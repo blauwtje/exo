@@ -42,6 +42,10 @@ export function checkSkillFrontmatter(report, repository) {
     if (description.trim() === '' || description.length > 1024 || /[<>]/.test(description)) {
       errors.push(`${relative}: invalid description`);
     }
+    // A description is the trigger: without both clauses the skill fires on the wrong turns.
+    if (!/\bUse (when|for|at|only)\b/.test(description) || !/\bNot (for|when)\b/.test(description)) {
+      errors.push(`${relative}: description lacks a Use clause or a Not clause`);
+    }
   }
   report.assert(
     errors.length === 0,

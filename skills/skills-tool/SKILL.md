@@ -1,6 +1,6 @@
 ---
 name: skills-tool
-description: Use when creating a skill or agent, editing one, or judging whether one is too long, before the edit is made and before it is called done.
+description: Use when creating, editing or sizing a skill or agent, before the edit and before it is called done. Not for CLAUDE.md, a rule or an output style.
 ---
 
 # Skills tool
