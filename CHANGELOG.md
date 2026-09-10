@@ -14,10 +14,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `planning` writes plans in the task shape: `### Task n`, `Files:`, numbered
+  steps carrying complete code with `Run:` and `Expected:`, and a `Commit:`
+  block with a `Plan-task:` trailer. `Freedom:` levels, `Touches:` anchors,
+  `replace:`/`with:` edits, `On drift:` lines and `[NEEDS CLARIFICATION]`
+  markers are gone; a question is asked before the plan is written.
+  `implementing` detects a landed task by its `Plan-task:` commit.
 - The three briefs `implementing` hands its delegates sit beside `SKILL.md` as
   `<role>-prompt.md`; the verifier now checks `implementing` and every prompt file.
 - `planning` reads `data-migration.md` from `implementing-batch` instead of
   carrying a copy, and its heading matches its name.
+
+### Removed
+
+- `validate-plan.mjs` and its test: the new plan grammar has no machine
+  validator; the planning session reads the plan once against the spec's rules.
 
 ## 0.1.0 - 2026-09-10
 

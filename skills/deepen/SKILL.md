@@ -36,7 +36,7 @@ Use exactly these terms; do not substitute component, service, unit, API, bounda
 3. Present each candidate as a card: **Files**; **Problem** (one sentence of friction); **Solution** (the concrete refactor and the resulting interface); **Benefit** (locality and leverage gained, which tests survive and which move); **Strength** (Strong, Worth exploring, or Speculative).
 4. Rank the cards and close with the top recommendation and why it goes first.
 
-Fill in everything the code determines: affected files, the refactor, the resulting interface, surviving tests, ordering. Unknowables become stated assumptions or `[NEEDS CLARIFICATION: ...]` — never placeholder fields, and never a menu of findings for the user to choose from. Ask at most one question, only when a choice changes persisted data, a public protocol or signature, a paid provider, or an irreversible deletion or migration; attach a recommendation.
+Fill in everything the code determines: affected files, the refactor, the resulting interface, surviving tests, ordering. Unknowables become stated assumptions, or a question asked before the plan is written — never placeholder fields, and never a menu of findings for the user to choose from. Ask at most one question, only when a choice changes persisted data, a public protocol or signature, a paid provider, or an irreversible deletion or migration; attach a recommendation.
 
 ## Two modes
 

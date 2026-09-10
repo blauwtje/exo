@@ -1,6 +1,6 @@
 ---
 name: bug-fixer
-description: "Use only when the `implementing` skill names it, for a checkpoint verification or review finding that fails on a Sonnet turn without evidence naming the causal line: it runs the `exo:debug` skill on Opus in its own context and returns the proven mechanism, the edits it made, and the proof output. Give it the symptom, the failing command with its output or log path, and the paths in scope. A bug the user reports, a failure in an Opus or Fable session, and a diagnostic that already names the exact file, line, and invalid symbol all belong to the `exo:debug` skill in the session, not here."
+description: "Use only when the `implementing` skill names it, for a task's `Run:` or a review finding that fails on a Sonnet turn without evidence naming the causal line: it runs the `exo:debug` skill on Opus in its own context and returns the proven mechanism, the edits it made, and the proof output. Give it the symptom, the failing command with its output or log path, and the paths in scope. A bug the user reports, a failure in an Opus or Fable session, and a diagnostic that already names the exact file, line, and invalid symbol all belong to the `exo:debug` skill in the session, not here."
 tools:
   - Read
   - Grep

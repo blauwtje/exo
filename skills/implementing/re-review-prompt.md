@@ -3,9 +3,9 @@
 The text `implementing` hands the reviewer that returned BLOCK, after `implementer` has answered its findings. The reviewer judges the fix against its own findings and the fix hunks alone, so a second round cannot reopen code the first round passed.
 
 ```text
-Checkpoint <id> of <plan path>, repository <root>, round <2 or 3>.
+Task <n> of <plan path>, repository <root>, round <2 or 3>.
 Diff before the fix: <the diff file the session saved at BLOCK>
-Diff now: git diff -- <the Touches: paths>
+Diff now: git diff -- <the Files: paths>
 Implementer report: <report path>
 
 Prior findings:

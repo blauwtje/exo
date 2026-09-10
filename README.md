@@ -17,7 +17,7 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 |---|---|
 | `shaping` | An outcome or feature request has no chosen solution. |
 | `planning` | A plan is requested, a planning mode is active, or another executor runs the work. |
-| `implementing` | A plan is run or resumed: one delegated build and two reviews per checkpoint, a commit each. |
+| `implementing` | A plan is run or resumed: one delegated build and two reviews per task, a commit each. |
 | `implementing-batch` | A decided change builds in the session: more than one file, a dependency, a signature or tests. |
 | `debug` | Existing behavior fails and the cause is unproven. |
 | `deepen` | The user asks where to improve architecture without naming the change. |

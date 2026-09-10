@@ -24,7 +24,8 @@ const CASE_INSENSITIVE = [
 const CASE_SENSITIVE = [
   '\\bClaude Code\\b',
   '\\bCodex\\b',
-  '\\bTask\\b',
+  // A plan task heading reads `Task 3` or `Task <n>`; the tool name never takes a number.
+  '\\bTask\\b(?!\\s*(?:\\d|<|\\[))',
   '\\bAgent\\b',
   '\\bWebSearch\\b',
   '\\bWebFetch\\b',

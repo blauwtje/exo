@@ -1,6 +1,6 @@
 ---
 name: quality-reviewer
-description: "Use only when the `implementing` skill names it, after the spec review passed, to read one checkpoint's diff against the code standard the brief names and the repository's conventions and return PASS or BLOCK with findings that cite the rule each hunk breaks, with file and line. It changes nothing and does not re-check the checkpoint's intent."
+description: "Use only when the `implementing` skill names it, after the spec review passed, to read one task's diff against the code standard the brief names and the repository's conventions and return PASS or BLOCK with findings that cite the rule each hunk breaks, with file and line. It changes nothing and does not re-check the task's intent."
 tools:
   - Read
   - Grep

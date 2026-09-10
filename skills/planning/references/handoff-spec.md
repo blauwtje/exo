@@ -1,86 +1,63 @@
 # Plan artifact specification
 
-Give a zero-context executor every verified name, edge, and check needed to edit without invention. The enemy is a goal statement that exports discovery to the executor. The overcorrection is loading this depth for a two-edit inline order the current session executes immediately.
+Give a zero-context executor every file, line of code, command and expected result it needs, so a cheap model pastes and runs instead of deciding. The enemy is a task that describes a change and leaves the code to the executor. The overcorrection is loading this depth for a two-edit inline order the current session executes immediately.
 
-The artifact must read the same however the request was phrased, and execute the same whether the executor is this session after approval, a fresh session, or a different model. Write for a reader with zero conversation context: no "as discussed", no "above", no reference back to the request: every referent is a path, symbol, or command named inside the plan. The plan carries each edit as text the executor pastes, never as a description of it: a prose `Target:` that a weaker model or a cleared context must translate into code is the discovery this artifact exists to remove.
+Write for a reader with zero conversation context: no "as discussed", no "above", no reference back to the request; every referent is a path, symbol or command named inside the plan. The plan carries no question and no placeholder: a fact the planning session could not settle is asked before the plan is written, and a choice the user would not notice is made in the plan.
 
-## Required sections, in order
+## Header sections, in order
 
 1. `## Goal`: one sentence naming the observable result.
-2. `## Plan basis`: opens with two lines on their own, `Repository: <absolute repository root>` and `Branch: <branch name>`, which `implementing` greps to match a plan to a checkout; then the ref, relevant dirty or untracked state, pinned external tool/library versions and dates the plan depends on, and the drift policy: what counts as `PLAN DRIFT`, and whether recovery is "make no edit" (drift found before a checkpoint's edits) or "revert only that checkpoint's changes and restore the last verified green state" (drift found after); closes with the literal sentence "Executor loads the `implementing` skill on this plan before the first checkpoint." so a fresh session that opens on the plan runs it under that skill, which owns the branch, the commits, the review and the pull-request question.
+2. `## Plan basis`: opens with `Repository: <absolute root>` and `Branch: <branch>` on their own lines, which `implementing` reads to match a plan to a checkout; then the ref planned against, relevant dirty state, and the pinned tool and library versions the plan depends on; closes with the literal sentence "Executor loads the `implementing` skill on this plan before the first task."
 3. `## Non-goals`: adjacent work that stays unchanged; the executor treats these as hard boundaries.
-4. `## Context`: the verified facts the plan depends on: current behavior, owning files and symbols, and the repository conventions the edits must follow. Only facts confirmed during the planning session belong here.
-5. `## Visual direction`: required when a checkpoint carries `Freedom: DESIGN`, and when a `Touches:` path ends in `.css`, `.scss`, `.sass`, `.less`, `.html`, `.htm`, `.tsx`, `.jsx`, `.vue`, `.svelte`, or `.astro`, including behind a `?query` or `#fragment` suffix, in a checkpoint whose `Target:` does not state "no visual change": exactly one `Design skill: <name>` line naming the frontend-design skill this plan's DESIGN checkpoints load, or the literal `none` only when `## Open questions` carries a clarification marker asking which skill to load, plus the chosen direction or world in one line, the evidence that choice rests on, the list of choices an executor may not invent, and, when the planning turn froze a direction contract, one `Contract: <repository-relative path>` line naming the JSON file the first DESIGN checkpoint creates.
-6. `## Steps`: dependency-ordered checkpoints, each formatted per the template below.
-7. `## Final verification`: the commands proving the whole change, with expected observable results, closing with a literal `Walkthrough:` line: the one command or URL a person runs or opens to see the delivered result, without a manual login or a Swagger detour (a seeded demo script, a curl or browser walkthrough, or a minimal view). A plan whose checkpoints ship only API, schema, or data changes still carries it and adds the minimal checkpoint that makes the result visible; `Walkthrough: none` is valid only when the change has no user-visible result, and then states why on the same line.
-8. `## Open questions`: every `[NEEDS CLARIFICATION: ...]` marker, or the word None.
+4. `## Context`: the verified facts the plan depends on: current behavior, owning files and symbols, the conventions the edits follow, and every signature two tasks share, because a task's executor sees only its own task.
+5. `## Visual direction`: only when a task carries a `Design:` line; exactly one `Design skill: <name>` line naming the skill that task loads, then the chosen direction in one line, the evidence it rests on, and the choices an executor may not invent.
+6. `## Tasks`: dependency-ordered tasks in the template below.
+7. `## Final verification`: the commands proving the whole change with their expected results, closing with a literal `Walkthrough:` line: the one command or URL a person runs to see the result. `Walkthrough: none` is valid only when nothing is user-visible, and says why on the same line.
 
-## Checkpoint template
-
-Each checkpoint in Steps uses exactly this format:
+## The task template
 
 ````
-### <id> — <title>
+### Task <n>: <title>
 
-Freedom: LOCKED | GUIDED | OPEN | DESIGN
-Depends on: none | <id>[, <id> …]
+Depends on: none | Task <m>[, Task <k>]
+Design: <skill name>    (only when the task changes what a page looks like; omit otherwise)
 
-Touches:
-- `<path>` — anchor: <type> (<anchor detail; planning line numbers advisory only>)
+Files:
+- Create: `<path>`
+- Modify: `<path>` (`<function, selector, or config key>`)
+- Test: `<path>`
 
-Current: <verified current state the executor must find>
-Target: <one sentence: the observable state after the edit>
-Wiring: <callers/consumers affected, or none>
+Step 1: <imperative title>
+```<lang>
+<the complete file, or the complete function or region, as it must read after this step>
+```
+Run: `<command>`
+Expected: <the observable result, quoted where it is output>
 
-Edit:
-- `<new path>` — create:
-  ```<lang>
-  <the whole file>
-  ```
-- `<existing path>` — replace:
-  ```<lang>
-  <verbatim current text, copied from the file this session, unique in that file>
-  ```
-  with:
-  ```<lang>
-  <the new text>
-  ```
+Step 2: <imperative title>
+...
 
-Verify: <command> → <expected observable result>
-On drift: <mismatch condition> → <recovery>, stop, report `PLAN DRIFT: <id>`
-Done when: <one observable completion condition>
+Commit:
+```bash
+git add <every path under Files>
+git commit -m "<type>(<scope>): <title>" -m "Plan-task: <n>"
+```
 ````
-
-`Freedom:` carries exactly one token, nothing else on the line:
-
-- **LOCKED**: paste the `Edit:` text verbatim: user decisions, public APIs, migrations, persisted formats, security boundaries, required copy, exact commands.
-- **GUIDED**: the `Edit:` text is the intended change; names, formatting, and idiom may adapt to repository conventions, behavior may not.
-- **OPEN**: the `Edit:` text is a reference implementation; the executor may restructure it inside the outcome and boundaries `Target:` and `## Non-goals` fix.
-- **DESIGN**: the direction fixed in `## Visual direction` holds and the `Edit:` text fixes structure, class names, and copy; the visual values inside that direction are decided by the frontend-design skill `## Visual direction` names, and this checkpoint loads that named skill immediately before its first UI edit.
-
-`Edit:` carries one entry per touched path, in the two forms the template shows, and nothing outside the entry lines and fenced blocks. A `new-file` anchor uses `create:` with the whole file; every other anchor uses `replace:` with the verbatim current text, then `with:` and the new text; an empty `with:` block deletes the quoted text. The same path may repeat for a second hunk. The current-text block is the executor's locator: text not found, or found more than once, is `PLAN DRIFT` before any edit. A checkpoint with `Touches: none` carries no `Edit:` field.
-
-`<id>` is a kebab-case slug naming the checkpoint's task, like `add-refund-column`, so `Depends on:` and `PLAN DRIFT:` references read as tasks: lowercase, at least two hyphen-separated words, never a sequence code (`CP1`, `step-2`). `Depends on: none` is valid; the field never stays empty or names no id, since both silently read as `none` and drop an ordering edge. Each section heading this grammar names, required or conditional, appears exactly once. Anchor `<type>` is one of `symbol`, `selector`, `template block`, `config key`, `exact string`, `new-file`; a newly created file always uses `new-file`, and every other touched path uses one of the other five. A checkpoint that changes nothing writes `Touches: none` and states "no repository change" in `Target:`; no checkpoint that edits may write `Touches: none`.
-
-A DESIGN checkpoint replaces its `Verify:` line with a literal `Render: <surface> at <viewports> → <observable visual outcome>` line. Every other checkpoint keeps `Verify:` and carries no `Render:` line.
-
-Optional `RED:`, `GREEN:`, `VERIFY:` substep lines may appear between `Wiring:` and `Verify:` when a checkpoint lands a failing test before implementing it. Every checkpoint still ends green.
 
 ## Rules
 
-1. **Anchor priority.** Cite a stable symbol, selector, template block, config key, or exact string first; fall back to a current signature or a short current-text fingerprint only when no stable anchor exists. A planning-time line range is advisory metadata alone and never the sole locator.
-2. **Verified anchors only.** Quote the current signature or text; never name an unread symbol. The same holds for every dependency version, schema field, fixture key, and environment variable the plan names: read it from the lockfile, migration, or fixture in this repository before writing it into a step, since an invented value still validates and fails only at the executor's first run.
-3. **The edit is the spec.** `Target:` is one sentence naming the observable state; the validator rejects a longer one. Every behavior, wording, or structural detail lives in `Edit:` as the text itself, so an executor with less reasoning or no conversation context pastes rather than designs.
-4. **Phased and green.** When credentials, hardware, or accounts gate later work, fully specify only the next executable checkpoint and summarize gated checkpoints until their prerequisites pass.
-5. **Rationale where required.** Explain any touched file the request did not name and any edit not forced by a changed signature, dependency edge, or call site, in `Current:`, `Target:`, `Wiring:` or `## Context`, never as a comment inside `Edit:` text: the executor pastes that text, and a comment naming an issue, a spec line, or what the change replaces outlives the change and then reads as a fact about the code. A comment in `Edit:` text states only a constraint or invariant of the code as it stands; the story belongs in the commit the executor writes.
-6. **No placeholders.** Replace "appropriate handling", "similar to", "etc.", and TODO-shaped steps with exact behavior or `[NEEDS CLARIFICATION: ...]`.
-7. **Repository conventions.** Name how each component connects to documented test registration, error types, process wrappers, logging, and file layout. Do not invent a parallel pattern.
-8. **Frontend entry.** Every checkpoint touching a frontend path is itself a DESIGN checkpoint or reaches one through `Depends on:`; a checkpoint whose `Target:` states "no visual change" is exempt.
-9. **Effort proportional to risk.** Author the plan at the session's configured reasoning effort. Raise it one level for a plan that crosses an irreversible migration, a security or trust boundary, or an architecture decision the read evidence does not settle.
+1. **The code is the spec.** Every step that changes a file shows the whole file, or the whole function or region, as it must read afterwards. "Similar to Task 2", "add validation", "handle errors" and TODO-shaped steps are plan failures; the plan repeats code rather than pointing at it.
+2. **Verified names only.** Every path, symbol, signature, version, fixture key and environment variable was read in this repository during the planning session; an invented one still reads well and fails at the executor's first run.
+3. **Every change is proven.** A step that changes a file ends with `Run:` and `Expected:`, or the next step's `Run:` covers it. Where the repository exposes a test runner and the task changes behavior, the first step writes the test, its `Expected:` is the failure, and a later step's `Expected:` is the pass.
+4. **One task, one commit.** The `Commit:` block names every path under `Files:` and carries the `Plan-task: <n>` trailer, which is how `implementing` detects a landed task. A task changes nothing outside `Files:`.
+5. **Small tasks.** A task lands in one delegate context: about two to five steps and one concern. Split a task whose steps reach a second concern.
+6. **Rationale where required.** A file the request did not name, and an edit not forced by a signature or call site, is explained in `## Context` or the step title, never as a comment inside the code: the executor pastes that code, and a comment telling the change's story outlives it.
+7. **Repository conventions.** Each task connects to the repository's own test registration, error types, logging and layout; the plan invents no parallel pattern.
+8. **Design tasks.** A task with a `Design:` line fixes structure, class names and copy in its code and leaves the visual values to the named skill, which the executing session loads before that task's first edit.
+9. **Drift.** The executor compares each `Modify:` region with the tree before editing; a region that no longer matches stops that task before any edit with `PLAN DRIFT: Task <n>` and the mismatch, and `plan-author` rewrites that task alone.
 
 ## Judgment
 
 - Verified repository evidence outranks remembered symbols and generic patterns.
-- Explicit user decisions outrank inferred implementation choices.
-- A clarification marker outranks inventing a name, behavior, credential, or external fact.
-- A green checkpoint outranks a tidy diff: never leave the repository red to finish a checkpoint sooner.
+- Explicit user decisions outrank inferred implementation choices; a choice the user would notice is asked before writing, never left to the executor.
+- A green task outranks a tidy diff: never leave the repository red to finish a task sooner.
