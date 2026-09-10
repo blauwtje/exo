@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "exo",
-      "description": "One engineering process for Claude Code: skills, agents and hook guards.",
+      "description": "One engineering process for Claude Code: skills and agents that take turns.",
       "version": "0.1.0",
       "license": "PolyForm-Noncommercial-1.0.0",
       "source": "./"

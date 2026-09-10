@@ -1,6 +1,6 @@
 # exo
 
-One engineering process for Claude Code, as a plugin: skills that take turns, agents that keep discovery off the main context, and hook guards that cap what enters it.
+One engineering process for Claude Code, as a plugin: skills that take turns, and agents that keep discovery off the main context.
 
 ## Install
 
@@ -27,9 +27,9 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 | `skills-tool` | A skill or agent is created, edited or judged too long. |
 | `using-exo` | Session start; explains the rest. |
 
-## Agents and hooks
+## Agents and the session hook
 
-`agents/` holds the delegates the skills dispatch, each pinned to the cheapest model and the narrowest tool list its job allows. `hooks/hooks.json` wires the read guard, the Bash output guard, the git guard and the session-start injection. The hooks need `bash` and `jq` on `PATH`.
+`agents/` holds the delegates the skills dispatch, each pinned to the cheapest model and the narrowest tool list its job allows. `hooks/hooks.json` wires one hook: a SessionStart injection that hands the model the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others. It needs `bash` and `jq` on `PATH`. The plugin ships no guard hook: a guard caps what a machine may do and belongs in that machine's own configuration, not in a shared plugin.
 
 ## Develop
 
