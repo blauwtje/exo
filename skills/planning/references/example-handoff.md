@@ -2,7 +2,7 @@
 
 Show the plan grammar filled in in full, not simplified for readability. The enemy is a worked example that quietly drops a required field because it reads better than the real thing. The overcorrection is a second, looser grammar that examples get to use and deliverable plans do not.
 
-This is one complete plan, valid against `handoff-spec.md` and against `scripts/validate-plan.mjs`: eight sections in order — `## Visual direction` included, because a `Touches:` path ends in `.css` — and three checkpoints, one LOCKED, one DESIGN closing on `Render:`, one GUIDED with a RED/GREEN/VERIFY substep. Every checkpoint carries every grammar field, including the `Edit:` text the executor pastes.
+This is one complete plan, valid against `handoff-spec.md` and against `scripts/validate-plan.mjs`: eight sections in order, `## Visual direction` included because a `Touches:` path ends in `.css`, and three checkpoints, one LOCKED, one DESIGN closing on `Render:`, one GUIDED with a RED/GREEN/VERIFY substep. Every checkpoint carries every grammar field, including the `Edit:` text the executor pastes.
 
 ## Goal
 
@@ -13,7 +13,7 @@ The refund detail page shows why a refund was issued, sourced from a new `orders
 Repository: /home/dev/orders-service
 Branch: main
 
-Remote `github.com/example/orders-service` at `a1b2c3d`, clean worktree. Node 20.11 and `psql` 16 confirmed on PATH this session. Drift policy: a mismatch found before a checkpoint's edits means make no edit; a mismatch found only after edits exist means revert only that checkpoint's changes and restore the last verified green state — either way, stop and report `PLAN DRIFT: <id>`. Executor loads the `implementing` skill on this plan before the first checkpoint.
+Remote `github.com/example/orders-service` at `a1b2c3d`, clean worktree. Node 20.11 and `psql` 16 confirmed on PATH this session. Drift policy: a mismatch found before a checkpoint's edits means make no edit; a mismatch found only after edits exist means revert only that checkpoint's changes and restore the last verified green state; either way, stop and report `PLAN DRIFT: <id>`. Executor loads the `implementing` skill on this plan before the first checkpoint.
 
 ## Non-goals
 
@@ -45,7 +45,7 @@ Touches:
 
 Current: `orders` has no `refund_reason` column; refund reasons live only in support tickets.
 Target: `orders` has a nullable `refund_reason` text column with no default and no backfill.
-Wiring: none — no code path reads or writes the column yet.
+Wiring: none; no code path reads or writes the column yet.
 
 Edit:
 - `db/migrations/0042_add_refund_reason.sql` — create:
@@ -135,7 +135,7 @@ Edit:
         </dd>
   ```
 
-RED: add an assertion that `GET /refunds/:id`'s response includes `refundReason` and that `RefundDetail` renders the reason row, and observe both fail — the key and the row are absent.
+RED: add an assertion that `GET /refunds/:id`'s response includes `refundReason` and that `RefundDetail` renders the reason row, and observe both fail because the key and the row are absent.
 GREEN: add the field to `serializeRefund` and the row to `RefundDetail`.
 VERIFY: rerun both assertions and observe them pass.
 
