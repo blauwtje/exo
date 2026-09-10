@@ -11,7 +11,6 @@ import { parseArgs } from 'node:util';
 import { createReport } from './verify/report.mjs';
 import { createRepository } from './verify/repository.mjs';
 import { checkSkillFrontmatter } from './verify/checks/skill-frontmatter.mjs';
-import { checkLineBudgets } from './verify/checks/line-budgets.mjs';
 import { checkProcessStructure } from './verify/checks/process-structure.mjs';
 import { checkMarkdownReferences } from './verify/checks/markdown-references.mjs';
 import { checkDescriptionBudgets } from './verify/checks/description-budgets.mjs';
@@ -51,7 +50,6 @@ const repository = createRepository(root);
 const options = { skipLinkCheck: values['skip-link-check'] };
 
 checkSkillFrontmatter(report, repository, options);
-checkLineBudgets(report, repository, options);
 checkProcessStructure(report, repository, options);
 checkMarkdownReferences(report, repository, options);
 checkDescriptionBudgets(report, repository, options);

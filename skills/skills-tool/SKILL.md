@@ -24,9 +24,8 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 | `## References` | A table of file and "read it when"; a reference is loaded at the step that needs it, never earlier. |
 | `## Judgment` | Which rule wins when two collide, as a ladder. |
 
-## Budgets
+## Form
 
-- Body under 500 words for a stage skill, under 150 for a gateway skill, under 900 for a skill that carries a contract; the ceiling in `verify/budgets.mjs` is the line limit that fails the build.
 - One sentence per line, under 25 words; a bullet is at most two lines.
 - Heavy material (a template, a worked example, a checklist over 20 lines) goes to `references/`; the body points to it with the moment to read it.
 - Text the skill hands to a delegate is `<role>-prompt.md` beside `SKILL.md`, in the References table with its dispatch step; `references/` holds only what the skill itself reads mid-run.
@@ -35,9 +34,9 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 
 1. Name the failure the skill must stop, as one observable symptom in one prompt, and save that prompt under `evals/<skill>/`.
 2. Run the prompt without the skill: a `general-purpose` delegate given the prompt alone, or `claude -p` in a scratch repository without `--plugin-dir`; record the exact rationalization it produced.
-3. Write the skill against that rationalization, in the shape above, inside the budget.
+3. Write the skill against that rationalization, in the shape above.
 4. Run the prompt with the skill: the same delegate told to load it, or `claude -p --plugin-dir <clone>`; a pass the baseline also passed proves nothing, so tighten the case until the baseline fails.
-5. Run `node verify.mjs`; a red check is a budget or structure fault to fix, not to exempt.
+5. Run `node verify.mjs`; a red check is a structure fault to fix, not to exempt.
 
 ## Red flags
 
@@ -56,5 +55,5 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 ## Judgment
 
 - A rule the baseline run violated outranks a rule that reads well.
-- The budget outranks completeness: a skill over budget loses its weakest rule, never its reason clauses.
+- Brevity outranks completeness: a bloated skill loses its weakest rule, never its reason clauses.
 - `instruction-style.md` outranks this skill where the two disagree on wording.

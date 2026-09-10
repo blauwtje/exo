@@ -42,11 +42,6 @@ function dropLines(root, relative, prefix) {
 const SCENARIOS = [
   { name: 'invalid-yaml', mutate: (root) => write(root, 'skills/shaping/SKILL.md',
     read(root, 'skills/shaping/SKILL.md').replace(/^name: shaping$/gm, 'name: [shaping')) },
-  { name: 'line-overflow', mutate: (root) =>
-    append(root, 'skills/implementing-batch/references/performance.md', '\nextra'.repeat(100)) },
-  // A file in LINE_BUDGETS must hit its own ceiling, not an exemption.
-  { name: 'budgeted-line-overflow', mutate: (root) =>
-    append(root, 'skills/planning/references/example-handoff.md', 'extra\n'.repeat(15)) },
   { name: 'missing-judgment', mutate: (root) =>
     replaceText(root, 'skills/research/SKILL.md', '## Judgment', '## Verdict') },
   { name: 'banned-phrase', mutate: (root) =>
@@ -57,8 +52,6 @@ const SCENARIOS = [
     replaceText(root, 'skills/implementing-batch/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>
     replaceText(root, 'skills/implementing/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
-  { name: 'prompt-line-overflow', mutate: (root) =>
-    append(root, 'skills/implementing/implementer-prompt.md', '\nextra'.repeat(100)) },
   { name: 'removed-required-owner-row', mutate: (root) =>
     dropLines(root, 'skills/debug/SKILL.md', '| `../implementing-batch/references/security.md` |') },
   { name: 'extra-ui-reference', mutate: (root) =>
@@ -112,12 +105,6 @@ const SCENARIOS = [
     dropLines(root, 'skills/debug/SKILL.md', 'description:') },
   { name: 'effort-unknown-key', mutate: (root) =>
     replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\nmodel-effort: high') },
-  { name: 'skill-char-budget', mutate: (root) => {
-    const lines = read(root, 'skills/designing/SKILL.md').split('\n');
-    const last = lines.at(-1) === '' ? lines.length - 2 : lines.length - 1;
-    lines[last] += ' padding'.repeat(400);
-    write(root, 'skills/designing/SKILL.md', lines.join('\n'));
-  } },
   { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     'baseline before the first edit, post-build before the critique fixes, and final after them',
     'capture the surface before and after building') },

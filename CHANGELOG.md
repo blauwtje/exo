@@ -29,6 +29,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `validate-plan.mjs` and its test: the new plan grammar has no machine
   validator; the planning session reads the plan once against the spec's rules.
+- The per-file line and character ceilings and the `line budgets` check: a
+  skill's length is judged by `skills-tool`, not failed by the verifier.
 
 ## 0.1.0 - 2026-09-10
 
