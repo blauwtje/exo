@@ -1,0 +1,12 @@
+{
+  "name": "exo",
+  "version": "0.1.0",
+  "description": "One engineering process for Claude Code: shaping, planning, implementing, debug, deepen, research and designing as skills, with the agents and hook guards that keep a session's context and model spend low.",
+  "author": {
+    "name": "Thomas Hoogteijling"
+  },
+  "homepage": "https://github.com/blauwtje/exo",
+  "repository": "https://github.com/blauwtje/exo",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "keywords": ["skills", "agents", "workflow", "planning", "debugging"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "blauwtje",
+  "description": "Plugins by blauwtje",
+  "owner": {
+    "name": "Thomas Hoogteijling"
+  },
+  "plugins": [
+    {
+      "name": "exo",
+      "description": "One engineering process for Claude Code: skills, agents and hook guards.",
+      "version": "0.1.0",
+      "license": "PolyForm-Noncommercial-1.0.0",
+      "source": "./"
+    }
+  ]
+}
