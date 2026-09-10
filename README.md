@@ -49,7 +49,7 @@ claude plugin validate .
 
 Node 22 or newer, plus `bash` and `jq` on `PATH`. Nothing to install: every check runs on the Node standard library. CI runs `npm run check` on Node 22 and 24 for every pull request.
 
-`verify/budgets.mjs` names the skills the verifier checks, so a new skill is unverified until it is listed there. `evals/` and `docs/` are git-ignored: prompt cases, their runs and research notes live outside this repository.
+`verify/budgets.mjs` names the skills the verifier checks, so a new skill is unverified until it is listed there. `docs/` is git-ignored: research notes live outside this repository. `evals/` is tracked: a case is `evals/<skill>-<case>/prompt.md` with its graders beside it, the layout `tests/evals.test.mjs` checks.
 
 ## License
 
