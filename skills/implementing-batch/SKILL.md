@@ -1,6 +1,6 @@
 ---
 name: implementing-batch
-description: Build a decided change end to end without checkpoints. Use after initial inspection when the change modifies more than one source/test/config file, adds a dependency, changes a public signature or user-visible behavior, adds or changes automated tests, or reaches a file inspection did not cover. Not for one-file typo corrections or internal renames, version-only bumps of an existing dependency, git-only operations, read-only questions, or failures whose cause is unproven.
+description: Use when a decided change builds in this session end to end, after initial inspection shows it modifies more than one source/test/config file, adds a dependency, changes a public signature or user-visible behavior, adds or changes automated tests, or reaches a file inspection did not cover; also for one checkpoint handed over by `implementing`, or a whole plan run in the session. Not for one-file typo corrections or internal renames, version-only bumps of an existing dependency, git-only operations, read-only questions, or failures whose cause is unproven.
 ---
 
 # Implement
@@ -54,6 +54,10 @@ Three conditions stop the loop and force an evidence report:
 ## Precedence
 
 `debug` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting. `codebase-scout` owns read-only discovery; `code-review` owns the review context. Design and structural decisions belong to the session on its expensive model; a Sonnet context builds the decided edits and reports when it needs a decision, rather than making one itself.
+
+## From a plan
+
+A plan written by `planning` runs here only when its checkpoints must build in this session; `implementing` runs one through delegated contexts and commits per checkpoint. Read `## Goal`, `## Plan basis`, `## Non-goals` and `## Context`, then the checkpoints one at a time in file order with `sed -n` between headings. For each: confirm every `replace:` text is present once, apply the `Edit:` under its `Freedom:` line, run its `Verify:`, and commit the `Touches:` paths under the plan's authorization before the next. Text missing or found twice is drift: stop and report `PLAN DRIFT: <id>`.
 
 ## Judgment
 
