@@ -1,7 +1,7 @@
 {
   "name": "exo",
   "version": "0.1.0",
-  "description": "One engineering process for Claude Code: shaping, planning, implementing, debug, deepen, research and designing as skills, with the agents that keep a session's context and model spend low.",
+  "description": "One engineering process for Claude Code: skills that take turns, and agents that keep discovery off the main context.",
   "author": {
     "name": "Thomas Hoogteijling"
   },
