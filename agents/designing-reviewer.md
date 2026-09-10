@@ -1,6 +1,6 @@
 ---
 name: designing-reviewer
-description: Renders, measures, and critiques a designing build against its selected contract in a fresh context, returning faults or a verdict as a short file under the run directory.
+description: Renders, measures, and critiques a designing build against its selected contract in a fresh context, returning faults or a verdict as a short file under the run directory. It writes only there and never edits the source, because a repair belongs to the caller.
 tools: Read, Write, Bash, Glob, Grep
 maxTurns: 30
 ---
