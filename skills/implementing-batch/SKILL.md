@@ -63,4 +63,5 @@ A plan written by `planning` runs here only when its tasks must build in this se
 
 - Explicit user instructions outrank this skill.
 - Settled brief or plan decisions outrank implementation defaults.
+- A repair that crosses a second owner, keeps an old route beside the new one, or cannot be explained in one pass goes to `debug` instead of a further patch, because each sign says the cause is elsewhere.
 - Repository test, build, naming, and review conventions outrank unspecified defaults here.
