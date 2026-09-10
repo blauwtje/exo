@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 
 export function checkMarkdownReferences(report, repository) {
-  const files = [repository.join('README.md'), ...repository.processFiles()];
+  const files = [repository.join('README.md'), ...repository.processFiles(), ...repository.promptFiles()];
   const errors = [];
   for (const file of files) {
     for (const target of markdownTargets(repository.text(file))) {

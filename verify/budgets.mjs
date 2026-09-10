@@ -1,10 +1,11 @@
 // The corpus contract as data: which skills must exist, what frontmatter may say,
 // and the per-file ceilings. Line ceilings are per file for the same reason
 // character ceilings are: a worked artifact carries grammar that costs lines, not
-// words. Every file not named here keeps 120 for a SKILL.md and 90 for a reference.
+// words. Every file not named here keeps 120 for a SKILL.md and 90 for a reference
+// or a delegate prompt.
 
 export const EXPECTED_SKILLS = [
-  'debug', 'deepen', 'designing', 'implementing-batch', 'planning', 'research', 'shaping'
+  'debug', 'deepen', 'designing', 'implementing', 'implementing-batch', 'planning', 'research', 'shaping'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);

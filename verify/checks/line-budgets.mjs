@@ -13,7 +13,7 @@ import {
 export function checkLineBudgets(report, repository) {
   const errors = [];
   const measured = [];
-  for (const file of repository.processFiles()) {
+  for (const file of [...repository.processFiles(), ...repository.promptFiles()]) {
     const relative = repository.relative(file);
     const count = repository.lines(file).length;
     const isSkill = path.basename(file) === 'SKILL.md';
@@ -35,7 +35,7 @@ export function checkLineBudgets(report, repository) {
   report.assert(
     errors.length === 0,
     'line budgets',
-    `all skill and reference files are within budget (${measured.join('; ')})`,
+    `all skill, reference and prompt files are within budget (${measured.join('; ')})`,
     errors.join('; ')
   );
 }

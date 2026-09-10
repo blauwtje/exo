@@ -1,7 +1,8 @@
 // Port of Test-ReferenceTables (verify.ps1:382-534) and its row helper
 // (verify.ps1:362-374): every reference a skill exposes is reachable from its
 // table, the required cross-skill owner rows are present with their timing
-// predicate, and the designing reference set stays exactly sixteen files.
+// predicate, every delegate prompt beside a SKILL.md has a row, and the designing
+// reference set stays exactly sixteen files.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,6 +34,11 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/deepen/SKILL.md': [
     '../planning/references/handoff-spec.md',
+  ],
+  'skills/implementing/SKILL.md': [
+    'implementer-prompt.md',
+    'spec-reviewer-prompt.md',
+    'quality-reviewer-prompt.md',
   ],
   'skills/research/SKILL.md': [],
   'skills/shaping/SKILL.md': [],
@@ -171,7 +177,7 @@ export function checkReferenceTables(report, repository) {
 
   const referenceFiles = repository.walk(repository.skillsRoot,
     (file) => file.endsWith('.md') && path.basename(path.dirname(file)) === 'references');
-  for (const referenceFile of referenceFiles) {
+  for (const referenceFile of [...referenceFiles, ...repository.promptFiles()]) {
     if (!referenced.has(referenceFile.toLowerCase())) {
       errors.push(`${repository.relative(referenceFile)}: no SKILL reference-table entry`);
     }

@@ -1,4 +1,4 @@
-# Quality review brief
+# Quality reviewer prompt
 
 The text `implementing` hands `quality-reviewer` after `spec-reviewer` returns PASS. The reviewer judges the code against the standard, never the plan.
 

@@ -1,4 +1,4 @@
-# Spec review brief
+# Spec reviewer prompt
 
 The text `implementing` hands `spec-reviewer` after `implementer` reports green. The reviewer compares the diff with the checkpoint, not with taste.
 

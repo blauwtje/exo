@@ -52,6 +52,11 @@ export function createRepository(root) {
     // Get-ProcessFiles: every SKILL.md plus every .md inside a references/ folder.
     processFiles: () => walk(skillsRoot, (full) => path.basename(full) === 'SKILL.md'
       || (full.endsWith('.md') && path.basename(path.dirname(full)) === 'references')),
+    // A delegate prompt sits beside its SKILL.md as <role>-prompt.md: text the skill
+    // hands to an agent, so it carries no process structure of its own but still
+    // keeps to the reference budget and the portable-language rules.
+    promptFiles: () => walk(skillsRoot, (full) => full.endsWith('-prompt.md')
+      && path.basename(path.dirname(path.dirname(full))) === 'skills'),
     // ReadAllLines drops the newline that ends the last line; split does not.
     lines: (file) => {
       const text = fs.readFileSync(file, 'utf8');

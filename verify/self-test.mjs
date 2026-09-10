@@ -55,6 +55,10 @@ const SCENARIOS = [
     append(root, 'skills/shaping/SKILL.md', '\nUse WebSearch when useful.\n') },
   { name: 'broken-reference', mutate: (root) =>
     replaceText(root, 'skills/implementing-batch/SKILL.md', 'references/critique.md', 'references/missing.md') },
+  { name: 'broken-prompt-link', mutate: (root) =>
+    replaceText(root, 'skills/implementing/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
+  { name: 'prompt-line-overflow', mutate: (root) =>
+    append(root, 'skills/implementing/implementer-prompt.md', '\nextra'.repeat(100)) },
   { name: 'removed-required-owner-row', mutate: (root) =>
     dropLines(root, 'skills/debug/SKILL.md', '| `../implementing-batch/references/security.md` |') },
   { name: 'extra-ui-reference', mutate: (root) =>

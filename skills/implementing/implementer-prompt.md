@@ -1,4 +1,4 @@
-# Implementer brief
+# Implementer prompt
 
 The text `implementing` hands `implementer` for one checkpoint. Fill every field; the implementer reads nothing else, so a missing fact becomes a guess.
 

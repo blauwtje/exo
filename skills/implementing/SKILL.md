@@ -20,8 +20,8 @@ Invoking `/exo:implementing` on a plan authorizes the branch its `## Plan basis`
 2. **Read the frame, not the plan.** Read `## Goal`, `## Plan basis`, `## Non-goals`, `## Context` and `## Visual direction`, then list the ids with `grep -n '^### ' <plan>`; never open the whole file and never `@`-reference it.
 3. **Ask the repository what landed.** Walk the ids in file order: a checkpoint has landed when every `create:` path exists and, per `replace:` entry, its `with:` text is present and its `replace:` text absent; one with `Touches: none` has landed when its `Done when:` holds. The first unlanded id whose `Depends on:` all landed is current; all landed sends you to step 7.
 4. **Extract that checkpoint alone** with `sed -n` between its `### ` heading and the next, and route on its `Freedom:` line.
-5. **Dispatch the build.** `LOCKED` and `GUIDED` go to `implementer` with a brief written from `references/implementer-brief.md`. `OPEN` builds here under `implementing-batch`, handed the checkpoint as the settled plan; `DESIGN` builds here under `designing` from its Build phase, or ends the turn when `## Visual direction` records no direction. A `PLAN DRIFT` report goes to `plan-author` with the plan path, the id and the mismatch, then step 4 repeats; a failed `Verify:` whose output names no causal line goes to `bug-fixer` with the command, the log path and the paths; a second drift or a second failure on one checkpoint ends the turn with both reports.
-6. **Review, then commit.** Dispatch `spec-reviewer` from `references/spec-review-brief.md` and, on PASS, `quality-reviewer` from `references/quality-review-brief.md`. A BLOCK goes back to `implementer` with the findings, then to the same reviewer again; a third round ends the turn with the findings. On PASS twice: `git add` the `Touches:` paths, a Conventional Commit with no attribution whose body carries the checkpoint's rationale, and `git push`. Report the landed id and the next id, then return to step 3.
+5. **Dispatch the build.** `LOCKED` and `GUIDED` go to `implementer` with a brief written from `implementer-prompt.md`. `OPEN` builds here under `implementing-batch`, handed the checkpoint as the settled plan; `DESIGN` builds here under `designing` from its Build phase, or ends the turn when `## Visual direction` records no direction. A `PLAN DRIFT` report goes to `plan-author` with the plan path, the id and the mismatch, then step 4 repeats; a failed `Verify:` whose output names no causal line goes to `bug-fixer` with the command, the log path and the paths; a second drift or a second failure on one checkpoint ends the turn with both reports.
+6. **Review, then commit.** Dispatch `spec-reviewer` from `spec-reviewer-prompt.md` and, on PASS, `quality-reviewer` from `quality-reviewer-prompt.md`. A BLOCK goes back to `implementer` with the findings, then to the same reviewer again; a third round ends the turn with the findings. On PASS twice: `git add` the `Touches:` paths, a Conventional Commit with no attribution whose body carries the checkpoint's rationale, and `git push`. Report the landed id and the next id, then return to step 3.
 7. **The tail.** With every id landed, run `code-review --fix` on the branch at `medium` effort when only `LOCKED` checkpoints landed this turn, else `high`; commit and push its fixes. Ask one question with three options: open the pull request and, once checks are green, ask the merge question; open it and stop; or the user opens it. On a PR: `gh pr create --base <default> --title --body-file` with the goal, the proof line and `Closes #<n>` on an `issue-<n>-<slug>` branch; on a merge yes run `merge-prs` Steps 2, 4 and 5. On an `issue-<n>-<slug>` branch name `/exo:ship-issue <n>` next.
 
 ## Red flags
@@ -37,9 +37,9 @@ Invoking `/exo:implementing` on a plan authorizes the branch its `## Plan basis`
 
 | File | Read it when |
 |---|---|
-| `references/implementer-brief.md` | Step 5, before every `implementer` dispatch. |
-| `references/spec-review-brief.md` | Step 6, before every `spec-reviewer` dispatch. |
-| `references/quality-review-brief.md` | Step 6, before every `quality-reviewer` dispatch. |
+| `implementer-prompt.md` | Step 5, before every `implementer` dispatch. |
+| `spec-reviewer-prompt.md` | Step 6, before every `spec-reviewer` dispatch. |
+| `quality-reviewer-prompt.md` | Step 6, before every `quality-reviewer` dispatch. |
 
 ## Judgment
 
