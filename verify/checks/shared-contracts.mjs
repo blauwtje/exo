@@ -78,7 +78,7 @@ const PINNED_SENTENCES = {
     'Ratio between adjacent steps: **1.25 by default**',
     'Do not name a new typeface from memory.',
   ],
-  '../dot_claude/exact_agents/design-implementer.md': [
+  'agents/design-implementer.md': [
     '- no horizontal scroll from 360px through 1440px;',
     '- reduced-motion handling for every animation and semantic HTML beneath styling;',
     '- reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;',

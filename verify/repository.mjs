@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { EXPECTED_SKILLS } from './budgets.mjs';
 
 // PowerShell's Sort-Object orders paths case-insensitively, so a references/
 // folder sorts before its sibling SKILL.md. Detail strings built from this order
@@ -24,9 +25,13 @@ export function createRepository(root) {
     return path.relative(absoluteRoot, path.resolve(target)).split(path.sep).join('/');
   }
 
+  // At the skills root only the skills the corpus contract names are walked:
+  // skills/ also holds the workflow and meta skills, whose shape the
+  // skills-tool skill governs until each is rewritten into this contract.
   function walk(directory, predicate) {
     const found = [];
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (directory === skillsRoot && !EXPECTED_SKILLS.includes(entry.name)) continue;
       const full = path.join(directory, entry.name);
       if (entry.isDirectory()) found.push(...walk(full, predicate));
       else if (entry.isFile() && predicate(full)) found.push(full);
@@ -41,7 +46,7 @@ export function createRepository(root) {
     walk,
     join: (...segments) => path.join(absoluteRoot, ...segments),
     skillDirectories: () => fs.readdirSync(skillsRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
+      .filter((entry) => entry.isDirectory() && EXPECTED_SKILLS.includes(entry.name))
       .map((entry) => entry.name)
       .sort(),
     // Get-ProcessFiles: every SKILL.md plus every .md inside a references/ folder.

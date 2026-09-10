@@ -34,7 +34,6 @@ const EXPECTED_OWNER_ROWS = {
   'skills/deepen/SKILL.md': [
     '../planning/references/handoff-spec.md',
   ],
-  'skills/next/SKILL.md': [],
   'skills/research/SKILL.md': [],
   'skills/shaping/SKILL.md': [],
   'skills/designing/SKILL.md': [

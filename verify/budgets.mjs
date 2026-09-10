@@ -4,7 +4,7 @@
 // words. Every file not named here keeps 120 for a SKILL.md and 90 for a reference.
 
 export const EXPECTED_SKILLS = [
-  'planning', 'debug', 'deepen', 'implementing-batch', 'next', 'research', 'shaping', 'designing'
+  'debug', 'deepen', 'designing', 'implementing-batch', 'planning', 'research', 'shaping'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -20,7 +20,6 @@ export const CHARACTER_BUDGETS = {
 
 export const LINE_BUDGETS = {
   'skills/planning/references/example-handoff.md': 160,
-  'skills/next/SKILL.md': 130,
   'skills/designing/references/craft-recipes.md': 110
 };
 
