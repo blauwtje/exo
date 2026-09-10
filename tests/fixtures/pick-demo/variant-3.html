@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variant 3: tide-band ground</title>
+<style>
+  :root { --ground: oklch(90% 0.05 200); --ink: oklch(25% 0.05 220); --accent: oklch(60% 0.15 30); }
+  body { margin: 0; min-height: 100vh; font: 18px/1.6 "Palatino Linotype", Palatino, serif; color: var(--ink);
+    background: repeating-linear-gradient(180deg, var(--ground) 0 120px, color-mix(in oklch, var(--ground) 90%, black) 120px 124px); }
+  main { padding: 14vh 8vw; text-align: center; }
+  h1 { font-size: clamp(2.6rem, 8vw, 6rem); line-height: 0.95; margin: 0 auto 1.5rem; max-inline-size: 14ch; }
+  p { max-inline-size: 48ch; margin: 0 auto 1.5rem; }
+  button { font: inherit; padding: 0.9rem 1.6rem; border: 0; border-radius: 999px; background: var(--accent); color: white; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tide tables for the Wadden coast</h1>
+  <p>Departure windows for the ferry, read against tonight's water level and the wind forecast.</p>
+  <button type="button">Plan the crossing</button>
+</main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variant 2: slate ground</title>
+<style>
+  :root { --ground: oklch(20% 0.03 250); --ink: oklch(94% 0.01 250); --accent: oklch(78% 0.14 190); }
+  body { margin: 0; min-height: 100vh; font: 18px/1.6 "Gill Sans", "Trebuchet MS", sans-serif; color: var(--ink); background: var(--ground); }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; padding: 10vh 6vw; align-items: end; }
+  h1 { font-size: clamp(2.2rem, 6vw, 4.5rem); line-height: 1.05; margin: 0; }
+  p { max-inline-size: 40ch; border-left: 1px solid var(--accent); padding-left: 1rem; }
+  button { font: inherit; padding: 0.8rem 1.4rem; border: 1px solid var(--accent); background: transparent; color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tide tables for the Wadden coast</h1>
+  <div>
+    <p>Departure windows for the ferry, read against tonight's water level and the wind forecast.</p>
+    <button type="button">Plan the crossing</button>
+  </div>
+</main>
+</body>
+</html>
