@@ -14,7 +14,7 @@ import process from 'node:process';
 
 // A fixture holds everything a check reads plus the verifier itself, so the
 // javascript syntax check has the same modules to parse that the real run does.
-const FIXTURE_ENTRIES = ['skills', 'evals', 'verify', 'verify.mjs', 'README.md', 'install.mjs'];
+const FIXTURE_ENTRIES = ['skills', 'agents', 'verify', 'verify.mjs', 'README.md'];
 
 function read(root, relative) {
   return fs.readFileSync(path.join(root, relative), 'utf8');
@@ -37,13 +37,6 @@ function replaceText(root, relative, from, to) {
 function dropLines(root, relative, prefix) {
   const kept = read(root, relative).split('\n').filter((line) => !line.startsWith(prefix));
   write(root, relative, kept.join('\n'));
-}
-
-function editCases(root, mutate) {
-  const casesPath = path.join(root, 'evals', 'cases.json');
-  const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
-  mutate(data, (id) => data.cases.find((entry) => entry.id === id));
-  fs.writeFileSync(casesPath, JSON.stringify(data, null, 2), 'utf8');
 }
 
 const SCENARIOS = [
@@ -74,44 +67,12 @@ const SCENARIOS = [
     fs.mkdirSync(nested);
     fs.renameSync(path.join(root, 'skills/shaping/SKILL.md'), path.join(nested, 'SKILL.md'));
   } },
-  { name: 'case-schema-version', mutate: (root) =>
-    replaceText(root, 'evals/cases.json', '"schemaVersion": 1', '"schemaVersion": 2') },
-  { name: 'unsafe-windows-expected-path', mutate: (root) => editCases(root, (data, byId) => {
-    const testCase = byId('fix-this');
-    const unsafePath = '..\\outside.ps1';
-    testCase.expected.allowedEditPaths = [unsafePath];
-    testCase.expected.requiredChangedPaths = [unsafePath];
-    testCase.expected.pathAssertions[0].path = unsafePath;
-  }) },
-  { name: 'collapsed-multi-file-rename', mutate: (root) => replaceText(root, 'evals/cases.json',
-    'export function getAdminLabel(name) { return formatInternalName(name); }',
-    'export function getAdminLabel(name) { return name; }') },
-  { name: 'early-security-reference', mutate: (root) => replaceText(root, 'evals/cases.json',
-    '"security.md": "after-baseline-before-affected-edit"', '"security.md": "after-proof"') },
-  { name: 'weak-multi-file-outcome', mutate: (root) => replaceText(root, 'evals/cases.json',
-    '"requiredChangedPaths": ["src/names.mjs", "src/admin-names.mjs"]', '"requiredChangedPaths": ["src/names.mjs"]') },
-  { name: 'eager-ui-reference', mutate: (root) => editCases(root, (data, byId) => {
-    const testCase = byId('dashboard-nicer');
-    testCase.expected.references = [...testCase.expected.references, 'copywriting.md'];
-    testCase.expected.referencePhases['copywriting.md'] = 'before-visual-code';
-  }) },
-  { name: 'missing-path-assertion', mutate: (root) => editCases(root, (data, byId) => {
-    byId('fix-this').expected.pathAssertions = [];
-  }) },
-  { name: 'unrelated-proof-command', mutate: (root) => editCases(root, (data, byId) => {
-    byId('fix-this').expected.verificationCommands = ['git status'];
-  }) },
-  { name: 'unsafe-live-adapter', mutate: (root) =>
-    replaceText(root, 'evals/live/outcome.mjs', 'CLAUDE_CONFIG_DIR: claudeConfigRoot',
-      'CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR') },
   { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
     'more than one source/test/config file must change', 'more than two source/test/config files must change') },
   { name: 'drifted-ledger-rule', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
     'from the working tree diff before the next edit', 'from memory before the next edit') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
-  { name: 'readme-trigger-drift', mutate: (root) => replaceText(root, 'README.md',
-    'or the request adds or changes automated tests', 'whenever convenient') },
   { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
     'shaping decides those first; designing follows for presentation',
     'shaping decides these first; designing follows for presentation') },
@@ -168,21 +129,10 @@ const SCENARIOS = [
     'Do not name a new typeface from memory.', 'Choose a face you know works.') },
   { name: 'dropped-quiet-region-jobs', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
-  { name: 'drifted-request-size', mutate: (root) => editCases(root, (data, byId) => {
-    byId('dashboard-nicer').expected.requestSize = 'tweak';
-  }) },
   { name: 'broken-skill-script', mutate: (root) =>
     append(root, 'skills/designing/scripts/capture.mjs', '\nexport function broken( {\n') },
   { name: 'divergent-planning-data-migration', mutate: (root) =>
-    append(root, 'skills/planning/references/data-migration.md', 'x') },
-  { name: 'render-contract-without-rendered', mutate: (root) => editCases(root, (data, byId) => {
-    byId('ui-tweak').expected.renderContract = {
-      surface: 'web/dashboard.html',
-      sourceInputs: ['web/dashboard.html'],
-      viewports: [390, 1440],
-      phases: ['baseline', 'post-build', 'final']
-    };
-  }) }
+    append(root, 'skills/planning/references/data-migration.md', 'x') }
 ];
 
 function copyVerificationFixture(repository, destination) {
@@ -195,13 +145,6 @@ function copyVerificationFixture(repository, destination) {
 export function runSelfTest(report, repository) {
   const verifier = path.resolve(import.meta.dirname, '..', 'verify.mjs');
   const selfRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-skills-selftest-'));
-  // The shared-contracts check pins a sentence in ../dot_claude/exact_agents/, a path
-  // outside the corpus root. A fixture root is <selfRoot>/<scenario>, so that relative
-  // path resolves to <selfRoot>/dot_claude for every scenario and one copy serves all
-  // of them. Without it every scenario fails on the missing file rather than on its
-  // own mutation, which makes the reject scenarios prove nothing.
-  fs.cpSync(repository.join('..', 'dot_claude', 'exact_agents'),
-    path.join(selfRoot, 'dot_claude', 'exact_agents'), { recursive: true });
   const failures = [];
   try {
     for (const scenario of SCENARIOS) {

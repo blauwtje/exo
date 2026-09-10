@@ -1,9 +1,8 @@
 // Deterministic verification of the skill corpus: no model calls, no network.
 //
 //   node verify.mjs [--repository-root <dir>] [--skip-link-check] [--self-test]
-//   node verify.mjs --live [--effort medium,high] [--case-id <id>] [--dry-run]
 //
-// Exits 1 when any check failed, or when --require-live --live left work unrun.
+// Exits 1 when any check failed.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,16 +18,11 @@ import { checkDescriptionBudgets } from './verify/checks/description-budgets.mjs
 import { checkBannedText } from './verify/checks/banned-text.mjs';
 import { checkReferenceTables } from './verify/checks/reference-tables.mjs';
 import { checkSharedContracts } from './verify/checks/shared-contracts.mjs';
-import { checkEvalCases } from './verify/checks/eval-cases.mjs';
-import { checkEvalReferenceTargets } from './verify/checks/eval-reference-targets.mjs';
-import { checkInstallationLinks } from './verify/checks/installation-links.mjs';
-import { checkLiveAdapterContract } from './verify/checks/live-adapter-contract.mjs';
 import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
 import { checkSkillScripts } from './verify/checks/skill-scripts.mjs';
 import { checkSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkGitWhitespace } from './verify/checks/git-whitespace.mjs';
 import { runSelfTest } from './verify/self-test.mjs';
-import { runLiveEvaluation } from './verify/live.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -36,15 +30,7 @@ const { values } = parseArgs({
   options: {
     'repository-root': { type: 'string' },
     'skip-link-check': { type: 'boolean', default: false },
-    'self-test': { type: 'boolean', default: false },
-    live: { type: 'boolean', default: false },
-    'require-live': { type: 'boolean', default: false },
-    'dry-run': { type: 'boolean', default: false },
-    baseline: { type: 'boolean', default: false },
-    'probe-elevated-sandbox': { type: 'boolean', default: false },
-    effort: { type: 'string', default: 'medium,high' },
-    'case-id': { type: 'string' },
-    'output-path': { type: 'string' }
+    'self-test': { type: 'boolean', default: false }
   }
 });
 
@@ -72,17 +58,12 @@ checkDescriptionBudgets(report, repository, options);
 checkBannedText(report, repository, options);
 checkReferenceTables(report, repository, options);
 checkSharedContracts(report, repository, options);
-checkEvalCases(report, repository, options);
-checkEvalReferenceTargets(report, repository, options);
-checkInstallationLinks(report, repository, options);
-checkLiveAdapterContract(report, repository, options);
 checkScriptSyntax(report, repository, options);
 checkSkillScripts(report, repository, options);
 checkSkillScriptBehavior(report, repository, options);
 checkGitWhitespace(report, repository, options);
 
 if (values['self-test']) runSelfTest(report, repository);
-if (values.live) runLiveEvaluation(report, repository, values);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);
