@@ -43,6 +43,14 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/research/SKILL.md': [],
   'skills/shaping/SKILL.md': [],
+  'skills/skills-tool/SKILL.md': [
+    'references/pressure-scenarios.md',
+    'references/form-by-failure.md',
+    'references/wording.md',
+    'references/description.md',
+    'references/skill-shape.md',
+    'references/plugging-holes.md',
+  ],
   'skills/designing/SKILL.md': [
     'references/visual-direction.md',
     'references/direction-preview.md',
