@@ -77,7 +77,7 @@ const SCENARIOS = [
     'shaping decides those first; designing follows for presentation',
     'shaping decides these first; designing follows for presentation') },
   { name: 'oversized-description', mutate: (root) => replaceText(root, 'skills/research/SKILL.md',
-    'description: Confirm the current', `description: ${'overlong '.repeat(140)}Confirm the current`) },
+    'description: Use when a code decision', `description: ${'overlong '.repeat(140)}Use when a code decision`) },
   { name: 'dropped-underdesign-contract', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'A redesign should feel fresh') },
