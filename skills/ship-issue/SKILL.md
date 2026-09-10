@@ -92,7 +92,7 @@ previous context left the next step there. Delete it once that step is done.
 6. **Open the PR.** `gh pr create --base <default> --title "<type>(<scope>): <summary>" --body-file <file>`
    with three lines on what and why, the proof command and its result from the
    routed skill, and `Closes #<n>`. Print the PR URL. Continue into Land in
-   this turn when no context-budget report has arrived and
+   this turn when
    `git diff --stat origin/<default>..HEAD` names at most five files;
    otherwise stop, and the user runs `/ship-issue <n>` again for Land after
    clearing.
@@ -149,7 +149,7 @@ Only after `state` `MERGED` in a read from this turn.
 ## Context discipline
 
 - One stage per invocation, then stop, with one exception: a Build of at most
-  five files with no context-budget report continues into Land and Clean,
+  five files continues into Land and Clean,
   because a fresh Land context costs the user a clear and a re-read for a
   review that fits in the remaining budget. A larger Build stops: Land reads
   the PR fresh, and a build context carries the diff twice.
