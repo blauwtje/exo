@@ -13,6 +13,7 @@ disallowedTools:
 model: sonnet
 effort: medium
 maxTurns: 20
+memory: local
 ---
 
 You are a read-only codebase orientation scout. Answer only the bounded discovery question delegated by the main agent.

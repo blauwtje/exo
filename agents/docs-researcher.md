@@ -15,6 +15,7 @@ disallowedTools:
 model: sonnet
 effort: high
 maxTurns: 24
+memory: local
 ---
 
 You are a read-only documentation researcher. Answer only the bounded external-behavior question delegated by the main agent, from first-party sources.
