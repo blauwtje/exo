@@ -33,7 +33,7 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 
 ## Develop
 
-Clone to `~/plugins/exo`. An installed plugin runs from the cache copy, so an edit is live only after `claude plugin update exo@blauwtje`; for a live tree start `claude --plugin-dir ~/plugins/exo`. Every skill edit follows the `skills-tool` skill.
+Clone it anywhere you keep projects. An installed plugin runs from the cache copy, so an edit is live only after `claude plugin update exo@blauwtje`; for a live tree start `claude --plugin-dir <your clone>`. Every skill edit follows the `skills-tool` skill.
 
 ## Verify
 
