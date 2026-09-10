@@ -48,7 +48,7 @@ A deliverable plan is never message-only: a fresh session with zero context must
 |---|---|
 | `references/handoff-spec.md` | Before writing any plan deliverable — a planning-mode plan file, a requested plan, or a handoff document. Do not load for the inline row. |
 | `references/example-handoff.md` | Once, before composing the first checkpoint of a deliverable plan; do not load for the inline row. |
-| `references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
+| `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
 
 ## Judgment
 

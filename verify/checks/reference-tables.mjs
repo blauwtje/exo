@@ -10,7 +10,7 @@ import path from 'node:path';
 const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
 const VISUAL_DESIGN_REFERENCE_COUNT = 16;
-const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md'];
+const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
 const EXPECTED_OWNER_ROWS = {
   'skills/debug/SKILL.md': [
@@ -30,7 +30,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/planning/SKILL.md': [
     'references/handoff-spec.md',
     'references/example-handoff.md',
-    'references/data-migration.md',
+    '../implementing-batch/references/data-migration.md',
   ],
   'skills/deepen/SKILL.md': [
     '../planning/references/handoff-spec.md',
@@ -81,7 +81,7 @@ const EXPECTED_CONTRACTS = {
       'After the baseline and before adding or changing an automated test or production behavior, only when logic or public behavior changes or the request adds or changes an automated test, and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
   },
   'skills/planning/SKILL.md': {
-    'references/data-migration.md':
+    '../implementing-batch/references/data-migration.md':
       'After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
   },
   'skills/deepen/SKILL.md': {
@@ -121,21 +121,6 @@ function checkTimingContracts(errors, skillPath, entries) {
     if (matches.length !== 1 || matches[0].readWhen !== timing) {
       errors.push(`${skillPath}: '${target}' timing/predicate contract differs`);
     }
-  }
-}
-
-// data-migration.md is the one reference planning carries locally (so planning
-// stays self-contained) rather than reaching across folders: exactly two copies,
-// canonical plus planning's, and they must stay byte-identical.
-function checkDataMigrationCopies(errors, repository) {
-  const canonical = path.join(repository.skillsRoot, 'implementing-batch', 'references', 'data-migration.md');
-  const planning = path.join(repository.skillsRoot, 'planning', 'references', 'data-migration.md');
-  const actual = repository.walk(repository.skillsRoot, (file) => path.basename(file) === 'data-migration.md');
-  const expected = [canonical, planning].sort();
-  if (actual.length !== expected.length || actual.some((file, index) => file !== expected[index])) {
-    errors.push('data-migration.md must exist only at skills/implementing-batch/references/data-migration.md and skills/planning/references/data-migration.md');
-  } else if (repository.text(canonical) !== repository.text(planning)) {
-    errors.push('skills/planning/references/data-migration.md must be byte-identical to skills/implementing-batch/references/data-migration.md');
   }
 }
 
@@ -193,8 +178,6 @@ export function checkReferenceTables(report, repository) {
       errors.push(`${name} must exist only at skills/implementing-batch/references/${name}`);
     }
   }
-
-  checkDataMigrationCopies(errors, repository);
 
   const auxiliary = repository.walk(repository.skillsRoot,
     (file) => /^README.*\.md$/i.test(path.basename(file)));

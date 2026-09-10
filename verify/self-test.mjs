@@ -135,8 +135,8 @@ const SCENARIOS = [
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
   { name: 'broken-skill-script', mutate: (root) =>
     append(root, 'skills/designing/scripts/capture.mjs', '\nexport function broken( {\n') },
-  { name: 'divergent-planning-data-migration', mutate: (root) =>
-    append(root, 'skills/planning/references/data-migration.md', 'x') }
+  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
+    read(root, 'skills/implementing-batch/references/data-migration.md')) }
 ];
 
 function copyVerificationFixture(repository, destination) {
