@@ -26,7 +26,7 @@ One pressure makes a usable case; three combined make a strong one, because a sk
 1. Run the case without the skill on the model the skill runs on, because a rule Sonnet needs is noise to Opus and the reverse.
 2. Record the choice and the rationalization verbatim; the exact wording is the material the skill answers.
 3. Run the same case with the skill loaded; a pass counts only when the baseline failed.
-4. Save the case under `evals/<skill>/` with the expected behavior stated as an observable, so the next edit can rerun it.
+4. Save the case as `evals/<skill>-<case>/prompt.md` with a grader under `graders/` stating the expected behavior as an observable, so the next edit can rerun it.
 
 ## Judgment
 
