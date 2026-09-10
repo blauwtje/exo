@@ -39,6 +39,7 @@ const EXPECTED_OWNER_ROWS = {
     'implementer-prompt.md',
     'spec-reviewer-prompt.md',
     'quality-reviewer-prompt.md',
+    're-review-prompt.md',
   ],
   'skills/research/SKILL.md': [],
   'skills/shaping/SKILL.md': [],
