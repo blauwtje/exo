@@ -1,5 +1,7 @@
 # exo
 
+[![quality](https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg)](https://github.com/blauwtje/exo/actions/workflows/quality.yml)
+
 One engineering process for Claude Code, as a plugin: skills that take turns, and agents that keep discovery off the main context.
 
 ## Install
@@ -38,14 +40,16 @@ Clone it anywhere you keep projects. An installed plugin runs from the cache cop
 ## Verify
 
 ```bash
-node verify.mjs
-node verify.mjs --self-test
-node --test 'tests/*.test.mjs'
+npm run check          # the gate: verifier, its self-test, and the script tests
+npm run validate       # the 12 structural checks over the skill corpus
+npm test               # the scripts under skills/designing/scripts/
+npm run smoke          # a real session lists the exo: skills; calls a model
 claude plugin validate .
-bash tests/smoke.sh
 ```
 
-`evals/` is git-ignored: prompt cases and their runs live outside this repository.
+Node 22 or newer, plus `bash` and `jq` on `PATH`. Nothing to install: every check runs on the Node standard library. CI runs `npm run check` on Node 22 and 24 for every pull request.
+
+`verify/budgets.mjs` names the skills the verifier checks, so a new skill is unverified until it is listed there. `evals/` and `docs/` are git-ignored: prompt cases, their runs and research notes live outside this repository.
 
 ## License
 

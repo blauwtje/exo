@@ -1,0 +1,28 @@
+name: quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 is the floor verify.mjs enforces; 24 is current.
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The whitespace check reads the diff, which needs more than one commit.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm run check

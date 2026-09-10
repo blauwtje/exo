@@ -1,0 +1,19 @@
+{
+  "name": "exo",
+  "version": "0.1.0",
+  "description": "One engineering process for Claude Code: skills that take turns, and agents that keep discovery off the main context.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "private": true,
+  "type": "module",
+  "repository": "https://github.com/blauwtje/exo",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "validate": "node verify.mjs",
+    "validate:self": "node verify.mjs --self-test",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "smoke": "bash tests/smoke.sh",
+    "check": "npm run validate:self && npm run test"
+  }
+}
