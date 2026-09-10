@@ -29,6 +29,7 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 - Body under 500 words for a stage skill, under 150 for a gateway skill, under 900 for a skill that carries a contract; the ceiling in `verify/budgets.mjs` is the line limit that fails the build.
 - One sentence per line, under 25 words; a bullet is at most two lines.
 - Heavy material (a template, a worked example, a checklist over 20 lines) goes to `references/`; the body points to it with the moment to read it.
+- Text the skill hands to a delegate is `<role>-prompt.md` beside `SKILL.md`, in the References table with its dispatch step; `references/` holds only what the skill itself reads mid-run.
 
 ## The loop
 
