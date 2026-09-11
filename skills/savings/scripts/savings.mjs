@@ -29,6 +29,8 @@ const TREND_FLOOR = '▁';
 const TREND_LOSS = '-';
 // One active day draws a single bar on a flat line, so the trend waits for a second.
 const TREND_MIN_ACTIVE_DAYS = 2;
+const MILESTONE_STEPS = [1, 2, 5];
+const MILESTONE_BAR_CELLS = 20;
 const PANEL_ROWS = {
   cost: 'cost at API price',
   lines: 'lines',
@@ -241,6 +243,8 @@ function scopeColumn(title, sessions, ratios, include) {
       time: duration(saved.time),
       trend: `\`${trendLine(days)}\``
     },
+    saved,
+    days,
     activeDays: days.filter((value) => value !== 0).length
   };
 }
@@ -278,6 +282,57 @@ function trendLine(days) {
   }).join('');
 }
 
+// Money compares in whole cents, the precision the panel prints.
+function cents(value) {
+  return Math.round(value * 100);
+}
+
+// Consecutive days that saved at least a cent, ending today, or yesterday while
+// today is still at zero; a losing today breaks it. The trend window caps it,
+// and the ledger keeps no older session.
+function streakDays(days) {
+  let last = days.length - 1;
+  if (cents(days[last]) === 0) last -= 1;
+  let count = 0;
+  while (count <= last && cents(days[last - count]) > 0) count += 1;
+  return count;
+}
+
+// The first dollar milestone in the 1-2-5 series above a positive total.
+function nextMilestone(total) {
+  for (let scale = 1; ; scale *= 10) {
+    const milestone = MILESTONE_STEPS.map((step) => step * scale).find((candidate) => candidate > total);
+    if (milestone !== undefined) return milestone;
+  }
+}
+
+function milestoneBar(total) {
+  const milestone = nextMilestone(total);
+  const share = total / milestone;
+  const filled = Math.floor(share * MILESTONE_BAR_CELLS);
+  const bar = `${'█'.repeat(filled)}${'░'.repeat(MILESTONE_BAR_CELLS - filled)}`;
+  return `\`${bar}\` ${Math.floor(share * 100)}% of the way to $${milestone}`;
+}
+
+// The lines above the table: the total saved everywhere, today's gain with the
+// streak, and the bar to the next milestone, each left out when it has nothing to show.
+// A total with an unknown price shows tokens alone, because the daily figures
+// leave out that session and would show a partial dollar amount.
+function headline(saved, days) {
+  if (!saved.costKnown) return [`### ${compact(saved.tokens)} tokens saved`];
+  const lines = [`### ${money(saved.cost, true)} saved`];
+  const pulse = [];
+  const today = cents(days[days.length - 1]);
+  if (today !== 0) pulse.push(`${today > 0 ? '+' : ''}${money(today / 100, true)} today`);
+  const streak = streakDays(days);
+  if (streak > 0) pulse.push(`🔥 ${streak}-day streak`);
+  if (pulse.length > 0) lines.push(pulse.join(' · '));
+  const total = cents(saved.cost);
+  // The bar measures the total as printed, so $0.996 reads $1.00 and aims at $2.
+  if (total > 0) lines.push('', milestoneBar(total / 100));
+  return lines;
+}
+
 // Markdown, not a drawn box: the model relays it unfenced, so Claude Code's own
 // renderer styles the title, the table and the inline code.
 function report() {
@@ -300,6 +355,8 @@ function report() {
   const rows = Object.entries(labels).map(([key, label]) => `| ${label} | ${here.cells[key]} | ${everywhere.cells[key]} |`);
   const lines = [
     `**✻ exo savings** · ${state}`,
+    '',
+    ...headline(everywhere.saved, everywhere.days),
     '',
     `| ≈ saved | ${here.title} | ${everywhere.title} |`,
     '|:--|--:|--:|',

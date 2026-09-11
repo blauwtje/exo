@@ -305,6 +305,65 @@ test('report draws the 30-day trend of the net cost saved, a losing day as a min
   assert.match(result.stdout, /^\| last 30 days \| `[▁-█-]{30}` \| `▁{27}-██` \|$/m);
 });
 
+// Local noon on the day the given number of days back, so a daylight-saving change cannot move it across midnight.
+function localNoonDaysAgo(count) {
+  const day = new Date();
+  day.setHours(12, 0, 0, 0);
+  day.setDate(day.getDate() - count);
+  return day.toISOString();
+}
+
+// A session that wrote product code and cost $3.00, so the test ratios save $1.00 of it.
+function dollarSavedRow(daysAgo) {
+  const started = localNoonDaysAgo(daysAgo);
+  return bookedRow({ started, updated: started, costUsd: 3, lines: { added: 10, removed: 0, processAdded: 0 } });
+}
+
+test('report opens on the total saved, today\'s gain, the streak and the bar to the next milestone', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  await writeLedger(directory, { s1: dollarSavedRow(2), s2: dollarSavedRow(1), s3: dollarSavedRow(0) });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^### \$3\.00 saved$/m);
+  assert.match(result.stdout, /^\+\$1\.00 today · 🔥 3-day streak$/m);
+  assert.match(result.stdout, /^`█{12}░{8}` 60% of the way to \$5$/m);
+});
+
+test('report keeps a streak that ended yesterday alive and prints no gain for a quiet today', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  await writeLedger(directory, { s1: dollarSavedRow(2), s2: dollarSavedRow(1) });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^🔥 2-day streak$/m);
+  assert.doesNotMatch(result.stdout, /today/);
+});
+
+test('report ends the streak on a day that loses', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const started = localNoonDaysAgo(0);
+  const losing = bookedRow({ started, updated: started, lines: { added: 0, removed: 0, processAdded: 0 } }, { cache1h: 5000 });
+  await writeLedger(directory, { s1: dollarSavedRow(2), s2: dollarSavedRow(1), s3: losing });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^-\$\d+\.\d{2} today$/m);
+  assert.doesNotMatch(result.stdout, /streak/);
+});
+
+test('report draws no milestone bar and no streak while the total is a loss', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const started = localNoonDaysAgo(0);
+  const losing = bookedRow({ started, updated: started, lines: { added: 0, removed: 0, processAdded: 0 } }, { cache1h: 5000 });
+  await writeLedger(directory, { s1: losing });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^### -\$\d+\.\d{2} saved$/m);
+  assert.doesNotMatch(result.stdout, /streak|of the way to/);
+});
+
 test('an unknown command fails with usage', async () => {
   const result = await runWithStdin(['bogus'], '', {});
   assert.equal(result.code, 1);
