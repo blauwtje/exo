@@ -1,10 +1,10 @@
-// A deliberately narrow frontmatter reader: it accepts the four keys the corpus
+// A deliberately narrow frontmatter reader: it accepts the five keys the corpus
 // uses and rejects any plain scalar a YAML 1.1 and a YAML 1.2 parser would read
 // differently, so a harness that disagrees with this repository cannot exist.
 
 import { ALLOWED_EFFORT, ALLOWED_MODEL } from './budgets.mjs';
 
-const KEY_LINE = /^(?<key>name|description|effort|model): +(?<value>.+)$/;
+const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools): +(?<value>.+)$/;
 const AMBIGUOUS_START = /^[-?:,[\]{}#&*!|>@`]/;
 const AMBIGUOUS_COLON = /:\s/;
 const AMBIGUOUS_COMMENT = /\s#/;
