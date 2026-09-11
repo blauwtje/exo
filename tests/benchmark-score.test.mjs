@@ -55,11 +55,11 @@ test('the table shows baseline absolutes, other arms as percentages, and exclude
   const result = await runScore([root]);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /model claude-haiku-4-5-20251001 · Claude Code 2\.1\.268 \(Claude Code\) · fixture full-stack-fastapi-template@cd83fc1 · n=2 · 2026-09-12/);
-  assert.match(result.stdout, /\| arm \| LOC \| tokens \| cost \| time \| safe \| correct \|/);
+  assert.match(result.stdout, /\| arm \| LOC \| tokens \| cost \| time \| safe \| correct \| right-sizing \|/);
   // baseline: LOC mean 220 sd 28; weighted input 100 + 0.1 × 1000 = 200, plus output 500/700 → 700/900, mean 800 sd 141
-  assert.match(result.stdout, /\| baseline \| 220 ±28 \| 800 ±141 \| \$0\.50 ±0\.14 \| 2\.0m ±0\.5m \| 50% \(1\/2\) \| 100% \(2\/2\) \|/);
+  assert.match(result.stdout, /\| baseline \| 220 ±28 \| 800 ±141 \| \$0\.50 ±0\.14 \| 2\.0m ±0\.5m \| 50% \(1\/2\) \| 100% \(2\/2\) \| 0% \(0\/2\) \|/);
   // exo: one correct cell, LOC 100 → -55%; tokens 200 + 300 = 500 → -37.5%, rounded -37%; cost 0.3 → -40%; time 60s → -50%
-  assert.match(result.stdout, /\| exo \| -55% \| -37% \| -40% \| -50% \| 100% \(2\/2\) \| 50% \(1\/2\) \|/);
+  assert.match(result.stdout, /\| exo \| 100 ±0 \(-55%\) \| 500 ±0 \(-37%\) \| \$0\.30 ±0\.00 \(-40%\) \| 1\.0m ±0\.0m \(-50%\) \| 100% \(2\/2\) \| 50% \(1\/2\) \| 0% \(0\/2\) \|/);
 });
 
 test('--publish writes the results file and the ratios file the counter reads', async () => {
@@ -71,7 +71,26 @@ test('--publish writes the results file and the ratios file the counter reads', 
   assert.equal(result.code, 0, result.stderr);
   const written = (await import(pathToFileURL(ratios).href)).default;
   assert.deepEqual({ lines: written.lines, tokens: written.tokens, cost: written.cost, time: written.time }, { lines: 0.55, tokens: 0.38, cost: 0.4, time: 0.5 });
+  // Standard errors: √(sd_E²/n_E + (E/B)² · sd_B²/n_B) / B, with the exo arm's one cell at sd 0.
+  assert.deepEqual(written.spread, { lines: 0.04, tokens: 0.08, cost: 0.12, time: 0.08 });
   assert.match(written.source, /results\.md: exo vs baseline, 2 tasks, claude-haiku-4-5-20251001, n=2, 2026-09-12/);
   assert.match(await fs.readFile(results, 'utf8'), /^# Benchmark 2026-09-12/);
   assert.match(await fs.readFile(results, 'utf8'), /## Limitations/);
+});
+
+test('--publish keeps a cut negative when the exo arm used more than the baseline', async () => {
+  const root = await fixture();
+  await fs.writeFile(path.join(root, 'meta.json'), JSON.stringify({
+    date: '2026-09-12', mode: 'test', model: 'claude-haiku-4-5-20251001', claudeVersion: '2.1.268 (Claude Code)',
+    fixture: { name: 'full-stack-fastapi-template', commit: 'cd83fc1' }, arms: ['baseline', 'exo'], tasks: ['t1'], runs: 1, cells: 2
+  }));
+  const template = (loc) => ({ tier: 'template', timedOut: false, resultParsed: true, loc: { added: loc, removed: 0, testAdded: 0, files: [] }, correct: true, correctReason: '' });
+  await cell(root, 't1', 'baseline', 1, { total_cost_usd: 0.4, duration_ms: 100000, usage: usage(100, 1000, 500) }, template(100));
+  await cell(root, 't1', 'exo', 1, { total_cost_usd: 0.6, duration_ms: 150000, usage: usage(100, 1000, 800) }, template(150));
+  const out = await fixture();
+  const ratios = path.join(out, 'ratios.mjs');
+  const result = await runScore([root, '--publish', '--results', path.join(out, 'results.md'), '--ratios', ratios]);
+  assert.equal(result.code, 0, result.stderr);
+  const written = (await import(pathToFileURL(ratios).href)).default;
+  assert.deepEqual({ lines: written.lines, cost: written.cost, time: written.time }, { lines: -0.5, cost: -0.5, time: -0.5 });
 });

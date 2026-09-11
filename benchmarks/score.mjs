@@ -3,7 +3,8 @@
 // Rescores a runs directory offline and prints one table; never reads a
 // transcript, never calls claude. Tokens are weighted exactly as the savings
 // counter weights them (token-weights.mjs); cost is total_cost_usd and time
-// duration_ms as `claude -p --output-format json` reports them.
+// duration_ms as `claude -p --output-format json` reports them. The
+// right-sizing column reads each cell's own ledger.
 //
 //   node benchmarks/score.mjs benchmarks/runs/<dir>
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>] [--ratios <file>]
@@ -11,20 +12,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { readJson } from '../skills/savings/scripts/ledger.mjs';
 import { sumCounts, usageCounts } from '../skills/savings/scripts/token-weights.mjs';
+import { meanAndSd } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
 const METRICS = ['loc', 'tokens', 'cost', 'time'];
+// A cut at or above 1 would divide the saving estimate by zero.
 const RATIO_CAP = 0.95;
 const RATIOS_HEADER = '// Data, not code: the cut per metric a benchmark measured against a no-skill\n'
-  + '// baseline, and its source. A .mjs file because the verifier allows only\n'
-  + '// modules under scripts/; benchmarks/score.mjs --publish rewrites it.\n';
+  + '// baseline, the standard error of each cut, and its source. A .mjs file because\n'
+  + '// the verifier allows only modules under scripts/; benchmarks/score.mjs --publish rewrites it.\n';
 const LIMITATIONS = [
   'Correctness on template tasks is a marker (a new route decorator, or a new .tsx file) plus python3 -m py_compile; TSX is not type-checked and no test suite runs.',
   'A cell that fails its correctness gate or times out is excluded from the LOC, tokens, cost and time means and counted in the correct column.',
   'Safe means the one adversarial input set in benchmarks/safe/<task>/check.mjs was refused; it is not a fuzzing guarantee.',
   'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, from the usage block of the result JSON; cost is Claude Code\'s client-side list-price estimate; time is duration_ms.',
-  'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.'
+  'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.',
+  'A published ratio is 1 − E/B for arm means E and B, and its spread is its standard error √(sd_E²/n_E + (E/B)²·sd_B²/n_B) / B; a negative ratio means the exo arm used more than the baseline.',
+  'Right-sizing counts the template cells whose own ledger shows exo:right-sizing fired.'
 ];
 
 function parseArguments(argv) {
@@ -49,8 +55,10 @@ function readCells(directory) {
     const checks = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'checks.json'), 'utf8'));
     const resultFile = path.join(cellDirectory, 'result.json');
     const result = fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')) : null;
+    const ledger = readJson(path.join(cellDirectory, 'ledger', 'sessions.json'), {});
+    const rightSized = Object.values(ledger).some((session) => session.rightSized === true);
     const [task, arm] = path.dirname(file).split(path.sep);
-    cells.push({ task, arm, checks, result });
+    cells.push({ task, arm, checks, result, rightSized });
   }
   return cells;
 }
@@ -69,14 +77,6 @@ function included(cell) {
   return cell.checks.tier === 'template' && cell.checks.correct === true && !cell.checks.timedOut && cell.result !== null;
 }
 
-function meanAndSd(values) {
-  if (values.length === 0) return { mean: null, sd: null, n: 0 };
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  if (values.length === 1) return { mean, sd: 0, n: 1 };
-  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1);
-  return { mean, sd: Math.sqrt(variance), n: values.length };
-}
-
 function summarizeArm(cells) {
   const measured = cells.filter(included).map(cellMetrics);
   const summary = {};
@@ -85,6 +85,7 @@ function summarizeArm(cells) {
   const safe = cells.filter((cell) => cell.checks.tier === 'safe');
   summary.correct = { pass: template.filter((cell) => cell.checks.correct === true).length, total: template.length };
   summary.safe = { pass: safe.filter((cell) => cell.checks.safe === true).length, total: safe.length };
+  summary.rightSized = { pass: template.filter((cell) => cell.rightSized).length, total: template.length };
   return summary;
 }
 
@@ -122,27 +123,46 @@ function rate({ pass, total }) {
   return `${Math.round((pass / total) * 100)}% (${pass}/${total})`;
 }
 
+// Every arm shows its mean and spread; an arm beside a baseline adds its change against it.
 function tableLines(meta, summaries) {
   const header = `model ${meta.model} · Claude Code ${meta.claudeVersion} · fixture ${meta.fixture.name}@${meta.fixture.commit} · n=${meta.runs} · ${meta.date}`;
-  const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct |', '|---|---|---|---|---|---|---|'];
+  const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct | right-sizing |', '|---|---|---|---|---|---|---|---|'];
   const baseline = summaries.baseline;
   for (const [arm, summary] of Object.entries(summaries)) {
-    const cells = METRICS.map((metric) => (arm === 'baseline' || !baseline ? absolute(metric, summary[metric]) : relative(summary[metric], baseline[metric])));
-    lines.push(`| ${arm} | ${cells.join(' | ')} | ${rate(summary.safe)} | ${rate(summary.correct)} |`);
+    const cells = METRICS.map((metric) => {
+      const value = absolute(metric, summary[metric]);
+      return arm === 'baseline' || !baseline ? value : `${value} (${relative(summary[metric], baseline[metric])})`;
+    });
+    lines.push(`| ${arm} | ${cells.join(' | ')} | ${rate(summary.safe)} | ${rate(summary.correct)} | ${rate(summary.rightSized)} |`);
   }
   return lines;
 }
 
+function roundedCent(value) {
+  return Math.round(value * 100) / 100;
+}
+
+// The standard error of 1 − E/B, from the standard errors of both arm means.
+function cutError(exo, baseline) {
+  const exoVariance = exo.sd ** 2 / exo.n;
+  const baselineVariance = (exo.mean / baseline.mean) ** 2 * baseline.sd ** 2 / baseline.n;
+  return Math.sqrt(exoVariance + baselineVariance) / baseline.mean;
+}
+
+// A negative cut is a measured cost of exo, so it is never floored at zero.
 function ratiosFrom(summaries, meta, resultsFile) {
   const baseline = summaries.baseline;
   const exo = summaries.exo;
   if (!baseline || !exo) throw new Error('--publish needs both a baseline and an exo arm');
   const ratios = {};
+  const spread = {};
   const keys = { lines: 'loc', tokens: 'tokens', cost: 'cost', time: 'time' };
   for (const [name, metric] of Object.entries(keys)) {
-    const cut = 1 - exo[metric].mean / baseline[metric].mean;
-    ratios[name] = Math.round(Math.min(Math.max(cut, 0), RATIO_CAP) * 100) / 100;
+    if (exo[metric].mean === null || baseline[metric].mean === null) throw new Error(`--publish needs correct template cells in both arms for ${metric}`);
+    ratios[name] = roundedCent(Math.min(1 - exo[metric].mean / baseline[metric].mean, RATIO_CAP));
+    spread[name] = roundedCent(cutError(exo[metric], baseline[metric]));
   }
+  ratios.spread = spread;
   const taskCount = new Set(meta.tasks).size;
   ratios.source = `${path.basename(resultsFile)}: exo vs baseline, ${taskCount} tasks, ${meta.model}, n=${meta.runs}, ${meta.date}`;
   return ratios;
