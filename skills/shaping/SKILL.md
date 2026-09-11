@@ -48,4 +48,4 @@ State the recommendation as the current default and continue in the same message
 - The frontend-design skill the executing session has loaded owns visual decisions, then hands control back; this skill retains product, data, and architecture decisions.
 - A brief whose `## Visual direction` names an existing `contract-selected.json` hands the frontend-design skill a decided direction; it resumes at Build and repeats no variant choice.
 - Explicit user wording outranks mode selection and artifact defaults.
-- A brief hands over through its file: after a compaction notice, re-read `docs/specs/<topic>.md` and continue from it, never from the conversation, and naming that path ends this skill's part of the turn.
+- A brief hands over through its file: after a compaction notice, re-read `docs/specs/<topic>.md` and continue from it, never from the conversation. Naming that path ends this skill's part, not the turn: with no gated question open the next stage starts in the same turn, because a turn that ends on an unanswered brief ships no code.
