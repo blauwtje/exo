@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-// Savings: lines, tokens, cost and time per session, read from the transcript
-// the harness writes and from the status line it renders, plus two saving
-// figures: the bytes the read guard withheld (measured) and what the
-// right-sizing ladder saved against the benchmark ratios in ratios.mjs
-// (estimated).
+// Savings: what exo saved per session in lines, tokens, cost and time, an
+// estimate against the benchmark ratios in ratios.mjs, net of exo's own
+// overhead. The ledger is fed from the transcript the harness writes
+// (transcript.mjs) and from the status line it renders.
 //
 //   node savings.mjs record      Stop hook: stdin is the hook JSON
 //   node savings.mjs statusline  status line: stdin is the status JSON; prints one segment
@@ -12,9 +11,7 @@
 //   node savings.mjs off | on    writes "enabled" into config.json: one switch for
 //                                the ladder, the counter, the status line and the guard
 //
-// The transcript format is internal to the harness and may change between
-// releases; a line that does not parse is skipped, never fatal, and a hook
-// failure never blocks the turn.
+// A hook failure never blocks the turn.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,12 +20,13 @@ import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJ
 import { overheadTotals } from './overhead.mjs';
 import { countsCost } from './pricing.mjs';
 import MEASURED from './ratios.mjs';
-import { ingestTranscript, sumLines, sumTokens } from './transcript.mjs';
+import { ingestTranscript, refreshStaleSessions, sumLines, sumTokens } from './transcript.mjs';
 
-const BYTES_PER_TOKEN = 4;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TREND_DAYS = 30;
 const TREND_LEVELS = '▂▃▄▅▆▇█';
+const TREND_FLOOR = '▁';
+const TREND_LOSS = '-';
 // One active day draws a single bar on a flat line, so the trend waits for a second.
 const TREND_MIN_ACTIVE_DAYS = 2;
 const PANEL_ROWS = {
@@ -40,20 +38,23 @@ const PANEL_ROWS = {
 };
 const PROJECT_NAME_MAX = 28;
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
-// MEASURED is the cut per metric the benchmark measured against a no-skill
-// baseline, with its source; user-editable in config.json.
-const DEFAULT_CONFIG = {
-  enabled: true,
-  readGuard: true,
-  ratios: { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time }
-};
+// MEASURED is the cut per metric exo's benchmark measured against a no-skill
+// baseline, with its source; a ratio in config.json overrides it.
+const PUBLISHED_RATIOS = { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time };
+// 0.1.x wrote these ratios into config.json on first load, so a config that
+// still holds exactly them carries no edit of the user's.
+const FIRST_LOAD_RATIOS = { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 };
+const DEFAULT_CONFIG = { enabled: true, readGuard: true };
 
 function loadConfig() {
   const existing = readJson(configFile(), null);
-  // A config that sets only readGuard or enabled keeps the default ratios.
-  if (existing !== null) return { ...DEFAULT_CONFIG, ...existing, ratios: { ...DEFAULT_CONFIG.ratios, ...existing.ratios } };
-  writeJson(configFile(), DEFAULT_CONFIG);
-  return DEFAULT_CONFIG;
+  if (existing === null) {
+    writeJson(configFile(), DEFAULT_CONFIG);
+    return { ...DEFAULT_CONFIG, ratios: PUBLISHED_RATIOS };
+  }
+  const stored = existing.ratios ?? {};
+  const unedited = METRICS.every((metric) => stored[metric] === FIRST_LOAD_RATIOS[metric]);
+  return { ...DEFAULT_CONFIG, ...existing, ratios: { ...PUBLISHED_RATIOS, ...(unedited ? {} : stored) } };
 }
 
 // A session's gross cost priced from its usage, each call at its own model,
@@ -75,64 +76,49 @@ function sessionMetrics(session) {
   const tokens = session.tokens ?? sumTokens({ usageById: session.usageById ?? {} });
   const lines = session.lines ?? sumLines({ linesByEntry: session.linesByEntry ?? {} });
   const elapsed = session.started && session.updated ? Date.parse(session.updated) - Date.parse(session.started) : 0;
-  const guard = session.guard ?? { capped: 0, duplicates: 0, bytesWithheld: 0 };
   const overhead = overheadTotals(session);
   return {
     lines: lines.added,
-    linesRemoved: lines.removed,
     tokens: tokens.weightedInput + tokens.output,
     cost: session.costUsd ?? pricedCost(session),
     time: session.durationMs ?? elapsed,
-    rightSized: session.rightSized === true,
     project: session.project ?? null,
-    guard,
-    overheadTokens: overhead.tokens,
-    overheadTime: overhead.time
+    overhead: { lines: lines.processAdded ?? 0, tokens: overhead.tokens, cost: overhead.cost, time: overhead.time }
   };
 }
 
-function totals(sessions, include = () => true) {
-  const sum = {
-    sessions: 0, lines: 0, linesRemoved: 0, tokens: 0, cost: 0, costKnown: false, time: 0,
-    overheadTokens: 0, overheadTime: 0,
-    guard: { capped: 0, duplicates: 0, bytesWithheld: 0 }
-  };
+// A session that wrote product code is what the benchmark measured: exo's
+// ratios compare its exo arm, which paid exo's overhead, with a no-skill
+// baseline, so it saves actual × r / (1 − r) and nothing more comes off. Any
+// other session is outside every ratio and saves minus its overhead. The
+// lines exo's own process writes are in no ratio, because the benchmark
+// counts code in the workdir diff, so they come off every session. Cost is
+// null when a price it needs is unknown.
+function sessionSavings(metrics, ratios) {
+  const estimate = (metric) => metrics[metric] * ratios[metric] / (1 - ratios[metric]);
+  const covered = metrics.lines > 0;
+  const lines = (covered ? estimate('lines') : 0) - metrics.overhead.lines;
+  if (covered) {
+    return { lines, tokens: estimate('tokens'), cost: metrics.cost === null ? null : estimate('cost'), time: estimate('time') };
+  }
+  const overhead = metrics.overhead;
+  return { lines, tokens: -overhead.tokens, cost: overhead.cost === null ? null : -overhead.cost, time: -overhead.time };
+}
+
+// The scope's sessions summed; its cost is known only when every session's is.
+function scopeSavings(sessions, ratios, include) {
+  const total = { lines: 0, tokens: 0, cost: 0, costKnown: true, time: 0 };
   for (const session of Object.values(sessions)) {
     const metrics = sessionMetrics(session);
     if (!include(metrics)) continue;
-    sum.sessions += 1;
-    sum.lines += metrics.lines;
-    sum.linesRemoved += metrics.linesRemoved;
-    sum.tokens += metrics.tokens;
-    sum.time += metrics.time;
-    sum.overheadTokens += metrics.overheadTokens;
-    sum.overheadTime += metrics.overheadTime;
-    if (typeof metrics.cost === 'number') {
-      sum.cost += metrics.cost;
-      sum.costKnown = true;
-    }
-    for (const key of Object.keys(sum.guard)) sum.guard[key] += metrics.guard[key] ?? 0;
+    const saved = sessionSavings(metrics, ratios);
+    total.lines += saved.lines;
+    total.tokens += saved.tokens;
+    total.time += saved.time;
+    if (saved.cost === null) total.costKnown = false;
+    else total.cost += saved.cost;
   }
-  return sum;
-}
-
-// A metric cut by ratio r leaves (1 - r) of its baseline, so the baseline is
-// actual / (1 - r) and the saving is the difference: actual × r / (1 - r).
-// The ratios measured another plugin, so exo's own overhead is outside the
-// cut: it leaves the right-sized actual before the ratio applies, and every
-// session's overhead in scope comes off the saving after, right-sized or not.
-const OVERHEAD_BY_METRIC = { tokens: 'overheadTokens', time: 'overheadTime' };
-
-function estimatedSavings(rightSized, all, ratios) {
-  const saved = {};
-  for (const metric of METRICS) {
-    const ratio = ratios[metric] ?? 0;
-    const overheadKey = OVERHEAD_BY_METRIC[metric];
-    const rightSizedOverhead = overheadKey ? rightSized[overheadKey] : 0;
-    const allOverhead = overheadKey ? all[overheadKey] : 0;
-    saved[metric] = (rightSized[metric] - rightSizedOverhead) * ratio / (1 - ratio) - allOverhead;
-  }
-  return saved;
+  return total;
 }
 
 function compact(value) {
@@ -151,17 +137,15 @@ function duration(milliseconds) {
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}`;
 }
 
+// A loss prints its minus before the currency sign; a value that rounds to zero prints $0.00.
 function money(value, known) {
-  return known ? `$${value.toFixed(2)}` : '-';
+  if (!known) return '-';
+  if (Math.round(value * 100) < 0) return `-$${(-value).toFixed(2)}`;
+  return `$${Math.abs(value).toFixed(2)}`;
 }
 
-function guardTokens(guard) {
-  return compact(guard.bytesWithheld / BYTES_PER_TOKEN);
-}
-
-function segment(saved, costKnown, guard) {
-  const ladder = `saved ≈ ${compact(saved.lines)} LOC · ${compact(saved.tokens)} tok · ${money(saved.cost, costKnown)} · ${duration(saved.time)}`;
-  return guard.bytesWithheld > 0 ? `${ladder} · guard ≈ ${guardTokens(guard)} tok` : ladder;
+function segment(saved) {
+  return `saved ≈ ${compact(saved.lines)} LOC · ${compact(saved.tokens)} tok · ${money(saved.cost, saved.costKnown)} · ${duration(saved.time)}`;
 }
 
 function readStdin() {
@@ -206,18 +190,17 @@ function statusline(statusInput) {
       return changed;
     });
   }
-  const rightSized = totals(sessions, (metrics) => metrics.rightSized);
-  const all = totals(sessions);
-  process.stdout.write(segment(estimatedSavings(rightSized, all, config.ratios), rightSized.costKnown, all.guard));
+  const saved = scopeSavings(refreshStaleSessions(sessions), config.ratios, () => true);
+  process.stdout.write(segment(saved));
 }
 
 function status() {
   process.stdout.write(`${savingsEnabled() ? 'on' : 'off'}\n`);
 }
 
+// Only "enabled" is written, so the published ratios keep reaching this install.
 function setEnabled(enabled) {
-  const config = { ...loadConfig(), enabled };
-  writeJson(configFile(), config);
+  writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), enabled });
   process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; right-sizing follows at the next session start\n`);
 }
 
@@ -245,51 +228,51 @@ function currentProject(sessions, directory) {
   return match ?? directory;
 }
 
-// One table column, keyed like PANEL_ROWS: the estimated saving over the
-// scope's right-sized sessions, net of the overhead of all its sessions.
+// One table column, keyed like PANEL_ROWS: the scope's net saving.
 function scopeColumn(title, sessions, ratios, include) {
-  const all = totals(sessions, include);
-  const rightSized = totals(sessions, (metrics) => include(metrics) && metrics.rightSized);
-  const saved = estimatedSavings(rightSized, all, ratios);
-  const costKnown = rightSized.costKnown || rightSized.sessions === 0;
+  const saved = scopeSavings(sessions, ratios, include);
   const days = dailySavings(sessions, ratios, Date.now(), include);
   return {
     title,
     cells: {
-      cost: money(saved.cost, costKnown),
+      cost: money(saved.cost, saved.costKnown),
       lines: compact(saved.lines),
       tokens: compact(saved.tokens),
       time: duration(saved.time),
       trend: `\`${trendLine(days)}\``
     },
-    activeDays: days.filter((value) => value > 0).length
+    activeDays: days.filter((value) => value !== 0).length
   };
 }
 
-// The estimated cost saving per local day, oldest first, ending today.
+// The net cost saved per local day, oldest first, ending today; a session
+// whose cost saving is unknown is left out.
 function dailySavings(sessions, ratios, now, include) {
   const days = new Array(TREND_DAYS).fill(0);
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   for (const session of Object.values(sessions)) {
     const metrics = sessionMetrics(session);
-    if (!include(metrics) || !metrics.rightSized) continue;
-    if (typeof metrics.cost !== 'number' || typeof session.started !== 'string') continue;
+    if (!include(metrics) || typeof session.started !== 'string') continue;
+    const cost = sessionSavings(metrics, ratios).cost;
+    if (cost === null) continue;
     const day = new Date(session.started);
     day.setHours(0, 0, 0, 0);
     // Rounded, because a day across a daylight-saving change is 23 or 25 hours.
     const age = Math.round((today - day) / DAY_MS);
     if (age < 0 || age >= TREND_DAYS) continue;
-    days[TREND_DAYS - 1 - age] += estimatedSavings(metrics, metrics, ratios).cost;
+    days[TREND_DAYS - 1 - age] += cost;
   }
   return days;
 }
 
-// A day without a saving sits on the floor glyph; any saving rises above it.
+// A day without a saving sits on the floor glyph, a net loss draws a minus,
+// and a saving rises above the floor in proportion to the best day.
 function trendLine(days) {
   const peak = Math.max(...days);
   return days.map((value) => {
-    if (value <= 0) return '▁';
+    if (value < 0) return TREND_LOSS;
+    if (value === 0) return TREND_FLOOR;
     const level = Math.ceil((value / peak) * TREND_LEVELS.length) - 1;
     return TREND_LEVELS[level];
   }).join('');
@@ -299,7 +282,7 @@ function trendLine(days) {
 // renderer styles the title, the table and the inline code.
 function report() {
   const config = loadConfig();
-  const sessions = readJson(ledgerFile(), {});
+  const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
   const project = currentProject(sessions, process.cwd());
   const baseName = path.basename(project);
   const shortName = baseName.length > PROJECT_NAME_MAX ? `${baseName.slice(0, PROJECT_NAME_MAX - 1)}…` : baseName;
