@@ -22,6 +22,7 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 | `implementing` | A plan is run or resumed: one delegated build and two reviews per task, a commit each. |
 | `implementing-batch` | A decided change builds in the session: more than one file, a dependency, a signature or tests. |
 | `debug` | Existing behavior fails and the cause is unproven. |
+| `right-sizing` | Code is about to be written: the smallest readable shape, stdlib and platform before a dependency, guards never cut. |
 | `deepen` | The user asks where to improve architecture without naming the change. |
 | `research` | A decision hinges on a pinned external version's behavior. |
 | `designing` | A visual surface is created or changed. |

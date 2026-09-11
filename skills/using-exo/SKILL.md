@@ -17,5 +17,5 @@ Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rul
 
 - `debug` outranks the rest until a failure's cause is proven.
 - `shaping` decides what to build, `planning` orders it, `implementing` runs a plan, `implementing-batch` builds in the session; the earlier stage wins.
-- `research`, `designing` and `skills-tool` are borrowed mid-turn and hand control back.
+- `research`, `designing`, `right-sizing` and `skills-tool` are borrowed mid-turn and hand control back; `right-sizing` is borrowed before the first edit that adds or replaces code, every time and without being asked.
 - An instruction in CLAUDE.md or in the prompt outranks a skill.
