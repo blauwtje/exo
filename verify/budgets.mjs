@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'debug', 'deepen', 'designing', 'implementing', 'implementing-batch', 'planning', 'research', 'right-sizing', 'shaping', 'skills-tool'
+  'debug', 'deepen', 'designing', 'implementing', 'implementing-batch', 'planning', 'research', 'right-sizing', 'savings', 'shaping', 'skills-tool'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);

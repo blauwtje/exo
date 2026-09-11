@@ -4,6 +4,11 @@
 # one says when to invoke the others. The frontmatter is dropped; the
 # descriptions already sit in context.
 root="$(cd "$(dirname "$0")/.." && pwd)"
+# The installed copy lives under a versioned cache path, so the status line
+# and the skills reach the scripts through this pointer instead of a path that
+# rots per bump.
+config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo"
+mkdir -p "$config_dir" && printf '%s\n' "$root" > "$config_dir/plugin-root"
 skill="$root/skills/using-exo/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
