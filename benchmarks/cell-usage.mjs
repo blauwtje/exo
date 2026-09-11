@@ -28,7 +28,13 @@ function subagentTypes(transcriptPath) {
 function ladderInContext(transcriptPath) {
   for (const line of fs.readFileSync(transcriptPath, 'utf8').split('\n')) {
     if (!line.includes('hook_additional_context')) continue;
-    const content = JSON.parse(line).attachment?.content;
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const content = entry?.attachment?.content;
     if (!Array.isArray(content)) continue;
     if (content.some((text) => typeof text === 'string' && text.includes(LADDER_HEADING))) return true;
   }
