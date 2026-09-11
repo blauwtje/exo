@@ -21,12 +21,11 @@ import path from 'node:path';
 import process from 'node:process';
 import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
 import { bookOverhead, emptyOverhead, overheadTotals } from './overhead.mjs';
-import PRICES from './prices.mjs';
+import { countsCost } from './pricing.mjs';
 import MEASURED from './ratios.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 
 const BYTES_PER_TOKEN = 4;
-const TOKENS_PER_PRICE_UNIT = 1e6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TREND_DAYS = 30;
 const TREND_LEVELS = '▂▃▄▅▆▇█';
@@ -176,26 +175,17 @@ function ingestTranscript(session, transcriptPath) {
   return changed;
 }
 
-function modelPrice(model) {
-  if (typeof model !== 'string') return null;
-  let family = null;
-  for (const candidate of Object.keys(PRICES.models)) {
-    if (model.startsWith(candidate) && (family === null || candidate.length > family.length)) family = candidate;
-  }
-  return family === null ? null : PRICES.models[family];
-}
-
-// A message on an unlisted model adds nothing, so such a session reads low;
-// it reads null only when no message was priced. A row recorded before the
-// model rode along with its usage is priced at the session's model.
+// A session's gross cost priced from its usage, each call at its own model,
+// or null when a call's model has no price. A row recorded before the model
+// rode along with its usage is priced at the session's model.
 function pricedCost(session) {
-  let cost = null;
-  for (const counts of Object.values(session.usageById ?? {})) {
-    const price = modelPrice(counts.model ?? session.model);
-    if (price === null) continue;
-    let perMillion = 0;
-    for (const key of Object.keys(price)) perMillion += (counts[key] ?? 0) * price[key];
-    cost = (cost ?? 0) + perMillion / TOKENS_PER_PRICE_UNIT;
+  const rows = Object.values(session.usageById ?? {});
+  if (rows.length === 0) return null;
+  let cost = 0;
+  for (const counts of rows) {
+    const rowCost = countsCost(counts, counts.model ?? session.model);
+    if (rowCost === null) return null;
+    cost += rowCost;
   }
   return cost;
 }
