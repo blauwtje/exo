@@ -71,7 +71,7 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
-The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05 · guard ≈ 23k tok`. The full card, with the switch state, what each state does, the saving in the current project beside all projects, and a 30-day trend of the cost saved per day: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
+The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05 · guard ≈ 23k tok`. The full panel, markdown the model relays unfenced so Claude Code styles it, with the switch state, the saving in the current project beside all projects, and a 30-day trend of the cost saved per day for each: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
 
 ## Develop
 

@@ -7,7 +7,7 @@
 //
 //   node savings.mjs record      Stop hook: stdin is the hook JSON
 //   node savings.mjs statusline  status line: stdin is the status JSON; prints one segment
-//   node savings.mjs report      prints the totals table
+//   node savings.mjs report      prints the totals as markdown
 //   node savings.mjs status      prints on or off
 //   node savings.mjs off | on    writes "enabled" into config.json: one switch for
 //                                the ladder, the counter, the status line and the guard
@@ -29,7 +29,7 @@ const TOKENS_PER_PRICE_UNIT = 1e6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TREND_DAYS = 30;
 const TREND_LEVELS = '▂▃▄▅▆▇█';
-const CARD_MIN_WIDTH = 50;
+const PANEL_ROWS = ['cost at API price', 'lines', 'tokens', 'time', 'last 30 days'];
 const PROJECT_NAME_MAX = 28;
 const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
@@ -314,7 +314,7 @@ function status() {
 function setEnabled(enabled) {
   const config = { ...loadConfig(), enabled };
   writeJson(configFile(), config);
-  process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}\n`);
+  process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; right-sizing follows at the next session start\n`);
 }
 
 // A recorded project may be a symlinked path while process.cwd() is resolved;
@@ -341,26 +341,30 @@ function currentProject(sessions, directory) {
   return match ?? directory;
 }
 
-// One card column: the estimated saving over the scope's right-sized sessions.
+// One table column: the estimated saving over the scope's right-sized sessions,
+// in the order of PANEL_ROWS.
 function scopeColumn(title, sessions, ratios, include) {
   const all = totals(sessions, include);
   const rightSized = totals(sessions, (metrics) => include(metrics) && metrics.rightSized);
   const saved = estimatedSavings(rightSized, ratios);
   const costKnown = rightSized.costKnown || rightSized.sessions === 0;
+  const trend = trendLine(dailySavings(sessions, ratios, Date.now(), include));
   return {
-    cells: [title, `${money(saved.cost, costKnown)} saved`, `${compact(saved.lines)} lines`, `${compact(saved.tokens)} tokens`, duration(saved.time)],
+    title,
+    cells: [money(saved.cost, costKnown), compact(saved.lines), compact(saved.tokens), duration(saved.time), `\`${trend}\``],
     counted: `${rightSized.sessions} of ${all.sessions}`
   };
 }
 
 // The estimated cost saving per local day, oldest first, ending today.
-function dailySavings(sessions, ratios, now) {
+function dailySavings(sessions, ratios, now, include) {
   const days = new Array(TREND_DAYS).fill(0);
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   for (const session of Object.values(sessions)) {
     const metrics = sessionMetrics(session);
-    if (!metrics.rightSized || typeof metrics.cost !== 'number' || typeof session.started !== 'string') continue;
+    if (!include(metrics) || !metrics.rightSized) continue;
+    if (typeof metrics.cost !== 'number' || typeof session.started !== 'string') continue;
     const day = new Date(session.started);
     day.setHours(0, 0, 0, 0);
     // Rounded, because a day across a daylight-saving change is 23 or 25 hours.
@@ -381,65 +385,37 @@ function trendLine(days) {
   }).join('');
 }
 
-function card(enabled, left, right, trend) {
-  const leftWidth = Math.max(...left.map((cell) => cell.length)) + 6;
-  const body = left.map((cell, index) => `   ${cell.padEnd(leftWidth)}${right[index]}`);
-  const trendRow = `   30 days  ${trend}`;
-  const title = ' ✻ exo savings';
-  const state = `${enabled ? '● on' : '○ off'}  `;
-  const width = Math.max(CARD_MIN_WIDTH, ...body.map((line) => line.length + 3), trendRow.length + 3, title.length + state.length + 2);
-  const row = (text) => `│${text.padEnd(width)}│`;
-  const rule = '─'.repeat(width);
-  return [
-    `╭${rule}╮`,
-    row(`${title}${state.padStart(width - title.length)}`),
-    row(''),
-    ...body.map(row),
-    row(''),
-    row(trendRow),
-    `╰${rule}╯`
-  ];
-}
-
-// The current state carries the filled dot; the last line names the command
-// that flips it.
-function switchLines(enabled, readGuard) {
-  const guard = readGuard ? 'guard' : 'guard (off in config.json)';
-  const lines = [
-    `  ${enabled ? '●' : '○'} on   right-sizing · counter · status line · ${guard}`,
-    `  ${enabled ? '○' : '●'} off  all four stop; the totals stay`,
-    `         switch with /exo:savings ${enabled ? 'off' : 'on'}; right-sizing follows at the next session start`
-  ];
-  const override = process.env.EXO_SAVINGS;
-  if (override === 'on' || override === 'off') lines.push(`         EXO_SAVINGS=${override} in the environment outranks the switch`);
-  return lines;
-}
-
+// Markdown, not a drawn box: the model relays it unfenced, so Claude Code's own
+// renderer styles the title, the table and the inline code.
 function report() {
   const config = loadConfig();
   const sessions = readJson(ledgerFile(), {});
   const project = currentProject(sessions, process.cwd());
   const baseName = path.basename(project);
-  const projectName = baseName.length > PROJECT_NAME_MAX ? `${baseName.slice(0, PROJECT_NAME_MAX - 1)}…` : baseName;
+  const shortName = baseName.length > PROJECT_NAME_MAX ? `${baseName.slice(0, PROJECT_NAME_MAX - 1)}…` : baseName;
+  // A pipe in a directory name would end the table cell.
+  const projectName = shortName.replaceAll('|', '\\|');
   const inProject = (metrics) => metrics.project === project;
   const here = scopeColumn(`this project · ${projectName}`, sessions, config.ratios, inProject);
   const everywhere = scopeColumn('all projects', sessions, config.ratios, () => true);
-  const trend = trendLine(dailySavings(sessions, config.ratios, Date.now()));
   const enabled = savingsEnabled();
+  const state = enabled ? '● on · turn off with `/exo:savings off`' : '○ off · turn on with `/exo:savings on`';
   const guard = totals(sessions).guard;
+  const guardLabel = config.readGuard === false ? 'read guard (off in config.json)' : 'read guard';
   const ratios = METRICS.map((metric) => `${metric} ${config.ratios[metric]}`).join(' · ');
+  const rows = PANEL_ROWS.map((label, index) => `| ${label} | ${here.cells[index]} | ${everywhere.cells[index]} |`);
   const lines = [
-    ...card(enabled, here.cells, everywhere.cells, trend),
-    ...switchLines(enabled, config.readGuard !== false),
+    `**✻ exo savings** · ${state}`,
     '',
-    `  ≈ estimated over right-sized sessions: ${here.counted} here, ${everywhere.counted} in all projects`,
-    `    r = ${ratios}; edit ${configFile()} to change r`,
-    `    r source (ratios.mjs): ${MEASURED.source}`,
-    `  read guard, measured: ≈ ${guardTokens(guard)} tokens withheld · ${guard.capped} reads capped · ${guard.duplicates} re-reads refused`,
-    `  cost: the status line's figure, else API list prices per model (prices.mjs), not a subscription bill`,
-    '  tokens: cache-weighted as in token-weights.mjs',
-    `  ledger: ${ledgerFile()} · last 30 days`
+    `| saved | ${here.title} | ${everywhere.title} |`,
+    '|:--|--:|--:|',
+    ...rows,
+    '',
+    `- ≈ estimated over right-sized sessions: ${here.counted} here, ${everywhere.counted} in all projects, r = ${ratios}`,
+    `- ${guardLabel}, measured: ≈ ${guardTokens(guard)} tokens withheld · ${guard.capped} reads capped · ${guard.duplicates} re-reads refused`
   ];
+  const override = process.env.EXO_SAVINGS;
+  if (override === 'on' || override === 'off') lines.push(`- EXO_SAVINGS=${override} in the environment outranks the switch`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 

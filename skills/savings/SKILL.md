@@ -16,7 +16,8 @@ Report the ledger as the script prints it, never a figure recomputed by hand, an
 ## The loop
 
 1. **Run** `node "$(cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo/plugin-root")/skills/savings/scripts/savings.mjs" report`; the pointer file names the installed plugin root, which the session hook rewrites at every start. For the switch, run the same script with `off` or `on` first, then `report`, because the panel shows the new state and what it switched.
-2. **Relay** the panel verbatim inside a code fence, because its columns align on spaces, the guard line is measured, the estimate line names its ratios, and the reader needs both labels to judge the numbers.
+2. **Relay** the panel's markdown unchanged and outside any code fence, because the chat renders the table only when unfenced; a fence prints raw pipes. After a switch, the script's one-line confirmation goes above the panel.
+3. **Add** no prose restating the panel's labels, because its list already marks the estimate and the measured guard, and a restatement is the bloat the panel replaced.
 
 ## Judgment
 

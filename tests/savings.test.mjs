@@ -141,19 +141,13 @@ test('report shows the switch state and the saving for the current project besid
   await runWithStdin(['record'], JSON.stringify({ session_id: 's2', transcript_path: transcript, cwd: '/elsewhere' }), env);
   const result = await run(SAVINGS, ['report'], { env, cwd: nested });
   assert.equal(result.code, 0, result.stderr);
-  const lines = result.stdout.split('\n');
-  const cardWidths = new Set(lines.slice(0, 11).map((line) => line.length));
-  assert.equal(cardWidths.size, 1, 'every card line has the same width');
-  assert.match(result.stdout, /│ ✻ exo savings\s+● on  │/);
-  assert.match(result.stdout, /│\s+this project · shop\s+all projects\s+│/);
-  assert.match(result.stdout, /│\s+\$0\.01 saved\s+\$0\.02 saved\s+│/);
-  assert.match(result.stdout, /│\s+12 lines\s+23 lines\s+│/);
-  assert.match(result.stdout, /│\s+838 tokens\s+1\.7k tokens\s+│/);
-  assert.match(result.stdout, /│\s+1m\s+2m\s+│/);
-  assert.match(result.stdout, /│\s+30 days {2}[▁-█]{30}\s+│/);
-  assert.match(result.stdout, /^ {2}● on /m);
-  assert.match(result.stdout, /^ {2}○ off /m);
-  assert.match(result.stdout, /switch with \/exo:savings off/);
+  assert.match(result.stdout, /^\*\*✻ exo savings\*\* · ● on · turn off with `\/exo:savings off`$/m);
+  assert.match(result.stdout, /^\| saved \| this project · shop \| all projects \|$/m);
+  assert.match(result.stdout, /^\| cost at API price \| \$0\.01 \| \$0\.02 \|$/m);
+  assert.match(result.stdout, /^\| lines \| 12 \| 23 \|$/m);
+  assert.match(result.stdout, /^\| tokens \| 838 \| 1\.7k \|$/m);
+  assert.match(result.stdout, /^\| time \| 1m \| 2m \|$/m);
+  assert.match(result.stdout, /^\| last 30 days \| `[▁-█]{30}` \| `[▁-█]{30}` \|$/m);
   assert.match(result.stdout, /estimated over right-sized sessions: 1 of 1 here, 2 of 2 in all projects/);
   assert.match(result.stdout, /read guard, measured: ≈ 0 tokens withheld · 0 reads capped · 0 re-reads refused/);
 });
@@ -197,22 +191,22 @@ test('off and on write enabled into config.json and status reports it', async ()
   const env = { CLAUDE_CONFIG_DIR: directory };
   const configFile = path.join(directory, 'exo', 'savings', 'config.json');
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'on\n');
-  assert.equal((await runWithStdin(['off'], '', env)).stdout, 'exo savings off\n');
+  assert.equal((await runWithStdin(['off'], '', env)).stdout, 'exo savings off; right-sizing follows at the next session start\n');
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
-  assert.match(panel, /○ off {2}│/);
-  assert.match(panel, /^ {2}● off /m);
-  assert.match(panel, /switch with \/exo:savings on/);
-  assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on\n');
+  assert.match(panel, /· ○ off · turn on with `\/exo:savings on`$/m);
+  assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; right-sizing follows at the next session start\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);
   assert.equal(config.ratios.lines, 0.54);
 });
 
-test('report names the source of the ratios', async () => {
+test('report marks the guard switched off in config.json', async () => {
   const directory = await fixture();
+  await fs.mkdir(path.join(directory, 'exo', 'savings'), { recursive: true });
+  await fs.writeFile(path.join(directory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /r source \(ratios\.mjs\): ponytail agentic benchmark/);
+  assert.match(result.stdout, /^- read guard \(off in config\.json\), measured: /m);
 });
