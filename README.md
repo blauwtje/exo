@@ -41,6 +41,8 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 
 Two saving figures, kept apart: the read guard's is measured (the bytes it withheld, shown as tokens at four bytes each); the ladder's is an estimate, for sessions in which `right-sizing` fired, actual × r / (1 − r) with the ratios the ponytail agentic benchmark measured (LOC 0.54, tokens 0.22, cost 0.20, time 0.27), editable in `~/.claude/exo/savings/config.json`. The counterfactual behind the estimate is never measured; the label says so.
 
+The read guard (`skills/savings/scripts/read-guard.mjs`, a PreToolUse hook on Read) is always on. It refuses an unbounded read of a file over 400 lines with a reason that asks for a located range, and refuses a second read of a range that is unchanged since the first in this context window; a clear or a compaction forgets the reads. Each refusal books the bytes withheld into the ledger. `"readGuard": false` in `~/.claude/exo/savings/config.json` is the only switch; there is no level and no command.
+
 To show the running total in the status line, add to your `statusLine` command script, after it has read stdin into `$input`:
 
 ```bash

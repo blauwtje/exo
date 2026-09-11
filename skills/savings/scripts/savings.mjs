@@ -25,8 +25,9 @@ const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
 // Cut per metric that the ponytail agentic benchmark measured against a
 // no-skill baseline (DietrichGebert/ponytail, benchmarks/results/2026-06-18-agentic.md,
-// twelve feature tasks, Haiku 4.5, n=4). User-editable in config.json.
-const DEFAULT_CONFIG = { ratios: { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 } };
+// twelve feature tasks, Haiku 4.5, n=4). User-editable in config.json;
+// readGuard: false switches the read guard off.
+const DEFAULT_CONFIG = { readGuard: true, ratios: { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 } };
 
 function loadConfig() {
   const file = path.join(ledgerDirectory(), 'config.json');
