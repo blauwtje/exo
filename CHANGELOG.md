@@ -17,6 +17,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- Every savings figure (cost, lines, tokens, time; panel, status line and
+  trend) is net of all of exo's overhead, from exo's own benchmark ratios with
+  their standard error. The read guard times itself and books its refusals by
+  tool call; the status line drops its separate guard figure.
 - `savings report` prints a card: the switch state and what each state does,
   the saving in the current project beside all projects, and a 30-day trend.
 
