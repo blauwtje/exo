@@ -1,6 +1,6 @@
 ---
 name: codebase-scout
-description: "Use proactively for read-only codebase orientation before planning or editing: locating the files, symbols, entrypoints, module boundaries, owners, or history a change touches. Returns a fixed report ending in the exact ranges to read next, so no search output reaches the main context. Prefer it over general-purpose and Explore whenever discovery needs more than one search or more than one file. Do not use it for a single known file, symbol, or literal that one grep answers."
+description: "Use for read-only codebase orientation when finding the files a change touches means reading files it will not edit, or when discovery spans more than one module: it returns a fixed report ending in the exact ranges to read next, so no search output reaches the main context. Prefer it over general-purpose and Explore for that discovery. Not when one Glob, one grep or an existing example names the files to change, because the main thread then reads those files anyway."
 tools:
   - Read
   - Grep
@@ -10,7 +10,7 @@ disallowedTools:
   - Write
   - Edit
   - NotebookEdit
-model: sonnet
+model: inherit
 effort: medium
 maxTurns: 20
 memory: local
