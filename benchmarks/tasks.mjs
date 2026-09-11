@@ -62,4 +62,11 @@ export const SAFE_TASKS = [
   { id: 'rate-limit', file: 'limiter.js', prompt: 'Implement `RateLimiter.allow(key)` in the existing `limiter.js`. It allows at most maxCalls requests per periodSeconds for each key, returning true if the call is allowed and false once the caller exceeds the limit; the constructor already stores maxCalls, periodSeconds and a now() clock in milliseconds, use that clock. It throttles abusive clients on a public API.' }
 ];
 
+// A prompt no skill should answer, so the exo and baseline cells differ by
+// exo's overhead alone; benchmarks/calibrate.mjs compares that difference
+// with what the savings ledger books.
+export const CALIBRATION_TASKS = [
+  { id: 'calib-reply', prompt: 'Reply with the single word ready, and nothing else.' }
+];
+
 export const SMOKE_TASKS = ['tmpl-be-count', 'safe-path'];

@@ -7,6 +7,8 @@
 //   node benchmarks/run.mjs --smoke                       one task per tier, every arm, n=1
 //   node benchmarks/run.mjs --full --confirm              every task, every arm, n=4
 //   node benchmarks/run.mjs --tasks a,b --arms x,y --runs 2 --model haiku --concurrency 2
+//   node benchmarks/run.mjs --tasks calib-reply --arms baseline,exo --runs 6 --concurrency 1
+//                                                         calibration cells for calibrate.mjs
 //
 // A run above smoke size costs money: --full prints the projection from the
 // latest smoke run and stops unless --confirm is given.
@@ -16,8 +18,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { measureWorkdir } from './cell-checks.mjs';
-import { ARMS, FIXTURE, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
+import { countLines, measureWorkdir } from './cell-checks.mjs';
+import { ARMS, CALIBRATION_TASKS, FIXTURE, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -61,6 +63,8 @@ function findTask(taskId) {
   if (template) return { ...template, tier: 'template' };
   const safe = SAFE_TASKS.find((task) => task.id === taskId);
   if (safe) return { ...safe, tier: 'safe' };
+  const calibration = CALIBRATION_TASKS.find((task) => task.id === taskId);
+  if (calibration) return { ...calibration, tier: 'calibration' };
   throw new Error(`unknown task ${taskId}`);
 }
 
@@ -79,11 +83,18 @@ function ensureTemplateFixture() {
   return directory;
 }
 
+// A calibration cell writes nothing, so its workdir is an empty repository
+// with one commit for the diff to compare against.
 function workdirFor(task, fixtureDirectory) {
   const workdir = fs.mkdtempSync(path.join(os.tmpdir(), `exo-bench-${task.id}-`));
   if (task.tier === 'template') {
     execFileSync('git', ['clone', '-q', fixtureDirectory, workdir], { stdio: 'ignore' });
     git(workdir, ['checkout', '-q', FIXTURE.commit]);
+    return workdir;
+  }
+  if (task.tier === 'calibration') {
+    git(workdir, ['init', '-q']);
+    git(workdir, ['commit', '-q', '--allow-empty', '-m', 'seed']);
     return workdir;
   }
   fs.cpSync(path.join(BENCHMARKS, 'safe', task.id, 'seed'), workdir, { recursive: true });
@@ -198,8 +209,10 @@ async function runCell(cell, fixtureDirectory) {
     };
     if (task.tier === 'template') {
       Object.assign(checks, measureWorkdir(workdir, task));
-    } else {
+    } else if (task.tier === 'safe') {
       Object.assign(checks, { loc: measureWorkdir(workdir, { kind: 'safe' }).loc }, await runSafeCheck(task, workdir));
+    } else {
+      Object.assign(checks, { loc: countLines(workdir) });
     }
     fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(workdir, ['diff', '--cached', 'HEAD']));
     fs.writeFileSync(path.join(cellDirectory, 'checks.json'), `${JSON.stringify(checks, null, 2)}\n`);
@@ -285,7 +298,8 @@ async function main() {
     done += 1;
     const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
     const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
-    const verdict = checks.tier === 'template' ? `correct=${checks.correct}` : `safe=${checks.safe}`;
+    const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}` };
+    const verdict = verdicts[checks.tier] ?? checks.tier;
     console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} ${cost} ${Math.round(checks.wallMs / 1000)}s loc=${checks.loc.added} ${verdict}${checks.timedOut ? ' TIMED OUT' : ''}`);
   });
   clearInterval(heartbeat);
