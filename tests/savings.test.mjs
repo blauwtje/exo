@@ -156,3 +156,12 @@ test('report exits non-zero and surfaces the error on a ledger fault', async () 
   assert.notEqual(result.code, 0);
   assert.match(result.stderr, /^savings: /);
 });
+
+test('report keeps the default ratios when config.json sets only readGuard', async () => {
+  const directory = await fixture();
+  await fs.mkdir(path.join(directory, 'exo', 'savings'), { recursive: true });
+  await fs.writeFile(path.join(directory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /"lines":0\.54/);
+});

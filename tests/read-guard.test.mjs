@@ -100,3 +100,20 @@ test('reset forgets the reads so the next identical read passes', async () => {
   assert.deepEqual((await ledger(configDirectory)).s1.reads, {});
   assert.equal(decision(await runGuard([], ranged, env)), null);
 });
+
+test('a delegate reading a range the main thread already read passes', async () => {
+  const { env, file } = await guardFixture();
+  const ranged = readInput(file, { offset: 1, limit: 20 });
+  await runGuard([], ranged, env);
+  const delegated = { ...ranged, agent_id: 'a1' };
+  assert.equal(decision(await runGuard([], delegated, env)), null);
+  const repeat = decision(await runGuard([], delegated, env));
+  assert.equal(repeat.permissionDecision, 'deny');
+});
+
+test('a file of exactly 400 lines with a final newline passes an unbounded read', async () => {
+  const { env, configDirectory } = await guardFixture();
+  const file = path.join(configDirectory, 'four-hundred.ts');
+  await fs.writeFile(file, Array.from({ length: 400 }, (_, index) => `line ${index + 1}\n`).join(''));
+  assert.equal(decision(await runGuard([], readInput(file), env)), null);
+});

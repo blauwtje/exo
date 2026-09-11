@@ -55,7 +55,10 @@ function guardRead(hookInput) {
     return;
   }
   if (!stat.isFile()) return;
-  const key = `${filePath}:${input.offset ?? 0}:${input.limit ?? 0}`;
+  // A delegate shares the session id but not the context window, so each
+  // agent's reads are tracked apart from the main thread's.
+  const reader = typeof hookInput.agent_id === 'string' ? hookInput.agent_id : 'main';
+  const key = `${reader}:${filePath}:${input.offset ?? 0}:${input.limit ?? 0}`;
   let reason = null;
   updateSession(hookInput.session_id, (session) => {
     const previous = session.reads[key];
@@ -65,7 +68,9 @@ function guardRead(hookInput) {
       reason = `exo read guard: ${filePath} (${describe(input)}) is unchanged since your read at ${previous.at} in this context window; use that copy, or pass a different offset and limit to read it again.`;
       return true;
     }
-    const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+    const content = fs.readFileSync(filePath, 'utf8');
+    // A final newline ends the last line; it does not open another one.
+    const lines = content.replace(/\n$/, '').split('\n');
     const unbounded = input.offset === undefined && input.limit === undefined;
     if (unbounded && lines.length > UNBOUNDED_READ_CAP) {
       session.guard.capped += 1;

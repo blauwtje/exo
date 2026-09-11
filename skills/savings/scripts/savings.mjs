@@ -32,7 +32,8 @@ const DEFAULT_CONFIG = { readGuard: true, ratios: { lines: 0.54, tokens: 0.22, c
 function loadConfig() {
   const file = path.join(ledgerDirectory(), 'config.json');
   const existing = readJson(file, null);
-  if (existing !== null) return existing;
+  // A config that sets only readGuard, as the read guard documents, keeps the default ratios.
+  if (existing !== null) return { ...DEFAULT_CONFIG, ...existing, ratios: { ...DEFAULT_CONFIG.ratios, ...existing.ratios } };
   writeJson(file, DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
 }
