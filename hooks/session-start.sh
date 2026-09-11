@@ -19,9 +19,12 @@ esac
 skill="$root/skills/using-exo/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
-# With exo savings off the ladder is not borrowed either; the sentence that
-# borrows it is dropped from the injected body.
-if [ "$(node "$root/skills/savings/scripts/savings.mjs" status 2>/dev/null)" = "off" ]; then
-  body=$(printf '%s\n' "$body" | sed 's/; `right-sizing` is borrowed before the first edit that adds or replaces code, every time and without being asked//')
+# While exo savings are on, the right-sizing ladder and its guards ride in this
+# same context string, so they hold before every edit without a skill call and
+# are booked with the rest of exo's session text; with savings off they stay out.
+ladder_skill="$root/skills/right-sizing/SKILL.md"
+if [ -f "$ladder_skill" ] && [ "$(node "$root/skills/savings/scripts/savings.mjs" status 2>/dev/null)" != "off" ]; then
+  ladder=$(awk '/^## Report$/ { exit } /^## The ladder$/ { keep = 1 } keep { print }' "$ladder_skill")
+  body=$(printf '%s\n\n# Right-sizing\n\nWhile exo savings are on, this ladder holds before every edit that adds or replaces code; it needs no call to `right-sizing`.\n\n%s' "$body" "$ladder")
 fi
 jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'
