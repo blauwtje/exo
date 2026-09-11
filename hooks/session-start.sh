@@ -19,4 +19,9 @@ esac
 skill="$root/skills/using-exo/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
+# With exo savings off the ladder is not borrowed either; the sentence that
+# borrows it is dropped from the injected body.
+if [ "$(node "$root/skills/savings/scripts/savings.mjs" status 2>/dev/null)" = "off" ]; then
+  body=$(printf '%s\n' "$body" | sed 's/; `right-sizing` is borrowed before the first edit that adds or replaces code, every time and without being asked//')
+fi
 jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'

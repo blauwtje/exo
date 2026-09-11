@@ -2,11 +2,15 @@
 // Savings: lines, tokens, cost and time per session, read from the transcript
 // the harness writes and from the status line it renders, plus two saving
 // figures: the bytes the read guard withheld (measured) and what the
-// right-sizing ladder saved against the ponytail benchmark ratios (estimated).
+// right-sizing ladder saved against the benchmark ratios in ratios.mjs
+// (estimated).
 //
 //   node savings.mjs record      Stop hook: stdin is the hook JSON
 //   node savings.mjs statusline  status line: stdin is the status JSON; prints one segment
 //   node savings.mjs report      prints the totals table
+//   node savings.mjs status      prints on or off
+//   node savings.mjs off | on    writes "enabled" into config.json: one switch for
+//                                the ladder, the counter, the status line and the guard
 //
 // The transcript format is internal to the harness and may change between
 // releases; a line that does not parse is skipped, never fatal, and a hook
@@ -15,26 +19,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { ledgerDirectory, ledgerFile, readJson, updateSession, writeJson } from './ledger.mjs';
+import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
+import MEASURED from './ratios.mjs';
+import { sumCounts, usageCounts } from './token-weights.mjs';
 
-const CACHE_READ_RATE = 0.1;
-const CACHE_5M_RATE = 1.25;
-const CACHE_1H_RATE = 2;
 const BYTES_PER_TOKEN = 4;
 const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
-// Cut per metric that the ponytail agentic benchmark measured against a
-// no-skill baseline (DietrichGebert/ponytail, benchmarks/results/2026-06-18-agentic.md,
-// twelve feature tasks, Haiku 4.5, n=4). User-editable in config.json;
-// readGuard: false switches the read guard off.
-const DEFAULT_CONFIG = { readGuard: true, ratios: { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 } };
+// MEASURED is the cut per metric the benchmark measured against a no-skill
+// baseline, with its source; user-editable in config.json.
+const DEFAULT_CONFIG = {
+  enabled: true,
+  readGuard: true,
+  ratios: { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time }
+};
 
 function loadConfig() {
-  const file = path.join(ledgerDirectory(), 'config.json');
-  const existing = readJson(file, null);
-  // A config that sets only readGuard, as the read guard documents, keeps the default ratios.
+  const existing = readJson(configFile(), null);
+  // A config that sets only readGuard or enabled keeps the default ratios.
   if (existing !== null) return { ...DEFAULT_CONFIG, ...existing, ratios: { ...DEFAULT_CONFIG.ratios, ...existing.ratios } };
-  writeJson(file, DEFAULT_CONFIG);
+  writeJson(configFile(), DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
 }
 
@@ -65,17 +69,6 @@ function appendedLines(file, offset) {
   if (lastNewline < 0) return { lines: [], offset };
   const complete = text.slice(0, lastNewline + 1);
   return { lines: complete.split('\n').slice(0, -1), offset: offset + Buffer.byteLength(complete) };
-}
-
-function usageCounts(usage) {
-  const creation = usage.cache_creation;
-  return {
-    input: usage.input_tokens ?? 0,
-    cacheRead: usage.cache_read_input_tokens ?? 0,
-    cache5m: creation ? (creation.ephemeral_5m_input_tokens ?? 0) : (usage.cache_creation_input_tokens ?? 0),
-    cache1h: creation ? (creation.ephemeral_1h_input_tokens ?? 0) : 0,
-    output: usage.output_tokens ?? 0
-  };
 }
 
 function lineCount(text) {
@@ -122,16 +115,7 @@ function applyEntry(session, entry) {
 }
 
 function sumTokens(session) {
-  const totals = { input: 0, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0 };
-  for (const counts of Object.values(session.usageById)) {
-    for (const key of Object.keys(totals)) totals[key] += counts[key];
-  }
-  totals.raw = totals.input + totals.cacheRead + totals.cache5m + totals.cache1h + totals.output;
-  totals.weightedInput = totals.input
-    + totals.cacheRead * CACHE_READ_RATE
-    + totals.cache5m * CACHE_5M_RATE
-    + totals.cache1h * CACHE_1H_RATE;
-  return totals;
+  return sumCounts(Object.values(session.usageById));
 }
 
 function sumLines(session) {
@@ -248,11 +232,13 @@ function readStdin() {
 }
 
 function record(hookInput) {
+  if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
   updateSession(hookInput.session_id, (session) => ingestTranscript(session, hookInput.transcript_path));
 }
 
 function statusline(statusInput) {
+  if (!savingsEnabled()) return;
   const config = loadConfig();
   let sessions = readJson(ledgerFile(), {});
   if (typeof statusInput.session_id === 'string') {
@@ -273,6 +259,16 @@ function statusline(statusInput) {
   const rightSized = totals(sessions, (metrics) => metrics.rightSized);
   const all = totals(sessions);
   process.stdout.write(segment(estimatedSavings(rightSized, config.ratios), rightSized.costKnown, all.guard));
+}
+
+function status() {
+  process.stdout.write(`${savingsEnabled() ? 'on' : 'off'}\n`);
+}
+
+function setEnabled(enabled) {
+  const config = { ...loadConfig(), enabled };
+  writeJson(configFile(), config);
+  process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}\n`);
 }
 
 function formatRow(cells, widths) {
@@ -296,30 +292,31 @@ function report() {
   lines.push('');
   lines.push(`Read guard (measured): ${all.guard.capped} unbounded reads capped, ${all.guard.duplicates} unchanged re-reads refused, ≈ ${guardTokens(all.guard)} tok withheld (bytes / ${BYTES_PER_TOKEN}).`);
   lines.push('tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output.');
-  lines.push(`Estimate: actual × r / (1 − r) over right-sized sessions, r = ${JSON.stringify(config.ratios)} (ponytail agentic benchmark); edit ${path.join(ledgerDirectory(), 'config.json')} to change r.`);
+  lines.push(`Estimate: actual × r / (1 − r) over right-sized sessions, r = ${JSON.stringify(config.ratios)} (ratios.mjs: ${MEASURED.source}); edit ${configFile()} to change r.`);
   if (!all.costKnown) lines.push('cost is recorded by the status line segment only; wire it to fill this column.');
   lines.push(`Ledger: ${ledgerFile()}`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
 const command = process.argv[2];
-if (command === 'record' || command === 'statusline') {
+const HOOK_COMMANDS = { record, statusline };
+const CLI_COMMANDS = { report, status, on: () => setEnabled(true), off: () => setEnabled(false) };
+if (command in HOOK_COMMANDS) {
   try {
-    if (command === 'record') record(readStdin());
-    else statusline(readStdin());
+    HOOK_COMMANDS[command](readStdin());
   } catch (error) {
     // A ledger fault must never block a turn or blank the status line.
     console.error(`savings: ${error.message}`);
   }
-} else if (command === 'report') {
+} else if (command in CLI_COMMANDS) {
   try {
-    report();
+    CLI_COMMANDS[command]();
   } catch (error) {
-    // report is a direct CLI command: its caller needs the failure surfaced.
+    // A CLI command's caller needs the failure surfaced.
     console.error(`savings: ${error.message}`);
     process.exit(1);
   }
 } else {
-  console.error('usage: savings.mjs record|statusline|report');
+  console.error('usage: savings.mjs record|statusline|report|status|on|off');
   process.exit(1);
 }

@@ -165,3 +165,34 @@ test('report keeps the default ratios when config.json sets only readGuard', asy
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /"lines":0\.54/);
 });
+
+test('record and statusline stand down when EXO_SAVINGS=off', async () => {
+  const { configDirectory, transcript } = await transcriptFixture();
+  const env = { CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS: 'off' };
+  const recorded = await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
+  assert.equal(recorded.code, 0, recorded.stderr);
+  const rendered = await runWithStdin(['statusline'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
+  assert.equal(rendered.stdout, '');
+  assert.equal(await fs.access(path.join(configDirectory, 'exo', 'savings', 'sessions.json')).catch(() => 'absent'), 'absent');
+});
+
+test('off and on write enabled into config.json and status reports it', async () => {
+  const directory = await fixture();
+  const env = { CLAUDE_CONFIG_DIR: directory };
+  const configFile = path.join(directory, 'exo', 'savings', 'config.json');
+  assert.equal((await runWithStdin(['status'], '', env)).stdout, 'on\n');
+  assert.equal((await runWithStdin(['off'], '', env)).stdout, 'exo savings off\n');
+  assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
+  assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
+  assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on\n');
+  const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
+  assert.equal(config.enabled, true);
+  assert.equal(config.ratios.lines, 0.54);
+});
+
+test('report names the source of the ratios', async () => {
+  const directory = await fixture();
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Estimate: .*ratios\.mjs: ponytail agentic benchmark/);
+});
