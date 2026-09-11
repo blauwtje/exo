@@ -20,10 +20,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
+import PRICES from './prices.mjs';
 import MEASURED from './ratios.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 
 const BYTES_PER_TOKEN = 4;
+const TOKENS_PER_PRICE_UNIT = 1e6;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const TREND_DAYS = 30;
+const TREND_LEVELS = '▂▃▄▅▆▇█';
+const CARD_MIN_WIDTH = 50;
+const PROJECT_NAME_MAX = 28;
 const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
 // MEASURED is the cut per metric the benchmark measured against a no-skill
@@ -103,7 +110,8 @@ function applyEntry(session, entry) {
   if (entry.type === 'assistant' && message && message.id && message.usage) {
     // One response is one line per content block, and a streaming response
     // repeats its id with a growing output count: the last line per id wins.
-    session.usageById[message.id] = usageCounts(message.usage);
+    // The model rides along because a delegate is priced at its own rate.
+    session.usageById[message.id] = { ...usageCounts(message.usage), model: message.model };
     // A delegate runs on its own model; the session's model is the main transcript's.
     if (typeof message.model === 'string' && entry.isSidechain !== true) session.model = message.model;
   }
@@ -152,6 +160,30 @@ function ingestTranscript(session, transcriptPath) {
   return changed;
 }
 
+function modelPrice(model) {
+  if (typeof model !== 'string') return null;
+  let family = null;
+  for (const candidate of Object.keys(PRICES.models)) {
+    if (model.startsWith(candidate) && (family === null || candidate.length > family.length)) family = candidate;
+  }
+  return family === null ? null : PRICES.models[family];
+}
+
+// A message on an unlisted model adds nothing, so such a session reads low;
+// it reads null only when no message was priced. A row recorded before the
+// model rode along with its usage is priced at the session's model.
+function pricedCost(session) {
+  let cost = null;
+  for (const counts of Object.values(session.usageById ?? {})) {
+    const price = modelPrice(counts.model ?? session.model);
+    if (price === null) continue;
+    let perMillion = 0;
+    for (const key of Object.keys(price)) perMillion += (counts[key] ?? 0) * price[key];
+    cost = (cost ?? 0) + perMillion / TOKENS_PER_PRICE_UNIT;
+  }
+  return cost;
+}
+
 function sessionMetrics(session) {
   const tokens = session.tokens ?? sumTokens({ usageById: session.usageById ?? {} });
   const lines = session.lines ?? sumLines({ linesByEntry: session.linesByEntry ?? {} });
@@ -161,9 +193,10 @@ function sessionMetrics(session) {
     lines: lines.added,
     linesRemoved: lines.removed,
     tokens: tokens.weightedInput + tokens.output,
-    cost: session.costUsd ?? null,
+    cost: session.costUsd ?? pricedCost(session),
     time: session.durationMs ?? elapsed,
     rightSized: session.rightSized === true,
+    project: session.project ?? null,
     guard
   };
 }
@@ -231,10 +264,22 @@ function readStdin() {
   return JSON.parse(fs.readFileSync(0, 'utf8'));
 }
 
+// The project root a session first reports is its project; a later cd inside
+// the session does not move it.
+function claimProject(session, directory) {
+  if (session.project !== null || typeof directory !== 'string') return false;
+  session.project = directory;
+  return true;
+}
+
 function record(hookInput) {
   if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
-  updateSession(hookInput.session_id, (session) => ingestTranscript(session, hookInput.transcript_path));
+  updateSession(hookInput.session_id, (session) => {
+    const claimed = claimProject(session, process.env.CLAUDE_PROJECT_DIR || hookInput.cwd);
+    const ingested = ingestTranscript(session, hookInput.transcript_path);
+    return claimed || ingested;
+  });
 }
 
 function statusline(statusInput) {
@@ -244,6 +289,7 @@ function statusline(statusInput) {
   if (typeof statusInput.session_id === 'string') {
     sessions = updateSession(statusInput.session_id, (session) => {
       let changed = ingestTranscript(session, statusInput.transcript_path);
+      if (claimProject(session, statusInput.workspace?.project_dir ?? statusInput.cwd)) changed = true;
       const cost = statusInput.cost ?? {};
       if (typeof cost.total_cost_usd === 'number' && cost.total_cost_usd !== session.costUsd) {
         session.costUsd = cost.total_cost_usd;
@@ -271,30 +317,129 @@ function setEnabled(enabled) {
   process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}\n`);
 }
 
-function formatRow(cells, widths) {
-  return cells.map((cell, index) => cell.padEnd(widths[index])).join('  ').trimEnd();
+// A recorded project may be a symlinked path while process.cwd() is resolved;
+// a project directory that no longer exists compares as recorded.
+function resolvedPath(directory) {
+  try {
+    return fs.realpathSync(directory);
+  } catch {
+    return directory;
+  }
+}
+
+// The recorded project that holds the directory, the deepest when projects
+// nest, so a report run from a subdirectory still finds its project.
+function currentProject(sessions, directory) {
+  let match = null;
+  for (const session of Object.values(sessions)) {
+    const project = session.project;
+    if (typeof project !== 'string') continue;
+    const resolved = resolvedPath(project);
+    const inside = directory === resolved || directory.startsWith(`${resolved}${path.sep}`);
+    if (inside && (match === null || project.length > match.length)) match = project;
+  }
+  return match ?? directory;
+}
+
+// One card column: the estimated saving over the scope's right-sized sessions.
+function scopeColumn(title, sessions, ratios, include) {
+  const all = totals(sessions, include);
+  const rightSized = totals(sessions, (metrics) => include(metrics) && metrics.rightSized);
+  const saved = estimatedSavings(rightSized, ratios);
+  const costKnown = rightSized.costKnown || rightSized.sessions === 0;
+  return {
+    cells: [title, `${money(saved.cost, costKnown)} saved`, `${compact(saved.lines)} lines`, `${compact(saved.tokens)} tokens`, duration(saved.time)],
+    counted: `${rightSized.sessions} of ${all.sessions}`
+  };
+}
+
+// The estimated cost saving per local day, oldest first, ending today.
+function dailySavings(sessions, ratios, now) {
+  const days = new Array(TREND_DAYS).fill(0);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  for (const session of Object.values(sessions)) {
+    const metrics = sessionMetrics(session);
+    if (!metrics.rightSized || typeof metrics.cost !== 'number' || typeof session.started !== 'string') continue;
+    const day = new Date(session.started);
+    day.setHours(0, 0, 0, 0);
+    // Rounded, because a day across a daylight-saving change is 23 or 25 hours.
+    const age = Math.round((today - day) / DAY_MS);
+    if (age < 0 || age >= TREND_DAYS) continue;
+    days[TREND_DAYS - 1 - age] += estimatedSavings(metrics, ratios).cost;
+  }
+  return days;
+}
+
+// A day without a saving sits on the floor glyph; any saving rises above it.
+function trendLine(days) {
+  const peak = Math.max(...days);
+  return days.map((value) => {
+    if (value <= 0) return '▁';
+    const level = Math.ceil((value / peak) * TREND_LEVELS.length) - 1;
+    return TREND_LEVELS[level];
+  }).join('');
+}
+
+function card(enabled, left, right, trend) {
+  const leftWidth = Math.max(...left.map((cell) => cell.length)) + 6;
+  const body = left.map((cell, index) => `   ${cell.padEnd(leftWidth)}${right[index]}`);
+  const trendRow = `   30 days  ${trend}`;
+  const title = ' ✻ exo savings';
+  const state = `${enabled ? '● on' : '○ off'}  `;
+  const width = Math.max(CARD_MIN_WIDTH, ...body.map((line) => line.length + 3), trendRow.length + 3, title.length + state.length + 2);
+  const row = (text) => `│${text.padEnd(width)}│`;
+  const rule = '─'.repeat(width);
+  return [
+    `╭${rule}╮`,
+    row(`${title}${state.padStart(width - title.length)}`),
+    row(''),
+    ...body.map(row),
+    row(''),
+    row(trendRow),
+    `╰${rule}╯`
+  ];
+}
+
+// The current state carries the filled dot; the last line names the command
+// that flips it.
+function switchLines(enabled, readGuard) {
+  const guard = readGuard ? 'guard' : 'guard (off in config.json)';
+  const lines = [
+    `  ${enabled ? '●' : '○'} on   right-sizing · counter · status line · ${guard}`,
+    `  ${enabled ? '○' : '●'} off  all four stop; the totals stay`,
+    `         switch with /exo:savings ${enabled ? 'off' : 'on'}; right-sizing follows at the next session start`
+  ];
+  const override = process.env.EXO_SAVINGS;
+  if (override === 'on' || override === 'off') lines.push(`         EXO_SAVINGS=${override} in the environment outranks the switch`);
+  return lines;
 }
 
 function report() {
   const config = loadConfig();
   const sessions = readJson(ledgerFile(), {});
-  const all = totals(sessions);
-  const rightSized = totals(sessions, (metrics) => metrics.rightSized);
-  const saved = estimatedSavings(rightSized, config.ratios);
-  const rows = [
-    ['', 'LOC added', 'tokens', 'cost', 'time'],
-    [`all sessions (${all.sessions})`, compact(all.lines), compact(all.tokens), money(all.cost, all.costKnown), duration(all.time)],
-    [`right-sized sessions (${rightSized.sessions})`, compact(rightSized.lines), compact(rightSized.tokens), money(rightSized.cost, rightSized.costKnown), duration(rightSized.time)],
-    ['estimated saved', compact(saved.lines), compact(saved.tokens), money(saved.cost, rightSized.costKnown), duration(saved.time)]
+  const project = currentProject(sessions, process.cwd());
+  const baseName = path.basename(project);
+  const projectName = baseName.length > PROJECT_NAME_MAX ? `${baseName.slice(0, PROJECT_NAME_MAX - 1)}…` : baseName;
+  const inProject = (metrics) => metrics.project === project;
+  const here = scopeColumn(`this project · ${projectName}`, sessions, config.ratios, inProject);
+  const everywhere = scopeColumn('all projects', sessions, config.ratios, () => true);
+  const trend = trendLine(dailySavings(sessions, config.ratios, Date.now()));
+  const enabled = savingsEnabled();
+  const guard = totals(sessions).guard;
+  const ratios = METRICS.map((metric) => `${metric} ${config.ratios[metric]}`).join(' · ');
+  const lines = [
+    ...card(enabled, here.cells, everywhere.cells, trend),
+    ...switchLines(enabled, config.readGuard !== false),
+    '',
+    `  ≈ estimated over right-sized sessions: ${here.counted} here, ${everywhere.counted} in all projects`,
+    `    r = ${ratios}; edit ${configFile()} to change r`,
+    `    r source (ratios.mjs): ${MEASURED.source}`,
+    `  read guard, measured: ≈ ${guardTokens(guard)} tokens withheld · ${guard.capped} reads capped · ${guard.duplicates} re-reads refused`,
+    `  cost: the status line's figure, else API list prices per model (prices.mjs), not a subscription bill`,
+    '  tokens: cache-weighted as in token-weights.mjs',
+    `  ledger: ${ledgerFile()} · last 30 days`
   ];
-  const widths = rows[0].map((_, column) => Math.max(...rows.map((row) => row[column].length)));
-  const lines = rows.map((row) => formatRow(row, widths));
-  lines.push('');
-  lines.push(`Read guard (measured): ${all.guard.capped} unbounded reads capped, ${all.guard.duplicates} unchanged re-reads refused, ≈ ${guardTokens(all.guard)} tok withheld (bytes / ${BYTES_PER_TOKEN}).`);
-  lines.push('tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output.');
-  lines.push(`Estimate: actual × r / (1 − r) over right-sized sessions, r = ${JSON.stringify(config.ratios)} (ratios.mjs: ${MEASURED.source}); edit ${configFile()} to change r.`);
-  if (!all.costKnown) lines.push('cost is recorded by the status line segment only; wire it to fill this column.');
-  lines.push(`Ledger: ${ledgerFile()}`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 

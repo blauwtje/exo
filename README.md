@@ -53,7 +53,7 @@ Trust-boundary validation, error handling that prevents data loss, security, acc
 
 ## Savings counter
 
-`skills/savings/scripts/savings.mjs` keeps a ledger at `~/.claude/exo/savings/sessions.json` (under `CLAUDE_CONFIG_DIR` when set, or `EXO_SAVINGS_DIR` when set): per session the lines added and removed, the tokens weighted by cache price (input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, in `skills/savings/scripts/token-weights.mjs`), and, when the status line segment is wired, the cost and duration the harness reports. The Stop hook feeds it every turn by reading only the transcript lines appended since the last turn; the ledger is updated behind a lock and sessions untouched for thirty days are pruned.
+`skills/savings/scripts/savings.mjs` keeps a ledger at `~/.claude/exo/savings/sessions.json` (under `CLAUDE_CONFIG_DIR` when set, or `EXO_SAVINGS_DIR` when set): per session the project root it started in (`CLAUDE_PROJECT_DIR` in the Stop hook, `workspace.project_dir` in the status line), the lines added and removed, the tokens weighted by cache price (input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, in `skills/savings/scripts/token-weights.mjs`), and, when the status line segment is wired, the cost and duration the harness reports. Without that cost, a session is priced from its tokens at the API list prices per model in `skills/savings/scripts/prices.mjs`, delegates at their own model's rate; on a subscription that is what the same tokens would cost on the API, not the bill. The Stop hook feeds it every turn by reading only the transcript lines appended since the last turn; the ledger is updated behind a lock and sessions untouched for thirty days are pruned.
 
 Two saving figures, kept apart: the read guard's is measured (the bytes it withheld, shown as tokens at four bytes each); the ladder's is an estimate, for sessions in which `right-sizing` fired, actual × r / (1 − r) with the ratios in `skills/savings/scripts/ratios.mjs`, which names its source and which `node benchmarks/score.mjs <run> --publish` rewrites from a measured run (see Benchmarks). The ratios are editable in `~/.claude/exo/savings/config.json`. The counterfactual behind the estimate is never measured; the label says so.
 
@@ -71,7 +71,7 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
-The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05 · guard ≈ 23k tok`. The full table: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
+The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05 · guard ≈ 23k tok`. The full card, with the switch state, what each state does, the saving in the current project beside all projects, and a 30-day trend of the cost saved per day: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
 
 ## Develop
 

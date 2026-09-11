@@ -11,8 +11,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `implementing` scopes a reviewer's second round to its own findings and the
   fix diff through `re-review-prompt.md`.
+- The savings ledger records each session's project, and `savings` prices a
+  session's tokens at API list prices per model (`prices.mjs`) when the status
+  line reports no cost.
 
 ### Changed
+
+- `savings report` prints a card: the switch state and what each state does,
+  the saving in the current project beside all projects, and a 30-day trend.
 
 - `planning` writes plans in the task shape: `### Task n`, `Files:`, numbered
   steps carrying complete code with `Run:` and `Expected:`, and a `Commit:`

@@ -107,7 +107,8 @@ test('statusline stores the cost and prints the estimated saving segment', async
   const { configDirectory, transcript } = await transcriptFixture();
   const env = { CLAUDE_CONFIG_DIR: configDirectory };
   const statusInput = JSON.stringify({
-    session_id: 's1', transcript_path: transcript,
+    session_id: 's1', transcript_path: transcript, cwd: '/shop/src',
+    workspace: { current_dir: '/shop/src', project_dir: '/shop' },
     cost: { total_cost_usd: 1.5, total_duration_ms: 600000, total_lines_added: 12, total_lines_removed: 4 }
   });
   const result = await runWithStdin(['statusline'], statusInput, env);
@@ -117,6 +118,7 @@ test('statusline stores the cost and prints the estimated saving segment', async
   const session = (await readLedger(configDirectory)).s1;
   assert.equal(session.costUsd, 1.5);
   assert.equal(session.durationMs, 600000);
+  assert.equal(session.project, '/shop');
 });
 
 test('statusline appends the measured guard figure when bytes were withheld', async () => {
@@ -125,21 +127,35 @@ test('statusline appends the measured guard figure when bytes were withheld', as
   await writeLedger(configDirectory, { s0: { guard: { capped: 2, duplicates: 1, bytesWithheld: 48000 } } });
   const result = await runWithStdin(['statusline'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout, 'saved ≈ 12 LOC · 838 tok · - · 1m · guard ≈ 12k tok');
+  // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302, saved × 0.2/0.8 = $0.0075.
+  assert.equal(result.stdout, 'saved ≈ 12 LOC · 838 tok · $0.01 · 1m · guard ≈ 12k tok');
 });
 
-test('report prints actuals, right-sized totals, the labelled estimate and the guard line', async () => {
+test('report shows the switch state and the saving for the current project beside all projects', async () => {
   const { configDirectory, transcript } = await transcriptFixture();
-  const env = { CLAUDE_CONFIG_DIR: configDirectory };
-  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
-  const result = await runWithStdin(['report'], '', env);
+  const project = path.join(configDirectory, 'shop');
+  const nested = path.join(project, 'src');
+  await fs.mkdir(nested, { recursive: true });
+  const env = { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: '' };
+  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript, cwd: project }), env);
+  await runWithStdin(['record'], JSON.stringify({ session_id: 's2', transcript_path: transcript, cwd: '/elsewhere' }), env);
+  const result = await run(SAVINGS, ['report'], { env, cwd: nested });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /all sessions \(1\)\s+10\s+3\.0k\s+-\s+3m/);
-  assert.match(result.stdout, /right-sized sessions \(1\)/);
-  assert.match(result.stdout, /estimated saved\s+12\s+838\s+-\s+1m/);
-  assert.match(result.stdout, /Read guard \(measured\): 0 unbounded reads capped, 0 unchanged re-reads refused, ≈ 0 tok withheld/);
-  assert.match(result.stdout, /Estimate: actual × r \/ \(1 − r\)/);
-  assert.match(result.stdout, /cost is recorded by the status line segment only/);
+  const lines = result.stdout.split('\n');
+  const cardWidths = new Set(lines.slice(0, 11).map((line) => line.length));
+  assert.equal(cardWidths.size, 1, 'every card line has the same width');
+  assert.match(result.stdout, /│ ✻ exo savings\s+● on  │/);
+  assert.match(result.stdout, /│\s+this project · shop\s+all projects\s+│/);
+  assert.match(result.stdout, /│\s+\$0\.01 saved\s+\$0\.02 saved\s+│/);
+  assert.match(result.stdout, /│\s+12 lines\s+23 lines\s+│/);
+  assert.match(result.stdout, /│\s+838 tokens\s+1\.7k tokens\s+│/);
+  assert.match(result.stdout, /│\s+1m\s+2m\s+│/);
+  assert.match(result.stdout, /│\s+30 days {2}[▁-█]{30}\s+│/);
+  assert.match(result.stdout, /^ {2}● on /m);
+  assert.match(result.stdout, /^ {2}○ off /m);
+  assert.match(result.stdout, /switch with \/exo:savings off/);
+  assert.match(result.stdout, /estimated over right-sized sessions: 1 of 1 here, 2 of 2 in all projects/);
+  assert.match(result.stdout, /read guard, measured: ≈ 0 tokens withheld · 0 reads capped · 0 re-reads refused/);
 });
 
 test('an unknown command fails with usage', async () => {
@@ -163,7 +179,7 @@ test('report keeps the default ratios when config.json sets only readGuard', asy
   await fs.writeFile(path.join(directory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /"lines":0\.54/);
+  assert.match(result.stdout, /r = lines 0\.54 · tokens 0\.22/);
 });
 
 test('record and statusline stand down when EXO_SAVINGS=off', async () => {
@@ -184,6 +200,10 @@ test('off and on write enabled into config.json and status reports it', async ()
   assert.equal((await runWithStdin(['off'], '', env)).stdout, 'exo savings off\n');
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
+  const panel = (await runWithStdin(['report'], '', env)).stdout;
+  assert.match(panel, /○ off {2}│/);
+  assert.match(panel, /^ {2}● off /m);
+  assert.match(panel, /switch with \/exo:savings on/);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);
@@ -194,5 +214,5 @@ test('report names the source of the ratios', async () => {
   const directory = await fixture();
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /Estimate: .*ratios\.mjs: ponytail agentic benchmark/);
+  assert.match(result.stdout, /r source \(ratios\.mjs\): ponytail agentic benchmark/);
 });
