@@ -6,7 +6,9 @@ Source of the Claude Code plugin `exo`. `README.md` explains the layout; this fi
 - After every push that changes this plugin, reinstall it so the installed copy matches the push:
   `claude plugin marketplace update blauwtje`, then `claude plugin uninstall exo@blauwtje` and
   `claude plugin install exo@blauwtje -y`, and tell the user to restart Claude Code.
-  `claude plugin update` is a no-op here: it compares only the manifest version, which stays `0.1.0`.
+- Any change to the tree runs `npm run bump` before the push: the marketplace installs the whole
+  repository, so the `plugin version` check fails while the version matches `origin/main`. It compares
+  only the manifest version, so an unbumped release installs as a no-op.
 - Skills are namespaced `exo:<name>` when invoked; a bare name inside a skill or agent body means that namespaced skill.
 - `verify/budgets.mjs` names the skills the verifier checks; a skill not listed there is not verified, so add it there when it reaches the shape `skills-tool` describes.
 - The session hook pins `"shell": "bash"` in `hooks.json`: without it, a Windows host without Git Bash

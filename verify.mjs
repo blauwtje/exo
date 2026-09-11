@@ -21,6 +21,7 @@ import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
 import { checkSkillScripts } from './verify/checks/skill-scripts.mjs';
 import { checkSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkGitWhitespace } from './verify/checks/git-whitespace.mjs';
+import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { runSelfTest } from './verify/self-test.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -60,6 +61,7 @@ checkScriptSyntax(report, repository, options);
 checkSkillScripts(report, repository, options);
 checkSkillScriptBehavior(report, repository, options);
 checkGitWhitespace(report, repository, options);
+checkPluginVersion(report, repository, options);
 
 if (values['self-test']) runSelfTest(report, repository);
 
