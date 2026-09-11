@@ -19,6 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
+import { writeCellUsage } from './cell-usage.mjs';
 import { ARMS, CALIBRATION_TASKS, FIXTURE, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
@@ -200,6 +201,7 @@ async function runCell(cell, fixtureDirectory) {
   try {
     const outcome = await runClaude(claudeArguments(arm, task, model), workdir, cellDirectory);
     const result = parseResult(cellDirectory);
+    if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
       task: task.id, tier: task.tier, arm, run, model: MODELS[model],
       exitCode: outcome.exitCode, timedOut: outcome.timedOut, wallMs: outcome.wallMs,
