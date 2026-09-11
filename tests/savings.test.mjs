@@ -162,7 +162,7 @@ test('a session without product code saves minus its overhead, and a loss shows 
   const uncovered = bookedRow({ project: directory, lines: { added: 0, removed: 0, processAdded: 20 }, tokens: { weightedInput: 0, output: 0 }, guard },
     { cache1h: 5000 }, 30000);
   await writeLedger(directory, { s1: covered, s2: uncovered });
-  // lines 100 - 20; tokens 8000 / 4 - 2 × 5000; cost $0.25 - 5000 × $2 per million; time 200 s - 60 s
+  // lines 100 - 20; tokens 8000 / 4 - 2 × 5000; cost $0.25 - 5000 × $2 per million; time 200 s - 60 s - 0.2 s of processing
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 80 LOC · -8.0k tok · $0.24 · 2m');
   await writeLedger(directory, { s2: uncovered });
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ -20 LOC · -10k tok · -$0.01 · -1m');
@@ -174,9 +174,9 @@ test('a session without product code saves minus its overhead, and a loss shows 
 });
 
 test("overhead is priced per transcript at that transcript's model, and an unlisted model leaves the cost unknown", async () => {
-  const listingLine = `- exo:${'x'.repeat(7994)}`;
+  const listingLine = `- exo:${'x'.repeat(8080)}`;
   const bodyPrefix = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n`;
-  const skillBody = bodyPrefix + 'y'.repeat(3200 - bodyPrefix.length);
+  const skillBody = bodyPrefix + 'y'.repeat(8086 - bodyPrefix.length);
   const outputs = [];
   for (const mainModel of ['claude-fable-5-1', 'claude-unlisted-9']) {
     const main = [
@@ -194,9 +194,9 @@ test("overhead is priced per transcript at that transcript's model, and an unlis
     await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
     outputs.push((await runWithStdin(['statusline'], '{}', env)).stdout);
   }
-  // Fable: 2000 tokens written at $20 and read at $0.25; Sonnet: 800 written at $2.50 and read at $0.20, per million.
-  // Tokens: 2 × 2000 + 0.1 × 2000 + 1.25 × 800 + 0.1 × 800 = 5280.
-  assert.deepEqual(outputs, ['saved ≈ 0 LOC · -5.3k tok · -$0.04 · 0m', 'saved ≈ 0 LOC · -5.3k tok · - · 0m']);
+  // 8,086 characters are 2,000 tokens each. Fable: written at $20 and read at $0.25; Sonnet: written at $2.50 and read
+  // at $0.20, per million. Tokens: 2 × 2000 + 0.1 × 2000 + 1.25 × 2000 + 0.1 × 2000 = 6900.
+  assert.deepEqual(outputs, ['saved ≈ 0 LOC · -6.9k tok · -$0.05 · 0m', 'saved ≈ 0 LOC · -6.9k tok · - · 0m']);
 });
 
 test('lines written into exo process files come off the lines saved', async () => {

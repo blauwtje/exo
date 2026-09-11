@@ -21,7 +21,10 @@ const LISTING = '- exo:debug: Prove the cause.\n- dataviz: Charts.';
 const AGENT_LINES = ['- exo:codebase-scout: Locate files.', '- claude: Catch-all.'];
 const SESSION_CONTEXT = '\n# Using exo\n\nEvery exo skill is invoked as exo:<name>.';
 const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n\n# Debug\n\nProve the cause first.`;
-const INJECTED = (LISTING.split('\n')[0].length + AGENT_LINES[0].length + SESSION_CONTEXT.length + SKILL_BODY.length) / 4;
+// The calibrated rates overhead.mjs books at: characters per token of exo text, and milliseconds per exo token a call writes.
+const CHARS_PER_TOKEN = 4.043;
+const MS_PER_WRITTEN_TOKEN = 0.0368;
+const INJECTED = (LISTING.split('\n')[0].length + AGENT_LINES[0].length + SESSION_CONTEXT.length + SKILL_BODY.length) / CHARS_PER_TOKEN;
 const REFUSAL = 'exo read guard: /repo/big.ts has 600 lines and an unbounded read is capped at 400; locate the range first.';
 const TEXT = [{ type: 'text', text: 'done' }];
 
@@ -116,7 +119,8 @@ test('a call that only loads exo skills counts whole, less its own booking of th
   // msg_skill's usage weighs 5 + 2 × 500 + 10 = 1015; its write of the exo text is booked once, with the transcript.
   near(totals.tokens, 1015 + INJECTED * 0.2);
   near(totals.cost, (5 * 10 + 500 * 20 + 10 * 50 + INJECTED * 2 * 0.25) / 1e6);
-  assert.equal(totals.time, 340 + 5000);
+  // The exo hooks, the skill call, and the time the API takes to process the exo text msg_skill writes.
+  near(totals.time, 340 + 5000 + INJECTED * MS_PER_WRITTEN_TOKEN);
 });
 
 test('text a warm cache served is booked as read, not written', async () => {
@@ -140,7 +144,7 @@ test('a compaction empties the exo text in context', async () => {
 
 test("an exo agent's system prompt is booked from its meta file and priced at that transcript's model", async () => {
   const agentFile = await fs.readFile(path.join(REPOSITORY_ROOT, 'agents', 'codebase-scout.md'), 'utf8');
-  const promptTokens = agentFile.replace(/^---\n[\s\S]*?\n---\n/, '').length / 4;
+  const promptTokens = agentFile.replace(/^---\n[\s\S]*?\n---\n/, '').length / CHARS_PER_TOKEN;
   const agentLines = (prefix) => [
     call(`${prefix}_1`, '2026-09-11T10:00:03.000Z', TEXT, { model: 'claude-sonnet-5', counts: { cache5m: 20000 } }),
     call(`${prefix}_2`, '2026-09-11T10:00:04.000Z', TEXT, { model: 'claude-sonnet-5', counts: { cache5m: 20000 } })
@@ -182,12 +186,13 @@ test('a refused Read re-issued at once counts whole, and the withheld tokens com
   assert.deepEqual(session.overhead.refusals.toolu_1, { transcript: file, calls: 2, entered: 'cache1h' });
   const reissue = session.overhead.calls.msg_2;
   assert.deepEqual([reissue.mixed, reissue.start, reissue.end], [false, '2026-09-11T10:00:02.000Z', '2026-09-11T10:00:05.000Z']);
-  const refusalTokens = REFUSAL.length / 4;
+  const refusalTokens = REFUSAL.length / CHARS_PER_TOKEN;
   const totals = overheadTotals(session);
   // The re-issue weighs 2 + 0.1 × 3000 + 2 × 500 + 40 = 1342, less its write of the refusal text; the text is
   // written once and read once; the 1,000 withheld tokens would have been written once and read once.
   near(totals.tokens, 1342 - refusalTokens * 2 + refusalTokens * 2.1 - 1000 * 2.1);
-  assert.equal(totals.time, 120 + 3000);
+  // The guard runs and the round trip, plus processing the refusal text, less processing the withheld file.
+  near(totals.time, 120 + 3000 + (refusalTokens - 1000) * MS_PER_WRITTEN_TOKEN);
 });
 
 test('a transcript booked by an older version is read again from the start, to the same result', async () => {

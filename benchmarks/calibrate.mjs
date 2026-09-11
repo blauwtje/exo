@@ -5,7 +5,8 @@
 // overhead alone: the measured difference of the arm means, with its
 // standard error, sits beside the mean of what overhead.mjs books from each
 // exo cell's own transcript, read again with the guard entries of that cell's
-// ledger.
+// ledger. Time is the cell's whole process (checks.json wallMs), because
+// duration_ms starts after the SessionStart hook the booking counts.
 //
 //   node benchmarks/calibrate.mjs benchmarks/runs/<dir> [--results <file>]
 
@@ -21,7 +22,7 @@ import { meanAndSd } from './statistics.mjs';
 const FORMAT = {
   tokens: (value) => value.toFixed(0),
   cost: (value) => `${value < 0 ? '-' : ''}$${Math.abs(value).toFixed(4)}`,
-  time: (value) => `${(value / 1000).toFixed(1)}s`
+  time: (value) => `${value.toFixed(0)} ms`
 };
 
 function calibrationCells(directory) {
@@ -31,14 +32,14 @@ function calibrationCells(directory) {
     const cellDirectory = path.join(directory, path.dirname(file));
     const checks = readJson(path.join(cellDirectory, 'checks.json'), null);
     const result = readJson(path.join(cellDirectory, 'result.json'), null);
-    if (checks?.tier === 'calibration' && result !== null) cells.push({ arm: checks.arm, cellDirectory, result });
+    if (checks?.tier === 'calibration' && result !== null) cells.push({ arm: checks.arm, cellDirectory, checks, result });
   }
   return cells;
 }
 
-function measured(result) {
-  const counts = sumCounts([usageCounts(result.usage ?? {})]);
-  return { tokens: counts.weightedInput + counts.output, cost: result.total_cost_usd, time: result.duration_ms };
+function measured(cell) {
+  const counts = sumCounts([usageCounts(cell.result.usage ?? {})]);
+  return { tokens: counts.weightedInput + counts.output, cost: cell.result.total_cost_usd, time: cell.checks.wallMs };
 }
 
 function booked(cell) {
@@ -73,8 +74,8 @@ function main() {
   const baselineCells = cells.filter((cell) => cell.arm === 'baseline');
   const exoCells = cells.filter((cell) => cell.arm === 'exo');
   if (baselineCells.length < 2 || exoCells.length < 2) throw new Error('needs at least two calibration cells in both the baseline and the exo arm');
-  const baseline = baselineCells.map((cell) => measured(cell.result));
-  const exo = exoCells.map((cell) => measured(cell.result));
+  const baseline = baselineCells.map(measured);
+  const exo = exoCells.map(measured);
   const bookings = exoCells.map(booked);
   const wholeCalls = bookings.reduce((sum, booking) => sum + booking.wholeCalls, 0);
   const lines = [

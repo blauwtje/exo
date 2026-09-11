@@ -4,8 +4,9 @@
 // and read by every later call in that transcript. An API call whose only tool
 // calls load exo skills or re-issue a Read the read guard refused counts
 // whole, and the tokens a refusal kept out of context come back as a credit.
-// Exo's hook runs count their duration; the read guard's leave no transcript
-// entry, so the guard times itself into the ledger.
+// Exo's hook runs count their duration, and so does the time the API takes to
+// process the exo text a call writes; the read guard's hook runs leave no
+// transcript entry, so the guard times itself into the ledger.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,7 +19,12 @@ import { sumCounts, usageCounts } from './token-weights.mjs';
 export const OVERHEAD_VERSION = 2;
 
 const PLUGIN_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const CHARS_PER_TOKEN = 4;
+// Measured by benchmarks/results/2026-09-11-calibration.md on Haiku 4.5: the
+// 10,162 characters of exo text an exo cell adds made its first call write
+// 2,513.7 ± 0.7 tokens more than a baseline cell's, and its first token came
+// 92.5 ms later. File content withheld by the read guard is unmeasured at 4 bytes.
+const CHARS_PER_TOKEN = 4.043;
+const MS_PER_WRITTEN_TOKEN = 0.0368;
 const BYTES_PER_TOKEN = 4;
 const SKILL_PREFIX = 'exo:';
 const LISTING_LINE_PREFIX = `- ${SKILL_PREFIX}`;
@@ -224,6 +230,10 @@ export function bookOverhead(session, entry, file) {
   if (typeof entry.timestamp === 'string') transcript.lastTimestamp = entry.timestamp;
 }
 
+function processingMs(counts) {
+  return (counts.cache5m + counts.cache1h) * MS_PER_WRITTEN_TOKEN;
+}
+
 function countsLess(usage, booked) {
   const counts = emptyCounts();
   for (const key of Object.keys(counts)) counts[key] = (usage[key] ?? 0) - (booked[key] ?? 0);
@@ -236,7 +246,11 @@ export function overheadTotals(session) {
   const overhead = session.overhead?.version === OVERHEAD_VERSION ? session.overhead : emptyOverhead();
   const guard = session.guard ?? {};
   let time = overhead.hookMs + (guard.hookMs ?? 0);
-  const priced = Object.values(overhead.transcripts).map((transcript) => ({ counts: transcript.counts, model: transcript.model }));
+  const priced = [];
+  for (const transcript of Object.values(overhead.transcripts)) {
+    priced.push({ counts: transcript.counts, model: transcript.model });
+    time += processingMs(transcript.counts);
+  }
   for (const [id, call] of Object.entries(overhead.calls)) {
     if (call.mixed) continue;
     // The call's read and write of the exo text are booked with its transcript already.
@@ -252,6 +266,7 @@ export function overheadTotals(session) {
     credit[refusal.entered] -= tokens;
     credit.cacheRead -= tokens * (refusal.calls - 1);
     priced.push({ counts: credit, model: overhead.transcripts[refusal.transcript]?.model ?? null });
+    time += processingMs(credit);
   }
   let tokens = 0;
   let cost = 0;

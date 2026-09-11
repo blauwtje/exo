@@ -20,13 +20,14 @@ function usage(cache1h) {
 test('the booked overhead of the exo cells is compared with the measured difference of the arms', async () => {
   const root = await fixture();
   const configDirectory = await fixture();
-  const listing = `- exo:${'x'.repeat(394)}`;
-  for (const [arm, cache1h] of [['baseline', 5000], ['exo', 5100]]) {
+  const listing = `- exo:${'x'.repeat(4037)}`;
+  const wallMs = { baseline: [3000, 3000], exo: [3036, 3037] };
+  for (const [arm, cache1h] of [['baseline', 5000], ['exo', 6000]]) {
     for (const run of [1, 2]) {
       const sessionId = `${arm}-${run}`;
       const cell = path.join(root, 'calib-reply', arm, String(run));
       await fs.mkdir(cell, { recursive: true });
-      await fs.writeFile(path.join(cell, 'checks.json'), JSON.stringify({ tier: 'calibration', arm }));
+      await fs.writeFile(path.join(cell, 'checks.json'), JSON.stringify({ tier: 'calibration', arm, wallMs: wallMs[arm][run - 1] }));
       await fs.writeFile(path.join(cell, 'result.json'), JSON.stringify({ session_id: sessionId, usage: usage(cache1h), total_cost_usd: 0.01, duration_ms: 3000 }));
       const transcript = path.join(configDirectory, 'projects', '-tmp-cell', `${sessionId}.jsonl`);
       await fs.mkdir(path.dirname(transcript), { recursive: true });
@@ -43,8 +44,9 @@ test('the booked overhead of the exo cells is compared with the measured differe
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) }));
   });
   assert.equal(result.code, 0, result.stderr);
-  // 100 listing tokens written at the 1-hour weight: 200 booked, and 2 × 100 more cache writes measured.
-  assert.match(result.stdout, /^\| tokens \| 200 ± 0 \| 200 \| 0 \| yes \|$/m);
-  assert.match(result.stdout, /^\| time \| 0\.0s ± 0\.0s \| 0\.0s \| 0\.0s \| yes \|$/m);
+  // 4,043 listing characters are 1,000 tokens, written at the 1-hour weight: 2,000 booked, and 2 × 1,000 more cache writes measured.
+  assert.match(result.stdout, /^\| tokens \| 2000 ± 0 \| 2000 \| 0 \| yes \|$/m);
+  // 1,000 written tokens at 0.0368 ms each against a 36.5 ms wall-time difference.
+  assert.match(result.stdout, /^\| time \| 37 ms ± 1 ms \| 37 ms \| 0 ms \| yes \|$/m);
   assert.match(result.stdout, /^Calibration: 2 exo and 2 baseline cells; calls counted whole: 0\.$/m);
 });
