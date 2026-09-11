@@ -3,6 +3,7 @@
 Source of the Claude Code plugin `exo`. `README.md` explains the layout; this file only names what a session here gets wrong without it.
 
 - Every skill or agent edit loads the `skills-tool` skill first; `npm run check` is the gate before any commit.
+- `npm test` prints Node's spec reporter, which marks a failure `✖`, not `not ok`: a grep of its log for `not ok` finds nothing while tests fail.
 - A session that changes this plugin releases it before its final reply, without asking, because the
   user wants every change in the installed copy: once `npm run check` passes, `npm run bump`, commit on
   `main` in Conventional Commits, push, then `claude plugin marketplace update blauwtje`,
