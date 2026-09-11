@@ -3,3 +3,5 @@
 node_modules/
 .DS_Store
 docs/
+benchmarks/fixtures/
+benchmarks/runs/
