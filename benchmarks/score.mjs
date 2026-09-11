@@ -2,7 +2,8 @@
 // benchmarks/score.mjs
 // Rescores a runs directory offline and prints one table; never reads a
 // transcript, never calls claude. Tokens are weighted exactly as the savings
-// counter weights them (token-weights.mjs); cost is total_cost_usd and time
+// counter weights them (token-weights.mjs) and summed over every transcript of
+// a cell, as its usage.json records them; cost is total_cost_usd and time
 // duration_ms as `claude -p --output-format json` reports them. The
 // right-sizing column reads each cell's own ledger.
 //
@@ -13,7 +14,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { readJson } from '../skills/savings/scripts/ledger.mjs';
-import { sumCounts, usageCounts } from '../skills/savings/scripts/token-weights.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -27,10 +27,10 @@ const LIMITATIONS = [
   'Correctness on template tasks is a marker (a new route decorator, or a new .tsx file) plus python3 -m py_compile; TSX is not type-checked and no test suite runs.',
   'A cell that fails its correctness gate or times out is excluded from the LOC, tokens, cost and time means and counted in the correct column.',
   'Safe means the one adversarial input set in benchmarks/safe/<task>/check.mjs was refused; it is not a fuzzing guarantee.',
-  'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, from the usage block of the result JSON; cost is Claude Code\'s client-side list-price estimate; time is duration_ms.',
+  'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell, main thread and subagents, from its usage.json; cost is Claude Code\'s client-side list-price estimate over every model; time is duration_ms.',
   'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.',
   'A published ratio is 1 − E/B for arm means E and B, and its spread is its standard error √(sd_E²/n_E + (E/B)²·sd_B²/n_B) / B; a negative ratio means the exo arm used more than the baseline.',
-  'Right-sizing counts the template cells whose own ledger shows exo:right-sizing fired.'
+  'Right-sizing counts the template cells whose own ledger shows exo:right-sizing fired; the line per arm counts the template cells whose session context carried the ladder, and the cost per correct cell per model.'
 ];
 
 function parseArguments(argv) {
@@ -55,16 +55,17 @@ function readCells(directory) {
     const checks = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'checks.json'), 'utf8'));
     const resultFile = path.join(cellDirectory, 'result.json');
     const result = fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')) : null;
+    const usage = readJson(path.join(cellDirectory, 'usage.json'), null);
     const ledger = readJson(path.join(cellDirectory, 'ledger', 'sessions.json'), {});
     const rightSized = Object.values(ledger).some((session) => session.rightSized === true);
-    const [task, arm] = path.dirname(file).split(path.sep);
-    cells.push({ task, arm, checks, result, rightSized });
+    const [task, arm, run] = path.dirname(file).split(path.sep);
+    cells.push({ task, arm, run, checks, result, usage, rightSized });
   }
   return cells;
 }
 
 function cellMetrics(cell) {
-  const counts = sumCounts([usageCounts(cell.result.usage ?? {})]);
+  const counts = cell.usage.counts;
   return {
     loc: cell.checks.loc.added,
     tokens: counts.weightedInput + counts.output,
@@ -77,8 +78,29 @@ function included(cell) {
   return cell.checks.tier === 'template' && cell.checks.correct === true && !cell.checks.timedOut && cell.result !== null;
 }
 
+function costByModel(cells) {
+  const totals = {};
+  for (const cell of cells) {
+    for (const [model, usage] of Object.entries(cell.result.modelUsage ?? {})) totals[model] = (totals[model] ?? 0) + usage.costUSD;
+  }
+  return Object.fromEntries(Object.entries(totals).map(([model, total]) => [model, total / cells.length]));
+}
+
+function subagentCells(cells) {
+  const counts = {};
+  for (const cell of cells) {
+    for (const type of new Set(cell.usage?.subagents ?? [])) counts[type] = (counts[type] ?? 0) + 1;
+  }
+  return counts;
+}
+
+// Tokens are read from usage.json only, so a cell without one stops the score
+// rather than falling back to the main thread's usage and mixing two bases.
 function summarizeArm(cells) {
-  const measured = cells.filter(included).map(cellMetrics);
+  const measuredCells = cells.filter(included);
+  const unmeasured = measuredCells.find((cell) => cell.usage === null);
+  if (unmeasured) throw new Error(`${unmeasured.task}/${unmeasured.arm}/${unmeasured.run} has no usage.json; run node benchmarks/backfill-usage.mjs on the runs directory`);
+  const measured = measuredCells.map(cellMetrics);
   const summary = {};
   for (const metric of METRICS) summary[metric] = meanAndSd(measured.map((row) => row[metric]));
   const template = cells.filter((cell) => cell.checks.tier === 'template');
@@ -86,6 +108,9 @@ function summarizeArm(cells) {
   summary.correct = { pass: template.filter((cell) => cell.checks.correct === true).length, total: template.length };
   summary.safe = { pass: safe.filter((cell) => cell.checks.safe === true).length, total: safe.length };
   summary.rightSized = { pass: template.filter((cell) => cell.rightSized).length, total: template.length };
+  summary.costByModel = costByModel(measuredCells);
+  summary.subagents = subagentCells(template);
+  summary.ladder = { pass: template.filter((cell) => cell.usage?.ladder === true).length, total: template.length };
   return summary;
 }
 
@@ -138,6 +163,12 @@ function tableLines(meta, summaries) {
   return lines;
 }
 
+function detailLine(arm, summary) {
+  const models = Object.entries(summary.costByModel).map(([model, cost]) => `${model} $${cost.toFixed(3)}`).join(', ') || '-';
+  const subagents = Object.entries(summary.subagents).map(([type, count]) => `${type} ${count}/${summary.correct.total}`).join(', ') || 'none';
+  return `- ${arm}: cost per correct cell ${models}; subagents ${subagents}; ladder in context ${rate(summary.ladder)}`;
+}
+
 function roundedCent(value) {
   return Math.round(value * 100) / 100;
 }
@@ -176,7 +207,8 @@ function main() {
   for (const arm of meta.arms) byArm[arm] = cells.filter((cell) => cell.arm === arm);
   const summaries = {};
   for (const [arm, armCells] of Object.entries(byArm)) summaries[arm] = summarizeArm(armCells);
-  const lines = tableLines(meta, summaries);
+  const details = Object.entries(summaries).map(([arm, summary]) => detailLine(arm, summary));
+  const lines = [...tableLines(meta, summaries), '', ...details];
   process.stdout.write(`${lines.join('\n')}\n`);
   if (!options.publish) return;
   const resultsFile = options.results ?? path.join(ROOT, 'benchmarks', 'results', `${meta.date}.md`);
