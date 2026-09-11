@@ -81,7 +81,7 @@ test('record sums usage once per message id, weights the cache, and counts patch
   assert.equal(session.model, 'claude-fable-5-1');
   assert.equal(session.started, '2026-09-11T10:00:00.000Z');
   assert.equal(session.updated, '2026-09-11T10:03:00.000Z');
-  assert.deepEqual(session.guard, { capped: 0, duplicates: 0, bytesWithheld: 0 });
+  assert.deepEqual(session.guard, { capped: 0, duplicates: 0, hookMs: 0, refusals: {} });
 });
 
 test('record is idempotent across runs and appended lines are picked up', async () => {

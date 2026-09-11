@@ -1,6 +1,7 @@
 // The read guard refuses an unbounded read of a large file and a second read
-// of a range unchanged since the first, books the bytes withheld into the
-// savings ledger, and stands down only when config.json says readGuard: false.
+// of a range unchanged since the first, books each refusal under its tool
+// call with the bytes it kept out of context, books its own run time, and
+// stands down only when config.json says readGuard: false.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -35,8 +36,8 @@ async function guardFixture(config = null) {
   return { env: { CLAUDE_CONFIG_DIR: configDirectory }, configDirectory, file };
 }
 
-function readInput(file, range = {}) {
-  return { session_id: 's1', tool_name: 'Read', tool_input: { file_path: file, ...range } };
+function readInput(file, range = {}, toolUseId = 'toolu_1') {
+  return { session_id: 's1', tool_name: 'Read', tool_use_id: toolUseId, tool_input: { file_path: file, ...range } };
 }
 
 async function ledger(configDirectory) {
@@ -47,7 +48,7 @@ function decision(result) {
   return result.stdout === '' ? null : JSON.parse(result.stdout).hookSpecificOutput;
 }
 
-test('refuses an unbounded read of a file over 400 lines and books the bytes', async () => {
+test('refuses an unbounded read of a file over 400 lines and books the whole file under the tool call', async () => {
   const { env, configDirectory, file } = await guardFixture();
   const result = await runGuard([], readInput(file), env);
   assert.equal(result.code, 0, result.stderr);
@@ -57,20 +58,47 @@ test('refuses an unbounded read of a file over 400 lines and books the bytes', a
   assert.match(verdict.permissionDecisionReason, /has 600 lines and an unbounded read is capped at 400/);
   const session = (await ledger(configDirectory)).s1;
   assert.equal(session.guard.capped, 1);
-  assert.ok(session.guard.bytesWithheld > 1500, `bytesWithheld ${session.guard.bytesWithheld}`);
+  const wholeFile = Buffer.byteLength(await fs.readFile(file, 'utf8'));
+  assert.deepEqual(session.guard.refusals.toolu_1, { kind: 'capped', bytesWithheld: wholeFile, reader: 'main', filePath: file, open: true });
 });
 
-test('a booked ranged read is refused on an unchanged re-read, and a change lets it through', async () => {
+test('a later read of a capped file by the same reader gives its bytes back, until a reset closes the refusal', async () => {
+  const { env, configDirectory, file } = await guardFixture();
+  await runGuard([], readInput(file), env);
+  const wholeFile = Buffer.byteLength(await fs.readFile(file, 'utf8'));
+  const ranged = readInput(file, { offset: 1, limit: 50 }, 'toolu_2');
+  await runGuard(['book'], ranged, env);
+  const rangeBytes = Buffer.byteLength(Array.from({ length: 50 }, (_, index) => `line ${index + 1}`).join('\n'));
+  assert.equal((await ledger(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, wholeFile - rangeBytes);
+  await runGuard(['book'], { ...ranged, agent_id: 'a1' }, env);
+  assert.equal((await ledger(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, wholeFile - rangeBytes);
+  await runGuard(['reset'], { session_id: 's1', source: 'compact' }, env);
+  await runGuard(['book'], readInput(file, { offset: 51, limit: 50 }, 'toolu_3'), env);
+  const refusal = (await ledger(configDirectory)).s1.guard.refusals.toolu_1;
+  assert.deepEqual([refusal.open, refusal.bytesWithheld], [false, wholeFile - rangeBytes]);
+});
+
+test('every run that reaches the ledger books its own time, an allowed read included', async () => {
+  const { env, configDirectory, file } = await guardFixture();
+  assert.equal(decision(await runGuard([], readInput(file, { offset: 1, limit: 20 }), env)), null);
+  const afterPre = (await ledger(configDirectory)).s1.guard.hookMs;
+  assert.ok(afterPre > 0, `hookMs ${afterPre}`);
+  await runGuard(['book'], readInput(file, { offset: 1, limit: 20 }), env);
+  assert.ok((await ledger(configDirectory)).s1.guard.hookMs > afterPre);
+});
+
+test('a booked ranged read is refused on an unchanged re-read with the earlier bytes, and a change lets it through', async () => {
   const { env, configDirectory, file } = await guardFixture();
   const ranged = readInput(file, { offset: 100, limit: 50 });
   assert.equal(decision(await runGuard([], ranged, env)), null);
   assert.equal((await runGuard(['book'], ranged, env)).stdout, '');
-  const repeat = decision(await runGuard([], ranged, env));
+  const repeat = decision(await runGuard([], readInput(file, { offset: 100, limit: 50 }, 'toolu_9'), env));
   assert.equal(repeat.permissionDecision, 'deny');
   assert.match(repeat.permissionDecisionReason, /is unchanged since your read at/);
   let session = (await ledger(configDirectory)).s1;
   assert.equal(session.guard.duplicates, 1);
-  assert.ok(session.guard.bytesWithheld > 400, `bytesWithheld ${session.guard.bytesWithheld}`);
+  assert.equal(session.guard.refusals.toolu_9.kind, 'duplicate');
+  assert.equal(session.guard.refusals.toolu_9.bytesWithheld, session.reads[Object.keys(session.reads)[0]].bytes);
 
   await fs.appendFile(file, '\nline 601');
   assert.equal(decision(await runGuard([], ranged, env)), null);

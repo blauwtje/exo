@@ -2,9 +2,11 @@
 // Guard on Read: in PreToolUse it refuses an unbounded read of a large file so
 // the model reads a located range instead, and refuses a second read of a
 // range unchanged since the first in this context window; in PostToolUse it
-// books the read that succeeded. Bytes withheld go into the ledger as a
-// measured saving. `readGuard: false` in the savings config.json switches the
-// guard alone off; EXO_SAVINGS=off or `enabled: false` switches everything off.
+// books the read that succeeded. Each refusal is booked under its tool call
+// with the bytes it kept out of context, and each run books its own time,
+// because a hook run on Read leaves no transcript entry. `readGuard: false`
+// in the savings config.json switches the guard alone off; EXO_SAVINGS=off or
+// `enabled: false` switches everything off.
 //
 //   node read-guard.mjs         PreToolUse hook on Read: stdin is the hook JSON
 //   node read-guard.mjs book    PostToolUse hook on Read: stdin is the hook JSON
@@ -50,8 +52,8 @@ function fileLines(filePath) {
   return fs.readFileSync(filePath, 'utf8').replace(/\n$/, '').split('\n');
 }
 
-// The file, its stat and the ledger key a hook call is about, or null when
-// the guard has nothing to say about this call.
+// The file, its stat, its reader and the ledger key a hook call is about, or
+// null when the guard has nothing to say about this call.
 function readTarget(hookInput) {
   if (!guardEnabled()) return null;
   if (typeof hookInput.session_id !== 'string') return null;
@@ -69,31 +71,59 @@ function readTarget(hookInput) {
   // agent's reads are tracked apart from the main thread's.
   const reader = typeof hookInput.agent_id === 'string' ? hookInput.agent_id : 'main';
   const key = `${reader}:${filePath}:${input.offset ?? 0}:${input.limit ?? 0}`;
-  return { input, filePath, stat, key };
+  return { input, filePath, stat, key, reader };
 }
 
+// performance.now() counts from the start of this Node process, so the run's
+// bootstrap, module loading and work are in; the spawn before it, the ledger
+// write after it and the exit are not.
+function bookRunTime(guard) {
+  guard.hookMs = (guard.hookMs ?? 0) + performance.now();
+}
+
+// A duplicate would have returned the earlier read's bytes again; a capped
+// read would have returned the whole file.
+function refusalOf(session, target) {
+  const { input, filePath, stat, key } = target;
+  const previous = session.reads[key];
+  if (previous && previous.mtimeMs === stat.mtimeMs && previous.size === stat.size) {
+    session.guard.duplicates += 1;
+    return {
+      kind: 'duplicate',
+      bytesWithheld: previous.bytes,
+      reason: `exo read guard: ${filePath} (${describe(input)}) is unchanged since your read at ${previous.at} in this context window; use that copy, or pass a different offset and limit to read it again.`
+    };
+  }
+  const lines = fileLines(filePath);
+  const unbounded = input.offset === undefined && input.limit === undefined;
+  if (!unbounded || lines.length <= UNBOUNDED_READ_CAP) return null;
+  session.guard.capped += 1;
+  return {
+    kind: 'capped',
+    bytesWithheld: Buffer.byteLength(lines.join('\n')),
+    reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${UNBOUNDED_READ_CAP}; locate the range first, then read it with offset and limit, or pass limit explicitly to read more.`
+  };
+}
+
+// An allowed read writes the ledger too, to book the run's time: that write
+// measured 0.17 ms against a 25 ms run.
 function guardRead(hookInput) {
   const target = readTarget(hookInput);
   if (target === null) return;
-  const { input, filePath, stat, key } = target;
   let reason = null;
   updateSession(hookInput.session_id, (session) => {
-    const previous = session.reads[key];
-    if (previous && previous.mtimeMs === stat.mtimeMs && previous.size === stat.size) {
-      session.guard.duplicates += 1;
-      session.guard.bytesWithheld += previous.bytes;
-      reason = `exo read guard: ${filePath} (${describe(input)}) is unchanged since your read at ${previous.at} in this context window; use that copy, or pass a different offset and limit to read it again.`;
-      return true;
+    const refusal = refusalOf(session, target);
+    if (refusal !== null) {
+      reason = refusal.reason;
+      if (typeof hookInput.tool_use_id === 'string') {
+        session.guard.refusals ??= {};
+        session.guard.refusals[hookInput.tool_use_id] = {
+          kind: refusal.kind, bytesWithheld: refusal.bytesWithheld, reader: target.reader, filePath: target.filePath, open: true
+        };
+      }
     }
-    const lines = fileLines(filePath);
-    const unbounded = input.offset === undefined && input.limit === undefined;
-    if (unbounded && lines.length > UNBOUNDED_READ_CAP) {
-      session.guard.capped += 1;
-      session.guard.bytesWithheld += Buffer.byteLength(lines.slice(UNBOUNDED_READ_CAP).join('\n'));
-      reason = `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${UNBOUNDED_READ_CAP}; locate the range first, then read it with offset and limit, or pass limit explicitly to read more.`;
-      return true;
-    }
-    return false;
+    bookRunTime(session.guard);
+    return true;
   });
   if (reason !== null) deny(reason);
 }
@@ -103,25 +133,30 @@ function guardRead(hookInput) {
 function book(hookInput) {
   const target = readTarget(hookInput);
   if (target === null) return;
-  const { input, filePath, stat, key } = target;
+  const { input, filePath, stat, key, reader } = target;
   const lines = fileLines(filePath);
   const { start, end } = rangeOf(input, lines.length);
+  const bytes = Buffer.byteLength(lines.slice(start, end).join('\n'));
   updateSession(hookInput.session_id, (session) => {
-    session.reads[key] = {
-      mtimeMs: stat.mtimeMs,
-      size: stat.size,
-      bytes: Buffer.byteLength(lines.slice(start, end).join('\n')),
-      at: new Date().toISOString()
-    };
+    session.reads[key] = { mtimeMs: stat.mtimeMs, size: stat.size, bytes, at: new Date().toISOString() };
+    // The same reader reading a capped file again, in the same context window,
+    // takes back part of what the refusal kept out.
+    for (const refusal of Object.values(session.guard.refusals ?? {})) {
+      const sameFile = refusal.reader === reader && refusal.filePath === filePath;
+      if (refusal.open && refusal.kind === 'capped' && sameFile) refusal.bytesWithheld -= bytes;
+    }
+    bookRunTime(session.guard);
     return true;
   });
 }
 
+// A clear or a compaction ends the context window every open refusal was about.
 function reset(hookInput) {
   if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
   updateSession(hookInput.session_id, (session) => {
     session.reads = {};
+    for (const refusal of Object.values(session.guard.refusals ?? {})) refusal.open = false;
     return true;
   });
 }
