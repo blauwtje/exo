@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
+import { bookOverhead, emptyOverhead, overheadTotals } from './overhead.mjs';
 import PRICES from './prices.mjs';
 import MEASURED from './ratios.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
@@ -36,9 +37,7 @@ const PANEL_ROWS = {
   lines: 'lines',
   tokens: 'tokens',
   time: 'time',
-  trend: 'last 30 days',
-  sessions: 'right-sized sessions',
-  guard: 'read guard, measured'
+  trend: 'last 30 days'
 };
 const PROJECT_NAME_MAX = 28;
 const RIGHT_SIZING_SKILL = 'exo:right-sizing';
@@ -110,7 +109,8 @@ function patchedLines(toolResult) {
   return counts;
 }
 
-function applyEntry(session, entry) {
+function applyEntry(session, entry, file, mainTranscript) {
+  bookOverhead(session, entry, file, mainTranscript);
   if (typeof entry.timestamp === 'string') {
     if (session.started === null || entry.timestamp < session.started) session.started = entry.timestamp;
     if (session.updated === null || entry.timestamp > session.updated) session.updated = entry.timestamp;
@@ -148,6 +148,12 @@ function sumLines(session) {
 // Returns true when any transcript file had new complete lines.
 function ingestTranscript(session, transcriptPath) {
   if (typeof transcriptPath !== 'string' || !fs.existsSync(transcriptPath)) return false;
+  // A row without overhead predates its booking: its transcript is read again
+  // from the start, which re-records usage and lines under the same keys.
+  if (session.overhead === null) {
+    session.overhead = emptyOverhead();
+    session.offsets = {};
+  }
   let changed = false;
   for (const file of transcriptFiles(transcriptPath)) {
     const { lines, offset } = appendedLines(file, session.offsets[file] ?? 0);
@@ -158,7 +164,7 @@ function ingestTranscript(session, transcriptPath) {
       } catch {
         continue;
       }
-      if (entry && typeof entry === 'object') applyEntry(session, entry);
+      if (entry && typeof entry === 'object') applyEntry(session, entry, file, transcriptPath);
     }
     if (lines.length > 0) changed = true;
     session.offsets[file] = offset;
@@ -199,6 +205,7 @@ function sessionMetrics(session) {
   const lines = session.lines ?? sumLines({ linesByEntry: session.linesByEntry ?? {} });
   const elapsed = session.started && session.updated ? Date.parse(session.updated) - Date.parse(session.started) : 0;
   const guard = session.guard ?? { capped: 0, duplicates: 0, bytesWithheld: 0 };
+  const overhead = overheadTotals(session);
   return {
     lines: lines.added,
     linesRemoved: lines.removed,
@@ -207,13 +214,16 @@ function sessionMetrics(session) {
     time: session.durationMs ?? elapsed,
     rightSized: session.rightSized === true,
     project: session.project ?? null,
-    guard
+    guard,
+    overheadTokens: overhead.tokens,
+    overheadTime: overhead.time
   };
 }
 
 function totals(sessions, include = () => true) {
   const sum = {
     sessions: 0, lines: 0, linesRemoved: 0, tokens: 0, cost: 0, costKnown: false, time: 0,
+    overheadTokens: 0, overheadTime: 0,
     guard: { capped: 0, duplicates: 0, bytesWithheld: 0 }
   };
   for (const session of Object.values(sessions)) {
@@ -224,6 +234,8 @@ function totals(sessions, include = () => true) {
     sum.linesRemoved += metrics.linesRemoved;
     sum.tokens += metrics.tokens;
     sum.time += metrics.time;
+    sum.overheadTokens += metrics.overheadTokens;
+    sum.overheadTime += metrics.overheadTime;
     if (typeof metrics.cost === 'number') {
       sum.cost += metrics.cost;
       sum.costKnown = true;
@@ -235,16 +247,26 @@ function totals(sessions, include = () => true) {
 
 // A metric cut by ratio r leaves (1 - r) of its baseline, so the baseline is
 // actual / (1 - r) and the saving is the difference: actual × r / (1 - r).
-function estimatedSavings(actual, ratios) {
+// The ratios measured another plugin, so exo's own overhead is outside the
+// cut: it leaves the right-sized actual before the ratio applies, and every
+// session's overhead in scope comes off the saving after, right-sized or not.
+const OVERHEAD_BY_METRIC = { tokens: 'overheadTokens', time: 'overheadTime' };
+
+function estimatedSavings(rightSized, all, ratios) {
   const saved = {};
   for (const metric of METRICS) {
     const ratio = ratios[metric] ?? 0;
-    saved[metric] = actual[metric] * ratio / (1 - ratio);
+    const overheadKey = OVERHEAD_BY_METRIC[metric];
+    const rightSizedOverhead = overheadKey ? rightSized[overheadKey] : 0;
+    const allOverhead = overheadKey ? all[overheadKey] : 0;
+    saved[metric] = (rightSized[metric] - rightSizedOverhead) * ratio / (1 - ratio) - allOverhead;
   }
   return saved;
 }
 
 function compact(value) {
+  // A value that rounds to zero prints 0, never -0.
+  if (Math.round(value) < 0) return `-${compact(-value)}`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
   if (value >= 1e4) return `${Math.round(value / 1e3)}k`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(1)}k`;
@@ -253,6 +275,7 @@ function compact(value) {
 
 function duration(milliseconds) {
   const minutes = Math.round(milliseconds / 60000);
+  if (minutes < 0) return `-${duration(-milliseconds)}`;
   if (minutes < 60) return `${minutes}m`;
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}`;
 }
@@ -314,7 +337,7 @@ function statusline(statusInput) {
   }
   const rightSized = totals(sessions, (metrics) => metrics.rightSized);
   const all = totals(sessions);
-  process.stdout.write(segment(estimatedSavings(rightSized, config.ratios), rightSized.costKnown, all.guard));
+  process.stdout.write(segment(estimatedSavings(rightSized, all, config.ratios), rightSized.costKnown, all.guard));
 }
 
 function status() {
@@ -352,11 +375,11 @@ function currentProject(sessions, directory) {
 }
 
 // One table column, keyed like PANEL_ROWS: the estimated saving over the
-// scope's right-sized sessions and the guard's measured withholding.
+// scope's right-sized sessions, net of the overhead of all its sessions.
 function scopeColumn(title, sessions, ratios, include) {
   const all = totals(sessions, include);
   const rightSized = totals(sessions, (metrics) => include(metrics) && metrics.rightSized);
-  const saved = estimatedSavings(rightSized, ratios);
+  const saved = estimatedSavings(rightSized, all, ratios);
   const costKnown = rightSized.costKnown || rightSized.sessions === 0;
   const days = dailySavings(sessions, ratios, Date.now(), include);
   return {
@@ -366,9 +389,7 @@ function scopeColumn(title, sessions, ratios, include) {
       lines: compact(saved.lines),
       tokens: compact(saved.tokens),
       time: duration(saved.time),
-      trend: `\`${trendLine(days)}\``,
-      sessions: `${rightSized.sessions} of ${all.sessions}`,
-      guard: `${guardTokens(all.guard)} tokens`
+      trend: `\`${trendLine(days)}\``
     },
     activeDays: days.filter((value) => value > 0).length
   };
@@ -388,7 +409,7 @@ function dailySavings(sessions, ratios, now, include) {
     // Rounded, because a day across a daylight-saving change is 23 or 25 hours.
     const age = Math.round((today - day) / DAY_MS);
     if (age < 0 || age >= TREND_DAYS) continue;
-    days[TREND_DAYS - 1 - age] += estimatedSavings(metrics, ratios).cost;
+    days[TREND_DAYS - 1 - age] += estimatedSavings(metrics, metrics, ratios).cost;
   }
   return days;
 }
@@ -420,7 +441,6 @@ function report() {
   const state = enabled ? '● on' : '○ off';
   const toggle = enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.';
   const labels = { ...PANEL_ROWS };
-  if (config.readGuard === false) labels.guard = 'read guard, off';
   // Every scope's active days are a subset of all projects' days.
   if (everywhere.activeDays < TREND_MIN_ACTIVE_DAYS) delete labels.trend;
   const rows = Object.entries(labels).map(([key, label]) => `| ${label} | ${here.cells[key]} | ${everywhere.cells[key]} |`);

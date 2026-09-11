@@ -72,7 +72,8 @@ export function emptySession() {
     usageById: {},
     linesByEntry: {},
     reads: {},
-    guard: { capped: 0, duplicates: 0, bytesWithheld: 0 }
+    guard: { capped: 0, duplicates: 0, bytesWithheld: 0 },
+    overhead: null
   };
 }
 

@@ -113,8 +113,9 @@ test('statusline stores the cost and prints the estimated saving segment', async
   });
   const result = await runWithStdin(['statusline'], statusInput, env);
   assert.equal(result.code, 0, result.stderr);
-  // lines 10 × 0.54/0.46 = 11.7, tokens 2972 × 0.22/0.78 = 838, cost 1.5 × 0.2/0.8 = 0.375, time 10 min × 0.27/0.73 = 3.7 min
-  assert.equal(result.stdout, 'saved ≈ 12 LOC · 838 tok · $0.38 · 4m');
+  // lines 10 × 0.54/0.46 = 11.7, cost 1.5 × 0.2/0.8 = 0.375, time 10 min × 0.27/0.73 = 3.7 min; tokens are
+  // net of the agent descriptions in agents/, so the overhead tests below pin them instead.
+  assert.match(result.stdout, /^saved ≈ 12 LOC · -?[\d.]+k? tok · \$0\.38 · 4m$/);
   const session = (await readLedger(configDirectory)).s1;
   assert.equal(session.costUsd, 1.5);
   assert.equal(session.durationMs, 600000);
@@ -128,7 +129,89 @@ test('statusline appends the measured guard figure when bytes were withheld', as
   const result = await runWithStdin(['statusline'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
   assert.equal(result.code, 0, result.stderr);
   // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302, saved × 0.2/0.8 = $0.0075.
-  assert.equal(result.stdout, 'saved ≈ 12 LOC · 838 tok · $0.01 · 1m · guard ≈ 12k tok');
+  assert.match(result.stdout, /^saved ≈ 12 LOC · -?[\d.]+k? tok · \$0\.01 · 1m · guard ≈ 12k tok$/);
+});
+
+const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
+const STOP_HOOK = 'node "${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/savings.mjs" record';
+const SESSION_HOOK = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"';
+const LISTING = '- exo:debug: Prove the cause.\n- dataviz: Charts.';
+const SESSION_CONTEXT = '\n# Using exo\n\nEvery exo skill is invoked as exo:<name>.';
+const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n\n# Debug\n\nProve the cause first.`;
+
+function toolCall(id, uuid, timestamp, block) {
+  return { type: 'assistant', uuid, timestamp, message: { id, model: 'claude-fable-5-1', usage: usage(10), content: [block] } };
+}
+
+// Calls and hooks alike; withInjections adds the three texts exo puts in context before them.
+function overheadLines(withInjections) {
+  const injections = [
+    { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'skill_listing', content: LISTING } },
+    { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'hook_additional_context', content: [SESSION_CONTEXT] } },
+    { type: 'user', isMeta: true, timestamp: '2026-09-11T10:00:01.000Z', message: { role: 'user', content: [{ type: 'text', text: SKILL_BODY }] } }
+  ];
+  const skill = (name) => ({ type: 'tool_use', name: 'Skill', input: { skill: name } });
+  return [
+    { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'hook_success', command: SESSION_HOOK, durationMs: 300 } },
+    ...(withInjections ? injections : []),
+    { type: 'user', uuid: 'p1', timestamp: '2026-09-11T10:00:02.000Z', message: { role: 'user', content: 'go' } },
+    toolCall('msg_skill', 'a1', '2026-09-11T10:00:07.000Z', skill('exo:debug')),
+    toolCall('msg_mixed', 'a2', '2026-09-11T10:00:09.000Z', { type: 'tool_use', name: 'Read', input: {} }),
+    toolCall('msg_mixed', 'a3', '2026-09-11T10:00:10.000Z', skill('exo:planning')),
+    { type: 'system', subtype: 'stop_hook_summary', timestamp: '2026-09-11T10:00:11.000Z',
+      hookInfos: [{ command: STOP_HOOK, durationMs: 40 }, { command: 'node other.mjs', durationMs: 999 }] }
+  ];
+}
+
+async function recordLines(lines) {
+  const directory = await fixture();
+  const transcript = path.join(directory, 'session.jsonl');
+  await fs.writeFile(transcript, `${lines.map((line) => JSON.stringify(line)).join('\n')}\n`);
+  const env = { CLAUDE_CONFIG_DIR: directory };
+  const result = await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
+  assert.equal(result.code, 0, result.stderr);
+  return { directory, transcript, env, session: (await readLedger(directory)).s1 };
+}
+
+test('record books the exo text in context, the exo-only skill call and the exo hook runs as overhead', async () => {
+  const bare = (await recordLines(overheadLines(false))).session;
+  const booked = (await recordLines(overheadLines(true))).session;
+  const listingLine = LISTING.split('\n')[0];
+  const injected = (listingLine.length + SESSION_CONTEXT.length + SKILL_BODY.length) / 4;
+  // Written once at the 1-hour cache weight, then read at 0.1 by each of the two later calls.
+  const expected = injected * 2 + injected * 0.1 * 2;
+  assert.ok(Math.abs(booked.overhead.tokens - bare.overhead.tokens - expected) < 1e-9);
+  assert.equal(booked.overhead.hookMs, 340);
+  const skillCall = booked.overhead.skillCalls.msg_skill;
+  assert.deepEqual([skillCall.mixed, skillCall.start, skillCall.end], [false, '2026-09-11T10:00:02.000Z', '2026-09-11T10:00:07.000Z']);
+  // The exo-only call's read of the injected text, already booked above, is taken back from its usage.
+  const contextReadDelta = skillCall.contextRead - bare.overhead.skillCalls.msg_skill.contextRead;
+  assert.ok(Math.abs(contextReadDelta - injected * 0.1) < 1e-9);
+  assert.equal(booked.overhead.skillCalls.msg_mixed.mixed, true);
+});
+
+test('a row recorded before overhead was booked is read again from the start', async () => {
+  const { directory, transcript, env, session } = await recordLines(overheadLines(true));
+  const legacy = { ...session };
+  delete legacy.overhead;
+  await writeLedger(directory, { s1: legacy });
+  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
+  const reread = (await readLedger(directory)).s1;
+  assert.deepEqual(reread.overhead, session.overhead);
+  assert.deepEqual(reread.tokens, session.tokens);
+});
+
+test('the saving is net of the overhead of every session in scope, and a loss prints a minus', async () => {
+  const directory = await fixture();
+  const env = { CLAUDE_CONFIG_DIR: directory };
+  const overhead = (tokens, hookMs) => ({ tokens, hookMs, transcripts: {}, skillCalls: {} });
+  const rightSized = { rightSized: true, tokens: { weightedInput: 7000, output: 800 }, durationMs: 600000, overhead: overhead(1000, 60000) };
+  const plain = { rightSized: false, tokens: { weightedInput: 0, output: 0 }, durationMs: 0, overhead: overhead(500, 30000) };
+  await writeLedger(directory, { s1: rightSized, s2: plain });
+  // tokens (7800 - 1000) × 0.22/0.78 - 1500 = 418; time (600 - 60) s × 0.27/0.73 - 90 s = 110 s, 2 min
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 0 LOC · 418 tok · - · 2m');
+  await writeLedger(directory, { s2: { ...plain, overhead: overhead(500, 120000) } });
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 0 LOC · -500 tok · - · -2m');
 });
 
 test('report shows the switch state and the saving for the current project beside all projects', async () => {
@@ -145,10 +228,8 @@ test('report shows the switch state and the saving for the current project besid
   assert.match(result.stdout, /^\| ≈ saved \| this project · shop \| all projects \|$/m);
   assert.match(result.stdout, /^\| cost at API price \| \$0\.01 \| \$0\.02 \|$/m);
   assert.match(result.stdout, /^\| lines \| 12 \| 23 \|$/m);
-  assert.match(result.stdout, /^\| tokens \| 838 \| 1\.7k \|$/m);
+  assert.match(result.stdout, /^\| tokens \| -?[\d.]+k? \| -?[\d.]+k? \|$/m);
   assert.match(result.stdout, /^\| time \| 1m \| 2m \|$/m);
-  assert.match(result.stdout, /^\| right-sized sessions \| 1 of 1 \| 2 of 2 \|$/m);
-  assert.match(result.stdout, /^\| read guard, measured \| 0 tokens \| 0 tokens \|$/m);
   assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
   // Both sessions started on one day, too few for a trend.
   assert.doesNotMatch(result.stdout, /last 30 days/);
@@ -220,13 +301,4 @@ test('off and on write enabled into config.json and status reports it', async ()
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);
   assert.equal(config.ratios.lines, 0.54);
-});
-
-test('report marks the guard switched off in config.json', async () => {
-  const directory = await fixture();
-  await fs.mkdir(path.join(directory, 'exo', 'savings'), { recursive: true });
-  await fs.writeFile(path.join(directory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
-  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^\| read guard, off \| /m);
 });

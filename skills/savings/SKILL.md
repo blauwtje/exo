@@ -25,7 +25,7 @@ The report as the script printed it when this skill loaded:
 1. **Relay** the panel above for a request that only asks what was saved, and run nothing, because a second run is a tool call the reader waits on for the same figures. The exception is a notice in place of the table, such as shell execution disabled by policy: then run `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" report`.
 2. **Switch** with `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" off` or `on`, then `report`, because the panel above shows the state before the switch.
 3. **Relay** the panel's markdown unchanged and outside any code fence, because the chat renders the table only when unfenced; a fence prints raw pipes. After a switch, the script's one-line confirmation goes above the panel.
-4. **Add** no prose restating the panel's labels, because its table already marks the estimate, the sessions counted and the guard, and a restatement is the bloat the panel replaced.
+4. **Add** no prose restating the panel's labels, because its header already marks the estimate, and a restatement is the bloat the panel replaced.
 
 ## Judgment
 
