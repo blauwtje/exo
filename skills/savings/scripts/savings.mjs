@@ -29,7 +29,17 @@ const TOKENS_PER_PRICE_UNIT = 1e6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TREND_DAYS = 30;
 const TREND_LEVELS = '▂▃▄▅▆▇█';
-const PANEL_ROWS = ['cost at API price', 'lines', 'tokens', 'time', 'last 30 days'];
+// One active day draws a single bar on a flat line, so the trend waits for a second.
+const TREND_MIN_ACTIVE_DAYS = 2;
+const PANEL_ROWS = {
+  cost: 'cost at API price',
+  lines: 'lines',
+  tokens: 'tokens',
+  time: 'time',
+  trend: 'last 30 days',
+  sessions: 'right-sized sessions',
+  guard: 'read guard, measured'
+};
 const PROJECT_NAME_MAX = 28;
 const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
@@ -341,18 +351,26 @@ function currentProject(sessions, directory) {
   return match ?? directory;
 }
 
-// One table column: the estimated saving over the scope's right-sized sessions,
-// in the order of PANEL_ROWS.
+// One table column, keyed like PANEL_ROWS: the estimated saving over the
+// scope's right-sized sessions and the guard's measured withholding.
 function scopeColumn(title, sessions, ratios, include) {
   const all = totals(sessions, include);
   const rightSized = totals(sessions, (metrics) => include(metrics) && metrics.rightSized);
   const saved = estimatedSavings(rightSized, ratios);
   const costKnown = rightSized.costKnown || rightSized.sessions === 0;
-  const trend = trendLine(dailySavings(sessions, ratios, Date.now(), include));
+  const days = dailySavings(sessions, ratios, Date.now(), include);
   return {
     title,
-    cells: [money(saved.cost, costKnown), compact(saved.lines), compact(saved.tokens), duration(saved.time), `\`${trend}\``],
-    counted: `${rightSized.sessions} of ${all.sessions}`
+    cells: {
+      cost: money(saved.cost, costKnown),
+      lines: compact(saved.lines),
+      tokens: compact(saved.tokens),
+      time: duration(saved.time),
+      trend: `\`${trendLine(days)}\``,
+      sessions: `${rightSized.sessions} of ${all.sessions}`,
+      guard: `${guardTokens(all.guard)} tokens`
+    },
+    activeDays: days.filter((value) => value > 0).length
   };
 }
 
@@ -399,23 +417,24 @@ function report() {
   const here = scopeColumn(`this project · ${projectName}`, sessions, config.ratios, inProject);
   const everywhere = scopeColumn('all projects', sessions, config.ratios, () => true);
   const enabled = savingsEnabled();
-  const state = enabled ? '● on · turn off with `/exo:savings off`' : '○ off · turn on with `/exo:savings on`';
-  const guard = totals(sessions).guard;
-  const guardLabel = config.readGuard === false ? 'read guard (off in config.json)' : 'read guard';
-  const ratios = METRICS.map((metric) => `${metric} ${config.ratios[metric]}`).join(' · ');
-  const rows = PANEL_ROWS.map((label, index) => `| ${label} | ${here.cells[index]} | ${everywhere.cells[index]} |`);
+  const state = enabled ? '● on' : '○ off';
+  const toggle = enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.';
+  const labels = { ...PANEL_ROWS };
+  if (config.readGuard === false) labels.guard = 'read guard, off';
+  // Every scope's active days are a subset of all projects' days.
+  if (everywhere.activeDays < TREND_MIN_ACTIVE_DAYS) delete labels.trend;
+  const rows = Object.entries(labels).map(([key, label]) => `| ${label} | ${here.cells[key]} | ${everywhere.cells[key]} |`);
   const lines = [
     `**✻ exo savings** · ${state}`,
     '',
-    `| saved | ${here.title} | ${everywhere.title} |`,
+    `| ≈ saved | ${here.title} | ${everywhere.title} |`,
     '|:--|--:|--:|',
     ...rows,
     '',
-    `- ≈ estimated over right-sized sessions: ${here.counted} here, ${everywhere.counted} in all projects, r = ${ratios}`,
-    `- ${guardLabel}, measured: ≈ ${guardTokens(guard)} tokens withheld · ${guard.capped} reads capped · ${guard.duplicates} re-reads refused`
+    toggle
   ];
   const override = process.env.EXO_SAVINGS;
-  if (override === 'on' || override === 'off') lines.push(`- EXO_SAVINGS=${override} in the environment outranks the switch`);
+  if (override === 'on' || override === 'off') lines.push('', `EXO_SAVINGS=${override} in the environment outranks the switch.`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 

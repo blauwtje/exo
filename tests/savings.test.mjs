@@ -141,15 +141,31 @@ test('report shows the switch state and the saving for the current project besid
   await runWithStdin(['record'], JSON.stringify({ session_id: 's2', transcript_path: transcript, cwd: '/elsewhere' }), env);
   const result = await run(SAVINGS, ['report'], { env, cwd: nested });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^\*\*✻ exo savings\*\* · ● on · turn off with `\/exo:savings off`$/m);
-  assert.match(result.stdout, /^\| saved \| this project · shop \| all projects \|$/m);
+  assert.match(result.stdout, /^\*\*✻ exo savings\*\* · ● on$/m);
+  assert.match(result.stdout, /^\| ≈ saved \| this project · shop \| all projects \|$/m);
   assert.match(result.stdout, /^\| cost at API price \| \$0\.01 \| \$0\.02 \|$/m);
   assert.match(result.stdout, /^\| lines \| 12 \| 23 \|$/m);
   assert.match(result.stdout, /^\| tokens \| 838 \| 1\.7k \|$/m);
   assert.match(result.stdout, /^\| time \| 1m \| 2m \|$/m);
-  assert.match(result.stdout, /^\| last 30 days \| `[▁-█]{30}` \| `[▁-█]{30}` \|$/m);
-  assert.match(result.stdout, /estimated over right-sized sessions: 1 of 1 here, 2 of 2 in all projects/);
-  assert.match(result.stdout, /read guard, measured: ≈ 0 tokens withheld · 0 reads capped · 0 re-reads refused/);
+  assert.match(result.stdout, /^\| right-sized sessions \| 1 of 1 \| 2 of 2 \|$/m);
+  assert.match(result.stdout, /^\| read guard, measured \| 0 tokens \| 0 tokens \|$/m);
+  assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
+  // Both sessions started on one day, too few for a trend.
+  assert.doesNotMatch(result.stdout, /last 30 days/);
+});
+
+test('report draws the 30-day trend once savings fall on two days', async () => {
+  const directory = await fixture();
+  // Local noon on each day, so a daylight-saving change cannot move a session across midnight.
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const session = (started) => ({ started: started.toISOString(), updated: started.toISOString(), costUsd: 1, rightSized: true });
+  await writeLedger(directory, { s1: session(yesterday), s2: session(today) });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^\| last 30 days \| `[▁-█]{30}` \| `▁{28}██` \|$/m);
 });
 
 test('an unknown command fails with usage', async () => {
@@ -168,12 +184,15 @@ test('report exits non-zero and surfaces the error on a ledger fault', async () 
 });
 
 test('report keeps the default ratios when config.json sets only readGuard', async () => {
-  const directory = await fixture();
-  await fs.mkdir(path.join(directory, 'exo', 'savings'), { recursive: true });
-  await fs.writeFile(path.join(directory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
-  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
+  const { configDirectory, transcript } = await transcriptFixture();
+  await fs.mkdir(path.join(configDirectory, 'exo', 'savings'), { recursive: true });
+  await fs.writeFile(path.join(configDirectory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
+  const env = { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: '' };
+  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
+  const result = await runWithStdin(['report'], '', env);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /r = lines 0\.54 · tokens 0\.22/);
+  // The same session saves 12 lines under the default ratios in the report test above.
+  assert.match(result.stdout, /^\| lines \| .+ \| 12 \|$/m);
 });
 
 test('record and statusline stand down when EXO_SAVINGS=off', async () => {
@@ -195,7 +214,8 @@ test('off and on write enabled into config.json and status reports it', async ()
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
-  assert.match(panel, /· ○ off · turn on with `\/exo:savings on`$/m);
+  assert.match(panel, /· ○ off$/m);
+  assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; right-sizing follows at the next session start\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);
@@ -208,5 +228,5 @@ test('report marks the guard switched off in config.json', async () => {
   await fs.writeFile(path.join(directory, 'exo', 'savings', 'config.json'), JSON.stringify({ readGuard: false }));
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^- read guard \(off in config\.json\), measured: /m);
+  assert.match(result.stdout, /^\| read guard, off \| /m);
 });
