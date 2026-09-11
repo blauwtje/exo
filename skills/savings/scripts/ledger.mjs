@@ -61,6 +61,7 @@ export function emptySession() {
     started: null,
     updated: null,
     touched: null,
+    transcript: null,
     project: null,
     model: null,
     rightSized: false,

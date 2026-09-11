@@ -20,10 +20,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
-import { bookOverhead, emptyOverhead, overheadTotals } from './overhead.mjs';
+import { overheadTotals } from './overhead.mjs';
 import { countsCost } from './pricing.mjs';
 import MEASURED from './ratios.mjs';
-import { sumCounts, usageCounts } from './token-weights.mjs';
+import { ingestTranscript, sumLines, sumTokens } from './transcript.mjs';
 
 const BYTES_PER_TOKEN = 4;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -39,7 +39,6 @@ const PANEL_ROWS = {
   trend: 'last 30 days'
 };
 const PROJECT_NAME_MAX = 28;
-const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 const METRICS = ['lines', 'tokens', 'cost', 'time'];
 // MEASURED is the cut per metric the benchmark measured against a no-skill
 // baseline, with its source; user-editable in config.json.
@@ -55,124 +54,6 @@ function loadConfig() {
   if (existing !== null) return { ...DEFAULT_CONFIG, ...existing, ratios: { ...DEFAULT_CONFIG.ratios, ...existing.ratios } };
   writeJson(configFile(), DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
-}
-
-function transcriptFiles(transcriptPath) {
-  const files = [transcriptPath];
-  const delegatesDirectory = path.join(transcriptPath.replace(/\.jsonl$/, ''), 'subagents');
-  if (!fs.existsSync(delegatesDirectory)) return files;
-  for (const name of fs.readdirSync(delegatesDirectory).sort()) {
-    if (name.endsWith('.jsonl')) files.push(path.join(delegatesDirectory, name));
-  }
-  return files;
-}
-
-// The complete lines appended since the stored byte offset; a trailing partial
-// line stays unread until its newline lands.
-function appendedLines(file, offset) {
-  const size = fs.statSync(file).size;
-  if (size <= offset) return { lines: [], offset };
-  const buffer = Buffer.alloc(size - offset);
-  const descriptor = fs.openSync(file, 'r');
-  try {
-    fs.readSync(descriptor, buffer, 0, buffer.length, offset);
-  } finally {
-    fs.closeSync(descriptor);
-  }
-  const text = buffer.toString('utf8');
-  const lastNewline = text.lastIndexOf('\n');
-  if (lastNewline < 0) return { lines: [], offset };
-  const complete = text.slice(0, lastNewline + 1);
-  return { lines: complete.split('\n').slice(0, -1), offset: offset + Buffer.byteLength(complete) };
-}
-
-function lineCount(text) {
-  if (typeof text !== 'string' || text === '') return 0;
-  return text.split('\n').length;
-}
-
-function patchedLines(toolResult) {
-  const counts = { added: 0, removed: 0 };
-  for (const hunk of toolResult.structuredPatch ?? []) {
-    for (const line of hunk.lines ?? []) {
-      if (line.startsWith('+')) counts.added += 1;
-      else if (line.startsWith('-')) counts.removed += 1;
-    }
-  }
-  if (counts.added + counts.removed > 0) return counts;
-  // A written file without a patch: the whole content is new, the whole
-  // original (if any) is gone.
-  if (typeof toolResult.content === 'string' && toolResult.filePath) {
-    return { added: lineCount(toolResult.content), removed: lineCount(toolResult.originalFile) };
-  }
-  return counts;
-}
-
-function applyEntry(session, entry, file, mainTranscript) {
-  bookOverhead(session, entry, file, mainTranscript);
-  if (typeof entry.timestamp === 'string') {
-    if (session.started === null || entry.timestamp < session.started) session.started = entry.timestamp;
-    if (session.updated === null || entry.timestamp > session.updated) session.updated = entry.timestamp;
-  }
-  if (entry.attributionSkill === RIGHT_SIZING_SKILL) session.rightSized = true;
-  const message = entry.message;
-  if (entry.type === 'assistant' && message && message.id && message.usage) {
-    // One response is one line per content block, and a streaming response
-    // repeats its id with a growing output count: the last line per id wins.
-    // The model rides along because a delegate is priced at its own rate.
-    session.usageById[message.id] = { ...usageCounts(message.usage), model: message.model };
-    // A delegate runs on its own model; the session's model is the main transcript's.
-    if (typeof message.model === 'string' && entry.isSidechain !== true) session.model = message.model;
-  }
-  const toolResult = entry.toolUseResult;
-  if (entry.type === 'user' && toolResult && typeof toolResult === 'object' && typeof entry.uuid === 'string') {
-    const counts = patchedLines(toolResult);
-    if (counts.added + counts.removed > 0) session.linesByEntry[entry.uuid] = counts;
-  }
-}
-
-function sumTokens(session) {
-  return sumCounts(Object.values(session.usageById));
-}
-
-function sumLines(session) {
-  const totals = { added: 0, removed: 0 };
-  for (const counts of Object.values(session.linesByEntry)) {
-    totals.added += counts.added;
-    totals.removed += counts.removed;
-  }
-  return totals;
-}
-
-// Returns true when any transcript file had new complete lines.
-function ingestTranscript(session, transcriptPath) {
-  if (typeof transcriptPath !== 'string' || !fs.existsSync(transcriptPath)) return false;
-  // A row without overhead predates its booking: its transcript is read again
-  // from the start, which re-records usage and lines under the same keys.
-  if (session.overhead === null) {
-    session.overhead = emptyOverhead();
-    session.offsets = {};
-  }
-  let changed = false;
-  for (const file of transcriptFiles(transcriptPath)) {
-    const { lines, offset } = appendedLines(file, session.offsets[file] ?? 0);
-    for (const line of lines) {
-      let entry;
-      try {
-        entry = JSON.parse(line);
-      } catch {
-        continue;
-      }
-      if (entry && typeof entry === 'object') applyEntry(session, entry, file, transcriptPath);
-    }
-    if (lines.length > 0) changed = true;
-    session.offsets[file] = offset;
-  }
-  if (changed) {
-    session.tokens = sumTokens(session);
-    session.lines = sumLines(session);
-  }
-  return changed;
 }
 
 // A session's gross cost priced from its usage, each call at its own model,
