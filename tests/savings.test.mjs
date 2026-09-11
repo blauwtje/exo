@@ -14,8 +14,10 @@ import { fixture, run } from './harness.mjs';
 
 const SAVINGS = fileURLToPath(new URL('../skills/savings/scripts/savings.mjs', import.meta.url));
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
-// Cuts that save the whole actual in lines, a quarter in tokens and cost, and a third in time.
-const TEST_RATIOS = { lines: 0.5, tokens: 0.2, cost: 0.2, time: 0.25 };
+// Cuts that save the whole actual in lines, a quarter in tokens, and a third in
+// cost and time. None may equal its FIRST_LOAD_RATIOS value in savings.mjs,
+// which loadConfig reads as unedited and replaces with the published ratio.
+const TEST_RATIOS = { lines: 0.5, tokens: 0.2, cost: 0.25, time: 0.25 };
 
 function runWithStdin(args, input, env) {
   return run(SAVINGS, args, { env, input });
@@ -143,8 +145,8 @@ test('a session that wrote product code saves actual × r / (1 − r), with no o
   });
   const result = await runWithStdin(['statusline'], statusInput, env);
   assert.equal(result.code, 0, result.stderr);
-  // lines 10 × 1, tokens (2465 + 507) × 1/4 = 743, cost $1.50 × 1/4 = $0.375, time 10 min × 1/3 = 3.3 min
-  assert.equal(result.stdout, 'saved ≈ 10 LOC · 743 tok · $0.38 · 3m');
+  // lines 10 × 1, tokens (2465 + 507) × 1/4 = 743, cost $1.50 × 1/3 = $0.50, time 10 min × 1/3 = 3.3 min
+  assert.equal(result.stdout, 'saved ≈ 10 LOC · 743 tok · $0.50 · 3m');
   const session = (await readLedger(configDirectory)).s1;
   assert.equal(session.costUsd, 1.5);
   assert.equal(session.durationMs, 600000);
@@ -162,8 +164,8 @@ test('a session without product code saves minus its overhead, and a loss shows 
   const uncovered = bookedRow({ project: directory, lines: { added: 0, removed: 0, processAdded: 20 }, tokens: { weightedInput: 0, output: 0 }, guard },
     { cache1h: 5000 }, 30000);
   await writeLedger(directory, { s1: covered, s2: uncovered });
-  // lines 100 - 20; tokens 8000 / 4 - 2 × 5000; cost $0.25 - 5000 × $2 per million; time 200 s - 60 s - 0.2 s of processing
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 80 LOC · -8.0k tok · $0.24 · 2m');
+  // lines 100 - 20; tokens 8000 / 4 - 2 × 5000; cost $1 / 3 - 5000 × $2 per million; time 200 s - 60 s - 0.2 s of processing
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 80 LOC · -8.0k tok · $0.32 · 2m');
   await writeLedger(directory, { s2: uncovered });
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ -20 LOC · -10k tok · -$0.01 · -1m');
   const panel = (await run(SAVINGS, ['report'], { env, cwd: directory })).stdout;
@@ -232,7 +234,9 @@ test('config ratios equal to the ones 0.1.x wrote on first load give way to the 
   const configs = {
     readGuardOnly: { readGuard: false },
     firstLoad: { ratios: { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 } },
-    edited: { ratios: TEST_RATIOS }
+    edited: { ratios: TEST_RATIOS },
+    linesEditedAfterFirstLoad: { ratios: { lines: 0.5, tokens: 0.22, cost: 0.2, time: 0.27 } },
+    linesOnly: { ratios: { lines: 0.5 } }
   };
   const outputs = {};
   for (const [name, config] of Object.entries(configs)) {
@@ -242,7 +246,22 @@ test('config ratios equal to the ones 0.1.x wrote on first load give way to the 
     outputs[name] = (await runWithStdin(['statusline'], statusInput, { CLAUDE_CONFIG_DIR: configDirectory })).stdout;
   }
   assert.equal(outputs.firstLoad, outputs.readGuardOnly);
-  assert.equal(outputs.edited, 'saved ≈ 10 LOC · 743 tok · $0.38 · 3m');
+  assert.equal(outputs.edited, 'saved ≈ 10 LOC · 743 tok · $0.50 · 3m');
+  assert.equal(outputs.linesEditedAfterFirstLoad, outputs.linesOnly);
+});
+
+test('reading older rows again neither brings back an expired row nor moves a row\'s touched', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const daysAgo = (count) => new Date(Date.now() - count * 24 * 60 * 60 * 1000).toISOString();
+  const recent = daysAgo(2);
+  await writeLedger(directory, { expired1: { touched: daysAgo(40), overhead: null }, expired2: { touched: daysAgo(40), overhead: null }, recent: { touched: recent, overhead: null } });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  const ledger = await readLedger(directory);
+  assert.deepEqual(Object.keys(ledger), ['recent']);
+  assert.equal(ledger.recent.touched, recent);
+  assert.equal(ledger.recent.overhead.version, OVERHEAD_VERSION);
 });
 
 test('report shows the switch state and the saving for the current project beside all projects', async () => {
@@ -257,7 +276,7 @@ test('report shows the switch state and the saving for the current project besid
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^\*\*✻ exo savings\*\* · ● on$/m);
   assert.match(result.stdout, /^\| ≈ saved \| this project · shop \| all projects \|$/m);
-  // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302 a session, a quarter of it saved.
+  // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302 a session, a third of it saved.
   assert.match(result.stdout, /^\| cost at API price \| \$0\.01 \| \$0\.02 \|$/m);
   assert.match(result.stdout, /^\| lines \| 10 \| 20 \|$/m);
   assert.match(result.stdout, /^\| tokens \| 743 \| 1\.5k \|$/m);

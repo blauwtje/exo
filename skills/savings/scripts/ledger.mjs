@@ -148,3 +148,16 @@ export function updateSession(sessionId, mutate) {
     return sessions;
   });
 }
+
+// Rewrites rows no hook is touching, such as an older row read again: stale
+// rows are pruned first, so mutate never brings one back, and no row's
+// touched moves. mutate returns true when it changed a row.
+export function updateSessions(mutate) {
+  return withLedgerLock(() => {
+    const sessions = readJson(ledgerFile(), {});
+    const pruned = pruneSessions(sessions, Date.now());
+    const changed = mutate(sessions);
+    if (changed || pruned) writeJson(ledgerFile(), sessions);
+    return sessions;
+  });
+}

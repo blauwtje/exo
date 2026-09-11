@@ -119,8 +119,8 @@ test('a call that only loads exo skills counts whole, less its own booking of th
   // msg_skill's usage weighs 5 + 2 × 500 + 10 = 1015; its write of the exo text is booked once, with the transcript.
   near(totals.tokens, 1015 + INJECTED * 0.2);
   near(totals.cost, (5 * 10 + 500 * 20 + 10 * 50 + INJECTED * 2 * 0.25) / 1e6);
-  // The exo hooks, the skill call, and the time the API takes to process the exo text msg_skill writes.
-  near(totals.time, 340 + 5000 + INJECTED * MS_PER_WRITTEN_TOKEN);
+  // The exo hooks and the skill call; the time to process the exo text it writes is inside the call, not added again.
+  near(totals.time, 340 + 5000);
 });
 
 test('text a warm cache served is booked as read, not written', async () => {
@@ -191,8 +191,9 @@ test('a refused Read re-issued at once counts whole, and the withheld tokens com
   // The re-issue weighs 2 + 0.1 × 3000 + 2 × 500 + 40 = 1342, less its write of the refusal text; the text is
   // written once and read once; the 1,000 withheld tokens would have been written once and read once.
   near(totals.tokens, 1342 - refusalTokens * 2 + refusalTokens * 2.1 - 1000 * 2.1);
-  // The guard runs and the round trip, plus processing the refusal text, less processing the withheld file.
-  near(totals.time, 120 + 3000 + (refusalTokens - 1000) * MS_PER_WRITTEN_TOKEN);
+  // The guard runs and the round trip, less processing the withheld file; processing the refusal text is inside
+  // the round trip, not added again.
+  near(totals.time, 120 + 3000 - 1000 * MS_PER_WRITTEN_TOKEN);
 });
 
 test('a transcript booked by an older version is read again from the start, to the same result', async () => {

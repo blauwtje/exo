@@ -50,7 +50,8 @@ function booked(cell) {
   const session = emptySession();
   session.guard = cellLedger[sessionId]?.guard ?? session.guard;
   ingestTranscript(session, transcript);
-  return { ...overheadTotals(session), wholeCalls: Object.keys(session.overhead.calls).length };
+  const wholeCalls = Object.values(session.overhead.calls).filter((call) => !call.mixed);
+  return { ...overheadTotals(session), wholeCalls: wholeCalls.length };
 }
 
 function comparisonRow(metric, baseline, exo, bookings) {

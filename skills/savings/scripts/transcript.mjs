@@ -5,7 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { configDirectory, updateSession } from './ledger.mjs';
+import { configDirectory, emptySession, updateSessions } from './ledger.mjs';
 import { OVERHEAD_VERSION, bookOverhead, emptyOverhead } from './overhead.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 
@@ -174,9 +174,13 @@ export function refreshStaleSessions(sessions) {
   let latest = sessions;
   for (const [sessionId, stored] of Object.entries(sessions)) {
     if (stored.overhead?.version === OVERHEAD_VERSION) continue;
-    latest = updateSession(sessionId, (session) => {
-      if (ingestTranscript(session, session.transcript ?? findTranscript(sessionId))) return true;
-      session.overhead = emptyOverhead();
+    latest = updateSessions((current) => {
+      const row = current[sessionId];
+      // Pruned, or read again by a hook, since the caller read the ledger.
+      if (row === undefined || row.overhead?.version === OVERHEAD_VERSION) return false;
+      const session = { ...emptySession(), ...row };
+      if (!ingestTranscript(session, session.transcript ?? findTranscript(sessionId))) session.overhead = emptyOverhead();
+      current[sessionId] = session;
       return true;
     });
   }

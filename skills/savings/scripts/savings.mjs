@@ -37,12 +37,12 @@ const PANEL_ROWS = {
   trend: 'last 30 days'
 };
 const PROJECT_NAME_MAX = 28;
-const METRICS = ['lines', 'tokens', 'cost', 'time'];
 // MEASURED is the cut per metric exo's benchmark measured against a no-skill
 // baseline, with its source; a ratio in config.json overrides it.
 const PUBLISHED_RATIOS = { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time };
-// 0.1.x wrote these ratios into config.json on first load, so a config that
-// still holds exactly them carries no edit of the user's.
+// 0.1.x wrote these ratios into config.json on first load and on every
+// switch, so a stored ratio still equal to its value here carries no edit of
+// the user's.
 const FIRST_LOAD_RATIOS = { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 };
 const DEFAULT_CONFIG = { enabled: true, readGuard: true };
 
@@ -52,9 +52,9 @@ function loadConfig() {
     writeJson(configFile(), DEFAULT_CONFIG);
     return { ...DEFAULT_CONFIG, ratios: PUBLISHED_RATIOS };
   }
-  const stored = existing.ratios ?? {};
-  const unedited = METRICS.every((metric) => stored[metric] === FIRST_LOAD_RATIOS[metric]);
-  return { ...DEFAULT_CONFIG, ...existing, ratios: { ...PUBLISHED_RATIOS, ...(unedited ? {} : stored) } };
+  const stored = Object.entries(existing.ratios ?? {});
+  const edited = Object.fromEntries(stored.filter(([metric, ratio]) => ratio !== FIRST_LOAD_RATIOS[metric]));
+  return { ...DEFAULT_CONFIG, ...existing, ratios: { ...PUBLISHED_RATIOS, ...edited } };
 }
 
 // A session's gross cost priced from its usage, each call at its own model,

@@ -140,10 +140,11 @@ function book(hookInput) {
   updateSession(hookInput.session_id, (session) => {
     session.reads[key] = { mtimeMs: stat.mtimeMs, size: stat.size, bytes, at: new Date().toISOString() };
     // The same reader reading a capped file again, in the same context window,
-    // takes back part of what the refusal kept out.
+    // takes back part of what the refusal kept out, never more than all of it:
+    // overlapping reads or a re-read after an edit are the model's own work.
     for (const refusal of Object.values(session.guard.refusals ?? {})) {
       const sameFile = refusal.reader === reader && refusal.filePath === filePath;
-      if (refusal.open && refusal.kind === 'capped' && sameFile) refusal.bytesWithheld -= bytes;
+      if (refusal.open && refusal.kind === 'capped' && sameFile) refusal.bytesWithheld = Math.max(refusal.bytesWithheld - bytes, 0);
     }
     bookRunTime(session.guard);
     return true;

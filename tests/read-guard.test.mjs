@@ -78,6 +78,14 @@ test('a later read of a capped file by the same reader gives its bytes back, unt
   assert.deepEqual([refusal.open, refusal.bytesWithheld], [false, wholeFile - rangeBytes]);
 });
 
+test('reads of a capped file never give back more than the refusal withheld', async () => {
+  const { env, configDirectory, file } = await guardFixture();
+  await runGuard([], readInput(file), env);
+  await runGuard(['book'], readInput(file, { limit: 600 }, 'toolu_2'), env);
+  await runGuard(['book'], readInput(file, { offset: 1, limit: 300 }, 'toolu_3'), env);
+  assert.equal((await ledger(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, 0);
+});
+
 test('every run that reaches the ledger books its own time, an allowed read included', async () => {
   const { env, configDirectory, file } = await guardFixture();
   assert.equal(decision(await runGuard([], readInput(file, { offset: 1, limit: 20 }), env)), null);

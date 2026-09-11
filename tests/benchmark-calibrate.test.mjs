@@ -22,6 +22,11 @@ test('the booked overhead of the exo cells is compared with the measured differe
   const configDirectory = await fixture();
   const listing = `- exo:${'x'.repeat(4037)}`;
   const wallMs = { baseline: [3000, 3000], exo: [3036, 3037] };
+  // A skill loaded beside another tool call is not counted whole.
+  const mixedCall = [
+    { type: 'tool_use', id: 'toolu_skill', name: 'Skill', input: { skill: 'exo:debug' } },
+    { type: 'tool_use', id: 'toolu_read', name: 'Read', input: { file_path: '/tmp/a.txt' } }
+  ];
   for (const [arm, cache1h] of [['baseline', 5000], ['exo', 6000]]) {
     for (const run of [1, 2]) {
       const sessionId = `${arm}-${run}`;
@@ -34,7 +39,7 @@ test('the booked overhead of the exo cells is compared with the measured differe
       const lines = [
         { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'skill_listing', content: arm === 'exo' ? listing : '- dataviz: Charts.' } },
         { type: 'assistant', uuid: 'a1', timestamp: '2026-09-11T10:00:03.000Z',
-          message: { id: `msg_${sessionId}`, model: 'claude-haiku-4-5-20251001', usage: usage(cache1h), content: [{ type: 'text', text: 'ready' }] } }
+          message: { id: `msg_${sessionId}`, model: 'claude-haiku-4-5-20251001', usage: usage(cache1h), content: arm === 'exo' && run === 1 ? mixedCall : [{ type: 'text', text: 'ready' }] } }
       ];
       await fs.writeFile(transcript, `${lines.map((line) => JSON.stringify(line)).join('\n')}\n`);
     }

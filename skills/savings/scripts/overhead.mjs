@@ -253,10 +253,11 @@ export function overheadTotals(session) {
   }
   for (const [id, call] of Object.entries(overhead.calls)) {
     if (call.mixed) continue;
-    // The call's read and write of the exo text are booked with its transcript already.
+    // The call's read and write of the exo text, and the time to process that
+    // write, are booked with its transcript already.
     const usage = session.usageById?.[id];
     if (usage) priced.push({ counts: countsLess(usage, call.booked), model: usage.model ?? session.model });
-    if (call.start && call.end) time += Date.parse(call.end) - Date.parse(call.start);
+    if (call.start && call.end) time += Date.parse(call.end) - Date.parse(call.start) - processingMs(call.booked);
   }
   for (const [id, refusal] of Object.entries(overhead.refusals)) {
     const withheld = guard.refusals?.[id]?.bytesWithheld;
