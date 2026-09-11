@@ -29,7 +29,7 @@ after(async () => {
 
 export function run(file, args, options = {}) {
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       process.execPath,
       [file, ...args],
       { cwd: options.cwd ?? SCRIPTS, env: { ...process.env, ...options.env }, timeout: 120_000 },
@@ -39,6 +39,7 @@ export function run(file, args, options = {}) {
         stderr: String(stderr)
       })
     );
+    if (options.input !== undefined) child.stdin.end(options.input);
   });
 }
 
