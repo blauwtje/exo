@@ -60,10 +60,11 @@ test('refuses an unbounded read of a file over 400 lines and books the bytes', a
   assert.ok(session.guard.bytesWithheld > 1500, `bytesWithheld ${session.guard.bytesWithheld}`);
 });
 
-test('a ranged read passes, an identical unchanged re-read is refused, and a change lets it through', async () => {
+test('a booked ranged read is refused on an unchanged re-read, and a change lets it through', async () => {
   const { env, configDirectory, file } = await guardFixture();
   const ranged = readInput(file, { offset: 100, limit: 50 });
   assert.equal(decision(await runGuard([], ranged, env)), null);
+  assert.equal((await runGuard(['book'], ranged, env)).stdout, '');
   const repeat = decision(await runGuard([], ranged, env));
   assert.equal(repeat.permissionDecision, 'deny');
   assert.match(repeat.permissionDecisionReason, /is unchanged since your read at/);
@@ -75,6 +76,13 @@ test('a ranged read passes, an identical unchanged re-read is refused, and a cha
   assert.equal(decision(await runGuard([], ranged, env)), null);
   session = (await ledger(configDirectory)).s1;
   assert.equal(session.guard.duplicates, 1);
+});
+
+test('a read that never succeeded is not a duplicate', async () => {
+  const { env, file } = await guardFixture();
+  const ranged = readInput(file, { offset: 100, limit: 50 });
+  assert.equal(decision(await runGuard([], ranged, env)), null);
+  assert.equal(decision(await runGuard([], ranged, env)), null);
 });
 
 test('an explicit limit above the cap passes', async () => {
@@ -95,7 +103,7 @@ test('readGuard false never refuses, and a missing or binary file passes', async
 test('reset forgets the reads so the next identical read passes', async () => {
   const { env, configDirectory, file } = await guardFixture();
   const ranged = readInput(file, { offset: 1, limit: 20 });
-  await runGuard([], ranged, env);
+  await runGuard(['book'], ranged, env);
   await runGuard(['reset'], { session_id: 's1', source: 'compact' }, env);
   assert.deepEqual((await ledger(configDirectory)).s1.reads, {});
   assert.equal(decision(await runGuard([], ranged, env)), null);
@@ -104,9 +112,10 @@ test('reset forgets the reads so the next identical read passes', async () => {
 test('a delegate reading a range the main thread already read passes', async () => {
   const { env, file } = await guardFixture();
   const ranged = readInput(file, { offset: 1, limit: 20 });
-  await runGuard([], ranged, env);
+  await runGuard(['book'], ranged, env);
   const delegated = { ...ranged, agent_id: 'a1' };
   assert.equal(decision(await runGuard([], delegated, env)), null);
+  await runGuard(['book'], delegated, env);
   const repeat = decision(await runGuard([], delegated, env));
   assert.equal(repeat.permissionDecision, 'deny');
 });
@@ -116,4 +125,12 @@ test('a file of exactly 400 lines with a final newline passes an unbounded read'
   const file = path.join(configDirectory, 'four-hundred.ts');
   await fs.writeFile(file, Array.from({ length: 400 }, (_, index) => `line ${index + 1}\n`).join(''));
   assert.equal(decision(await runGuard([], readInput(file), env)), null);
+});
+
+test('EXO_SAVINGS=off never refuses and writes no ledger', async () => {
+  const { env, configDirectory, file } = await guardFixture();
+  const off = { ...env, EXO_SAVINGS: 'off' };
+  assert.equal(decision(await runGuard([], readInput(file), off)), null);
+  await runGuard(['book'], readInput(file, { offset: 1, limit: 20 }), off);
+  assert.equal(await fs.access(path.join(configDirectory, 'exo', 'savings', 'sessions.json')).catch(() => 'absent'), 'absent');
 });
