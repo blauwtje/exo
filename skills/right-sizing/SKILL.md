@@ -1,6 +1,6 @@
 ---
 name: right-sizing
-description: Use when about to write or replace code in any language, before the first edit of a feature, helper, component, fix, refactor or dependency choice, to pick the smallest correct shape that still reads well. Also when the user says minimal, simplest, lean or YAGNI, or names bloat, boilerplate or an unneeded dependency. Not for diagnosis, which debug owns; not for prose, plans, a typo or a rename.
+description: Use when the user asks for the minimal, simplest, lean or YAGNI version, or names bloat, boilerplate or an unneeded dependency, to pick the smallest correct shape that still reads well. Not before every edit while exo savings are on, because the session context already holds the ladder. Not for diagnosis, which debug owns; not for prose, plans, a typo or a rename.
 ---
 
 # Right-sizing
@@ -9,14 +9,16 @@ Build the smallest shape that does the whole job and still reads as one thing pe
 
 ## When to use
 
-- Before the first edit of any change that adds or replaces code: a feature, a helper, a component, a fix, a dependency.
 - The user asks for minimal, simplest, lean or YAGNI, or names bloat, boilerplate or an unnecessary dependency.
+- Not before every edit while exo savings are on: the session hook puts the ladder and its guards in context, so a call repeats them.
 - Not for diagnosis: `debug` proves the cause first; this skill sizes the fix once the cause is proven.
 - Not for a one-file typo or rename, prose, or a plan.
 
 ## The ladder
 
 Read the ranges the change touches and follow the real flow through them before the first rung: lazy about the solution, never about reading. Then answer each rung from those ranges, in one pass, and stop at the first that holds; when two rungs hold, the earlier one wins without weighing, because weighing rungs is the over-build moved into thinking.
+
+Decide it without asking and edit in the same turn: a question about the shape ends a headless session before any code.
 
 1. **Need.** The request names a present use; a use imagined for later is skipped and named in the report, because unused code is read and maintained by everyone after you.
 2. **Present.** A symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it, because a second copy splits the codebase in two.
