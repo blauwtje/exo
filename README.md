@@ -35,13 +35,31 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 
 `agents/` holds the delegates the skills dispatch, each pinned to the cheapest model and the narrowest tool list its job allows. `hooks/hooks.json` wires the hooks: a SessionStart injection that hands the model the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others; and a Stop hook that records the turn's tokens and edited lines into the savings ledger. The session hook needs `bash` and `jq` on `PATH`; the Node hooks need `node`. The plugin ships no permission guard: a guard that caps what a machine may do belongs in that machine's own configuration, not in a shared plugin.
 
+## The ladder
+
+Before the first edit that adds or replaces code, `right-sizing` reads the ranges the change touches and follows the real flow, then stops at the first rung that holds:
+
+```text
+1. Does this need to exist?         → no: skip it (YAGNI)
+2. Already in this codebase?        → reuse it, don't rewrite
+3. Stdlib does it?                  → use it
+4. Native platform feature?         → use it
+5. Installed dependency?            → use it
+6. Fewest readable statements?      → one thing per line, never a one-liner
+7. Only then: the minimum that works
+```
+
+Trust-boundary validation, error handling that prevents data loss, security, accessibility and anything asked for by name are never on the ladder. Rung 6 sizes statements, not lines: readability and structure of code, files and folders outrank a shorter diff.
+
 ## Savings counter
 
-`skills/savings/scripts/savings.mjs` keeps a ledger at `~/.claude/exo/savings/sessions.json` (under `CLAUDE_CONFIG_DIR` when set): per session the lines added and removed, the tokens weighted by cache price (input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output), and, when the status line segment is wired, the cost and duration the harness reports. The Stop hook feeds it every turn by reading only the transcript lines appended since the last turn, so the cost per turn is one small file write.
+`skills/savings/scripts/savings.mjs` keeps a ledger at `~/.claude/exo/savings/sessions.json` (under `CLAUDE_CONFIG_DIR` when set, or `EXO_SAVINGS_DIR` when set): per session the lines added and removed, the tokens weighted by cache price (input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, in `skills/savings/scripts/token-weights.mjs`), and, when the status line segment is wired, the cost and duration the harness reports. The Stop hook feeds it every turn by reading only the transcript lines appended since the last turn; the ledger is updated behind a lock and sessions untouched for thirty days are pruned.
 
-Two saving figures, kept apart: the read guard's is measured (the bytes it withheld, shown as tokens at four bytes each); the ladder's is an estimate, for sessions in which `right-sizing` fired, actual × r / (1 − r) with the ratios the ponytail agentic benchmark measured (LOC 0.54, tokens 0.22, cost 0.20, time 0.27), editable in `~/.claude/exo/savings/config.json`. The counterfactual behind the estimate is never measured; the label says so.
+Two saving figures, kept apart: the read guard's is measured (the bytes it withheld, shown as tokens at four bytes each); the ladder's is an estimate, for sessions in which `right-sizing` fired, actual × r / (1 − r) with the ratios in `skills/savings/scripts/ratios.mjs`, which names its source and which `node benchmarks/score.mjs <run> --publish` rewrites from a measured run (see Benchmarks). The ratios are editable in `~/.claude/exo/savings/config.json`. The counterfactual behind the estimate is never measured; the label says so.
 
-The read guard (`skills/savings/scripts/read-guard.mjs`, a PreToolUse hook on Read) is always on. It refuses an unbounded read of a file over 400 lines with a reason that asks for a located range, and refuses a second read of a range that is unchanged since the first in this context window; a clear or a compaction forgets the reads. Each refusal books the bytes withheld into the ledger. `"readGuard": false` in `~/.claude/exo/savings/config.json` is the only switch; there is no level and no command.
+The read guard (`skills/savings/scripts/read-guard.mjs`, a PreToolUse hook on Read that decides and a PostToolUse hook on Read that books the read once it succeeded) refuses an unbounded read of a file over 400 lines with a reason that asks for a located range, and refuses a second read of a range that is unchanged since the first in this context window; a clear or a compaction forgets the reads. Each refusal books the bytes withheld into the ledger.
+
+One switch turns the ladder, the counter, the status line segment and the read guard off together: `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" off` (or `on`, `status`), which writes `"enabled": false` into `~/.claude/exo/savings/config.json`; `EXO_SAVINGS=off` or `EXO_SAVINGS=on` in the environment outranks the file. `"readGuard": false` in the same file switches the guard alone. There are no levels.
 
 To show the running total in the status line, add to your `statusLine` command script, after it has read stdin into `$input`:
 
