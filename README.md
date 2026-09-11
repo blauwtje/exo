@@ -91,6 +91,8 @@ Node 22 or newer, plus `bash` and `jq` on `PATH`. Nothing to install: every chec
 
 `verify/budgets.mjs` names the skills the verifier checks, so a new skill is unverified until it is listed there. `docs/` is git-ignored: research notes live outside this repository. `evals/` is tracked: a case is `evals/<skill>-<case>/prompt.md` with its graders beside it, the layout `tests/evals.test.mjs` checks.
 
+`benchmarks/` measures exo against a no-skill baseline the way ponytail's agentic benchmark does: `node benchmarks/run.mjs --smoke` runs one template task and one safe task through every arm (baseline, terse-prose control, "YAGNI + one-liners" prompt, exo) as headless `claude -p --output-format json` cells on a fresh checkout of `tiangolo/full-stack-fastapi-template@cd83fc1`, with `--setting-sources project,local` keeping your own plugins out and `--plugin-dir` loading exactly one. `node benchmarks/run.mjs --full` prints a cost projection from the last smoke run and stops; `--confirm` runs all 17 tasks at n=4. Raw cells go to `benchmarks/runs/<date>-<mode>/` (git-ignored, one `result.json` and `checks.json` per cell); `node benchmarks/score.mjs benchmarks/runs/<dir>` rescores offline and prints one table, and `--publish` writes `benchmarks/results/<date>.md` and `skills/savings/scripts/ratios.mjs`. Every safe check fails against its seed and passes against its reference solution under `npm test`.
+
 ## License
 
 PolyForm Noncommercial 1.0.0: use and change it freely, sell it never. See `LICENSE`.
