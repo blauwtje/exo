@@ -143,7 +143,7 @@ function ratiosFrom(summaries, meta, resultsFile) {
     const cut = 1 - exo[metric].mean / baseline[metric].mean;
     ratios[name] = Math.round(Math.min(Math.max(cut, 0), RATIO_CAP) * 100) / 100;
   }
-  const taskCount = new Set(Object.keys(summaries).length > 0 ? meta.tasks : []).size;
+  const taskCount = new Set(meta.tasks).size;
   ratios.source = `${path.basename(resultsFile)}: exo vs baseline, ${taskCount} tasks, ${meta.model}, n=${meta.runs}, ${meta.date}`;
   return ratios;
 }
