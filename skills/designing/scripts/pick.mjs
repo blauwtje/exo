@@ -11,7 +11,7 @@
 //
 //   node scripts/pick.mjs --comps <dir> --contracts <contracts.json>
 //                         [--frame <width>x<height>, default 1280x800]
-//                         [--intrinsic] [--lang nl|en] [--labels <labels.json>]
+//                         [--intrinsic] [--lang en|nl] [--labels <labels.json>]
 //                         [--recommend <n>] [--recommend-note <one sentence>]
 //                         [--timeout <seconds, default 600>] [--no-open]
 //
@@ -60,20 +60,9 @@ const VARIANT_DIRECTORY = /^variant-(\d+)$/;
 // languages are two languages, not a translation table: the skill writes the
 // screen's own copy in whatever language the conversation runs in, and these
 // only keep the picker usable when it does not. {n} is a variant's position.
+// English is first and is what --lang defaults to: a screen in one particular
+// national language is wrong everywhere that language is not spoken.
 const DEFAULT_LABELS = {
-  nl: {
-    title: 'Welke vind je het mooist?',
-    hint: 'Klik om te kiezen.',
-    recommended: 'Aanbevolen',
-    fallbackTitle: 'Optie {n}',
-    choose: 'Kies deze',
-    zoom: 'Vergroot',
-    close: 'Sluiten',
-    typeRole: 'Letters',
-    steer: 'Wil je iets veranderen?',
-    done: 'Dit is je keuze. Je kunt dit tabblad nu sluiten.',
-    failed: 'Je keuze kwam niet aan. Zeg het in het gesprek in plaats van hier.'
-  },
   en: {
     title: 'Which one do you like best?',
     hint: 'Click one to choose.',
@@ -86,6 +75,19 @@ const DEFAULT_LABELS = {
     steer: 'Want anything changed?',
     done: 'That is your pick. You can close this tab now.',
     failed: 'Your choice did not arrive. Say it in the conversation instead.'
+  },
+  nl: {
+    title: 'Welke vind je het mooist?',
+    hint: 'Klik om te kiezen.',
+    recommended: 'Aanbevolen',
+    fallbackTitle: 'Optie {n}',
+    choose: 'Kies deze',
+    zoom: 'Vergroot',
+    close: 'Sluiten',
+    typeRole: 'Letters',
+    steer: 'Wil je iets veranderen?',
+    done: 'Dit is je keuze. Je kunt dit tabblad nu sluiten.',
+    failed: 'Je keuze kwam niet aan. Zeg het in het gesprek in plaats van hier.'
   }
 };
 
@@ -238,7 +240,7 @@ function requireRecommendationNote(text, recommended) {
 }
 
 function requireLanguage(text) {
-  if (text === undefined) return 'nl';
+  if (text === undefined) return 'en';
   if (!Object.hasOwn(DEFAULT_LABELS, text)) {
     throw new UsageError(`--lang must be one of ${Object.keys(DEFAULT_LABELS).join(', ')}, received '${text}'`);
   }

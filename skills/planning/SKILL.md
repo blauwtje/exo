@@ -29,7 +29,7 @@ Delegate locating the files, symbols, and call sites the plan will name to a `ge
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 
-Code a deliverable plan carries has run once before the plan names it. Delegate that pre-run to a `general-purpose` context with the plan path, a scratch directory outside the working tree, and a stop condition: it copies the files there, applies each step's code, runs each `Run:` into a log, and returns one line per task with the result and log path, which `## Plan basis` records along with any task a missing service, build, or browser left unrun. A first run under the executor makes the executor the debugger, the role the plan exists to remove; a pre-run in this context carries every edit and log into the plan's own turns.
+The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove.
 
 ## Depth
 
@@ -41,6 +41,15 @@ Code a deliverable plan carries has run once before the plan names it. Delegate 
 A deliverable plan is never message-only: a fresh session with zero context must be able to open the artifact and execute it. Update an existing plan for the same topic rather than creating a sibling, and extend it with edits rather than rewriting the file, because a rewrite re-enters every task into the context.
 
 Before ending the turn, read the plan once against the rules in `references/handoff-spec.md`: a step without code, a step without `Run:` and `Expected:`, a task without its `Commit:` block, or any placeholder is repaired now, because the executor cannot.
+
+## Handing it over
+
+A deliverable plan ends the turn with the plan path, the task count, and one question: which of two ways runs it. Offer these two, recommended first, in words a reader who has run neither understands.
+
+- **`/exo:implementing` (recommended).** One task at a time, each in its own fresh helper context, each committed on its own. This window stays small, and a plan of four or more tasks belongs here.
+- **`/exo:implementing-batch`.** The whole plan is built in one window, no helpers, one report at the end. Two or three short tasks, or a run you want to watch edit by edit.
+
+Say that either route starts with a context clear: the window that just wrote the plan is the most expensive one to run it in.
 
 ## References
 
@@ -58,5 +67,5 @@ Before ending the turn, read the plan once against the rules in `references/hand
 - An unproven failure inside a planning turn makes reproduction and proof the plan's first phase; plan no fix past the proof point. Outside a planning turn, `debug` outranks planning until the cause is proven.
 - The executor and edge count set depth; a requested depth outranks both, and a requested plan outranks the upstream-order skip.
 - Repository verification and documentation conventions outrank unspecified defaults.
-- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and execution starts under `implementing` in a fresh context.
+- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and closes with the `## Handing it over` question.
 - After a compaction notice, list the written tasks with `grep -n '^### Task [0-9]' <plan-file>` before adding another; the file, not memory, records what the plan already holds.

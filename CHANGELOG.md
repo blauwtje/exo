@@ -16,6 +16,27 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The size gate `shaping`, `debug` and `implementing-batch` share sends a change
+  reaching at most two files straight to the edit and its proof, and counts a
+  crossed persisted format or security boundary where it counted user-visible
+  behavior. `using-exo` routes the same change past every skill.
+- `implementing` reviews each task in one delegate, against the task and against
+  the code standard in one reading of the diff (`task-reviewer-prompt.md`),
+  where it dispatched a spec reviewer and then a quality reviewer.
+- `code-review` is skipped below three changed files and 80 changed lines and
+  runs at `low` effort up to five files or 200 lines, `medium` above, in
+  `implementing-batch`, `implementing` and `debug`.
+- `planning` no longer pre-runs a deliverable plan's code in a scratch copy: the
+  plan's own `Run:` and `Expected:` prove each task under its executor, and
+  `## Plan basis` names what the planning session could not run. A deliverable
+  plan now ends with the two ways to run it, `implementing` recommended, each in
+  one plain sentence, and with the advice to clear the context first.
+- `designing` offers the direction picker once, in its own message, and renders
+  nothing before the answer; this session writes the comps itself. A surface
+  whose direction was decided before the run builds in the session and takes one
+  critique round.
+- `pick.mjs` defaults `--lang` to English.
+
 - Every savings figure (cost, tokens and time, in the panel and the status
   line) is net of all of exo's overhead, from exo's own benchmark ratios with
   their standard error. The read guard times itself and books its refusals by
@@ -53,6 +74,15 @@ release, and a body rewrite that keeps the trigger is a patch.
   scope's cost column at `-`.
 
 ### Removed
+
+- `skills/designing/comp-prompt.md`: `references/direction-preview.md` already
+  carries the comp contract, and the comps are written in the session.
+- `skills/implementing/spec-reviewer-prompt.md` and
+  `skills/implementing/quality-reviewer-prompt.md`, merged into
+  `task-reviewer-prompt.md`.
+- `implementing-batch`'s hand-over of one checkpoint from `implementing`: a plan
+  runs task by task under `implementing` or whole in the session, never one
+  checkpoint per invocation.
 
 - The `right-sizing` skill. Its ladder and its "never on the ladder" guards
   moved verbatim into `using-exo`, so the ladder holds without a skill call and

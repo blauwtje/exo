@@ -14,7 +14,7 @@ const HANDSHAKE_SKILLS = ['shaping', 'designing'];
 
 const PINNED_SENTENCES = {
   'skills/shaping/SKILL.md': [
-    'Count these facts: more than one file; a new dependency; a changed public signature; user-visible behavior; required code not inspected during initial orientation.',
+    'Count these facts: more than two files; a new dependency; a changed public signature; a crossed persisted format or security boundary; required code not inspected during initial orientation.',
     'Resolve “this” from the first source containing a candidate: working-tree diff, most recent failing check, then last touched file.',
     'changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration',
     'A bare \\"fix this\\" routes by its referent: working-tree diff, then latest failing check, then last-touched file.',
@@ -22,11 +22,11 @@ const PINNED_SENTENCES = {
     '`debug` outranks this skill when existing behavior fails and the cause is unproven.',
   ],
   'skills/debug/SKILL.md': [
-    'more than one changed file, a dependency, a public signature, user-visible behavior, or a required file outside initial inspection',
+    'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
     'Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and loads `implementing-batch` only for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.',
   ],
   'skills/implementing-batch/SKILL.md': [
-    'count these facts after initial inspection: more than one source/test/config file must change; a dependency is added; a public signature changes; user-visible behavior changes; a required file was not covered by the inspection.',
+    'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',
     'After a context compaction, rebuild what has landed from the working tree diff before the next edit',
     '`debug` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting.',
   ],

@@ -11,7 +11,9 @@ Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rul
 
 1. Match the request against the skill descriptions before the first tool call, including a clarifying question.
 2. When one fires, invoke and follow it; when it turns out wrong, say so and leave it.
-3. Use no skill for a one-file correction or rename, a version-only bump, a git-only operation or a read-only question.
+3. Use no skill for a version-only bump, a git-only operation or a read-only question.
+4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary.
+   Read the ranges, edit, run the check that proves it, report: a skill around two files costs more than the edit.
 
 ## When several fire
 

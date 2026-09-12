@@ -1,6 +1,6 @@
 ---
 name: shaping
-description: "Turn an outcome or feature request without a chosen solution into explored options or a decided brief in docs/specs before code. Use when the user asks to build or add a capability, or to compare options or trade-offs. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a named exact change, failing behavior, visual-only work, one-file edits, version bumps, git operations, or read-only questions. A bare \"fix this\" routes by its referent: working-tree diff, then latest failing check, then last-touched file."
+description: "Turn an outcome or feature request without a chosen solution into explored options or a decided brief in docs/specs before code. Use when the user asks to build or add a capability, or to compare options or trade-offs. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a named exact change, failing behavior, visual-only work, edits reaching at most two files, version bumps, git operations, or read-only questions. A bare \"fix this\" routes by its referent: working-tree diff, then latest failing check, then last-touched file."
 ---
 
 # Shaping
@@ -9,7 +9,7 @@ Turn an outcome into a recommendation or a buildable brief before implementation
 
 ## Size gate
 
-Count these facts: more than one file; a new dependency; a changed public signature; user-visible behavior; required code not inspected during initial orientation. Zero means make the exact requested edit, prove it, and stop with no skill. One or more means use one mode below. Establish the facts through a `general-purpose` delegate from `../research/scout-prompt.md` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
+Count these facts: more than two files; a new dependency; a changed public signature; a crossed persisted format or security boundary; required code not inspected during initial orientation. Zero means make the exact requested edits, prove them, and stop with no skill. One or more means use one mode below. Establish the facts through a `general-purpose` delegate from `../research/scout-prompt.md` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
 
 ## Two modes
 

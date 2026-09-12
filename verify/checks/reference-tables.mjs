@@ -43,8 +43,7 @@ const EXPECTED_OWNER_ROWS = {
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'plan-author-prompt.md',
-    'spec-reviewer-prompt.md',
-    'quality-reviewer-prompt.md',
+    'task-reviewer-prompt.md',
     're-review-prompt.md',
   ],
   'skills/research/SKILL.md': [
@@ -64,7 +63,6 @@ const EXPECTED_OWNER_ROWS = {
     'references/plugging-holes.md',
   ],
   'skills/designing/SKILL.md': [
-    'comp-prompt.md',
     'builder-prompt.md',
     'critic-prompt.md',
     'references/visual-direction.md',

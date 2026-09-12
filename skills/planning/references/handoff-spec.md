@@ -7,7 +7,7 @@ Write for a reader with zero conversation context: no "as discussed", no "above"
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the observable result.
-2. `## Plan basis`: opens with `Repository: <absolute root>` and `Branch: <branch>` on their own lines, which `implementing` reads to match a plan to a checkout; then the ref planned against, relevant dirty state, and the pinned tool and library versions the plan depends on; closes with the literal sentence "Executor loads the `implementing` skill on this plan before the first task."
+2. `## Plan basis`: opens with `Repository: <absolute root>` and `Branch: <branch>` on their own lines, which `implementing` reads to match a plan to a checkout; then the ref planned against, relevant dirty state, the pinned tool and library versions the plan depends on, and every command the planning session could not run itself; closes with the literal sentence "Executor loads the `implementing` skill on this plan before the first task."
 3. `## Non-goals`: adjacent work that stays unchanged; the executor treats these as hard boundaries.
 4. `## Context`: the verified facts the plan depends on: current behavior, owning files and symbols, the conventions the edits follow, and every signature two tasks share, because a task's executor sees only its own task.
 5. `## Visual direction`: only when a task carries a `Design:` line; exactly one `Design skill: <name>` line naming the skill that task loads, then the chosen direction in one line, the evidence it rests on, and the choices an executor may not invent.

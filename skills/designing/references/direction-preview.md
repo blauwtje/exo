@@ -13,13 +13,13 @@ node scripts/pick.mjs --comps <dir> --contracts <contracts.json> \
 
 - `--comps` holds one `variant-<n>/index.html` per variant with its own assets, index-aligned with the contracts file. Nothing is written and no dependency is installed.
 - `--recommend <n>` seats that variant first and badges it, and `--recommend-note` puts the reason inside that card in one short everyday sentence. This skill always names its own pick; a row of three with no opinion hands the work back.
-- `--frame <width>x<height>` is the tile every comp renders in and the `FRAME` every comp builder received: `390x844` for a phone-first surface, the default `1280x800` otherwise, so a phone comp is not a phone centred in a desktop tile.
+- `--frame <width>x<height>` is the tile every comp renders in and the frame each comp was composed for: `390x844` for a phone-first surface, the default `1280x800` otherwise, so a phone comp is not a phone centred in a desktop tile.
 - `--intrinsic` belongs to a size comparison alone, where each comp carries its own `meta.json`. It turns off the shared content window, because the frame size is then the thing being compared.
 - Exit 3 means no browser opened or no answer arrived within the 600 seconds; the `--recommend` variant is then the selection, and no question goes to the terminal. Exit 2 is a usage error, and the flag it names is the flag to fix.
 
 ## Before the picker
 
-The picker opens in the same turn as the `--check` that reports ok, with no question to the chooser in between, and the only tool calls between the two are reading this file, starting the comp builders, writing the labels file, and running the picker. Everything a comp might still need waits for the click, because a chooser waiting twenty minutes for a preview stops choosing.
+The picker opens in the turn after the chooser accepts the offer the skill's `## Asking` section defines, and the only tool calls between that answer and the picker are reading this file, writing each comp, writing the labels file, and running the picker. Everything a comp might still need waits for the click, because a chooser waiting twenty minutes for a preview stops choosing.
 
 - No `capture.mjs`, `inspect-render.mjs`, screenshot, or image read of a comp before the picker: the picker is the comps' first render and the chooser's eyes are the critique. A headless capture engine is not the chooser's browser either, so a repair made against it fixes a defect the chooser might never have seen.
 - Write each `index.html` directly from its contract. No template, generator, build script, or patch script stands between the two; a pipeline costs the minutes it was meant to save.

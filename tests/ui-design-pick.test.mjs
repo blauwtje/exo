@@ -92,7 +92,7 @@ describe('pick.mjs', () => {
     assert.equal((html.match(/data-choose=/g) ?? []).length, 2, 'one choose button per variant');
     assert.equal((html.match(/class="pick"/g) ?? []).length, 2, 'one overlay button covers each card');
     assert.equal(
-      (html.match(/aria-label="Kies deze: /g) ?? []).length, 2,
+      (html.match(/aria-label="Choose this: /g) ?? []).length, 2,
       'the empty overlay still announces what choosing it picks'
     );
     assert.equal((html.match(/sandbox="allow-scripts"/g) ?? []).length, 3, 'every frame is sandboxed');
@@ -238,10 +238,10 @@ describe('pick.mjs', () => {
   it('carries a sentence for an answer that never reached the picker', async () => {
     const { comps, contracts } = await round();
     const labels = await jsonFixture('labels-failed.json', { failed: 'No llego tu eleccion.' });
-    const dutch = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const dutchUrl = await dutch.url;
+    const builtIn = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
+    const builtInUrl = await builtIn.url;
     assert.match(
-      await (await fetch(dutchUrl)).text(), /Je keuze kwam niet aan/,
+      await (await fetch(builtInUrl)).text(), /Your choice did not arrive/,
       'the default wording sends the chooser back to the conversation'
     );
 
@@ -251,8 +251,8 @@ describe('pick.mjs', () => {
     const writtenUrl = await written.url;
     assert.match(await (await fetch(writtenUrl)).text(), /No llego tu eleccion\./, 'the skill can write it');
 
-    await Promise.all([dutchUrl, writtenUrl].map((url) => answer(url, 0)));
-    await Promise.all([dutch.exit, written.exit]);
+    await Promise.all([builtInUrl, writtenUrl].map((url) => answer(url, 0)));
+    await Promise.all([builtIn.exit, written.exit]);
   });
 
   it('shows the contract title, its description, and the recommended variant', async () => {
@@ -280,7 +280,7 @@ describe('pick.mjs', () => {
     );
     assert.doesNotMatch(html, /Claude raadt/, 'the seat and the badge state it, not a sentence of chrome');
     assert.equal((html.match(/class="badge"/g) ?? []).length, 1, 'exactly one variant is badged');
-    assert.match(html, /Optie B/, 'an unnamed variant is marked by its seat, not by its directory');
+    assert.match(html, /Option B/, 'an unnamed variant is marked by its seat, not by its directory');
     assert.match(html, /<span class="ordinal">A<\/span>/, 'seats are lettered, so a chooser names one rather than counting');
     assert.doesNotMatch(html, /tide-band-strata/, 'no dealt axis id reaches the chooser');
 
@@ -379,7 +379,7 @@ describe('pick.mjs', () => {
       'each card overlay is named with it, and so is the zoom bar button'
     );
     assert.match(html, /Elegida: variante \{n\}\./, 'the done template reaches the page with its placeholder');
-    assert.match(html, /Vergroot/, 'a key the file omits keeps the --lang wording');
+    assert.match(html, /Enlarge/, 'a key the file omits keeps the --lang wording');
 
     await answer(url, 0);
     await pick.exit;
