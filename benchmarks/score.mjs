@@ -7,7 +7,7 @@
 // duration_ms as `claude -p --output-format json` reports them.
 //
 //   node benchmarks/score.mjs benchmarks/runs/<dir>
-//   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>] [--ratios <file>]
+//   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>]
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,9 +19,6 @@ import { ROOT } from './tasks.mjs';
 const METRICS = ['loc', 'tokens', 'cost', 'time'];
 // A cut at or above 1 would divide the saving estimate by zero.
 const RATIO_CAP = 0.95;
-const RATIOS_HEADER = '// Data, not code: the cut per metric a benchmark measured against a no-skill\n'
-  + '// baseline, the standard error of each cut, and its source. A .mjs file because\n'
-  + '// the verifier allows only modules under scripts/; benchmarks/score.mjs --publish rewrites it.\n';
 const LIMITATIONS = [
   'Correctness on template tasks is a marker (a new route decorator, or a new .tsx file) plus python3 -m py_compile; TSX is not type-checked and no test suite runs.',
   'A cell that fails its correctness gate or times out is excluded from the LOC, tokens, cost and time means and counted in the correct column.',
@@ -33,16 +30,15 @@ const LIMITATIONS = [
 ];
 
 function parseArguments(argv) {
-  const options = { directory: null, publish: false, results: null, ratios: path.join(ROOT, 'skills', 'savings', 'scripts', 'ratios.mjs') };
+  const options = { directory: null, publish: false, results: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--publish') options.publish = true;
     else if (flag === '--results') options.results = argv[++index];
-    else if (flag === '--ratios') options.ratios = argv[++index];
     else if (options.directory === null) options.directory = path.resolve(flag);
     else throw new Error(`unknown argument ${flag}`);
   }
-  if (options.directory === null) throw new Error('usage: score.mjs <runs directory> [--publish] [--results <file>] [--ratios <file>]');
+  if (options.directory === null) throw new Error('usage: score.mjs <runs directory> [--publish] [--results <file>]');
   return options;
 }
 
@@ -216,7 +212,7 @@ function main() {
     '',
     ...lines,
     '',
-    `Ratios published to skills/savings/scripts/ratios.mjs: ${JSON.stringify(ratios)}`,
+    `Measured cuts against the baseline: ${JSON.stringify(ratios)}`,
     '',
     '## Limitations',
     '',
@@ -225,8 +221,7 @@ function main() {
   ];
   fs.mkdirSync(path.dirname(resultsFile), { recursive: true });
   fs.writeFileSync(resultsFile, document.join('\n'));
-  fs.writeFileSync(options.ratios, `${RATIOS_HEADER}export default ${JSON.stringify(ratios, null, 2)};\n`);
-  process.stdout.write(`\npublished ${resultsFile} and ${options.ratios}\n${JSON.stringify(ratios)}\n`);
+  process.stdout.write(`\npublished ${resultsFile}\n${JSON.stringify(ratios)}\n`);
 }
 
 try {

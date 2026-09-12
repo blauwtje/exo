@@ -1,7 +1,7 @@
 // score.mjs turns a runs directory into one table: per arm the mean and
 // spread of LOC, tokens, cost and time over correct template cells as a
 // percentage of the baseline, the safe rate over safe cells, and with
-// --publish the ratios file the savings counter reads. Tokens come from each
+// --publish the results file that records those cuts. Tokens come from each
 // cell's usage.json, which sums the main thread and every subagent.
 
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
 const SCORE = fileURLToPath(new URL('../benchmarks/score.mjs', import.meta.url));
@@ -95,23 +95,23 @@ test('a correct template cell without usage.json stops the score', async () => {
   assert.match(scored.stderr, /score: t1\/exo\/1 has no usage\.json; run node benchmarks\/backfill-usage\.mjs on the runs directory/);
 });
 
-test('--publish writes the results file and the ratios file the counter reads', async () => {
+test('--publish writes the results file with the cuts it measured', async () => {
   const root = await runsFixture();
   const out = await fixture();
   const results = path.join(out, 'results.md');
-  const ratios = path.join(out, 'ratios.mjs');
-  const scored = await runScore([root, '--publish', '--results', results, '--ratios', ratios]);
+  const scored = await runScore([root, '--publish', '--results', results]);
   assert.equal(scored.code, 0, scored.stderr);
-  const written = (await import(pathToFileURL(ratios).href)).default;
-  assert.deepEqual({ lines: written.lines, tokens: written.tokens, cost: written.cost, time: written.time }, { lines: 0.55, tokens: 0.38, cost: 0.4, time: 0.5 });
-  // Standard errors: √(sd_E²/n_E + (E/B)² · sd_B²/n_B) / B, with the exo arm's one cell at sd 0.
-  assert.deepEqual(written.spread, { lines: 0.04, tokens: 0.08, cost: 0.12, time: 0.08 });
-  assert.match(written.source, /results\.md: exo vs baseline, 2 tasks, claude-haiku-4-5-20251001, n=2, 2026-09-12/);
   const document = await fs.readFile(results, 'utf8');
   assert.match(document, /^# Benchmark 2026-09-12/);
+  assert.match(document, /^Measured cuts against the baseline: /m);
+  assert.match(document, /"lines":0\.55,"tokens":0\.38,"cost":0\.4,"time":0\.5/);
+  // Standard errors: √(sd_E²/n_E + (E/B)² · sd_B²/n_B) / B, with the exo arm's one cell at sd 0.
+  assert.match(document, /"spread":\{"lines":0\.04,"tokens":0\.08,"cost":0\.12,"time":0\.08\}/);
+  assert.match(document, /results\.md: exo vs baseline, 2 tasks, claude-haiku-4-5-20251001, n=2, 2026-09-12/);
   assert.match(document, /^- exo: cost per correct cell /m);
   assert.match(document, /## Limitations/);
-  assert.match(document, /summed over every transcript of the cell, main thread and subagents/);
+  // The cuts are a record of one benchmark run, not a figure any panel reads.
+  assert.doesNotMatch(document, /ratios\.mjs/);
 });
 
 test('--publish keeps a cut negative when the exo arm used more than the baseline', async () => {
@@ -120,9 +120,11 @@ test('--publish keeps a cut negative when the exo arm used more than the baselin
   await cell(root, 't1', 'baseline', 1, result(0.4, 100000), template(100, true), cellUsage(100, 1000, 500));
   await cell(root, 't1', 'exo', 1, result(0.6, 150000), template(150, true), cellUsage(100, 1000, 800));
   const out = await fixture();
-  const ratios = path.join(out, 'ratios.mjs');
-  const scored = await runScore([root, '--publish', '--results', path.join(out, 'results.md'), '--ratios', ratios]);
+  const results = path.join(out, 'results.md');
+  const scored = await runScore([root, '--publish', '--results', results]);
   assert.equal(scored.code, 0, scored.stderr);
-  const written = (await import(pathToFileURL(ratios).href)).default;
-  assert.deepEqual({ lines: written.lines, cost: written.cost, time: written.time }, { lines: -0.5, cost: -0.5, time: -0.5 });
+  const document = await fs.readFile(results, 'utf8');
+  assert.match(document, /"lines":-0\.5/);
+  assert.match(document, /"cost":-0\.5/);
+  assert.match(document, /"time":-0\.5/);
 });
