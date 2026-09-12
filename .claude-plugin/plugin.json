@@ -1,6 +1,6 @@
 {
   "name": "exo",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "One engineering process for Claude Code: skills that take turns, and prompts that keep discovery off the main context.",
   "author": {
     "name": "Thomas Hoogteijling"

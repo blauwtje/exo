@@ -9,6 +9,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- Two eval cases: `implementing-batch-two-file-floor`, the regression test for
+  ceremony around a two-file change, and `designing-offers-the-preview`, which
+  fails a run that renders before the chooser agrees or that names no cost.
+
 - `implementing` scopes a reviewer's second round to its own findings and the
   fix diff through `re-review-prompt.md`.
 - `savings` prices a session's tokens at API list prices per model
@@ -32,7 +36,8 @@ release, and a body rewrite that keeps the trigger is a patch.
   plan now ends with the two ways to run it, `implementing` recommended, each in
   one plain sentence, and with the advice to clear the context first.
 - `designing` offers the direction picker once, in its own message, and renders
-  nothing before the answer; this session writes the comps itself. A surface
+  nothing before the answer; that offer states what the render costs, because an
+  offer without its price is not one; this session writes the comps itself. A surface
   whose direction was decided before the run builds in the session and takes one
   critique round.
 - `pick.mjs` defaults `--lang` to English.
