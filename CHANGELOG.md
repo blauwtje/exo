@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The savings panel and the status line segment report measured figures only:
+  the read guard's refusals with the bytes they kept out of context, and the
+  calls, tokens, price and wall time of the API calls that were exo's own work.
+  The four estimated rows are gone with `skills/savings/scripts/ratios.mjs`,
+  the ratio override in `config.json`, and the calibrated character, byte and
+  millisecond rates that sized exo's text in context; `benchmarks/score.mjs
+  --publish` now records its measured cut in `benchmarks/results/<date>.md`
+  alone. `OVERHEAD_VERSION` rises to 3, so every ledger row is re-read from its
+  transcript on the next turn.
+
 ### Added
 
 - `using-exo` carries the closing rule every turn ends under: the outcome, the
