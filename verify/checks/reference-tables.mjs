@@ -56,6 +56,9 @@ const EXPECTED_OWNER_ROWS = {
     'references/plugging-holes.md',
   ],
   'skills/designing/SKILL.md': [
+    'comp-prompt.md',
+    'builder-prompt.md',
+    'critic-prompt.md',
     'references/visual-direction.md',
     'references/direction-preview.md',
     'references/composition.md',

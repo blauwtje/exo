@@ -37,11 +37,13 @@ export function markdownTargets(text) {
 export function resolveMarkdownTarget(file, target) {
   const withoutFragment = target.split('#')[0];
   // A `<>` placeholder and a `*`/`?` glob both name a set of files rather than one file,
-  // so neither can resolve to a leaf and neither is a broken reference.
+  // and a `$VAR` segment names a directory the caller fills at dispatch time, so none of
+  // the three can resolve to a leaf and none is a broken reference.
   if (withoutFragment.trim() === ''
     || SCHEME.test(withoutFragment)
     || /[<>]/.test(withoutFragment)
     || /[*?]/.test(withoutFragment)
+    || withoutFragment.includes('$')
     || HARNESS_ROOT_FILES.some((name) => name.toLowerCase() === withoutFragment.toLowerCase())) {
     return null;
   }
