@@ -31,6 +31,8 @@ Use `oklch()` for authored colors when the target matrix supports it, and derive
 - Use grid or flex for layout, and subgrid when child rows must align across siblings.
 - Use logical properties for flow-relative spacing and inset; use physical properties only for a screen-anchored edge.
 - Use `aspect-ratio`, `gap`, `place-*`, and `inset` instead of padding-ratio, child-margin, or four-offset workarounds.
+- Pad every screen-anchored edge with `env(safe-area-inset-*)` added to its own spacing token, not instead of it: a bottom bar without it sits under the home indicator on a notched phone, and a value hard-coded for one device is wrong on the next.
+- Set a mobile text input at 16px or larger. Below that, iOS Safari zooms the viewport on focus and the layout the design was composed for is gone for the rest of the flow; this is a mechanic, not the reading floor the Phase 3 body-text rule sets.
 
 ## Selectors and cascade
 

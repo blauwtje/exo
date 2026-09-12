@@ -364,6 +364,7 @@ describe('pick.mjs', () => {
   it('takes the screen copy from --labels and falls back for what it omits', async () => {
     const { comps, contracts } = await round();
     const labels = await jsonFixture('labels.json', {
+      lang: 'es',
       title: 'Elige una direccion',
       choose: 'Elegir esta',
       done: 'Elegida: variante {n}.'
@@ -379,16 +380,33 @@ describe('pick.mjs', () => {
       'each card overlay is named with it, and so is the zoom bar button'
     );
     assert.match(html, /Elegida: variante \{n\}\./, 'the done template reaches the page with its placeholder');
-    assert.match(html, /Enlarge/, 'a key the file omits keeps the --lang wording');
+    assert.match(html, /Enlarge/, 'a key the file omits keeps the English last resort');
+    assert.match(html, /<html lang="es">/, 'the file that carries the words names their language');
 
     await answer(url, 0);
     await pick.exit;
   });
 
-  it('refuses a --labels file with an unknown key or a dropped {n}', async () => {
+  it('ships no language to choose from, so --lang is not a flag', async () => {
+    const { comps, contracts } = await round();
+    const rejected = await run(PICK,
+      ['--comps', comps, '--contracts', contracts, '--lang', 'nl', '--no-open', '--timeout', '1']);
+    assert.equal(rejected.code, 2);
+    assert.match(rejected.stderr, /unknown flag '--lang'/);
+
+    const noLabels = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
+    const url = await noLabels.url;
+    assert.match(await (await fetch(url)).text(), /<html lang="en">/,
+      'with no file to name a language the last-resort copy is English and says so');
+    await answer(url, 0);
+    await noLabels.exit;
+  });
+
+  it('refuses a --labels file with an unknown key, a dropped {n}, or a lang that is not a tag', async () => {
     const { comps, contracts } = await round();
     const unknown = await jsonFixture('labels-unknown.json', { titel: 'Kies een richting' });
     const stripped = await jsonFixture('labels-stripped.json', { fallbackTitle: 'Richting' });
+    const sentence = await jsonFixture('labels-lang.json', { lang: 'Nederlands" onload="x' });
 
     // Both runs carry --timeout 1: a validation that wrongly passes then exits 3
     // in a second, where the default would block this test for ten minutes.
@@ -401,6 +419,91 @@ describe('pick.mjs', () => {
       ['--comps', comps, '--contracts', contracts, '--labels', stripped, '--no-open', '--timeout', '1']);
     assert.equal(dropped.code, 2);
     assert.match(dropped.stderr, /--labels key 'fallbackTitle' must keep the \{n\} placeholder/);
+
+    const injected = await run(PICK,
+      ['--comps', comps, '--contracts', contracts, '--labels', sentence, '--no-open', '--timeout', '1']);
+    assert.equal(injected.code, 2);
+    assert.match(injected.stderr, /--labels key 'lang' must be a language tag/);
+  });
+
+  it('opens before the comps exist and fills each seat as its own file lands', async () => {
+    const comps = await fixture();
+    const contracts = await jsonFixture('late-contracts.json', {
+      schemaVersion: 1, seed: 'atlas', status: 'ok',
+      contracts: [contract(0, 'light-field'), contract(1, 'tide-band-strata')]
+    });
+
+    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
+    const url = await pick.url;
+    const { origin, searchParams } = new URL(url);
+    const ready = () => fetch(`${origin}/k/${searchParams.get('key')}/ready`).then((held) => held.json());
+
+    const empty = await (await fetch(url)).text();
+    assert.equal((empty.match(/aria-busy="true"/g) ?? []).length, 2,
+      'the contracts seat the grid, so the screen is up with nothing written yet');
+    assert.doesNotMatch(empty, /<iframe[^>]* src=/, 'and no frame points at a comp that does not exist');
+    assert.deepEqual(await ready(), { ready: [] });
+
+    const first = path.join(comps, 'variant-1');
+    await fs.mkdir(first, { recursive: true });
+    await fs.writeFile(path.join(first, 'index.html'), COMP('variant-1'));
+    assert.deepEqual(await ready(), { ready: [1] }, 'a landed comp is reported without the other one');
+
+    const half = await (await fetch(url)).text();
+    assert.equal((half.match(/aria-busy="true"/g) ?? []).length, 1, 'one seat is filled and one still waits');
+    assert.match(half, /<iframe[^>]* src="\/k\/[0-9a-f]+\/v\/1\/index\.html"/, 'the filled seat points at its comp');
+
+    await answer(url, 1);
+    await pick.exit;
+  });
+
+  it('wraps a comp fragment in the document shell and leaves a whole document alone', async () => {
+    const comps = await fixture();
+    const fragmentDirectory = path.join(comps, 'variant-0');
+    await fs.mkdir(fragmentDirectory, { recursive: true });
+    await fs.writeFile(path.join(fragmentDirectory, 'index.html'),
+      '<style>main{background:#0b1b2b;color:#f4e9d8;font-family:Fraunces,serif;padding:64px}</style>\n<main><h1>Tij</h1></main>');
+    const wholeDirectory = path.join(comps, 'variant-1');
+    await fs.mkdir(wholeDirectory, { recursive: true });
+    await fs.writeFile(path.join(wholeDirectory, 'index.html'), COMP('variant-1'));
+    const contracts = await jsonFixture('shell-contracts.json', {
+      schemaVersion: 1, seed: 'atlas', status: 'ok',
+      contracts: [contract(0, 'light-field'), contract(1, 'tide-band-strata')]
+    });
+
+    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
+    const url = await pick.url;
+    const { origin, searchParams } = new URL(url);
+    const comp = (index) => fetch(`${origin}/k/${searchParams.get('key')}/v/${index}/index.html`).then((held) => held.text());
+
+    const fragment = await comp(0);
+    assert.equal((fragment.match(/<!doctype html>/gi) ?? []).length, 1,
+      'the server owns the document, so a fragment is given exactly one');
+    assert.match(fragment, /Fraunces/, "the direction's own type stays inside the comp");
+    assert.match(fragment, /uiDesignContentBox/, 'and the measurement shim still reaches it');
+    const shell = /<style>([^<]*)<\/style>/.exec(fragment)[1];
+    assert.match(shell, /box-sizing:border-box/, 'the shell carries the structural reset');
+    assert.doesNotMatch(shell, /font-family|background|#[0-9a-f]{3}|padding:\s*[1-9]/i,
+      'and names no typeface, colour or spacing: a shared theme would destroy the comparison');
+
+    const whole = await comp(1);
+    assert.equal((whole.match(/<!doctype html>/gi) ?? []).length, 1, 'a comp that wrote its own document keeps it');
+    assert.match(whole, /<html lang="nl">/, 'including the language it set for itself');
+    assert.match(whole, /uiDesignContentBox/);
+
+    await answer(url, 0);
+    await pick.exit;
+  });
+
+  it('refuses --intrinsic before the comps exist, because that grid is laid out from their own sizes', async () => {
+    const comps = await fixture();
+    const contracts = await jsonFixture('intrinsic-contracts.json', {
+      schemaVersion: 1, seed: 'atlas', status: 'ok', contracts: [contract(0, 'light-field')]
+    });
+    const early = await run(PICK,
+      ['--comps', comps, '--contracts', contracts, '--intrinsic', '--no-open', '--timeout', '1']);
+    assert.equal(early.code, 2);
+    assert.match(early.stderr, /--intrinsic needs every comp written first/);
   });
 
   it('puts the recommendation note inside the recommended card only', async () => {

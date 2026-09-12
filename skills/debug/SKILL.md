@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Prove the cause of a bug, error, crash, regression, broken output, or slowdown before changing production code. Use when existing behavior is reported wrong and evidence does not yet identify one causal line or boundary plus a mechanism that predicts the symptom. Not when a diagnostic names the exact file, line, and invalid symbol or type and matches the source; when the user-stated cause checks out against the code; or when the request is a feature complaint, not a failure of existing behavior.
+description: Use when existing behavior is reported wrong as a bug, error, crash, regression, broken output, or slowdown, and evidence does not yet identify one causal line or boundary plus a mechanism that predicts the symptom. Not when a diagnostic names the exact file, line, and invalid symbol or type and matches the source; when the user-stated cause checks out against the code; or when the request is a feature complaint, not a failure of existing behavior.
 ---
 
 # Debug

@@ -12,6 +12,8 @@ Three tiers, distinguishable with color removed:
 
 A tertiary text action is a link, not a fourth button style. If two tiers differ only in fill percentage, one of them is not a tier.
 
+One exception, and it is not a matter of taste: where the pair **is the consent**, accept and decline carry equal visual weight — same tier, same size, same optical mass — because a lighter decline is how a refusal is engineered into an acceptance. The same rule bans the pre-checked optional box and the decline routed one level deeper than the accept. Consent means tracking, marketing, data sharing, and anything a regulator would call a choice; a destructive-action confirmation is not consent and keeps its tiers.
+
 ## Proportion and padding
 
 - **Optical padding, not metric.** Equal numeric padding reads bottom-heavy under most typefaces; adjust until it looks even at the rendered size. Round labels read differently from uppercase labels.

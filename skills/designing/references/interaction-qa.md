@@ -19,6 +19,12 @@ Name the primary task, its decision points, and the path from arrival to done. T
 
 Defaults stay visible; secondary controls sit behind labeled disclosure. Build disclosure on native `details`, `dialog`, and `popover` states (`implementation.md`) so open and closed are real states, not reconstructed ones.
 
+Where controls filter a result field, what is currently on is visible without opening anything:
+
+- every active filter renders as its own removable chip beside the results, with a live count of what survives, because a filter a person cannot see is a filter they blame the data for;
+- an option that would return nothing is shown disabled with its zero count, not removed, since a list that reshuffles as you read it costs the reader their place;
+- one action clears all of them at once, and it names what it clears rather than saying "Reset".
+
 ## The reachable-state inventory
 
 First inventory which of loading, empty, error, success, disabled, permission, and live states each region and fallible control can enter — from the repository, data model, workflow, or brief. Build every reachable state and no unreachable one.

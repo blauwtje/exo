@@ -74,6 +74,8 @@ Use view transitions only for elements persisting across a state or navigation c
 
 Author movement inside `prefers-reduced-motion: no-preference`. Under `reduce`, replace movement with an instant state or opacity change, preserving content and feedback. Apply this to CSS animation, scroll timelines, view transitions, and autoplaying media.
 
+**The media query is the default, not the whole answer.** Where the surface carries a signature sequence, ambient motion, or autoplay, ship an in-product motion setting whose initial value is read from `prefers-reduced-motion` and which the person can then override either way. The operating-system switch is one all-or-nothing choice made far from this product, most people never find it, and someone who wants this surface still but not its parallax has nowhere else to say so. The setting drives the same token or class the media query does, so there is one code path and not two.
+
 **Replace, do not delete.** Apple's evaluation criteria are explicit: "if the motion itself conveys some meaning… don't remove the animation entirely. Instead, consider providing a new animation that avoids motion" — a dissolve, a fade, a color shift ([App Store Connect reduced-motion criteria](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/reduced-motion-evaluation-criteria), read 2026-09-07). The same page names what must be disabled or changed outright: depth simulation, parallax, animated blur, multi-axis and spinning motion, and auto-advancing motion. Verify under `reduce`: the state change still animates on opacity or color while translation, scale, and parallax measure approximately zero.
 
 ## Libraries

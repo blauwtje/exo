@@ -9,6 +9,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `designing` carries `references/feedback-and-status.md`, the seventeenth
+  reference: waiting by duration band, skeleton discipline, the three conditions
+  a provisional result must meet, transient-message dwell and placement, and its
+  own Phase 5 sweep.
+- `designing` opens with a `## Symptoms` table routing a reported fault to the
+  reference that owns it, so a complaint is read about once instead of argued
+  about twice.
+- One eval case, `shaping-clear-goal-needs-no-brief`, which fails a run that
+  writes a brief for a goal that was already decided.
+
 - Two eval cases: `implementing-batch-two-file-floor`, the regression test for
   ceremony around a two-file change, and `designing-offers-the-preview`, which
   fails a run that renders before the chooser agrees or that names no cost.
@@ -19,6 +29,35 @@ release, and a body rewrite that keeps the trigger is a patch.
   (`prices.mjs`) when the status line reports no cost.
 
 ### Changed
+
+- `pick.mjs` takes the screen's copy from `--labels` alone, in the language the
+  conversation runs in, plus a `lang` tag beside the words; `--lang` and the
+  built-in en/nl table are gone, because a flag cannot know what language a
+  session runs in. One English string per key is the last resort for a missing
+  key.
+- `pick.mjs` seats the grid from the contracts file and opens before any comp
+  exists, filling each seat as its own `index.html` lands. A comp is now a
+  fragment carrying its own markup and CSS; the picker injects the document
+  shell, which is structural only, and the comp budget drops from 200 lines to
+  180. `--intrinsic` alone still needs every comp on disk first.
+- `shaping` counts the product decisions a request leaves open instead of the
+  files it changes, and hands a decided goal to `planning` or
+  `implementing-batch` without writing a brief. A brief it does write still
+  lands in `docs/specs/<topic>.md`, because a brief living only in a message
+  dies at the next context clear.
+- `designing`, `shaping`, `planning`, `debug` and `deepen` descriptions carry
+  the same triggers and "not for" cases in fewer characters: the always-loaded
+  total falls from 4171 to 3953, inside the 4000 budget.
+- `accessibility.md` names WCAG 2.2 focus-not-obscured (2.4.11) and the
+  single-pointer alternative to dragging (2.5.7); `controls.md` makes accept and
+  decline equal weight where the pair is consent; `composition.md` picks a
+  disclosure container from the task's shape and places a touch-first primary
+  action in the thumb band; `implementation.md` pads screen-anchored edges with
+  `env(safe-area-inset-*)` and sets a mobile input at 16px; `motion.md` ships an
+  in-product motion setting over the media query alone; `component-system.md`
+  writes the table sort cycle into `aria-sort` and makes a paged table sort at
+  the source; `interaction-qa.md` renders active filters as removable chips with
+  live counts.
 
 - The size gate `shaping`, `debug` and `implementing-batch` share sends a change
   reaching at most two files straight to the edit and its proof, and counts a

@@ -14,7 +14,8 @@ const HANDSHAKE_SKILLS = ['shaping', 'designing'];
 
 const PINNED_SENTENCES = {
   'skills/shaping/SKILL.md': [
-    'Count these facts: more than two files; a new dependency; a changed public signature; a crossed persisted format or security boundary; required code not inspected during initial orientation.',
+    'Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention.',
+    'Zero open decisions means leave this skill and write no brief',
     'Resolve “this” from the first source containing a candidate: working-tree diff, most recent failing check, then last touched file.',
     'changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration',
     'A bare \\"fix this\\" routes by its referent: working-tree diff, then latest failing check, then last-touched file.',

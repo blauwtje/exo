@@ -1,6 +1,6 @@
 ---
 name: deepen
-description: Audit a codebase or subsystem for architectural improvements such as tech debt, coupling, shallow modules, and refactor candidates ranked by evidence. Use when the user asks where or how to improve architecture without naming one exact change. In a read-only planning mode it owns the turn and writes the plan for its findings. Not for a single named refactor or rename, failing existing behavior, or a security or dependency audit.
+description: "Use when the user asks where or how to improve architecture without naming one exact change: tech debt, coupling, shallow modules, refactor candidates across a codebase or subsystem. In a read-only planning mode it owns the turn and writes the plan for its findings. Not for a single named refactor or rename, failing existing behavior, or a security or dependency audit."
 ---
 
 # Deepen

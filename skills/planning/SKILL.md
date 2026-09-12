@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Produce a machine-executable plan before implementation and govern any read-only planning mode. Use when that mode is active, the user asks for a plan or a handoff, another session or executor will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge and no plan request; one-file, typo-only, rename-only, or version-bump edits; git-only operations; proving an active failure outside a planning turn; or an architecture audit, which deepen owns even in planning mode.
+description: Use when a read-only planning mode is active, the user asks for a plan or a handoff, another session or executor will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge and no plan request; one-file, typo-only, rename-only, or version-bump edits; git-only operations; proving an active failure outside a planning turn; or an architecture audit, which deepen owns even in planning mode.
 ---
 
 # Planning

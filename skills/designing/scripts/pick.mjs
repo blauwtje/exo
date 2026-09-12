@@ -10,26 +10,38 @@
 // the user. Nothing is written.
 //
 //   node scripts/pick.mjs --comps <dir> --contracts <contracts.json>
+//                         [--labels <labels.json>] [--intrinsic]
 //                         [--frame <width>x<height>, default 1280x800]
-//                         [--intrinsic] [--lang en|nl] [--labels <labels.json>]
 //                         [--recommend <n>] [--recommend-note <one sentence>]
 //                         [--timeout <seconds, default 600>] [--no-open]
 //
-// --comps holds one directory per variant, named variant-0, variant-1, and so
-// on, each carrying an index.html plus its own assets; variant i is
-// contracts[i]. A variant sets its own frame size in an optional meta.json
-// ({"width":<n>,"height":<n>}), which --intrinsic honours so a size comparison
-// keeps its size differences at one shared scale. stdout carries one line,
+// --contracts decides the seats: contracts[i] is variant i, and --comps holds
+// one directory per variant, named variant-0, variant-1, and so on, each
+// carrying an index.html plus its own assets. A seat opens empty and fills the
+// moment its own index.html exists, so the tab is up while the comps are still
+// being written and nothing waits for the last of three. A variant sets its own
+// frame size in an optional meta.json ({"width":<n>,"height":<n>}), which
+// --intrinsic honours so a size comparison keeps its size differences at one
+// shared scale; that mode lays the grid out from those sizes, so it needs its
+// comps written before the run. stdout carries one line,
 // {"index","label","steer"}, on exit 0. Exit 2 is a usage error; exit 3 means no
 // browser or no answer, and the --recommend variant is then the selection.
 //
+// A comp file opening with <!doctype or <html is served as it stands. Anything
+// else is a fragment, and the server wraps it in the document shell, so a comp
+// carries its own markup and its own CSS and nothing every comp would repeat.
+// That shell is structural only, never a font, a colour or a spacing scale: a
+// shared visual theme across comps would destroy the comparison this picker
+// exists for.
+//
 // --labels carries the screen's own copy, written by the skill in the language
 // the conversation runs in: an object with any of title, hint, recommended,
-// fallbackTitle, choose, zoom, close, typeRole, steer, done, failed. Only
-// fallbackTitle keeps a {n} placeholder, which stands for the seat's letter.
-// Whatever it omits falls back to --lang. --recommend seats that variant first
-// and badges it, and --recommend-note puts one plain sentence of reasoning
-// inside that card.
+// fallbackTitle, choose, zoom, close, typeRole, steer, done, failed, plus lang,
+// the language tag that copy is written in. Only fallbackTitle keeps a {n}
+// placeholder, which stands for the seat's letter. Whatever it omits falls back
+// to the English string below. --recommend seats that variant first and badges
+// it, and --recommend-note puts one plain sentence of reasoning inside that
+// card.
 //
 // Each comp reports the box its text, media and controls occupy, and the grid
 // crops every tile to one shared window around those boxes. A comp is judged on
@@ -54,47 +66,37 @@ const DEFAULT_TIMEOUT_SECONDS = 600;
 // comp's own content lands on screen: at 1280 it reads where 1440 did not,
 // and it is still a real desktop viewport rather than a flattering one.
 const DEFAULT_FRAME = { width: 1280, height: 800 };
-const VARIANT_DIRECTORY = /^variant-(\d+)$/;
 
-// The fallback wording, used when the skill passes no --labels file. Two
-// languages are two languages, not a translation table: the skill writes the
-// screen's own copy in whatever language the conversation runs in, and these
-// only keep the picker usable when it does not. {n} is a variant's position.
-// English is first and is what --lang defaults to: a screen in one particular
-// national language is wrong everywhere that language is not spoken.
+// The last resort, reached only for a key the --labels file leaves out. A flag
+// cannot know what language the session runs in, so this script ships no
+// vocabulary to pick from: the skill writes the screen's copy in the
+// conversation's own language on every run, and one English string per key is
+// what keeps the picker usable when a key is missing. {n} is a variant's
+// position.
 const DEFAULT_LABELS = {
-  en: {
-    title: 'Which one do you like best?',
-    hint: 'Click one to choose.',
-    recommended: 'Recommended',
-    fallbackTitle: 'Option {n}',
-    choose: 'Choose this',
-    zoom: 'Enlarge',
-    close: 'Close',
-    typeRole: 'Letters',
-    steer: 'Want anything changed?',
-    done: 'That is your pick. You can close this tab now.',
-    failed: 'Your choice did not arrive. Say it in the conversation instead.'
-  },
-  nl: {
-    title: 'Welke vind je het mooist?',
-    hint: 'Klik om te kiezen.',
-    recommended: 'Aanbevolen',
-    fallbackTitle: 'Optie {n}',
-    choose: 'Kies deze',
-    zoom: 'Vergroot',
-    close: 'Sluiten',
-    typeRole: 'Letters',
-    steer: 'Wil je iets veranderen?',
-    done: 'Dit is je keuze. Je kunt dit tabblad nu sluiten.',
-    failed: 'Je keuze kwam niet aan. Zeg het in het gesprek in plaats van hier.'
-  }
+  lang: 'en',
+  title: 'Which one do you like best?',
+  hint: 'Click one to choose.',
+  recommended: 'Recommended',
+  fallbackTitle: 'Option {n}',
+  choose: 'Choose this',
+  zoom: 'Enlarge',
+  close: 'Close',
+  typeRole: 'Letters',
+  steer: 'Want anything changed?',
+  done: 'That is your pick. You can close this tab now.',
+  failed: 'Your choice did not arrive. Say it in the conversation instead.'
 };
 
-const LABEL_KEYS = Object.keys(DEFAULT_LABELS.en);
+const LABEL_KEYS = Object.keys(DEFAULT_LABELS);
 // The one label that carries a variant's seat mark; dropping {n} would leave a
-// tile headed 'Optie .' with no way to tell which of three it is.
+// tile headed 'Option .' with no way to tell which of three it is.
 const NUMBERED_LABELS = ['fallbackTitle'];
+// lang is the document's language attribute rather than copy: a screen reader
+// announcing Dutch words as English is unusable, so the file carrying the words
+// also names which language they are. It lands in an HTML attribute, so its
+// shape is checked instead of escaped.
+const LANGUAGE_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 
 // A seat is marked by its letter, so a chooser says 'B' rather than counting.
 // Past Z there is no letter left, and a picker that far along has bigger
@@ -197,6 +199,38 @@ const DEMO_SHIM = `<script>
 })();
 </script>`;
 
+// The shell a fragment is served inside. Every declaration here removes a user
+// agent's opinion rather than adding one of this script's: no family, no size,
+// no colour, no spacing, because the ground, the type, the palette and the
+// technique are the direction and they live in the comp. Controls inherit so
+// the comp's own type reaches its buttons and fields, which the user agent
+// otherwise overrides with a system face the direction never chose.
+const COMP_RESET = '*,*::before,*::after{box-sizing:border-box}'
+  + 'html,body{margin:0;padding:0;width:100%;min-height:100%}'
+  + 'img,svg,video,canvas{display:block;max-width:100%}'
+  + 'button,input,select,textarea{font:inherit;color:inherit}';
+
+// A comp that wrote its own <head> owns the whole document and keeps it; the
+// shim is appended either way, because the picker measures and neutralises
+// navigation from inside the frame in both cases.
+const OPENS_ITS_OWN_DOCUMENT = /^\s*<(?:!doctype|html)\b/i;
+
+function compDocument(markup, lang) {
+  if (OPENS_ITS_OWN_DOCUMENT.test(markup)) {
+    return markup.includes('</body>')
+      ? markup.replace('</body>', `${DEMO_SHIM}\n</body>`)
+      : `${markup}\n${DEMO_SHIM}`;
+  }
+  return `<!doctype html>
+<html lang="${escapeHtml(lang)}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>${COMP_RESET}</style>
+</head><body>
+${markup}
+${DEMO_SHIM}
+</body></html>`;
+}
+
 function requireTimeout(text) {
   if (text === undefined) return DEFAULT_TIMEOUT_SECONDS;
   const seconds = Number(text);
@@ -237,14 +271,6 @@ function requireRecommendationNote(text, recommended) {
     throw new UsageError('--recommend-note must be a non-empty sentence');
   }
   return text.trim();
-}
-
-function requireLanguage(text) {
-  if (text === undefined) return 'en';
-  if (!Object.hasOwn(DEFAULT_LABELS, text)) {
-    throw new UsageError(`--lang must be one of ${Object.keys(DEFAULT_LABELS).join(', ')}, received '${text}'`);
-  }
-  return text;
 }
 
 // CI, a display-less SSH session, or a display-less Linux box cannot show a
@@ -365,66 +391,82 @@ function readSignature(contract, index) {
   return { face, fontHref, swatches };
 }
 
+/** One seat per contract, whether its comp exists yet or not: the contracts are
+ *  written before any comp, so they are what the screen can be laid out from
+ *  while the comps are still arriving. */
 export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME, intrinsic = false } = {}) {
   if (!compsDirectory) throw new UsageError('--comps is required');
-  let entries;
+  let root;
   try {
-    entries = await fs.readdir(compsDirectory, { withFileTypes: true });
+    // Canonical, because resolveAsset compares real paths: on macOS a comps
+    // tree under /tmp or a temp dir resolves into /private, and a variant
+    // directory that still carried the symlinked spelling would match nothing.
+    root = realpathSync(compsDirectory);
   } catch {
     throw new UsageError(`--comps directory '${compsDirectory}' cannot be read`);
-  }
-  const directories = entries
-    .filter((entry) => entry.isDirectory() && VARIANT_DIRECTORY.test(entry.name))
-    .sort((a, b) => Number(VARIANT_DIRECTORY.exec(a.name)[1]) - Number(VARIANT_DIRECTORY.exec(b.name)[1]));
-  if (directories.length === 0) {
-    throw new UsageError(`--comps directory '${compsDirectory}' holds no variant-<n> directory`);
   }
 
   const container = await readJsonFlag(contractsFile, '--contracts');
   if (!Array.isArray(container?.contracts)) throw new UsageError('--contracts file carries no contracts array');
-  if (directories.length !== container.contracts.length) {
-    throw new UsageError(`--comps holds ${directories.length} variants but --contracts holds ${container.contracts.length}`);
-  }
+  if (container.contracts.length === 0) throw new UsageError('--contracts file carries no contracts');
 
   const variants = [];
-  for (const [index, entry] of directories.entries()) {
-    // Canonical, because resolveAsset compares real paths: on macOS a comps
-    // tree under /tmp or a temp dir resolves into /private, and a variant
-    // directory that still carried the symlinked spelling would match nothing.
-    const directory = realpathSync(path.resolve(compsDirectory, entry.name));
-    const document = path.join(directory, 'index.html');
-    if (!(await fs.stat(document).catch(() => null))?.isFile()) {
-      throw new UsageError(`variant directory '${directory}' has no index.html`);
+  for (const [index, contract] of container.contracts.entries()) {
+    const label = `variant-${index}`;
+    const directory = path.join(root, label);
+    // --intrinsic lays the grid out from the comps' own frame sizes, so under it
+    // alone a comp has to be on disk before the run; every other mode opens on
+    // the shared frame and fills the seat when the file lands.
+    if (intrinsic && !(await fs.stat(path.join(directory, 'index.html')).catch(() => null))?.isFile()) {
+      throw new UsageError(`--intrinsic needs every comp written first, and '${directory}' has no index.html`);
     }
     variants.push({
       index,
-      label: entry.name,
+      label,
       directory,
+      ready: false,
       frame: intrinsic ? await readFrame(directory, frame) : frame,
-      contract: container.contracts[index],
-      signature: readSignature(container.contracts[index], index)
+      contract,
+      signature: readSignature(contract, index)
     });
   }
   return variants;
 }
 
+/** True once the seat's own index.html exists. The realpath is taken here and
+ *  not at load time, because the directory a comp lands in did not exist when
+ *  the run started and resolveAsset compares real paths. */
+async function seatReady(variant) {
+  if (variant.ready) return true;
+  if (!(await fs.stat(path.join(variant.directory, 'index.html')).catch(() => null))?.isFile()) return false;
+  try {
+    variant.directory = realpathSync(variant.directory);
+  } catch {
+    return false;
+  }
+  variant.ready = true;
+  return true;
+}
+
 /** The chooser's own copy, written by the skill in the language the
  *  conversation runs in. Every key is optional: what the file leaves out falls
- *  back to --lang, so a partial file still yields a screen with no blanks. */
-export async function readLabels(labelsFile, language) {
-  const fallback = DEFAULT_LABELS[language];
-  if (labelsFile === undefined) return fallback;
+ *  back to English, so a partial file still yields a screen with no blanks. */
+export async function readLabels(labelsFile) {
+  if (labelsFile === undefined) return DEFAULT_LABELS;
   const written = await readJsonFlag(labelsFile, '--labels');
   if (written === null || typeof written !== 'object' || Array.isArray(written)) {
     throw new UsageError('--labels file must hold an object of label keys');
   }
-  const words = { ...fallback };
+  const words = { ...DEFAULT_LABELS };
   for (const [name, value] of Object.entries(written)) {
     if (!LABEL_KEYS.includes(name)) {
       throw new UsageError(`--labels holds unknown key '${name}', expected one of ${LABEL_KEYS.join(', ')}`);
     }
     if (typeof value !== 'string' || value.trim() === '') {
       throw new UsageError(`--labels key '${name}' must be a non-empty string`);
+    }
+    if (name === 'lang' && !LANGUAGE_TAG.test(value)) {
+      throw new UsageError(`--labels key 'lang' must be a language tag such as nl or pt-BR, received '${value}'`);
     }
     if (NUMBERED_LABELS.includes(name) && !value.includes('{n}')) {
       throw new UsageError(`--labels key '${name}' must keep the {n} placeholder for the variant number`);
@@ -437,7 +479,7 @@ export async function readLabels(labelsFile, language) {
 const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
-function page(variants, key, { words, language, recommended, recommendedNote, intrinsic }) {
+function page(variants, key, { words, recommended, recommendedNote, intrinsic }) {
   // The recommendation is expressed as the first seat rather than as a sentence
   // of chrome above the comps. Every data-* attribute keeps carrying the real
   // variant index, so a reordered screen still answers with the index the comps
@@ -475,10 +517,16 @@ function page(variants, key, { words, language, recommended, recommendedNote, in
     // The crop starts as the whole frame, so the first paint is the comp entire
     // and the window only ever narrows onto content once every comp has said
     // where its own content is.
-    return `<section class="tile${isPick ? ' recommended' : ''}" style="--fw:${variant.frame.width};--fh:${variant.frame.height};--cw:${variant.frame.width};--ch:${variant.frame.height};--cx:0;--cy:0" data-index="${variant.index}" data-summary="${escapeHtml(description)}">
+    // A seat whose comp has not been written yet holds its title and its
+    // description and an empty frame, and its controls stay off: nobody chooses
+    // or enlarges a direction they cannot see. aria-busy says the same thing
+    // without a sentence of copy to translate.
+    const source = `/k/${key}/v/${variant.index}/index.html`;
+    const waiting = !variant.ready;
+    return `<section class="tile${isPick ? ' recommended' : ''}${waiting ? ' pending' : ''}"${waiting ? ' aria-busy="true"' : ''} style="--fw:${variant.frame.width};--fh:${variant.frame.height};--cw:${variant.frame.width};--ch:${variant.frame.height};--cx:0;--cy:0" data-index="${variant.index}" data-source="${source}" data-summary="${escapeHtml(description)}">
     <div class="stage">
-      <iframe inert sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}" src="/k/${key}/v/${variant.index}/index.html"></iframe>
-      <button type="button" class="enlarge" data-zoom="${variant.index}">${escapeHtml(words.zoom)}</button>
+      <iframe inert sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}"${waiting ? '' : ` src="${source}"`}></iframe>
+      <button type="button" class="enlarge" data-zoom="${variant.index}"${waiting ? ' disabled' : ''}>${escapeHtml(words.zoom)}</button>
     </div>
     <div class="meta">
       <h2><span class="ordinal">${mark}</span><span class="label">${escapeHtml(title)}</span>${isPick ? `<span class="badge">${escapeHtml(words.recommended)}</span>` : ''}</h2>
@@ -486,7 +534,7 @@ function page(variants, key, { words, language, recommended, recommendedNote, in
       ${signature(variant.signature)}
     </div>
     ${isPick && recommendedNote ? `<p class="why"><span class="why-mark" aria-hidden="true">&#9733;</span>${escapeHtml(recommendedNote)}</p>` : ''}
-    <button type="button" class="pick" data-choose="${variant.index}" aria-label="${escapeHtml(`${words.choose}: ${title}`)}"></button>
+    <button type="button" class="pick" data-choose="${variant.index}" aria-label="${escapeHtml(`${words.choose}: ${title}`)}"${waiting ? ' disabled' : ''}></button>
   </section>`;
   };
 
@@ -497,7 +545,7 @@ function page(variants, key, { words, language, recommended, recommendedNote, in
     .map((href) => `<link rel="stylesheet" href="${escapeHtml(href)}">`).join('\n');
 
   return `<!doctype html>
-<html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(words.title)}</title>
+<html lang="${escapeHtml(words.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(words.title)}</title>
 ${fontLinks}
 <style>
   @layer tokens, base, layout, components;
@@ -652,6 +700,12 @@ ${fontLinks}
        means tabbing through every link inside all three. */
     iframe { pointer-events: none; }
     .zoom iframe { pointer-events: auto; }
+    /* A seat waiting for its comp shows the frame it will arrive in and nothing
+       else: a blank srcless document paints white, which reads as a comp with a
+       white ground rather than as a comp that has not landed. */
+    .tile.pending iframe { visibility: hidden; }
+    .tile.pending .stage { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+    .tile.pending .meta { opacity: 0.55; }
     /* The stage is the crop window, not the frame: the comp keeps its own size
        and is moved under the window, so a narrower window is a closer look
        rather than a smaller picture. */
@@ -1183,8 +1237,44 @@ ${seated.map(tile).join('\n')}
     seatButton.dataset.zoom = tile.dataset.index;
     seatButton.textContent = markOf(seat);
     seatButton.setAttribute('aria-label', markOf(seat) + '. ' + tile.querySelector('.label').textContent);
+    seatButton.disabled = tile.classList.contains('pending');
     zoomSeats.append(seatButton);
   }
+
+  // The seats the page opened empty. The picker is up before the comps are
+  // written, so each seat is filled the moment its own file lands instead of the
+  // screen waiting for the last of three. The shared content window still waits
+  // for all of them, because a crop applied to two comps and then redrawn for
+  // three is not a like-for-like comparison.
+  const waiting = new Map(tiles
+    .filter((tile) => tile.classList.contains('pending'))
+    .map((tile) => [Number(tile.dataset.index), tile]));
+
+  function fill(index) {
+    const tile = waiting.get(index);
+    if (!tile) return;
+    waiting.delete(index);
+    tile.classList.remove('pending');
+    tile.removeAttribute('aria-busy');
+    tile.querySelector('iframe').src = tile.dataset.source;
+    for (const control of tile.querySelectorAll('button[disabled]')) control.disabled = false;
+    zoomSeats.children[seatOf.get(index)].disabled = false;
+  }
+
+  async function fillSeatsAsTheyLand() {
+    while (waiting.size > 0) {
+      try {
+        const answered = await (await fetch('/k/' + key + '/ready')).json();
+        for (const index of answered.ready ?? []) fill(index);
+      } catch {
+        // The server is gone, so the run is over and no seat will ever fill.
+        return;
+      }
+      if (waiting.size === 0) return;
+      await new Promise((resolve) => { setTimeout(resolve, 700); });
+    }
+  }
+  fillSeatsAsTheyLand();
 
   /** The comp at its own frame size, scaled whole to the room it has. Stretched
    *  to the dialog instead, a 1280-wide page reflows into a shape no browser
@@ -1234,10 +1324,18 @@ ${seated.map(tile).join('\n')}
   }
 
   /** The seat one step along the row, wrapping, so the last comp is one key
-   *  from the first. */
+   *  from the first. A seat whose comp has not landed is stepped over rather
+   *  than enlarged: there is nothing in it to look at. */
   function stepSeat(step) {
     if (shownSeat === null) return;
-    enlarge(Number(tiles[(shownSeat + step + tiles.length) % tiles.length].dataset.index));
+    const count = tiles.length;
+    for (let taken = 1; taken <= count; taken += 1) {
+      const seat = ((shownSeat + step * taken) % count + count) % count;
+      const tile = tiles[seat];
+      if (tile.classList.contains('pending')) continue;
+      enlarge(Number(tile.dataset.index));
+      return;
+    }
   }
   zoomChoose.addEventListener('click', () => choose(Number(zoomChoose.dataset.index)));
 
@@ -1372,9 +1470,21 @@ async function serve(variants, key, presentation, timeoutSeconds) {
 
     // Comp assets carry the key in the path, not the query, so a comp's own
     // relative URLs resolve without every stylesheet and font needing a token.
+    // The seats the page may fill now. It carries the key in the path for the
+    // same reason the assets do, and it is what turns an empty seat into a comp
+    // without the chooser reloading anything.
+    if (request.method === 'GET' && url.pathname === `/k/${key}/ready`) {
+      const ready = [];
+      for (const variant of variants) {
+        if (await seatReady(variant)) ready.push(variant.index);
+      }
+      return send(response, 200, 'application/json', JSON.stringify({ ready }));
+    }
+
     const asset = new RegExp(`^/k/${key}/v/(\\d+)/(.+)$`).exec(url.pathname);
     if (request.method === 'GET' && asset && variants[Number(asset[1])]) {
       const variant = variants[Number(asset[1])];
+      if (!(await seatReady(variant))) return send(response, 404, null, '');
       const file = await resolveAsset(variant, asset[2]);
       if (!file) return send(response, 404, null, '');
       const type = MEDIA_TYPES.get(path.extname(file).toLowerCase()) ?? 'application/octet-stream';
@@ -1383,14 +1493,14 @@ async function serve(variants, key, presentation, timeoutSeconds) {
         return createReadStream(file).pipe(response);
       }
       const markup = await fs.readFile(file, 'utf8');
-      const shimmed = markup.includes('</body>')
-        ? markup.replace('</body>', `${DEMO_SHIM}\n</body>`)
-        : `${markup}\n${DEMO_SHIM}`;
-      return send(response, 200, type, shimmed);
+      return send(response, 200, type, compDocument(markup, presentation.words.lang));
     }
 
     if (url.searchParams.get('key') !== key) return send(response, 403, null, '');
     if (request.method === 'GET' && url.pathname === '/') {
+      // Readiness is resolved before the markup so a comp already on disk is
+      // painted by the first response, not one poll later.
+      for (const variant of variants) await seatReady(variant);
       return send(response, 200, 'text/html; charset=utf-8', page(variants, key, presentation));
     }
     if (request.method !== 'POST' || url.pathname !== '/answer') return send(response, 404, null, '');
@@ -1429,12 +1539,11 @@ async function serve(variants, key, presentation, timeoutSeconds) {
 async function main(argv) {
   const flags = parseFlags(argv, {
     comps: 'value', contracts: 'value', frame: 'value', intrinsic: 'boolean',
-    labels: 'value', lang: 'value', recommend: 'value', 'recommend-note': 'value',
+    labels: 'value', recommend: 'value', 'recommend-note': 'value',
     timeout: 'value', 'no-open': 'boolean'
   });
   const timeoutSeconds = requireTimeout(flags.timeout);
-  const language = requireLanguage(flags.lang);
-  const words = await readLabels(flags.labels, language);
+  const words = await readLabels(flags.labels);
   const frame = requireFrame(flags.frame);
   const intrinsic = Boolean(flags.intrinsic);
   const variants = await loadVariants(flags.comps, flags.contracts, { frame, intrinsic });
@@ -1446,7 +1555,7 @@ async function main(argv) {
     throw new CapabilityError(`ui-design: no browser can open here (${headless}); the recommended variant stands`);
   }
 
-  const { url, answer } = await serve(variants, randomBytes(8).toString('hex'), { words, language, recommended, recommendedNote, intrinsic }, timeoutSeconds);
+  const { url, answer } = await serve(variants, randomBytes(8).toString('hex'), { words, recommended, recommendedNote, intrinsic }, timeoutSeconds);
   process.stderr.write(`ui-design: pick URL ${url}\n`);
   if (wantsBrowser) openSystemBrowser(url);
   const chosen = await answer;

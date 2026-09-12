@@ -1,15 +1,15 @@
 ---
 name: shaping
-description: "Turn an outcome or feature request without a chosen solution into explored options or a decided brief in docs/specs before code. Use when the user asks to build or add a capability, or to compare options or trade-offs. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a named exact change, failing behavior, visual-only work, edits reaching at most two files, version bumps, git operations, or read-only questions. A bare \"fix this\" routes by its referent: working-tree diff, then latest failing check, then last-touched file."
+description: "Use when a request names a result but leaves a product decision open: what counts as done, what data it holds, or which architecture carries it; also when asked to compare options or trade-offs. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a goal clear enough to plan or build, a named exact change, failing behavior, visual-only work, a one- or two-file edit, a version bump, a git operation, or a read-only question. A bare \"fix this\" routes by its referent: working-tree diff, then latest failing check, then last-touched file."
 ---
 
 # Shaping
 
 Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before doing any work. Resolve defaults, ask at most one gated question, and keep moving.
 
-## Size gate
+## Decision gate
 
-Count these facts: more than two files; a new dependency; a changed public signature; a crossed persisted format or security boundary; required code not inspected during initial orientation. Zero means make the exact requested edits, prove them, and stop with no skill. One or more means use one mode below. Establish the facts through a `general-purpose` delegate from `../research/scout-prompt.md` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
+Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision is open only while the request, the repository's own conventions, and the ranges read this turn all fail to settle it; a decision this skill would make the obvious way is already closed. Zero open decisions means leave this skill and write no brief: a clear goal goes to `planning` when another session or executor runs it, and to `implementing-batch` when it builds here. Size is not the gate, because a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. One or more open decisions means use one mode below. Establish the facts through a `general-purpose` delegate from `../research/scout-prompt.md` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
 
 ## Two modes
 
@@ -22,7 +22,7 @@ Count these facts: more than two files; a new dependency; a changed public signa
 - **Acceptance:** observable checks.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
 
-Always write the brief to `docs/specs/<topic>.md` and name that path in the same message; the file, not the message, is the artifact a later session resumes from. One exception: when a planning turn borrowed this skill, fold the brief into the plan artifact instead of a separate spec file — the plan is the persisted document.
+Always write the brief to `docs/specs/<topic>.md` and name that path in the same message; the file, not the message, is the artifact a later session resumes from. That holds even when this session goes straight on to build, because a brief living only in a message dies at the next context clear and the stage after it then starts from nothing. One exception: when a planning turn borrowed this skill, fold the brief into the plan artifact instead of a separate spec file — the plan is the persisted document.
 
 Both modes add three decisions:
 
@@ -51,6 +51,7 @@ State the recommendation as the current default and continue in the same message
 ## Judgment
 
 - `debug` outranks this skill when existing behavior fails and the cause is unproven.
+- A closed decision outranks a brief: with nothing open, `planning` owns the turn when another session runs the work and `implementing-batch` owns it when the work builds here, and this skill leaves without writing a file.
 - The frontend-design skill the executing session has loaded owns visual decisions, then hands control back; this skill retains product, data, and architecture decisions.
 - A brief whose `## Visual direction` names an existing `contract-selected.json` hands the frontend-design skill a decided direction; it resumes at Build and repeats no variant choice.
 - Explicit user wording outranks mode selection and artifact defaults.

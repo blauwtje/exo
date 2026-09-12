@@ -40,6 +40,15 @@ For each content cluster, name the relationship before choosing its container:
 
 Cards are for objects reorderable or removable without changing a neighboring object's meaning. Do not put paragraphs forming one argument in separate cards, and do not repeat one card anatomy for three or more content types.
 
+A task that interrupts the page picks its container from the task's own shape, never from habit:
+
+- the surrounding context has to stay readable while the task runs → a side panel, because closing the context to edit it loses the reason for the edit;
+- the task is short, self-contained, and blocks everything else until it resolves → a modal, and the page behind it is inert;
+- the task carries its own sections, more than roughly seven fields, or a step sequence → its own route, because a scrolling modal is a page that forfeited its URL, its back button, and its focus order;
+- the task is one value on one object → edit it where it sits, since a container around a single field costs more attention than the field.
+
+A modal that grew a second step or a scrollbar is the signal to promote it to a route, not to make it taller.
+
 ## Write a composition contract
 
 Before code, record all five:
@@ -71,6 +80,8 @@ Each surface class owes content, hierarchy, interaction, and verification — ne
 ## Responsive recomposition
 
 Mobile reduces simultaneity, not substance. Preserve every content obligation, set an explicit reading order, move secondary tools behind labeled disclosure, and keep the primary action reachable at the decision point. Tables and plots may use a labeled scroll region, pinned key columns, a changed comparison axis, or a detail view; page-level horizontal scroll is never the answer.
+
+On a touch-first surface, reachability is physical and not a metaphor: a hand holding the device sweeps the lower half of the screen with its thumb and strains for the top corners. Put the repeated primary action in the lower band, put rarely used and destructive actions in the top corners where a stray thumb cannot reach them, and never place a frequent action and a destructive one adjacent in the same band. A desktop layout that simply stacks keeps its primary action at the top of the fold, which is exactly where a thumb is not.
 
 ## Pre-ship composition sweep
 

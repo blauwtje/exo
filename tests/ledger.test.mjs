@@ -17,7 +17,10 @@ function runModule(source, env) {
     execFile(
       process.execPath,
       ['--input-type=module', '-e', source],
-      { env: { ...process.env, ...env }, timeout: 30_000 },
+      // The child's stdout is read, not displayed, and console.log paints a
+      // boolean yellow once FORCE_COLOR is set in the terminal that started the
+      // run; the assertions compare the value, so colour is switched off here.
+      { env: { ...process.env, FORCE_COLOR: '0', ...env }, timeout: 30_000 },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) })
     );
   });

@@ -2,14 +2,14 @@
 // (verify.ps1:362-374): every reference a skill exposes is reachable from its
 // table, the required cross-skill owner rows are present with their timing
 // predicate, every delegate prompt beside a SKILL.md has a row, and the designing
-// reference set stays exactly sixteen files.
+// reference set stays exactly seventeen files.
 
 import fs from 'node:fs';
 import path from 'node:path';
 
 const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
-const VISUAL_DESIGN_REFERENCE_COUNT = 16;
+const VISUAL_DESIGN_REFERENCE_COUNT = 17;
 const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
 const EXPECTED_OWNER_ROWS = {
@@ -73,6 +73,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/implementation.md',
     'references/motion.md',
     'references/interaction-qa.md',
+    'references/feedback-and-status.md',
     'references/visual-critique.md',
     'references/craft-recipes.md',
     'references/component-system.md',
@@ -156,7 +157,7 @@ function checkVisualDesignSet(errors, repository) {
   const present = new Set(repository.walk(referencesRoot, (file) => file.endsWith('.md')));
   const equal = tabled.size === present.size && [...tabled].every((file) => present.has(file));
   if (present.size !== VISUAL_DESIGN_REFERENCE_COUNT || tabled.size !== VISUAL_DESIGN_REFERENCE_COUNT || !equal) {
-    errors.push(`designing requires set equality for sixteen files and rows; files=${present.size}, rows=${tabled.size}`);
+    errors.push(`designing requires set equality for ${VISUAL_DESIGN_REFERENCE_COUNT} files and rows; files=${present.size}, rows=${tabled.size}`);
   }
 }
 
