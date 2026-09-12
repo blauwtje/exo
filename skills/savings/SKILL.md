@@ -1,6 +1,6 @@
 ---
 name: savings
-description: Use when the user asks what exo cost, what the read guard withheld, for the exo ledger, panel or counter, or asks to switch exo savings, the ladder or the read guard off or on. Not for the size of one diff, which git shows; not for the live figure, which the status line segment prints.
+description: Use when the user asks what exo cost, what exo or the read guard has saved or withheld, for the exo ledger, savings counter, panel or totals, or asks to switch exo savings, the ladder or the read guard off or on. Not for the size of one diff, which git shows; not for the live figure, which the status line segment prints.
 allowed-tools: Bash(node *savings.mjs*)
 model: haiku
 ---
@@ -23,7 +23,7 @@ The report as the script printed it when this skill loaded:
 
 ## The loop
 
-1. **Relay** the panel above for a request that only asks what was saved, and run nothing, because a second run is a tool call the reader waits on for the same figures. The exception is a notice in place of the panel, such as shell execution disabled by policy: then run `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" report`.
+1. **Relay** the panel above for a request that only asks for the figures, and run nothing, because a second run is a tool call the reader waits on for the same figures. The exception is a notice in place of the panel, such as shell execution disabled by policy: then run `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" report`.
 2. **Switch** with `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" off` or `on`, then `report`, because the panel above shows the state before the switch.
 3. **Relay** the panel unchanged, keeping the ```` ```text ```` fence the script printed around it, because its columns are padded to one width and line up only in a monospace block. After a switch, the script's one-line confirmation goes above the panel.
 4. **Write** nothing of your own above the fence, not the panel's `✻ exo ledger` header and not the opening line an output style asks for: the panel is the whole answer, and a line above it repeats what the reader is about to read.

@@ -17,8 +17,6 @@ import { meanAndSd } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
 const METRICS = ['loc', 'tokens', 'cost', 'time'];
-// A cut at or above 1 would divide the saving estimate by zero.
-const RATIO_CAP = 0.95;
 const LIMITATIONS = [
   'Correctness on template tasks is a marker (a new route decorator, or a new .tsx file) plus python3 -m py_compile; TSX is not type-checked and no test suite runs.',
   'A cell that fails its correctness gate or times out is excluded from the LOC, tokens, cost and time means and counted in the correct column.',
@@ -182,7 +180,7 @@ function ratiosFrom(summaries, meta, resultsFile) {
   const keys = { lines: 'loc', tokens: 'tokens', cost: 'cost', time: 'time' };
   for (const [name, metric] of Object.entries(keys)) {
     if (exo[metric].mean === null || baseline[metric].mean === null) throw new Error(`--publish needs correct template cells in both arms for ${metric}`);
-    ratios[name] = roundedCent(Math.min(1 - exo[metric].mean / baseline[metric].mean, RATIO_CAP));
+    ratios[name] = roundedCent(1 - exo[metric].mean / baseline[metric].mean);
     spread[name] = roundedCent(cutError(exo[metric], baseline[metric]));
   }
   ratios.spread = spread;
