@@ -37,6 +37,8 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/implementing/SKILL.md': [
     'implementer-prompt.md',
+    'bug-fixer-prompt.md',
+    'plan-author-prompt.md',
     'spec-reviewer-prompt.md',
     'quality-reviewer-prompt.md',
     're-review-prompt.md',

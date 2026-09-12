@@ -1,6 +1,6 @@
 # Re-review prompt
 
-The text `implementing` hands the reviewer that returned BLOCK, after `implementer` has answered its findings. The reviewer judges the fix against its own findings and the fix hunks alone, so a second round cannot reopen code the first round passed.
+The text `implementing` hands the reviewer that returned BLOCK, after the build delegate has answered its findings. The reviewer judges the fix against its own findings and the fix hunks alone, so a second round cannot reopen code the first round passed.
 
 ```text
 Task <n> of <plan path>, repository <root>, round <2 or 3>.

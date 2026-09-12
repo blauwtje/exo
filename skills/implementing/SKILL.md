@@ -1,6 +1,7 @@
 ---
 name: implementing
 description: Use when a session opens on a plan file to run, after a clear, or when the user says to run or resume a plan. Not for authoring or repairing a plan, a decided change with no plan file, or a task that must build in this session, which `implementing-batch` owns.
+effort: high
 ---
 
 # Implementing a plan
@@ -21,8 +22,8 @@ Invoking `/exo:implementing` on a plan authorizes the branch its `## Plan basis`
 3. **Ask the branch what landed.** A task has landed when `git log --grep '^Plan-task: <n>$' --format=%h` on the branch prints a commit. The first unlanded task whose `Depends on:` all landed is current; all landed sends you to step 7.
 4. **Extract that task alone**, fence-aware, and route on its `Design:` line:
    `awk -v n=<n> '/^```/{fence=!fence} !fence && /^### Task [0-9]/{on=($3==n":")} on' <plan>`
-5. **Dispatch the build.** A task without `Design:` goes to `implementer` with a brief written from `implementer-prompt.md`. A task with `Design:` builds here under `designing` from its Build phase, or ends the turn when `## Visual direction` records no direction. A `PLAN DRIFT` report goes to `plan-author` with the plan path, the task number and the mismatch, then step 4 repeats; a failed `Run:` whose output names no causal line goes to `bug-fixer` with the command, the log path and the paths; a second drift or a second failure on one task ends the turn with both reports.
-6. **Review, then commit.** Dispatch `spec-reviewer` from `spec-reviewer-prompt.md` and, on PASS, `quality-reviewer` from `quality-reviewer-prompt.md`; a task whose `Files:` names one path and whose `Run:` is one command skips `quality-reviewer`, because a second context costs its body plus the diff and finds nothing on a rename-sized change. A BLOCK saves `git diff -- <Files: paths>` under the directory `git rev-parse --git-dir` prints, goes back to `implementer` with the findings appended, then to the same reviewer from `re-review-prompt.md`, which scopes it to those findings and the fix hunks; a third round ends the turn with the findings. On PASS from every reviewer dispatched run the task's `Commit:` block as written, then `git push`. Report the landed task and the next, then return to step 3.
+5. **Dispatch the build.** A task without `Design:` goes to a `general-purpose` delegate on `sonnet` with a brief written from `implementer-prompt.md`; the model is named on every dispatch, because an omitted model inherits the session's. A task with `Design:` builds here under `designing` from its Build phase, or ends the turn when `## Visual direction` records no direction. A `PLAN DRIFT` report goes to a `general-purpose` delegate on `opus` from `plan-author-prompt.md` with the plan path, the task number and the mismatch, then step 4 repeats; a failed `Run:` whose output names no causal line goes to a `general-purpose` delegate on `opus` from `bug-fixer-prompt.md` with the command, the log path and the paths; a second drift or a second failure on one task ends the turn with both reports.
+6. **Review, then commit.** Dispatch a `general-purpose` delegate from `spec-reviewer-prompt.md` on `sonnet`, or on `opus` when the diff touches concurrency, a security boundary or more than five files, and on PASS another from `quality-reviewer-prompt.md` on the same model; a task whose `Files:` names one path and whose `Run:` is one command skips the quality review, because a second context costs its body plus the diff and finds nothing on a rename-sized change. A BLOCK saves `git diff -- <Files: paths>` under the directory `git rev-parse --git-dir` prints, goes back to the build delegate, resumed, with the findings appended, then to the same reviewer from `re-review-prompt.md`, which scopes it to those findings and the fix hunks; a third round ends the turn with the findings. On PASS from every review dispatched run the task's `Commit:` block as written, then `git push`. Report the landed task and the next, then return to step 3.
 7. **The tail.** With every task landed, run `code-review --fix` on the branch at `medium` effort when no task this turn carried `Design:`, else `high`; commit and push its fixes. Ask one question with three options: open the pull request and, once checks are green, ask the merge question; open it and stop; or the user opens it. On a PR: `gh pr create --base <default> --title --body-file` with the goal, the proof line and `Closes #<n>` on an `issue-<n>-<slug>` branch; on a merge yes run `merge-prs` Steps 2, 4 and 5. On an `issue-<n>-<slug>` branch name `/exo:ship-issue <n>` next.
 
 ## Red flags
@@ -38,13 +39,15 @@ Invoking `/exo:implementing` on a plan authorizes the branch its `## Plan basis`
 
 | File | Read it when |
 |---|---|
-| `implementer-prompt.md` | Step 5, before every `implementer` dispatch. |
-| `spec-reviewer-prompt.md` | Step 6, before every `spec-reviewer` dispatch. |
-| `quality-reviewer-prompt.md` | Step 6, before every `quality-reviewer` dispatch. |
+| `implementer-prompt.md` | Step 5, before every build dispatch. |
+| `bug-fixer-prompt.md` | Step 5, before a dispatch on a failed `Run:` with no causal line. |
+| `plan-author-prompt.md` | Step 5, before a dispatch on `PLAN DRIFT`. |
+| `spec-reviewer-prompt.md` | Step 6, before every spec review dispatch. |
+| `quality-reviewer-prompt.md` | Step 6, before every quality review dispatch. |
 | `re-review-prompt.md` | Step 6, before a reviewer's second or third round on one task. |
 
 ## Judgment
 
 - Explicit user instructions outrank this skill; a named plan path outranks the search.
-- The plan's settled decisions outrank implementation defaults: `planning` owns the plan's text, `implementer` owns the build, the reviewers own their verdicts, this skill owns routing and commits. A choice the plan leaves open and the user would not notice is ruled here and recorded in the commit body, never sent back as a question.
+- The plan's settled decisions outrank implementation defaults: `planning` owns the plan's text, the build delegate owns the build, the reviewers own their verdicts, this skill owns routing and commits. A choice the plan leaves open and the user would not notice is ruled here and recorded in the commit body, never sent back as a question.
 - Repository state outranks memory: only a `Plan-task:` commit on the branch decides what has landed, and after a compaction notice step 3 runs again before any edit.
