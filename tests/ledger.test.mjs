@@ -71,3 +71,34 @@ test('a session untouched for thirty days is pruned, an undated one is kept', as
   assert.deepEqual(Object.keys(sessions).sort(), ['fresh', 'undated']);
   assert.match(sessions.fresh.touched, /^\d{4}-\d{2}-\d{2}T/);
 });
+
+test('a ledger that does not parse is left untouched and the update throws', async () => {
+  const directory = await fixture();
+  const ledger = path.join(directory, 'sessions.json');
+  await fs.writeFile(ledger, '{not json');
+  const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.notEqual(result.code, 0);
+  assert.match(result.stderr, /sessions\.json is not valid JSON/);
+  assert.equal(await fs.readFile(ledger, 'utf8'), '{not json');
+});
+
+test('a lock older than the stale threshold is taken over', async () => {
+  const directory = await fixture();
+  const lock = path.join(directory, 'sessions.json.lock');
+  await fs.mkdir(lock);
+  const expired = new Date(Date.now() - 20_000);
+  await fs.utimes(lock, expired, expired);
+  const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  const sessions = JSON.parse(await fs.readFile(path.join(directory, 'sessions.json'), 'utf8'));
+  assert.deepEqual(Object.keys(sessions), ['s1']);
+});
+
+test('a live lock makes the waiter give up without writing', async () => {
+  const directory = await fixture();
+  await fs.mkdir(path.join(directory, 'sessions.json.lock'));
+  const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.notEqual(result.code, 0);
+  assert.match(result.stderr, /ledger locked by another hook for over 8000 ms/);
+  assert.equal(await fs.access(path.join(directory, 'sessions.json')).catch(() => 'absent'), 'absent');
+});

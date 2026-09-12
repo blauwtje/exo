@@ -9,8 +9,11 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
-const LOCK_WAIT_MS = 2000;
-const LOCK_STALE_MS = 5000;
+// Every hook in hooks/hooks.json times out after 10 s, so a lock older than
+// LOCK_STALE_MS outlived any hook and belongs to one that died, and a waiter
+// gives up before its own hook's timeout kills it mid-write.
+const LOCK_WAIT_MS = 8000;
+const LOCK_STALE_MS = 15000;
 const SESSION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function configDirectory() {
@@ -36,6 +39,24 @@ export function readJson(file, fallback) {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch {
     return fallback;
+  }
+}
+
+// A missing ledger is an empty one; any other read or parse failure throws,
+// because a ledger written back without being read drops every session in it.
+export function readLedger() {
+  const file = ledgerFile();
+  let text;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return {};
+    throw error;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`${file} is not valid JSON: ${error.message}`);
   }
 }
 
@@ -80,6 +101,17 @@ function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
 
+// Removes the lock only while it is the one found stale: a lock a live hook
+// took in the meantime carries a newer mtime and stays.
+function removeStaleLock(lock, staleMtimeMs) {
+  try {
+    if (fs.statSync(lock).mtimeMs !== staleMtimeMs) return;
+  } catch {
+    return;
+  }
+  fs.rmSync(lock, { recursive: true, force: true });
+}
+
 // A directory is the lock because mkdir is atomic on every platform Node
 // runs on; a lock older than LOCK_STALE_MS belongs to a hook that died.
 function withLedgerLock(work) {
@@ -93,14 +125,14 @@ function withLedgerLock(work) {
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
     }
-    let age = 0;
+    let found;
     try {
-      age = Date.now() - fs.statSync(lock).mtimeMs;
+      found = fs.statSync(lock);
     } catch {
       continue;
     }
-    if (age > LOCK_STALE_MS) {
-      fs.rmSync(lock, { recursive: true, force: true });
+    if (Date.now() - found.mtimeMs > LOCK_STALE_MS) {
+      removeStaleLock(lock, found.mtimeMs);
       continue;
     }
     if (Date.now() > deadline) throw new Error(`ledger locked by another hook for over ${LOCK_WAIT_MS} ms`);
@@ -133,7 +165,7 @@ function pruneSessions(sessions, now) {
 // version gains the fields it lacks.
 export function updateSession(sessionId, mutate) {
   return withLedgerLock(() => {
-    const sessions = readJson(ledgerFile(), {});
+    const sessions = readLedger();
     const session = { ...emptySession(), ...(sessions[sessionId] ?? {}) };
     const changed = mutate(session);
     const now = Date.now();
@@ -152,7 +184,7 @@ export function updateSession(sessionId, mutate) {
 // touched moves. mutate returns true when it changed a row.
 export function updateSessions(mutate) {
   return withLedgerLock(() => {
-    const sessions = readJson(ledgerFile(), {});
+    const sessions = readLedger();
     const pruned = pruneSessions(sessions, Date.now());
     const changed = mutate(sessions);
     if (changed || pruned) writeJson(ledgerFile(), sessions);

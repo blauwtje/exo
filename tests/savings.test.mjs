@@ -304,3 +304,14 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal(config.enabled, true);
   assert.equal(config.ratios, undefined);
 });
+
+test('record leaves a ledger that does not parse untouched and exits 0 with the error on stderr', async () => {
+  const { configDirectory, transcript } = await transcriptFixture();
+  const ledger = path.join(configDirectory, 'exo', 'savings', 'sessions.json');
+  await fs.writeFile(ledger, '{not json');
+  const hookInput = JSON.stringify({ session_id: 's1', transcript_path: transcript });
+  const result = await runWithStdin(['record'], hookInput, { CLAUDE_CONFIG_DIR: configDirectory });
+  assert.equal(result.code, 0);
+  assert.match(result.stderr, /^savings: .*sessions\.json is not valid JSON/m);
+  assert.equal(await fs.readFile(ledger, 'utf8'), '{not json');
+});

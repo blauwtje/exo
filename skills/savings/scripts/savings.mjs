@@ -16,7 +16,7 @@
 
 import fs from 'node:fs';
 import process from 'node:process';
-import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
+import { configFile, readJson, readLedger, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
 import { measuredTotals } from './overhead.mjs';
 import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
 
@@ -100,7 +100,7 @@ function record(hookInput) {
 
 function statusline(statusInput) {
   if (!savingsEnabled()) return;
-  let sessions = readJson(ledgerFile(), {});
+  let sessions = readLedger();
   if (typeof statusInput.session_id === 'string') {
     sessions = updateSession(statusInput.session_id, (session) => {
       let changed = ingestTranscript(session, statusInput.transcript_path);
@@ -173,7 +173,7 @@ function gridLines(cells) {
 // one switch away from a per-project split that nobody read. No bar and no
 // trend: a measured figure needs no baseline drawn beside it.
 function report() {
-  const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
+  const sessions = refreshStaleSessions(readLedger());
   const cells = panelCells(sessions);
   const enabled = savingsEnabled();
   const lines = [
