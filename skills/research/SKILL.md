@@ -1,6 +1,7 @@
 ---
 name: research
 description: Use when a code decision hinges on how a pinned external library, framework, API or service behaves and a wrong recalled answer would still compile or type-check yet fail at runtime or at the provider boundary. Not for questions the repository's own code answers, a version bump alone, or a concept explanation.
+effort: high
 ---
 
 # Research
@@ -24,7 +25,7 @@ The overcorrection is researching a call the repository already makes elsewhere:
 
 ## Where this runs
 
-- Delegate the read to `docs-researcher` with the pinned version, the exact question and a stop condition; `document-scout` owns a file on disk, `codebase-scout` the repository.
+- Delegate the read to a `general-purpose` delegate on `sonnet` from `researcher-prompt.md` with the pinned version, the exact question and a stop condition; the same prompt owns a document on disk, and `scout-prompt.md` owns the repository.
 - Read here only when no separate context exists, one page at a time.
 - Hand back the confirmed facts, their citations and the unconfirmed remainder, never the pages.
 
@@ -40,6 +41,13 @@ Write `docs/research/<library>.md` only when the user asks for a file, or a name
 | "I know this API." | Knowing the concept is not knowing this version; read the lockfile. |
 | "The latest docs will do." | The install is older; the answer diverges across minor versions. |
 | "I'll paste the page for context." | Ten quoted lines and a URL; the page costs every later turn. |
+
+## References
+
+| File | Read it when |
+|---|---|
+| `researcher-prompt.md` | Before every documentation or document dispatch. |
+| `scout-prompt.md` | Before a codebase discovery dispatch, here or from any skill that links it. |
 
 ## Judgment
 

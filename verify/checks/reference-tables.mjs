@@ -19,6 +19,7 @@ const EXPECTED_OWNER_ROWS = {
     '../implementing-batch/references/security.md',
     '../implementing-batch/references/data-migration.md',
     '../implementing-batch/references/test-design.md',
+    '../research/scout-prompt.md',
   ],
   'skills/implementing-batch/SKILL.md': [
     'references/critique.md',
@@ -26,14 +27,17 @@ const EXPECTED_OWNER_ROWS = {
     'references/data-migration.md',
     'references/test-design.md',
     'references/performance.md',
+    '../research/scout-prompt.md',
   ],
   'skills/planning/SKILL.md': [
     'references/handoff-spec.md',
     'references/example-handoff.md',
     '../implementing-batch/references/data-migration.md',
+    '../research/scout-prompt.md',
   ],
   'skills/deepen/SKILL.md': [
     '../planning/references/handoff-spec.md',
+    '../research/scout-prompt.md',
   ],
   'skills/implementing/SKILL.md': [
     'implementer-prompt.md',
@@ -43,10 +47,15 @@ const EXPECTED_OWNER_ROWS = {
     'quality-reviewer-prompt.md',
     're-review-prompt.md',
   ],
-  'skills/research/SKILL.md': [],
+  'skills/research/SKILL.md': [
+    'researcher-prompt.md',
+    'scout-prompt.md',
+  ],
   'skills/right-sizing/SKILL.md': [],
   'skills/savings/SKILL.md': [],
-  'skills/shaping/SKILL.md': [],
+  'skills/shaping/SKILL.md': [
+    '../research/scout-prompt.md',
+  ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',
     'references/form-by-failure.md',

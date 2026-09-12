@@ -9,7 +9,7 @@ Turn an outcome into a recommendation or a buildable brief before implementation
 
 ## Size gate
 
-Count these facts: more than one file; a new dependency; a changed public signature; user-visible behavior; required code not inspected during initial orientation. Zero means make the exact requested edit, prove it, and stop with no skill. One or more means use one mode below. Establish the facts through `codebase-scout` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
+Count these facts: more than one file; a new dependency; a changed public signature; user-visible behavior; required code not inspected during initial orientation. Zero means make the exact requested edit, prove it, and stop with no skill. One or more means use one mode below. Establish the facts through a `general-purpose` delegate from `../research/scout-prompt.md` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
 
 ## Two modes
 
@@ -41,6 +41,12 @@ Ask at most one implementation question, with a recommendation, only when all th
 3. choosing one changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration.
 
 State the recommendation as the current default and continue in the same message. Only the unresolved-referent case above stops for an answer. Every other open point becomes a stated assumption.
+
+## References
+
+| File | Read it when |
+|---|---|
+| `../research/scout-prompt.md` | Before a codebase discovery dispatch. |
 
 ## Judgment
 

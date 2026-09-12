@@ -48,7 +48,7 @@ except to add a relation to a parent or a blocker you named.
    left off the issue and named in the report, never approximated by a similar
    one and never created.
 
-3. **Ground the references.** Send `codebase-scout` the paths and symbols the
+3. **Ground the references.** Send a `general-purpose` delegate from `../research/scout-prompt.md` the paths and symbols the
    goal sentences name, so `References` carries real paths. Skip this step for
    an issue that names no code.
 

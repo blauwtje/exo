@@ -10,7 +10,7 @@ Surface the refactors that turn shallow modules into deep ones, ranked by eviden
 ## Scope — an argument, not an interview
 
 - A named target — a path, module, subsystem, layer, or felt pain point — resolves against real paths; audit only inside it.
-- Nothing named: ask `codebase-scout` for the commit-history hot spots, the files and areas that keep recurring, and take the ranges it names as the scope. Widen to the whole tree only when changes are too scattered to yield a hot spot or the user asks for a whole-codebase audit, and still audit through scout-named ranges, because a whole-tree read here exhausts the context before the cards are written.
+- Nothing named: ask a `general-purpose` delegate from `../research/scout-prompt.md` for the commit-history hot spots, the files and areas that keep recurring, and take the ranges it names as the scope. Widen to the whole tree only when changes are too scattered to yield a hot spot or the user asks for a whole-codebase audit, and still audit through scout-named ranges, because a whole-tree read here exhausts the context before the cards are written.
 - Open the output by stating the resolved scope, how it was chosen, and what was deliberately left out. Never ask the user to pick a scope.
 
 ## Vocabulary
@@ -26,7 +26,7 @@ Use exactly these terms; do not substitute component, service, unit, API, bounda
 
 ## The audit
 
-1. Read the scoped code and its callers in the ranges `codebase-scout` names, with an offset and a limit, never a whole file over 100 lines. Note friction, not rule violations:
+1. Read the scoped code and its callers in the ranges a `general-purpose` delegate from `../research/scout-prompt.md` names, with an offset and a limit, never a whole file over 100 lines. Note friction, not rule violations:
    - understanding one concept requires bouncing between many small modules;
    - an interface nearly as complex as the implementation it fronts;
    - pure functions extracted for testability while the real bugs hide in how they are called;
@@ -50,6 +50,7 @@ Fill in everything the code determines: affected files, the refactor, the result
 | File | Read it when |
 |---|---|
 | `../planning/references/handoff-spec.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
+| `../research/scout-prompt.md` | Before a codebase discovery dispatch. |
 
 ## Judgment
 
@@ -57,4 +58,4 @@ Fill in everything the code determines: affected files, the refactor, the result
 - Failing existing behavior outranks this skill: an unproven failure routes to `debug`, and a finding that explains a live symptom is a `debug` hypothesis, not an audit card.
 - A single named refactor or rename is a decided change for `implementing-batch`; this skill exists for the open question of where and what to improve.
 - Migration cost is part of every recommendation: a deepening that invalidates the whole test suite must say so in its card.
-- Report mode ends the turn at the ranked cards and plan mode when the plan validates; after a compaction notice, treat unread code as unread and ask `codebase-scout` for its ranges again before asserting anything, because a card may only name code opened this session.
+- Report mode ends the turn at the ranked cards and plan mode when the plan validates; after a compaction notice, treat unread code as unread and ask a `general-purpose` delegate from `../research/scout-prompt.md` for its ranges again before asserting anything, because a card may only name code opened this session.
