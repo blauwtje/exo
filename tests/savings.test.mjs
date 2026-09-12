@@ -1,9 +1,8 @@
 // The savings ledger reads the transcript the harness writes: one line per
-// content block sharing a message id, streaming repeats with a growing output
-// count, and tool results carrying structured patches. These fixtures pin the
-// shape observed on 2026-09-11; a format change shows up here first. Every
-// figure the panel prints comes out of these fixtures, never out of a ratio
-// applied to one.
+// content block sharing a message id, and streaming repeats with a growing
+// output count. These fixtures pin the shape observed on 2026-09-11; a format
+// change shows up here first. Every figure the panel prints comes out of
+// these fixtures, never out of a ratio applied to one.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -11,6 +10,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { OVERHEAD_VERSION } from '../skills/savings/scripts/overhead.mjs';
+import { sumTokens } from '../skills/savings/scripts/transcript.mjs';
 import { fixture, run } from './harness.mjs';
 
 const SAVINGS = fileURLToPath(new URL('../skills/savings/scripts/savings.mjs', import.meta.url));
@@ -107,16 +107,15 @@ function measuredRow() {
   });
 }
 
-test('record sums usage once per message id, weights the cache, and counts patched lines', async () => {
+test('record sums usage once per message id and weights the cache', async () => {
   const { configDirectory, transcript } = await transcriptFixture();
   const env = { CLAUDE_CONFIG_DIR: configDirectory };
   const first = await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
   assert.equal(first.code, 0, first.stderr);
   const session = (await readLedger(configDirectory)).s1;
-  assert.deepEqual(session.tokens, {
+  assert.deepEqual(sumTokens(session), {
     input: 15, cacheRead: 2000, cache5m: 200, cache1h: 1000, output: 507, raw: 3722, weightedInput: 2465
   });
-  assert.deepEqual(session.lines, { added: 10, removed: 4 });
   assert.equal(session.model, 'claude-fable-5-1');
   assert.equal(session.transcript, transcript);
   assert.equal(session.started, '2026-09-11T10:00:00.000Z');
@@ -131,30 +130,15 @@ test('record is idempotent across runs and appended lines are picked up', async 
   await runWithStdin(['record'], hookInput, env);
   await runWithStdin(['record'], hookInput, env);
   let session = (await readLedger(configDirectory)).s1;
-  assert.deepEqual(session.lines, { added: 10, removed: 4 });
-  assert.equal(session.tokens.output, 507);
+  assert.equal(sumTokens(session).output, 507);
 
   const appended = { type: 'assistant', uuid: 'a9', timestamp: '2026-09-11T10:09:00.000Z',
     message: { id: 'msg_C', model: 'claude-fable-5-1', usage: usage(50), content: [{ type: 'text' }] } };
   await fs.appendFile(transcript, `${JSON.stringify(appended)}\n`);
   await runWithStdin(['record'], hookInput, env);
   session = (await readLedger(configDirectory)).s1;
-  assert.equal(session.tokens.output, 557);
+  assert.equal(sumTokens(session).output, 557);
   assert.equal(session.updated, '2026-09-11T10:09:00.000Z');
-});
-
-test('lines written into exo process files count neither for nor against the lines saved', async () => {
-  const lines = [
-    { type: 'user', uuid: 'w1', timestamp: '2026-09-11T10:00:01.000Z',
-      toolUseResult: { type: 'create', filePath: '/repo/docs/specs/brief.md', content: Array.from({ length: 30 }, () => 'b').join('\n'), originalFile: null, structuredPatch: [] } },
-    { type: 'user', uuid: 'w2', timestamp: '2026-09-11T10:00:02.000Z',
-      toolUseResult: { type: 'create', filePath: '/repo/src/a.js', content: Array.from({ length: 10 }, () => 'a').join('\n'), originalFile: null, structuredPatch: [] } }
-  ];
-  const { configDirectory, transcript } = await transcriptFixture(lines, []);
-  const env = { CLAUDE_CONFIG_DIR: configDirectory };
-  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
-  assert.deepEqual((await readLedger(configDirectory)).s1.lines, { added: 10, removed: 0 });
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo 0 B withheld · 0 tok · $0.00 · 0m');
 });
 
 test('a row booked by an older version is read again from its transcript when the report runs', async () => {
@@ -169,7 +153,7 @@ test('a row booked by an older version is read again from its transcript when th
   const session = (await readLedger(directory)).s9;
   assert.equal(session.transcript, transcript);
   assert.equal(session.overhead.version, OVERHEAD_VERSION);
-  assert.deepEqual(session.lines, { added: 10, removed: 4 });
+  assert.equal(sumTokens(session).output, 100);
 });
 
 test('reading older rows again neither brings back an expired row nor moves a row\'s touched', async () => {
@@ -314,4 +298,38 @@ test('record leaves a ledger that does not parse untouched and exits 0 with the 
   assert.equal(result.code, 0);
   assert.match(result.stderr, /^savings: .*sessions\.json is not valid JSON/m);
   assert.equal(await fs.readFile(ledger, 'utf8'), '{not json');
+});
+
+test('record without a transcript path books an empty row and exits 0', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const result = await runWithStdin(['record'], JSON.stringify({ session_id: 's1' }), { CLAUDE_CONFIG_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  const session = (await readLedger(directory)).s1;
+  assert.equal(session.transcript, null);
+  assert.deepEqual(session.usageById, {});
+});
+
+test('the cost and duration the status line reports are never stored in the ledger', async () => {
+  const { configDirectory, transcript } = await transcriptFixture();
+  const statusInput = { session_id: 's1', transcript_path: transcript, cost: { total_cost_usd: 1.23, total_duration_ms: 4000 } };
+  const result = await runWithStdin(['statusline'], JSON.stringify(statusInput), { CLAUDE_CONFIG_DIR: configDirectory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^exo /);
+  const session = (await readLedger(configDirectory)).s1;
+  for (const field of ['costUsd', 'durationMs', 'tokens', 'lines', 'linesByEntry']) {
+    assert.equal(Object.hasOwn(session, field), false, field);
+  }
+});
+
+test('a row whose transcript is gone gets an empty overhead and keeps its transcript path', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const gone = path.join(directory, 'gone.jsonl');
+  await writeLedger(directory, { s9: { transcript: gone, overhead: null } });
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+  assert.equal(result.code, 0, result.stderr);
+  const session = (await readLedger(directory)).s9;
+  assert.deepEqual(session.overhead, { version: OVERHEAD_VERSION, hookMs: 0, transcripts: {}, calls: {} });
+  assert.equal(session.transcript, gone);
 });

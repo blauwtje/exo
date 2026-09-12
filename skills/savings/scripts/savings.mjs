@@ -102,19 +102,7 @@ function statusline(statusInput) {
   if (!savingsEnabled()) return;
   let sessions = readLedger();
   if (typeof statusInput.session_id === 'string') {
-    sessions = updateSession(statusInput.session_id, (session) => {
-      let changed = ingestTranscript(session, statusInput.transcript_path);
-      const cost = statusInput.cost ?? {};
-      if (typeof cost.total_cost_usd === 'number' && cost.total_cost_usd !== session.costUsd) {
-        session.costUsd = cost.total_cost_usd;
-        changed = true;
-      }
-      if (typeof cost.total_duration_ms === 'number' && cost.total_duration_ms !== session.durationMs) {
-        session.durationMs = cost.total_duration_ms;
-        changed = true;
-      }
-      return changed;
-    });
+    sessions = updateSession(statusInput.session_id, (session) => ingestTranscript(session, statusInput.transcript_path));
   }
   process.stdout.write(segment(measuredLedger(refreshStaleSessions(sessions))));
 }

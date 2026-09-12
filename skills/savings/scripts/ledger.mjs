@@ -1,8 +1,8 @@
 // The savings ledger on disk: one JSON file keyed by session id, written
 // through a rename so a status line render never reads a half file, and
 // updated behind a directory lock so two hooks firing at once lose nothing.
-// Shared by savings.mjs (tokens, lines, cost, time) and read-guard.mjs (reads
-// withheld).
+// Shared by savings.mjs (usage and overhead per session) and read-guard.mjs
+// (reads withheld).
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -84,13 +84,8 @@ export function emptySession() {
     transcript: null,
     project: null,
     model: null,
-    costUsd: null,
-    durationMs: null,
-    tokens: null,
-    lines: null,
     offsets: {},
     usageById: {},
-    linesByEntry: {},
     reads: {},
     guard: { capped: 0, duplicates: 0, hookMs: 0, refusals: {} },
     overhead: null

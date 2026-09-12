@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { emptySession } from '../skills/savings/scripts/ledger.mjs';
 import { OVERHEAD_VERSION, measuredTotals } from '../skills/savings/scripts/overhead.mjs';
-import { ingestTranscript, isExoProcessFile } from '../skills/savings/scripts/transcript.mjs';
+import { ingestTranscript } from '../skills/savings/scripts/transcript.mjs';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -149,20 +149,5 @@ test('a transcript booked by an older version is read again from the start, to t
   const legacy = { ...structuredClone(fresh), overhead: { tokens: 1, hookMs: 0, transcripts: {}, skillCalls: {} } };
   assert.equal(ingestTranscript(legacy, transcript), true);
   assert.deepEqual(legacy.overhead, fresh.overhead);
-  assert.deepEqual(legacy.tokens, fresh.tokens);
-});
-
-test('lines written into exo process files are kept apart from product code', async () => {
-  const processFiles = ['/repo/docs/specs/brief.md', '/repo/docs/plans/plan.md', '/repo/docs/research/node.md', '/repo/.git/implement-next.md',
-    '/repo/.git/worktrees/w/implement-next.md', '/private/tmp/designing/exo-20260911-1200/comp.html', '/Users/me/.claude/plans/p.md',
-    'C:\\repo\\docs\\specs\\brief.md'];
-  for (const filePath of processFiles) assert.equal(isExoProcessFile(filePath), true, filePath);
-  for (const filePath of ['/repo/src/docs.ts', '/repo/implement-next.md', '/repo/specs/a.md', undefined]) assert.equal(isExoProcessFile(filePath), false, filePath);
-  const session = await ingest([
-    { type: 'user', uuid: 'w1', timestamp: '2026-09-11T10:00:01.000Z',
-      toolUseResult: { type: 'create', filePath: '/repo/docs/specs/brief.md', content: 'a\nb\nc', originalFile: null, structuredPatch: [] } },
-    { type: 'user', uuid: 'w2', timestamp: '2026-09-11T10:00:02.000Z',
-      toolUseResult: { filePath: '/repo/src/a.ts', structuredPatch: [{ lines: ['+x', '+y', '-z'] }] } }
-  ]);
-  assert.deepEqual(session.lines, { added: 2, removed: 1 });
+  assert.deepEqual(legacy.usageById, fresh.usageById);
 });
