@@ -87,7 +87,7 @@ export function emptySession() {
     offsets: {},
     usageById: {},
     reads: {},
-    guard: { capped: 0, duplicates: 0, hookMs: 0, refusals: {} },
+    guard: { hookMs: 0, refusals: {} },
     overhead: null
   };
 }

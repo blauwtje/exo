@@ -120,7 +120,7 @@ test('a model missing from prices.mjs makes the exo cost unknown', async () => {
 
 test('a refused Read re-issued at once counts whole, and the guard reports the bytes it withheld', async () => {
   const guard = {
-    capped: 1, duplicates: 0, hookMs: 120,
+    hookMs: 120,
     refusals: { toolu_1: { kind: 'capped', bytesWithheld: 4000, reader: 'main', filePath: '/repo/big.ts', open: true } }
   };
   const session = await ingest([

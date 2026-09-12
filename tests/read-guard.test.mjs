@@ -57,7 +57,7 @@ test('refuses an unbounded read of a file over 400 lines and books the whole fil
   assert.equal(verdict.permissionDecision, 'deny');
   assert.match(verdict.permissionDecisionReason, /has 600 lines and an unbounded read is capped at 400/);
   const session = (await ledger(configDirectory)).s1;
-  assert.equal(session.guard.capped, 1);
+  assert.deepEqual(Object.keys(session.guard.refusals), ['toolu_1']);
   const wholeFile = Buffer.byteLength(await fs.readFile(file, 'utf8'));
   assert.deepEqual(session.guard.refusals.toolu_1, { kind: 'capped', bytesWithheld: wholeFile, reader: 'main', filePath: file, open: true });
 });
@@ -104,14 +104,13 @@ test('a booked ranged read is refused on an unchanged re-read with the earlier b
   assert.equal(repeat.permissionDecision, 'deny');
   assert.match(repeat.permissionDecisionReason, /is unchanged since your read at/);
   let session = (await ledger(configDirectory)).s1;
-  assert.equal(session.guard.duplicates, 1);
   assert.equal(session.guard.refusals.toolu_9.kind, 'duplicate');
   assert.equal(session.guard.refusals.toolu_9.bytesWithheld, session.reads[Object.keys(session.reads)[0]].bytes);
 
   await fs.appendFile(file, '\nline 601');
   assert.equal(decision(await runGuard([], ranged, env)), null);
   session = (await ledger(configDirectory)).s1;
-  assert.equal(session.guard.duplicates, 1);
+  assert.deepEqual(Object.keys(session.guard.refusals), ['toolu_9']);
 });
 
 test('a read that never succeeded is not a duplicate', async () => {
@@ -169,4 +168,11 @@ test('EXO_SAVINGS=off never refuses and writes no ledger', async () => {
   assert.equal(decision(await runGuard([], readInput(file), off)), null);
   await runGuard(['book'], readInput(file, { offset: 1, limit: 20 }), off);
   assert.equal(await fs.access(path.join(configDirectory, 'exo', 'savings', 'sessions.json')).catch(() => 'absent'), 'absent');
+});
+
+test('the guard books no capped or duplicate counters beside its refusals', async () => {
+  const { env, configDirectory, file } = await guardFixture();
+  await runGuard([], readInput(file), env);
+  const guard = (await ledger(configDirectory)).s1.guard;
+  assert.deepEqual(Object.keys(guard).sort(), ['hookMs', 'refusals']);
 });

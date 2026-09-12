@@ -49,12 +49,12 @@ test('savingsEnabled reads EXO_SAVINGS first and config.json enabled second', as
 
 test('concurrent updates behind the lock lose no increment', async () => {
   const directory = await fixture();
-  const increment = `${IMPORT} updateSession('s1', (session) => { session.guard.capped += 1; return true; });`;
+  const increment = `${IMPORT} updateSession('s1', (session) => { session.guard.hookMs += 1; return true; });`;
   const writers = Array.from({ length: 8 }, () => runModule(increment, { EXO_SAVINGS_DIR: directory }));
   const results = await Promise.all(writers);
   for (const result of results) assert.equal(result.code, 0, result.stderr);
   const sessions = JSON.parse(await fs.readFile(path.join(directory, 'sessions.json'), 'utf8'));
-  assert.equal(sessions.s1.guard.capped, 8);
+  assert.equal(sessions.s1.guard.hookMs, 8);
   assert.equal(await fs.access(path.join(directory, 'sessions.json.lock')).catch(() => 'absent'), 'absent');
 });
 
@@ -62,8 +62,8 @@ test('a session untouched for thirty days is pruned, an undated one is kept', as
   const directory = await fixture();
   const old = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
   await fs.writeFile(path.join(directory, 'sessions.json'), JSON.stringify({
-    stale: { touched: old, guard: { capped: 1, duplicates: 0, bytesWithheld: 10 } },
-    undated: { guard: { capped: 2, duplicates: 0, bytesWithheld: 20 } }
+    stale: { touched: old, guard: { hookMs: 1, refusals: {} } },
+    undated: { guard: { hookMs: 2, refusals: {} } }
   }));
   const result = await runModule(`${IMPORT} updateSession('fresh', () => true);`, { EXO_SAVINGS_DIR: directory });
   assert.equal(result.code, 0, result.stderr);

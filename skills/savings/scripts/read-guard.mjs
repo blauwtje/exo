@@ -87,17 +87,16 @@ function refusalOf(session, target) {
   const { input, filePath, stat, key } = target;
   const previous = session.reads[key];
   if (previous && previous.mtimeMs === stat.mtimeMs && previous.size === stat.size) {
-    session.guard.duplicates += 1;
     return {
       kind: 'duplicate',
       bytesWithheld: previous.bytes,
       reason: `exo read guard: ${filePath} (${describe(input)}) is unchanged since your read at ${previous.at} in this context window; use that copy, or pass a different offset and limit to read it again.`
     };
   }
-  const lines = fileLines(filePath);
   const unbounded = input.offset === undefined && input.limit === undefined;
-  if (!unbounded || lines.length <= UNBOUNDED_READ_CAP) return null;
-  session.guard.capped += 1;
+  if (!unbounded) return null;
+  const lines = fileLines(filePath);
+  if (lines.length <= UNBOUNDED_READ_CAP) return null;
   return {
     kind: 'capped',
     bytesWithheld: Buffer.byteLength(lines.join('\n')),

@@ -87,7 +87,7 @@ function bookedRow({ calls = {}, usageById = {}, guard = {}, hookMs = 0 }) {
   return {
     overhead: { version: OVERHEAD_VERSION, hookMs, transcripts: {}, calls },
     usageById,
-    guard: { capped: 0, duplicates: 0, hookMs: 0, refusals: {}, ...guard }
+    guard: { hookMs: 0, refusals: {}, ...guard }
   };
 }
 
@@ -98,7 +98,7 @@ function measuredRow() {
     calls: { msg_1: { mixed: false, start: '2026-09-11T10:00:00.000Z', end: '2026-09-11T10:01:58.000Z' } },
     usageById: { msg_1: { input: 2000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 400, model: 'claude-fable-5-1' } },
     guard: {
-      capped: 1, duplicates: 1, hookMs: 2000,
+      hookMs: 2000,
       refusals: {
         toolu_1: { kind: 'capped', bytesWithheld: 1048576, reader: 'main', filePath: '/repo/big.ts', open: true },
         toolu_2: { kind: 'duplicate', bytesWithheld: 524288, reader: 'main', filePath: '/repo/big.ts', open: true }
@@ -120,7 +120,7 @@ test('record sums usage once per message id and weights the cache', async () => 
   assert.equal(session.transcript, transcript);
   assert.equal(session.started, '2026-09-11T10:00:00.000Z');
   assert.equal(session.updated, '2026-09-11T10:03:00.000Z');
-  assert.deepEqual(session.guard, { capped: 0, duplicates: 0, hookMs: 0, refusals: {} });
+  assert.deepEqual(session.guard, { hookMs: 0, refusals: {} });
 });
 
 test('record is idempotent across runs and appended lines are picked up', async () => {
