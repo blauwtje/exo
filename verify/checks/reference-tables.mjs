@@ -1,8 +1,7 @@
-// Port of Test-ReferenceTables (verify.ps1:382-534) and its row helper
-// (verify.ps1:362-374): every reference a skill exposes is reachable from its
-// table, the required cross-skill owner rows are present with their timing
-// predicate, every delegate prompt beside a SKILL.md has a row, and the designing
-// reference set stays exactly seventeen files.
+// Every reference a skill exposes is reachable from its table, the required
+// cross-skill owner rows are present with their timing predicate, every
+// delegate prompt beside a SKILL.md has a row, and the designing reference set
+// matches its table file for file.
 
 import fs from 'node:fs';
 import path from 'node:path';

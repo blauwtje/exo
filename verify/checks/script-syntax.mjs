@@ -1,6 +1,4 @@
-// Every script in the repository parses. JavaScript goes through node --check.
-// Port of Test-PowerShellSyntax (verify.ps1:1299-1310), javascript only: no .ps1
-// remains in the repository for a PowerShell parser to check.
+// Every script in the repository parses: JavaScript goes through node --check.
 
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';

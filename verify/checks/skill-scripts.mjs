@@ -1,7 +1,7 @@
-// Port of Test-SkillScripts (verify.ps1:1347-1404): every file a skill ships under
-// scripts/ is an .mjs module that parses, installs nothing, hard-codes no machine
-// path, and is linked from the prose that names it. A skill script that installs a
-// package or points at one machine's temp directory works only where it was written.
+// Every file a skill ships under scripts/ is an .mjs module that parses,
+// installs nothing, hard-codes no machine path, and is linked from the prose
+// that names it. A skill script that installs a package or points at one
+// machine's temp directory works only where it was written.
 
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,6 +1,5 @@
-// Port of Test-ProcessStructure (verify.ps1:232-259): each process file opens
-// with an H1, then a stance/enemy/overcorrection paragraph, and closes on a
-// non-empty Judgment section.
+// Each process file opens with an H1, then a stance/enemy/overcorrection
+// paragraph, and closes on a non-empty Judgment section.
 
 import path from 'node:path';
 import { markdownBody } from '../markdown.mjs';

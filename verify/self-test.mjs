@@ -2,9 +2,7 @@
 // verifier to reject each mutation, plus a set of benign variations it must still
 // accept. A verifier nobody attacks reports green on a corpus that has rotted.
 //
-// Port of Invoke-VerifierSelfTest (verify.ps1:1482-1758) and its fixture copy
-// (verify.ps1:1471-1480). Scenario order and names are preserved so a failure names
-// the same scenario in both runners.
+// Each scenario keeps its name, so a failure names the same scenario on every run.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -146,7 +144,7 @@ export function runSelfTest(report, repository) {
       const caseRoot = path.join(selfRoot, scenario.name);
       copyVerificationFixture(repository, caseRoot);
       scenario.mutate(caseRoot);
-      const run = spawnSync(process.execPath, [verifier, '--repository-root', caseRoot, '--skip-link-check'], {
+      const run = spawnSync(process.execPath, [verifier, '--repository-root', caseRoot], {
         encoding: 'utf8'
       });
       const expect = scenario.expect ?? 'reject';

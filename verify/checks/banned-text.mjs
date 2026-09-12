@@ -1,7 +1,6 @@
-// Port of Test-BannedText (verify.ps1:260-309): no vendor, harness, or model name
-// and no assistant filler reaches a skill body, so the corpus stays portable and
-// does not age with a product. The pattern text is quoted back in the failure
-// detail, so each entry stays character-identical to its PowerShell counterpart.
+// No vendor, harness, or model name and no assistant filler reaches a skill
+// body, so the corpus stays portable and does not age with a product. The
+// pattern text is quoted back in the failure detail.
 
 const CASE_INSENSITIVE = [
   "let me know if you(?:'|’)d like",

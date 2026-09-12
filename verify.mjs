@@ -1,6 +1,6 @@
 // Deterministic verification of the skill corpus: no model calls, no network.
 //
-//   node verify.mjs [--repository-root <dir>] [--skip-link-check] [--self-test]
+//   node verify.mjs [--repository-root <dir>] [--self-test]
 //
 // Exits 1 when any check failed.
 
@@ -29,7 +29,6 @@ const MINIMUM_NODE_MAJOR = 22;
 const { values } = parseArgs({
   options: {
     'repository-root': { type: 'string' },
-    'skip-link-check': { type: 'boolean', default: false },
     'self-test': { type: 'boolean', default: false }
   }
 });
@@ -48,20 +47,19 @@ if (!fs.existsSync(path.join(root, 'skills'))) {
 
 const report = createReport();
 const repository = createRepository(root);
-const options = { skipLinkCheck: values['skip-link-check'] };
 
-checkSkillFrontmatter(report, repository, options);
-checkProcessStructure(report, repository, options);
-checkMarkdownReferences(report, repository, options);
-checkDescriptionBudgets(report, repository, options);
-checkBannedText(report, repository, options);
-checkReferenceTables(report, repository, options);
-checkSharedContracts(report, repository, options);
-checkScriptSyntax(report, repository, options);
-checkSkillScripts(report, repository, options);
-checkSkillScriptBehavior(report, repository, options);
-checkGitWhitespace(report, repository, options);
-checkPluginVersion(report, repository, options);
+checkSkillFrontmatter(report, repository);
+checkProcessStructure(report, repository);
+checkMarkdownReferences(report, repository);
+checkDescriptionBudgets(report, repository);
+checkBannedText(report, repository);
+checkReferenceTables(report, repository);
+checkSharedContracts(report, repository);
+checkScriptSyntax(report, repository);
+checkSkillScripts(report, repository);
+checkSkillScriptBehavior(report, repository);
+checkGitWhitespace(report, repository);
+checkPluginVersion(report, repository);
 
 if (values['self-test']) runSelfTest(report, repository);
 

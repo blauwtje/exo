@@ -4,5 +4,13 @@
 # node --test because it calls a model.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
-claude -p --plugin-dir "$root" 'List the names of the skills available to you, one per line, nothing else.' \
-  | grep -q 'exo:' && echo "smoke: exo skills visible"
+# Ten of the eleven skills the model may invoke, so one name the model drops
+# from its list does not fail the run while a missing plugin still does.
+minimum=10
+listed=$(claude -p --plugin-dir "$root" 'List the names of the skills available to you, one per line, nothing else.' \
+  | grep -cE '^[-*[:space:]]*exo:' || true)
+if [ "$listed" -lt "$minimum" ]; then
+  echo "smoke: $listed exo: skills listed, expected at least $minimum" >&2
+  exit 1
+fi
+echo "smoke: $listed exo skills visible"

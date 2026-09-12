@@ -1,5 +1,5 @@
-// Port of Test-MarkdownReferences (verify.ps1:348-361): every Markdown path a
-// process file names resolves to a file that exists, forward-slashed.
+// Every Markdown path a process file names resolves to a file that exists,
+// forward-slashed.
 
 import fs from 'node:fs';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';

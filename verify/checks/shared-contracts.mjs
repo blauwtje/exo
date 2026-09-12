@@ -1,8 +1,6 @@
-// Port of Test-SharedContracts (verify.ps1:536-663): the sentences two skills must
-// state identically stay pinned, so a handshake cannot desync in one body alone.
-// Every entry is a literal substring of the file it is keyed by, quoted from the
-// PowerShell table character for character; paths are relative to the repository
-// root, and one of them reaches outside it into the agent definition.
+// The sentences two skills must state identically stay pinned, so a handshake
+// cannot desync in one body alone. Every entry is a literal substring of the
+// file it is keyed by; paths are relative to the repository root.
 
 import fs from 'node:fs';
 import path from 'node:path';

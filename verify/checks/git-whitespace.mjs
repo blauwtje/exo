@@ -1,5 +1,5 @@
-// Port of Test-GitWhitespace (verify.ps1:1312-1333): git diff --check over tracked
-// files, plus a trailing-whitespace scan of untracked ones, which git cannot see.
+// git diff --check over tracked files, plus a trailing-whitespace scan of
+// untracked ones, which git cannot see.
 
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';

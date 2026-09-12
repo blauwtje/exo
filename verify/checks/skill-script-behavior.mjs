@@ -1,7 +1,7 @@
-// Port of Test-SkillScriptBehavior (verify.ps1:1406-1438): runs tests/*.test.mjs
-// under node --test with the TAP reporter and reports the tally. The tally comes
-// from the TAP footer rather than the exit code alone, so a green line names how
-// many tests actually ran and a red one names which ones failed.
+// Runs tests/*.test.mjs under node --test with the TAP reporter and reports the
+// tally. The tally comes from the TAP footer rather than the exit code alone, so
+// a green line names how many tests actually ran and a red one names which ones
+// failed.
 
 import fs from 'node:fs';
 import path from 'node:path';
