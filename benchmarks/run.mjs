@@ -8,7 +8,7 @@
 //   node benchmarks/run.mjs --full --confirm              every task, every arm, n=4
 //   node benchmarks/run.mjs --tasks a,b --arms x,y --runs 2 --model haiku --concurrency 2
 //   node benchmarks/run.mjs --tasks calib-reply --arms baseline,exo --runs 6 --concurrency 1
-//                                                         calibration cells for calibrate.mjs
+//                                                         cells of the calibration tier
 //
 // A run above smoke size costs money: --full prints the projection from the
 // latest smoke run and stops unless --confirm is given.

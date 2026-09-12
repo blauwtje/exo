@@ -1,8 +1,9 @@
 // The savings ledger reads the transcript the harness writes: one line per
 // content block sharing a message id, streaming repeats with a growing output
 // count, and tool results carrying structured patches. These fixtures pin the
-// shape observed on 2026-09-11; a format change shows up here first. Ratios
-// are pinned in config.json, so a published benchmark run moves no figure.
+// shape observed on 2026-09-11; a format change shows up here first. Every
+// figure the panel prints comes out of these fixtures, never out of a ratio
+// applied to one.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -13,11 +14,6 @@ import { OVERHEAD_VERSION } from '../skills/savings/scripts/overhead.mjs';
 import { fixture, run } from './harness.mjs';
 
 const SAVINGS = fileURLToPath(new URL('../skills/savings/scripts/savings.mjs', import.meta.url));
-const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
-// Cuts that save the whole actual in lines, a quarter in tokens, and a third in
-// cost and time. None may equal its FIRST_LOAD_RATIOS value in savings.mjs,
-// which loadConfig reads as unedited and replaces with the published ratio.
-const TEST_RATIOS = { lines: 0.5, tokens: 0.2, cost: 0.25, time: 0.25 };
 
 function runWithStdin(args, input, env) {
   return run(SAVINGS, args, { env, input });
@@ -57,7 +53,7 @@ function jsonLines(lines) {
   return `${lines.map((line) => JSON.stringify(line)).join('\n')}\n`;
 }
 
-async function writeConfig(configDirectory, config = { ratios: TEST_RATIOS }) {
+async function writeConfig(configDirectory, config = {}) {
   const file = path.join(configDirectory, 'exo', 'savings', 'config.json');
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.writeFile(file, JSON.stringify(config));
@@ -85,17 +81,30 @@ async function writeLedger(configDirectory, sessions) {
   await fs.writeFile(file, JSON.stringify(sessions));
 }
 
-// A ledger row as the current version books it, its overhead held as usage counts in one transcript.
-function bookedRow(fields, overheadCounts = {}, overheadHookMs = 0) {
-  const counts = { input: 0, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0, ...overheadCounts };
-  const transcripts = { '/t.jsonl': { model: 'claude-haiku-4-5', counts } };
-  return { overhead: { version: OVERHEAD_VERSION, hookMs: overheadHookMs, transcripts, calls: {}, refusals: {} }, ...fields };
+// A ledger row as the current version books it: the calls that were exo's own,
+// the usage the API reported for them, and the guard's refusals.
+function bookedRow({ calls = {}, usageById = {}, guard = {}, hookMs = 0 }) {
+  return {
+    overhead: { version: OVERHEAD_VERSION, hookMs, transcripts: {}, calls },
+    usageById,
+    guard: { capped: 0, duplicates: 0, hookMs: 0, refusals: {}, ...guard }
+  };
 }
 
-function call(id, timestamp, model, counts) {
-  const usageBlock = { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: counts.cache1h + counts.cache5m, output_tokens: 0,
-    cache_creation: { ephemeral_5m_input_tokens: counts.cache5m, ephemeral_1h_input_tokens: counts.cache1h } };
-  return { type: 'assistant', uuid: `${id}-u`, timestamp, message: { id, model, usage: usageBlock, content: [{ type: 'text', text: 'ok' }] } };
+// One exo call of 2,000 input and 400 output tokens over 118 seconds, two
+// seconds of guard runs, and 1.5 MB withheld over two refusals.
+function measuredRow() {
+  return bookedRow({
+    calls: { msg_1: { mixed: false, start: '2026-09-11T10:00:00.000Z', end: '2026-09-11T10:01:58.000Z' } },
+    usageById: { msg_1: { input: 2000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 400, model: 'claude-fable-5-1' } },
+    guard: {
+      capped: 1, duplicates: 1, hookMs: 2000,
+      refusals: {
+        toolu_1: { kind: 'capped', bytesWithheld: 1048576, reader: 'main', filePath: '/repo/big.ts', open: true },
+        toolu_2: { kind: 'duplicate', bytesWithheld: 524288, reader: 'main', filePath: '/repo/big.ts', open: true }
+      }
+    }
+  });
 }
 
 test('record sums usage once per message id, weights the cache, and counts patched lines', async () => {
@@ -134,72 +143,6 @@ test('record is idempotent across runs and appended lines are picked up', async 
   assert.equal(session.updated, '2026-09-11T10:09:00.000Z');
 });
 
-test('a session that wrote product code saves actual × r / (1 − r), with no overhead taken off again', async () => {
-  const { configDirectory, transcript } = await transcriptFixture();
-  const env = { CLAUDE_CONFIG_DIR: configDirectory };
-  const statusInput = JSON.stringify({
-    session_id: 's1', transcript_path: transcript, cwd: '/shop/src',
-    workspace: { current_dir: '/shop/src', project_dir: '/shop' },
-    cost: { total_cost_usd: 1.5, total_duration_ms: 600000, total_lines_added: 12, total_lines_removed: 4 }
-  });
-  const result = await runWithStdin(['statusline'], statusInput, env);
-  assert.equal(result.code, 0, result.stderr);
-  // lines 10 × 1, tokens (2465 + 507) × 1/4 = 743, cost $1.50 × 1/3 = $0.50, time 10 min × 1/3 = 3.3 min
-  assert.equal(result.stdout, 'saved ≈ 10 LOC · 743 tok · $0.50 · 3m');
-  const session = (await readLedger(configDirectory)).s1;
-  assert.equal(session.costUsd, 1.5);
-  assert.equal(session.durationMs, 600000);
-});
-
-test('a session without product code saves minus its overhead, and a loss shows in every figure', async () => {
-  const directory = await fixture();
-  await writeConfig(directory);
-  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
-  // The covered row's overhead is inside its ratio, so its 99,999 cache writes never come off.
-  const covered = bookedRow({ lines: { added: 100, removed: 0 }, tokens: { weightedInput: 7000, output: 1000 }, costUsd: 1, durationMs: 600000 },
-    { cache1h: 99999 });
-  const guard = { capped: 0, duplicates: 0, hookMs: 30000, refusals: {} };
-  const uncovered = bookedRow({ lines: { added: 0, removed: 0 }, tokens: { weightedInput: 0, output: 0 }, guard },
-    { cache1h: 5000 }, 30000);
-  await writeLedger(directory, { s1: covered, s2: uncovered });
-  // lines 100; tokens 8000 / 4 - 2 × 5000; cost $1 / 3 - 5000 × $2 per million; time 200 s - 60 s - 0.2 s of processing
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 100 LOC · -8.0k tok · $0.32 · 2m');
-  await writeLedger(directory, { s2: uncovered });
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 0 LOC · -10k tok · -$0.01 · -1m');
-  // A session that wrote no code loses what exo cost it, so the panel prints that loss.
-  const panel = (await run(SAVINGS, ['report'], { env, cwd: directory })).stdout;
-  assert.match(panel, /^code lines\s+0$/m);
-  assert.match(panel, /^tokens\s+-10k$/m);
-  assert.match(panel, /^cost\s+-\$0\.01$/m);
-  assert.match(panel, /^time\s+-1m$/m);
-});
-
-test("overhead is priced per transcript at that transcript's model, and an unlisted model leaves the cost unknown", async () => {
-  const listingLine = `- exo:${'x'.repeat(8080)}`;
-  const bodyPrefix = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n`;
-  const skillBody = bodyPrefix + 'y'.repeat(8086 - bodyPrefix.length);
-  const outputs = [];
-  for (const mainModel of ['claude-fable-5-1', 'claude-unlisted-9']) {
-    const main = [
-      { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'skill_listing', content: listingLine } },
-      call('msg_m1', '2026-09-11T10:00:01.000Z', mainModel, { cache1h: 5000, cache5m: 0 }),
-      call('msg_m2', '2026-09-11T10:00:02.000Z', mainModel, { cache1h: 5000, cache5m: 0 })
-    ];
-    const delegate = [
-      { type: 'user', isMeta: true, timestamp: '2026-09-11T10:00:01.000Z', message: { role: 'user', content: [{ type: 'text', text: skillBody }] } },
-      call('msg_d1', '2026-09-11T10:00:01.500Z', 'claude-sonnet-5', { cache1h: 0, cache5m: 5000 }),
-      call('msg_d2', '2026-09-11T10:00:01.700Z', 'claude-sonnet-5', { cache1h: 0, cache5m: 5000 })
-    ];
-    const { configDirectory, transcript } = await transcriptFixture(main, delegate);
-    const env = { CLAUDE_CONFIG_DIR: configDirectory };
-    await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
-    outputs.push((await runWithStdin(['statusline'], '{}', env)).stdout);
-  }
-  // 8,086 characters are 2,000 tokens each. Fable: written at $20 and read at $0.25; Sonnet: written at $2.50 and read
-  // at $0.20, per million. Tokens: 2 × 2000 + 0.1 × 2000 + 1.25 × 2000 + 0.1 × 2000 = 6900.
-  assert.deepEqual(outputs, ['saved ≈ 0 LOC · -6.9k tok · -$0.05 · 0m', 'saved ≈ 0 LOC · -6.9k tok · - · 0m']);
-});
-
 test('lines written into exo process files count neither for nor against the lines saved', async () => {
   const lines = [
     { type: 'user', uuid: 'w1', timestamp: '2026-09-11T10:00:01.000Z',
@@ -211,7 +154,7 @@ test('lines written into exo process files count neither for nor against the lin
   const env = { CLAUDE_CONFIG_DIR: configDirectory };
   await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
   assert.deepEqual((await readLedger(configDirectory)).s1.lines, { added: 10, removed: 0 });
-  assert.match((await runWithStdin(['statusline'], '{}', env)).stdout, /^saved ≈ 10 LOC · /);
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo 0 B withheld · 0 tok · $0.00 · 0m');
 });
 
 test('a row booked by an older version is read again from its transcript when the report runs', async () => {
@@ -229,26 +172,6 @@ test('a row booked by an older version is read again from its transcript when th
   assert.deepEqual(session.lines, { added: 10, removed: 4 });
 });
 
-test('config ratios equal to the ones 0.1.x wrote on first load give way to the published ratios; edited ones apply', async () => {
-  const configs = {
-    readGuardOnly: { readGuard: false },
-    firstLoad: { ratios: { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 } },
-    edited: { ratios: TEST_RATIOS },
-    linesEditedAfterFirstLoad: { ratios: { lines: 0.5, tokens: 0.22, cost: 0.2, time: 0.27 } },
-    linesOnly: { ratios: { lines: 0.5 } }
-  };
-  const outputs = {};
-  for (const [name, config] of Object.entries(configs)) {
-    const { configDirectory, transcript } = await transcriptFixture();
-    await writeConfig(configDirectory, config);
-    const statusInput = JSON.stringify({ session_id: 's1', transcript_path: transcript, cost: { total_cost_usd: 1.5, total_duration_ms: 600000 } });
-    outputs[name] = (await runWithStdin(['statusline'], statusInput, { CLAUDE_CONFIG_DIR: configDirectory })).stdout;
-  }
-  assert.equal(outputs.firstLoad, outputs.readGuardOnly);
-  assert.equal(outputs.edited, 'saved ≈ 10 LOC · 743 tok · $0.50 · 3m');
-  assert.equal(outputs.linesEditedAfterFirstLoad, outputs.linesOnly);
-});
-
 test('reading older rows again neither brings back an expired row nor moves a row\'s touched', async () => {
   const directory = await fixture();
   await writeConfig(directory);
@@ -263,50 +186,78 @@ test('reading older rows again neither brings back an expired row nor moves a ro
   assert.equal(ledger.recent.overhead.version, OVERHEAD_VERSION);
 });
 
-test('report shows the switch state, every project at once, and one saved figure per metric', async () => {
-  const { configDirectory, transcript } = await transcriptFixture();
-  const env = { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: '' };
-  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript, cwd: '/shop' }), env);
-  await runWithStdin(['record'], JSON.stringify({ session_id: 's2', transcript_path: transcript, cwd: '/elsewhere' }), env);
-  const result = await run(SAVINGS, ['report'], { env, cwd: configDirectory });
-  assert.equal(result.code, 0, result.stderr);
-  // Fenced, because the columns line up only in a monospace block.
-  assert.match(result.stdout, /^```text$/m);
-  assert.match(result.stdout, /^✻ exo savings · ● on · all projects$/m);
-  // Both sessions in one grid, in one project or another: no section per project.
-  assert.doesNotMatch(result.stdout, /^── /m);
-  // One figure per metric: what was spent and what it would have cost without exo stay out.
-  assert.doesNotMatch(result.stdout, /with exo/);
-  // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302 a session, a third of it saved.
-  assert.match(result.stdout, /^code lines\s+20$/m);
-  assert.match(result.stdout, /^tokens\s+1\.5k$/m);
-  assert.match(result.stdout, /^cost\s+\$0\.02$/m);
-  assert.match(result.stdout, /^time\s+2m$/m);
-  assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
-  assert.doesNotMatch(result.stdout, /last 30 days/);
-});
-
-test('a saving whose price is unknown dashes the cost row', async () => {
+test('the panel reports the guard refusals and the calls that were exo alone, and nothing estimated', async () => {
   const directory = await fixture();
   await writeConfig(directory);
   const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
-  const priced = bookedRow({ costUsd: 10, lines: { added: 10, removed: 0 }, tokens: { weightedInput: 0, output: 0 } });
-  const unpriced = bookedRow({ lines: { added: 10, removed: 0 },
-    usageById: { m1: { input: 1000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0, model: 'claude-unlisted-9' } } });
+  await writeLedger(directory, { s1: measuredRow() });
+  const result = await run(SAVINGS, ['report'], { env, cwd: directory });
+  assert.equal(result.code, 0, result.stderr);
+  // Fenced, because the columns line up only in a monospace block.
+  assert.match(result.stdout, /^```text$/m);
+  assert.match(result.stdout, /^✻ exo ledger · ● on · all projects$/m);
+  // Every session in one grid, in one project or another: no section per project.
+  assert.doesNotMatch(result.stdout, /^── /m);
+  assert.match(result.stdout, /^reads refused\s+2$/m);
+  assert.match(result.stdout, /^context withheld\s+1\.5 MB$/m);
+  assert.match(result.stdout, /^exo calls\s+1$/m);
+  // 2,000 input and 400 output weigh 2,400 and price at Fable's $10 and $50 per million.
+  assert.match(result.stdout, /^exo tokens\s+2\.4k$/m);
+  assert.match(result.stdout, /^exo cost\s+\$0\.04$/m);
+  // Two seconds of hook runs and 118 seconds of call.
+  assert.match(result.stdout, /^exo time\s+2m$/m);
+  assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
+  // No row is an estimate, so no row is approximate and nothing is called saved.
+  assert.doesNotMatch(result.stdout, /≈|saved/);
+});
+
+test('the status line segment carries the same measured figures', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  await writeLedger(directory, { s1: measuredRow() });
+  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo 1.5 MB withheld · 2.4k tok · $0.04 · 2m');
+});
+
+test('a Skill call to an exo skill reaches the segment from the transcript alone', async () => {
+  const lines = [
+    { type: 'user', uuid: 'u0', timestamp: '2026-09-11T10:00:00.000Z', message: { role: 'user', content: 'go' } },
+    { type: 'assistant', uuid: 'a1', timestamp: '2026-09-11T10:02:00.000Z',
+      message: { id: 'msg_S', model: 'claude-fable-5-1',
+        usage: { input_tokens: 2000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, output_tokens: 400 },
+        content: [{ type: 'tool_use', id: 'toolu_1', name: 'Skill', input: { skill: 'exo:debug' } }] } }
+  ];
+  const { configDirectory, transcript } = await transcriptFixture(lines, []);
+  const env = { CLAUDE_CONFIG_DIR: configDirectory };
+  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo 0 B withheld · 2.4k tok · $0.04 · 2m');
+});
+
+test('a call whose model has no price dashes the cost row', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
+  const counts = { input: 1000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0 };
+  const priced = bookedRow({ calls: { m1: { mixed: false, start: null, end: null } },
+    usageById: { m1: { ...counts, model: 'claude-fable-5-1' } } });
+  const unpriced = bookedRow({ calls: { m2: { mixed: false, start: null, end: null } },
+    usageById: { m2: { ...counts, model: 'claude-unlisted-9' } } });
   await writeLedger(directory, { s1: priced, s2: unpriced });
   const result = await runWithStdin(['report'], '', env);
   assert.equal(result.code, 0, result.stderr);
-  // One of the two sessions has no price, so the cost saved over both cannot be totalled.
-  assert.match(result.stdout, /^cost\s+-$/m);
+  // One of the two sessions has no price, so the cost over both cannot be totalled.
+  assert.match(result.stdout, /^exo cost\s+-$/m);
 });
 
 test('every row of the panel is padded to one width', async () => {
-  const { configDirectory, transcript } = await transcriptFixture();
-  const env = { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: '' };
-  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
-  const result = await run(SAVINGS, ['report'], { env, cwd: configDirectory });
+  const directory = await fixture();
+  await writeConfig(directory);
+  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
+  await writeLedger(directory, { s1: measuredRow() });
+  const result = await run(SAVINGS, ['report'], { env, cwd: directory });
   assert.equal(result.code, 0, result.stderr);
-  const grid = result.stdout.split('\n').filter((line) => /^(?:code lines|tokens|cost|time)/.test(line));
+  const grid = result.stdout.split('\n').filter((line) => /^(?:reads refused|context withheld|exo calls|exo tokens|exo cost|exo time)/.test(line));
+  assert.equal(grid.length, 6);
   const widths = new Set(grid.map((line) => [...line].length));
   assert.equal(widths.size, 1, [...widths].join(', '));
   assert.ok([...widths][0] <= 60, `panel is ${[...widths][0]} columns`);
@@ -318,11 +269,11 @@ test('an unknown command fails with usage', async () => {
   assert.match(result.stderr, /usage: savings\.mjs record\|statusline\|report/);
 });
 
-test('report exits non-zero and surfaces the error on a ledger fault', async () => {
+test('a CLI command exits non-zero and surfaces the error when the config directory is a file', async () => {
   const directory = await fixture();
   const configFile = path.join(directory, 'config-is-a-file');
   await fs.writeFile(configFile, 'not a directory');
-  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: configFile });
+  const result = await runWithStdin(['off'], '', { CLAUDE_CONFIG_DIR: configFile });
   assert.notEqual(result.code, 0);
   assert.match(result.stderr, /^savings: /);
 });
@@ -346,7 +297,7 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
-  assert.match(panel, /^✻ exo savings · ○ off · all projects$/m);
+  assert.match(panel, /^✻ exo ledger · ○ off · all projects$/m);
   assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; the counter, the status line segment and the read guard follow at once\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));

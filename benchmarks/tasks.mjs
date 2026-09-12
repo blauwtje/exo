@@ -63,8 +63,7 @@ export const SAFE_TASKS = [
 ];
 
 // A prompt no skill should answer, so the exo and baseline cells differ by
-// exo's overhead alone; benchmarks/calibrate.mjs compares that difference
-// with what the savings ledger books.
+// what exo's presence alone costs a session.
 export const CALIBRATION_TASKS = [
   { id: 'calib-reply', prompt: 'Reply with the single word ready, and nothing else.' }
 ];

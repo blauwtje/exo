@@ -1,8 +1,7 @@
-// overhead.mjs books what exo adds to a session from the transcript the
-// harness writes, as usage counts per transcript: the exo text in context,
-// calls that only load an exo skill or re-issue a refused Read, the read
-// guard's credit, and exo's hook runs. The fixtures pin the shapes observed
-// on 2026-09-11.
+// overhead.mjs books what exo itself cost a session from the transcript the
+// harness writes: calls that only load an exo skill or re-issue a refused Read,
+// and exo's hook runs. Every figure is a number the harness reported. The
+// fixtures pin the shapes observed on 2026-09-11.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -10,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { emptySession } from '../skills/savings/scripts/ledger.mjs';
-import { OVERHEAD_VERSION, overheadTotals } from '../skills/savings/scripts/overhead.mjs';
+import { OVERHEAD_VERSION, measuredTotals } from '../skills/savings/scripts/overhead.mjs';
 import { ingestTranscript, isExoProcessFile } from '../skills/savings/scripts/transcript.mjs';
 import { fixture } from './harness.mjs';
 
@@ -21,11 +20,6 @@ const LISTING = '- exo:debug: Prove the cause.\n- dataviz: Charts.';
 const AGENT_LINES = ['- general-purpose: Multi-step tasks.', '- claude: Catch-all.'];
 const SESSION_CONTEXT = '\n# Using exo\n\nEvery exo skill is invoked as exo:<name>.';
 const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n\n# Debug\n\nProve the cause first.`;
-// The calibrated rates overhead.mjs books at: characters per token of exo text, and milliseconds per exo token a call writes.
-const CHARS_PER_TOKEN = 4.043;
-const MS_PER_WRITTEN_TOKEN = 0.0368;
-// No agent listing line starts with the exo prefix now that the plugin ships no agent files, so AGENT_LINES books nothing.
-const INJECTED = (LISTING.split('\n')[0].length + SESSION_CONTEXT.length + SKILL_BODY.length) / CHARS_PER_TOKEN;
 const REFUSAL = 'exo read guard: /repo/big.ts has 600 lines and an unbounded read is capped at 400; locate the range first.';
 const TEXT = [{ type: 'text', text: 'done' }];
 
@@ -68,10 +62,6 @@ async function ingest(lines, { subagents = {}, guard = null } = {}) {
   return session;
 }
 
-function transcriptNamed(session, suffix) {
-  return Object.entries(session.overhead.transcripts).find(([file]) => file.endsWith(suffix))[1];
-}
-
 function injections() {
   return [
     { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'skill_listing', content: LISTING } },
@@ -100,66 +90,35 @@ function near(actual, expected) {
   assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 }
 
-test('exo text is written by the next call and read by every later one, and exo hooks count their time', async () => {
-  const session = await ingest(sessionLines(true));
-  const counts = transcriptNamed(session, 'session.jsonl').counts;
-  near(counts.cache1h, INJECTED);
-  near(counts.cacheRead, INJECTED * 2);
-  assert.equal(session.overhead.hookMs, 340);
-  assert.equal(session.overhead.version, OVERHEAD_VERSION);
-});
-
-test('a call that only loads exo skills counts whole, less its own booking of the exo text', async () => {
+test('a call that only loads exo skills counts whole, at the usage and the wall time the harness reported', async () => {
   const session = await ingest(sessionLines(true));
   const skillCall = session.overhead.calls.msg_skill;
   assert.deepEqual([skillCall.mixed, skillCall.start, skillCall.end], [false, '2026-09-11T10:00:02.000Z', '2026-09-11T10:00:07.000Z']);
-  near(skillCall.booked.cache1h, INJECTED);
   assert.equal(session.overhead.calls.msg_mixed.mixed, true);
   assert.equal(session.overhead.calls.msg_text, undefined);
-  const totals = overheadTotals(session);
-  // msg_skill's usage weighs 5 + 2 × 500 + 10 = 1015; its write of the exo text is booked once, with the transcript.
-  near(totals.tokens, 1015 + INJECTED * 0.2);
-  near(totals.cost, (5 * 10 + 500 * 20 + 10 * 50 + INJECTED * 2 * 0.25) / 1e6);
-  // The exo hooks and the skill call; the time to process the exo text it writes is inside the call, not added again.
+  assert.equal(session.overhead.hookMs, 340);
+  assert.equal(session.overhead.version, OVERHEAD_VERSION);
+  const totals = measuredTotals(session);
+  // msg_skill's usage weighs 5 + 2 × 500 + 10 = 1015, priced at Fable's $10 input, $20 1-hour write and $50 output per million.
+  near(totals.tokens, 1015);
+  near(totals.cost, (5 * 10 + 500 * 20 + 10 * 50) / 1e6);
+  assert.equal(totals.costKnown, true);
+  assert.equal(totals.calls, 1);
+  // The exo hooks, and the five seconds between the entry before the call and its last line.
   near(totals.time, 340 + 5000);
 });
 
-test('text a warm cache served is booked as read, not written', async () => {
-  const session = await ingest([...injections(), call('msg_1', '2026-09-11T10:00:05.000Z', TEXT, { counts: { cache1h: 10, cacheRead: 9000 } })]);
-  const counts = transcriptNamed(session, 'session.jsonl').counts;
-  near(counts.cacheRead, INJECTED);
-  assert.equal(counts.cache1h, 0);
-});
-
-test('a compaction empties the exo text in context', async () => {
+test('a model missing from prices.mjs makes the exo cost unknown', async () => {
   const session = await ingest([
-    ...injections(),
-    call('msg_1', '2026-09-11T10:00:05.000Z', TEXT),
-    { type: 'system', subtype: 'compact_boundary', timestamp: '2026-09-11T10:00:06.000Z' },
-    call('msg_2', '2026-09-11T10:00:07.000Z', TEXT)
+    call('msg_1', '2026-09-11T10:00:05.000Z', [{ type: 'tool_use', id: 'toolu_1', name: 'Skill', input: { skill: 'exo:debug' } }],
+      { model: 'claude-unlisted-9' })
   ]);
-  const counts = transcriptNamed(session, 'session.jsonl').counts;
-  near(counts.cache1h, INJECTED);
-  assert.equal(counts.cacheRead, 0);
+  const totals = measuredTotals(session);
+  assert.equal(totals.costKnown, false);
+  assert.equal(totals.calls, 1);
 });
 
-test("a delegate transcript starts with no booked context and keeps its own model", async () => {
-  const session = await ingest([call('msg_main', '2026-09-11T10:00:05.000Z', TEXT)], {
-    subagents: {
-      'agent-other': { meta: { agentType: 'general-purpose' }, lines: [
-        call('msg_other_1', '2026-09-11T10:00:03.000Z', TEXT, { model: 'claude-sonnet-5', counts: { cache5m: 20000 } })
-      ] }
-    }
-  });
-  assert.deepEqual(transcriptNamed(session, 'agent-other.jsonl').counts, { input: 0, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0 });
-});
-
-test('a model missing from prices.mjs makes the overhead cost unknown', async () => {
-  const session = await ingest([...injections(), call('msg_1', '2026-09-11T10:00:05.000Z', TEXT, { model: 'claude-unlisted-9' })]);
-  assert.equal(overheadTotals(session).cost, null);
-});
-
-test('a refused Read re-issued at once counts whole, and the withheld tokens come back as a credit', async () => {
+test('a refused Read re-issued at once counts whole, and the guard reports the bytes it withheld', async () => {
   const guard = {
     capped: 1, duplicates: 0, hookMs: 120,
     refusals: { toolu_1: { kind: 'capped', bytesWithheld: 4000, reader: 'main', filePath: '/repo/big.ts', open: true } }
@@ -172,18 +131,15 @@ test('a refused Read re-issued at once counts whole, and the withheld tokens com
     toolResult('r2', '2026-09-11T10:00:06.000Z', { type: 'tool_result', tool_use_id: 'toolu_2', content: 'line 1' }),
     call('msg_3', '2026-09-11T10:00:08.000Z', TEXT)
   ], { guard });
-  const file = Object.keys(session.overhead.transcripts)[0];
-  assert.deepEqual(session.overhead.refusals.toolu_1, { transcript: file, calls: 2, entered: 'cache1h' });
   const reissue = session.overhead.calls.msg_2;
   assert.deepEqual([reissue.mixed, reissue.start, reissue.end], [false, '2026-09-11T10:00:02.000Z', '2026-09-11T10:00:05.000Z']);
-  const refusalTokens = REFUSAL.length / CHARS_PER_TOKEN;
-  const totals = overheadTotals(session);
-  // The re-issue weighs 2 + 0.1 × 3000 + 2 × 500 + 40 = 1342, less its write of the refusal text; the text is
-  // written once and read once; the 1,000 withheld tokens would have been written once and read once.
-  near(totals.tokens, 1342 - refusalTokens * 2 + refusalTokens * 2.1 - 1000 * 2.1);
-  // The guard runs and the round trip, less processing the withheld file; processing the refusal text is inside
-  // the round trip, not added again.
-  near(totals.time, 120 + 3000 - 1000 * MS_PER_WRITTEN_TOKEN);
+  const totals = measuredTotals(session);
+  // The re-issue weighs 2 + 0.1 × 3000 + 2 × 500 + 40 = 1342; the plain Read before it is the session's own work.
+  near(totals.tokens, 1342);
+  assert.equal(totals.calls, 1);
+  // The guard's own runs, and the three seconds of the round trip.
+  near(totals.time, 120 + 3000);
+  assert.deepEqual([totals.refusals, totals.bytesWithheld], [1, 4000]);
 });
 
 test('a transcript booked by an older version is read again from the start, to the same result', async () => {

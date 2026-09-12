@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Savings: what exo saved per session in lines, tokens, cost and time, an
-// estimate against the benchmark ratios in ratios.mjs, net of exo's own
-// overhead. The ledger is fed from the transcript the harness writes
+// The exo ledger: what exo itself cost a session in tokens, price and wall
+// time, and what its read guard kept out of context, summed over every session
+// the ledger holds. Every figure is one the harness reported; nothing here is
+// an estimate. The ledger is fed from the transcript the harness writes
 // (transcript.mjs) and from the status line it renders.
 //
 //   node savings.mjs record      Stop hook: stdin is the hook JSON
@@ -16,106 +17,39 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
-import { overheadTotals } from './overhead.mjs';
-import { countsCost } from './pricing.mjs';
-import MEASURED from './ratios.mjs';
-import { ingestTranscript, refreshStaleSessions, sumLines, sumTokens } from './transcript.mjs';
+import { measuredTotals } from './overhead.mjs';
+import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
 
 const PANEL_ROWS = {
-  lines: 'code lines',
-  tokens: 'tokens',
-  cost: 'cost',
-  time: 'time'
+  refusals: 'reads refused',
+  bytesWithheld: 'context withheld',
+  calls: 'exo calls',
+  tokens: 'exo tokens',
+  cost: 'exo cost',
+  time: 'exo time'
 };
 const COLUMN_GAP = 2;
-// MEASURED is the cut per metric exo's benchmark measured against a no-skill
-// baseline, with its source; a ratio in config.json overrides it.
-const PUBLISHED_RATIOS = { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time };
-// 0.1.x wrote these ratios into config.json on first load and on every
-// switch, so a stored ratio still equal to its value here carries no edit of
-// the user's.
-const FIRST_LOAD_RATIOS = { lines: 0.54, tokens: 0.22, cost: 0.2, time: 0.27 };
 const DEFAULT_CONFIG = { enabled: true, readGuard: true };
 
-function loadConfig() {
-  const existing = readJson(configFile(), null);
-  if (existing === null) {
-    writeJson(configFile(), DEFAULT_CONFIG);
-    return { ...DEFAULT_CONFIG, ratios: PUBLISHED_RATIOS };
-  }
-  const stored = Object.entries(existing.ratios ?? {});
-  const edited = Object.fromEntries(stored.filter(([metric, ratio]) => ratio !== FIRST_LOAD_RATIOS[metric]));
-  return { ...DEFAULT_CONFIG, ...existing, ratios: { ...PUBLISHED_RATIOS, ...edited } };
-}
-
-// A session's gross cost priced from its usage, each call at its own model,
-// or null when a call's model has no price. A session with no recorded call
-// cost nothing, which is a known zero: an unknown cost would take the whole
-// scope's cost column down with it. A row recorded before the model rode
-// along with its usage is priced at the session's model.
-function pricedCost(session) {
-  const rows = Object.values(session.usageById ?? {});
-  let cost = 0;
-  for (const counts of rows) {
-    const rowCost = countsCost(counts, counts.model ?? session.model);
-    if (rowCost === null) return null;
-    cost += rowCost;
-  }
-  return cost;
-}
-
-function sessionMetrics(session) {
-  const tokens = session.tokens ?? sumTokens({ usageById: session.usageById ?? {} });
-  const lines = session.lines ?? sumLines({ linesByEntry: session.linesByEntry ?? {} });
-  const elapsed = session.started && session.updated ? Date.parse(session.updated) - Date.parse(session.started) : 0;
-  const overhead = overheadTotals(session);
-  return {
-    lines: lines.added,
-    tokens: tokens.weightedInput + tokens.output,
-    cost: session.costUsd ?? pricedCost(session),
-    time: session.durationMs ?? elapsed,
-    overhead: { tokens: overhead.tokens, cost: overhead.cost, time: overhead.time }
-  };
-}
-
-// A session that wrote product code is what the benchmark measured: exo's
-// ratios compare its exo arm, which paid exo's overhead, with a no-skill
-// baseline, so it saves actual × r / (1 − r) and nothing more comes off. Any
-// other session is outside every ratio and saves minus its overhead in
-// tokens, cost and time. Lines are the code estimate alone: the lines exo's
-// own process writes stay out of the product count that the ratio multiplies
-// and are charged against nothing, because a markdown line of a brief is not
-// a line of code. Cost is null when a price it needs is unknown.
-function sessionSavings(metrics, ratios) {
-  const estimate = (metric) => metrics[metric] * ratios[metric] / (1 - ratios[metric]);
-  if (metrics.lines > 0) {
-    return { lines: estimate('lines'), tokens: estimate('tokens'), cost: metrics.cost === null ? null : estimate('cost'), time: estimate('time') };
-  }
-  const overhead = metrics.overhead;
-  return { lines: 0, tokens: -overhead.tokens, cost: overhead.cost === null ? null : -overhead.cost, time: -overhead.time };
-}
-
 function emptyTotals() {
-  return { lines: 0, tokens: 0, cost: 0, costKnown: true, time: 0 };
+  return { calls: 0, tokens: 0, cost: 0, costKnown: true, time: 0, refusals: 0, bytesWithheld: 0 };
 }
 
-function addTotals(total, values) {
-  total.lines += values.lines;
-  total.tokens += values.tokens;
-  total.time += values.time;
-  if (values.cost === null) total.costKnown = false;
-  else total.cost += values.cost;
-}
-
-// Every session's saving summed, already net of what exo's own listing, skill
-// bodies, hook runs and refusals cost that session. A cost is known only when
-// every session's is.
-function savedTotals(sessions, ratios) {
-  const saved = emptyTotals();
+// Every session's measured figures summed: what exo cost, and what the guard
+// withheld. A cost is known only when every session's is.
+function measuredLedger(sessions) {
+  const totals = emptyTotals();
   for (const session of Object.values(sessions)) {
-    addTotals(saved, sessionSavings(sessionMetrics(session), ratios));
+    const measured = measuredTotals(session);
+    totals.calls += measured.calls;
+    totals.tokens += measured.tokens;
+    totals.time += measured.time;
+    totals.refusals += measured.refusals;
+    totals.bytesWithheld += measured.bytesWithheld;
+    if (measured.costKnown) totals.cost += measured.cost;
+    else totals.costKnown = false;
   }
-  return saved;
+  return totals;
 }
 
 function compact(value) {
@@ -125,6 +59,15 @@ function compact(value) {
   if (value >= 1e4) return `${Math.round(value / 1e3)}k`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(1)}k`;
   return `${Math.round(value)}`;
+}
+
+const BYTES_PER_KB = 1024;
+
+// Binary units, because what the guard withheld is a file's own size.
+function bytes(value) {
+  if (value >= BYTES_PER_KB ** 2) return `${(value / BYTES_PER_KB ** 2).toFixed(1)} MB`;
+  if (value >= BYTES_PER_KB) return `${Math.round(value / BYTES_PER_KB)} KB`;
+  return `${Math.round(value)} B`;
 }
 
 function duration(milliseconds) {
@@ -141,8 +84,8 @@ function money(value, known) {
   return `$${Math.abs(value).toFixed(2)}`;
 }
 
-function segment(saved) {
-  return `saved ≈ ${compact(saved.lines)} LOC · ${compact(saved.tokens)} tok · ${money(saved.cost, saved.costKnown)} · ${duration(saved.time)}`;
+function segment(measured) {
+  return `exo ${bytes(measured.bytesWithheld)} withheld · ${compact(measured.tokens)} tok · ${money(measured.cost, measured.costKnown)} · ${duration(measured.time)}`;
 }
 
 function readStdin() {
@@ -157,7 +100,6 @@ function record(hookInput) {
 
 function statusline(statusInput) {
   if (!savingsEnabled()) return;
-  const config = loadConfig();
   let sessions = readJson(ledgerFile(), {});
   if (typeof statusInput.session_id === 'string') {
     sessions = updateSession(statusInput.session_id, (session) => {
@@ -174,15 +116,15 @@ function statusline(statusInput) {
       return changed;
     });
   }
-  const saved = savedTotals(refreshStaleSessions(sessions), config.ratios);
-  process.stdout.write(segment(saved));
+  process.stdout.write(segment(measuredLedger(refreshStaleSessions(sessions))));
 }
 
 function status() {
   process.stdout.write(`${savingsEnabled() ? 'on' : 'off'}\n`);
 }
 
-// Only "enabled" is written, so the published ratios keep reaching this install.
+// Only "enabled" is written, so `readGuard` and any other key the user set by
+// hand survive the switch.
 function setEnabled(enabled) {
   writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), enabled });
   process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; the counter, the status line segment and the read guard follow at once\n`);
@@ -202,16 +144,17 @@ function padEnd(text, width) {
   return text + ' '.repeat(Math.max(width - displayWidth(text), 0));
 }
 
-// The panel's cells as text: per metric what the benchmark says exo saved
-// against a no-skill baseline. A saving whose price is unknown, because a
-// session's model is missing from prices.mjs, prints a dash.
-function panelCells(sessions, ratios) {
-  const saved = savedTotals(sessions, ratios);
+// The panel's cells as text: what exo cost, and what its guard held back. The
+// cost prints a dash when a session's model is missing from prices.mjs.
+function panelCells(sessions) {
+  const measured = measuredLedger(sessions);
   return {
-    lines: compact(saved.lines),
-    tokens: compact(saved.tokens),
-    cost: money(saved.cost, saved.costKnown),
-    time: duration(saved.time)
+    refusals: compact(measured.refusals),
+    bytesWithheld: bytes(measured.bytesWithheld),
+    calls: compact(measured.calls),
+    tokens: compact(measured.tokens),
+    cost: money(measured.cost, measured.costKnown),
+    time: duration(measured.time)
   };
 }
 
@@ -228,16 +171,14 @@ function gridLines(cells) {
 // A fixed-width grid inside a code fence, because its columns line up only in
 // a monospace block. Every session in the ledger, whatever project it ran in:
 // one switch away from a per-project split that nobody read. No bar and no
-// trend: one benchmark ratio per metric fills every bar to the same point,
-// and a sparkline answers a question nobody asked.
+// trend: a measured figure needs no baseline drawn beside it.
 function report() {
-  const config = loadConfig();
   const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
-  const cells = panelCells(sessions, config.ratios);
+  const cells = panelCells(sessions);
   const enabled = savingsEnabled();
   const lines = [
     '```text',
-    `✻ exo savings · ${enabled ? '● on' : '○ off'} · all projects`,
+    `✻ exo ledger · ${enabled ? '● on' : '○ off'} · all projects`,
     '',
     ...gridLines(cells),
     '```',
