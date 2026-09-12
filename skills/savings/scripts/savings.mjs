@@ -31,6 +31,10 @@ const TREND_LOSS = '-';
 const TREND_MIN_ACTIVE_DAYS = 2;
 const MILESTONE_STEPS = [1, 2, 5];
 const MILESTONE_BAR_CELLS = 20;
+const MILESTONE_BAR_FILLED = '█';
+const MILESTONE_BAR_EMPTY = '░';
+// Left-aligned partial blocks, indexed by eighths of a cell; index 0 draws nothing.
+const MILESTONE_BAR_EDGES = ['', '▏', '▎', '▍', '▌', '▋', '▊', '▉'];
 const PANEL_ROWS = {
   cost: 'cost at API price',
   lines: 'lines',
@@ -306,30 +310,37 @@ function nextMilestone(total) {
   }
 }
 
+// The leading edge is drawn to an eighth of a cell, so a gain too small to fill
+// a whole cell still moves the bar between one visit and the next.
 function milestoneBar(total) {
   const milestone = nextMilestone(total);
   const share = total / milestone;
-  const filled = Math.floor(share * MILESTONE_BAR_CELLS);
-  const bar = `${'█'.repeat(filled)}${'░'.repeat(MILESTONE_BAR_CELLS - filled)}`;
-  return `\`${bar}\` ${Math.floor(share * 100)}% of the way to $${milestone}`;
+  const eighths = Math.round(share * MILESTONE_BAR_CELLS * 8);
+  const filled = Math.floor(eighths / 8);
+  const edge = MILESTONE_BAR_EDGES[eighths % 8];
+  const empty = MILESTONE_BAR_CELLS - filled - (edge === '' ? 0 : 1);
+  const bar = `${MILESTONE_BAR_FILLED.repeat(filled)}${edge}${MILESTONE_BAR_EMPTY.repeat(empty)}`;
+  return `\`${bar}\` **${Math.floor(share * 100)}%** to $${milestone}`;
 }
 
-// The lines above the table: the total saved everywhere, today's gain with the
-// streak, and the bar to the next milestone, each left out when it has nothing to show.
+// The two lines above the table: the total saved everywhere, then one meter line
+// joining the milestone bar, today's gain and the streak, each dropped when it
+// has nothing to show. They stay one block, because three blocks for one figure
+// read as three claims.
 // A total with an unknown price shows tokens alone, because the daily figures
 // leave out that session and would show a partial dollar amount.
 function headline(saved, days) {
-  if (!saved.costKnown) return [`### ${compact(saved.tokens)} tokens saved`];
-  const lines = [`### ${money(saved.cost, true)} saved`];
-  const pulse = [];
-  const today = cents(days[days.length - 1]);
-  if (today !== 0) pulse.push(`${today > 0 ? '+' : ''}${money(today / 100, true)} today`);
-  const streak = streakDays(days);
-  if (streak > 0) pulse.push(`🔥 ${streak}-day streak`);
-  if (pulse.length > 0) lines.push(pulse.join(' · '));
+  if (!saved.costKnown) return [`### ≈ ${compact(saved.tokens)} tokens saved`];
+  const lines = [`### ≈ ${money(saved.cost, true)} saved`];
+  const meter = [];
   const total = cents(saved.cost);
   // The bar measures the total as printed, so $0.996 reads $1.00 and aims at $2.
-  if (total > 0) lines.push('', milestoneBar(total / 100));
+  if (total > 0) meter.push(milestoneBar(total / 100));
+  const today = cents(days[days.length - 1]);
+  if (today !== 0) meter.push(`${today > 0 ? '+' : ''}${money(today / 100, true)} today`);
+  const streak = streakDays(days);
+  if (streak > 0) meter.push(`🔥 ${streak}-day streak`);
+  if (meter.length > 0) lines.push(meter.join(' · '));
   return lines;
 }
 
@@ -344,11 +355,12 @@ function report() {
   // A pipe in a directory name would end the table cell.
   const projectName = shortName.replaceAll('|', '\\|');
   const inProject = (metrics) => metrics.project === project;
-  const here = scopeColumn(`this project · ${projectName}`, sessions, config.ratios, inProject);
-  const everywhere = scopeColumn('all projects', sessions, config.ratios, () => true);
+  // Short scope titles, so the headline figure sits directly under the word that scopes it.
+  const here = scopeColumn(`in ${projectName}`, sessions, config.ratios, inProject);
+  const everywhere = scopeColumn('everywhere', sessions, config.ratios, () => true);
   const enabled = savingsEnabled();
   const state = enabled ? '● on' : '○ off';
-  const toggle = enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.';
+  const toggle = enabled ? '> Turn off with `/exo:savings off`.' : '> Turn on with `/exo:savings on`.';
   const labels = { ...PANEL_ROWS };
   // Every scope's active days are a subset of all projects' days.
   if (everywhere.activeDays < TREND_MIN_ACTIVE_DAYS) delete labels.trend;
@@ -365,7 +377,8 @@ function report() {
     toggle
   ];
   const override = process.env.EXO_SAVINGS;
-  if (override === 'on' || override === 'off') lines.push('', `EXO_SAVINGS=${override} in the environment outranks the switch.`);
+  // A bare '>' holds both notes in the one blockquote rather than drawing a second rule.
+  if (override === 'on' || override === 'off') lines.push('>', `> EXO_SAVINGS=${override} in the environment outranks the switch.`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 

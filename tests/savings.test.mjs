@@ -275,13 +275,13 @@ test('report shows the switch state and the saving for the current project besid
   const result = await run(SAVINGS, ['report'], { env, cwd: nested });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^\*\*✻ exo savings\*\* · ● on$/m);
-  assert.match(result.stdout, /^\| ≈ saved \| this project · shop \| all projects \|$/m);
+  assert.match(result.stdout, /^\| ≈ saved \| in shop \| everywhere \|$/m);
   // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302 a session, a third of it saved.
   assert.match(result.stdout, /^\| cost at API price \| \$0\.01 \| \$0\.02 \|$/m);
   assert.match(result.stdout, /^\| lines \| 10 \| 20 \|$/m);
   assert.match(result.stdout, /^\| tokens \| 743 \| 1\.5k \|$/m);
   assert.match(result.stdout, /^\| time \| 1m \| 2m \|$/m);
-  assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
+  assert.match(result.stdout, /^> Turn off with `\/exo:savings off`\.$/m);
   // Both sessions started on one day, too few for a trend.
   assert.doesNotMatch(result.stdout, /last 30 days/);
 });
@@ -325,9 +325,8 @@ test('report opens on the total saved, today\'s gain, the streak and the bar to 
   await writeLedger(directory, { s1: dollarSavedRow(2), s2: dollarSavedRow(1), s3: dollarSavedRow(0) });
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^### \$3\.00 saved$/m);
-  assert.match(result.stdout, /^\+\$1\.00 today · 🔥 3-day streak$/m);
-  assert.match(result.stdout, /^`█{12}░{8}` 60% of the way to \$5$/m);
+  assert.match(result.stdout, /^### ≈ \$3\.00 saved$/m);
+  assert.match(result.stdout, /^`█{12}░{8}` \*\*60%\*\* to \$5 · \+\$1\.00 today · 🔥 3-day streak$/m);
 });
 
 test('report keeps a streak that ended yesterday alive and prints no gain for a quiet today', async () => {
@@ -336,7 +335,7 @@ test('report keeps a streak that ended yesterday alive and prints no gain for a 
   await writeLedger(directory, { s1: dollarSavedRow(2), s2: dollarSavedRow(1) });
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^🔥 2-day streak$/m);
+  assert.match(result.stdout, /^`█{8}░{12}` \*\*40%\*\* to \$5 · 🔥 2-day streak$/m);
   assert.doesNotMatch(result.stdout, /today/);
 });
 
@@ -348,7 +347,7 @@ test('report ends the streak on a day that loses', async () => {
   await writeLedger(directory, { s1: dollarSavedRow(2), s2: dollarSavedRow(1), s3: losing });
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^-\$\d+\.\d{2} today$/m);
+  assert.match(result.stdout, / · -\$\d+\.\d{2} today$/m);
   assert.doesNotMatch(result.stdout, /streak/);
 });
 
@@ -360,8 +359,8 @@ test('report draws no milestone bar and no streak while the total is a loss', as
   await writeLedger(directory, { s1: losing });
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^### -\$\d+\.\d{2} saved$/m);
-  assert.doesNotMatch(result.stdout, /streak|of the way to/);
+  assert.match(result.stdout, /^### ≈ -\$\d+\.\d{2} saved$/m);
+  assert.doesNotMatch(result.stdout, /streak|\*\*\d+%\*\* to \$/);
 });
 
 test('an unknown command fails with usage', async () => {
@@ -399,7 +398,7 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
   assert.match(panel, /· ○ off$/m);
-  assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
+  assert.match(panel, /^> Turn on with `\/exo:savings on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; right-sizing follows at the next session start\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);
