@@ -1,6 +1,6 @@
 ---
 type: llm
-criteria: The response changes exactly src/exports/csv_writer.py and tests/exports/test_csv_writer.py, writes the header and row code for both, and runs pytest as its proof. It dispatches no discovery, search or scout delegate, writes no plan document and no numbered ledger of edits, and runs no separate code review or critique pass. A response that writes a plan first, dispatches a context to locate or review anything, opens a review pass after the edits, or reports the work done without running the test fails.
+criteria: The response changes exactly src/exports/csv_writer.py and tests/exports/test_csv_writer.py, writes the header and row code for both, and names a pytest run as its proof. The session holds no checkout and no write tool, so the sequence is named, not executed, and noting the empty working directory does not fail it. It dispatches no discovery, search or scout delegate, writes no plan document and no numbered ledger of edits, and runs no separate code review or critique pass. A response that writes a plan first, dispatches a context to locate or review anything, opens a review pass after the edits, or calls the work done without a pytest run in its sequence fails.
 ---
 
 Passes when a decided change of two files goes straight to the edits and their proof, with no orientation, ledger or review context around it.

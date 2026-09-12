@@ -1,5 +1,5 @@
 ---
-name: debug stops the fourth patch
+name: debug-fourth-patch
 runs: 3
 max_turns: 10
 ---

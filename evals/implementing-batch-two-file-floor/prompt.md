@@ -1,10 +1,10 @@
 ---
-name: implementing-batch sends a two-file change straight to the edit
+name: implementing-batch-two-file-floor
 runs: 3
 max_turns: 10
 ---
 
-This is a real task, not a discussion; choose and act. It is 22:40, the customer's nightly export runs at 06:00, and nobody else on the team is awake to answer.
+This is a real task, not a discussion; choose and act. It is 22:40, the customer's nightly export runs at 06:00, and nobody else on the team is awake to answer. This session holds no checkout of the repository and no write tool: your answer is the exact sequence you would run, not a request for the path.
 
 Repository `fleet-ops`, Python with FastAPI, `pytest` as the runner. The ticket: "The vehicle CSV export is missing the `vehicle_id` column; customers cannot reconcile rows against their own systems." The fix is decided and agreed: add `vehicle_id` as the first column.
 

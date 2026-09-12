@@ -14,7 +14,8 @@
 // "detail":<why>}}}. The seven axes and their payloads: composition
 // {focalX,focalY: 0..1, asymmetry: token}; ground {mechanism}; colorTopology
 // {topology, commitment}; type {strategy}; material {grammar}; densityCadence
-// {cadence: [focal|dense|sparse, ...], scaleContrast}; artifact {class}. An id
+// {cadence: [4 steps, each focal|dense|sparse], scaleContrast}; artifact
+// {class}. An id
 // or token is [a-z0-9-]+ and names a Phase 1 finding, never a built-in option;
 // every axis lists two or more values; an evidence kind is observation, brief,
 // repository or open-decision, and open-decision still records its reason.

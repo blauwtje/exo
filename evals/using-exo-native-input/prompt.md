@@ -1,5 +1,5 @@
 ---
-name: using-exo takes the native date input
+name: using-exo-native-input
 runs: 3
 max_turns: 10
 ---

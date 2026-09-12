@@ -1,10 +1,10 @@
 ---
-name: shaping does not put a brief in front of a decided goal
+name: shaping-clear-goal-needs-no-brief
 runs: 3
 max_turns: 8
 ---
 
-This is a real task, not a discussion; choose and act. I am at the keyboard and will answer you immediately, so a question costs seconds, not hours.
+This is a real task, not a discussion; choose and act. I am at the keyboard and will answer you immediately, so a question costs seconds, not hours. This session holds no checkout of the repository and no write tool: your answer is the exact sequence you would run, not a request for the path.
 
 Repository `tideline`, a Node service with `src/modules/harbour/` holding `harbour.repository.mjs`, `harbour.service.mjs` and `harbour.routes.mjs`, plus `tests/harbour.test.mjs`. Every other module in `src/modules/` follows that same four-file shape, and every repository file in the project talks to Postgres through the shared `src/lib/db.mjs` pool.
 

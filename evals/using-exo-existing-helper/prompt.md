@@ -1,5 +1,5 @@
 ---
-name: using-exo reuses the helper that exists
+name: using-exo-existing-helper
 runs: 3
 max_turns: 10
 ---
