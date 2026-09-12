@@ -1,6 +1,6 @@
 {
   "name": "exo",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "One engineering process for Claude Code: skills that take turns, and agents that keep discovery off the main context.",
   "license": "PolyForm-Noncommercial-1.0.0",
   "private": true,

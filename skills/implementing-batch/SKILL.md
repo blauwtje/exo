@@ -39,7 +39,7 @@ Three conditions stop the loop and force an evidence report:
 - A hook reports the context budget crossed. Finish the edit in progress at a green state, write the ledger with its states and the remaining edits to a file named implement-next.md under the directory `git rev-parse --git-dir` prints, report, and say a context clear comes next. The name carries no backticks because the skill verifier resolves a backticked `.md` token as a link.
 
 - The same symptom survives two fix attempts. Report both attempts and observations; do not try a third variation of the same mechanism.
-- A required edit lies outside the paths named during orientation or by the brief/plan. Report the path and dependency before touching it; name `parallel-implementer` as the route when that work belongs on its own branch.
+- A required edit lies outside the paths named during orientation or by the brief/plan. Report the path and dependency before touching it; work that belongs on its own branch is reported here, never started.
 
 ## References
 
