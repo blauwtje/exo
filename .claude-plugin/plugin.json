@@ -1,12 +1,12 @@
 {
   "name": "exo",
   "version": "0.1.13",
-  "description": "One engineering process for Claude Code: skills that take turns, and agents that keep discovery off the main context.",
+  "description": "One engineering process for Claude Code: skills that take turns, and prompts that keep discovery off the main context.",
   "author": {
     "name": "Thomas Hoogteijling"
   },
   "homepage": "https://github.com/blauwtje/exo",
   "repository": "https://github.com/blauwtje/exo",
   "license": "PolyForm-Noncommercial-1.0.0",
-  "keywords": ["skills", "agents", "workflow", "planning", "debugging"]
+  "keywords": ["skills", "delegates", "workflow", "planning", "debugging"]
 }

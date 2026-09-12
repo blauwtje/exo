@@ -45,7 +45,7 @@ test('backfill writes usage.json with the main thread and every subagent', async
   ]);
   const subagents = path.join(project, SESSION_ID, 'subagents');
   await writeLines(path.join(subagents, 'agent-a1.jsonl'), [assistant('msg_sub_1', 'claude-sonnet-5', usage(3, 0, 0, 400, 40))]);
-  await fs.writeFile(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'exo:codebase-scout' }));
+  await fs.writeFile(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'general-purpose' }));
 
   const runs = await fixture();
   const cell = path.join(runs, 't1', 'exo', '1');
@@ -68,7 +68,7 @@ test('backfill writes usage.json with the main thread and every subagent', async
   assert.equal(written.counts.weightedInput, 18 + 100 + 2000 + 500);
   assert.deepEqual(Object.keys(written.byModel).sort(), ['claude-haiku-4-5-20251001', 'claude-sonnet-5']);
   assert.equal(written.byModel['claude-sonnet-5'].output, 40);
-  assert.deepEqual(written.subagents, ['exo:codebase-scout']);
+  assert.deepEqual(written.subagents, ['general-purpose']);
   assert.equal(written.ladder, true);
   await assert.rejects(fs.access(path.join(orphan, 'usage.json')));
 });

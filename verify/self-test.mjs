@@ -14,7 +14,7 @@ import process from 'node:process';
 
 // A fixture holds everything a check reads plus the verifier itself, so the
 // javascript syntax check has the same modules to parse that the real run does.
-const FIXTURE_ENTRIES = ['skills', 'agents', 'verify', 'verify.mjs', 'README.md'];
+const FIXTURE_ENTRIES = ['skills', 'verify', 'verify.mjs', 'README.md'];
 
 function read(root, relative) {
   return fs.readFileSync(path.join(root, relative), 'utf8');

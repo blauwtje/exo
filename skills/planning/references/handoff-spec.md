@@ -54,7 +54,7 @@ git commit -m "<type>(<scope>): <title>" -m "Plan-task: <n>"
 6. **Rationale where required.** A file the request did not name, and an edit not forced by a signature or call site, is explained in `## Context` or the step title, never as a comment inside the code: the executor pastes that code, and a comment telling the change's story outlives it.
 7. **Repository conventions.** Each task connects to the repository's own test registration, error types, logging and layout; the plan invents no parallel pattern.
 8. **Design tasks.** A task with a `Design:` line fixes structure, class names and copy in its code and leaves the visual values to the named skill, which the executing session loads before that task's first edit.
-9. **Drift.** The executor compares each `Modify:` region with the tree before editing; a region that no longer matches stops that task before any edit with `PLAN DRIFT: Task <n>` and the mismatch, and `plan-author` rewrites that task alone.
+9. **Drift.** The executor compares each `Modify:` region with the tree before editing; a region that no longer matches stops that task before any edit with `PLAN DRIFT: Task <n>` and the mismatch, and a `general-purpose` delegate from `../../implementing/plan-author-prompt.md` rewrites that task alone.
 
 ## Judgment
 

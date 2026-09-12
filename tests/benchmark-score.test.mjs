@@ -53,7 +53,7 @@ const safe = (pass) => ({ tier: 'safe', timedOut: false, resultParsed: true, loc
 async function runsFixture() {
   const root = await fixture();
   await writeMeta(root, ['t1', 'safe-path'], 2, 8);
-  const scouted = { subagents: ['exo:codebase-scout'], ladder: true };
+  const scouted = { subagents: ['general-purpose'], ladder: true };
   await cell(root, 't1', 'baseline', 1, result(0.4, 100000), template(200, true), cellUsage(100, 1000, 500));
   await cell(root, 't1', 'baseline', 2, result(0.6, 140000), template(240, true), cellUsage(100, 1000, 700));
   await cell(root, 't1', 'exo', 1, result(0.3, 60000, { [HAIKU]: { costUSD: 0.25 }, 'claude-sonnet-5': { costUSD: 0.05 } }), template(100, true), cellUsage(100, 1000, 300, scouted));
@@ -82,7 +82,7 @@ test('a line per arm gives cost per correct cell by model, the subagents spawned
   const scored = await runScore([root]);
   assert.equal(scored.code, 0, scored.stderr);
   assert.match(scored.stdout, /^- baseline: cost per correct cell claude-haiku-4-5-20251001 \$0\.500; subagents none; ladder in context 0% \(0\/2\)$/m);
-  assert.match(scored.stdout, /^- exo: cost per correct cell claude-haiku-4-5-20251001 \$0\.250, claude-sonnet-5 \$0\.050; subagents exo:codebase-scout 1\/2; ladder in context 100% \(2\/2\)$/m);
+  assert.match(scored.stdout, /^- exo: cost per correct cell claude-haiku-4-5-20251001 \$0\.250, claude-sonnet-5 \$0\.050; subagents general-purpose 1\/2; ladder in context 100% \(2\/2\)$/m);
 });
 
 test('a correct template cell without usage.json stops the score', async () => {

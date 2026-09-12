@@ -1,8 +1,8 @@
 // overhead.mjs books what exo adds to a session from the transcript the
 // harness writes, as usage counts per transcript: the exo text in context,
-// exo agents' system prompts, calls that only load an exo skill or re-issue a
-// refused Read, the read guard's credit, and exo's hook runs. The fixtures pin
-// the shapes observed on 2026-09-11.
+// calls that only load an exo skill or re-issue a refused Read, the read
+// guard's credit, and exo's hook runs. The fixtures pin the shapes observed
+// on 2026-09-11.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -18,13 +18,14 @@ const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const STOP_HOOK = 'node "${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/savings.mjs" record';
 const SESSION_HOOK = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"';
 const LISTING = '- exo:debug: Prove the cause.\n- dataviz: Charts.';
-const AGENT_LINES = ['- exo:codebase-scout: Locate files.', '- claude: Catch-all.'];
+const AGENT_LINES = ['- general-purpose: Multi-step tasks.', '- claude: Catch-all.'];
 const SESSION_CONTEXT = '\n# Using exo\n\nEvery exo skill is invoked as exo:<name>.';
 const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n\n# Debug\n\nProve the cause first.`;
 // The calibrated rates overhead.mjs books at: characters per token of exo text, and milliseconds per exo token a call writes.
 const CHARS_PER_TOKEN = 4.043;
 const MS_PER_WRITTEN_TOKEN = 0.0368;
-const INJECTED = (LISTING.split('\n')[0].length + AGENT_LINES[0].length + SESSION_CONTEXT.length + SKILL_BODY.length) / CHARS_PER_TOKEN;
+// No agent listing line starts with the exo prefix now that the plugin ships no agent files, so AGENT_LINES books nothing.
+const INJECTED = (LISTING.split('\n')[0].length + SESSION_CONTEXT.length + SKILL_BODY.length) / CHARS_PER_TOKEN;
 const REFUSAL = 'exo read guard: /repo/big.ts has 600 lines and an unbounded read is capped at 400; locate the range first.';
 const TEXT = [{ type: 'text', text: 'done' }];
 
@@ -142,26 +143,15 @@ test('a compaction empties the exo text in context', async () => {
   assert.equal(counts.cacheRead, 0);
 });
 
-test("an exo agent's system prompt is booked from its meta file and priced at that transcript's model", async () => {
-  const agentFile = await fs.readFile(path.join(REPOSITORY_ROOT, 'agents', 'codebase-scout.md'), 'utf8');
-  const promptTokens = agentFile.replace(/^---\n[\s\S]*?\n---\n/, '').length / CHARS_PER_TOKEN;
-  const agentLines = (prefix) => [
-    call(`${prefix}_1`, '2026-09-11T10:00:03.000Z', TEXT, { model: 'claude-sonnet-5', counts: { cache5m: 20000 } }),
-    call(`${prefix}_2`, '2026-09-11T10:00:04.000Z', TEXT, { model: 'claude-sonnet-5', counts: { cache5m: 20000 } })
-  ];
+test("a delegate transcript starts with no booked context and keeps its own model", async () => {
   const session = await ingest([call('msg_main', '2026-09-11T10:00:05.000Z', TEXT)], {
     subagents: {
-      'agent-exo': { meta: { agentType: 'exo:codebase-scout' }, lines: agentLines('msg_exo') },
-      'agent-other': { meta: { agentType: 'Explore' }, lines: agentLines('msg_other') }
+      'agent-other': { meta: { agentType: 'general-purpose' }, lines: [
+        call('msg_other_1', '2026-09-11T10:00:03.000Z', TEXT, { model: 'claude-sonnet-5', counts: { cache5m: 20000 } })
+      ] }
     }
   });
-  const exoAgent = transcriptNamed(session, 'agent-exo.jsonl');
-  near(exoAgent.counts.cache5m, promptTokens);
-  near(exoAgent.counts.cacheRead, promptTokens);
-  assert.equal(exoAgent.model, 'claude-sonnet-5');
   assert.deepEqual(transcriptNamed(session, 'agent-other.jsonl').counts, { input: 0, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0 });
-  // Sonnet 5 writes 5-minute cache at $2.50 and reads it at $0.20 per million.
-  near(overheadTotals(session).cost, promptTokens * (2.5 + 0.2) / 1e6);
 });
 
 test('a model missing from prices.mjs makes the overhead cost unknown', async () => {

@@ -8,7 +8,6 @@
 // process the exo text a call writes; the read guard's hook runs leave no
 // transcript entry, so the guard times itself into the ledger.
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readJson } from './ledger.mjs';
@@ -31,8 +30,6 @@ const LISTING_LINE_PREFIX = `- ${SKILL_PREFIX}`;
 const SKILL_BODY_PREFIX = `Base directory for this skill: ${PLUGIN_ROOT}`;
 const SESSION_HOOK_HEADING = '# Using exo';
 const REFUSAL_PREFIX = 'exo read guard:';
-const AGENT_NAME = /^[\w-]+$/;
-const FRONTMATTER = /^---\n[\s\S]*?\n---\n/;
 
 let hookCommandsCache = null;
 
@@ -56,22 +53,6 @@ function hookCommands() {
     }
   }
   return hookCommandsCache;
-}
-
-// A subagent's meta file names the agent type that ran in its transcript; an
-// exo agent's body is that subagent's system prompt.
-function agentPromptTokens(file) {
-  const meta = readJson(file.replace(/\.jsonl$/, '.meta.json'), null);
-  const agentType = meta?.agentType;
-  if (typeof agentType !== 'string' || !agentType.startsWith(SKILL_PREFIX)) return 0;
-  const name = agentType.slice(SKILL_PREFIX.length);
-  if (!AGENT_NAME.test(name)) return 0;
-  try {
-    const agentFile = fs.readFileSync(path.join(PLUGIN_ROOT, 'agents', `${name}.md`), 'utf8');
-    return textTokens(agentFile.replace(FRONTMATTER, ''));
-  } catch {
-    return 0;
-  }
 }
 
 function messageText(message) {
@@ -206,18 +187,17 @@ export function emptyOverhead() {
 export function bookOverhead(session, entry, file) {
   const overhead = session.overhead;
   if (overhead.transcripts[file] === undefined) {
-    const agentTokens = agentPromptTokens(file);
     overhead.transcripts[file] = {
-      model: null, agentTokens, contextTokens: 0, pendingTokens: agentTokens, counts: emptyCounts(),
+      model: null, contextTokens: 0, pendingTokens: 0, counts: emptyCounts(),
       lastTimestamp: null, openCall: null, reads: {}, refused: [], refusals: []
     };
   }
   const transcript = overhead.transcripts[file];
   transcript.pendingTokens += injectedTokens(entry);
   bookRefusals(overhead, transcript, entry, file);
-  // A compaction empties the injected text and ends every refusal's credit; the agent prompt stays.
+  // A compaction empties the injected text and ends every refusal's credit.
   if (entry.type === 'system' && entry.subtype === 'compact_boundary') {
-    transcript.contextTokens = transcript.agentTokens;
+    transcript.contextTokens = 0;
     transcript.pendingTokens = 0;
     transcript.refusals = [];
   }
