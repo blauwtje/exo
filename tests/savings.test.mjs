@@ -36,7 +36,7 @@ const MAIN_USAGE = {
 };
 
 const MAIN_LINES = [
-  { type: 'assistant', uuid: 'a1', timestamp: '2026-09-11T10:00:00.000Z', attributionSkill: 'exo:right-sizing',
+  { type: 'assistant', uuid: 'a1', timestamp: '2026-09-11T10:00:00.000Z',
     message: { id: 'msg_A', model: 'claude-fable-5-1', usage: MAIN_USAGE, content: [{ type: 'thinking' }] } },
   { type: 'assistant', uuid: 'a2', timestamp: '2026-09-11T10:00:01.000Z',
     message: { id: 'msg_A', model: 'claude-fable-5-1', usage: MAIN_USAGE, content: [{ type: 'tool_use' }] } },
@@ -108,7 +108,6 @@ test('record sums usage once per message id, weights the cache, and counts patch
     input: 15, cacheRead: 2000, cache5m: 200, cache1h: 1000, output: 507, raw: 3722, weightedInput: 2465
   });
   assert.deepEqual(session.lines, { added: 10, removed: 4 });
-  assert.equal(session.rightSized, true);
   assert.equal(session.model, 'claude-fable-5-1');
   assert.equal(session.transcript, transcript);
   assert.equal(session.started, '2026-09-11T10:00:00.000Z');
@@ -340,13 +339,13 @@ test('off and on write enabled into config.json, never the ratios, and status re
   const env = { CLAUDE_CONFIG_DIR: directory };
   const configFile = path.join(directory, 'exo', 'savings', 'config.json');
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'on\n');
-  assert.equal((await runWithStdin(['off'], '', env)).stdout, 'exo savings off; right-sizing follows at the next session start\n');
+  assert.equal((await runWithStdin(['off'], '', env)).stdout, 'exo savings off; the counter, the status line segment and the read guard follow at once\n');
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
   assert.match(panel, /^✻ exo savings · ○ off$/m);
   assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
-  assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; right-sizing follows at the next session start\n');
+  assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; the counter, the status line segment and the read guard follow at once\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);
   assert.equal(config.ratios, undefined);

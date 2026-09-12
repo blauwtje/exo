@@ -1,5 +1,5 @@
 ---
-name: right-sizing takes the native date input
+name: using-exo takes the native date input
 runs: 3
 max_turns: 10
 ---

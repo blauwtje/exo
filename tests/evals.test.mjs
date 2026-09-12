@@ -1,5 +1,5 @@
 // Structural check for the eval fixtures under evals/: every case names a
-// verified skill by directory prefix and carries a prompt and one grader in
+// shipped skill by directory prefix and carries a prompt and one grader in
 // the `claude plugin eval` layout. Behavior is judged by that runner, not here.
 
 import assert from 'node:assert/strict';
@@ -7,12 +7,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { EXPECTED_SKILLS } from '../verify/budgets.mjs';
 
 const evalsRoot = fileURLToPath(new URL('../evals/', import.meta.url));
+const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
 const GRADER_TYPES = ['regex', 'tool_used', 'tool_order', 'file_exists', 'llm', 'baseline'];
+// Every skill the plugin ships, not only the ones budgets.mjs verifies: a case
+// may pin the behavior of a skill whose shape the verifier does not police.
 // Longest name first so `implementing-batch-x` resolves to implementing-batch, not implementing.
-const skillsByLength = [...EXPECTED_SKILLS].sort((left, right) => right.length - left.length);
+const skillsByLength = fs.readdirSync(skillsRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(skillsRoot, entry.name, 'SKILL.md')))
+  .map((entry) => entry.name)
+  .sort((left, right) => right.length - left.length);
 
 // The runner reads frontmatter as a map, so a key may sit anywhere in the block.
 function frontmatterBlock(text) {
@@ -34,7 +39,7 @@ test('evals/ holds at least one case', () => {
 for (const caseName of caseNames) {
   test(`eval case ${caseName} is complete`, () => {
     const skill = skillsByLength.find((name) => caseName === name || caseName.startsWith(`${name}-`));
-    assert.ok(skill, `${caseName} does not start with a verified skill name`);
+    assert.ok(skill, `${caseName} does not start with a shipped skill name`);
 
     const promptFile = path.join(evalsRoot, caseName, 'prompt.md');
     assert.ok(fs.existsSync(promptFile), `${caseName} has no prompt.md`);

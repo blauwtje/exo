@@ -51,7 +51,6 @@ const EXPECTED_OWNER_ROWS = {
     'researcher-prompt.md',
     'scout-prompt.md',
   ],
-  'skills/right-sizing/SKILL.md': [],
   'skills/savings/SKILL.md': [],
   'skills/shaping/SKILL.md': [
     '../research/scout-prompt.md',

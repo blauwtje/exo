@@ -1,5 +1,5 @@
 ---
-name: right-sizing keeps the trust-boundary guard
+name: using-exo keeps the trust-boundary guard
 runs: 3
 max_turns: 10
 ---

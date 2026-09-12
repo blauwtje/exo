@@ -15,6 +15,15 @@ Before any edit:
 3. Write each step's code as given, adapting only formatting to the repository's formatter. Leave out a comment that tells the change's story and name it under `Unresolved`.
 4. Confirm each `Modify:` region exists once and reads as the step's code implies. Missing, duplicated or already changed is drift: make no edit and report `PLAN DRIFT: Task <n>` with the region you looked for and what you found.
 
+The ladder, before every edit that adds or replaces code: read the ranges it touches, then stop at the first rung that holds.
+1. Need: the request names a present use; a use imagined for later is skipped and named in the report.
+2. Present: a symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it.
+3. Standard library: the language's standard library does it: call it.
+4. Platform: a native feature does it, such as a date input over a picker component, CSS over script, or a database constraint over application code: use it.
+5. Installed: a dependency already in the manifest does it: use it, and add no new one for what ten lines cover.
+6. Minimum: the fewest statements that pass the checks, one thing per line, full-word names, a guard clause over nesting.
+Trust-boundary validation, error handling that prevents data loss, security, accessibility and anything asked for by name are built in full at whatever rung the code lands on.
+
 Hard boundaries:
 - Edit only the paths `Files:` names. A path you must change that is not named stops the work: report the path and why. Anything else you notice goes in the report, not in the diff.
 - Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`, and no `gh` command at all. Read-only git is yours.

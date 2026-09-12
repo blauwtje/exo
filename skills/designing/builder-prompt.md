@@ -35,6 +35,17 @@ Every scope meets the floor; its state, timing, and reachability mechanics live 
 
 The underdesign floor: the ground is a designed surface, not an untouched flat neutral; raised surfaces carry the direction's material, not one grey shadow each; type carries a voice through a second weight, width, or family; the recorded motion decision is built; every browser surface on the finish list in `$SKILL/references/implementation.md` is themed; and no slop trope from `$SKILL/references/visual-critique.md` stands without recorded provenance. `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration; the shapes live in `$SKILL/references/craft-recipes.md`.
 
+**The ladder.**
+
+The ladder, before every edit that adds or replaces code: read the ranges it touches, then stop at the first rung that holds.
+1. Need: the request names a present use; a use imagined for later is skipped and named in the report.
+2. Present: a symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it.
+3. Standard library: the language's standard library does it: call it.
+4. Platform: a native feature does it, such as a date input over a picker component, CSS over script, or a database constraint over application code: use it.
+5. Installed: a dependency already in the manifest does it: use it, and add no new one for what ten lines cover.
+6. Minimum: the fewest statements that pass the checks, one thing per line, full-word names, a guard clause over nesting.
+Trust-boundary validation, error handling that prevents data loss, security, accessibility and anything asked for by name are built in full at whatever rung the code lands on.
+
 **Rules.**
 
 - Do not render, screenshot, or start a browser; the reviewer renders.

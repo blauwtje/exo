@@ -17,12 +17,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
-- Every savings figure (cost, lines, tokens, time; panel, status line and
-  trend) is net of all of exo's overhead, from exo's own benchmark ratios with
+- Every savings figure (cost, tokens and time, in the panel and the status
+  line) is net of all of exo's overhead, from exo's own benchmark ratios with
   their standard error. The read guard times itself and books its refusals by
   tool call; the status line drops its separate guard figure.
-- `savings report` prints a card: the switch state and what each state does,
-  the saving in the current project beside all projects, and a 30-day trend.
+- `savings report` draws a fixed-width grid inside a code fence, relayed
+  fenced: the switch state, then one section for the current project and one
+  for everywhere, and per metric what those sessions spent with exo, what the
+  benchmark says the same work would have cost without it, and the difference.
+- The right-sizing ladder rides in every session as part of the `using-exo`
+  body the session hook injects, whatever the savings switch says; that switch
+  now reaches the counter, the status line segment and the read guard alone.
+  `implementer-prompt.md`, `bug-fixer-prompt.md` and `builder-prompt.md` carry
+  the ladder in their own text, because a delegate never sees the session hook.
 
 - `planning` writes plans in the task shape: `### Task n`, `Files:`, numbered
   steps carrying complete code with `Run:` and `Expected:`, and a `Commit:`
@@ -35,8 +42,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `planning` reads `data-migration.md` from `implementing-batch` instead of
   carrying a copy, and its heading matches its name.
 
+### Fixed
+
+- The panel's lines row no longer subtracts the lines exo's own process writes
+  (briefs, plans, research notes, designing runs, the handoff file) from the
+  code estimate, which drove every session that shaped or planned into a
+  reported loss; those lines still stay out of the product count. A session
+  with no recorded call prices at a known zero instead of leaving a whole
+  scope's cost column at `-`.
+
 ### Removed
 
+- The `right-sizing` skill. Its ladder and its "never on the ladder" guards
+  moved verbatim into `using-exo`, so the ladder holds without a skill call and
+  an explicit ask for the minimal or lean version is answered from the same
+  text. Its three evals are renamed `using-exo-*`.
+- The savings panel's 30-day trend, the `exo:right-sizing` attribution in the
+  ledger, and the right-sizing column in `benchmarks/score.mjs`.
 - `validate-plan.mjs` and its test: the new plan grammar has no machine
   validator; the planning session reads the plan once against the spec's rules.
 - The per-file line and character ceilings and the `line budgets` check: a

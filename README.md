@@ -22,8 +22,7 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 | `implementing` | A plan is run or resumed: one delegated build and two reviews per task, a commit each. |
 | `implementing-batch` | A decided change builds in the session: more than one file, a dependency, a signature or tests. |
 | `debug` | Existing behavior fails and the cause is unproven. |
-| `right-sizing` | The user asks for the minimal or lean version: the smallest readable shape, stdlib and platform before a dependency, guards never cut. While savings are on, its ladder already sits in every session's context. |
-| `savings` | The user asks what the ladder and the read guard saved: prints the ledger table, user-invoked. |
+| `savings` | The user asks what exo and the read guard saved: prints the ledger panel, user-invoked. |
 | `deepen` | The user asks where to improve architecture without naming the change. |
 | `research` | A decision hinges on a pinned external version's behavior. |
 | `designing` | A visual surface is created or changed. |
@@ -33,11 +32,11 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, c
 
 ## Delegates and the hooks
 
-The plugin ships no agent files. Every delegate is the harness's `general-purpose` agent: the dispatching skill names the model on each call (`sonnet` for a mechanical build, a review, a comp or a documentation read; `opus` for debugging, plan repair, the design critique and a risky review; none for codebase discovery, so the scout inherits the session's model and never costs more per token than the thread that called it) and hands it the role text from a `<role>-prompt.md` beside the skill, the way `obra/superpowers` does. Effort cannot travel with a dispatch, so `implementing`, `designing` and `research` pin `effort: high` in their own frontmatter, which their delegates inherit. `hooks/hooks.json` wires the hooks: a SessionStart injection that hands the model the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others, plus the right-sizing ladder while savings are on; and a Stop hook that records the turn's tokens and edited lines into the savings ledger. The session hook needs `bash` and `jq` on `PATH`; the Node hooks need `node`. The plugin ships no permission guard: a guard that caps what a machine may do belongs in that machine's own configuration, not in a shared plugin.
+The plugin ships no agent files. Every delegate is the harness's `general-purpose` agent: the dispatching skill names the model on each call (`sonnet` for a mechanical build, a review, a comp or a documentation read; `opus` for debugging, plan repair, the design critique and a risky review; none for codebase discovery, so the scout inherits the session's model and never costs more per token than the thread that called it) and hands it the role text from a `<role>-prompt.md` beside the skill, the way `obra/superpowers` does. Effort cannot travel with a dispatch, so `implementing`, `designing` and `research` pin `effort: high` in their own frontmatter, which their delegates inherit. `hooks/hooks.json` wires the hooks: a SessionStart injection that hands the model the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others and carries the right-sizing ladder; and a Stop hook that records the turn's tokens and edited lines into the savings ledger. The session hook needs `bash` and `jq` on `PATH`; the Node hooks need `node`. The plugin ships no permission guard: a guard that caps what a machine may do belongs in that machine's own configuration, not in a shared plugin.
 
 ## The ladder
 
-While exo savings are on, the session hook puts this ladder and its guards in context, so it holds before every edit that adds or replaces code without a call to `right-sizing`; the skill itself answers an explicit ask for the minimal or lean version. The model reads the ranges the change touches and follows the real flow, then stops at the first rung that holds:
+The ladder lives in the `using-exo` body, so the session hook puts it and its guards in every session's context, on or off the savings switch: it holds before every edit that adds or replaces code, and answers an explicit ask for the minimal or lean version. No skill call brings it. The three delegate prompts that write code (`skills/implementing/implementer-prompt.md`, `skills/implementing/bug-fixer-prompt.md`, `skills/designing/builder-prompt.md`) carry it in their own text, because a delegate never sees the session hook. The model reads the ranges the change touches and follows the real flow, then stops at the first rung that holds:
 
 ```text
 1. Does this need to exist?         → no: skip it (YAGNI)
@@ -59,7 +58,7 @@ One saving figure per metric, net of all of exo's own overhead. A session that w
 
 The read guard (`skills/savings/scripts/read-guard.mjs`, a PreToolUse hook on Read that decides and a PostToolUse hook on Read that books the read once it succeeded) refuses an unbounded read of a file over 400 lines with a reason that asks for a located range, and refuses a second read of a range that is unchanged since the first in this context window; a clear or a compaction forgets the reads. Each refusal books, under its tool call, the bytes it kept out of context, less what the same reader reads of that file afterwards, and each run books its own time.
 
-One switch turns the ladder, the counter, the status line segment and the read guard off together: `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" off` (or `on`, `status`), which writes `"enabled": false` into `~/.claude/exo/savings/config.json`; `EXO_SAVINGS=off` or `EXO_SAVINGS=on` in the environment outranks the file. `"readGuard": false` in the same file switches the guard alone. There are no levels.
+One switch turns the counter, the status line segment and the read guard off together, the ladder excepted, which rides in every session either way: `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" off` (or `on`, `status`), which writes `"enabled": false` into `~/.claude/exo/savings/config.json`; `EXO_SAVINGS=off` or `EXO_SAVINGS=on` in the environment outranks the file. `"readGuard": false` in the same file switches the guard alone. There are no levels.
 
 To show the running total in the status line, add to your `statusLine` command script, after it has read stdin into `$input`:
 

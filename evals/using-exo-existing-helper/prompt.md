@@ -1,5 +1,5 @@
 ---
-name: right-sizing reuses the helper that exists
+name: using-exo reuses the helper that exists
 runs: 3
 max_turns: 10
 ---

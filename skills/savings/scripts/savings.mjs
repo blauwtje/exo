@@ -9,7 +9,7 @@
 //   node savings.mjs report      prints the panel as a fenced fixed-width grid
 //   node savings.mjs status      prints on or off
 //   node savings.mjs off | on    writes "enabled" into config.json: one switch for
-//                                the ladder, the counter, the status line and the guard
+//                                the counter, the status line and the read guard
 //
 // A hook failure never blocks the turn.
 
@@ -211,7 +211,7 @@ function status() {
 // Only "enabled" is written, so the published ratios keep reaching this install.
 function setEnabled(enabled) {
   writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), enabled });
-  process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; right-sizing follows at the next session start\n`);
+  process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; the counter, the status line segment and the read guard follow at once\n`);
 }
 
 // A recorded project may be a symlinked path while process.cwd() is resolved;

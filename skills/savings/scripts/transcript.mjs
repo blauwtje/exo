@@ -1,5 +1,5 @@
 // Reads the transcript the harness writes into a ledger row: usage per API
-// call, lines per edit, the overhead exo adds, and whether right-sizing fired.
+// call, lines per edit, and the overhead exo adds.
 // The format is internal to the harness and may change between releases; a
 // line that does not parse is skipped, never fatal.
 
@@ -9,7 +9,6 @@ import { configDirectory, emptySession, updateSessions } from './ledger.mjs';
 import { OVERHEAD_VERSION, bookOverhead, emptyOverhead } from './overhead.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 
-const RIGHT_SIZING_SKILL = 'exo:right-sizing';
 // What exo's own process writes: a brief, a plan, research notes, a designing
 // run, and the handoff implementing-batch leaves under the git directory.
 const EXO_PROCESS_DIRECTORIES = ['/docs/specs/', '/docs/plans/', '/docs/research/', '/.claude/plans/', '/tmp/designing/'];
@@ -80,7 +79,6 @@ function applyEntry(session, entry, file) {
     if (session.started === null || entry.timestamp < session.started) session.started = entry.timestamp;
     if (session.updated === null || entry.timestamp > session.updated) session.updated = entry.timestamp;
   }
-  if (entry.attributionSkill === RIGHT_SIZING_SKILL) session.rightSized = true;
   const message = entry.message;
   if (entry.type === 'assistant' && message && message.id && message.usage) {
     // One response is one line per content block, and a streaming response

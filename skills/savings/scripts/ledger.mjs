@@ -46,8 +46,7 @@ export function writeJson(file, value) {
   fs.renameSync(temporary, file);
 }
 
-// One switch for the ladder, the counter, the status line segment and the
-// read guard: EXO_SAVINGS=off|on outranks "enabled" in config.json.
+// One switch for the counter, the status line segment and the read guard: EXO_SAVINGS=off|on outranks "enabled" in config.json.
 export function savingsEnabled() {
   const override = process.env.EXO_SAVINGS;
   if (override === 'off') return false;
@@ -64,7 +63,6 @@ export function emptySession() {
     transcript: null,
     project: null,
     model: null,
-    rightSized: false,
     costUsd: null,
     durationMs: null,
     tokens: null,

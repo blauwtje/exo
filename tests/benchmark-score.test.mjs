@@ -70,11 +70,11 @@ test('the table shows baseline absolutes, other arms as percentages, and exclude
   const scored = await runScore([root]);
   assert.equal(scored.code, 0, scored.stderr);
   assert.match(scored.stdout, /model claude-haiku-4-5-20251001 · Claude Code 2\.1\.268 \(Claude Code\) · fixture full-stack-fastapi-template@cd83fc1 · n=2 · 2026-09-12/);
-  assert.match(scored.stdout, /\| arm \| LOC \| tokens \| cost \| time \| safe \| correct \| right-sizing \|/);
+  assert.match(scored.stdout, /\| arm \| LOC \| tokens \| cost \| time \| safe \| correct \|/);
   // baseline: LOC mean 220 sd 28; weighted input 100 + 0.1 × 1000 = 200, plus output 500/700 → 700/900, mean 800 sd 141
-  assert.match(scored.stdout, /\| baseline \| 220 ±28 \| 800 ±141 \| \$0\.50 ±0\.14 \| 2\.0m ±0\.5m \| 50% \(1\/2\) \| 100% \(2\/2\) \| 0% \(0\/2\) \|/);
+  assert.match(scored.stdout, /\| baseline \| 220 ±28 \| 800 ±141 \| \$0\.50 ±0\.14 \| 2\.0m ±0\.5m \| 50% \(1\/2\) \| 100% \(2\/2\) \|/);
   // exo: one correct cell, LOC 100 → -55%; tokens 200 + 300 = 500 → -37.5%, rounded -37%; cost 0.3 → -40%; time 60s → -50%
-  assert.match(scored.stdout, /\| exo \| 100 ±0 \(-55%\) \| 500 ±0 \(-37%\) \| \$0\.30 ±0\.00 \(-40%\) \| 1\.0m ±0\.0m \(-50%\) \| 100% \(2\/2\) \| 50% \(1\/2\) \| 0% \(0\/2\) \|/);
+  assert.match(scored.stdout, /\| exo \| 100 ±0 \(-55%\) \| 500 ±0 \(-37%\) \| \$0\.30 ±0\.00 \(-40%\) \| 1\.0m ±0\.0m \(-50%\) \| 100% \(2\/2\) \| 50% \(1\/2\) \|/);
 });
 
 test('a line per arm gives cost per correct cell by model, the subagents spawned and the ladder in context', async () => {

@@ -1,9 +1,7 @@
-// The session hook hands the model the using-exo body and, while exo savings
-// are on, the right-sizing ladder and its guards in the same context string,
-// so the ladder holds before every edit without a skill call and is booked
-// with the rest of exo's session text; with savings off the ladder stays out,
-// so the switch silences the ladder, the counter, the status line and the
-// guard together.
+// The session hook hands the model the using-exo body, the right-sizing ladder
+// and its guards included, so the ladder holds before every edit without a
+// skill call. The savings switch does not reach it: it silences the counter,
+// the status line segment and the read guard, and the ladder rides either way.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -26,18 +24,18 @@ function jqAvailable() {
   return new Promise((resolve) => execFile('jq', ['--version'], (error) => resolve(!error)));
 }
 
-test('the session hook carries the right-sizing ladder only while exo savings are on', { skip: !(await jqAvailable()) && 'jq not on PATH' }, async () => {
+test('the session hook carries the right-sizing ladder whether exo savings are on or off', { skip: !(await jqAvailable()) && 'jq not on PATH' }, async () => {
   const configDirectory = await fixture();
   const on = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
   assert.equal(on.code, 0, on.stderr);
-  const onContext = JSON.parse(on.stdout).hookSpecificOutput.additionalContext;
-  assert.ok(onContext.includes('# Using exo'), onContext);
-  for (const text of LADDER_TEXTS) assert.ok(onContext.includes(text), text);
-  assert.ok(!onContext.includes('## Report'), onContext);
-  assert.ok(!onContext.includes('is borrowed before the first edit'), onContext);
   const off = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS: 'off' });
   assert.equal(off.code, 0, off.stderr);
-  const offContext = JSON.parse(off.stdout).hookSpecificOutput.additionalContext;
-  for (const text of LADDER_TEXTS) assert.ok(!offContext.includes(text), text);
-  assert.ok(offContext.includes('are borrowed mid-turn and hand control back.'), offContext);
+  for (const result of [on, off]) {
+    const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+    assert.ok(context.includes('# Using exo'), context);
+    for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
+    assert.ok(context.includes('are borrowed mid-turn and hand control back.'), context);
+    // The frontmatter is dropped, so the description never reaches the context twice.
+    assert.ok(!context.includes('name: using-exo'), context);
+  }
 });

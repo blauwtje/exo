@@ -4,8 +4,7 @@
 // transcript, never calls claude. Tokens are weighted exactly as the savings
 // counter weights them (token-weights.mjs) and summed over every transcript of
 // a cell, as its usage.json records them; cost is total_cost_usd and time
-// duration_ms as `claude -p --output-format json` reports them. The
-// right-sizing column reads each cell's own ledger.
+// duration_ms as `claude -p --output-format json` reports them.
 //
 //   node benchmarks/score.mjs benchmarks/runs/<dir>
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>] [--ratios <file>]
@@ -30,7 +29,7 @@ const LIMITATIONS = [
   'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell, main thread and subagents, from its usage.json; cost is Claude Code\'s client-side list-price estimate over every model; time is duration_ms.',
   'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.',
   'A published ratio is 1 − E/B for arm means E and B, and its spread is its standard error √(sd_E²/n_E + (E/B)²·sd_B²/n_B) / B; a negative ratio means the exo arm used more than the baseline.',
-  'Right-sizing counts the template cells whose own ledger shows exo:right-sizing fired; the line per arm counts the template cells whose session context carried the ladder, and the cost per correct cell per model.'
+  'The line per arm counts the template cells whose session context carried the ladder, and the cost per correct cell per model.'
 ];
 
 function parseArguments(argv) {
@@ -56,10 +55,8 @@ function readCells(directory) {
     const resultFile = path.join(cellDirectory, 'result.json');
     const result = fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')) : null;
     const usage = readJson(path.join(cellDirectory, 'usage.json'), null);
-    const ledger = readJson(path.join(cellDirectory, 'ledger', 'sessions.json'), {});
-    const rightSized = Object.values(ledger).some((session) => session.rightSized === true);
     const [task, arm, run] = path.dirname(file).split(path.sep);
-    cells.push({ task, arm, run, checks, result, usage, rightSized });
+    cells.push({ task, arm, run, checks, result, usage });
   }
   return cells;
 }
@@ -107,7 +104,6 @@ function summarizeArm(cells) {
   const safe = cells.filter((cell) => cell.checks.tier === 'safe');
   summary.correct = { pass: template.filter((cell) => cell.checks.correct === true).length, total: template.length };
   summary.safe = { pass: safe.filter((cell) => cell.checks.safe === true).length, total: safe.length };
-  summary.rightSized = { pass: template.filter((cell) => cell.rightSized).length, total: template.length };
   summary.costByModel = costByModel(measuredCells);
   summary.subagents = subagentCells(template);
   summary.ladder = { pass: template.filter((cell) => cell.usage?.ladder === true).length, total: template.length };
@@ -151,14 +147,14 @@ function rate({ pass, total }) {
 // Every arm shows its mean and spread; an arm beside a baseline adds its change against it.
 function tableLines(meta, summaries) {
   const header = `model ${meta.model} · Claude Code ${meta.claudeVersion} · fixture ${meta.fixture.name}@${meta.fixture.commit} · n=${meta.runs} · ${meta.date}`;
-  const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct | right-sizing |', '|---|---|---|---|---|---|---|---|'];
+  const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct |', '|---|---|---|---|---|---|---|'];
   const baseline = summaries.baseline;
   for (const [arm, summary] of Object.entries(summaries)) {
     const cells = METRICS.map((metric) => {
       const value = absolute(metric, summary[metric]);
       return arm === 'baseline' || !baseline ? value : `${value} (${relative(summary[metric], baseline[metric])})`;
     });
-    lines.push(`| ${arm} | ${cells.join(' | ')} | ${rate(summary.safe)} | ${rate(summary.correct)} | ${rate(summary.rightSized)} |`);
+    lines.push(`| ${arm} | ${cells.join(' | ')} | ${rate(summary.safe)} | ${rate(summary.correct)} |`);
   }
   return lines;
 }

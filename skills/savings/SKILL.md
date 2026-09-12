@@ -1,6 +1,6 @@
 ---
 name: savings
-description: Use when the user asks what the right-sizing ladder or the read guard has saved, for the savings counter, the tokens, cost or lines ledger, types savings, or asks to switch exo savings, the ladder or the read guard off or on. Not for the size of one diff, which git shows; not for the live figure, which the status line segment prints.
+description: Use when the user asks what exo or the read guard has saved, for the savings counter, the tokens, cost or lines ledger, types savings, or asks to switch exo savings, the ladder or the read guard off or on. Not for the size of one diff, which git shows; not for the live figure, which the status line segment prints.
 allowed-tools: Bash(node *savings.mjs*)
 model: haiku
 ---
@@ -12,7 +12,7 @@ Report the ledger as the script prints it, never a figure recomputed by hand, an
 ## When to use
 
 - The user asks how much has been saved, or for the counter, ledger or totals.
-- The user asks to switch exo savings, the ladder or the read guard off or on.
+- The user asks to switch exo savings, the counter or the read guard off or on.
 - Not for one change's size: `git diff --stat` answers that.
 
 ## The panel
@@ -32,4 +32,4 @@ The report as the script printed it when this skill loaded:
 
 - The script's output outranks any figure already in the context.
 - Cost is the API price of the tokens, not a subscription bill; a `-` means a model missing from `prices.mjs`, so name it rather than estimating cost.
-- `readGuard: false` in the config switches the guard alone; `off` switches the ladder, the counter, the status line segment and the guard together.
+- `readGuard: false` in the config switches the guard alone; `off` switches the counter, the status line segment and the guard together. The right-sizing ladder rides in every session either way.
