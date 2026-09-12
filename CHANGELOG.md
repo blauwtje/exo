@@ -22,11 +22,10 @@ release, and a body rewrite that keeps the trigger is a patch.
   tool call; the status line drops its separate guard figure.
 - `savings report` draws a fixed-width grid inside a code fence, relayed
   fenced: the switch state, then every session in the ledger at once whatever
-  project it ran in, and per metric what those sessions spent with exo, what
-  the benchmark says the same work would have cost without it, and the
-  difference. One line under the grid names what exo itself cost inside the
-  with-exo column, the overhead that makes the saving a net figure; the ledger
-  no longer records a session's project.
+  project it ran in, and per metric the one figure the benchmark says exo
+  saved, net of what exo itself cost. The with-exo and without-exo columns and
+  the overhead line under the grid are gone, and the ledger no longer records a
+  session's project.
 - The right-sizing ladder rides in every session as part of the `using-exo`
   body the session hook injects, whatever the savings switch says; that switch
   now reaches the counter, the status line segment and the read guard alone.

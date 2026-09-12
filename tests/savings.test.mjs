@@ -166,12 +166,12 @@ test('a session without product code saves minus its overhead, and a loss shows 
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 100 LOC · -8.0k tok · $0.32 · 2m');
   await writeLedger(directory, { s2: uncovered });
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 0 LOC · -10k tok · -$0.01 · -1m');
-  // The panel spends nothing on this session and loses on it: with, without, saved.
+  // A session that wrote no code loses what exo cost it, so the panel prints that loss.
   const panel = (await run(SAVINGS, ['report'], { env, cwd: directory })).stdout;
-  assert.match(panel, /^code lines\s+0\s+0\s+0$/m);
-  assert.match(panel, /^tokens\s+0\s+-10k\s+-10k$/m);
-  assert.match(panel, /^cost\s+\$0\.00\s+-\$0\.01\s+-\$0\.01$/m);
-  assert.match(panel, /^time\s+0m\s+-1m\s+-1m$/m);
+  assert.match(panel, /^code lines\s+0$/m);
+  assert.match(panel, /^tokens\s+-10k$/m);
+  assert.match(panel, /^cost\s+-\$0\.01$/m);
+  assert.match(panel, /^time\s+-1m$/m);
 });
 
 test("overhead is priced per transcript at that transcript's model, and an unlisted model leaves the cost unknown", async () => {
@@ -263,7 +263,7 @@ test('reading older rows again neither brings back an expired row nor moves a ro
   assert.equal(ledger.recent.overhead.version, OVERHEAD_VERSION);
 });
 
-test('report shows the switch state, every project at once, and exo\'s own cost inside the with-exo column', async () => {
+test('report shows the switch state, every project at once, and one saved figure per metric', async () => {
   const { configDirectory, transcript } = await transcriptFixture();
   const env = { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: '' };
   await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript, cwd: '/shop' }), env);
@@ -273,32 +273,31 @@ test('report shows the switch state, every project at once, and exo\'s own cost 
   // Fenced, because the columns line up only in a monospace block.
   assert.match(result.stdout, /^```text$/m);
   assert.match(result.stdout, /^✻ exo savings · ● on · all projects$/m);
-  assert.match(result.stdout, /^\s+with exo\s+≈ without exo\s+saved$/m);
   // Both sessions in one grid, in one project or another: no section per project.
   assert.doesNotMatch(result.stdout, /^── /m);
+  // One figure per metric: what was spent and what it would have cost without exo stay out.
+  assert.doesNotMatch(result.stdout, /with exo/);
   // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302 a session, a third of it saved.
-  assert.match(result.stdout, /^code lines\s+20\s+40\s+20$/m);
-  assert.match(result.stdout, /^tokens\s+5\.9k\s+7\.4k\s+1\.5k$/m);
-  assert.match(result.stdout, /^cost\s+\$0\.06\s+\$0\.08\s+\$0\.02$/m);
-  assert.match(result.stdout, /^time\s+6m\s+8m\s+2m$/m);
-  // This transcript carries no exo text, so exo's share of what was spent is zero.
-  assert.match(result.stdout, /^exo's own cost, already inside "with exo": 0 tok · \$0\.00 · 0m$/m);
+  assert.match(result.stdout, /^code lines\s+20$/m);
+  assert.match(result.stdout, /^tokens\s+1\.5k$/m);
+  assert.match(result.stdout, /^cost\s+\$0\.02$/m);
+  assert.match(result.stdout, /^time\s+2m$/m);
   assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
   assert.doesNotMatch(result.stdout, /last 30 days/);
 });
 
-test('a session whose model has no price marks the with-exo cost and dashes the other two', async () => {
+test('a saving whose price is unknown dashes the cost row', async () => {
   const directory = await fixture();
   await writeConfig(directory);
   const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
   const priced = bookedRow({ costUsd: 10, lines: { added: 10, removed: 0 }, tokens: { weightedInput: 0, output: 0 } });
-  const unpriced = bookedRow({ lines: { added: 0, removed: 0 },
+  const unpriced = bookedRow({ lines: { added: 10, removed: 0 },
     usageById: { m1: { input: 1000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0, model: 'claude-unlisted-9' } } });
   await writeLedger(directory, { s1: priced, s2: unpriced });
   const result = await runWithStdin(['report'], '', env);
   assert.equal(result.code, 0, result.stderr);
-  // $10 of the two sessions is priced, so the sum is short one session and says so.
-  assert.match(result.stdout, /^cost\s+\$10\.00\+\s+-\s+-$/m);
+  // One of the two sessions has no price, so the cost saved over both cannot be totalled.
+  assert.match(result.stdout, /^cost\s+-$/m);
 });
 
 test('every row of the panel is padded to one width', async () => {
@@ -307,7 +306,7 @@ test('every row of the panel is padded to one width', async () => {
   await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
   const result = await run(SAVINGS, ['report'], { env, cwd: configDirectory });
   assert.equal(result.code, 0, result.stderr);
-  const grid = result.stdout.split('\n').filter((line) => /^(?:code lines|tokens|cost|time|\s+with exo)/.test(line));
+  const grid = result.stdout.split('\n').filter((line) => /^(?:code lines|tokens|cost|time)/.test(line));
   const widths = new Set(grid.map((line) => [...line].length));
   assert.equal(widths.size, 1, [...widths].join(', '));
   assert.ok([...widths][0] <= 60, `panel is ${[...widths][0]} columns`);

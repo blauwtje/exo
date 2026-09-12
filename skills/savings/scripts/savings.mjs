@@ -27,12 +27,6 @@ const PANEL_ROWS = {
   cost: 'cost',
   time: 'time'
 };
-// The three numbers per metric. The ≈ marks the whole panel as an estimate once.
-const PANEL_COLUMNS = {
-  actual: 'with exo',
-  without: '≈ without exo',
-  saved: 'saved'
-};
 const COLUMN_GAP = 2;
 // MEASURED is the cut per metric exo's benchmark measured against a no-skill
 // baseline, with its source; a ratio in config.json overrides it.
@@ -113,21 +107,15 @@ function addTotals(total, values) {
   else total.cost += values.cost;
 }
 
-// Every session summed three times over: what it actually spent, what exo
-// saved on top of that, and the share of the actual that exo's own listing,
-// skill bodies, hook runs and refusals cost. A cost is known only when every
-// session's is. Overhead carries no lines: exo's own files are not code.
-function ledgerTotals(sessions, ratios) {
-  const actual = emptyTotals();
+// Every session's saving summed, already net of what exo's own listing, skill
+// bodies, hook runs and refusals cost that session. A cost is known only when
+// every session's is.
+function savedTotals(sessions, ratios) {
   const saved = emptyTotals();
-  const overhead = emptyTotals();
   for (const session of Object.values(sessions)) {
-    const metrics = sessionMetrics(session);
-    addTotals(actual, metrics);
-    addTotals(saved, sessionSavings(metrics, ratios));
-    addTotals(overhead, { lines: 0, ...metrics.overhead });
+    addTotals(saved, sessionSavings(sessionMetrics(session), ratios));
   }
-  return { actual, saved, overhead };
+  return saved;
 }
 
 function compact(value) {
@@ -186,7 +174,7 @@ function statusline(statusInput) {
       return changed;
     });
   }
-  const { saved } = ledgerTotals(refreshStaleSessions(sessions), config.ratios);
+  const saved = savedTotals(refreshStaleSessions(sessions), config.ratios);
   process.stdout.write(segment(saved));
 }
 
@@ -200,8 +188,8 @@ function setEnabled(enabled) {
   process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; the counter, the status line segment and the read guard follow at once\n`);
 }
 
-// Code points, not terminal cells: every glyph the grid pads is single width,
-// so only a wide character inside a project name can stretch its own rule.
+// Code points, not terminal cells: the grid pads metric labels and formatted
+// numbers only, all single width, so a code point count is the cell's width.
 function displayWidth(text) {
   return [...text].length;
 }
@@ -214,55 +202,27 @@ function padEnd(text, width) {
   return text + ' '.repeat(Math.max(width - displayWidth(text), 0));
 }
 
-// The panel's cells as text: what every session spent, what the benchmark
-// says the same work would have cost without exo, and the saving between
-// them. Without is with plus saved, so the three columns always add up. A
-// session whose model has no price cannot total its cost: the without and
-// saved cells print a dash, and the with cell prints the sum of the prices it
-// has under a trailing + that says the sum is short a session.
+// The panel's cells as text: per metric what the benchmark says exo saved
+// against a no-skill baseline. A saving whose price is unknown, because a
+// session's model is missing from prices.mjs, prints a dash.
 function panelCells(sessions, ratios) {
-  const { actual, saved, overhead } = ledgerTotals(sessions, ratios);
-  const costKnown = actual.costKnown && saved.costKnown;
-  const without = {
-    lines: actual.lines + saved.lines,
-    tokens: actual.tokens + saved.tokens,
-    cost: actual.cost + saved.cost,
-    time: actual.time + saved.time
+  const saved = savedTotals(sessions, ratios);
+  return {
+    lines: compact(saved.lines),
+    tokens: compact(saved.tokens),
+    cost: money(saved.cost, saved.costKnown),
+    time: duration(saved.time)
   };
-  const cellsOf = (totals, known) => ({
-    lines: compact(totals.lines),
-    tokens: compact(totals.tokens),
-    cost: money(totals.cost, known),
-    time: duration(totals.time)
-  });
-  const spent = cellsOf(actual, true);
-  if (!actual.costKnown) spent.cost = `${spent.cost}+`;
-  return { cells: { actual: spent, without: cellsOf(without, costKnown), saved: cellsOf(saved, costKnown) }, overhead };
 }
 
-// The grid: one header row, then one row per metric. Every column is padded
-// from the width of its widest cell, so no cell can push a row past the edge.
+// The grid: one row per metric, its label then its value. Both columns are
+// padded from the width of their widest cell, so no cell can push a row past
+// the edge.
 function gridLines(cells) {
   const metrics = Object.keys(PANEL_ROWS);
-  const columns = Object.keys(PANEL_COLUMNS);
   const labelWidth = Math.max(...Object.values(PANEL_ROWS).map(displayWidth));
-  const columnWidth = {};
-  for (const column of columns) {
-    const values = metrics.map((metric) => cells[column][metric]);
-    columnWidth[column] = Math.max(displayWidth(PANEL_COLUMNS[column]), ...values.map(displayWidth));
-  }
-  const row = (label, cellOf) => padEnd(label, labelWidth) +
-    columns.map((column) => padStart(cellOf(column), columnWidth[column] + COLUMN_GAP)).join('');
-  const header = row('', (column) => PANEL_COLUMNS[column]);
-  return [header, ...metrics.map((metric) => row(PANEL_ROWS[metric], (column) => cells[column][metric]))];
-}
-
-// What exo's own listing, skill bodies, hook runs and read guard cost, spelled
-// out because it is already inside the with-exo column and so already off the
-// saving; a reader who cannot see it assumes it was never counted.
-function overheadLine(overhead) {
-  const price = money(overhead.cost, overhead.costKnown);
-  return `exo's own cost, already inside "with exo": ${compact(overhead.tokens)} tok · ${price} · ${duration(overhead.time)}`;
+  const valueWidth = Math.max(...metrics.map((metric) => displayWidth(cells[metric])));
+  return metrics.map((metric) => padEnd(PANEL_ROWS[metric], labelWidth) + padStart(cells[metric], valueWidth + COLUMN_GAP));
 }
 
 // A fixed-width grid inside a code fence, because its columns line up only in
@@ -273,15 +233,13 @@ function overheadLine(overhead) {
 function report() {
   const config = loadConfig();
   const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
-  const { cells, overhead } = panelCells(sessions, config.ratios);
+  const cells = panelCells(sessions, config.ratios);
   const enabled = savingsEnabled();
   const lines = [
     '```text',
     `✻ exo savings · ${enabled ? '● on' : '○ off'} · all projects`,
     '',
     ...gridLines(cells),
-    '',
-    overheadLine(overhead),
     '```',
     '',
     enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'
