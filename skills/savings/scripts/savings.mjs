@@ -29,12 +29,6 @@ const TREND_FLOOR = '▁';
 const TREND_LOSS = '-';
 // One active day draws a single bar on a flat line, so the trend waits for a second.
 const TREND_MIN_ACTIVE_DAYS = 2;
-const MILESTONE_STEPS = [1, 2, 5];
-const MILESTONE_BAR_CELLS = 20;
-const MILESTONE_BAR_FILLED = '█';
-const MILESTONE_BAR_EMPTY = '░';
-// Left-aligned partial blocks, indexed by eighths of a cell; index 0 draws nothing.
-const MILESTONE_BAR_EDGES = ['', '▏', '▎', '▍', '▌', '▋', '▊', '▉'];
 const PANEL_ROWS = {
   cost: 'cost at API price',
   lines: 'lines',
@@ -286,66 +280,9 @@ function trendLine(days) {
   }).join('');
 }
 
-// Money compares in whole cents, the precision the panel prints.
-function cents(value) {
-  return Math.round(value * 100);
-}
-
-// Consecutive days that saved at least a cent, ending today, or yesterday while
-// today is still at zero; a losing today breaks it. The trend window caps it,
-// and the ledger keeps no older session.
-function streakDays(days) {
-  let last = days.length - 1;
-  if (cents(days[last]) === 0) last -= 1;
-  let count = 0;
-  while (count <= last && cents(days[last - count]) > 0) count += 1;
-  return count;
-}
-
-// The first dollar milestone in the 1-2-5 series above a positive total.
-function nextMilestone(total) {
-  for (let scale = 1; ; scale *= 10) {
-    const milestone = MILESTONE_STEPS.map((step) => step * scale).find((candidate) => candidate > total);
-    if (milestone !== undefined) return milestone;
-  }
-}
-
-// The leading edge is drawn to an eighth of a cell, so a gain too small to fill
-// a whole cell still moves the bar between one visit and the next.
-function milestoneBar(total) {
-  const milestone = nextMilestone(total);
-  const share = total / milestone;
-  const eighths = Math.round(share * MILESTONE_BAR_CELLS * 8);
-  const filled = Math.floor(eighths / 8);
-  const edge = MILESTONE_BAR_EDGES[eighths % 8];
-  const empty = MILESTONE_BAR_CELLS - filled - (edge === '' ? 0 : 1);
-  const bar = `${MILESTONE_BAR_FILLED.repeat(filled)}${edge}${MILESTONE_BAR_EMPTY.repeat(empty)}`;
-  return `\`${bar}\` **${Math.floor(share * 100)}%** to $${milestone}`;
-}
-
-// The two lines above the table: the total saved everywhere, then one meter line
-// joining the milestone bar, today's gain and the streak, each dropped when it
-// has nothing to show. They stay one block, because three blocks for one figure
-// read as three claims.
-// A total with an unknown price shows tokens alone, because the daily figures
-// leave out that session and would show a partial dollar amount.
-function headline(saved, days) {
-  if (!saved.costKnown) return [`### ≈ ${compact(saved.tokens)} tokens saved`];
-  const lines = [`### ≈ ${money(saved.cost, true)} saved`];
-  const meter = [];
-  const total = cents(saved.cost);
-  // The bar measures the total as printed, so $0.996 reads $1.00 and aims at $2.
-  if (total > 0) meter.push(milestoneBar(total / 100));
-  const today = cents(days[days.length - 1]);
-  if (today !== 0) meter.push(`${today > 0 ? '+' : ''}${money(today / 100, true)} today`);
-  const streak = streakDays(days);
-  if (streak > 0) meter.push(`🔥 ${streak}-day streak`);
-  if (meter.length > 0) lines.push(meter.join(' · '));
-  return lines;
-}
-
 // Markdown, not a drawn box: the model relays it unfenced, so Claude Code's own
-// renderer styles the title, the table and the inline code.
+// renderer styles the title, the table and the inline code. One table is the
+// whole report; the totals are its rightmost column, not a second claim above it.
 function report() {
   const config = loadConfig();
   const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
@@ -360,15 +297,13 @@ function report() {
   const everywhere = scopeColumn('everywhere', sessions, config.ratios, () => true);
   const enabled = savingsEnabled();
   const state = enabled ? '● on' : '○ off';
-  const toggle = enabled ? '> Turn off with `/exo:savings off`.' : '> Turn on with `/exo:savings on`.';
+  const toggle = enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.';
   const labels = { ...PANEL_ROWS };
   // Every scope's active days are a subset of all projects' days.
   if (everywhere.activeDays < TREND_MIN_ACTIVE_DAYS) delete labels.trend;
   const rows = Object.entries(labels).map(([key, label]) => `| ${label} | ${here.cells[key]} | ${everywhere.cells[key]} |`);
   const lines = [
     `**✻ exo savings** · ${state}`,
-    '',
-    ...headline(everywhere.saved, everywhere.days),
     '',
     `| ≈ saved | ${here.title} | ${everywhere.title} |`,
     '|:--|--:|--:|',
@@ -377,8 +312,7 @@ function report() {
     toggle
   ];
   const override = process.env.EXO_SAVINGS;
-  // A bare '>' holds both notes in the one blockquote rather than drawing a second rule.
-  if (override === 'on' || override === 'off') lines.push('>', `> EXO_SAVINGS=${override} in the environment outranks the switch.`);
+  if (override === 'on' || override === 'off') lines.push('', `EXO_SAVINGS=${override} in the environment outranks the switch.`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 

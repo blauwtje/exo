@@ -71,7 +71,7 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
-The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05`, and a loss prints with a minus. The full panel, markdown the model relays unfenced so Claude Code styles it, opens on the switch state and the total saved everywhere, then one meter line joining the bar to the next dollar milestone (1, 2, 5, 10, 20, ...), today's gain and the run of consecutive days with a saving; the bar draws its leading edge in eighth-width blocks, so a gain under a whole cell still moves it. Below it the saving in the current project sits beside every project, with a 30-day trend of the cost saved per day for each: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
+The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05`, and a loss prints with a minus. The full panel, markdown the model relays unfenced so Claude Code styles it, is one table under the switch state: the saving in the current project beside the saving everywhere, per metric, with a 30-day trend of the cost saved per day for each. No headline figure, streak or milestone bar; the totals are the table's rightmost column: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
 
 ## Develop
 
