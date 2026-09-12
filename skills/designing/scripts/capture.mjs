@@ -587,6 +587,11 @@ async function screenshotIsComplete(target) {
 function runScreenshotBinary(binary, args, target) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { stdio: 'ignore' });
+    // A child that failed to spawn emits 'error' and never 'exit'.
+    const childGone = new Promise((resolveGone) => {
+      child.once('exit', resolveGone);
+      child.once('error', resolveGone);
+    });
     let settled = false;
     const finish = (error) => {
       if (settled) return;
@@ -594,8 +599,12 @@ function runScreenshotBinary(binary, args, target) {
       clearInterval(poll);
       clearTimeout(deadline);
       child.kill('SIGKILL');
-      if (error) reject(error);
-      else resolve();
+      // The caller removes the profile next, and a browser still exiting keeps
+      // writing into it: that removal then fails with ENOTEMPTY.
+      childGone.then(() => {
+        if (error) reject(error);
+        else resolve();
+      });
     };
     const poll = setInterval(() => {
       screenshotIsComplete(target).then((complete) => {
@@ -633,7 +642,8 @@ async function captureWithCli({ binary, url, width, height, target }) {
       url
     ], target);
   } finally {
-    await fs.rm(profile, { recursive: true, force: true });
+    // Chrome's helper processes can outlive the main process by a moment.
+    await fs.rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 
