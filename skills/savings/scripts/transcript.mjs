@@ -103,15 +103,13 @@ export function sumTokens(session) {
   return sumCounts(Object.values(session.usageById));
 }
 
-// Product lines added and removed, and apart from them the lines exo's own
-// process added.
+// Product lines added and removed. What exo's own process wrote counts in
+// neither: no benchmark ratio covers those lines, so they neither raise nor
+// lower the lines saved.
 export function sumLines(session) {
-  const totals = { added: 0, removed: 0, processAdded: 0 };
+  const totals = { added: 0, removed: 0 };
   for (const counts of Object.values(session.linesByEntry)) {
-    if (counts.process === true) {
-      totals.processAdded += counts.added;
-      continue;
-    }
+    if (counts.process === true) continue;
     totals.added += counts.added;
     totals.removed += counts.removed;
   }

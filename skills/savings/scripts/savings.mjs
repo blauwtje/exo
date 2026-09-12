@@ -83,26 +83,25 @@ function sessionMetrics(session) {
     cost: session.costUsd ?? pricedCost(session),
     time: session.durationMs ?? elapsed,
     project: session.project ?? null,
-    overhead: { lines: lines.processAdded ?? 0, tokens: overhead.tokens, cost: overhead.cost, time: overhead.time }
+    overhead: { tokens: overhead.tokens, cost: overhead.cost, time: overhead.time }
   };
 }
 
 // A session that wrote product code is what the benchmark measured: exo's
 // ratios compare its exo arm, which paid exo's overhead, with a no-skill
 // baseline, so it saves actual × r / (1 − r) and nothing more comes off. Any
-// other session is outside every ratio and saves minus its overhead. The
-// lines exo's own process writes are in no ratio, because the benchmark
-// counts code in the workdir diff, so they come off every session. Cost is
-// null when a price it needs is unknown.
+// other session is outside every ratio and saves minus its overhead in
+// tokens, cost and time. Lines are the code estimate alone: the lines exo's
+// own process writes stay out of the product count that the ratio multiplies
+// and are charged against nothing, because a markdown line of a brief is not
+// a line of code. Cost is null when a price it needs is unknown.
 function sessionSavings(metrics, ratios) {
   const estimate = (metric) => metrics[metric] * ratios[metric] / (1 - ratios[metric]);
-  const covered = metrics.lines > 0;
-  const lines = (covered ? estimate('lines') : 0) - metrics.overhead.lines;
-  if (covered) {
-    return { lines, tokens: estimate('tokens'), cost: metrics.cost === null ? null : estimate('cost'), time: estimate('time') };
+  if (metrics.lines > 0) {
+    return { lines: estimate('lines'), tokens: estimate('tokens'), cost: metrics.cost === null ? null : estimate('cost'), time: estimate('time') };
   }
   const overhead = metrics.overhead;
-  return { lines, tokens: -overhead.tokens, cost: overhead.cost === null ? null : -overhead.cost, time: -overhead.time };
+  return { lines: 0, tokens: -overhead.tokens, cost: overhead.cost === null ? null : -overhead.cost, time: -overhead.time };
 }
 
 // The scope's sessions summed; its cost is known only when every session's is.

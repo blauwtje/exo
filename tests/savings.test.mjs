@@ -107,7 +107,7 @@ test('record sums usage once per message id, weights the cache, and counts patch
   assert.deepEqual(session.tokens, {
     input: 15, cacheRead: 2000, cache5m: 200, cache1h: 1000, output: 507, raw: 3722, weightedInput: 2465
   });
-  assert.deepEqual(session.lines, { added: 10, removed: 4, processAdded: 0 });
+  assert.deepEqual(session.lines, { added: 10, removed: 4 });
   assert.equal(session.rightSized, true);
   assert.equal(session.model, 'claude-fable-5-1');
   assert.equal(session.transcript, transcript);
@@ -123,7 +123,7 @@ test('record is idempotent across runs and appended lines are picked up', async 
   await runWithStdin(['record'], hookInput, env);
   await runWithStdin(['record'], hookInput, env);
   let session = (await readLedger(configDirectory)).s1;
-  assert.deepEqual(session.lines, { added: 10, removed: 4, processAdded: 0 });
+  assert.deepEqual(session.lines, { added: 10, removed: 4 });
   assert.equal(session.tokens.output, 507);
 
   const appended = { type: 'assistant', uuid: 'a9', timestamp: '2026-09-11T10:09:00.000Z',
@@ -158,19 +158,19 @@ test('a session without product code saves minus its overhead, and a loss shows 
   await writeConfig(directory);
   const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
   // The covered row's overhead is inside its ratio, so its 99,999 cache writes never come off.
-  const covered = bookedRow({ lines: { added: 100, removed: 0, processAdded: 0 }, tokens: { weightedInput: 7000, output: 1000 }, costUsd: 1, durationMs: 600000 },
+  const covered = bookedRow({ lines: { added: 100, removed: 0 }, tokens: { weightedInput: 7000, output: 1000 }, costUsd: 1, durationMs: 600000 },
     { cache1h: 99999 });
   const guard = { capped: 0, duplicates: 0, hookMs: 30000, refusals: {} };
-  const uncovered = bookedRow({ project: directory, lines: { added: 0, removed: 0, processAdded: 20 }, tokens: { weightedInput: 0, output: 0 }, guard },
+  const uncovered = bookedRow({ project: directory, lines: { added: 0, removed: 0 }, tokens: { weightedInput: 0, output: 0 }, guard },
     { cache1h: 5000 }, 30000);
   await writeLedger(directory, { s1: covered, s2: uncovered });
-  // lines 100 - 20; tokens 8000 / 4 - 2 × 5000; cost $1 / 3 - 5000 × $2 per million; time 200 s - 60 s - 0.2 s of processing
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 80 LOC · -8.0k tok · $0.32 · 2m');
+  // lines 100; tokens 8000 / 4 - 2 × 5000; cost $1 / 3 - 5000 × $2 per million; time 200 s - 60 s - 0.2 s of processing
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 100 LOC · -8.0k tok · $0.32 · 2m');
   await writeLedger(directory, { s2: uncovered });
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ -20 LOC · -10k tok · -$0.01 · -1m');
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 0 LOC · -10k tok · -$0.01 · -1m');
   const panel = (await run(SAVINGS, ['report'], { env, cwd: directory })).stdout;
   assert.match(panel, /^\| cost at API price \| -\$0\.01 \| -\$0\.01 \|$/m);
-  assert.match(panel, /^\| lines \| -20 \| -20 \|$/m);
+  assert.match(panel, /^\| lines \| 0 \| 0 \|$/m);
   assert.match(panel, /^\| tokens \| -10k \| -10k \|$/m);
   assert.match(panel, /^\| time \| -1m \| -1m \|$/m);
 });
@@ -201,7 +201,7 @@ test("overhead is priced per transcript at that transcript's model, and an unlis
   assert.deepEqual(outputs, ['saved ≈ 0 LOC · -6.9k tok · -$0.05 · 0m', 'saved ≈ 0 LOC · -6.9k tok · - · 0m']);
 });
 
-test('lines written into exo process files come off the lines saved', async () => {
+test('lines written into exo process files count neither for nor against the lines saved', async () => {
   const lines = [
     { type: 'user', uuid: 'w1', timestamp: '2026-09-11T10:00:01.000Z',
       toolUseResult: { type: 'create', filePath: '/repo/docs/specs/brief.md', content: Array.from({ length: 30 }, () => 'b').join('\n'), originalFile: null, structuredPatch: [] } },
@@ -211,8 +211,8 @@ test('lines written into exo process files come off the lines saved', async () =
   const { configDirectory, transcript } = await transcriptFixture(lines, []);
   const env = { CLAUDE_CONFIG_DIR: configDirectory };
   await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
-  assert.deepEqual((await readLedger(configDirectory)).s1.lines, { added: 10, removed: 0, processAdded: 30 });
-  assert.match((await runWithStdin(['statusline'], '{}', env)).stdout, /^saved ≈ -20 LOC · /);
+  assert.deepEqual((await readLedger(configDirectory)).s1.lines, { added: 10, removed: 0 });
+  assert.match((await runWithStdin(['statusline'], '{}', env)).stdout, /^saved ≈ 10 LOC · /);
 });
 
 test('a row booked by an older version is read again from its transcript when the report runs', async () => {
@@ -227,7 +227,7 @@ test('a row booked by an older version is read again from its transcript when th
   const session = (await readLedger(directory)).s9;
   assert.equal(session.transcript, transcript);
   assert.equal(session.overhead.version, OVERHEAD_VERSION);
-  assert.deepEqual(session.lines, { added: 10, removed: 4, processAdded: 0 });
+  assert.deepEqual(session.lines, { added: 10, removed: 4 });
 });
 
 test('config ratios equal to the ones 0.1.x wrote on first load give way to the published ratios; edited ones apply', async () => {
@@ -297,8 +297,8 @@ test('report draws the 30-day trend of the net cost saved, a losing day as a min
     day.setDate(today.getDate() - count);
     return day.toISOString();
   };
-  const covered = (started) => bookedRow({ started, updated: started, costUsd: 1, lines: { added: 10, removed: 0, processAdded: 0 } });
-  const losing = bookedRow({ started: daysAgo(2), updated: daysAgo(2), lines: { added: 0, removed: 0, processAdded: 0 } }, { cache1h: 5000 });
+  const covered = (started) => bookedRow({ started, updated: started, costUsd: 1, lines: { added: 10, removed: 0 } });
+  const losing = bookedRow({ started: daysAgo(2), updated: daysAgo(2), lines: { added: 0, removed: 0 } }, { cache1h: 5000 });
   await writeLedger(directory, { s1: covered(daysAgo(1)), s2: covered(daysAgo(0)), s3: losing });
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
   assert.equal(result.code, 0, result.stderr);

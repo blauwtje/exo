@@ -208,5 +208,5 @@ test('lines written into exo process files are kept apart from product code', as
     { type: 'user', uuid: 'w2', timestamp: '2026-09-11T10:00:02.000Z',
       toolUseResult: { filePath: '/repo/src/a.ts', structuredPatch: [{ lines: ['+x', '+y', '-z'] }] } }
   ]);
-  assert.deepEqual(session.lines, { added: 2, removed: 1, processAdded: 3 });
+  assert.deepEqual(session.lines, { added: 2, removed: 1 });
 });
