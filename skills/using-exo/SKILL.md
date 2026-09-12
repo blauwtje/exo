@@ -43,6 +43,19 @@ Decide it without asking and edit in the same turn: a question about the shape e
 
 Trust-boundary validation, error handling that prevents data loss, security, accessibility, and anything the user asked for by name are built in full at whatever rung the code lands on. A corner cut with a known ceiling gets one comment naming the ceiling and the upgrade path, because that constraint is what the next reader needs.
 
+# Progress
+
+A run of more than one step shows its progress in the harness's task list, not in a message between two steps.
+
+## The list
+
+1. **One list, opened first.** Write one line per step before the first one starts: a list opened halfway through cannot show where the run stands.
+2. **Two updates per step.** Set its line to in progress when its step starts and to completed when it lands; a line moved once at the end is a summary, not progress.
+3. **No message between two steps.** The list already states what landed, and a status message repeats it into every later turn's context.
+4. **The exception is narrow.** A blocked step, a failed check, or a question only the user can answer gets its own message, carrying that alone.
+
+The run's last message is the ending below; the list never replaces it, and the ending never restates the list.
+
 # Closing
 
 Every turn ends here, with or without a skill: the skill's own report step names what the ending carries, never a second shape for it.
