@@ -333,3 +333,10 @@ test('a row whose transcript is gone gets an empty overhead and keeps its transc
   assert.deepEqual(session.overhead, { version: OVERHEAD_VERSION, hookMs: 0, transcripts: {}, calls: {} });
   assert.equal(session.transcript, gone);
 });
+
+test('a switch under an EXO_SAVINGS override says the environment outranks it', async () => {
+  const directory = await fixture();
+  const result = await runWithStdin(['off'], '', { CLAUDE_CONFIG_DIR: directory, EXO_SAVINGS: 'on' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^EXO_SAVINGS=on in the environment outranks the switch\.$/m);
+});

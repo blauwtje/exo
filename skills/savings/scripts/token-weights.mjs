@@ -2,9 +2,9 @@
 // benchmark scorer so both divide the same figure: input + 0.1 × cache read +
 // 1.25 × 5-minute cache write + 2 × 1-hour cache write, plus output.
 
-export const CACHE_READ_RATE = 0.1;
-export const CACHE_5M_RATE = 1.25;
-export const CACHE_1H_RATE = 2;
+const CACHE_READ_RATE = 0.1;
+const CACHE_5M_RATE = 1.25;
+const CACHE_1H_RATE = 2;
 
 // Reads the usage block the API returns, in the transcript and in the
 // `claude -p --output-format json` result alike.

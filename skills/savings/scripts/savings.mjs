@@ -111,11 +111,21 @@ function status() {
   process.stdout.write(`${savingsEnabled() ? 'on' : 'off'}\n`);
 }
 
+// EXO_SAVINGS in the environment outranks config.json, so every view of the
+// switch names an override that holds it in place.
+function overrideNotice() {
+  const override = process.env.EXO_SAVINGS;
+  if (override !== 'on' && override !== 'off') return null;
+  return `EXO_SAVINGS=${override} in the environment outranks the switch.`;
+}
+
 // Only "enabled" is written, so `readGuard` and any other key the user set by
 // hand survive the switch.
 function setEnabled(enabled) {
   writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), enabled });
   process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; the counter, the status line segment and the read guard follow at once\n`);
+  const notice = overrideNotice();
+  if (notice !== null) process.stdout.write(`${notice}\n`);
 }
 
 // Code points, not terminal cells: the grid pads metric labels and formatted
@@ -173,8 +183,8 @@ function report() {
     '',
     enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'
   ];
-  const override = process.env.EXO_SAVINGS;
-  if (override === 'on' || override === 'off') lines.push('', `EXO_SAVINGS=${override} in the environment outranks the switch.`);
+  const notice = overrideNotice();
+  if (notice !== null) lines.push('', notice);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 

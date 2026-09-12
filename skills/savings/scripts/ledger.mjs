@@ -22,7 +22,7 @@ export function configDirectory() {
 
 // EXO_SAVINGS_DIR relocates the ledger and its config alone, so a benchmark
 // cell keeps its own ledger while the session keeps its login and settings.
-export function ledgerDirectory() {
+function ledgerDirectory() {
   return process.env.EXO_SAVINGS_DIR || path.join(configDirectory(), 'exo', 'savings');
 }
 

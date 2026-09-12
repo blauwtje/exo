@@ -22,3 +22,10 @@ test('an unlisted model prices non-zero counts as unknown and zero counts as not
   assert.equal(countsCost({ input: 1 }, 'claude-unlisted-9'), null);
   assert.equal(countsCost({ input: 0, output: 0 }, '<synthetic>'), 0);
 });
+
+test('Fable 5 prices its cache reads at its own rate, apart from Fable 5.1', () => {
+  assert.equal(modelPrice('claude-fable-5').cacheRead, 1);
+  assert.equal(modelPrice('claude-fable-5-1').cacheRead, 0.25);
+  assert.deepEqual(modelPrice('claude-opus-4-7'), { input: 5, output: 25, cacheRead: 0.5, cache5m: 6.25, cache1h: 10 });
+  assert.deepEqual(modelPrice('claude-sonnet-4-5-20250929'), { input: 3, output: 15, cacheRead: 0.3, cache5m: 3.75, cache1h: 6 });
+});
