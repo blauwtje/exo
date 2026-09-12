@@ -8,7 +8,7 @@
     {
       "name": "exo",
       "description": "One engineering process for Claude Code: skills that take turns, and agents that keep discovery off the main context.",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "license": "PolyForm-Noncommercial-1.0.0",
       "source": "./"
     }
