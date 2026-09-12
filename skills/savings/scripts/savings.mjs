@@ -267,9 +267,10 @@ function sectionRule(title, width) {
 
 // One scope's cells as text: what its sessions spent, what the benchmark says
 // the same work would have cost without exo, and the saving between them.
-// Without is with plus saved, so the three columns always add up. The with
-// column prints every price it knows; the other two need all of them, because
-// a total missing one session's price is not the total.
+// Without is with plus saved, so the three columns always add up. A scope
+// holding a session whose model has no price cannot total its cost: the
+// without and saved cells print a dash, and the with cell prints the sum of
+// the prices it has under a trailing + that says the sum is short a session.
 function scopeSection(title, sessions, ratios, include) {
   const { actual, saved } = scopeTotals(sessions, ratios, include);
   const costKnown = actual.costKnown && saved.costKnown;
@@ -285,10 +286,9 @@ function scopeSection(title, sessions, ratios, include) {
     cost: money(totals.cost, known),
     time: duration(totals.time)
   });
-  return {
-    title,
-    cells: { actual: cellsOf(actual, true), without: cellsOf(without, costKnown), saved: cellsOf(saved, costKnown) }
-  };
+  const spent = cellsOf(actual, true);
+  if (!actual.costKnown) spent.cost = `${spent.cost}+`;
+  return { title, cells: { actual: spent, without: cellsOf(without, costKnown), saved: cellsOf(saved, costKnown) } };
 }
 
 // The grid: one header row, then a labelled rule and four rows per scope.

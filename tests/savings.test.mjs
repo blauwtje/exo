@@ -294,6 +294,20 @@ test('report shows the switch state and the saving for the current project besid
   assert.doesNotMatch(result.stdout, /last 30 days/);
 });
 
+test('a session whose model has no price marks the with-exo cost and dashes the other two', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
+  const priced = bookedRow({ costUsd: 10, lines: { added: 10, removed: 0 }, tokens: { weightedInput: 0, output: 0 } });
+  const unpriced = bookedRow({ lines: { added: 0, removed: 0 },
+    usageById: { m1: { input: 1000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0, model: 'claude-unlisted-9' } } });
+  await writeLedger(directory, { s1: priced, s2: unpriced });
+  const result = await runWithStdin(['report'], '', env);
+  assert.equal(result.code, 0, result.stderr);
+  // $10 of the two sessions is priced, so the sum is short one session and says so.
+  assert.match(result.stdout, /^cost\s+\$10\.00\+\s+-\s+-$/m);
+});
+
 test('every row of the panel is padded to one width, and a long project name cannot break it', async () => {
   const { configDirectory, transcript } = await transcriptFixture();
   const project = path.join(configDirectory, 'a-project-name-far-wider-than-the-panel-itself');

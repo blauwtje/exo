@@ -31,5 +31,5 @@ The report as the script printed it when this skill loaded:
 ## Judgment
 
 - The script's output outranks any figure already in the context.
-- Cost is the API price of the tokens, not a subscription bill; a `-` means a model missing from `prices.mjs`, so name it rather than estimating cost.
+- Cost is the API price of the tokens, not a subscription bill; a `-` means a model missing from `prices.mjs` and a `+` a with-exo cost short that session, so name either rather than estimating cost.
 - `readGuard: false` in the config switches the guard alone; `off` switches the counter, the status line segment and the guard together. The right-sizing ladder rides in every session either way.
