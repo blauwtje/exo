@@ -14,7 +14,6 @@
 // A hook failure never blocks the turn.
 
 import fs from 'node:fs';
-import path from 'node:path';
 import process from 'node:process';
 import { configFile, ledgerFile, readJson, savingsEnabled, updateSession, writeJson } from './ledger.mjs';
 import { overheadTotals } from './overhead.mjs';
@@ -35,8 +34,6 @@ const PANEL_COLUMNS = {
   saved: 'saved'
 };
 const COLUMN_GAP = 2;
-// A rule keeps at least this many dashes after its label, whatever the label's length.
-const RULE_MIN_TRAIL = 3;
 // MEASURED is the cut per metric exo's benchmark measured against a no-skill
 // baseline, with its source; a ratio in config.json overrides it.
 const PUBLISHED_RATIOS = { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time };
@@ -83,7 +80,6 @@ function sessionMetrics(session) {
     tokens: tokens.weightedInput + tokens.output,
     cost: session.costUsd ?? pricedCost(session),
     time: session.durationMs ?? elapsed,
-    project: session.project ?? null,
     overhead: { tokens: overhead.tokens, cost: overhead.cost, time: overhead.time }
   };
 }
@@ -117,18 +113,21 @@ function addTotals(total, values) {
   else total.cost += values.cost;
 }
 
-// The scope's sessions summed twice over: what they actually spent, and what
-// exo saved on top of that. A cost is known only when every session's is.
-function scopeTotals(sessions, ratios, include) {
+// Every session summed three times over: what it actually spent, what exo
+// saved on top of that, and the share of the actual that exo's own listing,
+// skill bodies, hook runs and refusals cost. A cost is known only when every
+// session's is. Overhead carries no lines: exo's own files are not code.
+function ledgerTotals(sessions, ratios) {
   const actual = emptyTotals();
   const saved = emptyTotals();
+  const overhead = emptyTotals();
   for (const session of Object.values(sessions)) {
     const metrics = sessionMetrics(session);
-    if (!include(metrics)) continue;
     addTotals(actual, metrics);
     addTotals(saved, sessionSavings(metrics, ratios));
+    addTotals(overhead, { lines: 0, ...metrics.overhead });
   }
-  return { actual, saved };
+  return { actual, saved, overhead };
 }
 
 function compact(value) {
@@ -162,22 +161,10 @@ function readStdin() {
   return JSON.parse(fs.readFileSync(0, 'utf8'));
 }
 
-// The project root a session first reports is its project; a later cd inside
-// the session does not move it.
-function claimProject(session, directory) {
-  if (session.project !== null || typeof directory !== 'string') return false;
-  session.project = directory;
-  return true;
-}
-
 function record(hookInput) {
   if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
-  updateSession(hookInput.session_id, (session) => {
-    const claimed = claimProject(session, process.env.CLAUDE_PROJECT_DIR || hookInput.cwd);
-    const ingested = ingestTranscript(session, hookInput.transcript_path);
-    return claimed || ingested;
-  });
+  updateSession(hookInput.session_id, (session) => ingestTranscript(session, hookInput.transcript_path));
 }
 
 function statusline(statusInput) {
@@ -187,7 +174,6 @@ function statusline(statusInput) {
   if (typeof statusInput.session_id === 'string') {
     sessions = updateSession(statusInput.session_id, (session) => {
       let changed = ingestTranscript(session, statusInput.transcript_path);
-      if (claimProject(session, statusInput.workspace?.project_dir ?? statusInput.cwd)) changed = true;
       const cost = statusInput.cost ?? {};
       if (typeof cost.total_cost_usd === 'number' && cost.total_cost_usd !== session.costUsd) {
         session.costUsd = cost.total_cost_usd;
@@ -200,7 +186,7 @@ function statusline(statusInput) {
       return changed;
     });
   }
-  const { saved } = scopeTotals(refreshStaleSessions(sessions), config.ratios, () => true);
+  const { saved } = ledgerTotals(refreshStaleSessions(sessions), config.ratios);
   process.stdout.write(segment(saved));
 }
 
@@ -212,30 +198,6 @@ function status() {
 function setEnabled(enabled) {
   writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), enabled });
   process.stdout.write(`exo savings ${enabled ? 'on' : 'off'}; the counter, the status line segment and the read guard follow at once\n`);
-}
-
-// A recorded project may be a symlinked path while process.cwd() is resolved;
-// a project directory that no longer exists compares as recorded.
-function resolvedPath(directory) {
-  try {
-    return fs.realpathSync(directory);
-  } catch {
-    return directory;
-  }
-}
-
-// The recorded project that holds the directory, the deepest when projects
-// nest, so a report run from a subdirectory still finds its project.
-function currentProject(sessions, directory) {
-  let match = null;
-  for (const session of Object.values(sessions)) {
-    const project = session.project;
-    if (typeof project !== 'string') continue;
-    const resolved = resolvedPath(project);
-    const inside = directory === resolved || directory.startsWith(`${resolved}${path.sep}`);
-    if (inside && (match === null || project.length > match.length)) match = project;
-  }
-  return match ?? directory;
 }
 
 // Code points, not terminal cells: every glyph the grid pads is single width,
@@ -252,27 +214,14 @@ function padEnd(text, width) {
   return text + ' '.repeat(Math.max(width - displayWidth(text), 0));
 }
 
-// A name too long for the space it has, cut with an ellipsis so the grid holds.
-function fit(text, width) {
-  const characters = [...text];
-  if (characters.length <= width) return text;
-  return `${characters.slice(0, Math.max(width - 1, 0)).join('')}…`;
-}
-
-// A scope's label carried by the rule that opens its rows: ── in shop ────.
-function sectionRule(title, width) {
-  const head = `── ${fit(title, width - RULE_MIN_TRAIL - 4)} `;
-  return head + '─'.repeat(Math.max(width - displayWidth(head), RULE_MIN_TRAIL));
-}
-
-// One scope's cells as text: what its sessions spent, what the benchmark says
-// the same work would have cost without exo, and the saving between them.
-// Without is with plus saved, so the three columns always add up. A scope
-// holding a session whose model has no price cannot total its cost: the
-// without and saved cells print a dash, and the with cell prints the sum of
-// the prices it has under a trailing + that says the sum is short a session.
-function scopeSection(title, sessions, ratios, include) {
-  const { actual, saved } = scopeTotals(sessions, ratios, include);
+// The panel's cells as text: what every session spent, what the benchmark
+// says the same work would have cost without exo, and the saving between
+// them. Without is with plus saved, so the three columns always add up. A
+// session whose model has no price cannot total its cost: the without and
+// saved cells print a dash, and the with cell prints the sum of the prices it
+// has under a trailing + that says the sum is short a session.
+function panelCells(sessions, ratios) {
+  const { actual, saved, overhead } = ledgerTotals(sessions, ratios);
   const costKnown = actual.costKnown && saved.costKnown;
   const without = {
     lines: actual.lines + saved.lines,
@@ -288,51 +237,51 @@ function scopeSection(title, sessions, ratios, include) {
   });
   const spent = cellsOf(actual, true);
   if (!actual.costKnown) spent.cost = `${spent.cost}+`;
-  return { title, cells: { actual: spent, without: cellsOf(without, costKnown), saved: cellsOf(saved, costKnown) } };
+  return { cells: { actual: spent, without: cellsOf(without, costKnown), saved: cellsOf(saved, costKnown) }, overhead };
 }
 
-// The grid: one header row, then a labelled rule and four rows per scope.
-// Every column is measured across both scopes first and padded from that one
-// width, so no cell can push a row past the edge the rules draw.
-function gridLines(scopes) {
+// The grid: one header row, then one row per metric. Every column is padded
+// from the width of its widest cell, so no cell can push a row past the edge.
+function gridLines(cells) {
   const metrics = Object.keys(PANEL_ROWS);
   const columns = Object.keys(PANEL_COLUMNS);
   const labelWidth = Math.max(...Object.values(PANEL_ROWS).map(displayWidth));
   const columnWidth = {};
   for (const column of columns) {
-    const cells = scopes.flatMap((scope) => metrics.map((metric) => scope.cells[column][metric]));
-    columnWidth[column] = Math.max(displayWidth(PANEL_COLUMNS[column]), ...cells.map(displayWidth));
+    const values = metrics.map((metric) => cells[column][metric]);
+    columnWidth[column] = Math.max(displayWidth(PANEL_COLUMNS[column]), ...values.map(displayWidth));
   }
   const row = (label, cellOf) => padEnd(label, labelWidth) +
     columns.map((column) => padStart(cellOf(column), columnWidth[column] + COLUMN_GAP)).join('');
   const header = row('', (column) => PANEL_COLUMNS[column]);
-  const width = displayWidth(header);
-  const lines = [header];
-  for (const scope of scopes) {
-    lines.push(sectionRule(scope.title, width));
-    for (const metric of metrics) lines.push(row(PANEL_ROWS[metric], (column) => scope.cells[column][metric]));
-  }
-  return lines;
+  return [header, ...metrics.map((metric) => row(PANEL_ROWS[metric], (column) => cells[column][metric]))];
+}
+
+// What exo's own listing, skill bodies, hook runs and read guard cost, spelled
+// out because it is already inside the with-exo column and so already off the
+// saving; a reader who cannot see it assumes it was never counted.
+function overheadLine(overhead) {
+  const price = money(overhead.cost, overhead.costKnown);
+  return `exo's own cost, already inside "with exo": ${compact(overhead.tokens)} tok · ${price} · ${duration(overhead.time)}`;
 }
 
 // A fixed-width grid inside a code fence, because its columns line up only in
-// a monospace block. No bar and no trend: one benchmark ratio per metric fills
-// every bar to the same point, and a sparkline answers a question nobody asked.
+// a monospace block. Every session in the ledger, whatever project it ran in:
+// one switch away from a per-project split that nobody read. No bar and no
+// trend: one benchmark ratio per metric fills every bar to the same point,
+// and a sparkline answers a question nobody asked.
 function report() {
   const config = loadConfig();
   const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
-  const project = currentProject(sessions, process.cwd());
-  const inProject = (metrics) => metrics.project === project;
-  const scopes = [
-    scopeSection(`in ${path.basename(project)}`, sessions, config.ratios, inProject),
-    scopeSection('everywhere', sessions, config.ratios, () => true)
-  ];
+  const { cells, overhead } = panelCells(sessions, config.ratios);
   const enabled = savingsEnabled();
   const lines = [
     '```text',
-    `✻ exo savings · ${enabled ? '● on' : '○ off'}`,
+    `✻ exo savings · ${enabled ? '● on' : '○ off'} · all projects`,
     '',
-    ...gridLines(scopes),
+    ...gridLines(cells),
+    '',
+    overheadLine(overhead),
     '```',
     '',
     enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'

@@ -26,10 +26,12 @@ The report as the script printed it when this skill loaded:
 1. **Relay** the panel above for a request that only asks what was saved, and run nothing, because a second run is a tool call the reader waits on for the same figures. The exception is a notice in place of the panel, such as shell execution disabled by policy: then run `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" report`.
 2. **Switch** with `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" off` or `on`, then `report`, because the panel above shows the state before the switch.
 3. **Relay** the panel unchanged, keeping the ```` ```text ```` fence the script printed around it, because its columns are padded to one width and line up only in a monospace block. After a switch, the script's one-line confirmation goes above the panel.
-4. **Add** no prose restating the panel's labels, because its `≈ without exo` header already marks the estimate, and a restatement is the bloat the panel replaced.
+4. **Write** no copy of the panel's `✻ exo savings` header above the fence, not even as the opening line an output style asks for: the header is inside the fence, so a second copy reads as the panel printed twice. A line of your own above the fence names the figures in words or is left out.
+5. **Add** no prose restating the panel's labels, because its `≈ without exo` header already marks the estimate, and a restatement is the bloat the panel replaced.
 
 ## Judgment
 
 - The script's output outranks any figure already in the context.
+- The panel counts every session in the ledger, whatever project it ran in; a single project's figure is not reported.
 - Cost is the API price of the tokens, not a subscription bill; a `-` means a model missing from `prices.mjs` and a `+` a with-exo cost short that session, so name either rather than estimating cost.
 - `readGuard: false` in the config switches the guard alone; `off` switches the counter, the status line segment and the guard together. The right-sizing ladder rides in every session either way.
