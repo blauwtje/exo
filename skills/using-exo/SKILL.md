@@ -42,3 +42,23 @@ Decide it without asking and edit in the same turn: a question about the shape e
 ## Never on the ladder
 
 Trust-boundary validation, error handling that prevents data loss, security, accessibility, and anything the user asked for by name are built in full at whatever rung the code lands on. A corner cut with a known ceiling gets one comment naming the ceiling and the upgrade path, because that constraint is what the next reader needs.
+
+# Closing
+
+Every turn ends here, with or without a skill: the skill's own report step names what the ending carries, never a second shape for it.
+
+## The ending
+
+The final message is the report itself. It opens with the outcome, and every line after it is one of three things.
+
+1. **What happened.** One line: what now exists, works, or failed. No preamble and no account of the steps that got there.
+2. **What was verified.** The command that proves it and its result, or the evidence a read-only claim rests on. A check that did not run is named as not run.
+3. **What to do next.** One action, and only while one is open.
+
+A decision you made on the user's behalf is one line naming the choice and what it costs if wrong; its reasoning stays out of the ending.
+
+## Never in an ending
+
+- Reasoning for a decision nobody disputed, an alternative you did not take, or a recap of what the reader just read.
+- An inventory of work you did not do, except a requested part that is blocked and a check that did not run.
+- A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question, each option one line, the recommended one first.

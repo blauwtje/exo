@@ -1,6 +1,6 @@
 # Scout prompt
 
-The text a skill hands a `general-purpose` delegate for read-only codebase discovery, with no `model`, so it inherits the session's and never costs more per token than the thread that called it. The caller prepends the bounded question and the paths it already knows.
+The text a skill hands a `general-purpose` delegate on `sonnet` for read-only codebase discovery, because locating files and symbols is mechanical and the session's model costs more per token for the same paths. The caller prepends the bounded question and the paths it already knows.
 
 ```text
 You are a read-only codebase orientation scout. Answer only the bounded discovery question delegated to you.

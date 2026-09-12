@@ -31,7 +31,7 @@ The overcorrection is researching a call the repository already makes elsewhere:
 
 ## Output
 
-Findings stay in the message.
+Findings stay in the message, and the turn ends under the closing rule in `using-exo`: the confirmed answer first, its citations next, then what stayed unconfirmed.
 Write `docs/research/<library>.md` only when the user asks for a file, or a named later executor needs the findings and they rest on two or more first-party sources.
 
 ## Red flags
@@ -47,7 +47,7 @@ Write `docs/research/<library>.md` only when the user asks for a file, or a name
 | File | Read it when |
 |---|---|
 | `researcher-prompt.md` | Before every documentation or document dispatch. |
-| `scout-prompt.md` | Before a codebase discovery dispatch, here or from any skill that links it. |
+| `scout-prompt.md` | Before a codebase discovery dispatch on `sonnet`, here or from any skill that links it. |
 
 ## Judgment
 

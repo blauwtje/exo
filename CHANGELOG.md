@@ -9,6 +9,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `using-exo` carries the closing rule every turn ends under: the outcome, the
+  check that proves it, one next action, and nothing else. `debug`, `deepen`,
+  `designing`, `implementing`, `implementing-batch`, `planning`, `research` and
+  `shaping` name that rule instead of restating a report shape of their own.
+- One eval case, `using-exo-closing-line`, which fails an ending that adds a
+  rationale paragraph, an inventory of untouched work, or a closing menu.
 - `designing` carries `references/feedback-and-status.md`, the seventeenth
   reference: waiting by duration band, skeleton discipline, the three conditions
   a provisional result must meet, transient-message dwell and placement, and its
@@ -30,6 +36,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The codebase discovery scout runs on `sonnet` instead of inheriting the
+  session's model: locating files and symbols is mechanical.
+- `planning` hands a plan over with the one command that runs it, read off the
+  task count, instead of asking which of two commands the user wants.
 - `pick.mjs` takes the screen's copy from `--labels` alone, in the language the
   conversation runs in, plus a `lang` tag beside the words; `--lang` and the
   built-in en/nl table are gone, because a flag cannot know what language a

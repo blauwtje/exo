@@ -22,7 +22,7 @@ Count the product decisions the request leaves open: what counts as done; which 
 - **Acceptance:** observable checks.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
 
-Always write the brief to `docs/specs/<topic>.md` and name that path in the same message; the file, not the message, is the artifact a later session resumes from. That holds even when this session goes straight on to build, because a brief living only in a message dies at the next context clear and the stage after it then starts from nothing. One exception: when a planning turn borrowed this skill, fold the brief into the plan artifact instead of a separate spec file — the plan is the persisted document.
+Always write the brief to `docs/specs/<topic>.md` and name that path in the same message; the file, not the message, is the artifact a later session resumes from. That holds even when this session goes straight on to build, because a brief living only in a message dies at the next context clear and the stage after it then starts from nothing. One exception: when a planning turn borrowed this skill, fold the brief into the plan artifact instead of a separate spec file — the plan is the persisted document. The message around that path ends under the closing rule in `using-exo`: the goal, the path, and the one next action, with each decision's reasoning left in the file.
 
 Both modes add three decisions:
 
@@ -46,7 +46,7 @@ State the recommendation as the current default and continue in the same message
 
 | File | Read it when |
 |---|---|
-| `../research/scout-prompt.md` | Before a codebase discovery dispatch. |
+| `../research/scout-prompt.md` | Before a codebase discovery dispatch, which runs on `sonnet`. |
 
 ## Judgment
 

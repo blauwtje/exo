@@ -44,12 +44,12 @@ Before ending the turn, read the plan once against the rules in `references/hand
 
 ## Handing it over
 
-A deliverable plan ends the turn with the plan path, the task count, and one question: which of two ways runs it. Offer these two, recommended first, in words a reader who has run neither understands.
+A deliverable plan ends under the closing rule in `using-exo`: the plan path, the task count, and the one command that runs it.
 
-- **`/exo:implementing` (recommended).** One task at a time, each in its own fresh helper context, each committed on its own. This window stays small, and a plan of four or more tasks belongs here.
-- **`/exo:implementing-batch`.** The whole plan is built in one window, no helpers, one report at the end. Two or three short tasks, or a run you want to watch edit by edit.
+Read that command off the plan rather than asking, and name the context clear that comes first, because the window that wrote the plan is the most expensive one to run it in.
 
-Say that either route starts with a context clear: the window that just wrote the plan is the most expensive one to run it in.
+- Four or more tasks: `/exo:implementing`, one task per fresh helper context, each committed on its own.
+- Two or three short tasks: `/exo:implementing-batch`, the whole plan built in one window with one report at the end.
 
 ## References
 
@@ -58,7 +58,7 @@ Say that either route starts with a context clear: the window that just wrote th
 | `references/handoff-spec.md` | Before writing any plan deliverable: a planning-mode plan file, a requested plan, or a handoff document. Do not load for the inline row. |
 | `references/example-handoff.md` | Once, before composing the first task of a deliverable plan; do not load for the inline row. |
 | `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
-| `../research/scout-prompt.md` | Before a codebase discovery dispatch. |
+| `../research/scout-prompt.md` | Before a codebase discovery dispatch, which runs on `sonnet`. |
 
 ## Judgment
 
