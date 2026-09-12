@@ -1,4 +1,5 @@
-// Raise the plugin version in every manifest that carries it.
+// Raise the plugin version in every manifest that carries it, and turn the
+// changelog's Unreleased heading into the new version's heading.
 //
 //   node bump.mjs [patch|minor|major]
 //
@@ -11,6 +12,8 @@ import process from 'node:process';
 
 const MANIFESTS = ['package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
+const CHANGELOG = 'CHANGELOG.md';
+const UNRELEASED_HEADING = /^## Unreleased$/m;
 const RELEASES = ['patch', 'minor', 'major'];
 
 function raise(version, release) {
@@ -34,8 +37,8 @@ const current = JSON.parse(fs.readFileSync(path.join(root, PLUGIN_MANIFEST), 'ut
 const next = raise(current, release);
 const versionField = new RegExp(`("version":\\s*")${current.replace(/\./g, '\\.')}(")`, 'g');
 
-// Every manifest is rewritten or none is: a partial bump leaves the three
-// further apart than the state it was meant to repair.
+// Every file is rewritten or none is: a partial bump leaves the manifests and
+// the changelog further apart than the state it was meant to repair.
 const rewritten = [];
 for (const manifest of MANIFESTS) {
   const before = fs.readFileSync(path.join(root, manifest), 'utf8');
@@ -44,11 +47,21 @@ for (const manifest of MANIFESTS) {
     console.error(`${manifest} carries no version ${current}; align the manifests by hand and rerun`);
     process.exit(1);
   }
-  rewritten.push({ manifest, after });
+  rewritten.push({ file: manifest, after });
 }
 
-for (const { manifest, after } of rewritten) {
-  fs.writeFileSync(path.join(root, manifest), after);
+const changelog = fs.readFileSync(path.join(root, CHANGELOG), 'utf8');
+if (!UNRELEASED_HEADING.test(changelog)) {
+  console.error(`${CHANGELOG} has no "## Unreleased" heading; add it above the latest release and rerun`);
+  process.exit(1);
+}
+// UTC, so the heading does not depend on the machine's time zone.
+const today = new Date().toISOString().slice(0, 10);
+rewritten.push({ file: CHANGELOG, after: changelog.replace(UNRELEASED_HEADING, `## Unreleased\n\n## ${next} - ${today}`) });
+
+for (const { file, after } of rewritten) {
+  fs.writeFileSync(path.join(root, file), after);
 }
 
-console.log(`${current} -> ${next} in ${MANIFESTS.join(', ')}`);
+const files = rewritten.map(({ file }) => file);
+console.log(`${current} -> ${next} in ${files.join(', ')}`);

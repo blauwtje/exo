@@ -7,17 +7,53 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.9 - 2026-09-12
+
+### Fixed
+
+- `capture.mjs` waits for the screenshot browser to exit before it removes the
+  browser profile, and retries that removal, so a capture no longer fails with
+  `ENOTEMPTY` on CI.
+- A savings ledger that cannot be read or parsed is left untouched: the hook
+  reports the error instead of rewriting the ledger with the current session
+  alone.
+- The ledger lock waits up to 8 seconds and counts a lock as stale only after
+  15 seconds, past the hook timeout, so a slow hook keeps its lock.
+- The session hook also runs on `resume`, so the plugin-root pointer follows a
+  bump, and without `jq` it exits 0 with a notice on stderr.
+- The verifier fails a skill description over 400 characters, the limit
+  `skills-tool` sets, and runs the frontmatter, portable-language and
+  description checks over every skill, not only the listed ones.
+- `using-exo` no longer skips a skill whose description claims a read-only
+  question, a two-file failure or a visual change, tells `deepen` from
+  `shaping`, and names the user-invoked issue and pull-request commands.
+- Delegate prompts agree with the skills they load: the implementer and the bug
+  fixer skip the steps their callers own, the plan author rewrites a task's
+  `Commit:` paths, and the designing builder and critic always receive the
+  skill directory and write no git state.
+- README, manifests and `CLAUDE.md` describe the plugin as it ships: six ladder
+  rungs, four hook groups, the two-file batch floor and the release route.
+
 ### Changed
 
-- The savings panel and the status line segment report measured figures only:
-  the read guard's refusals with the bytes they kept out of context, and the
-  calls, tokens, price and wall time of the API calls that were exo's own work.
-  The four estimated rows are gone with `skills/savings/scripts/ratios.mjs`,
-  the ratio override in `config.json`, and the calibrated character, byte and
-  millisecond rates that sized exo's text in context; `benchmarks/score.mjs
-  --publish` now records its measured cut in `benchmarks/results/<date>.md`
-  alone. `OVERHEAD_VERSION` rises to 3, so every ledger row is re-read from its
-  transcript on the next turn.
+- `designing` reads its Phase 2, 3 and 4 mechanics from
+  `references/phase-direction.md`, `references/phase-build.md` and
+  `references/phase-critique.md` at the phase that needs them.
+- The `shaping`, `designing`, `planning`, `debug` and `implementing-batch`
+  descriptions are cut to 400 characters or fewer.
+- `npm run check` runs the tests once, inside the verifier.
+- `prices.mjs` also prices Fable 5, Opus 4.7, 4.6 and 4.5, and Sonnet 4.5.
+- `bump.mjs` turns the `## Unreleased` heading into the new version's heading.
+
+### Removed
+
+- The ledger no longer writes a session's cost, duration, token or line totals,
+  nor the guard's capped and duplicate counters: nothing read them.
+- `researcher-prompt.md` drops its GitHub shortlist mode, which no skill
+  dispatched.
+- `verify.mjs --skip-link-check`, which no check read.
+
+## 0.3.8 - 2026-09-12
 
 ### Added
 
@@ -48,6 +84,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The savings panel and the status line segment report measured figures only:
+  the read guard's refusals with the bytes they kept out of context, and the
+  calls, tokens, price and wall time of the API calls that were exo's own work.
+  The four estimated rows are gone with `skills/savings/scripts/ratios.mjs`,
+  the ratio override in `config.json`, and the calibrated character, byte and
+  millisecond rates that sized exo's text in context; `benchmarks/score.mjs
+  --publish` now records its measured cut in `benchmarks/results/<date>.md`
+  alone. `OVERHEAD_VERSION` rises to 3, so every ledger row is re-read from its
+  transcript on the next turn.
 - The codebase discovery scout runs on `sonnet` instead of inheriting the
   session's model: locating files and symbols is mechanical.
 - `planning` hands a plan over with the one command that runs it, read off the
@@ -102,17 +147,6 @@ release, and a body rewrite that keeps the trigger is a patch.
   whose direction was decided before the run builds in the session and takes one
   critique round.
 - `pick.mjs` defaults `--lang` to English.
-
-- Every savings figure (cost, tokens and time, in the panel and the status
-  line) is net of all of exo's overhead, from exo's own benchmark ratios with
-  their standard error. The read guard times itself and books its refusals by
-  tool call; the status line drops its separate guard figure.
-- `savings report` draws a fixed-width grid inside a code fence, relayed
-  fenced: the switch state, then every session in the ledger at once whatever
-  project it ran in, and per metric the one figure the benchmark says exo
-  saved, net of what exo itself cost. The with-exo and without-exo columns and
-  the overhead line under the grid are gone, and the ledger no longer records a
-  session's project.
 - The right-sizing ladder rides in every session as part of the `using-exo`
   body the session hook injects, whatever the savings switch says; that switch
   now reaches the counter, the status line segment and the read guard alone.
