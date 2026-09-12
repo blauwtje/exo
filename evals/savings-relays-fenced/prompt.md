@@ -1,5 +1,5 @@
 ---
-name: savings relays the panel unfenced without restating it
+name: savings relays the panel fenced without restating it
 runs: 3
 max_turns: 6
 ---

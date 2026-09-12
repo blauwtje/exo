@@ -6,7 +6,7 @@
 //
 //   node savings.mjs record      Stop hook: stdin is the hook JSON
 //   node savings.mjs statusline  status line: stdin is the status JSON; prints one segment
-//   node savings.mjs report      prints the totals as markdown
+//   node savings.mjs report      prints the panel as a fenced fixed-width grid
 //   node savings.mjs status      prints on or off
 //   node savings.mjs off | on    writes "enabled" into config.json: one switch for
 //                                the ladder, the counter, the status line and the guard
@@ -22,21 +22,21 @@ import { countsCost } from './pricing.mjs';
 import MEASURED from './ratios.mjs';
 import { ingestTranscript, refreshStaleSessions, sumLines, sumTokens } from './transcript.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const TREND_DAYS = 30;
-const TREND_LEVELS = '▂▃▄▅▆▇█';
-const TREND_FLOOR = '▁';
-const TREND_LOSS = '-';
-// One active day draws a single bar on a flat line, so the trend waits for a second.
-const TREND_MIN_ACTIVE_DAYS = 2;
 const PANEL_ROWS = {
-  cost: 'cost at API price',
-  lines: 'lines',
+  lines: 'code lines',
   tokens: 'tokens',
-  time: 'time',
-  trend: 'last 30 days'
+  cost: 'cost',
+  time: 'time'
 };
-const PROJECT_NAME_MAX = 28;
+// The three numbers per metric. The ≈ marks the whole panel as an estimate once.
+const PANEL_COLUMNS = {
+  actual: 'with exo',
+  without: '≈ without exo',
+  saved: 'saved'
+};
+const COLUMN_GAP = 2;
+// A rule keeps at least this many dashes after its label, whatever the label's length.
+const RULE_MIN_TRAIL = 3;
 // MEASURED is the cut per metric exo's benchmark measured against a no-skill
 // baseline, with its source; a ratio in config.json overrides it.
 const PUBLISHED_RATIOS = { lines: MEASURED.lines, tokens: MEASURED.tokens, cost: MEASURED.cost, time: MEASURED.time };
@@ -58,11 +58,12 @@ function loadConfig() {
 }
 
 // A session's gross cost priced from its usage, each call at its own model,
-// or null when a call's model has no price. A row recorded before the model
-// rode along with its usage is priced at the session's model.
+// or null when a call's model has no price. A session with no recorded call
+// cost nothing, which is a known zero: an unknown cost would take the whole
+// scope's cost column down with it. A row recorded before the model rode
+// along with its usage is priced at the session's model.
 function pricedCost(session) {
   const rows = Object.values(session.usageById ?? {});
-  if (rows.length === 0) return null;
   let cost = 0;
   for (const counts of rows) {
     const rowCost = countsCost(counts, counts.model ?? session.model);
@@ -104,20 +105,30 @@ function sessionSavings(metrics, ratios) {
   return { lines: 0, tokens: -overhead.tokens, cost: overhead.cost === null ? null : -overhead.cost, time: -overhead.time };
 }
 
-// The scope's sessions summed; its cost is known only when every session's is.
-function scopeSavings(sessions, ratios, include) {
-  const total = { lines: 0, tokens: 0, cost: 0, costKnown: true, time: 0 };
+function emptyTotals() {
+  return { lines: 0, tokens: 0, cost: 0, costKnown: true, time: 0 };
+}
+
+function addTotals(total, values) {
+  total.lines += values.lines;
+  total.tokens += values.tokens;
+  total.time += values.time;
+  if (values.cost === null) total.costKnown = false;
+  else total.cost += values.cost;
+}
+
+// The scope's sessions summed twice over: what they actually spent, and what
+// exo saved on top of that. A cost is known only when every session's is.
+function scopeTotals(sessions, ratios, include) {
+  const actual = emptyTotals();
+  const saved = emptyTotals();
   for (const session of Object.values(sessions)) {
     const metrics = sessionMetrics(session);
     if (!include(metrics)) continue;
-    const saved = sessionSavings(metrics, ratios);
-    total.lines += saved.lines;
-    total.tokens += saved.tokens;
-    total.time += saved.time;
-    if (saved.cost === null) total.costKnown = false;
-    else total.cost += saved.cost;
+    addTotals(actual, metrics);
+    addTotals(saved, sessionSavings(metrics, ratios));
   }
-  return total;
+  return { actual, saved };
 }
 
 function compact(value) {
@@ -189,7 +200,7 @@ function statusline(statusInput) {
       return changed;
     });
   }
-  const saved = scopeSavings(refreshStaleSessions(sessions), config.ratios, () => true);
+  const { saved } = scopeTotals(refreshStaleSessions(sessions), config.ratios, () => true);
   process.stdout.write(segment(saved));
 }
 
@@ -227,88 +238,104 @@ function currentProject(sessions, directory) {
   return match ?? directory;
 }
 
-// One table column, keyed like PANEL_ROWS: the scope's net saving.
-function scopeColumn(title, sessions, ratios, include) {
-  const saved = scopeSavings(sessions, ratios, include);
-  const days = dailySavings(sessions, ratios, Date.now(), include);
+// Code points, not terminal cells: every glyph the grid pads is single width,
+// so only a wide character inside a project name can stretch its own rule.
+function displayWidth(text) {
+  return [...text].length;
+}
+
+function padStart(text, width) {
+  return ' '.repeat(Math.max(width - displayWidth(text), 0)) + text;
+}
+
+function padEnd(text, width) {
+  return text + ' '.repeat(Math.max(width - displayWidth(text), 0));
+}
+
+// A name too long for the space it has, cut with an ellipsis so the grid holds.
+function fit(text, width) {
+  const characters = [...text];
+  if (characters.length <= width) return text;
+  return `${characters.slice(0, Math.max(width - 1, 0)).join('')}…`;
+}
+
+// A scope's label carried by the rule that opens its rows: ── in shop ────.
+function sectionRule(title, width) {
+  const head = `── ${fit(title, width - RULE_MIN_TRAIL - 4)} `;
+  return head + '─'.repeat(Math.max(width - displayWidth(head), RULE_MIN_TRAIL));
+}
+
+// One scope's cells as text: what its sessions spent, what the benchmark says
+// the same work would have cost without exo, and the saving between them.
+// Without is with plus saved, so the three columns always add up. The with
+// column prints every price it knows; the other two need all of them, because
+// a total missing one session's price is not the total.
+function scopeSection(title, sessions, ratios, include) {
+  const { actual, saved } = scopeTotals(sessions, ratios, include);
+  const costKnown = actual.costKnown && saved.costKnown;
+  const without = {
+    lines: actual.lines + saved.lines,
+    tokens: actual.tokens + saved.tokens,
+    cost: actual.cost + saved.cost,
+    time: actual.time + saved.time
+  };
+  const cellsOf = (totals, known) => ({
+    lines: compact(totals.lines),
+    tokens: compact(totals.tokens),
+    cost: money(totals.cost, known),
+    time: duration(totals.time)
+  });
   return {
     title,
-    cells: {
-      cost: money(saved.cost, saved.costKnown),
-      lines: compact(saved.lines),
-      tokens: compact(saved.tokens),
-      time: duration(saved.time),
-      trend: `\`${trendLine(days)}\``
-    },
-    saved,
-    days,
-    activeDays: days.filter((value) => value !== 0).length
+    cells: { actual: cellsOf(actual, true), without: cellsOf(without, costKnown), saved: cellsOf(saved, costKnown) }
   };
 }
 
-// The net cost saved per local day, oldest first, ending today; a session
-// whose cost saving is unknown is left out.
-function dailySavings(sessions, ratios, now, include) {
-  const days = new Array(TREND_DAYS).fill(0);
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  for (const session of Object.values(sessions)) {
-    const metrics = sessionMetrics(session);
-    if (!include(metrics) || typeof session.started !== 'string') continue;
-    const cost = sessionSavings(metrics, ratios).cost;
-    if (cost === null) continue;
-    const day = new Date(session.started);
-    day.setHours(0, 0, 0, 0);
-    // Rounded, because a day across a daylight-saving change is 23 or 25 hours.
-    const age = Math.round((today - day) / DAY_MS);
-    if (age < 0 || age >= TREND_DAYS) continue;
-    days[TREND_DAYS - 1 - age] += cost;
+// The grid: one header row, then a labelled rule and four rows per scope.
+// Every column is measured across both scopes first and padded from that one
+// width, so no cell can push a row past the edge the rules draw.
+function gridLines(scopes) {
+  const metrics = Object.keys(PANEL_ROWS);
+  const columns = Object.keys(PANEL_COLUMNS);
+  const labelWidth = Math.max(...Object.values(PANEL_ROWS).map(displayWidth));
+  const columnWidth = {};
+  for (const column of columns) {
+    const cells = scopes.flatMap((scope) => metrics.map((metric) => scope.cells[column][metric]));
+    columnWidth[column] = Math.max(displayWidth(PANEL_COLUMNS[column]), ...cells.map(displayWidth));
   }
-  return days;
+  const row = (label, cellOf) => padEnd(label, labelWidth) +
+    columns.map((column) => padStart(cellOf(column), columnWidth[column] + COLUMN_GAP)).join('');
+  const header = row('', (column) => PANEL_COLUMNS[column]);
+  const width = displayWidth(header);
+  const lines = [header];
+  for (const scope of scopes) {
+    lines.push(sectionRule(scope.title, width));
+    for (const metric of metrics) lines.push(row(PANEL_ROWS[metric], (column) => scope.cells[column][metric]));
+  }
+  return lines;
 }
 
-// A day without a saving sits on the floor glyph, a net loss draws a minus,
-// and a saving rises above the floor in proportion to the best day.
-function trendLine(days) {
-  const peak = Math.max(...days);
-  return days.map((value) => {
-    if (value < 0) return TREND_LOSS;
-    if (value === 0) return TREND_FLOOR;
-    const level = Math.ceil((value / peak) * TREND_LEVELS.length) - 1;
-    return TREND_LEVELS[level];
-  }).join('');
-}
-
-// Markdown, not a drawn box: the model relays it unfenced, so Claude Code's own
-// renderer styles the title, the table and the inline code. One table is the
-// whole report; the totals are its rightmost column, not a second claim above it.
+// A fixed-width grid inside a code fence, because its columns line up only in
+// a monospace block. No bar and no trend: one benchmark ratio per metric fills
+// every bar to the same point, and a sparkline answers a question nobody asked.
 function report() {
   const config = loadConfig();
   const sessions = refreshStaleSessions(readJson(ledgerFile(), {}));
   const project = currentProject(sessions, process.cwd());
-  const baseName = path.basename(project);
-  const shortName = baseName.length > PROJECT_NAME_MAX ? `${baseName.slice(0, PROJECT_NAME_MAX - 1)}…` : baseName;
-  // A pipe in a directory name would end the table cell.
-  const projectName = shortName.replaceAll('|', '\\|');
   const inProject = (metrics) => metrics.project === project;
-  // Short scope titles, so the headline figure sits directly under the word that scopes it.
-  const here = scopeColumn(`in ${projectName}`, sessions, config.ratios, inProject);
-  const everywhere = scopeColumn('everywhere', sessions, config.ratios, () => true);
+  const scopes = [
+    scopeSection(`in ${path.basename(project)}`, sessions, config.ratios, inProject),
+    scopeSection('everywhere', sessions, config.ratios, () => true)
+  ];
   const enabled = savingsEnabled();
-  const state = enabled ? '● on' : '○ off';
-  const toggle = enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.';
-  const labels = { ...PANEL_ROWS };
-  // Every scope's active days are a subset of all projects' days.
-  if (everywhere.activeDays < TREND_MIN_ACTIVE_DAYS) delete labels.trend;
-  const rows = Object.entries(labels).map(([key, label]) => `| ${label} | ${here.cells[key]} | ${everywhere.cells[key]} |`);
   const lines = [
-    `**✻ exo savings** · ${state}`,
+    '```text',
+    `✻ exo savings · ${enabled ? '● on' : '○ off'}`,
     '',
-    `| ≈ saved | ${here.title} | ${everywhere.title} |`,
-    '|:--|--:|--:|',
-    ...rows,
+    ...gridLines(scopes),
+    '```',
     '',
-    toggle
+    enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'
   ];
   const override = process.env.EXO_SAVINGS;
   if (override === 'on' || override === 'off') lines.push('', `EXO_SAVINGS=${override} in the environment outranks the switch.`);

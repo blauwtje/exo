@@ -168,11 +168,12 @@ test('a session without product code saves minus its overhead, and a loss shows 
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 100 LOC · -8.0k tok · $0.32 · 2m');
   await writeLedger(directory, { s2: uncovered });
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'saved ≈ 0 LOC · -10k tok · -$0.01 · -1m');
+  // The panel spends nothing on this session and loses on it: with, without, saved.
   const panel = (await run(SAVINGS, ['report'], { env, cwd: directory })).stdout;
-  assert.match(panel, /^\| cost at API price \| -\$0\.01 \| -\$0\.01 \|$/m);
-  assert.match(panel, /^\| lines \| 0 \| 0 \|$/m);
-  assert.match(panel, /^\| tokens \| -10k \| -10k \|$/m);
-  assert.match(panel, /^\| time \| -1m \| -1m \|$/m);
+  assert.match(panel, /^code lines\s+0\s+0\s+0$/m);
+  assert.match(panel, /^tokens\s+0\s+-10k\s+-10k$/m);
+  assert.match(panel, /^cost\s+\$0\.00\s+-\$0\.01\s+-\$0\.01$/m);
+  assert.match(panel, /^time\s+0m\s+-1m\s+-1m$/m);
 });
 
 test("overhead is priced per transcript at that transcript's model, and an unlisted model leaves the cost unknown", async () => {
@@ -274,35 +275,39 @@ test('report shows the switch state and the saving for the current project besid
   await runWithStdin(['record'], JSON.stringify({ session_id: 's2', transcript_path: transcript, cwd: '/elsewhere' }), env);
   const result = await run(SAVINGS, ['report'], { env, cwd: nested });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^\*\*✻ exo savings\*\* · ● on$/m);
-  assert.match(result.stdout, /^\| ≈ saved \| in shop \| everywhere \|$/m);
+  // Fenced, because the columns line up only in a monospace block.
+  assert.match(result.stdout, /^```text$/m);
+  assert.match(result.stdout, /^✻ exo savings · ● on$/m);
+  assert.match(result.stdout, /^\s+with exo\s+≈ without exo\s+saved$/m);
+  assert.match(result.stdout, /^── in shop ─+$/m);
+  assert.match(result.stdout, /^── everywhere ─+$/m);
   // Priced per model: Fable 25,600 + Sonnet 4,580 per million = $0.0302 a session, a third of it saved.
-  assert.match(result.stdout, /^\| cost at API price \| \$0\.01 \| \$0\.02 \|$/m);
-  assert.match(result.stdout, /^\| lines \| 10 \| 20 \|$/m);
-  assert.match(result.stdout, /^\| tokens \| 743 \| 1\.5k \|$/m);
-  assert.match(result.stdout, /^\| time \| 1m \| 2m \|$/m);
+  // In shop, one session: 10 lines, 2,972 tokens, $0.03 and 3 minutes spent; everywhere, both.
+  assert.match(result.stdout, /^code lines\s+10\s+20\s+10$/m);
+  assert.match(result.stdout, /^tokens\s+3\.0k\s+3\.7k\s+743$/m);
+  assert.match(result.stdout, /^cost\s+\$0\.03\s+\$0\.04\s+\$0\.01$/m);
+  assert.match(result.stdout, /^time\s+3m\s+4m\s+1m$/m);
+  assert.match(result.stdout, /^code lines\s+20\s+40\s+20$/m);
+  assert.match(result.stdout, /^tokens\s+5\.9k\s+7\.4k\s+1\.5k$/m);
+  assert.match(result.stdout, /^cost\s+\$0\.06\s+\$0\.08\s+\$0\.02$/m);
+  assert.match(result.stdout, /^time\s+6m\s+8m\s+2m$/m);
   assert.match(result.stdout, /^Turn off with `\/exo:savings off`\.$/m);
-  // Both sessions started on one day, too few for a trend.
   assert.doesNotMatch(result.stdout, /last 30 days/);
 });
 
-test('report draws the 30-day trend of the net cost saved, a losing day as a minus', async () => {
-  const directory = await fixture();
-  await writeConfig(directory);
-  // Local noon on each day, so a daylight-saving change cannot move a session across midnight.
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  const daysAgo = (count) => {
-    const day = new Date(today);
-    day.setDate(today.getDate() - count);
-    return day.toISOString();
-  };
-  const covered = (started) => bookedRow({ started, updated: started, costUsd: 1, lines: { added: 10, removed: 0 } });
-  const losing = bookedRow({ started: daysAgo(2), updated: daysAgo(2), lines: { added: 0, removed: 0 } }, { cache1h: 5000 });
-  await writeLedger(directory, { s1: covered(daysAgo(1)), s2: covered(daysAgo(0)), s3: losing });
-  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
+test('every row of the panel is padded to one width, and a long project name cannot break it', async () => {
+  const { configDirectory, transcript } = await transcriptFixture();
+  const project = path.join(configDirectory, 'a-project-name-far-wider-than-the-panel-itself');
+  await fs.mkdir(project, { recursive: true });
+  const env = { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: '' };
+  await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript, cwd: project }), env);
+  const result = await run(SAVINGS, ['report'], { env, cwd: project });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^\| last 30 days \| `[▁-█-]{30}` \| `▁{27}-██` \|$/m);
+  const grid = result.stdout.split('\n').filter((line) => /^(?:code lines|tokens|cost|time|── |\s+with exo)/.test(line));
+  const widths = new Set(grid.map((line) => [...line].length));
+  assert.equal(widths.size, 1, [...widths].join(', '));
+  assert.ok([...widths][0] <= 60, `panel is ${[...widths][0]} columns`);
+  assert.match(result.stdout, /^── in a-project-name-far-wider.*… ─+$/m);
 });
 
 test('an unknown command fails with usage', async () => {
@@ -339,7 +344,7 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
-  assert.match(panel, /· ○ off$/m);
+  assert.match(panel, /^✻ exo savings · ○ off$/m);
   assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; right-sizing follows at the next session start\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));

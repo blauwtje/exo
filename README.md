@@ -71,7 +71,7 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
-The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05`, and a loss prints with a minus. The full panel, markdown the model relays unfenced so Claude Code styles it, is one table under the switch state: the saving in the current project beside the saving everywhere, per metric, with a 30-day trend of the cost saved per day for each. No headline figure, streak or milestone bar; the totals are the table's rightmost column: `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
+The segment reads `saved ≈ 1.2k LOC · 340k tok · $12.10 · 1h05`, and a loss prints with a minus. The full panel is a fixed-width grid under the switch state, relayed inside the `text` fence the script prints because its columns line up only in a monospace block: one section for the current project and one for everywhere, and per metric what those sessions spent with exo, what the benchmark says the same work would have cost without it, and the difference. No bar, trend, streak or headline figure: one fixed ratio per metric fills every bar to the same point. `/exo:savings`, or `node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" report`.
 
 ## Develop
 
