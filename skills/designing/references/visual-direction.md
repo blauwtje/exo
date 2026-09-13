@@ -20,9 +20,9 @@ Run this loop for an open identity, one that does not exist yet or that the brie
 
 1. Inspect what exists first — repository assets, `docs/design/`, and any prior approved renders.
 2. Where visual research capability is available in the session, gather a small, visually diverse reference set and extract relationships across composition, typography, chroma, geometry, imagery, material and light, and motion. Record what to borrow and what to reject. Do not route the decision through a named style label; the borrow-and-reject list is the output, not a style name.
-3. Deal, fill, and `--check` three contracts below; nothing is asked between `--check` and the picker.
+3. Deal, fill, and `--check` three contracts below; nothing but the preview offer is asked between `--check` and the picker.
 4. Build one comp per variant — one screenful of the real surface, real content, one self-contained HTML file, no build step — into `variant-<n>/index.html` under scratch output outside the repository, and run `scripts/pick.mjs --comps <dir> --frame <w>x<h>`, which shows every comp live at one shared scale and prints the clicked index. The `title` and `description` on each contract are what the chooser reads: plain words, no axis ids; mark your own pick with `--recommend <n>`. The whole set is one turn's work, and the comps stay under the run directory after Build. `pick.mjs` exit 3: the recommended contract is the selection, with no question in the terminal, **before** any production code changes.
-5. Select autonomously only where the user delegated the choice, the picker exited 3, or a planning turn allows no picker; record the rationale in the contract.
+5. Select autonomously only where the user delegated the choice, took the text option, the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 6. `--select` freezes the choice; the other variants stay under the run directory.
 
 A settled design system, a local component inside one, and a tweak each produce one direction, no variants, and no selection gate. Never force variants there.
