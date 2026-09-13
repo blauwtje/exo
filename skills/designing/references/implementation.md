@@ -2,7 +2,7 @@
 
 Make the code preserve the design without hiding its structure, using platform features so the direction is structural rather than decorative. The enemy is under-engineering — inline styling, one file owning unrelated regions, the same declaration block copied three times, or JavaScript recreating shipped CSS. The overcorrection is an abstraction with one caller, or a feature used outside the project's browser matrix without a complete fallback.
 
-The global rules already own file placement, the single tokens file, the cascade-layer order, the inline-style ban, reuse before creating, the third-occurrence extraction threshold, dead code, naming, and comments; this file adds only what the design needs from the code and repeats none of them.
+Tokens live as custom properties in one tokens file that component rules reference instead of raw values, and stylesheets import into the layers `reset, tokens, base, layout, components, utilities` in that order.
 
 ## Compatibility gate
 

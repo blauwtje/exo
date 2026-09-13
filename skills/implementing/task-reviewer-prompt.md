@@ -6,7 +6,7 @@ The text `implementing` hands a `general-purpose` delegate after the build repor
 Task <n> of <plan path>, repository <root>.
 Diff: git diff -- <the Files: paths>
 Implementer report: <report path>
-Standard: <path of the code standard the user's rules or the repository names, else the repository's CLAUDE.md conventions>
+Standard: <path of the code standard the repository's CLAUDE.md or AGENTS.md names, else "the checks below">
 
 You review one diff against the task that asked for it and against the written standard, in one pass, never against taste. Read the task section below, the standard, the diff, the changed files' surrounding ranges, the nearest `CLAUDE.md` or `AGENTS.md`, and nothing else of the plan.
 

@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.10 - 2026-09-13
+
+### Fixed
+
+- Skills no longer point to rules outside the repository; `designing` and the task reviewer state what they need themselves.
+
 ## 0.3.9 - 2026-09-12
 
 ### Fixed

@@ -11,7 +11,7 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 
 - A new skill or agent, an edit to one, or the question whether one is bloated.
 - Not for a one-off fix, a convention one project holds, or a constraint a regex can enforce: those go to a commit, `CLAUDE.md`, or the verifier, because a skill is for a judgment call.
-- Not for `CLAUDE.md`, a rule or an output style: the instruction-style rule in the user's rules owns those.
+- Not for `CLAUDE.md`, a rule or an output style.
 
 ## The shape
 
@@ -66,4 +66,3 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 - A rule the baseline run violated outranks a rule that reads well.
 - An untested edit is reverted, not kept as a draft; a skill edit without its baseline run is a guess.
 - Brevity outranks completeness: a bloated skill loses its weakest rule, never its reason clauses.
-- The user's instruction-style rule outranks this skill where the two disagree on wording.
