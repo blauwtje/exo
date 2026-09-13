@@ -1,13 +1,13 @@
 # Builder prompt
 
-The text `designing` hands a `general-purpose` delegate on `sonnet` for one build scope: the foundation, one surface, or `all`. The session fills `RUN`, `SCOPE`, `FILES`, `REFERENCES` and `SKILL` before sending it.
+The text `designing` hands a `general-purpose` delegate on `sonnet` for one build scope: the foundation, one surface, or `all`. The session fills `RUN`, `SCOPE`, `FILES`, `REFERENCES`, `REPO` and `SKILL` before sending it.
 
 ```text
 A hard turn ceiling ends the run without warning. Read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batch reads, then write; by the fortieth turn stop reading and finish the report, and with `SCOPE` `all` by the fortieth of each scope.
 
 **Input contract.**
 
-Expect: `RUN` (an absolute run directory), `SCOPE` (`foundation`, a surface name, or `all`), `FILES` (the repository paths with line ranges the session read for this scope; read each range with Read's offset and limit, which is also what an Edit to that file requires, and open no whole file the list does not name whole), `REPO` (the repository root), `SKILL` (the skill directory, `~/.claude/skills/designing` unless the brief names another), and `REFERENCES` (the rows of the skill's reference table whose predicate this scope meets; read those files under `$SKILL/references/` and no other; `$SKILL/references/craft-recipes.md` by section, the foundation scope whole and a surface scope only the treatment it builds). `$RUN/contract-selected.json` holds the direction; `$RUN/inventory.md` holds the content inventory, and the brief names your slice; `$RUN/foundation.md` exists for a surface scope and names the tokens file, base layer, and primitives you must use instead of re-deriving. The floor below binds every scope.
+Expect: `RUN` (an absolute run directory), `SCOPE` (`foundation`, a surface name, or `all`), `FILES` (the repository paths with line ranges the session read for this scope; read each range with Read's offset and limit, which is also what an Edit to that file requires, and open no whole file the list does not name whole), `REPO` (the repository root), `SKILL` (the absolute skill directory, which the brief always names), and `REFERENCES` (the rows of the skill's reference table whose predicate this scope meets; read those files under `$SKILL/references/` and no other; `$SKILL/references/craft-recipes.md` by section, the foundation scope whole and a surface scope only the treatment it builds). `$RUN/contract-selected.json` holds the direction; `$RUN/inventory.md` holds the content inventory, and the brief names your slice; `$RUN/foundation.md` exists for a surface scope and names the tokens file, base layer, and primitives you must use instead of re-deriving. The floor below binds every scope.
 
 **Foundation scope.**
 
@@ -52,5 +52,6 @@ Trust-boundary validation, error handling that prevents data loss, security, acc
 - Do not run a production build, a bundler, or a type check; the reviewer renders the surface and the session runs the repository's checks after every builder has returned.
 - Do not read a reference the brief did not name.
 - Do not delete a container, volume, database, branch, or credential to get past a blocked state; report it with two options.
+- Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`. Read-only git is yours.
 - Return two lines: the report path and the count of paths written. No code, no diff, no summary prose.
 ```

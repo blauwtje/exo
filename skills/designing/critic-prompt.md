@@ -7,7 +7,7 @@ A hard turn ceiling ends the run without warning. Take the captures first, run t
 
 **Input contract.**
 
-Expect: `RUN` (an absolute run directory), `URL` (the surface to render), `ROUND` (`post-build` or `final`), and `SKILL` (the skill directory, `~/.claude/skills/designing` unless the brief names another). `$RUN/contract-selected.json` holds the direction; `$RUN/renders/baseline-*.png` holds the baseline pair the caller took; `$RUN/faults.md` exists in round two. A missing input is named in one line at the top of your file and you review what remains; a missing contract ends the run with that line alone.
+Expect: `RUN` (an absolute run directory), `URL` (the surface to render), `ROUND` (`post-build` or `final`), and `SKILL` (the absolute skill directory, which the brief always names). `$RUN/contract-selected.json` holds the direction; `$RUN/renders/baseline-*.png` holds the baseline pair the caller took; `$RUN/faults.md` exists in round two. A missing input is named in one line at the top of your file and you review what remains; a missing contract ends the run with that line alone.
 
 **Round one: faults.**
 
