@@ -52,10 +52,14 @@ const PINNED_SENTENCES = {
     '- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;',
     '- targets at least 24×24 CSS px — the WCAG 2.2 AA minimum, exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation — with 44×44 as the enhanced target and the default under a coarse pointer;',
     'This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
-    'baseline before the first edit, post-build before the critique fixes, and final after them',
     'never substitute a product-category aesthetic for missing evidence',
-    'validate the set with `--check` to status ok before building any variant',
     'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
+  ],
+  'skills/designing/references/phase-direction.md': [
+    'validate the set with `--check` to status ok before building any variant',
+  ],
+  'skills/designing/references/phase-critique.md': [
+    'baseline before the first edit, post-build before the critique fixes, and final after them',
   ],
   'skills/designing/references/motion.md': [
     'only exercised is motion-verified',

@@ -107,7 +107,7 @@ const SCENARIOS = [
     dropLines(root, 'skills/debug/SKILL.md', 'description:') },
   { name: 'effort-unknown-key', mutate: (root) =>
     replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\nmodel-effort: high') },
-  { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/references/phase-critique.md',
     'baseline before the first edit, post-build before the critique fixes, and final after them',
     'capture the surface before and after building') },
   { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
@@ -115,7 +115,7 @@ const SCENARIOS = [
     'pick a fitting product-category aesthetic') },
   { name: 'dropped-motion-evidence-contract', mutate: (root) => replaceText(root, 'skills/designing/references/motion.md',
     'only exercised is motion-verified', 'a careful read of the code is enough') },
-  { name: 'dropped-direction-contract-gate', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-direction-contract-gate', mutate: (root) => replaceText(root, 'skills/designing/references/phase-direction.md',
     'validate the set with `--check` to status ok before building any variant',
     'render at least two variants and pick the better one') },
   { name: 'dropped-font-provenance', mutate: (root) => replaceText(root, 'skills/designing/references/typography.md',

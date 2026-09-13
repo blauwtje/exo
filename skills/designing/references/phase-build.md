@@ -1,0 +1,12 @@
+# Phase 3: Build
+
+Build where the edits cost least: in this session when the direction predates the run, in builder delegates otherwise. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is a multi-surface inventory built inside this session's own context.
+
+## The mechanics
+
+A surface whose direction was decided before this run — a plan's `Contract:`, a brief's `contract-selected.json`, or the piece path's direction artifact — builds here, in this session, from that contract and the Phase 1 file ranges, because a builder brief plus its report costs more than the edits it forwards. Every other build runs in `general-purpose` delegates on `sonnet` from `../builder-prompt.md`, each given `$RUN/contract-selected.json`, `SKILL` as the absolute directory this skill loaded from, `REPO` as the repository root, its inventory slice, the reference rows whose predicate its scope meets, and as `FILES` the Phase 1 list of paths and line ranges, so a builder opens no whole file. An inventory of at most two surfaces is one call with scope `all`, which writes foundation.md and every `build-<surface>.md` in `$RUN`; more surfaces run foundation first — one call with scope `foundation` writes the tokens file, the base layer, and the primitives the inventory repeats, and returns foundation.md — then one call per surface, all in one message, each given that same foundation.md. Every report is at most 20 lines; code stays on disk and this session reads the reports, not the code. Run the repository's own checks once every builder has returned. The rest of this phase binds the builders. Build the recorded motion decision; a redesign or new piece without one is unfinished. Where the subject's world names a technique — a canvas, an instrument, generative motion — build the technique itself, not a static imitation. A component the design repeats is unbuilt while a reachable entry of its state row is unstyled, and a surface with no existing product is unfinished while a content obligation from the inventory is missing or a region still carries placeholder material.
+
+## Judgment
+
+- The floor and the underdesign floor in the skill body bind every build, in this session and in every builder.
+- A reachable state left unstyled or a placeholder region still standing keeps the surface unfinished, whatever the checks report.
