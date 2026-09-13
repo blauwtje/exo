@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `planning` takes the next session's model and effort from the `using-exo` next-stage table instead of repeating the rule.
+
 ## 0.3.13 - 2026-09-13
 
 ### Changed

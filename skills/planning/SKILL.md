@@ -52,7 +52,7 @@ Read that command off the plan rather than asking; the fresh-session option is t
 - Four or more tasks: `/exo:implementing`, one task per fresh helper context, each committed on its own.
 - Two or three short tasks: `/exo:implementing-batch`, the whole plan built in one window with one report at the end.
 
-Name the model and effort for the session that runs it: `opus` at `high` when a task carries `Design:`, because that task builds in the session; otherwise `sonnet` at `high`, because the plan already holds every step's code and the builds run on delegates that name their own model.
+Take the model and effort for the session that runs it from the table under `## The next stage` in `using-exo`, because that table owns the rule and a second copy drifts from it.
 
 ## References
 
