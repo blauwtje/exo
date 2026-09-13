@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.13 - 2026-09-13
+
 ### Changed
 
 - `implementing` commits each task once its checks pass and reviews the whole
