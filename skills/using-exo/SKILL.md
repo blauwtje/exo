@@ -11,15 +11,17 @@ Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rul
 
 1. Match the request against the skill descriptions before the first tool call, including a clarifying question.
 2. When one fires, invoke and follow it; when it turns out wrong, say so and leave it.
-3. Use no skill for a version-only bump, a git-only operation or a read-only question.
-4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary.
+3. Use no skill for a version-only bump, a git-only operation or a read-only question no skill description claims.
+4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change, which `designing` owns.
    Read the ranges, edit, run the check that proves it, report: a skill around two files costs more than the edit.
+5. Issue and pull-request workflows run only when the user invokes them: name `/exo:issuing`, `/exo:ship-issue <n>` or `/exo:merge-prs` instead of doing that work by hand, because those skills carry the gates a hand-run skips.
 
 ## When several fire
 
 - `debug` outranks the rest until a failure's cause is proven.
 - `shaping` decides what to build, `planning` orders it, `implementing` runs a plan, `implementing-batch` builds in the session; the earlier stage wins.
-- `research`, `designing` and `skills-tool` are borrowed mid-turn and hand control back.
+- `deepen` answers where the architecture should change; `shaping` decides the shape of a change the request already names.
+- `research`, `designing` and `skills-tool` are borrowed mid-turn and hand control back when a stage called them; alone, they own the turn.
 - An instruction in CLAUDE.md or in the prompt outranks a skill.
 
 # Right-sizing
