@@ -1,5 +1,7 @@
 # Overhead calibration
 
+Recorded as printed on 2026-09-11. `skills/savings/scripts/ratios.mjs` and `benchmarks/calibrate.mjs` have since been removed, and the skills `exo:codebase-scout` and `exo:right-sizing` no longer exist; the figures below stand as measured.
+
 What `node benchmarks/calibrate.mjs` printed for `2026-09-11-calibration`.
 
 Calibration: 6 exo and 6 baseline cells; calls counted whole: 0.

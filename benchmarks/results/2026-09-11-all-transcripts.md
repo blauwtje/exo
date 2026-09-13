@@ -1,5 +1,7 @@
 # Benchmark 2026-09-11, rescored over every transcript
 
+Recorded as printed on 2026-09-11. `skills/savings/scripts/ratios.mjs` and `benchmarks/calibrate.mjs` have since been removed, and the skills `exo:codebase-scout` and `exo:right-sizing` no longer exist; the figures below stand as measured.
+
 The 96 cells of `benchmarks/results/2026-09-11.md`, rescored after `node benchmarks/backfill-usage.mjs benchmarks/runs/2026-09-11-full` wrote `usage.json` into each cell from its surviving transcripts. Tokens now sum the main thread and every subagent transcript; `2026-09-11.md` counted the main thread only and stays as printed.
 
 ## `node benchmarks/score.mjs benchmarks/runs/2026-09-11-full`
