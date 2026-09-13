@@ -15,20 +15,24 @@ Restart Claude Code. The `using-exo` skill is injected at every session start, r
 
 ## Skills
 
-| Skill | Fires when |
-|---|---|
-| `shaping` | An outcome or feature request has no chosen solution. |
-| `planning` | A plan is requested, a planning mode is active, or another executor runs the work. |
-| `implementing` | A plan is run or resumed: one delegated build and two reviews per task, a commit each. |
-| `implementing-batch` | A decided change builds in the session: more than two files, a dependency, a public signature, a persisted format or security boundary. |
-| `debug` | Existing behavior fails and the cause is unproven. |
-| `savings` | The user asks what exo cost or what the read guard withheld, or switches savings off or on: prints the ledger panel. |
-| `deepen` | The user asks where to improve architecture without naming the change. |
-| `research` | A decision hinges on a pinned external version's behavior. |
-| `designing` | A visual surface is created or changed. |
-| `issuing`, `ship-issue`, `merge-prs` | GitHub issue and pull-request workflows, user-invoked. |
-| `skills-tool` | A skill or agent is created, edited or judged too long. |
-| `using-exo` | Session start; explains the rest. |
+| Skill | Fires when | Invocation | Argument hint | Model | Effort |
+|---|---|---|---|---|---|
+| `shaping` | An outcome or feature request has no chosen solution. | model or slash | `<outcome to shape>` | session | session |
+| `planning` | A plan is requested, a planning mode is active, or another executor runs the work. | model or slash | `<what to plan, or a spec path>` | session | session |
+| `implementing` | A plan is run or resumed: one delegated build and one commit per task, then one branch review on `opus`. | model or slash | `[plan path]` | session | `high` |
+| `implementing-batch` | A decided change builds in the session: more than two files, a dependency, a public signature, a persisted format or security boundary. | model or slash | `<decided change or plan path>` | session | session |
+| `debug` | Existing behavior fails and the cause is unproven. | model or slash | `<symptom, failing command or error>` | session | session |
+| `savings` | The user asks what exo cost or what the read guard withheld, or switches savings off or on: prints the ledger panel. | model or slash | `[report, on, off or status]` | `haiku` | session |
+| `deepen` | The user asks where to improve architecture without naming the change. | model or slash | `[path, module or pain point]` | session | session |
+| `research` | A decision hinges on a pinned external version's behavior. | model or slash | `<library, version and question>` | session | `high` |
+| `designing` | A visual surface is created or changed. | model or slash | `<page, component or visual change>` | session | `high` |
+| `issuing` | The user files issues as specs. | slash only | `<what the issue or issues should cover>` | `opus` | `high` |
+| `ship-issue` | The user takes one issue to merged, one stage per call. | slash only | `<number, #number, issue URL, title, or what the issue is about>` | session | session |
+| `merge-prs` | The user merges open pull requests behind API gates. | slash only | `[pull request numbers]` | session | session |
+| `skills-tool` | A skill or agent is created, edited or judged too long. | model or slash | `<skill or agent to create, edit or size>` | session | session |
+| `using-exo` | Session start; explains the rest. | injected by the session hook | none | session | session |
+
+A skill whose work leaves the machine (issues, pull requests, merges) is slash-only with `disable-model-invocation: true`; every other skill stays model-invocable, so a next-stage question can start it, and its description opens with `Use when`. `model` and `effort` are set only where the skill's work always needs that tier, so the session's choice holds everywhere else. The stage skills pin no model, because the next-stage question names one per stage and a pinned model would override that pick and rebuild the prompt cache mid-session.
 
 ## Delegates and the hooks
 
@@ -36,7 +40,7 @@ The plugin ships no agent files. Every delegate is the harness's `general-purpos
 
 ## The ladder
 
-The ladder lives in the `using-exo` body, so the session hook puts it and its guards in every session's context, on or off the savings switch: it holds before every edit that adds or replaces code, and answers an explicit ask for the minimal or lean version. No skill call brings it. The three delegate prompts that write code (`skills/implementing/implementer-prompt.md`, `skills/implementing/bug-fixer-prompt.md`, `skills/designing/builder-prompt.md`) carry it in their own text, because a delegate never sees the session hook. The model reads the ranges the change touches and follows the real flow, then stops at the first rung that holds:
+The ladder lives in the `using-exo` body, so the session hook puts it and its guards in every session's context, on or off the savings switch: it holds before every edit that adds or replaces code, and answers an explicit ask for the minimal or lean version. No skill call brings it. The four delegate prompts that write code (`skills/implementing/implementer-prompt.md`, `skills/implementing/bug-fixer-prompt.md`, `skills/implementing/branch-reviewer-prompt.md`, `skills/designing/builder-prompt.md`) carry it in their own text, because a delegate never sees the session hook. The model reads the ranges the change touches and follows the real flow, then stops at the first rung that holds:
 
 ```text
 1. Need?              → a use imagined for later is skipped (YAGNI)
