@@ -17,8 +17,8 @@ re-invocation re-reads the issue and the PR for a minute of work. Build ends
 at the pull request and Land ends at the merge; a stop inside a stage is a
 wait or a second failure, never a habit. The branch and the API say what
 landed; a note may only say what to do next. Start this skill on the
-session's model: Build plans and debugs there, and `/exo:implementing` runs its own
-turns on Opus, building through Sonnet agents.
+session's model: Build plans and debugs there, and `/exo:implementing` runs on
+the session's model too, naming the model on every dispatch it makes.
 
 Invoking this skill with an issue number authorizes, for that issue only: a
 worktree and branch, commits and pushes on that branch, one pull request, its
@@ -81,8 +81,8 @@ previous context left the next step there. Delete it once that step is done.
    |---|---|
    | Existing behavior is wrong: bug, error, crash, regression, wrong output, slowdown | `debug`. Expect a finished, proven fix back, never a diagnosis alone. |
    | Named exact change with a decided solution: refactor, rename, extract, config, dependency, decided feature | `implementing-batch`. No reproduction step. |
-   | Capability without a chosen solution, or trade-offs to weigh | `shaping` for the brief, then `implementing-batch`, which orders the edits inline. `planning` at deliverable depth only when the brief touches more than six files or crosses a migration, credential, or security boundary: it writes the plan into this worktree's `docs/plans/` and this stage stops; the user clears and runs `/exo:implementing`, which finishes the plan on the `issue-<n>-<slug>` branch through the branch review and the pull-request question, then names `/ship-issue <n>` for Land, or for Clean when it merged. A deliverable plan cost a median 52 minutes before the first edit on 2026-09-07, which a small issue cannot afford. |
-   | Visual-only surface | The frontend-design skill the session has loaded (`designing` or `impeccable`), then `implementing-batch`. |
+   | Capability without a chosen solution, or trade-offs to weigh | `shaping` for the brief, then `implementing-batch`, which orders the edits inline. `planning` at deliverable depth only when its own activation gate holds or the brief crosses a migration, credential, or security boundary: it writes the plan into this worktree's `docs/plans/` and this stage stops; the user clears and runs `/exo:implementing`, which finishes the plan on the `issue-<n>-<slug>` branch through the branch review and the pull-request question, then names `/exo:ship-issue <n>` for Land, or for Clean when it merged. |
+   | Visual-only surface | `designing`, then `implementing-batch`. |
 
 3. **Resuming:** read `git log origin/<default>..HEAD --oneline` and
    `git diff --stat` before any edit; the branch, not memory, says what landed.
@@ -94,7 +94,7 @@ previous context left the next step there. Delete it once that step is done.
    routed skill, and `Closes #<n>`. Print the PR URL. Continue into Land in
    this turn when
    `git diff --stat origin/<default>..HEAD` names at most five files;
-   otherwise stop, and the user runs `/ship-issue <n>` again for Land after
+   otherwise stop, and the user runs `/exo:ship-issue <n>` again for Land after
    clearing.
 
 ## Land

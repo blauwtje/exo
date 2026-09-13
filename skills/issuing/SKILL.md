@@ -48,7 +48,7 @@ except to add a relation to a parent or a blocker you named.
    left off the issue and named in the report, never approximated by a similar
    one and never created.
 
-3. **Ground the references.** Send a `general-purpose` delegate from `../research/scout-prompt.md` the paths and symbols the
+3. **Ground the references.** Send a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` the paths and symbols the
    goal sentences name, so `References` carries real paths. Skip this step for
    an issue that names no code.
 
@@ -98,6 +98,12 @@ in the body goes stale on the first edit.
 Priority and Effort are project fields or existing labels or nothing. When
 this repository defines neither, leave them off and say so; never write them
 into the body as prose.
+
+## References
+
+| File | Read it when |
+|---|---|
+| `../research/scout-prompt.md` | Step 3, before the discovery dispatch. |
 
 ## Judgment
 

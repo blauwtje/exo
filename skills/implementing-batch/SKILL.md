@@ -17,7 +17,7 @@ For every other decided change, count these facts after initial inspection: more
 
 Every token a tool call returns into this context is re-read on every later turn. Keep this context small.
 
-- Address files by repository-root-relative or absolute paths. Never chain `cd &&`, and never pipe a test or build runner: a chained or piped command bypasses the Bash output guard's 200-line cap.
+- Address files by repository-root-relative or absolute paths. Never chain `cd &&`, and never pipe a test or build runner: a chained or piped runner hides which command failed and its exit code.
 - Read bounded ranges: pass an offset and a limit to Read; scope every grep to a path; never `cat` a file over 100 lines — Read the range you need.
 - Delegate every read-only discovery and multi-file search to a `general-purpose` delegate from `../research/scout-prompt.md`, and the review to `code-review`, so their output never lands here. Read directly here only the ranges you will edit.
 

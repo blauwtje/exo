@@ -67,5 +67,5 @@ Read that command off the plan rather than asking, and name the context clear th
 - An unproven failure inside a planning turn makes reproduction and proof the plan's first phase; plan no fix past the proof point. Outside a planning turn, `debug` outranks planning until the cause is proven.
 - The executor and edge count set depth; a requested depth outranks both, and a requested plan outranks the upstream-order skip.
 - Repository verification and documentation conventions outrank unspecified defaults.
-- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and closes with the `## Handing it over` question.
+- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and closes with the command `## Handing it over` names.
 - After a compaction notice, list the written tasks with `grep -n '^### Task [0-9]' <plan-file>` before adding another; the file, not memory, records what the plan already holds.

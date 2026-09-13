@@ -12,7 +12,7 @@ Report the ledger as the script prints it, never a figure recomputed by hand, an
 ## When to use
 
 - The user asks what exo cost, what the read guard withheld, or for the counter, ledger or panel.
-- The user asks to switch exo savings, the counter or the read guard off or on.
+- The user asks to switch exo savings, the counter or the read guard off or on; the ladder has no switch, so a request to switch it off gets that answer and runs nothing.
 - Not for one change's size: `git diff --stat` answers that.
 
 ## The panel
