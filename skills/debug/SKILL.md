@@ -40,8 +40,8 @@ A speed-only symptom requires measurement before a hypothesis or edit. Read `../
 
 ## Judgment
 
-- Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and loads `implementing-batch` only for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.
+- Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and offers `implementing-batch` on the next-stage question for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.
 - A user-stated cause outranks investigation only after it matches the source and predicts the reproduction.
 - Reproduction and instrumentation outrank intuition, including the first hypothesis.
 - A further patch loses to a return to Step 1 when the repair crosses a second owner, an old and a new route coexist, support code grows while behavior stays flat, or the path cannot be explained in one pass: each says the proven cause is not the cause.
-- The turn ends after Step 7; after a compaction notice, re-run the Step 1 reproduction before the next edit, because the command, not memory, says whether the symptom still exists.
+- After Step 7, edits the proof leaves beyond the predicted change end the turn on the next-stage question in `using-exo`, offering `implementing-batch` for them; with none left, the turn ends under the closing rule. After a compaction notice, re-run the Step 1 reproduction before the next edit, because the command, not memory, says whether the symptom still exists.

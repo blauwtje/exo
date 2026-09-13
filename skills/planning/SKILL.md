@@ -44,12 +44,14 @@ Before ending the turn, read the plan once against the rules in `references/hand
 
 ## Handing it over
 
-A deliverable plan ends under the closing rule in `using-exo`: the plan path, the task count, and the one command that runs it.
+A deliverable plan ends on the next-stage question in `using-exo`: the plan path and the task count, then the question carrying the one command that runs the plan.
 
-Read that command off the plan rather than asking, and name the context clear that comes first, because the window that wrote the plan is the most expensive one to run it in.
+Read that command off the plan rather than asking; the fresh-session option is the recommended one, because the window that wrote the plan is the most expensive one to run it in.
 
 - Four or more tasks: `/exo:implementing`, one task per fresh helper context, each committed on its own.
 - Two or three short tasks: `/exo:implementing-batch`, the whole plan built in one window with one report at the end.
+
+Name the model and effort for the session that runs it: `opus` at `high` when a task carries `Design:`, because that task builds in the session; otherwise `sonnet` at `high`, because the plan already holds every step's code and the builds run on delegates that name their own model.
 
 ## References
 
@@ -67,5 +69,5 @@ Read that command off the plan rather than asking, and name the context clear th
 - An unproven failure inside a planning turn makes reproduction and proof the plan's first phase; plan no fix past the proof point. Outside a planning turn, `debug` outranks planning until the cause is proven.
 - The executor and edge count set depth; a requested depth outranks both, and a requested plan outranks the upstream-order skip.
 - Repository verification and documentation conventions outrank unspecified defaults.
-- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and closes with the command `## Handing it over` names.
+- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and closes on the question `## Handing it over` names.
 - After a compaction notice, list the written tasks with `grep -n '^### Task [0-9]' <plan-file>` before adding another; the file, not memory, records what the plan already holds.

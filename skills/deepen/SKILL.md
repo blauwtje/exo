@@ -42,8 +42,8 @@ Fill in everything the code determines: affected files, the refactor, the result
 
 | Mode | Output |
 |---|---|
-| A read-only planning mode is active, or the user asks for the plan | Audit, then write the executable plan for the top findings per the References row — into the harness-designated plan file when one exists, otherwise `docs/plans/<topic>.md`. One invocation delivers both; no second skill. Write the ranked cards into that file's `## Context` before loading the References row, so a compaction after the audit loses no finding. |
-| Otherwise | Report only: the ranked cards in the current message, plus what implementing each would take. No production edits, and no artifact unless the user asks for a file. The ending is those cards and the one next action under the closing rule in `using-exo`, never the reasoning behind a rank. |
+| A read-only planning mode is active, or the user asks for the plan | Audit, then write the executable plan for the top findings per the References row — into the harness-designated plan file when one exists, otherwise `docs/plans/<topic>.md`. One invocation delivers both; no second skill. Write the ranked cards into that file's `## Context` before loading the References row, so a compaction after the audit loses no finding. The turn ends on the next-stage question in `using-exo` with the command that runs the plan. |
+| Otherwise | Report only: the ranked cards in the current message, plus what implementing each would take. No production edits, and no artifact unless the user asks for a file. The ending is those cards, then the next-stage question in `using-exo` offering `planning` for the top card, never the reasoning behind a rank. |
 
 ## References
 

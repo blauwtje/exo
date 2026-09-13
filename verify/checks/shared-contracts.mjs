@@ -21,7 +21,7 @@ const PINNED_SENTENCES = {
   ],
   'skills/debug/SKILL.md': [
     'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
-    'Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and loads `implementing-batch` only for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.',
+    'Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and offers `implementing-batch` on the next-stage question for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.',
   ],
   'skills/implementing-batch/SKILL.md': [
     'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',

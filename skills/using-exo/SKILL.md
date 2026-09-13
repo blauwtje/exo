@@ -77,3 +77,19 @@ A decision you made on the user's behalf is one line naming the choice and what 
 - Reasoning for a decision nobody disputed, an alternative you did not take, or a recap of what the reader just read.
 - An inventory of work you did not do, except a requested part that is blocked and a check that did not run.
 - A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question, each option one line, the recommended one first.
+
+## The next stage
+
+A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks, even when no other question is open: where and on which model the next stage runs is the user's choice.
+
+1. **Three options, the recommended one first.** Run the next stage in a fresh session after a context clear; run it now in this session; stop here. Ask through the harness's structured question tool where it has one, otherwise as three numbered lines that end the turn.
+2. **Fresh is recommended when the next stage reads its input from a file**, and its description says why: a long context is re-read on every turn, which costs tokens and answer quality. Input that lives only in this conversation makes running it now the recommended option.
+3. **Every option that starts a stage names its command, model and effort**, with the reason in one clause, from this table.
+4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller, which owns the ending.
+
+| Next stage | Model and effort | Because |
+|---|---|---|
+| `planning` | `opus` at `high` | a plan's code is pasted as written, so a slip repeats in every task. |
+| `implementing` or `implementing-batch`, plan with a `Design:` task | `opus` at `high` | that task builds in the session. |
+| `implementing` or `implementing-batch`, plan without one | `sonnet` at `high` | the plan already holds every step's code. |
+| `implementing-batch` without a plan | `opus` at `high` | it decides the change while building it. |
