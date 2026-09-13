@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.11 - 2026-09-13
+
+### Changed
+
+- The designing preview offer is one question with two options, the browser
+  preview with its price of about 3,500 tokens per direction, or deciding in
+  text, and a planning turn makes the same offer.
+- `pick.mjs` opens the tab only once every comp exists and reports how long it
+  waited; comps run live and whole in tight cards fitted to the window, and an
+  enlarged comp fills the viewport with nothing around it.
+- Every comp is written in one message with the picker start, the surface
+  builders go out in the turn the foundation report returns, and the
+  post-build review is one sonnet round, with the final pair captured by the
+  session.
+
 ## 0.3.10 - 2026-09-13
 
 ### Fixed
