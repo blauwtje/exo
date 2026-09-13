@@ -7,6 +7,25 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `implementing` commits each task once its checks pass and reviews the whole
+  branch once, on opus, through `branch-reviewer-prompt.md`, before the release
+  or pull-request step; the per-task reviewer prompts are gone.
+- The implementer delegate builds a task whose every changing step carries its
+  code straight from its brief, without loading `implementing-batch`.
+- `shaping`, `planning`, `deepen` and `debug` end on one next-stage question
+  that names the command, model and effort, and start nothing before the user
+  picks.
+- Every model-invocable description opens with "Use when", every skill that
+  takes slash input carries an argument hint, and the README lists each skill's
+  invocation settings.
+
+### Fixed
+
+- `implementing` stays on the default branch and pushes only at the release
+  step when the repository's instructions commit and release there.
+
 ## 0.3.12 - 2026-09-13
 
 ### Changed
