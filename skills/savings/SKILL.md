@@ -1,6 +1,7 @@
 ---
 name: savings
 description: Use when the user asks what exo cost, what exo or the read guard has saved or withheld, for the exo ledger, savings counter, panel or totals, or asks to switch exo savings, the ladder or the read guard off or on. Not for the size of one diff, which git shows; not for the live figure, which the status line segment prints.
+argument-hint: "[report, on, off or status]"
 allowed-tools: Bash(node *savings.mjs*)
 model: haiku
 ---

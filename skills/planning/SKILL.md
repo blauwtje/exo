@@ -1,6 +1,7 @@
 ---
 name: planning
 description: Use when a read-only planning mode is active, the user asks for a plan or a handoff, another session will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge; one-file, typo, rename, or version-bump edits; git-only operations; an unproven failure outside a planning turn; or an architecture audit, which deepen owns.
+argument-hint: <what to plan, or a spec path>
 ---
 
 # Planning

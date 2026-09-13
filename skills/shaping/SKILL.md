@@ -1,6 +1,7 @@
 ---
 name: shaping
 description: "Use when a request names a result but leaves a product decision open: what counts as done, what data it holds, which architecture carries it, or a trade-off. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a clear goal, a named change, a failure, visual-only work, or a two-file edit."
+argument-hint: <outcome to shape>
 ---
 
 # Shaping

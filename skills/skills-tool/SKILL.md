@@ -1,6 +1,7 @@
 ---
 name: skills-tool
 description: Use when creating, editing or sizing a skill or agent, before the edit and before it is called done. Not for CLAUDE.md, a rule or an output style.
+argument-hint: <skill or agent to create, edit or size>
 ---
 
 # Skills tool

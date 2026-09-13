@@ -1,6 +1,7 @@
 ---
 name: implementing
 description: Use when a session opens on a plan file to run, after a clear, or when the user says to run or resume a plan. Not for authoring or repairing a plan, a decided change with no plan file, or a task that must build in this session, which `implementing-batch` owns.
+argument-hint: "[plan path]"
 effort: high
 ---
 

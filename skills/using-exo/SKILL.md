@@ -1,6 +1,6 @@
 ---
 name: using-exo
-description: Use at the start of every session, after a clear and after a compaction, before any other action, to know how the exo skills are named, found and ordered. Not for a turn that already holds its rules in context.
+description: Use when a session starts, after a clear and after a compaction, before any other action, to know how the exo skills are named, found and ordered. Not for a turn that already holds its rules in context.
 ---
 
 # Using exo

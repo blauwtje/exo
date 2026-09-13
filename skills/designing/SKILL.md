@@ -1,6 +1,7 @@
 ---
 name: designing
-description: "Use for a page, component, or visual axis: typography, color, spacing, motion, copy. Fires on a new visual surface, a redesign, or a surface reported as empty, boring, or generic. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for typo-only copy fixes or behavior with no visual effect."
+description: "Use when a page, component, or visual axis changes: typography, color, spacing, motion, copy. Fires on a new visual surface, a redesign, or a surface called empty, boring, or generic. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for typo-only copy fixes or behavior with no visual effect."
+argument-hint: <page, component or visual change>
 effort: high
 ---
 

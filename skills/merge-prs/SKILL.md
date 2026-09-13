@@ -1,6 +1,7 @@
 ---
 name: merge-prs
 description: Review and merge the open pull requests of this repository one at a time behind hard gates read from the GitHub API. Use when the user asks to merge open or listed PRs. Not for reviewing code, for a PR the user did not name or list, or for anything that deletes a branch.
+argument-hint: "[pull request numbers]"
 disable-model-invocation: true
 ---
 

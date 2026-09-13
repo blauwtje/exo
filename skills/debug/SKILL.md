@@ -1,6 +1,7 @@
 ---
 name: debug
 description: Use when existing behavior is reported wrong as a bug, error, crash, regression, broken output, or slowdown, and evidence does not yet identify one causal line or boundary plus a mechanism that predicts the symptom. Not when a diagnostic names the exact file, line, and symbol and matches the source; when the user-stated cause checks out; or for a feature complaint.
+argument-hint: <symptom, failing command or error>
 ---
 
 # Debug

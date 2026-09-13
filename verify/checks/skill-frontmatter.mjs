@@ -1,7 +1,8 @@
 // Two results. 'skill set': exactly the skills budgets.mjs lists exist as
 // skills/<name>/SKILL.md. 'YAML frontmatter': every skill directory's SKILL.md,
 // listed or not, parses under the strict reader, its name matches its folder,
-// and its description carries a Use clause and a Not clause.
+// its description carries a Use clause and a Not clause, and a model-invocable
+// description opens with "Use when".
 
 import path from 'node:path';
 import { EXPECTED_SKILLS, EXPECTED_SKILL_PATHS } from '../budgets.mjs';
@@ -43,6 +44,10 @@ export function checkSkillFrontmatter(report, repository) {
     // A description is the trigger: without both clauses the skill fires on the wrong turns.
     if (!/\bUse (when|for|at|only)\b/.test(description) || !/\bNot (for|when)\b/.test(description)) {
       errors.push(`${relative}: description lacks a Use clause or a Not clause`);
+    }
+    // The model matches its listing on the opening words, so a trigger it may act on opens on the trigger.
+    if (parsed.values.get('disable-model-invocation') !== 'true' && !description.startsWith('Use when ')) {
+      errors.push(`${relative}: model-invocable description does not open with 'Use when'`);
     }
   }
   report.assert(
