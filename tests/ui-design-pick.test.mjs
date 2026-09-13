@@ -60,7 +60,7 @@ function startPick(args) {
     });
     child.on('close', () => reject(new Error(`pick.mjs exited before printing a URL: ${stderr}`)));
   });
-  return { url, exit };
+  return { url, exit, stderr: () => stderr };
 }
 
 /** POST one answer to a running picker, the way the page's own click does. */
@@ -426,7 +426,7 @@ describe('pick.mjs', () => {
     assert.match(injected.stderr, /--labels key 'lang' must be a language tag/);
   });
 
-  it('opens before the comps exist and fills each seat as its own file lands', async () => {
+  it('prints the URL only once every comp has landed', async () => {
     const comps = await fixture();
     const contracts = await jsonFixture('late-contracts.json', {
       schemaVersion: 1, seed: 'atlas', status: 'ok',
@@ -434,24 +434,31 @@ describe('pick.mjs', () => {
     });
 
     const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const url = await pick.url;
-    const { origin, searchParams } = new URL(url);
-    const ready = () => fetch(`${origin}/k/${searchParams.get('key')}/ready`).then((held) => held.json());
+    let printed = false;
+    pick.url.then(() => { printed = true; }, () => {});
+    const settle = () => new Promise((resolve) => { setTimeout(resolve, 700); });
 
-    const empty = await (await fetch(url)).text();
-    assert.equal((empty.match(/aria-busy="true"/g) ?? []).length, 2,
-      'the contracts seat the grid, so the screen is up with nothing written yet');
-    assert.doesNotMatch(empty, /<iframe[^>]* src=/, 'and no frame points at a comp that does not exist');
-    assert.deepEqual(await ready(), { ready: [] });
+    await settle();
+    assert.equal(printed, false, 'no tab opens while no comp exists');
 
-    const first = path.join(comps, 'variant-1');
+    const second = path.join(comps, 'variant-1');
+    await fs.mkdir(second, { recursive: true });
+    await fs.writeFile(path.join(second, 'index.html'), COMP('variant-1'));
+    await settle();
+    assert.equal(printed, false, 'nor while one comp is still missing');
+
+    const first = path.join(comps, 'variant-0');
     await fs.mkdir(first, { recursive: true });
-    await fs.writeFile(path.join(first, 'index.html'), COMP('variant-1'));
-    assert.deepEqual(await ready(), { ready: [1] }, 'a landed comp is reported without the other one');
+    await fs.writeFile(path.join(first, 'index.html'), COMP('variant-0'));
+    const url = await pick.url;
+    assert.match(pick.stderr(), /every comp landed after \d+\.\d+s/, 'the wait is reported, so a run can be timed');
 
-    const half = await (await fetch(url)).text();
-    assert.equal((half.match(/aria-busy="true"/g) ?? []).length, 1, 'one seat is filled and one still waits');
-    assert.match(half, /<iframe[^>]* src="\/k\/[0-9a-f]+\/v\/1\/index\.html"/, 'the filled seat points at its comp');
+    const page = await (await fetch(url)).text();
+    assert.doesNotMatch(page, /aria-busy/, 'the first page already holds every comp');
+    assert.equal(
+      (page.match(/<iframe[^>]* src="\/k\/[0-9a-f]+\/v\/\d\/index\.html"/g) ?? []).length, 2,
+      'and points every card at its comp'
+    );
 
     await answer(url, 1);
     await pick.exit;
@@ -495,15 +502,16 @@ describe('pick.mjs', () => {
     await pick.exit;
   });
 
-  it('refuses --intrinsic before the comps exist, because that grid is laid out from their own sizes', async () => {
+  it('exits 3 when the comps never all land before --timeout', async () => {
     const comps = await fixture();
-    const contracts = await jsonFixture('intrinsic-contracts.json', {
+    const contracts = await jsonFixture('missing-contracts.json', {
       schemaVersion: 1, seed: 'atlas', status: 'ok', contracts: [contract(0, 'light-field')]
     });
-    const early = await run(PICK,
+    const result = await run(PICK,
       ['--comps', comps, '--contracts', contracts, '--intrinsic', '--no-open', '--timeout', '1']);
-    assert.equal(early.code, 2);
-    assert.match(early.stderr, /--intrinsic needs every comp written first/);
+    assert.equal(result.code, 3, result.stderr);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /not every comp landed within 1s/);
   });
 
   it('puts the recommendation note inside the recommended card only', async () => {

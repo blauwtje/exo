@@ -17,15 +17,14 @@
 //
 // --contracts decides the seats: contracts[i] is variant i, and --comps holds
 // one directory per variant, named variant-0, variant-1, and so on, each
-// carrying an index.html plus its own assets. A seat opens empty and fills the
-// moment its own index.html exists, so the tab is up while the comps are still
-// being written and nothing waits for the last of three. A variant sets its own
-// frame size in an optional meta.json ({"width":<n>,"height":<n>}), which
-// --intrinsic honours so a size comparison keeps its size differences at one
-// shared scale; that mode lays the grid out from those sizes, so it needs its
-// comps written before the run. stdout carries one line,
-// {"index","label","steer"}, on exit 0. Exit 2 is a usage error; exit 3 means no
-// browser or no answer, and the --recommend variant is then the selection.
+// carrying an index.html plus its own assets. The script waits until every
+// seat's index.html exists and only then prints the URL and opens the tab, so
+// the chooser never looks at an empty card. A variant sets its own frame size
+// in an optional meta.json ({"width":<n>,"height":<n>}), which --intrinsic
+// honours so a size comparison keeps its size differences at one shared scale.
+// stdout carries one line, {"index","label","steer"}, on exit 0. Exit 2 is a
+// usage error; exit 3 means no browser, comps that never all landed, or no
+// answer, and the --recommend variant is then the selection.
 //
 // A comp file opening with <!doctype or <html is served as it stands. Anything
 // else is a fragment, and the server wraps it in the document shell, so a comp
@@ -391,10 +390,9 @@ function readSignature(contract, index) {
   return { face, fontHref, swatches };
 }
 
-/** One seat per contract, whether its comp exists yet or not: the contracts are
- *  written before any comp, so they are what the screen can be laid out from
- *  while the comps are still arriving. */
-export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME, intrinsic = false } = {}) {
+/** One seat per contract. Every seat starts on the shared frame; main swaps in
+ *  each comp's own meta.json size under --intrinsic once every comp exists. */
+export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME } = {}) {
   if (!compsDirectory) throw new UsageError('--comps is required');
   let root;
   try {
@@ -413,19 +411,12 @@ export async function loadVariants(compsDirectory, contractsFile, { frame = DEFA
   const variants = [];
   for (const [index, contract] of container.contracts.entries()) {
     const label = `variant-${index}`;
-    const directory = path.join(root, label);
-    // --intrinsic lays the grid out from the comps' own frame sizes, so under it
-    // alone a comp has to be on disk before the run; every other mode opens on
-    // the shared frame and fills the seat when the file lands.
-    if (intrinsic && !(await fs.stat(path.join(directory, 'index.html')).catch(() => null))?.isFile()) {
-      throw new UsageError(`--intrinsic needs every comp written first, and '${directory}' has no index.html`);
-    }
     variants.push({
       index,
       label,
-      directory,
+      directory: path.join(root, label),
       ready: false,
-      frame: intrinsic ? await readFrame(directory, frame) : frame,
+      frame,
       contract,
       signature: readSignature(contract, index)
     });
@@ -446,6 +437,22 @@ async function seatReady(variant) {
   }
   variant.ready = true;
   return true;
+}
+
+// How often the comps directory is checked while the session is still writing.
+const COMP_POLL_MS = 250;
+
+/** Resolves once every seat's index.html exists. The tab opens only after
+ *  this, because a card that fills in later makes the chooser wait twice. */
+async function waitForEveryComp(variants, deadline, timeoutSeconds) {
+  for (;;) {
+    const readiness = await Promise.all(variants.map(seatReady));
+    if (readiness.every(Boolean)) return;
+    if (Date.now() >= deadline) {
+      throw new CapabilityError(`ui-design: not every comp landed within ${timeoutSeconds}s; the recommended variant stands`);
+    }
+    await new Promise((resolve) => { setTimeout(resolve, COMP_POLL_MS); });
+  }
 }
 
 /** The chooser's own copy, written by the skill in the language the
@@ -517,16 +524,11 @@ function page(variants, key, { words, recommended, recommendedNote, intrinsic })
     // The crop starts as the whole frame, so the first paint is the comp entire
     // and the window only ever narrows onto content once every comp has said
     // where its own content is.
-    // A seat whose comp has not been written yet holds its title and its
-    // description and an empty frame, and its controls stay off: nobody chooses
-    // or enlarges a direction they cannot see. aria-busy says the same thing
-    // without a sentence of copy to translate.
     const source = `/k/${key}/v/${variant.index}/index.html`;
-    const waiting = !variant.ready;
-    return `<section class="tile${isPick ? ' recommended' : ''}${waiting ? ' pending' : ''}"${waiting ? ' aria-busy="true"' : ''} style="--fw:${variant.frame.width};--fh:${variant.frame.height};--cw:${variant.frame.width};--ch:${variant.frame.height};--cx:0;--cy:0" data-index="${variant.index}" data-source="${source}" data-summary="${escapeHtml(description)}">
+    return `<section class="tile${isPick ? ' recommended' : ''}" style="--fw:${variant.frame.width};--fh:${variant.frame.height};--cw:${variant.frame.width};--ch:${variant.frame.height};--cx:0;--cy:0" data-index="${variant.index}" data-summary="${escapeHtml(description)}">
     <div class="stage">
-      <iframe inert sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}"${waiting ? '' : ` src="${source}"`}></iframe>
-      <button type="button" class="enlarge" data-zoom="${variant.index}"${waiting ? ' disabled' : ''}>${escapeHtml(words.zoom)}</button>
+      <iframe inert sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}" src="${source}"></iframe>
+      <button type="button" class="enlarge" data-zoom="${variant.index}">${escapeHtml(words.zoom)}</button>
     </div>
     <div class="meta">
       <h2><span class="ordinal">${mark}</span><span class="label">${escapeHtml(title)}</span>${isPick ? `<span class="badge">${escapeHtml(words.recommended)}</span>` : ''}</h2>
@@ -534,7 +536,7 @@ function page(variants, key, { words, recommended, recommendedNote, intrinsic })
       ${signature(variant.signature)}
     </div>
     ${isPick && recommendedNote ? `<p class="why"><span class="why-mark" aria-hidden="true">&#9733;</span>${escapeHtml(recommendedNote)}</p>` : ''}
-    <button type="button" class="pick" data-choose="${variant.index}" aria-label="${escapeHtml(`${words.choose}: ${title}`)}"${waiting ? ' disabled' : ''}></button>
+    <button type="button" class="pick" data-choose="${variant.index}" aria-label="${escapeHtml(`${words.choose}: ${title}`)}"></button>
   </section>`;
   };
 
@@ -700,12 +702,6 @@ ${fontLinks}
        means tabbing through every link inside all three. */
     iframe { pointer-events: none; }
     .zoom iframe { pointer-events: auto; }
-    /* A seat waiting for its comp shows the frame it will arrive in and nothing
-       else: a blank srcless document paints white, which reads as a comp with a
-       white ground rather than as a comp that has not landed. */
-    .tile.pending iframe { visibility: hidden; }
-    .tile.pending .stage { background: color-mix(in oklab, var(--ink) 6%, transparent); }
-    .tile.pending .meta { opacity: 0.55; }
     /* The stage is the crop window, not the frame: the comp keeps its own size
        and is moved under the window, so a narrower window is a closer look
        rather than a smaller picture. */
@@ -1237,44 +1233,8 @@ ${seated.map(tile).join('\n')}
     seatButton.dataset.zoom = tile.dataset.index;
     seatButton.textContent = markOf(seat);
     seatButton.setAttribute('aria-label', markOf(seat) + '. ' + tile.querySelector('.label').textContent);
-    seatButton.disabled = tile.classList.contains('pending');
     zoomSeats.append(seatButton);
   }
-
-  // The seats the page opened empty. The picker is up before the comps are
-  // written, so each seat is filled the moment its own file lands instead of the
-  // screen waiting for the last of three. The shared content window still waits
-  // for all of them, because a crop applied to two comps and then redrawn for
-  // three is not a like-for-like comparison.
-  const waiting = new Map(tiles
-    .filter((tile) => tile.classList.contains('pending'))
-    .map((tile) => [Number(tile.dataset.index), tile]));
-
-  function fill(index) {
-    const tile = waiting.get(index);
-    if (!tile) return;
-    waiting.delete(index);
-    tile.classList.remove('pending');
-    tile.removeAttribute('aria-busy');
-    tile.querySelector('iframe').src = tile.dataset.source;
-    for (const control of tile.querySelectorAll('button[disabled]')) control.disabled = false;
-    zoomSeats.children[seatOf.get(index)].disabled = false;
-  }
-
-  async function fillSeatsAsTheyLand() {
-    while (waiting.size > 0) {
-      try {
-        const answered = await (await fetch('/k/' + key + '/ready')).json();
-        for (const index of answered.ready ?? []) fill(index);
-      } catch {
-        // The server is gone, so the run is over and no seat will ever fill.
-        return;
-      }
-      if (waiting.size === 0) return;
-      await new Promise((resolve) => { setTimeout(resolve, 700); });
-    }
-  }
-  fillSeatsAsTheyLand();
 
   /** The comp at its own frame size, scaled whole to the room it has. Stretched
    *  to the dialog instead, a 1280-wide page reflows into a shape no browser
@@ -1324,18 +1284,12 @@ ${seated.map(tile).join('\n')}
   }
 
   /** The seat one step along the row, wrapping, so the last comp is one key
-   *  from the first. A seat whose comp has not landed is stepped over rather
-   *  than enlarged: there is nothing in it to look at. */
+   *  from the first. */
   function stepSeat(step) {
     if (shownSeat === null) return;
     const count = tiles.length;
-    for (let taken = 1; taken <= count; taken += 1) {
-      const seat = ((shownSeat + step * taken) % count + count) % count;
-      const tile = tiles[seat];
-      if (tile.classList.contains('pending')) continue;
-      enlarge(Number(tile.dataset.index));
-      return;
-    }
+    const seat = ((shownSeat + step) % count + count) % count;
+    enlarge(Number(tiles[seat].dataset.index));
   }
   zoomChoose.addEventListener('click', () => choose(Number(zoomChoose.dataset.index)));
 
@@ -1450,12 +1404,13 @@ async function resolveAsset(variant, relative) {
 }
 
 /** Serve the picker on a random localhost port. Returns the URL to print and a
- *  promise that resolves on the first valid answer or rejects at the timeout. */
-async function serve(variants, key, presentation, timeoutSeconds) {
+ *  promise that resolves on the first valid answer or rejects at the deadline,
+ *  which the wait for the comps has already spent part of. */
+async function serve(variants, key, presentation, timeoutSeconds, deadline) {
   let settle;
   const answer = new Promise((resolve, reject) => {
     settle = (error, value) => {
-      clearTimeout(deadline);
+      clearTimeout(timer);
       server.close();
       server.closeAllConnections();
       if (error) reject(error);
@@ -1470,21 +1425,9 @@ async function serve(variants, key, presentation, timeoutSeconds) {
 
     // Comp assets carry the key in the path, not the query, so a comp's own
     // relative URLs resolve without every stylesheet and font needing a token.
-    // The seats the page may fill now. It carries the key in the path for the
-    // same reason the assets do, and it is what turns an empty seat into a comp
-    // without the chooser reloading anything.
-    if (request.method === 'GET' && url.pathname === `/k/${key}/ready`) {
-      const ready = [];
-      for (const variant of variants) {
-        if (await seatReady(variant)) ready.push(variant.index);
-      }
-      return send(response, 200, 'application/json', JSON.stringify({ ready }));
-    }
-
     const asset = new RegExp(`^/k/${key}/v/(\\d+)/(.+)$`).exec(url.pathname);
     if (request.method === 'GET' && asset && variants[Number(asset[1])]) {
       const variant = variants[Number(asset[1])];
-      if (!(await seatReady(variant))) return send(response, 404, null, '');
       const file = await resolveAsset(variant, asset[2]);
       if (!file) return send(response, 404, null, '');
       const type = MEDIA_TYPES.get(path.extname(file).toLowerCase()) ?? 'application/octet-stream';
@@ -1498,9 +1441,6 @@ async function serve(variants, key, presentation, timeoutSeconds) {
 
     if (url.searchParams.get('key') !== key) return send(response, 403, null, '');
     if (request.method === 'GET' && url.pathname === '/') {
-      // Readiness is resolved before the markup so a comp already on disk is
-      // painted by the first response, not one poll later.
-      for (const variant of variants) await seatReady(variant);
       return send(response, 200, 'text/html; charset=utf-8', page(variants, key, presentation));
     }
     if (request.method !== 'POST' || url.pathname !== '/answer') return send(response, 404, null, '');
@@ -1530,9 +1470,9 @@ async function serve(variants, key, presentation, timeoutSeconds) {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);
   });
-  const deadline = setTimeout(
+  const timer = setTimeout(
     () => settle(new CapabilityError(`ui-design: no choice arrived within ${timeoutSeconds}s; the recommended variant stands`)),
-    timeoutSeconds * 1000);
+    Math.max(0, deadline - Date.now()));
   return { url: `http://127.0.0.1:${server.address().port}/?key=${key}`, answer };
 }
 
@@ -1546,7 +1486,7 @@ async function main(argv) {
   const words = await readLabels(flags.labels);
   const frame = requireFrame(flags.frame);
   const intrinsic = Boolean(flags.intrinsic);
-  const variants = await loadVariants(flags.comps, flags.contracts, { frame, intrinsic });
+  const variants = await loadVariants(flags.comps, flags.contracts, { frame });
   const recommended = requireRecommendation(flags.recommend, variants.length);
   const recommendedNote = requireRecommendationNote(flags['recommend-note'], recommended);
   const wantsBrowser = !flags['no-open'];
@@ -1555,7 +1495,16 @@ async function main(argv) {
     throw new CapabilityError(`ui-design: no browser can open here (${headless}); the recommended variant stands`);
   }
 
-  const { url, answer } = await serve(variants, randomBytes(8).toString('hex'), { words, recommended, recommendedNote, intrinsic }, timeoutSeconds);
+  const startedAt = Date.now();
+  const deadline = startedAt + timeoutSeconds * 1000;
+  await waitForEveryComp(variants, deadline, timeoutSeconds);
+  if (intrinsic) {
+    for (const variant of variants) variant.frame = await readFrame(variant.directory, frame);
+  }
+
+  const { url, answer } = await serve(variants, randomBytes(8).toString('hex'), { words, recommended, recommendedNote, intrinsic }, timeoutSeconds, deadline);
+  const waitedSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+  process.stderr.write(`ui-design: every comp landed after ${waitedSeconds}s\n`);
   process.stderr.write(`ui-design: pick URL ${url}\n`);
   if (wantsBrowser) openSystemBrowser(url);
   const chosen = await answer;
