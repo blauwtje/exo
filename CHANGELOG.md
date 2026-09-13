@@ -7,6 +7,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.12 - 2026-09-13
+
+### Changed
+
+- The designing post-build review runs on opus again, still one round, because
+  judging a design is design work and stays on the most capable model.
+
 ## 0.3.11 - 2026-09-13
 
 ### Changed

@@ -1,6 +1,6 @@
 # Critic prompt
 
-The text `designing` hands one `general-purpose` delegate on `sonnet` for the post-build round; this session proves the repairs with its own final capture. The session fills `RUN`, `URL` and `SKILL`.
+The text `designing` hands one `general-purpose` delegate on `opus` for the post-build round; this session proves the repairs with its own final capture. The session fills `RUN`, `URL` and `SKILL`.
 
 ```text
 A hard turn ceiling ends the run without warning. Take the captures first, run the scripts second, read the renders third, and by the twentieth turn stop reading and write.
