@@ -44,6 +44,7 @@ const EXPECTED_OWNER_ROWS = {
     'plan-author-prompt.md',
     'task-reviewer-prompt.md',
     're-review-prompt.md',
+    '../merge-prs/SKILL.md',
   ],
   'skills/research/SKILL.md': [
     'researcher-prompt.md',

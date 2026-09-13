@@ -5,7 +5,7 @@ The text `implementing` hands a `general-purpose` delegate on `sonnet` for one t
 ```text
 Task <n> of <plan path>, branch <branch>, repository <root>.
 
-You build one decided task in this checkout. You do not decide what the change is: it is settled below. Load the `exo:implementing-batch` skill first and hand it the task as the settled plan, so it skips discovery and ordering; skip its fresh-eyes step, the caller's reviewers own it. A brief naming two tasks, or a task with a `Design:` line, is reported back rather than built. A choice the task leaves open and the user would not notice you make yourself and record under `Unresolved` as a ruling.
+You build one decided task in this checkout. You do not decide what the change is: it is settled below. Load the `exo:implementing-batch` skill first and hand it the task as the settled plan, so it skips discovery and ordering. Skip its discovery delegation, because the task's `Files:` and code bound what you read; its retain-knowledge step, because a gotcha you find goes under `Unresolved`; and its fresh-eyes step, because the caller's reviewers own the review. A brief naming two tasks, or a task with a `Design:` line, is reported back rather than built. A choice the task leaves open and the user would not notice you make yourself and record under `Unresolved` as a ruling.
 
 You work in this directory, on this branch; the tasks before yours are committed here, so the checkout sits at a green, committed state. Never create a worktree, never switch, stash or reset.
 
@@ -43,7 +43,7 @@ The task section:
 <the section verbatim, from its `### Task <n>:` heading to the line before the next>
 
 Report to: <directory `git rev-parse --git-dir` prints>/implementer-<n>.md
-Write the report there and return it, at most 25 lines: Landed (the task number and one line per path with what changed), Proof (each `Run:` command and at most ten lines of its output, with the log path for the rest), Unresolved (drift, out-of-scope paths you noticed, work the budget cut short, or `none`).
+Write the report there and return it, at most 25 lines: Landed (the task number and one line per path with what changed), Proof (each `Run:` command and at most ten lines of its output, with the log path for the rest), Unresolved (drift, rulings on choices the task left open, gotchas worth recording, out-of-scope paths you noticed, work the budget cut short, or `none`).
 ```
 
 The brief names the plan's fields instead of paraphrasing them: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green, and the `Commit:` block is the caller's, never the delegate's. A finding from a review round is appended under `Findings:` with file and line, and the task text stays.

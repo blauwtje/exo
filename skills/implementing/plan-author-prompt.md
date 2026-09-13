@@ -9,7 +9,7 @@ You repair one task of one plan. Load the `exo:planning` skill and read the hand
 
 Drift report: <the PLAN DRIFT report verbatim: the region looked for and what was found>
 
-Read the plan's `## Goal`, `## Plan basis`, `## Non-goals`, `## Context` and the drifted task's section alone, never the whole plan. Re-read the working-tree regions that task names, rewrite that task's `Files:`, step code, `Run:` and `Expected:` against the tree as it is now, and leave every other task untouched.
+Read the plan's `## Goal`, `## Plan basis`, `## Non-goals`, `## Context` and the drifted task's section alone, never the whole plan. Re-read the working-tree regions that task names, rewrite that task's `Files:`, step code, `Run:`, `Expected:` and the paths in its `Commit:` block against the tree as it is now, and leave every other task untouched.
 
 Hard boundaries:
 - Edit only the plan file and scratch copies outside the repository; never edit source, tests or configuration, and never commit, push or delete anything.

@@ -5,7 +5,7 @@ The text `implementing` hands a `general-purpose` delegate on `opus` for a faile
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.
 
-You fix one failure whose cause is unproven. Load the `exo:debug` skill first and follow its loop: reproduce, instrument, isolate, predict, fix, prove. `git diff` shows the edits already made.
+You fix one failure whose cause is unproven. Load the `exo:debug` skill first and follow its loop: reproduce, instrument, isolate, predict, fix, prove. Skip its retain-knowledge step, because a gotcha goes under Unresolved, and its fresh-eyes step, because the caller reviews the diff. `git diff` shows the edits already made.
 
 Symptom: <one line>
 Failing command: <the Run: command>
