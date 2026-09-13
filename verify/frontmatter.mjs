@@ -1,10 +1,13 @@
-// A deliberately narrow frontmatter reader: it accepts the five keys the corpus
+// A deliberately narrow frontmatter reader: it accepts the keys the corpus
 // uses and rejects any plain scalar a YAML 1.1 and a YAML 1.2 parser would read
 // differently, so a harness that disagrees with this repository cannot exist.
 
 import { ALLOWED_EFFORT, ALLOWED_MODEL } from './budgets.mjs';
 
-const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools): +(?<value>.+)$/;
+const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell): +(?<value>.+)$/;
+// A switch reads the same under YAML 1.1 and 1.2 only as lowercase true or
+// false, so those two plain scalars are its whole vocabulary.
+const BOOLEAN_KEYS = ['disable-model-invocation'];
 const AMBIGUOUS_START = /^[-?:,[\]{}#&*!|>@`]/;
 const AMBIGUOUS_COLON = /:\s/;
 const AMBIGUOUS_COMMENT = /\s#/;
@@ -37,6 +40,11 @@ export function readFrontmatter(lines) {
     const { key, value: valueText } = match.groups;
     if (values.has(key)) {
       errors.push(`duplicate frontmatter key: ${key}`);
+      continue;
+    }
+    if (BOOLEAN_KEYS.includes(key)) {
+      if (valueText === 'true' || valueText === 'false') values.set(key, valueText);
+      else errors.push(`${key} must be true or false`);
       continue;
     }
     if (valueText.startsWith('"')) {

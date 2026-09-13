@@ -1,6 +1,6 @@
 ---
 name: shaping
-description: "Use when a request names a result but leaves a product decision open: what counts as done, what data it holds, or which architecture carries it; also when asked to compare options or trade-offs. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a goal clear enough to plan or build, a named exact change, failing behavior, visual-only work, a one- or two-file edit, a version bump, a git operation, or a read-only question. A bare \"fix this\" routes by its referent: working-tree diff, then latest failing check, then last-touched file."
+description: "Use when a request names a result but leaves a product decision open: what counts as done, what data it holds, which architecture carries it, or a trade-off. When a new visual surface does not name its displayed data, settings, or behavior, shaping decides those first; designing follows for presentation. Not for a clear goal, a named change, a failure, visual-only work, or a two-file edit."
 ---
 
 # Shaping

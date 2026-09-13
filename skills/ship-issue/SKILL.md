@@ -1,7 +1,7 @@
 ---
 name: ship-issue
 description: Take one open GitHub issue, named by number, URL, title or description, to merged and cleaned up, one stage per invocation, routing the build to debug, implement, shaping or planning by the kind of issue. Use when the user names an issue number to build, land, or resume. Not for several issues in one session, a PR this skill did not open, or a change without an issue.
-argument-hint: <number, #number, issue URL, title, or what the issue is about>
+argument-hint: "<number, #number, issue URL, title, or what the issue is about>"
 disable-model-invocation: true
 allowed-tools: Bash(gh *), Bash(git *)
 shell: bash
@@ -164,7 +164,7 @@ Only after `state` `MERGED` in a read from this turn.
 One issue per session. A second issue runs in a second session with its own
 worktree, on files the first does not touch. Land stages serialize through the
 gate: `BEHIND` means rebase and re-gate, never merge on a stale read. Never fan issues out
-to subagents from one session: that pays the orchestrator context plus a full
+to delegates from one session: that pays the orchestrator context plus a full
 reload per agent and returns nothing a second session would not.
 
 ## Judgment

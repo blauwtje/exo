@@ -16,7 +16,6 @@ const PINNED_SENTENCES = {
     'Zero open decisions means leave this skill and write no brief',
     'Resolve “this” from the first source containing a candidate: working-tree diff, most recent failing check, then last touched file.',
     'changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration',
-    'A bare \\"fix this\\" routes by its referent: working-tree diff, then latest failing check, then last-touched file.',
     'Always write the brief to `docs/specs/<topic>.md` and name that path in the same message',
     '`debug` outranks this skill when existing behavior fails and the cause is unproven.',
   ],

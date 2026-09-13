@@ -39,7 +39,10 @@ const CASE_SENSITIVE = [
 
 export function checkBannedText(report, repository) {
   const errors = [];
-  for (const file of [...repository.processFiles(), ...repository.promptFiles()]) {
+  // Process files and prompts come from the listed skills; every SKILL.md is
+  // read too, listed or not.
+  const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.everySkillFile()]);
+  for (const file of files) {
     const relative = repository.relative(file);
     const content = repository.text(file);
     for (const pattern of CASE_INSENSITIVE) {

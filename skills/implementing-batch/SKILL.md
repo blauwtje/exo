@@ -1,6 +1,6 @@
 ---
 name: implementing-batch
-description: Use when a decided change builds in this session end to end and inspection shows it modifies more than two source/test/config files, adds a dependency, changes a public signature, crosses a persisted format or security boundary, or reaches an uninspected file; also a whole plan run here. Not for a change reaching at most two files, a version bump, a git-only operation, a read-only question, or an unproven failure.
+description: Use when a decided change builds in this session and inspection shows it modifies more than two source/test/config files, adds a dependency, changes a public signature, crosses a persisted format or security boundary, or reaches an uninspected file; also a whole plan run here. Not for a change reaching at most two files, a version bump, a git-only operation, or an unproven failure.
 ---
 
 # Implement

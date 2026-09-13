@@ -27,7 +27,8 @@ export function createRepository(root) {
 
   // At the skills root only the skills the corpus contract names are walked:
   // skills/ also holds the workflow and meta skills, whose shape the
-  // skills-tool skill governs until each is rewritten into this contract.
+  // skills-tool skill governs until each is rewritten into this contract;
+  // everySkillFile reaches them for the checks every skill must pass.
   function walk(directory, predicate) {
     const found = [];
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -49,6 +50,10 @@ export function createRepository(root) {
       .filter((entry) => entry.isDirectory() && EXPECTED_SKILLS.includes(entry.name))
       .map((entry) => entry.name)
       .sort(),
+    everySkillFile: () => fs.readdirSync(skillsRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(skillsRoot, entry.name, 'SKILL.md')))
+      .map((entry) => path.join(skillsRoot, entry.name, 'SKILL.md'))
+      .sort(comparePaths),
     // Get-ProcessFiles: every SKILL.md plus every .md inside a references/ folder.
     processFiles: () => walk(skillsRoot, (full) => path.basename(full) === 'SKILL.md'
       || (full.endsWith('.md') && path.basename(path.dirname(full)) === 'references')),

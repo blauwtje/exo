@@ -1,9 +1,7 @@
-// Port of Test-SkillFrontmatter (verify.ps1:161-195): the eight expected skills
-// exist as skills/<name>/SKILL.md, each name matches its folder, and every
-// frontmatter parses under the strict reader. The check reports twice, under the
-// names 'skill set' (verify.ps1:171) and 'YAML frontmatter' (verify.ps1:194):
-// the result lines are the parity contract, so both names and both pass details
-// are fixed text.
+// Two results. 'skill set': exactly the skills budgets.mjs lists exist as
+// skills/<name>/SKILL.md. 'YAML frontmatter': every skill directory's SKILL.md,
+// listed or not, parses under the strict reader, its name matches its folder,
+// and its description carries a Use clause and a Not clause.
 
 import path from 'node:path';
 import { EXPECTED_SKILLS, EXPECTED_SKILL_PATHS } from '../budgets.mjs';
@@ -25,7 +23,7 @@ export function checkSkillFrontmatter(report, repository) {
   );
 
   const errors = [];
-  for (const file of skillFiles) {
+  for (const file of repository.everySkillFile()) {
     const relative = repository.relative(file);
     const parsed = readFrontmatter(repository.lines(file));
     for (const message of parsed.errors) errors.push(`${relative}: ${message}`);
@@ -50,7 +48,7 @@ export function checkSkillFrontmatter(report, repository) {
   report.assert(
     errors.length === 0,
     'YAML frontmatter',
-    'all the expected skills use the strict portable subset',
+    'every skill uses the strict portable subset',
     errors.join('; ')
   );
 }

@@ -15,7 +15,7 @@ Source of the Claude Code plugin `exo`. `README.md` explains the layout; this fi
   repository, so the `plugin version` check fails while the version matches `origin/main`. It compares
   only the manifest version, so an unbumped release installs as a no-op.
 - Skills are namespaced `exo:<name>` when invoked; a bare name inside a skill or prompt body means that namespaced skill.
-- `verify/budgets.mjs` names the skills the verifier checks; a skill not listed there is not verified, so add it there when it reaches the shape `skills-tool` describes.
+- `verify/budgets.mjs` names the skills the full verifier checks; every other skill still passes the frontmatter, portable-language and description-budget checks, so add a skill there when it reaches the shape `skills-tool` describes.
 - The session hook pins `"shell": "bash"` in `hooks.json`: without it, a Windows host without Git Bash
   falls back to PowerShell, which cannot run the script. Shell form, not `args`, because Claude Code
   then resolves the shell itself instead of looking up `bash` on `PATH`.
