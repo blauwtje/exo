@@ -90,16 +90,13 @@ describe('pick.mjs', () => {
     assert.equal(page.status, 200);
     const html = await page.text();
     assert.equal((html.match(/data-choose=/g) ?? []).length, 2, 'one choose button per variant');
-    assert.equal((html.match(/class="pick"/g) ?? []).length, 2, 'one overlay button covers each card');
+    assert.equal((html.match(/class="choose"/g) ?? []).length, 2, 'the answer is a button under each comp');
     assert.equal(
       (html.match(/aria-label="Choose this: /g) ?? []).length, 2,
-      'the empty overlay still announces what choosing it picks'
+      'and it announces which direction it picks'
     );
     assert.equal((html.match(/sandbox="allow-scripts"/g) ?? []).length, 3, 'every frame is sandboxed');
-    assert.equal(
-      (html.match(/<iframe inert /g) ?? []).length, 2,
-      'the grid frames are out of the tab order, so the comps own links are not stops on the way to a choice'
-    );
+    assert.doesNotMatch(html, /<iframe inert/, 'the grid comps take the pointer, so their hover and motion run');
     assert.doesNotMatch(html, /\son[a-z]+\s*=\s*["'][^"']/i, 'no inline event handler');
 
     const origin = new URL(url);
@@ -141,75 +138,57 @@ describe('pick.mjs', () => {
     await Promise.all([shared.exit, intrinsic.exit]);
   });
 
-  it('opens on the whole frame and lets the comps narrow it, except under --intrinsic', async () => {
-    const { comps, contracts } = await round();
-    const shared = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const sharedUrl = await shared.url;
-    const sharedHtml = await (await fetch(sharedUrl)).text();
-    assert.equal(
-      (sharedHtml.match(/--cw:1280;--ch:800;--cx:0;--cy:0/g) ?? []).length, 2,
-      'the first paint shows each comp entire, before any comp has reported'
-    );
-    assert.match(sharedHtml, /const cropping = true;/, 'a shared frame may be cropped to its content');
-
-    const origin = new URL(sharedUrl);
-    const key = origin.searchParams.get('key');
-    const comp = await fetch(`${origin.origin}/k/${key}/v/0/index.html`);
-    const compMarkup = await comp.text();
-    assert.match(compMarkup, /uiDesignContentBox/, 'the comp measures what it shows and reports it');
-    assert.match(compMarkup, /uiDesignDocumentHeight: documentHeight\(\)/, 'and how tall it really is, for the enlarged view');
-
-    const intrinsic = startPick(['--comps', comps, '--contracts', contracts, '--intrinsic', '--no-open', '--timeout', '30']);
-    const intrinsicUrl = await intrinsic.url;
-    assert.match(
-      await (await fetch(intrinsicUrl)).text(), /const cropping = false;/,
-      'a size comparison keeps its frames, because the size is the comparison'
-    );
-
-    await Promise.all([sharedUrl, intrinsicUrl].map((url) => answer(url, 0)));
-    await Promise.all([shared.exit, intrinsic.exit]);
-  });
-
-  it('keeps the enlarge control off the comp until it is asked for', async () => {
+  it('shows every comp whole and live, with no crop window', async () => {
     const { comps, contracts } = await round();
     const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
     const url = await pick.url;
     const html = await (await fetch(url)).text();
-    assert.match(html, /\.enlarge \{[^}]*opacity: 0;[^}]*pointer-events: none;/,
-      'nothing is painted over the comp at rest, and nothing invisible takes the click');
-    assert.match(html, /\.tile:hover \.enlarge, \.enlarge:focus-visible \{/,
-      'pointer and keyboard both reach it');
-    assert.match(html, /@media \(hover: none\) \{\s*\.enlarge \{ opacity: 1;/,
-      'a finger has no hover to reveal it with');
+    assert.equal((html.match(/--fw:1280;--fh:800"/g) ?? []).length, 2, 'each card carries its whole frame');
+    assert.doesNotMatch(html, /--cw:|--cx:/, 'and no window that crops it once the comps report');
+    assert.match(html, /grid\.classList\.add\('ready'\)/, 'the cards appear together once the comps have loaded');
+
+    const origin = new URL(url);
+    const key = origin.searchParams.get('key');
+    const compMarkup = await (await fetch(`${origin.origin}/k/${key}/v/0/index.html`)).text();
+    assert.doesNotMatch(compMarkup, /uiDesignContentBox/, 'a comp measures nothing for the picker');
+    assert.match(compMarkup, /parent\.postMessage\(\{ uiDesignKey: event\.key \}, '\*'\)/,
+      'it forwards the keys that leave the enlarged view');
 
     await answer(url, 0);
     await pick.exit;
   });
 
-  it('enlarges one comp whole, at its own frame size, beside the other seats', async () => {
+  it('puts enlarge and choose in the caption, never over the comp', async () => {
     const { comps, contracts } = await round();
     const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
     const url = await pick.url;
     const html = await (await fetch(url)).text();
-    assert.match(html, /\.zoom iframe \{[^}]*transform: scale\(var\(--zk\)\)/,
-      'the comp is scaled whole, never reflowed into the shape of the dialog');
-    assert.match(
-      html,
-      /const scale = Math\.min\(zoomCanvas\.clientWidth \/ frameWidth, zoomCanvas\.clientHeight \/ frameHeight, 1\);/,
-      'it fills the room it is given and stops at life size'
-    );
-    assert.match(html, /zoomSeats\.append\(seatButton\);/,
-      'the directions it is being compared against stay one click away');
+    assert.equal((html.match(/<div class="stage"><iframe [^>]*><\/iframe><\/div>/g) ?? []).length, 2,
+      'the stage holds the comp and nothing painted over it');
+    assert.equal((html.match(/<div class="caption">/g) ?? []).length, 2, 'one caption row per card');
+    assert.match(html, /<div class="caption">[\s\S]*?class="enlarge"[\s\S]*?class="choose"/,
+      'enlarge and choose sit in that row');
+
+    await answer(url, 0);
+    await pick.exit;
+  });
+
+  it('enlarges one comp to fill the viewport with nothing around it', async () => {
+    const { comps, contracts } = await round();
+    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
+    const url = await pick.url;
+    const html = await (await fetch(url)).text();
+    assert.match(html, /\.full-shell iframe \{[^}]*transform: scale\(var\(--zk\)\)/,
+      'the comp is scaled whole, never reflowed into the shape of the window');
+    assert.match(html, /const scale = Math\.min\(innerWidth \/ frameWidth, innerHeight \/ frameHeight\);/,
+      'it fills the viewport along its tighter axis, with no cap at life size');
+    assert.match(html, /dialog \{[^}]*inline-size: 100vw; block-size: 100dvh;/,
+      'the enlarged view is the whole viewport');
+    assert.doesNotMatch(html, /zoom-bar|zoom-rail|zoom-seats/, 'with no bar, rail or seat track around the comp');
     assert.match(html, /stepSeat\(event\.key === 'ArrowRight' \? 1 : -1\);/,
-      'and one arrow key away');
-    assert.match(html, /zoomRail\.replaceChildren\(\.\.\.material, zoomSize\);/,
-      'the legend and the reason are the card own ones, never a second copy that can drift');
-    assert.match(html, /String\(Math\.max\(frameHeight, documentHeights\.get\(seat\) \?\? 0\)\)/,
-      'a comp taller than its frame is shown whole and smaller, never scrolled');
-    assert.match(html, /html\.zoomed \{ overflow: hidden; \}/,
-      'the page behind holds still while the panel is open');
-    assert.match(html, /document\.documentElement\.classList\.remove\('zoomed'\)/,
-      'and scrolls again once it closes');
+      'the other directions are an arrow key away');
+    assert.match(html, /if \(forwarded === 'Escape'\) dialog\.close\(\);/,
+      'and Escape leaves it even with focus inside the comp');
 
     await answer(url, 0);
     await pick.exit;
@@ -376,8 +355,8 @@ describe('pick.mjs', () => {
     const html = await (await fetch(url)).text();
     assert.match(html, /Elige una direccion/, 'the skill-written title is the heading');
     assert.equal(
-      (html.match(/Elegir esta/g) ?? []).length, 3,
-      'each card overlay is named with it, and so is the zoom bar button'
+      (html.match(/Elegir esta/g) ?? []).length, 4,
+      'each card button shows it and names its direction with it'
     );
     assert.match(html, /Elegida: variante \{n\}\./, 'the done template reaches the page with its placeholder');
     assert.match(html, /Enlarge/, 'a key the file omits keeps the English last resort');
@@ -487,7 +466,7 @@ describe('pick.mjs', () => {
     assert.equal((fragment.match(/<!doctype html>/gi) ?? []).length, 1,
       'the server owns the document, so a fragment is given exactly one');
     assert.match(fragment, /Fraunces/, "the direction's own type stays inside the comp");
-    assert.match(fragment, /uiDesignContentBox/, 'and the measurement shim still reaches it');
+    assert.match(fragment, /window\.open = \(\) => null/, 'and the demo shim still reaches it');
     const shell = /<style>([^<]*)<\/style>/.exec(fragment)[1];
     assert.match(shell, /box-sizing:border-box/, 'the shell carries the structural reset');
     assert.doesNotMatch(shell, /font-family|background|#[0-9a-f]{3}|padding:\s*[1-9]/i,
@@ -496,7 +475,7 @@ describe('pick.mjs', () => {
     const whole = await comp(1);
     assert.equal((whole.match(/<!doctype html>/gi) ?? []).length, 1, 'a comp that wrote its own document keeps it');
     assert.match(whole, /<html lang="nl">/, 'including the language it set for itself');
-    assert.match(whole, /uiDesignContentBox/);
+    assert.match(whole, /window\.open = \(\) => null/);
 
     await answer(url, 0);
     await pick.exit;
@@ -514,7 +493,7 @@ describe('pick.mjs', () => {
     assert.match(result.stderr, /not every comp landed within 1s/);
   });
 
-  it('puts the recommendation note inside the recommended card only', async () => {
+  it('puts the recommendation note once, above the cards', async () => {
     const { comps, contracts } = await round();
     const pick = startPick([
       '--comps', comps, '--contracts', contracts, '--recommend', '1',
@@ -523,14 +502,10 @@ describe('pick.mjs', () => {
     ]);
     const url = await pick.url;
     const html = await (await fetch(url)).text();
-    assert.equal(
-      (html.match(/class="why"/g) ?? []).length, 1,
-      'one card carries the reason, not every card'
-    );
+    assert.equal((html.match(/class="why"/g) ?? []).length, 1, 'one line carries the reason, not every card');
     assert.match(html, /Deze leest het rustigst op een klein scherm\./);
-    const why = html.indexOf('class="why"');
-    const second = html.indexOf('data-index="0"');
-    assert.ok(why < second, 'and it is the recommended card, which sits first');
+    assert.ok(html.indexOf('class="why"') < html.indexOf('<section class="tile'),
+      'and it sits in the header, so no card grows taller than the others');
 
     await answer(url, 0);
     await pick.exit;
