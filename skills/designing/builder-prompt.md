@@ -37,14 +37,14 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 
 **The ladder.**
 
-The ladder, before every edit that adds or replaces code: read the ranges it touches, then stop at the first rung that holds.
+The ladder, before every edit that adds or replaces code: read the ranges it touches, then stop at the first rung that holds; when two rungs hold, the earlier one wins without weighing.
 1. Need: the request names a present use; a use imagined for later is skipped and named in the report.
 2. Present: a symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it.
 3. Standard library: the language's standard library does it: call it.
 4. Platform: a native feature does it, such as a date input over a picker component, CSS over script, or a database constraint over application code: use it.
 5. Installed: a dependency already in the manifest does it: use it, and add no new one for what ten lines cover.
-6. Minimum: the fewest statements that pass the checks, one thing per line, full-word names, a guard clause over nesting.
-Trust-boundary validation, error handling that prevents data loss, security, accessibility and anything asked for by name are built in full at whatever rung the code lands on.
+6. Minimum: write the fewest statements that pass the checks, one thing per line: no chained call into a call into an index, full-word names, a guard clause over nesting.
+Trust-boundary validation, error handling that prevents data loss, security, accessibility, and anything the user asked for by name are built in full at whatever rung the code lands on. A corner cut with a known ceiling gets one comment naming the ceiling and the upgrade path.
 
 **Rules.**
 
@@ -52,6 +52,6 @@ Trust-boundary validation, error handling that prevents data loss, security, acc
 - Do not run a production build, a bundler, or a type check; the reviewer renders the surface and the session runs the repository's checks after every builder has returned.
 - Do not read a reference the brief did not name.
 - Do not delete a container, volume, database, branch, or credential to get past a blocked state; report it with two options.
-- Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`. Read-only git is yours.
+- Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`, and no `gh` command at all. Read-only git is yours.
 - Return two lines: the report path and the count of paths written. No code, no diff, no summary prose.
 ```

@@ -81,7 +81,7 @@ previous context left the next step there. Delete it once that step is done.
    |---|---|
    | Existing behavior is wrong: bug, error, crash, regression, wrong output, slowdown | `debug`. Expect a finished, proven fix back, never a diagnosis alone. |
    | Named exact change with a decided solution: refactor, rename, extract, config, dependency, decided feature | `implementing-batch`. No reproduction step. |
-   | Capability without a chosen solution, or trade-offs to weigh | `shaping` for the brief, then `implementing-batch`, which orders the edits inline. `planning` at deliverable depth only when its own activation gate holds or the brief crosses a migration, credential, or security boundary: it writes the plan into this worktree's `docs/plans/` and this stage stops; the user clears and runs `/exo:implementing`, which finishes the plan on the `issue-<n>-<slug>` branch through the branch review and the pull-request question, then names `/exo:ship-issue <n>` for Land, or for Clean when it merged. |
+   | Capability without a chosen solution, or trade-offs to weigh | `shaping` for the brief, then `implementing-batch`, which orders the edits inline. `planning` at deliverable depth only when its own activation gate holds or the brief crosses a migration, credential, or security boundary: it writes the plan into this worktree's `docs/plans/` and this stage stops; the user clears and runs `/exo:implementing`, which finishes the plan on the `issue-<n>-<slug>` branch through the branch review and the pull-request question, then names `/exo:ship-issue <n>` for Land. |
    | Visual-only surface | `designing`, then `implementing-batch`. |
 
 3. **Resuming:** read `git log origin/<default>..HEAD --oneline` and
@@ -104,7 +104,8 @@ or a second failure needs a fresh read.
 
 1. **Review once per head.** `gh pr view <pr> --json headRefOid,comments --jq '{head: .headRefOid, reviewed: [.comments[].body | select(startswith("Reviewed "))]}'`.
    When no `Reviewed <head sha>` comment exists: run the `code-review` skill on
-   the PR at medium effort. Fix confirmed correctness findings on the branch, an
+   the PR on the session's model at medium effort, one step above the in-session
+   review because it is the last look before merge. Fix confirmed correctness findings on the branch, an
    unproven cause under `debug`, then commit and push. Post
    `gh pr comment <pr> --body "Reviewed <head sha>: <count> findings, <fixed> fixed"`
    with the head sha after that push, and continue.

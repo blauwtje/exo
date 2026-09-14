@@ -24,14 +24,14 @@ Against the standard:
 
 A finding is confirmed when the diff, a range you read or a command's output shows it. A rule the standard does not state is not a finding, and style, naming and structure are findings only where the standard names them or where they change what the plan asked for.
 
-The ladder, before every fix that adds or replaces code: read the ranges it touches, then stop at the first rung that holds.
+The ladder, before every fix that adds or replaces code: read the ranges it touches, then stop at the first rung that holds; when two rungs hold, the earlier one wins without weighing.
 1. Need: the request names a present use; a use imagined for later is skipped and named in the report.
 2. Present: a symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it.
 3. Standard library: the language's standard library does it: call it.
 4. Platform: a native feature does it, such as a date input over a picker component, CSS over script, or a database constraint over application code: use it.
 5. Installed: a dependency already in the manifest does it: use it, and add no new one for what ten lines cover.
-6. Minimum: the fewest statements that pass the checks, one thing per line, full-word names, a guard clause over nesting.
-Trust-boundary validation, error handling that prevents data loss, security, accessibility and anything asked for by name are built in full at whatever rung the code lands on.
+6. Minimum: write the fewest statements that pass the checks, one thing per line: no chained call into a call into an index, full-word names, a guard clause over nesting.
+Trust-boundary validation, error handling that prevents data loss, security, accessibility, and anything the user asked for by name are built in full at whatever rung the code lands on. A corner cut with a known ceiling gets one comment naming the ceiling and the upgrade path.
 
 Fix each confirmed finding inside the paths the diff already changes; a fix that needs another path is reported, not made. Then run every Final verification command, redirecting output over forty lines to a log under the directory `git rev-parse --git-dir` prints and quoting at most ten lines. A command that still fails after two fix attempts ends the work with both outputs.
 

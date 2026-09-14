@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.15 - 2026-09-14
+
+### Changed
+
+- `implementing` pushes nothing until its tail question is answered, and hands a merge to `/exo:merge-prs` instead of running its steps.
+- Every delegate dispatch names its model at the call site, and the `code-review` calls name the session's model.
+- The four code-writing delegate prompts carry the full `using-exo` ladder, including the tie-break and the corner-cut comment.
+- `builder-prompt.md` and `bug-fixer-prompt.md` forbid every `gh` command.
+- The README states that a skill's `effort: high` reaches its delegates only when the skill starts from its slash command.
+
+### Added
+
+- Tests that every dispatch names a model and that the ladder copies match `using-exo`.
+
 ## 0.3.14 - 2026-09-13
 
 ### Changed

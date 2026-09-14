@@ -26,7 +26,7 @@ An outcome with no chosen solution borrows `shaping` for its product and archite
 
 ## Investigate
 
-Delegate locating the files, symbols, and call sites the plan will name to a `general-purpose` delegate from `../research/scout-prompt.md`, then confirm each here by reading only the range around it: a session that greps the tree or opens whole files carries that output into every later turn. A name not read this session may not appear in a step. For a deliverable plan, write each step's code in full while the file is open: the executor pastes it, so this session writes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
+Delegate locating the files, symbols, and call sites the plan will name to a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md`, then confirm each here by reading only the range around it: a session that greps the tree or opens whole files carries that output into every later turn. A name not read this session may not appear in a step. For a deliverable plan, write each step's code in full while the file is open: the executor pastes it, so this session writes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 

@@ -35,7 +35,7 @@ A skill is the shortest text that stops a failure the model makes without it. Th
 ## The loop
 
 1. Name the failure the skill must stop, as one observable symptom in one prompt built as `references/pressure-scenarios.md` describes, and save it as `evals/<skill>-<case>/prompt.md` with a grader beside it, the layout `tests/evals.test.mjs` checks.
-2. Run the prompt without the skill: a `general-purpose` delegate given the prompt alone, or `claude -p` in a scratch repository without `--plugin-dir`; record the exact rationalization it produced.
+2. Run the prompt without the skill: a `general-purpose` delegate on the model the skill under test runs on, given the prompt alone, or `claude -p` in a scratch repository without `--plugin-dir`; record the exact rationalization it produced.
 3. Classify that failure with `references/form-by-failure.md`, then write the skill against it in the shape above, worded as `references/wording.md` says.
 4. Run the prompt with the skill: the same delegate told to load it, or `claude -p --plugin-dir <clone>`; a pass the baseline also passed proves nothing, so tighten the case until the baseline fails.
 5. For each new rationalization the run produced, plug it as `references/plugging-holes.md` says and rerun every case; the skill is done when no case adds a row.

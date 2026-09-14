@@ -43,7 +43,6 @@ const EXPECTED_OWNER_ROWS = {
     'bug-fixer-prompt.md',
     'plan-author-prompt.md',
     'branch-reviewer-prompt.md',
-    '../merge-prs/SKILL.md',
   ],
   'skills/research/SKILL.md': [
     'researcher-prompt.md',
