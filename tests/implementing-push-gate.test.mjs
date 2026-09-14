@@ -25,7 +25,7 @@ test('a plan branch other than the default is created without a push', () => {
 
 test('only a default-branch plan in a repository that releases there becomes a release run', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes("On the default branch while `Branch:` names it too, read the root `CLAUDE.md` or `AGENTS.md`: when it commits and releases on the default branch, stay there and treat the run as a release run"));
+  assert.ok(branchStep.includes("On the default branch while `Branch:` names it too, read the root `CLAUDE.md` or `AGENTS.md`: when it states both that work is committed on the default branch and that this session runs its release steps there, stay there and treat the run as a release run"));
   assert.ok(branchStep.includes('otherwise branch as `<type>/<slug>`'), 'a repository without release instructions gets a branch');
 });
 
