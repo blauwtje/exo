@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.20 - 2026-09-14
+
+### Changed
+
+- The closing rule in `using-exo` names the reading a decision rules out when the request itself read two ways; a choice of how to build still names no rival. The `using-exo-names-the-rival-reading` eval covers it.
+
 ## 0.3.19 - 2026-09-14
 
 ### Fixed

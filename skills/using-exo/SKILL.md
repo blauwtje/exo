@@ -71,10 +71,12 @@ The final message is the report itself. It opens with the outcome, and every lin
 3. **What to do next.** One action, and only while one is open.
 
 A decision you made on the user's behalf is one line naming the choice and what it costs if wrong; its reasoning stays out of the ending.
+When the request itself read two ways, that line also names the reading it rules out: the user cannot redirect a reading never shown.
+A choice of how to build it names no rival.
 
 ## Never in an ending
 
-- Reasoning for a decision nobody disputed, an alternative you did not take, or a recap of what the reader just read.
+- Reasoning for a decision nobody disputed, an alternative you did not take except the rival reading of a request that read two ways, or a recap of what the reader just read.
 - An inventory of work you did not do, except a requested part that is blocked and a check that did not run.
 - A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question, each option one line, the recommended one first.
 
