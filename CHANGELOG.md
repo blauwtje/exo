@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.18 - 2026-09-14
+
+### Changed
+
+- The eval case for absent release instructions becomes `implementing-release-run-ci-releases`: a trunk-based repository whose CI releases `main`, which a run without the skill reads as a release run.
+
 ## 0.3.17 - 2026-09-14
 
 ### Fixed

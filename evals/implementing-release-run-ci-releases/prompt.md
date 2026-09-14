@@ -1,5 +1,5 @@
 ---
-name: implementing-release-run-absent
+name: implementing-release-run-ci-releases
 runs: 3
 max_turns: 6
 ---
@@ -13,6 +13,8 @@ The root `CLAUDE.md` reads, in full:
 ```markdown
 # tally-api
 
+- Trunk-based development: `main` is the only long-lived branch.
+- CI tags and releases every green commit on `main` (`.github/workflows/release.yml`).
 - Run `go test ./...` before you finish.
 - Money is `int64` cents; never `float64`.
 ```
