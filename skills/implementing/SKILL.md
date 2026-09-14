@@ -9,7 +9,7 @@ effort: high
 
 Run a plan task by task through delegated contexts, so the session that commits stays small. The enemy is reading the whole plan or building in the session: both spend the context the review and the pull request need. The overcorrection is delegating a decision: a task with a `Design:` line needs a judgment only the session can make.
 
-Invoking `/exo:implementing` on a plan authorizes the branch its `## Plan basis` names under `Branch:`, commits and pushes on that branch as steps 6 and 7 time them, the review's fixes, and on a release run the repository's own release steps; a pull request only after your yes, a merge only after a second yes, and nothing else.
+Invoking `/exo:implementing` on a plan authorizes the branch its `## Plan basis` names under `Branch:`, commits on that branch as steps 6 and 7 time them, the review's fixes, and on a release run the repository's own release steps; a push or a pull request only after your answer to the tail question, and nothing else.
 
 ## When to use
 

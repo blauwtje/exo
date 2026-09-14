@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.16 - 2026-09-14
+
+### Fixed
+
+- The `implementing` authorization line no longer grants a merge or a push before the tail answer.
+
+### Added
+
+- A test that guards the `implementing` push gate and its release-run exception.
+
 ## 0.3.15 - 2026-09-14
 
 ### Changed
