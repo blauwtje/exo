@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { parseDocument } from 'yaml';
 
 const evalsRoot = fileURLToPath(new URL('../evals/', import.meta.url));
 const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
@@ -19,10 +20,17 @@ const skillsByLength = fs.readdirSync(skillsRoot, { withFileTypes: true })
   .map((entry) => entry.name)
   .sort((left, right) => right.length - left.length);
 
-// The runner reads frontmatter as a map, so a key may sit anywhere in the block.
-function frontmatterBlock(text) {
-  const delimited = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
-  return delimited === null ? null : delimited[1];
+// The runner parses frontmatter as YAML and refuses to load a case whose block
+// does not parse, so this parses it the same way instead of matching lines.
+function frontmatter(file, label) {
+  const delimited = fs.readFileSync(file, 'utf8').match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  assert.ok(delimited, `${label} has no frontmatter block`);
+  const document = parseDocument(delimited[1]);
+  const messages = document.errors.map((error) => error.message);
+  assert.deepEqual(messages, [], `${label} frontmatter is not valid YAML`);
+  const fields = document.toJS();
+  assert.ok(fields !== null && typeof fields === 'object' && !Array.isArray(fields), `${label} frontmatter is not a map`);
+  return fields;
 }
 
 const caseNames = fs.existsSync(evalsRoot)
@@ -43,9 +51,9 @@ for (const caseName of caseNames) {
 
     const promptFile = path.join(evalsRoot, caseName, 'prompt.md');
     assert.ok(fs.existsSync(promptFile), `${caseName} has no prompt.md`);
-    const promptFrontmatter = frontmatterBlock(fs.readFileSync(promptFile, 'utf8'));
+    const promptFields = frontmatter(promptFile, `${caseName}/prompt.md`);
     assert.ok(
-      promptFrontmatter !== null && /^name: .+$/m.test(promptFrontmatter),
+      typeof promptFields.name === 'string' && promptFields.name.length > 0,
       `${caseName}/prompt.md lacks a name frontmatter line`
     );
 
@@ -54,9 +62,9 @@ for (const caseName of caseNames) {
     const graderFiles = fs.readdirSync(gradersRoot).filter((file) => file.endsWith('.md'));
     assert.ok(graderFiles.length > 0, `${caseName} has no grader`);
     for (const graderFile of graderFiles) {
-      const graderFrontmatter = frontmatterBlock(fs.readFileSync(path.join(gradersRoot, graderFile), 'utf8'));
-      const typeLine = graderFrontmatter === null ? null : graderFrontmatter.match(/^type: (\S+)$/m);
-      assert.ok(typeLine !== null && GRADER_TYPES.includes(typeLine[1]), `${caseName}/graders/${graderFile} has no supported type`);
+      const graderLabel = `${caseName}/graders/${graderFile}`;
+      const graderFields = frontmatter(path.join(gradersRoot, graderFile), graderLabel);
+      assert.ok(GRADER_TYPES.includes(graderFields.type), `${graderLabel} has no supported type`);
     }
   });
 }

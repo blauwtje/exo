@@ -7,6 +7,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.19 - 2026-09-14
+
+### Fixed
+
+- The `implementing-runs-the-list` grader quotes its criteria, so `claude plugin eval` loads the case again instead of failing on `: ` inside an unquoted value.
+- `tests/evals.test.mjs` parses every eval frontmatter with the `yaml` package, so a block the runner cannot load fails `npm run check`; CI runs `npm ci` first.
+
 ## 0.3.18 - 2026-09-14
 
 ### Changed
