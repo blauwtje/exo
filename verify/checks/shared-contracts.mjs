@@ -57,6 +57,7 @@ const PINNED_SENTENCES = {
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
     'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call',
+    'its repair is a new direction, not another polish pass, so the cycle ends there',
   ],
   'skills/designing/references/phase-direction.md': [
     'validate the set with `--check` to status ok before building any variant',

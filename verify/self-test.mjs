@@ -90,6 +90,8 @@ const SCENARIOS = [
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
   { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call', 'A read-only planning mode runs the same calls') },
+  { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+    'its repair is a new direction, not another polish pass, so the cycle ends there', 'its repair is a return to Phase 2') },
   { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/deepen/SKILL.md',
     'every other planning turn belongs to', 'planning turns belong to') },
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {
