@@ -56,6 +56,7 @@ const PINNED_SENTENCES = {
     'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
+    'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call',
   ],
   'skills/designing/references/phase-direction.md': [
     'validate the set with `--check` to status ok before building any variant',
