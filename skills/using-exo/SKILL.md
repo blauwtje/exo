@@ -73,6 +73,9 @@ The final message is the report itself. It opens with the outcome, and every lin
 A decision you made on the user's behalf is one line naming the choice and what it costs if wrong; its reasoning stays out of the ending.
 When the request itself read two ways, that line also names the reading it rules out: the user cannot redirect a reading never shown.
 A choice of how to build it names no rival.
+A message a rule sends alone ends the turn by itself: the report waits for the turn that finishes the run.
+A decision made before that message is reported there.
+A question whose options are the readings of the request names no rival: the user picks the reading.
 
 ## Never in an ending
 
