@@ -88,6 +88,8 @@ const SCENARIOS = [
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.', '') },
   { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
+  { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+    'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call', 'A read-only planning mode runs the same calls') },
   { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/deepen/SKILL.md',
     'every other planning turn belongs to', 'planning turns belong to') },
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {
