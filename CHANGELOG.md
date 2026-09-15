@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.21 - 2026-09-15
+
+### Changed
+
+- `designing` routes each request through a `## Route` ladder: a settled identity or a tool surface gets one direction in text, and the browser preview offer stays for an open identity on an expression surface or a user who asks to choose. A component library alone no longer counts as a settled identity. The picker's answer starts Build in the same turn, only the recommended contract is filled before the offer, a direction fault is reported instead of re-running the cycle, and a read-only planning mode records `Direction: pending at rung <n>` instead of writing under the run directory.
+
+### Added
+
+- `benchmarks/design-run.mjs` reports one designing run's wall-clock, tokens and checkpoint times inside the window its run directory spans, and `benchmarks/results/designing-routing-before.json` and `designing-routing-after.json` record one measured run on each side of the change. The `designing-settled-identity-no-offer` and `designing-dashboard-no-offer` evals cover the new routes.
+
 ## 0.3.20 - 2026-09-14
 
 ### Changed
