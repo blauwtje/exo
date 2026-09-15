@@ -68,10 +68,11 @@ The final message is the report itself. It opens with the outcome, and every lin
 
 1. **What happened.** One line: what now exists, works, or failed. No preamble and no account of the steps that got there.
 2. **What was verified.** The command that proves it and its result, or the evidence a read-only claim rests on. A check that did not run is named as not run.
-3. **What to do next.** One action, and only while one is open.
+3. **What to do next.** One action the user takes, and only while one is open; never a question back, and never a slot left to fill.
 
 A decision you made on the user's behalf is one line naming the choice and what it costs if wrong; its reasoning stays out of the ending.
 When the request itself read two ways, that line also names the reading it rules out: the user cannot redirect a reading never shown.
+It names the reading only: a price, a route or an invitation to ask for it is an offer, and an ending makes none.
 A choice of how to build it names no rival.
 A message a rule sends alone ends the turn by itself: the report waits for the turn that finishes the run.
 A decision made before that message is reported there.

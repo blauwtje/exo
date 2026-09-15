@@ -12,7 +12,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `designing` routes each request through a `## Route` ladder: a settled identity or a tool surface gets one direction in text, and the browser preview offer stays for an open identity on an expression surface or a user who asks to choose. A component library alone no longer counts as a settled identity. The picker's answer starts Build in the same turn, only the recommended contract is filled before the offer, a direction fault is reported instead of re-running the cycle, and a read-only planning mode records `Direction: pending at rung <n>` instead of writing under the run directory.
-- The closing rule in `using-exo` lets a message another rule sends alone, such as `designing`'s preview offer or a blocking question, end its turn with nothing from the ending beside it; a question whose options are the readings of the request names no rival.
+- The closing rule in `using-exo` lets a message another rule sends alone, such as `designing`'s preview offer or a blocking question, end its turn with nothing from the ending beside it; a question whose options are the readings of the request names no rival. The next-action line is one action the user takes, never a question back or a slot left to fill, and the rival-reading line names the reading only, never a price, a route or an invitation to ask for it.
 
 ### Added
 
