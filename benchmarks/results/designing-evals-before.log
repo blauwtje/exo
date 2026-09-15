@@ -1,0 +1,17 @@
+Plugin under test: "exo" version "0.3.21" at "/Users/thomash/Documents/Code/personal/tools/exo"
+  designing-offers-the-preview run 1/3: score 1.00  $0.34
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+  designing-offers-the-preview run 2/3: score 1.00  $0.33
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+  designing-offers-the-preview run 3/3: score 1.00  $0.35
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+✓ designing-offers-the-preview  score 1.00  (3 runs)  $1.01
+
+CASE                          SCORE PASS% RUNS COST    NOTES
+designing-offers-the-preview  1.00  100%  3    $1.01   
+
+1 case(s) · 237s · $1.01
+Report: /tmp/exo-measure/evals-before/report.html

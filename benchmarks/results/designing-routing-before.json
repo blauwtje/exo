@@ -1,0 +1,61 @@
+{
+  "transcript": "/Users/thomash/.claude/projects/-private-tmp-exo-measure-before/3f1c2a9e-5b7d-4e21-9a44-0c6d8e1f2b01.jsonl",
+  "run": "/private/tmp/designing/exo-measure-before-20260915-1152",
+  "window": {
+    "start": "2026-09-15T09:52:48.873Z",
+    "end": "2026-09-15T10:06:35.298Z"
+  },
+  "wallMs": 826425,
+  "responses": 58,
+  "counts": {
+    "input": 116,
+    "cacheRead": 3069153,
+    "cache5m": 149752,
+    "cache1h": 59276,
+    "output": 68483,
+    "raw": 3346780,
+    "weightedInput": 612773.3
+  },
+  "excluded": {
+    "responses": 3,
+    "counts": {
+      "input": 6,
+      "cacheRead": 180250,
+      "cache5m": 0,
+      "cache1h": 16706,
+      "output": 1628,
+      "raw": 198590,
+      "weightedInput": 51443
+    }
+  },
+  "marks": [
+    {
+      "checkpoint": "context.json",
+      "atMs": 15629
+    },
+    {
+      "checkpoint": "contract-selected.json",
+      "atMs": 95512
+    },
+    {
+      "checkpoint": "foundation.md",
+      "atMs": 535884
+    },
+    {
+      "checkpoint": "renders/baseline-",
+      "atMs": 16958
+    },
+    {
+      "checkpoint": "renders/post-build-",
+      "atMs": 568979
+    },
+    {
+      "checkpoint": "faults.md",
+      "atMs": 716165
+    },
+    {
+      "checkpoint": "renders/final-",
+      "atMs": 826419
+    }
+  ]
+}
