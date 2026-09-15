@@ -1,0 +1,67 @@
+Plugin under test: "exo" version "0.3.21" at "/Users/thomash/Documents/Code/personal/tools/exo"
+  designing-dashboard-no-offer run 1/6: score 1.00  $0.45
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ ranks-scanability (weight 1): judge votes: PASS PASS PASS
+  designing-dashboard-no-offer run 2/6: score 1.00  $0.41
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ ranks-scanability (weight 1): judge votes: PASS PASS PASS
+  designing-dashboard-no-offer run 3/6: score 1.00  $0.45
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ ranks-scanability (weight 1): judge votes: PASS PASS PASS
+  designing-dashboard-no-offer run 4/6: score 1.00  $0.46
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ ranks-scanability (weight 1): judge votes: PASS PASS PASS
+  designing-dashboard-no-offer run 5/6: score 1.00  $0.48
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ ranks-scanability (weight 1): judge votes: PASS PASS PASS
+  designing-dashboard-no-offer run 6/6: score 1.00  $0.47
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ ranks-scanability (weight 1): judge votes: PASS PASS PASS
+✓ designing-dashboard-no-offer  score 1.00  (6 runs)  $2.72
+  designing-offers-the-preview run 1/6: score 1.00  $0.41
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS FAIL PASS
+  designing-offers-the-preview run 2/6: score 1.00  $0.47
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+  designing-offers-the-preview run 3/6: score 1.00  $0.40
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+  designing-offers-the-preview run 4/6: score 1.00  $0.33
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS FAIL PASS
+  designing-offers-the-preview run 5/6: score 1.00  $0.42
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+  designing-offers-the-preview run 6/6: score 1.00  $0.46
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ offers-then-waits (weight 1): judge votes: PASS PASS PASS
+✓ designing-offers-the-preview  score 1.00  (6 runs)  $2.48
+  designing-settled-identity-no-offer run 1/6: score 1.00  $0.48
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ keeps-the-identity (weight 1): judge votes: PASS PASS PASS
+  designing-settled-identity-no-offer run 2/6: score 1.00  $0.35
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ keeps-the-identity (weight 1): judge votes: PASS PASS PASS
+  designing-settled-identity-no-offer run 3/6: score 1.00  $0.36
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ keeps-the-identity (weight 1): judge votes: PASS PASS PASS
+  designing-settled-identity-no-offer run 4/6: score 1.00  $0.37
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ keeps-the-identity (weight 1): judge votes: PASS PASS PASS
+  designing-settled-identity-no-offer run 5/6: score 1.00  $0.34
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ keeps-the-identity (weight 1): judge votes: PASS PASS PASS
+  designing-settled-identity-no-offer run 6/6: score 1.00  $0.34
+    ✓ invokes-the-skill (weight 1): Skill called 1x (expected 1..∞)
+    ✓ keeps-the-identity (weight 1): judge votes: FAIL PASS PASS
+✓ designing-settled-identity-no-offer  score 1.00  (6 runs)  $2.25
+
+CASE                                 SCORE PASS% RUNS COST    NOTES
+designing-dashboard-no-offer         1.00  100%  6    $2.72   
+designing-offers-the-preview         1.00  100%  6    $2.48   
+designing-settled-identity-no-offer  1.00  100%  6    $2.25   
+
+3 case(s) · 1938s · $7.45
+Report: /tmp/exo-measure/evals-after-3/report.html
+eval exit 0
