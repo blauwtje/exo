@@ -84,6 +84,10 @@ const SCENARIOS = [
     'A redesign should feel fresh') },
   { name: 'dropped-bounded-redesign-trigger', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     '; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive', '') },
+  { name: 'dropped-expression-offer', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+    'A user who leaves the look to this skill has not asked for text: rung 7 still offers.', '') },
+  { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+    'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
   { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/deepen/SKILL.md',
     'every other planning turn belongs to', 'planning turns belong to') },
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {

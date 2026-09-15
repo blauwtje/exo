@@ -54,6 +54,8 @@ const PINNED_SENTENCES = {
     'This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
     'never substitute a product-category aesthetic for missing evidence',
     'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
+    'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
+    'A component library in the manifest is not that evidence on its own',
   ],
   'skills/designing/references/phase-direction.md': [
     'validate the set with `--check` to status ok before building any variant',
