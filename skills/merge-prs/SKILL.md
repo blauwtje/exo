@@ -42,8 +42,10 @@ named, or on every open PR when the user said so; it authorizes nothing else.
    the PR as not merged with the JSON that says so. Stacked PRs then need a
    fresh gate, since their base just moved.
 6. **Report.** One table: PR, gate result, merged yes/no, blocking reason.
-   Stop and report as soon as anything is ambiguous. Do not retry a failed
-   merge unchanged.
+   When `git worktree list` names a worktree on a merged PR's branch, add one
+   line naming `git worktree remove <path>` for the user to run; this skill
+   removes nothing. Stop and report as soon as anything is ambiguous. Do not
+   retry a failed merge unchanged.
 
 ## Judgment
 

@@ -29,7 +29,7 @@ Every skill is invoked as `/exo:<name>`; the model may also start one when its t
 | Skill | Use it when |
 |---|---|
 | `shaping <outcome>` | A request names a result but leaves open what counts as done, what data it holds or which architecture carries it. |
-| `planning <topic or spec>` | A plan or handoff is asked for, a planning mode is active, or the work has two or more edit-order dependencies. |
+| `planning <topic, spec or issue>` | A plan or handoff is asked for, a planning mode is active, or the work has two or more edit-order dependencies. A shaped issue plans without shaping again. |
 | `implementing [plan]` | A plan runs or resumes: one delegated build and one commit per task, then one branch review. |
 | `implementing-batch <change>` | A decided change builds in this session and touches more than two files, a dependency, a public signature, a persisted format or a security boundary. |
 | `debug <symptom>` | Existing behavior fails and the cause is not yet proven. Outranks every other stage until it is. |
@@ -43,6 +43,7 @@ Every skill is invoked as `/exo:<name>`; the model may also start one when its t
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
 | `savings [report, on, off, status]` | You ask what exo cost or withheld, or switch the ledger and read guard off or on. |
+| `settings [key value scope]` | You show or change an exo setting for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
 ### Workflows
@@ -52,7 +53,6 @@ These leave the machine, so only you can start them.
 | Skill | Use it when |
 |---|---|
 | `issuing <scope>` | You file GitHub issues as specs, with the labels and fields the repository defines. |
-| `ship-issue <issue>` | You take one issue to merged, one stage per call. |
 | `merge-prs [numbers]` | You merge open pull requests behind gates read from the GitHub API. |
 
 ## How it works
@@ -71,6 +71,16 @@ These leave the machine, so only you can start them.
 6. Minimum: the fewest statements that pass, one thing per line.
 
 Whatever rung the code lands on, a guard at a trust boundary, error handling that keeps data safe, security, accessibility and anything you asked for by name are built in full.
+
+## Settings
+
+exo reads each setting from four layers, highest first: `.claude/exo.local.json` (this machine, git-ignored), `.claude/exo.json` (the repository, committed so every collaborator shares it), the plugin's global options, then the default. The global options are asked when the plugin is enabled and change later in `/config`; `/exo:settings` shows every value with its layer and writes the two repository files.
+
+| Key | Values | Default | Effect |
+|---|---|---|---|
+| `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
+
+A new setting is one entry in `skills/settings/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` holds the two together.
 
 ## Savings
 
@@ -103,6 +113,8 @@ claude --plugin-dir .    # run the working tree instead of the installed copy
 ```
 
 `CONTRIBUTING.md` covers the checks, the evals, how skills dispatch delegates, and the hooks. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
+
+A change lands under `## Unreleased` in the changelog without a version change, so the installed plugin updates only on a release. A release raises the version with `npm run bump`, tags `v<version>`, and publishes a GitHub Release whose notes `npm run release-notes` renders from the changelog: highlights, then Added, Changed, Fixed and Removed, then the upgrade commands. `CLAUDE.md` lists the steps.
 
 ## Credits
 

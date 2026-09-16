@@ -7,6 +7,24 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `settings` shows and changes exo settings in four layers: `.claude/exo.local.json`, `.claude/exo.json`, the plugin's global options (asked when the plugin is enabled, changed in `/config`) and the default. The session hook injects the resolved values as one `exo settings:` context line.
+- The `specs` setting: `shaping` stores a spec in `docs/specs/` (default), as a GitHub issue whose body opens with `<!-- exo:spec -->`, or both, and writes the file when git, a GitHub remote or `gh` is missing. `planning` accepts `#<n>` and plans a marked issue without shaping it again.
+- `issuing` fills size, effort, type and relations from the repository's own labels, types and project fields, or from a default label set when the repository defines none.
+- `implementing`, `implementing-batch` and `debug` ask where a run commits (branch, worktree or the current branch) before the first edit, and end on a short overview with a finish question: open a pull request, push, or keep local.
+- `npm run release-notes` renders a GitHub Release body from a changelog section.
+
+### Changed
+
+- Every exo question is plain numbered lines, `(1) Label (Recommended): what it does`, answered with a digit and never through a question tool. A stage option no longer carries its command, model and effort; one line under the options names a model only when it differs from the session's.
+- Nothing pushes automatically: commits stay local until the finish question's answer, and `implementing` no longer enters a release run on the default branch.
+- `npm run bump` reads the release level off `## Unreleased`, and the `plugin version` check asks for a changelog entry on every change instead of a version raise.
+
+### Removed
+
+- `ship-issue`: plan an issue with `/exo:planning #<n>`, build it with `/exo:implementing`, open the pull request from the finish question, and merge with `/exo:merge-prs`.
+
 ## 0.3.26 - 2026-09-16
 
 ### Added

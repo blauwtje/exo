@@ -16,7 +16,7 @@ const PINNED_SENTENCES = {
     'Zero open decisions means leave this skill and write no brief',
     'Resolve “this” from the first source containing a candidate: working-tree diff, most recent failing check, then last touched file.',
     'changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration',
-    'Always write the brief to `docs/specs/<topic>.md` and name that path in the same message',
+    'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
     '`debug` outranks this skill when existing behavior fails and the cause is unproven.',
   ],
   'skills/debug/SKILL.md': [

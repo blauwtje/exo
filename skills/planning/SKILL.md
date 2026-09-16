@@ -1,7 +1,7 @@
 ---
 name: planning
 description: Use when a read-only planning mode is active, the user asks for a plan or a handoff, another session will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge; one-file, typo, rename, or version-bump edits; git-only operations; an unproven failure outside a planning turn; or an architecture audit, which deepen owns.
-argument-hint: <what to plan, or a spec path>
+argument-hint: <what to plan, a spec path, or an issue number>
 ---
 
 # Planning
@@ -20,6 +20,7 @@ Before any planning:
 - Resolve a vague referent from the first non-empty source: working-tree diff, most recent failing check, then last touched file.
 - Separate hard requirements from incidental wording; record what the plan will not do as explicit non-goals.
 - Decide every choice the user would not notice and record it in the plan; do not interview.
+- Read an issue reference, `#<n>` or an issue URL, with `gh issue view <n> --json number,title,body,url`: a body whose first line is `<!-- exo:spec -->` is a shaped brief, planned as a spec file would be and never shaped again, and the plan's `## Goal` names `#<n>` so the finished pull request closes it.
 - Ask, before writing, only what blocks planning: the first non-empty source holds two or more candidate referents and the request names no discriminator, or a choice changes persisted data, a public protocol or signature, a paid provider, or an irreversible deletion or migration. Attach a recommendation. The written plan carries no open question.
 
 An outcome with no chosen solution borrows `shaping` for its product and architecture decisions; the resulting brief folds into the plan's Context rather than a separate file.

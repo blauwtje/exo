@@ -23,7 +23,7 @@ Count the product decisions the request leaves open: what counts as done; which 
 - **Acceptance:** observable checks.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
 
-Always write the brief to `docs/specs/<topic>.md` and name that path in the same message; the file, not the message, is the artifact a later session resumes from. That holds even when the next stage runs in this session, because a brief living only in a message dies at the next context clear and the stage after it then starts from nothing. One exception: when a planning turn borrowed this skill, fold the brief into the plan artifact instead of a separate spec file — the plan is the persisted document. The message around that path carries the goal and the path, with each decision's reasoning left in the file, and ends on the next-stage question in `using-exo` offering `/exo:planning docs/specs/<topic>.md`.
+Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message; the stored brief, not the message, is the artifact a later session resumes from. That holds even when the next stage runs in this session, because a brief living only in a message dies at the next context clear and the stage after it then starts from nothing. `docs` writes `docs/specs/<topic>.md`. `issues` creates one GitHub issue whose body opens with the line `<!-- exo:spec -->` followed by the brief, with its fields and relations set as `../issuing/references/fields.md` says, and writes no file; the setting is the authorization, so no draft is shown first. `both` writes the file, then that issue with the file's path under its references, and the file is the source when the two differ. `issues` and `both` write the file alone when `git remote get-url origin` names no GitHub repository or `gh auth status` fails, and the message says so in one line. One exception: when a planning turn borrowed this skill, fold the brief into the plan artifact instead of storing it — the plan is the persisted document. The message around that location carries the goal and the location, with each decision's reasoning left in the stored brief, and ends on the next-stage question in `using-exo` offering `/exo:planning docs/specs/<topic>.md`, or `/exo:planning #<n>` when an issue holds the brief.
 
 Both modes add three decisions:
 
@@ -47,6 +47,7 @@ State the recommendation as the current default and continue in the same message
 
 | File | Read it when |
 |---|---|
+| `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
 | `../research/scout-prompt.md` | Before a codebase discovery dispatch, which runs on `sonnet`. |
 
 ## Judgment
@@ -56,4 +57,4 @@ State the recommendation as the current default and continue in the same message
 - The frontend-design skill the executing session has loaded owns visual decisions, then hands control back; this skill retains product, data, and architecture decisions.
 - A brief whose `## Visual direction` names an existing `contract-selected.json` hands the frontend-design skill a decided direction; it resumes at Build and repeats no variant choice.
 - Explicit user wording outranks mode selection and artifact defaults.
-- A brief hands over through its file: after a compaction notice, re-read `docs/specs/<topic>.md` and continue from it, never from the conversation. Naming that path ends this skill's part on the next-stage question, and planning starts only on the user's pick.
+- A brief hands over through its stored copy: after a compaction notice, re-read `docs/specs/<topic>.md` or `gh issue view <n> --json body` and continue from it, never from the conversation. Naming that location ends this skill's part on the next-stage question, and planning starts only on the user's pick.
