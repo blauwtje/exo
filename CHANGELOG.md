@@ -9,7 +9,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## 0.3.23 - 2026-09-16
 
-## 0.3.22 - 2026-09-16
+### Changed
+
+- The next-stage question in `using-exo` is numbered lines the user answers by typing the digit, in a fixed order per stage, and running the next stage in this session is the recommended option; the recommendation moves to stopping only when a compaction has happened or a second stage has finished in the session. `designing` offers its browser preview the same way, with its price unchanged.
+- `implementing` sends a task with a `Design:` line to a delegate on `opus` when `## Visual direction` names the chosen direction, and keeps a pending or missing direction in the session; the model table recommends `sonnet` for a plan whose directions are frozen.
+- A plan's `## Plan basis` may no longer carry branching, commit, push or pull-request policy, and every acceptance check of a brief must reach a step's `Expected:`, a `## Final verification` line, or `## Non-goals`.
 
 ## 0.3.21 - 2026-09-15
 
