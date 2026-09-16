@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.24 - 2026-09-16
+
+### Changed
+
+- `planning` hands over on the numbered lines `using-exo` fixes, which carry both run commands and stopping, and reads off the plan which command the recommended line carries.
+
 ## 0.3.23 - 2026-09-16
 
 ### Changed

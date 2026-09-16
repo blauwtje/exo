@@ -45,9 +45,9 @@ Before ending the turn, read the plan once against the rules in `references/hand
 
 ## Handing it over
 
-A deliverable plan ends on the next-stage question in `using-exo`: the plan path and the task count, then the question carrying the one command that runs the plan.
+A deliverable plan ends on the next-stage question in `using-exo`: the plan path and the task count, then that question's numbered lines, which carry both run commands and stopping.
 
-Read that command off the plan rather than asking.
+Read off the plan which command the recommended line carries, rather than asking.
 
 - Four or more tasks: `/exo:implementing`, one task per fresh helper context, each committed on its own.
 - Two or three short tasks: `/exo:implementing-batch`, the whole plan built in one window with one report at the end.
