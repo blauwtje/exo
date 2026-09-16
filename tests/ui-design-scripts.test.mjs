@@ -275,12 +275,12 @@ describe('check-ui.mjs static subset', () => {
 
   it('reports the default drop shadow repeated across cards once, with the count', async () => {
     const tells = await tellsFor([
-      '.card-a { box-shadow: 0 1px 3px rgba(0,0,0,.1); }',
-      '.card-b { box-shadow: 0 1px 3px rgba(0,0,0,.1); }',
-      '.card-c { box-shadow: 0 1px 3px rgba(0,0,0,.1); }'
+      '.card-a { box-shadow: 0 1px 3px rgb(0 0 0 / 10%); }',
+      '.card-b { box-shadow: 0 1px 3px rgb(0 0 0 / 10%); }',
+      '.card-c { box-shadow: 0 1px 3px rgb(0 0 0 / 10%); }'
     ].join('\n'));
     assert.deepEqual(tells.map((entry) => entry.type), ['uniform-card-shadow']);
-    assert.equal(tells[0].measured, '0 1px 3px rgba(0,0,0,.1) on 3 selectors');
+    assert.equal(tells[0].measured, '0 1px 3px rgb(0 0 0 / 10%) on 3 selectors');
   });
 
   it('reports gradient text once for the prefixed and unprefixed pair', async () => {
@@ -295,7 +295,7 @@ describe('check-ui.mjs static subset', () => {
   });
 
   it('reports the canonical two-hue gradient ground the 60 degree gate missed', async () => {
-    const tells = await tellsFor('body {\n  background: linear-gradient(135deg, #667eea, #764ba2);\n}\n');
+    const tells = await tellsFor('body {\n  background: linear-gradient(to bottom right, #667eea 0%, #764ba2 100%);\n}\n');
     assert.deepEqual(tells.map((entry) => entry.type), ['aggressive-gradient-ground']);
     assert.equal(tells[0].measured, '41 degrees between the first two stops');
   });
@@ -331,15 +331,15 @@ describe('check-ui.mjs static subset', () => {
   });
 
   it('reports a centered translucent radial halo', async () => {
-    const tells = await tellsFor('.halo {\n  background: radial-gradient(circle at center, rgba(120,80,255,0.35), transparent 70%);\n}\n');
+    const tells = await tellsFor('.halo {\n  background: radial-gradient(circle at center, rgba(96,70,240,0.3), transparent 65%);\n}\n');
     assert.deepEqual(tells.map((entry) => entry.type), ['radial-halo']);
     assert.equal(tells[0].confidence, 'potential');
   });
 
   it('reports a hairline border carrying a wide soft shadow', async () => {
-    const tells = await tellsFor('.panel {\n  border: 1px solid #e5e5e5;\n  box-shadow: 0 4px 24px rgba(0,0,0,0.08);\n}\n');
+    const tells = await tellsFor('.panel {\n  border: 1px solid #dcdcdc;\n  box-shadow: 0 6px 28px rgba(0,0,0,0.07);\n}\n');
     assert.deepEqual(tells.map((entry) => entry.type), ['thin-border-wide-shadow']);
-    assert.equal(tells[0].measured, 'border 1px with 24px blur');
+    assert.equal(tells[0].measured, 'border 1px with 28px blur');
   });
 
   it('reports emoji in markup text once per line', async () => {

@@ -10,12 +10,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
+- `benchmarks/font-defaults-probe.mjs` measures which typefaces models pick for unrelated briefs, unprompted and again with the overused list forbidden.
 
 ### Changed
 
 - The benchmark runs twelve new template tasks on the same fixture, with new wording for the safe tasks, the no-run instruction, the one-liner prompt and the terse-prose control prompt; each published result names the task set it measured.
 - The right-sizing ladder has four rungs, Need, Reuse, Borrow and Write, with the same precedence, tie-break and guards, in `using-exo`, the four code-writing delegate prompts and the README.
 - `designing` states its turn limits, motion thesis, materials, timing, reduced-motion rule, browser finish list, build bindings and slop tropes in new wording and structure, with the same rules and values.
+- The overused-font list is rebuilt from a criterion recorded in `overused-fonts.mjs`: Google Fonts' most popular families, platform and browser defaults, the `create-next-app` faces, and the faces models pick unprompted or fall back on, now 66 families; the craft recipes and check tests spell their CSS samples anew.
 
 ### Fixed
 
