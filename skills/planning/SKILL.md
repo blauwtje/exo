@@ -47,7 +47,7 @@ Before ending the turn, read the plan once against the rules in `references/hand
 
 A deliverable plan ends on the next-stage question in `using-exo`: the plan path and the task count, then the question carrying the one command that runs the plan.
 
-Read that command off the plan rather than asking; the fresh-session option is the recommended one, because the window that wrote the plan is the most expensive one to run it in.
+Read that command off the plan rather than asking.
 
 - Four or more tasks: `/exo:implementing`, one task per fresh helper context, each committed on its own.
 - Two or three short tasks: `/exo:implementing-batch`, the whole plan built in one window with one report at the end.
