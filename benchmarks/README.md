@@ -1,6 +1,6 @@
 # Benchmarks
 
-Paired headless runs that measure exo against a session without it. The design follows the agentic benchmark in [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail); the template tasks and the no-run instruction are reused from it verbatim under its MIT license (see `THIRD_PARTY_NOTICES.md` at the repository root).
+Paired headless runs that measure exo against a session without it. Running a plugin arm beside prompt-only control arms on one fixture is an idea taken from the agentic benchmark in [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail); the tasks and the prompts here are exo's own.
 
 Every cell is one `claude -p --output-format json` call on a fresh checkout of `tiangolo/full-stack-fastapi-template` at commit `cd83fc1`. `--setting-sources project,local` keeps your own plugins out of the cell and `--plugin-dir` loads exactly one.
 
@@ -9,7 +9,7 @@ Every cell is one `claude -p --output-format json` call on a fresh checkout of `
 | Arm | What the cell gets |
 |---|---|
 | `baseline` | No plugin and no extra prompt. |
-| `terse` | The terse-prose control prompt in `arms/terse.md`: the caveman skill text, as ponytail ships it. |
+| `terse` | exo's terse-prose control prompt in `arms/terse.md`: short replies, with nothing said about code size. |
 | `yagni-oneliner` | One sentence asking for YAGNI and one-liners. |
 | `exo` | This plugin, loaded from the working tree. |
 

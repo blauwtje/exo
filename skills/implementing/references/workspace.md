@@ -4,7 +4,7 @@ Ask where a code-changing run commits before its first edit, and commit only whe
 
 ## When it is asked
 
-1. **Outside git, never.** When `git rev-parse --is-inside-work-tree` fails, nothing is committed and the report says so in one line.
+1. **Outside git, never.** When `git rev-parse --show-toplevel` fails, nothing is committed and the report says so in one line.
 2. **In a chosen place, never.** Inside a linked worktree, where `git rev-parse --git-dir` and `git rev-parse --git-common-dir` differ, or on a branch other than the default one, the run commits there and the report names it, because asking would offer a branch off a branch.
 3. **Otherwise first.** The question is the run's first message, before any edit or dispatch, in the shape `## A question` in `using-exo` gives, and the run stops until the digit arrives:
 

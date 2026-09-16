@@ -28,9 +28,10 @@ background:
 
 ~~~css
 .ground::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
+  content: ""; pointer-events: none; position: absolute; inset: 0;
   opacity: var(--grain-opacity); mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-texture: url("data:image/svg+xml,%3Csvg width='240' height='240' viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-image: var(--grain-texture);
 }
 ~~~
 
@@ -45,14 +46,14 @@ box-shadow:
   0 18px 36px -12px oklch(from var(--ink) l c h / 0.12);
 ~~~
 
-**Top-edge highlight** — the one-pixel light that makes a raised surface read as material: `box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.14), var(--shadow-raised);`
+**Top-edge highlight** — the one-pixel light that makes a raised surface read as material: `box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.14), var(--shadow-raised);`
 
 **Glass** — the layered-translucency grammar, only over real changing content beneath it, with an opaque fallback.
 
 ~~~css
 .glass { background: color-mix(in oklch, var(--surface) 62%, transparent);
   backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 0.18); }
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.18); }
 @supports not (backdrop-filter: blur(1px)) { .glass { background: var(--surface); } }
 ~~~
 

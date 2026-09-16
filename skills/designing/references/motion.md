@@ -4,7 +4,7 @@ Choreograph motion as a concept decision, not a garnish. The enemy is unowned mo
 
 ## Motion thesis
 
-For a full or bounded redesign, write one sentence before any animation: what moves, on what trigger, and what it says about the subject. A generic fade-and-rise, hover lift, or scroll reveal is not a thesis; derive it from Phase 1. Record exactly one motion decision; a new piece records one for itself:
+For a full or bounded redesign, write the thesis as one sentence before the first animation: the thing that moves, the trigger that moves it, and what that movement says about the subject. Stock moves such as content drifting upward into place, cards rising under the pointer, or sections appearing as they scroll in say nothing about any subject and are not a thesis; take the thesis from Phase 1. Record exactly one motion decision; a new piece records one for itself:
 
 - **a signature sequence**, only where the surface and concept justify one: a narrative moment, a live instrument, or a continuity-critical transition. A staged entrance is one option — focal first, supporting groups staggered, settling fully visible;
 - **feedback-only**, where interaction response is the whole motion story;
@@ -26,26 +26,31 @@ Cut an animation with no listed job. Signature count follows the direction's spa
 
 ## Materials
 
-Choose the mechanism from the meaning, not habit:
+Pick the mechanism for what the motion means, never out of habit:
 
-- continuity across states or navigation → view transitions, FLIP, shared elements;
-- depth and focus → blur, backdrop-filter, layered shadow;
-- reveal → clip-path, mask, staged opacity;
-- energy or a live instrument → canvas or generative motion, only when the subject's world names it.
+| The motion means | Reach for |
+|---|---|
+| An element persists across a state or page change | view transitions, FLIP, a shared element |
+| Something moves forward in depth or out of focus | blur, `backdrop-filter`, stacked shadows |
+| Content is being uncovered | `clip-path`, `mask`, opacity in steps |
+| The subject is live or energetic, and its world says so | canvas or generative motion |
 
-Transform and opacity are the workhorses; blur, clip-path, mask, and shadow join when smooth on target devices.
+Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or shadow only where the target devices keep them smooth.
 
 ## Timing
 
-- Hover, toggle, press: 120–200ms.
-- Panel, dropdown, card transition: 200–400ms.
-- Signature sequence or authored focal entrance: 400–800ms.
-- Sibling stagger: 30–80ms; the complete sequence no longer than 800ms.
-- Focus indication is immediate; a transition may animate secondary focus properties, never the indicator's appearance.
-- Exits are shorter than entries; functional motion decelerates — `cubic-bezier(0.16, 1, 0.3, 1)` is the default ease-out. A signature sequence earns its own curve from the subject's physics; the default there reads as borrowed.
-- Bounce or elastic easing needs a brief whose world is literally springy; never on functional controls.
+| Motion | Duration |
+|---|---|
+| Response to a press, toggle or hover | 120–200ms |
+| A panel, dropdown or card changing state | 200–400ms |
+| A signature sequence or an authored focal entrance | 400–800ms |
+| The delay between siblings in a stagger | 30–80ms, with the whole sequence inside 800ms |
 
-Store durations and curves in tokens. Transition named properties, never `all`.
+- A focus indicator appears at once; a transition may animate properties around focus, never the indicator itself.
+- An exit is quicker than its entry. Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)` as the default ease-out; a signature sequence takes its curve from how the subject physically moves, because the default curve there reads as borrowed.
+- A springy or elastic curve belongs only to a brief whose world truly bounces, and never to a functional control.
+
+Durations and curves live in tokens, and a transition lists its properties instead of `all`.
 
 **Duration derives from distance.** Carbon states the rule the token tables hide: "the larger the change in distance… or size (scaling) of the element, the longer the animation takes" ([carbon-website `elements/motion/overview.mdx`, `main`, read 2026-09-07](https://github.com/carbon-design-system/carbon-website/blob/main/src/pages/elements/motion/overview.mdx)). A panel crossing the viewport and a chip nudging four pixels do not share one token. Verify: measure two travels of clearly different distance and confirm the longer one takes longer.
 
@@ -72,7 +77,7 @@ Use view transitions only for elements persisting across a state or navigation c
 
 ## Reduced motion
 
-Author movement inside `prefers-reduced-motion: no-preference`. Under `reduce`, replace movement with an instant state or opacity change, preserving content and feedback. Apply this to CSS animation, scroll timelines, view transitions, and autoplaying media.
+Put every movement behind `@media (prefers-reduced-motion: no-preference)`. When the preference is `reduce`, the same state change happens instantly or as an opacity change, and no content or feedback is lost. This covers CSS animations, scroll timelines, view transitions and media that plays by itself.
 
 **The media query is the default, not the whole answer.** Where the surface carries a signature sequence, ambient motion, or autoplay, ship an in-product motion setting whose initial value is read from `prefers-reduced-motion` and which the person can then override either way. The operating-system switch is one all-or-nothing choice made far from this product, most people never find it, and someone who wants this surface still but not its parallax has nowhere else to say so. The setting drives the same token or class the media query does, so there is one code path and not two.
 

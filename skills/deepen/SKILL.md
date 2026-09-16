@@ -6,38 +6,40 @@ argument-hint: "[path, module or pain point]"
 
 # Deepen
 
-Surface the refactors that turn shallow modules into deep ones, ranked by evidence from code read this session. The enemy is the vibes audit — findings asserted about files never opened. The overcorrection is the exhaustive rewrite catalog that reports every theoretical improvement instead of the few worth their migration cost.
+Find the refactors that give a module a small interface over a large body of work, ranked by evidence read in this session. The enemy is the audit by impression, with claims about files nobody opened. The overcorrection is a catalog of every improvement imaginable instead of the few that repay their migration cost.
 
-## Scope — an argument, not an interview
+## Scope, taken from the argument
 
-- A named target — a path, module, subsystem, layer, or felt pain point — resolves against real paths; audit only inside it.
-- Nothing named: ask a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` for the commit-history hot spots, the files and areas that keep recurring, and take the ranges it names as the scope. Widen to the whole tree only when changes are too scattered to yield a hot spot or the user asks for a whole-codebase audit, and still audit through scout-named ranges, because a whole-tree read here exhausts the context before the cards are written.
-- Open the output by stating the resolved scope, how it was chosen, and what was deliberately left out. Never ask the user to pick a scope.
+- A named target, whether a path, module, subsystem, layer or a pain the user describes, is matched to real paths, and the audit stays inside them.
+- With no target, ask a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` where commit history keeps coming back, the files and areas changed again and again, and take the ranges it names as the scope. Widen to the whole tree only when the changes scatter too much to show a cluster or the user asks for a full audit, and even then read through ranges the scout names, because reading the whole tree here fills the context before any card exists.
+- The output opens with the scope, how it was picked and what was left out on purpose. The user is never asked to pick a scope.
 
-## Vocabulary
+## Terms
 
-Use exactly these terms; do not substitute component, service, unit, API, boundary, layer, or wrapper.
+Use these words and no substitute such as component, service, unit, API, boundary, layer or wrapper:
 
-- **Module** — any unit with an **interface** (what callers must know) and an **implementation** (what it hides).
-- **Deep / shallow** — deep when the interface is far simpler than the implementation behind it; shallow when knowing the interface is nearly knowing the implementation.
-- **Seam** — a point where an implementation can be swapped; an **adapter** realizes one. One adapter is a hypothetical seam; two adapters make it real.
-- **Locality** — related behavior lives in one place, so bugs concentrate where they can be found.
-- **Leverage** — one interface serving many call sites, so one improvement pays off at every caller.
-- **Deletion test** — before calling a module shallow, ask: would deleting it and inlining its work concentrate complexity in one place, or merely move it? Only "concentrates" qualifies as shallow.
+| Term | Meaning |
+|---|---|
+| **Module** | Anything with an **interface**, what a caller has to know, and an **implementation**, what that interface hides. |
+| **Deep** or **shallow** | Deep when the interface is much smaller than what it hides; shallow when learning the interface teaches most of the implementation. |
+| **Seam** | A place where one implementation can stand in for another; each stand-in is an **adapter**. A seam with a single adapter is speculative, and a second adapter makes it earn its place. |
+| **Locality** | Behavior that belongs together sits together, so a defect has one place to be. |
+| **Leverage** | Many call sites share one interface, so improving it helps every caller at once. |
+| **Deletion test** | Before calling a module shallow, imagine removing it and inlining its work: if the complexity gathers in one place, the module was shallow; if it only spreads elsewhere, it was not. |
 
 ## The audit
 
-1. Read the scoped code and its callers in the ranges a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` names, with an offset and a limit, never a whole file over 100 lines. Note friction, not rule violations:
-   - understanding one concept requires bouncing between many small modules;
-   - an interface nearly as complex as the implementation it fronts;
-   - pure functions extracted for testability while the real bugs hide in how they are called;
-   - tightly coupled modules leaking internals across a seam;
-   - code that is untested or untestable through its current interface.
-2. Every finding names files and symbols opened this session; assert nothing about code not read. Apply the deletion test explicitly before calling any module shallow.
-3. Present each candidate as a card with an id `C1`, `C2` in the order presented, so a reply can name one: **Files**; **Problem** (one sentence of friction); **Solution** (the concrete refactor and the resulting interface); **Benefit** (locality and leverage gained, which tests survive and which move); **Strength** (Strong, Worth exploring, or Speculative).
-4. Rank the cards and close with the top recommendation and why it goes first.
+1. Read the scoped code and its callers in the ranges a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` names, with an offset and a limit, never a whole file longer than 100 lines. Record friction rather than rule breaks, for example:
+   - one idea that can only be followed by jumping through a chain of tiny files;
+   - a module whose signature asks callers to know nearly everything it does;
+   - logic split into small pure helpers that are easy to test, while the defects live in the code that wires them together;
+   - modules that reach into each other's internals across a seam;
+   - behavior with no tests, or none possible through its present interface.
+2. Every finding names files and symbols opened in this session, and nothing is claimed about code not read. State the deletion test's outcome before calling any module shallow.
+3. Give each candidate a card with an id `C1`, `C2` in presentation order, so a reply can point at one: **Files**; **Friction** (one sentence); **Refactor** (the change and the interface it leaves); **Payoff** (locality and leverage gained, and which tests stay and which move); **Confidence** (Firm, Plausible, or Speculative).
+4. Order the cards and end with the card to take first and the reason it goes first.
 
-Fill in everything the code determines: affected files, the refactor, the resulting interface, surviving tests, ordering. Unknowables become stated assumptions, or a question asked before the plan is written — never placeholder fields, and never a menu of findings for the user to choose from. Ask at most one question, only when a choice changes persisted data, a public protocol or signature, a paid provider, or an irreversible deletion or migration; attach a recommendation.
+Fill in whatever the code settles: the files, the refactor, the resulting interface, the tests that survive, the order. What the code cannot settle becomes a stated assumption, or a question asked before the plan is written; never an empty field, and never a menu of findings for the user to pick from. Ask one question at most, and only when a choice changes persisted data, a public protocol or signature, a paid provider, or an irreversible deletion or migration; attach a recommendation.
 
 ## Two modes
 

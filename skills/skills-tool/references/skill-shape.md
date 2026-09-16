@@ -1,55 +1,55 @@
 # Skill shape
 
-A new skill fills this template and drops every section it cannot fill. The enemy is a thin section kept for symmetry, which costs tokens and teaches nothing. The overcorrection is a body that skips the opening or the judgment ladder, which the verifier rejects.
+A new skill starts from this template and removes every section it has nothing real to put in. The enemy is a near-empty section kept so the file looks complete, which spends tokens and teaches nothing. The overcorrection is a body without the opening paragraph or the judgment ladder, which the verifier refuses.
 
 ```markdown
 ---
 name: <kebab-case>
-description: <When it fires, then "Not for ..." with the cases it declines. At most 400 characters.>
+description: <The moments it fires, then "Not for ..." naming the cases it leaves alone. 400 characters at most.>
 ---
 
 # <Title>
 
-<Principle in one sentence. The enemy is <the failure this stops>. The overcorrection is <the failure this must not cause>.>
+<The principle in one sentence. The enemy is <the mistake this prevents>. The overcorrection is <the mistake this must not create>.>
 
 ## When to use
 
-- <symptom or request shape>
-- Not for <case>: <who owns it instead>.
+- <a symptom or the shape of a request>
+- Not for <case>: <the skill or file that owns it>.
 
 ## The loop
 
-1. **<Verb>.** <Rule plus its reason in one sentence.>
+1. **<Verb>.** <The rule and its reason, in one sentence.>
 2. ...
 
 ## Red flags
 
 | Thought | Reality |
 |---|---|
-| "<rationalization>" | <what is true instead> |
+| "<the excuse>" | <what holds instead> |
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `references/<name>.md` | <the step and condition> |
+| `references/<name>.md` | <the step and the condition> |
 
 ## Judgment
 
 - <rule A> outranks <rule B> when <condition>.
 ```
 
-An agent follows the same shape with two differences: its frontmatter carries `model`, `tools` and `effort`, chosen so discovery and bulk reading run on Sonnet with a narrow tool list, and its body ends with the exact report shape the caller parses.
+An agent uses the same shape with two changes: its frontmatter sets `model`, `tools` and `effort`, picked so discovery and bulk reading run on Sonnet with few tools, and its body closes with the exact report format its caller parses.
 
-## Anti-patterns
+## What to leave out
 
-- A narrative of one fix ("we hit X in May") instead of the rule it taught; the reader cannot generalize a story.
-- The same example in two languages, or a fill-in template posing as an example; one complete real example in the most relevant language.
-- A generic label (`step3`, `helper`, `data`) anywhere a domain word fits.
-- A reference that points at another reference; every reference sits one level below the skill file, and one over 100 lines opens with a table of contents.
+- A war story about one fix, such as "last sprint the build broke because…"; write the rule the story taught, since a reader cannot generalize an anecdote.
+- One example repeated in several languages, or a blank template dressed up as an example; give a single complete example in the language that matters most.
+- Placeholder names such as `step3`, `helper` or `data` where a word from the domain exists.
+- A reference that sends the reader on to another reference; every reference sits one level under the skill file, and one longer than 100 lines starts with a table of contents.
 
 ## Judgment
 
-- A dropped section outranks a thin one.
-- One real example outranks two ports of it.
-- The verifier's opening and closing contract outranks any layout preference.
+- Dropping a section outranks keeping a thin one.
+- One real example outranks the same example ported twice.
+- The verifier's rules for the opening and the closing outrank any layout preference.

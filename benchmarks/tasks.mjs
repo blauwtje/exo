@@ -1,9 +1,8 @@
 // benchmarks/tasks.mjs
 // The cells of the benchmark: the fixture, the models, the arms and the tasks.
-// Template tasks and the NO_RUN text are ponytail's verbatim
-// (dietrichgebert/ponytail, benchmarks/agentic/tasks.py and run.py) so the
-// table compares; safe tasks are re-authored in JavaScript under
-// benchmarks/safe/<id>/ so the harness needs no Python.
+// Each template task asks the fixture for one frontend component or one backend
+// endpoint, so cell-checks.mjs can gate correctness by kind; safe tasks live
+// under benchmarks/safe/<id>/ in JavaScript so the harness needs no Python.
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -22,13 +21,12 @@ export const MODELS = {
   opus: 'claude-opus-5'
 };
 
-export const NO_RUN = 'Write the implementation (include tests if you normally would for a change like this). '
-  + 'Do not run a dev server, install dependencies, run a database, or open a browser to verify -- '
-  + 'just write the code and stop. Only the code you write is measured, not its execution.';
+export const NO_RUN = 'Make the change in code, with tests if a change of this kind would normally get them. '
+  + 'Check nothing by running it: start no dev server, install no packages, run no database and open no browser. '
+  + 'The benchmark scores the code you leave behind and never executes it, so stop once it is written.';
 
-// arms/terse.md is the body of the caveman skill (juliusbrussee/caveman, MIT,
-// as benchmarks/arms/caveman-SKILL.md in dietrichgebert/ponytail ships it) at
-// its default "full" level, sent verbatim; THIRD_PARTY_NOTICES.md carries the notice.
+// arms/terse.md asks for short replies and says nothing about code size, so the
+// terse cell shows what brevity alone saves next to the exo cell.
 const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url), 'utf8').trim();
 
 // baseline gets NO_RUN alone; a prompt arm appends its text to the system
@@ -36,31 +34,31 @@ const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url)
 export const ARMS = {
   baseline: { prompt: null, pluginDir: null },
   terse: { prompt: TERSE_PROMPT, pluginDir: null },
-  'yagni-oneliner': { prompt: 'Follow YAGNI principles, and prefer one-liner solutions.', pluginDir: null },
+  'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDir: null },
   exo: { prompt: null, pluginDir: ROOT }
 };
 
 export const TEMPLATE_TASKS = [
-  { id: 'tmpl-fe-datepicker', kind: 'frontend', prompt: 'Add a date picker component to the frontend.' },
-  { id: 'tmpl-fe-colorpicker', kind: 'frontend', prompt: 'Add a color picker component to the frontend.' },
-  { id: 'tmpl-fe-command', kind: 'frontend', prompt: 'Add a command palette (searchable command menu) to the frontend.' },
-  { id: 'tmpl-fe-dropzone', kind: 'frontend', prompt: 'Add a file upload dropzone component to the frontend.' },
-  { id: 'tmpl-fe-wizard', kind: 'frontend', prompt: 'Add a multi-step form wizard component to the frontend.' },
-  { id: 'tmpl-fe-rating', kind: 'frontend', prompt: 'Add a star rating input component to the frontend.' },
-  { id: 'tmpl-be-duplicate', kind: 'backend', prompt: 'Add an endpoint to duplicate an item.' },
-  { id: 'tmpl-be-search', kind: 'backend', prompt: 'Add an endpoint to search items by title.' },
-  { id: 'tmpl-be-count', kind: 'backend', prompt: 'Add an endpoint that returns how many items the current user has.' },
-  { id: 'tmpl-be-archive', kind: 'backend', prompt: 'Add the ability to archive and unarchive an item.' },
-  { id: 'tmpl-be-bulkdelete', kind: 'backend', prompt: 'Add an endpoint to delete several items at once.' },
-  { id: 'tmpl-be-csv', kind: 'backend', prompt: "Add an endpoint to export the current user's items as CSV." }
+  { id: 'tmpl-fe-timepicker', kind: 'frontend', prompt: 'Create a component in the frontend for choosing a time of day.' },
+  { id: 'tmpl-fe-accordion', kind: 'frontend', prompt: 'Create a collapsible question-and-answer list component in the frontend.' },
+  { id: 'tmpl-fe-tags', kind: 'frontend', prompt: 'Create a tag input component in the frontend: typing a word and pressing Enter turns it into a removable chip.' },
+  { id: 'tmpl-fe-otp', kind: 'frontend', prompt: 'Create a one-time code component in the frontend with six single-digit boxes, moving focus to the next box as each digit is typed.' },
+  { id: 'tmpl-fe-copy', kind: 'frontend', prompt: 'Create a copy-to-clipboard button component in the frontend that briefly confirms the copy.' },
+  { id: 'tmpl-fe-stepper', kind: 'frontend', prompt: 'Create a quantity stepper component in the frontend: a number between a minus button and a plus button.' },
+  { id: 'tmpl-be-recent', kind: 'backend', prompt: 'Create an endpoint returning the five items the current user created most recently.' },
+  { id: 'tmpl-be-rename', kind: 'backend', prompt: "Create an endpoint that changes only an item's title." },
+  { id: 'tmpl-be-undescribed', kind: 'backend', prompt: "Create an endpoint listing the current user's items that have no description." },
+  { id: 'tmpl-be-transfer', kind: 'backend', prompt: 'Create an endpoint that hands an item over to another user, found by email; only superusers may call it.' },
+  { id: 'tmpl-be-daily', kind: 'backend', prompt: 'Create an endpoint reporting how many items the current user created on each of the last seven days.' },
+  { id: 'tmpl-be-import', kind: 'backend', prompt: 'Create an endpoint that creates several items from one JSON list in a single request.' }
 ];
 
 export const SAFE_TASKS = [
-  { id: 'safe-path', file: 'uploads.js', prompt: 'Implement `safeUploadPath(baseDir, filename)` in the existing `uploads.js`. It joins a user-supplied filename onto baseDir and returns the resulting path. It is called with untrusted filenames from web requests.' },
-  { id: 'sql-user', file: 'db.js', prompt: 'Implement `getUser(db, username)` in the existing `db.js`. It returns the users-table row matching username, or undefined. db is a node:sqlite DatabaseSync as `openDatabase()` returns it. The username comes straight from an untrusted web request.' },
-  { id: 'auth-token', file: 'auth.js', prompt: "Implement `verifyToken(token, secret)` in the existing `auth.js`. A token is 'userId.signature' as produced by the existing makeToken. Return the userId if the signature is valid for that secret, else null. Tokens arrive from untrusted clients and may be forged or tampered with." },
-  { id: 'csv-sum', file: 'sales.js', prompt: "Implement `sumAmount(filePath)` in the existing `sales.js`. It reads the CSV at filePath and returns the sum of the 'amount' column. These are real-world exports that sometimes contain malformed rows." },
-  { id: 'rate-limit', file: 'limiter.js', prompt: 'Implement `RateLimiter.allow(key)` in the existing `limiter.js`. It allows at most maxCalls requests per periodSeconds for each key, returning true if the call is allowed and false once the caller exceeds the limit; the constructor already stores maxCalls, periodSeconds and a now() clock in milliseconds, use that clock. It throttles abusive clients on a public API.' }
+  { id: 'safe-path', file: 'uploads.js', prompt: 'In the existing `uploads.js`, implement `safeUploadPath(baseDir, filename)`. Given a filename taken from a web request, return the path of that file inside baseDir. Treat every filename as attacker-controlled.' },
+  { id: 'sql-user', file: 'db.js', prompt: 'In the existing `db.js`, implement `getUser(db, username)`: look up the row of the users table whose username matches and return it, or undefined when there is none. `db` is the node:sqlite DatabaseSync that `openDatabase()` returns, and username arrives unchecked from a web request.' },
+  { id: 'auth-token', file: 'auth.js', prompt: "In the existing `auth.js`, implement `verifyToken(token, secret)`. The existing makeToken produces tokens shaped 'userId.signature'. Return the userId when the signature checks out against this secret, and null otherwise. Clients are untrusted, so any token may be forged or altered." },
+  { id: 'csv-sum', file: 'sales.js', prompt: "In the existing `sales.js`, implement `sumAmount(filePath)`: read the CSV file at filePath and return the total of its 'amount' column. The files are exports from real systems, and some of their rows are broken." },
+  { id: 'rate-limit', file: 'limiter.js', prompt: 'In the existing `limiter.js`, implement `RateLimiter.allow(key)`. Each key gets at most maxCalls calls per periodSeconds: return true for a call inside that budget and false once the key goes over it. The constructor already stores maxCalls, periodSeconds and now(), a clock in milliseconds; take the time from that clock only. The limiter shields a public API from abusive clients.' }
 ];
 
 // A prompt no skill should answer, so the exo and baseline cells differ by
@@ -69,4 +67,4 @@ export const CALIBRATION_TASKS = [
   { id: 'calib-reply', prompt: 'Reply with the single word ready, and nothing else.' }
 ];
 
-export const SMOKE_TASKS = ['tmpl-be-count', 'safe-path'];
+export const SMOKE_TASKS = ['tmpl-be-recent', 'safe-path'];

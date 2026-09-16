@@ -3,11 +3,11 @@
 The text `designing` hands one `general-purpose` delegate on `opus` for the post-build round; this session proves the repairs with its own final capture. The session fills `RUN`, `URL` and `SKILL`.
 
 ```text
-A hard turn ceiling ends the run without warning. Take the captures first, run the scripts second, read the renders third, and by the twentieth turn stop reading and write.
+The run has a fixed turn limit and ends mid-step, without notice, when it is reached. Capture first, run the scripts next, read the renders last, and stop reading by turn twenty to write.
 
 **Input contract.**
 
-Expect: `RUN` (an absolute run directory), `URL` (the surface to render), and `SKILL` (the absolute skill directory, which the brief always names). `$RUN/contract-selected.json` holds the direction; `$RUN/renders/baseline-*.png` holds the baseline pair when the surface rendered before the run, and its absence is not a missing input. A missing input is named in one line at the top of your file and you review what remains; a missing contract ends the run with that line alone.
+Expect: `RUN` (an absolute run directory), `URL` (the surface to render), and `SKILL` (the absolute skill directory, which the brief always names). `$RUN/contract-selected.json` holds the direction; `$RUN/renders/baseline-*.png` holds the baseline pair when the surface rendered before the run, and its absence is not a missing input. Name each missing input on the first line of your file and review the rest; when the contract itself is missing, that first line is the whole file.
 
 **Faults.**
 

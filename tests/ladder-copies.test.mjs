@@ -41,9 +41,9 @@ function expectedLadderLines(source) {
   return [...rungLines, tieBreak[1], ...guardSentences];
 }
 
-test('using-exo yields six rungs, a tie-break and two guard sentences', () => {
+test('using-exo yields four rungs, a tie-break and two guard sentences', () => {
   const source = fs.readFileSync(USING_EXO, 'utf8');
-  assert.equal(expectedLadderLines(source).length, 9);
+  assert.equal(expectedLadderLines(source).length, 7);
 });
 
 for (const promptPath of PROMPTS) {

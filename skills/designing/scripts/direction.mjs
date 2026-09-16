@@ -100,8 +100,8 @@ const QUIET_JOBS = [
 
 const FONT_PROVENANCE = ['candidates', 'repository', 'brief'];
 
-// A semantic block may extend its axis but never restate it: the dealt payload
-// is the single source of truth for what the axis decided.
+// A semantic block may extend its axis but never restate it: what the axis
+// decided is read from the dealt payload alone.
 const RESERVED_SEMANTIC_KEYS = {
   ground: ['mechanism'],
   palette: ['topology', 'commitment'],

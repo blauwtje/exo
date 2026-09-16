@@ -3,7 +3,7 @@
 The text `designing` hands a `general-purpose` delegate on `sonnet` for one build scope: the foundation, one surface, or `all`. The session fills `RUN`, `SCOPE`, `FILES`, `REFERENCES`, `REPO` and `SKILL` before sending it.
 
 ```text
-A hard turn ceiling ends the run without warning. Read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batch reads, then write; by the fortieth turn stop reading and finish the report, and with `SCOPE` `all` by the fortieth of each scope.
+The run has a fixed turn limit and ends mid-step, without notice, when it is reached. Read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batching the reads, then write; stop reading by turn forty and finish the report, and with `SCOPE` `all` by turn forty of each scope.
 
 **Input contract.**
 
@@ -37,14 +37,12 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 
 **The ladder.**
 
-The ladder, before every edit that adds or replaces code: read the ranges it touches, then stop at the first rung that holds; when two rungs hold, the earlier one wins without weighing.
-1. Need: the request names a present use; a use imagined for later is skipped and named in the report.
-2. Present: a symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it.
-3. Standard library: the language's standard library does it: call it.
-4. Platform: a native feature does it, such as a date input over a picker component, CSS over script, or a database constraint over application code: use it.
-5. Installed: a dependency already in the manifest does it: use it, and add no new one for what ten lines cover.
-6. Minimum: write the fewest statements that pass the checks, one thing per line: no chained call into a call into an index, full-word names, a guard clause over nesting.
-Trust-boundary validation, error handling that prevents data loss, security, accessibility, and anything the user asked for by name are built in full at whatever rung the code lands on. A corner cut with a known ceiling gets one comment naming the ceiling and the upgrade path.
+The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins with no comparison.
+1. Need: build only for a use the request names today; a use that might come later stays out and is listed in the report.
+2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by its name or its role, build on that one rather than writing a second.
+3. Borrow: otherwise take the first existing source that does it: the language's standard library, then a native platform feature such as a `<dialog>` element over a modal component, CSS over script such as a transition over an animation library, or a database constraint over application code such as a unique index over a duplicate check, then a dependency the manifest already lists, with no new dependency for what ten lines cover.
+4. Write: only then write it, with the fewest statements the checks accept and one action per line: no call chained into a call into an index, names in full words, and a guard clause instead of nesting.
+Checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user asked for by name are built completely, whichever rung the code lands on. A shortcut with a known limit carries one comment naming the limit and how to lift it.
 
 **Rules.**
 

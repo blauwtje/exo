@@ -60,7 +60,14 @@ Prefer semantic HTML and shipped controls — `dialog`, `popover`, `details`, na
 
 ## Finish — browser surfaces
 
-Theme every browser surface the implementation presents; the cheapest signal a page was built rather than assembled: `::selection` colored from the palette; `:focus-visible` rings recolored and offset in the direction's accent, never the browser default; `caret-color` and `accent-color` in forms; `scrollbar-color` on panels that scroll inside the layout; link `text-decoration-thickness` and `text-underline-offset` set deliberately; and `font-variant-numeric: tabular-nums` in changing columns (`typography.md`).
+Theme every browser surface the page shows; these small details are what separate a crafted page from a stock one:
+
+- `::selection` in palette colors;
+- `:focus-visible` rings in the direction's accent with an offset, never the browser's default ring;
+- `accent-color` and `caret-color` on form controls;
+- `scrollbar-color` on any panel that scrolls inside the layout;
+- links with a chosen `text-underline-offset` and `text-decoration-thickness`;
+- `font-variant-numeric: tabular-nums` in columns whose numbers change (`typography.md`).
 
 ## Replacing decoration
 

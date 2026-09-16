@@ -30,20 +30,18 @@ This ladder holds before every edit that adds or replaces code, and it answers a
 
 ## The ladder
 
-Read the ranges the change touches and follow the real flow through them before the first rung: lazy about the solution, never about reading. Then answer each rung from those ranges, in one pass, and stop at the first that holds; when two rungs hold, the earlier one wins without weighing, because weighing rungs is the over-build moved into thinking.
+Open the ranges the change touches and trace how control and data really move through them before settling any rung: spend the effort on reading, not on the solution. Then settle the rungs in order from those ranges, in a single pass, and take the first one that fits; when two rungs hold, the lower number wins with no comparison, because comparing rungs is overbuilding moved from the diff into your head.
 
 Decide it without asking and edit in the same turn: a question about the shape ends a headless session before any code.
 
-1. **Need.** The request names a present use; a use imagined for later is skipped and named in the report, because unused code is read and maintained by everyone after you.
-2. **Present.** A symbol, pattern or type in this repository already does it, found by one search for its name or role: reuse it, because a second copy splits the codebase in two.
-3. **Standard library.** The language's standard library does it: call it, because more people have tested it than any file here.
-4. **Platform.** A native feature does it, such as a date input over a picker component, CSS over script, or a database constraint over application code: use it, because the platform ships the edge cases.
-5. **Installed.** A dependency already in the manifest does it: use it, and add no new one for what ten lines cover.
-6. **Minimum.** Write the fewest statements that pass the checks, one thing per line: no chained call into a call into an index, full-word names, a guard clause over nesting.
+1. **Need.** Build only for a use the request names today; a use that might come later stays out and is listed in the report, because code nobody calls still costs every later reader.
+2. **Reuse.** When a symbol, pattern or type in this repository already does the job, found with one search by its name or its role, build on that one rather than writing a second, because a parallel copy leaves two places to fix.
+3. **Borrow.** Otherwise take the first existing source that does it: the language's standard library, then a native platform feature such as a `<dialog>` element over a modal component, CSS over script such as a transition over an animation library, or a database constraint over application code such as a unique index over a duplicate check, then a dependency the manifest already lists, with no new dependency for what ten lines cover, because each of these has already met edge cases that new code here has not.
+4. **Write.** Only then write it, with the fewest statements the checks accept and one action per line: no call chained into a call into an index, names in full words, and a guard clause instead of nesting.
 
 ## Never on the ladder
 
-Trust-boundary validation, error handling that prevents data loss, security, accessibility, and anything the user asked for by name are built in full at whatever rung the code lands on. A corner cut with a known ceiling gets one comment naming the ceiling and the upgrade path, because that constraint is what the next reader needs.
+Checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user asked for by name are built completely, whichever rung the code lands on. A shortcut with a known limit carries one comment naming the limit and how to lift it, because the next reader cannot see that limit any other way.
 
 # Progress
 
