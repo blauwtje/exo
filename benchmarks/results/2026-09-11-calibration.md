@@ -1,3 +1,5 @@
+Task set measured: `benchmarks/tasks.mjs` at commit `7ada5b3` (exo 0.4.0), before the template tasks, the no-run instruction and the control prompts were replaced.
+
 # Overhead calibration
 
 Recorded as printed on 2026-09-11. `skills/savings/scripts/ratios.mjs` and `benchmarks/calibrate.mjs` have since been removed, and the skills `exo:codebase-scout` and `exo:right-sizing` no longer exist; the figures below stand as measured.

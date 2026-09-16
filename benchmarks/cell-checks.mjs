@@ -1,14 +1,14 @@
 // benchmarks/cell-checks.mjs
-// What a cell leaves in its workdir: added lines on code files (lockfiles
-// skipped, tests counted apart, as ponytail counts them) and a correctness
-// gate per task kind, so a smaller diff that does not solve the task is not
-// a saving.
+// What a cell leaves in its workdir: the lines it added to code files, with
+// lockfiles left out and test files tallied on their own, plus a correctness
+// gate per task kind, so a smaller diff that misses the task never counts as a
+// saving.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const CODE_EXTENSIONS = new Set(['.py', '.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.go', '.rs', '.java', '.rb', '.sh']);
-const LOCKFILES = new Set(['package-lock.json', 'bun.lock', 'uv.lock', 'yarn.lock', 'pnpm-lock.yaml', 'poetry.lock']);
+const CODE_EXTENSIONS = new Set(['.css', '.go', '.html', '.java', '.js', '.jsx', '.py', '.rb', '.rs', '.sh', '.ts', '.tsx']);
+const LOCKFILES = new Set(['bun.lock', 'package-lock.json', 'pnpm-lock.yaml', 'poetry.lock', 'uv.lock', 'yarn.lock']);
 const ROUTE_MARKER = /^\+\s*@router\.(get|post|put|patch|delete)\(/m;
 
 function git(workdir, args) {

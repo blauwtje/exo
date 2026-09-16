@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The benchmark runs twelve new template tasks on the same fixture, with new wording for the safe tasks, the no-run instruction, the one-liner prompt and the terse-prose control prompt; each published result names the task set it measured.
+
 ### Fixed
 
 - The eval case check skips `evals/results/`, where `claude plugin eval` writes its reports, and git ignores that directory, so `npm run check` passes after an eval run.
