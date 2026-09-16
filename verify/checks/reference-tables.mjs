@@ -56,6 +56,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/savings/SKILL.md': [],
   'skills/shaping/SKILL.md': [
+    '../issuing/references/fields.md',
     '../research/scout-prompt.md',
   ],
   'skills/skills-tool/SKILL.md': [
