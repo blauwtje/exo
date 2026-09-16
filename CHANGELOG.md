@@ -25,6 +25,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The eval case check skips `evals/results/`, where `claude plugin eval` writes its reports, and git ignores that directory, so `npm run check` passes after an eval run.
 
+### Removed
+
+- `THIRD_PARTY_NOTICES.md` and `LICENSES/Apache-2.0.txt`: every file is now exo's own work under PolyForm Noncommercial 1.0.0, and the README credits name the plugins that inspired exo without a license claim.
+
 ## 0.4.0 - 2026-09-16
 
 ### Highlights

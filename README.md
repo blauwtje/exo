@@ -116,7 +116,7 @@ A change lands under `## Unreleased` in the changelog without a version change, 
 
 ## Credits
 
-exo grew out of reading other plugins, and some of their text is still here. The benchmark tasks and the right-sizing ladder come from [ponytail](https://github.com/dietrichgebert/ponytail), the skill-writing references from [superpowers](https://github.com/obra/superpowers), the design references from [impeccable](https://github.com/pbakaus/impeccable), and the architecture skill from [Matt Pocock's skills](https://github.com/mattpocock/skills). `THIRD_PARTY_NOTICES.md` names every file and its license.
+exo was inspired by [ponytail](https://github.com/dietrichgebert/ponytail), [caveman](https://github.com/juliusbrussee/caveman), [superpowers](https://github.com/obra/superpowers), [impeccable](https://github.com/pbakaus/impeccable), [Matt Pocock's skills](https://github.com/mattpocock/skills) and [smallest-complete](https://github.com/JetXu-LLM/smallest-complete).
 
 ## License
 
