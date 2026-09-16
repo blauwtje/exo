@@ -1,16 +1,19 @@
 // One version lives in three manifests, and `claude plugin update` compares only
-// the one in plugin.json: a change shipped without a raise installs as a no-op.
-// The gate therefore demands a raise whenever the tree differs from the pushed
-// base, and stays silent when it does not.
+// the one in plugin.json, so users receive a change only when a release raises
+// it. Between releases every change waits under `## Unreleased` in CHANGELOG.md:
+// the gate demands that entry whenever the tree differs from the pushed base,
+// and a raised version must carry the dated section `npm run bump` writes.
 
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
 
 const PACKAGE_FILE = 'package.json';
 const PLUGIN_FILE = '.claude-plugin/plugin.json';
 const MARKETPLACE_FILE = '.claude-plugin/marketplace.json';
+const CHANGELOG_FILE = 'CHANGELOG.md';
 // The pushed state, never the local branch: `git diff main` on main compares HEAD
-// to itself and would pass every unbumped commit.
+// to itself and would pass every unrecorded commit.
 const BASE_REF = 'origin/main';
 const THREE_FIELDS = /^\d+\.\d+\.\d+$/;
 
@@ -37,6 +40,11 @@ function marketplaceVersion(manifest, pluginName) {
 function treeDiffers(repository) {
   if (git(repository, ['diff', '--quiet', BASE_REF]).status !== 0) return true;
   return (git(repository, ['ls-files', '--others', '--exclude-standard']).stdout ?? '').trim() !== '';
+}
+
+function changelogText(repository) {
+  const file = repository.join(CHANGELOG_FILE);
+  return fs.existsSync(file) ? repository.text(file) : '';
 }
 
 export function checkPluginVersion(report, repository) {
@@ -80,13 +88,34 @@ export function checkPluginVersion(report, repository) {
   }
 
   const baseVersion = JSON.parse(shown.stdout).version;
-  const changed = treeDiffers(repository);
+  const order = compareVersions(declared, baseVersion);
+  if (order < 0) {
+    report.result('FAIL', name, `every manifest carries ${declared}, below ${BASE_REF} at ${baseVersion}`);
+    return;
+  }
+
+  const changelog = changelogText(repository);
+  if (order > 0) {
+    const dated = changelog.split(/\r?\n/).some((line) => line.startsWith(`## ${declared} - `));
+    report.assert(
+      dated,
+      name,
+      `every manifest carries ${declared}, above ${BASE_REF} at ${baseVersion}`,
+      `the version rose to ${declared} but ${CHANGELOG_FILE} has no "## ${declared} - <date>" section: raise it with npm run bump`
+    );
+    return;
+  }
+
+  if (!treeDiffers(repository)) {
+    report.result('PASS', name, `every manifest carries ${declared}, matching an unchanged ${BASE_REF}`);
+    return;
+  }
+
+  const unreleased = sectionBody(changelog, UNRELEASED_HEADING);
   report.assert(
-    !changed || compareVersions(declared, baseVersion) > 0,
+    unreleased !== null && unreleased !== '',
     name,
-    changed
-      ? `every manifest carries ${declared}, above ${BASE_REF} at ${baseVersion}`
-      : `every manifest carries ${declared}, matching an unchanged ${BASE_REF}`,
-    `the tree differs from ${BASE_REF} while the version stays ${declared}: run npm run bump`
+    `every manifest carries ${declared}; the changes since ${BASE_REF} wait under ${UNRELEASED_HEADING}`,
+    `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`
   );
 }
