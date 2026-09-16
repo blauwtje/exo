@@ -16,6 +16,13 @@ export function sectionBody(changelog, heading) {
   return lines.slice(start + 1, end).join('\n').trim();
 }
 
+// The `## <version> - <date>` line `npm run bump` writes for a release;
+// undefined when that version has no dated section.
+export function releaseHeading(changelog, version) {
+  const lines = changelog.split(/\r?\n/);
+  return lines.find((line) => line.startsWith(`## ${version} - `));
+}
+
 // The changelog policy: removing public surface breaks callers, which is a
 // minor release before 1.0 and a major one after; adding surface is a minor
 // release; anything else is a patch.

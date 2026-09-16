@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { sectionBody } from './verify/changelog.mjs';
+import { releaseHeading, sectionBody } from './verify/changelog.mjs';
 
 const ORDER = ['Highlights', 'Added', 'Changed', 'Fixed', 'Removed'];
 const root = import.meta.dirname;
@@ -16,7 +16,7 @@ const marketplace = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/m
 const version = process.argv[2] ?? plugin.version;
 
 const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
-const heading = changelog.split(/\r?\n/).find((line) => line.startsWith(`## ${version} - `));
+const heading = releaseHeading(changelog, version);
 if (heading === undefined) {
   console.error(`CHANGELOG.md has no "## ${version} - <date>" section; run npm run bump first`);
   process.exit(1);

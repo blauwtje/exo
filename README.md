@@ -114,7 +114,7 @@ claude --plugin-dir .    # run the working tree instead of the installed copy
 
 `CONTRIBUTING.md` covers the checks, the evals, how skills dispatch delegates, and the hooks. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
 
-A change lands under `## Unreleased` in `CHANGELOG.md` without a version change, so the installed plugin updates only on a release. A release raises the version with `npm run bump`, tags `v<version>`, and publishes a GitHub Release whose notes `npm run release-notes` renders from the changelog: highlights, then Added, Changed, Fixed and Removed, then the upgrade commands. `CLAUDE.md` lists the steps.
+A change lands under `## Unreleased` in the changelog without a version change, so the installed plugin updates only on a release. A release raises the version with `npm run bump`, tags `v<version>`, and publishes a GitHub Release whose notes `npm run release-notes` renders from the changelog: highlights, then Added, Changed, Fixed and Removed, then the upgrade commands. `CLAUDE.md` lists the steps.
 
 ## Credits
 

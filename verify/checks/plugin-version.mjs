@@ -6,7 +6,7 @@
 
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
+import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
 
 const PACKAGE_FILE = 'package.json';
 const PLUGIN_FILE = '.claude-plugin/plugin.json';
@@ -96,7 +96,7 @@ export function checkPluginVersion(report, repository) {
 
   const changelog = changelogText(repository);
   if (order > 0) {
-    const dated = changelog.split(/\r?\n/).some((line) => line.startsWith(`## ${declared} - `));
+    const dated = releaseHeading(changelog, declared) !== undefined;
     report.assert(
       dated,
       name,

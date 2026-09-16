@@ -15,7 +15,7 @@ import { releaseLevel, sectionBody, UNRELEASED_HEADING } from './verify/changelo
 const MANIFESTS = ['package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
 const CHANGELOG = 'CHANGELOG.md';
-const UNRELEASED_LINE = /^## Unreleased$/m;
+const UNRELEASED_LINE = new RegExp(`^${UNRELEASED_HEADING}$`, 'm');
 const RELEASES = ['auto', 'patch', 'minor', 'major'];
 
 function raise(version, release) {
