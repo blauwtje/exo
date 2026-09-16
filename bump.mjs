@@ -1,20 +1,22 @@
 // Raise the plugin version in every manifest that carries it, and turn the
 // changelog's Unreleased heading into the new version's heading.
 //
-//   node bump.mjs [patch|minor|major]
+//   node bump.mjs [auto|patch|minor|major]
 //
-// Rewrites the version field in place rather than reserialising the JSON, so
-// key order and formatting survive the bump.
+// `auto`, the default, reads the level off the Unreleased sections, so a
+// release follows the changelog policy. Rewrites the version field in place
+// rather than reserialising the JSON, so key order and formatting survive.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { releaseLevel, sectionBody, UNRELEASED_HEADING } from './verify/changelog.mjs';
 
 const MANIFESTS = ['package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
 const CHANGELOG = 'CHANGELOG.md';
-const UNRELEASED_HEADING = /^## Unreleased$/m;
-const RELEASES = ['patch', 'minor', 'major'];
+const UNRELEASED_LINE = /^## Unreleased$/m;
+const RELEASES = ['auto', 'patch', 'minor', 'major'];
 
 function raise(version, release) {
   const [major, minor, patch] = version.split('.').map(Number);
@@ -26,14 +28,27 @@ function raise(version, release) {
   return `${major}.${minor}.${patch + 1}`;
 }
 
-const release = process.argv[2] ?? 'patch';
-if (!RELEASES.includes(release)) {
-  console.error(`unknown release ${release}; expected one of ${RELEASES.join(', ')}`);
+const requested = process.argv[2] ?? 'auto';
+if (!RELEASES.includes(requested)) {
+  console.error(`unknown release ${requested}; expected one of ${RELEASES.join(', ')}`);
   process.exit(1);
 }
 
 const root = import.meta.dirname;
 const current = JSON.parse(fs.readFileSync(path.join(root, PLUGIN_MANIFEST), 'utf8')).version;
+
+const changelog = fs.readFileSync(path.join(root, CHANGELOG), 'utf8');
+const unreleased = sectionBody(changelog, UNRELEASED_HEADING);
+if (unreleased === null) {
+  console.error(`${CHANGELOG} has no "${UNRELEASED_HEADING}" heading; add it above the latest release and rerun`);
+  process.exit(1);
+}
+if (unreleased === '') {
+  console.error(`${CHANGELOG} holds no entry under "${UNRELEASED_HEADING}": nothing to release`);
+  process.exit(1);
+}
+
+const release = requested === 'auto' ? releaseLevel(unreleased, current) : requested;
 const next = raise(current, release);
 const versionField = new RegExp(`("version":\\s*")${current.replace(/\./g, '\\.')}(")`, 'g');
 
@@ -50,18 +65,13 @@ for (const manifest of MANIFESTS) {
   rewritten.push({ file: manifest, after });
 }
 
-const changelog = fs.readFileSync(path.join(root, CHANGELOG), 'utf8');
-if (!UNRELEASED_HEADING.test(changelog)) {
-  console.error(`${CHANGELOG} has no "## Unreleased" heading; add it above the latest release and rerun`);
-  process.exit(1);
-}
 // UTC, so the heading does not depend on the machine's time zone.
 const today = new Date().toISOString().slice(0, 10);
-rewritten.push({ file: CHANGELOG, after: changelog.replace(UNRELEASED_HEADING, `## Unreleased\n\n## ${next} - ${today}`) });
+rewritten.push({ file: CHANGELOG, after: changelog.replace(UNRELEASED_LINE, `${UNRELEASED_HEADING}\n\n## ${next} - ${today}`) });
 
 for (const { file, after } of rewritten) {
   fs.writeFileSync(path.join(root, file), after);
 }
 
 const files = rewritten.map(({ file }) => file);
-console.log(`${current} -> ${next} in ${files.join(', ')}`);
+console.log(`${current} -> ${next} (${release}) in ${files.join(', ')}`);
