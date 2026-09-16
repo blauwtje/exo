@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.26 - 2026-09-16
+
+### Added
+
+- `THIRD_PARTY_NOTICES.md` and `LICENSES/Apache-2.0.txt` carry the notices for the material reused from ponytail, caveman, superpowers, mattpocock/skills, smallest-complete and impeccable, and `LICENSE` opens with the licensor's required notice.
+
+### Changed
+
+- The README is a short guide in the shape of the larger plugin repositories: install, why, the skills by group, how it works, savings, develop, credits and license. The developer detail moved to `CONTRIBUTING.md` and `benchmarks/README.md`.
+
 ## 0.3.25 - 2026-09-16
 
 ### Fixed

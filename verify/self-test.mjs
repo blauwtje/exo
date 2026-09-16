@@ -11,8 +11,12 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 
 // A fixture holds everything a check reads plus the verifier itself, so the
-// javascript syntax check has the same modules to parse that the real run does.
-const FIXTURE_ENTRIES = ['skills', 'verify', 'verify.mjs', 'README.md'];
+// javascript syntax check has the same modules to parse that the real run does,
+// and the Markdown files README.md links to, so its references resolve there too.
+const FIXTURE_ENTRIES = [
+  'skills', 'verify', 'verify.mjs', 'README.md',
+  'CONTRIBUTING.md', 'THIRD_PARTY_NOTICES.md', 'benchmarks/README.md'
+];
 
 function read(root, relative) {
   return fs.readFileSync(path.join(root, relative), 'utf8');
