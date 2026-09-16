@@ -56,3 +56,12 @@ test('the authorization line grants no push before the finish answer and no merg
   assert.ok(authorization[0].includes('a push or a pull request only after your answer to the finish question'));
   assert.ok(!authorization[0].includes('merge'), 'implementing grants no merge');
 });
+
+test('implementing-batch and debug settle the workspace and end on the finish question', () => {
+  for (const skill of ['implementing-batch', 'debug']) {
+    const text = read(`${skill}/SKILL.md`);
+    assert.ok(text.includes('`../implementing/references/workspace.md`'), `${skill} names the workspace step`);
+    assert.ok(text.includes('`../implementing/references/finishing.md`'), `${skill} names the finish step`);
+    assert.ok(!text.includes('git push'), `${skill} runs no push of its own`);
+  }
+});

@@ -13,6 +13,8 @@ const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data
 
 const EXPECTED_OWNER_ROWS = {
   'skills/debug/SKILL.md': [
+    '../implementing/references/workspace.md',
+    '../implementing/references/finishing.md',
     '../implementing-batch/references/performance.md',
     '../implementing-batch/references/critique.md',
     '../implementing-batch/references/security.md',
@@ -21,6 +23,8 @@ const EXPECTED_OWNER_ROWS = {
     '../research/scout-prompt.md',
   ],
   'skills/implementing-batch/SKILL.md': [
+    '../implementing/references/workspace.md',
+    '../implementing/references/finishing.md',
     'references/critique.md',
     'references/security.md',
     'references/data-migration.md',
