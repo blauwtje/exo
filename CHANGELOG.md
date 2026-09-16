@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Settings now come in layers.** Local, project and global files override exo's defaults, and `shaping` can store a spec as a GitHub issue.
+- **Every run asks where it commits.** Before the first edit you pick a branch, a worktree or the current branch, and nothing pushes until you answer the finish question.
+- **Releases are explicit.** `ship-issue` is gone, and a change only reaches you through a release.
+
 ### Added
 
 - `settings` shows and changes exo settings in four layers: `.claude/exo.local.json`, `.claude/exo.json`, the plugin's global options (asked when the plugin is enabled, changed in `/config`) and the default. The session hook injects the resolved values as one `exo settings:` context line.
@@ -20,6 +26,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Every exo question is plain numbered lines, `(1) Label (Recommended): what it does`, answered with a digit and never through a question tool. A stage option no longer carries its command, model and effort; one line under the options names a model only when it differs from the session's.
 - Nothing pushes automatically: commits stay local until the finish question's answer, and `implementing` no longer enters a release run on the default branch.
 - `npm run bump` reads the release level off `## Unreleased`, and the `plugin version` check asks for a changelog entry on every change instead of a version raise.
+
+### Fixed
+
+- `implementing-batch` names the three workspace options in its own step, so a session that cannot read `workspace.md` still offers the worktree.
 
 ### Removed
 
