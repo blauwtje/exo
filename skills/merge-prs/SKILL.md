@@ -18,7 +18,7 @@ named, or on every open PR when the user said so; it authorizes nothing else.
 
 ## Steps
 
-1. **List.** `gh pr list --state open --json number,title,baseRefName,headRefName`.
+1. **List.** `gh pr list --json number,title,baseRefName,headRefName`.
    Keep the user's order when they named PRs; otherwise take the list order.
    Print the table before touching anything.
 2. **Gate, per PR, from the API.** Run

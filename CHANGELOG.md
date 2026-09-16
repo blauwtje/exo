@@ -19,6 +19,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `designing` states its turn limits, motion thesis, materials, timing, reduced-motion rule, browser finish list, build bindings and slop tropes in new wording and structure, with the same rules and values.
 - The overused-font list is rebuilt from a criterion recorded in `overused-fonts.mjs`: Google Fonts' most popular families, platform and browser defaults, the `create-next-app` faces, and the faces models pick unprompted or fall back on, now 66 families; the craft recipes and check tests spell their CSS samples anew.
 - `skills-tool` and its form, pressure, plugging and shape references are rewritten in exo's own words and structure, with the same loop, rules and bounds.
+- `deepen` restates its scope, terms and audit with new card fields (Files, Friction, Refactor, Payoff, Confidence), and `debug`, `implementing`, `implementing-batch` and `merge-prs` reword single passages, with the same triggers and bounds.
 
 ### Fixed
 

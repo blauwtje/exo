@@ -16,7 +16,7 @@ For every other decided change, count these facts after initial inspection: more
 
 ## Context discipline
 
-Every token a tool call returns into this context is re-read on every later turn. Keep this context small.
+Every token a tool call returns here is carried into every turn that follows. Keep this context small.
 
 - Address files by repository-root-relative or absolute paths. Never chain `cd &&`, and never pipe a test or build runner: a chained or piped runner hides which command failed and its exit code.
 - Read bounded ranges: pass an offset and a limit to Read; scope every grep to a path; never `cat` a file over 100 lines — Read the range you need.

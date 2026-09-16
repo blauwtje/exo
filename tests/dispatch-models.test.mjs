@@ -1,6 +1,6 @@
 // Every delegate dispatch names its model in the sentence that dispatches it,
-// because an omitted model inherits the session's: a discovery dispatch from an
-// opus session would silently run on opus.
+// because a dispatch that names no model runs on the session's model: a
+// discovery dispatch from an opus session would silently run on opus.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

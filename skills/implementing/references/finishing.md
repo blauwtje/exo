@@ -25,7 +25,7 @@ Branch
 
 In the shape `## A question` in `using-exo` gives, offering only what can run. Without a remote named `origin` nothing can, and the overview ends the turn with no question.
 
-On a branch or in a worktree:
+On any branch but the default, or in a worktree:
 
 ```text
 (1) Open PR (Recommended): push the branch and open a pull request
