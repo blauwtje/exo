@@ -41,7 +41,7 @@ The plan's code is not pre-run: a context that copies the tree, applies every st
 
 A deliverable plan is never message-only: a fresh session with zero context must be able to open the artifact and execute it. Update an existing plan for the same topic rather than creating a sibling, and extend it with edits rather than rewriting the file, because a rewrite re-enters every task into the context.
 
-Before ending the turn, read the plan once against the rules in `references/handoff-spec.md`: a step without code, a step without `Run:` and `Expected:`, a task without its `Commit:` block, or any placeholder is repaired now, because the executor cannot.
+Before ending the turn, read the plan once against the rules in `references/handoff-spec.md` and against the brief's acceptance list: a step without code, a step without `Run:` and `Expected:`, a task without its `Commit:` block, a placeholder, or an acceptance check that reaches no step, no `## Final verification` line and no non-goal is repaired now, because the executor cannot.
 
 ## Handing it over
 
