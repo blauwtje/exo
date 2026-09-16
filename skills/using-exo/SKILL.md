@@ -82,20 +82,20 @@ A question whose options are the readings of the request names no rival: the use
 
 - Reasoning for a decision nobody disputed, an alternative you did not take except the rival reading of a request that read two ways, or a recap of what the reader just read.
 - An inventory of work you did not do, except a requested part that is blocked and a check that did not run.
-- A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question, each option one line, the recommended one first.
+- A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question, each option one line, the recommended one first, except the next stage's question, whose order is fixed below.
 
 ## The next stage
 
 A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks, even when no other question is open: where and on which model the next stage runs is the user's choice.
 
-1. **Three options, the recommended one first.** Run the next stage in a fresh session after a context clear; run it now in this session; stop here. Ask through the harness's structured question tool where it has one, otherwise as three numbered lines that end the turn.
-2. **Fresh is recommended when the next stage reads its input from a file**, and its description says why: a long context is re-read on every turn, which costs tokens and answer quality. Input that lives only in this conversation makes running it now the recommended option.
+1. **Numbered lines, in a fixed order.** The options are numbered lines that end the turn, which the user answers by typing the digit, and no other question shape is used. After `shaping`: 1) run `planning` in this session, 2) stop here. After `planning`: 1) `/exo:implementing <plan>`, 2) `/exo:implementing-batch <plan>`, 3) stop here. Another stage skill lists the stages it opens in that same shape, stopping last.
+2. **Running the next stage in this session is recommended**, because the session that produced the artifact already holds the facts it rests on. The mark moves to the stop line when the context is high: a compaction notice has appeared in this session, or this stage is the second one to finish in it. The stop line then names the command to run after a context clear.
 3. **Every option that starts a stage names its command, model and effort**, with the reason in one clause, from this table.
 4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller, which owns the ending.
 
 | Next stage | Model and effort | Because |
 |---|---|---|
 | `planning` | `opus` at `high` | a plan's code is pasted as written, so a slip repeats in every task. |
-| `implementing` or `implementing-batch`, plan with a `Design:` task | `opus` at `high` | that task builds in the session. |
-| `implementing` or `implementing-batch`, plan without one | `sonnet` at `high` | the plan already holds every step's code. |
+| `implementing` or `implementing-batch`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `high` | that task builds in the session. |
+| `implementing` or `implementing-batch`, any other plan | `sonnet` at `high` | the plan holds every step's code, and a frozen direction builds in a delegate. |
 | `implementing-batch` without a plan | `opus` at `high` | it decides the change while building it. |
