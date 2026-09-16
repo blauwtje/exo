@@ -8,5 +8,14 @@
   "homepage": "https://github.com/blauwtje/exo",
   "repository": "https://github.com/blauwtje/exo",
   "license": "PolyForm-Noncommercial-1.0.0",
-  "keywords": ["skills", "delegates", "workflow", "planning", "debugging"]
+  "keywords": ["skills", "delegates", "workflow", "planning", "debugging"],
+  "userConfig": {
+    "specs": {
+      "type": "string",
+      "title": "Where shaping stores specs",
+      "description": "docs: files under docs/specs. issues: GitHub issues. both: a file plus a linked issue. Not sure? Keep docs. A project overrides this in .claude/exo.json.",
+      "options": ["docs", "issues", "both"],
+      "default": "docs"
+    }
+  }
 }

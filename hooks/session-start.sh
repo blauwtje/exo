@@ -25,4 +25,8 @@ esac
 skill="$root/skills/using-exo/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
+# Skills read project and global choices, such as where shaping stores a spec,
+# from this one line instead of opening the settings files themselves.
+settings=$(node "$root/skills/settings/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
+body="$body"$'\n\n'"$settings"
 jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'

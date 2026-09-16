@@ -89,3 +89,15 @@ test('a project file that is not JSON is named in the context line, and defaults
   assert.equal(result.code, 0);
   assert.match(result.stdout, /^exo settings: specs=docs \(default\); .*exo\.json is not valid JSON/);
 });
+
+test('every schema key is a userConfig entry with the same type, options and default', async () => {
+  const schema = JSON.parse(await fs.readFile(new URL('../skills/settings/schema.json', import.meta.url), 'utf8'));
+  const plugin = JSON.parse(await fs.readFile(new URL('../.claude-plugin/plugin.json', import.meta.url), 'utf8'));
+  const userConfig = plugin.userConfig ?? {};
+  assert.deepEqual(Object.keys(userConfig).sort(), Object.keys(schema).sort());
+  for (const [key, entry] of Object.entries(schema)) {
+    assert.equal(userConfig[key].type, entry.type, key);
+    assert.deepEqual(userConfig[key].options, entry.options, key);
+    assert.equal(userConfig[key].default, entry.default, key);
+  }
+});

@@ -84,3 +84,14 @@ test('without jq the hook still writes the plugin-root pointer and exits 0 with 
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
 });
+
+test('the session hook appends the settings line resolved for the project', { skip: withoutJq }, async () => {
+  const configDirectory = await fixture();
+  const project = await fixture();
+  await fs.mkdir(path.join(project, '.claude'));
+  await fs.writeFile(path.join(project, '.claude', 'exo.json'), '{"specs":"issues"}\n');
+  const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '' });
+  assert.equal(result.code, 0, result.stderr);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  assert.ok(context.endsWith('exo settings: specs=issues (project)'), context.slice(-200));
+});
