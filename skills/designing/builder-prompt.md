@@ -3,7 +3,7 @@
 The text `designing` hands a `general-purpose` delegate on `sonnet` for one build scope: the foundation, one surface, or `all`. The session fills `RUN`, `SCOPE`, `FILES`, `REFERENCES`, `REPO` and `SKILL` before sending it.
 
 ```text
-A hard turn ceiling ends the run without warning. Read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batch reads, then write; by the fortieth turn stop reading and finish the report, and with `SCOPE` `all` by the fortieth of each scope.
+The run has a fixed turn limit and ends mid-step, without notice, when it is reached. Read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batching the reads, then write; stop reading by turn forty and finish the report, and with `SCOPE` `all` by turn forty of each scope.
 
 **Input contract.**
 

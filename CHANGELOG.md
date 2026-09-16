@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The benchmark runs twelve new template tasks on the same fixture, with new wording for the safe tasks, the no-run instruction, the one-liner prompt and the terse-prose control prompt; each published result names the task set it measured.
 - The right-sizing ladder has four rungs, Need, Reuse, Borrow and Write, with the same precedence, tie-break and guards, in `using-exo`, the four code-writing delegate prompts and the README.
+- `designing` states its turn limits, motion thesis, materials, timing, reduced-motion rule, browser finish list, build bindings and slop tropes in new wording and structure, with the same rules and values.
 
 ### Fixed
 

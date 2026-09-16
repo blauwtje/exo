@@ -39,7 +39,14 @@ When a tell removes a default, replacement parity applies (`visual-direction.md`
 
 ## Slop tropes
 
-Defaults that read as machine-made. Each stays only when a contract field or the brief's own words earn it, with that provenance recorded; `scripts/check-ui.mjs` reports the code-detectable ones as `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `left-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, and `kicker-above-heading`. Aggressive gradient grounds: a hue swing across the page, a saturated centered halo or glow, a gradient wash as decoration. Emoji outside an explicit brand use; a labelled placeholder beats an emoji icon. The rounded container with a left accent border, nested cards, and one grey shadow under every card. Imagery drawn in SVG to fill a region; use a labelled placeholder and ask for the real material. An overused family (Inter, Roboto, Arial, Fraunces, a system stack) as the display face. An eyebrow or kicker above a heading, gradient-filled text, an arrow glyph on a button, monospace as a costume for "technical". The cream-serif-terracotta kit, the near-black-with-acid-accent kit, and a hairline border under a wide soft shadow.
+These defaults make a page look generated. One stays only when a contract field or the wording of the brief justifies it and that justification is recorded; `scripts/check-ui.mjs` reports the code-detectable ones as `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `left-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, and `kicker-above-heading`.
+
+- Grounds: a gradient whose hue swings across the page, a saturated halo or glow in the middle, a gradient wash used as decoration.
+- Icons and imagery: emoji outside a stated brand use, and SVG drawings invented to fill a region; a labelled placeholder does better in both cases, with a request for the real material.
+- Containers: a rounded box with a colored left border, cards inside cards, the same grey shadow under every card, and a thin border beneath a broad soft shadow.
+- Type: a display face from `scripts/overused-fonts.mjs`, such as Inter, Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
+- Kits: cream with a serif and terracotta, and near-black with one acid accent.
+- Buttons: an arrow glyph added to the label.
 
 ## The fault contract
 
@@ -63,8 +70,8 @@ Fix them and render again. A redesign also removes one accessory with no content
 Machine-written copy has a cadence as recognizable as machine design:
 
 - **Em dashes.** Any em dash in interface copy: rewrite with a comma, colon, or period.
-- **The inflation lexicon:** streamline, empower, supercharge, world-class, seamless, effortless, unleash, elevate, revolutionize, "at scale" (unless literally about scaling). Replace each with the specific fact it was inflating.
-- **Manufactured contrast:** "It's not just X — it's Y." One instance is rhetoric; as a house style it is autocomplete.
+- **Inflated verbs and adjectives:** leverage, seamless, unlock, elevate, robust, empower, effortless, transform, streamline, cutting-edge, supercharge, world-class, unleash, next-generation, revolutionize, game-changing, or "at scale" when nothing scales. Replace each with the concrete fact it stands in for.
+- **Staged reversal:** "This isn't a tool. It's a teammate." Once is a figure of speech; as the page's habit it is filler.
 - **Reflexive triplets:** "Fast. Simple. Powerful." Keep only when each word names a different observable behavior.
 - **Rhetorical-question openers** and **audience hedging** ("Whether you're a startup or an enterprise…").
 
