@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.4.0 - 2026-09-16
+
 ### Highlights
 
 - **Settings now come in layers.** Local, project and global files override exo's defaults, and `shaping` can store a spec as a GitHub issue.
