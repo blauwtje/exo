@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
+
 ### Changed
 
 - The benchmark runs twelve new template tasks on the same fixture, with new wording for the safe tasks, the no-run instruction, the one-liner prompt and the terse-prose control prompt; each published result names the task set it measured.
