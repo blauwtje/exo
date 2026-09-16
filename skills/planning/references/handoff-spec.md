@@ -7,7 +7,7 @@ Write for a reader with zero conversation context: no "as discussed", no "above"
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the observable result.
-2. `## Plan basis`: opens with `Repository: <absolute root>` and `Branch: <branch>` on their own lines, which `implementing` reads to match a plan to a checkout; then the ref planned against, relevant dirty state, the pinned tool and library versions the plan depends on, and every command the planning session could not run itself; closes with the literal sentence "Executor loads the `implementing` skill on this plan before the first task."
+2. `## Plan basis`: opens with `Repository: <absolute root>` and `Branch: <branch>` on their own lines, which `implementing` reads to match a plan to a checkout; then the ref planned against, relevant dirty state, the pinned tool and library versions the plan depends on, and every command the planning session could not run itself; closes with the literal sentence "Executor loads the `implementing` skill on this plan before the first task." It carries no branching, commit, push or pull-request policy: the skill that runs the plan owns those, and a plan that overrides them disables a gate the executor cannot see.
 3. `## Non-goals`: adjacent work that stays unchanged; the executor treats these as hard boundaries.
 4. `## Context`: the verified facts the plan depends on: current behavior, owning files and symbols, the conventions the edits follow, and every signature two tasks share, because a task's executor sees only its own task.
 5. `## Visual direction`: only when a task carries a `Design:` line; exactly one `Design skill: <name>` line naming the skill that task loads, then the chosen direction in one line, or `Direction: pending at rung <n>` when that skill ran inside a read-only planning mode, the evidence it rests on, and the choices an executor may not invent.
@@ -55,6 +55,7 @@ git commit -m "<type>(<scope>): <title>" -m "Plan-task: <n>"
 7. **Repository conventions.** Each task connects to the repository's own test registration, error types, logging and layout; the plan invents no parallel pattern.
 8. **Design tasks.** A task with a `Design:` line fixes structure, class names and copy in its code and leaves the visual values to the named skill, which the executing session loads before that task's first edit.
 9. **Drift.** The executor compares each `Modify:` region with the tree before editing; a region that no longer matches stops that task before any edit with `PLAN DRIFT: Task <n>` and the mismatch, and a `general-purpose` delegate on `opus` from `../../implementing/plan-author-prompt.md` rewrites that task alone.
+10. **Acceptance coverage.** Every acceptance check in the brief reaches a step's `Expected:`, a `## Final verification` line, or `## Non-goals`, in the brief's own words; a check in none of the three is a plan failure, because the branch review is the next thing that would catch it.
 
 ## Judgment
 
