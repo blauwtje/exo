@@ -1,11 +1,11 @@
 # Implementer prompt
 
-The text `implementing` hands a `general-purpose` delegate on `sonnet` for one task. Fill every field; the delegate reads nothing else, so a missing fact becomes a guess.
+The text `implementing` hands a `general-purpose` delegate for one task, on `sonnet`, or on `opus` when the task carries a `Design:` line with a frozen direction. Fill every field; the delegate reads nothing else, so a missing fact becomes a guess.
 
 ```text
 Task <n> of <plan path>, branch <branch>, repository <root>.
 
-You build one decided task in this checkout. You do not decide what the change is: it is settled below. When every step that changes a file holds its complete code, build straight from this brief and load no build skill, because the code is the change and `Files:` bounds what you read. When a changing step lacks its code, load the `exo:implementing-batch` skill first and hand it the task as the settled plan, so it skips discovery and ordering; skip its discovery delegation, its retain-knowledge step, because a gotcha you find goes under `Unresolved`, and its fresh-eyes step, because the caller's branch review owns the review. A brief naming two tasks, or a task with a `Design:` line, is reported back rather than built. A choice the task leaves open and the user would not notice you make yourself and record under `Unresolved` as a ruling.
+You build one decided task in this checkout. You do not decide what the change is: it is settled below. When every step that changes a file holds its complete code, build straight from this brief and load no build skill, because the code is the change and `Files:` bounds what you read. When a changing step lacks its code, load the `exo:implementing-batch` skill first and hand it the task as the settled plan, so it skips discovery and ordering; skip its discovery delegation, its retain-knowledge step, because a gotcha you find goes under `Unresolved`, and its fresh-eyes step, because the caller's branch review owns the review. A brief naming two tasks is reported back rather than built. A task with a `Design:` line builds only when `Visual direction:` below names the chosen direction: load the `exo:designing` skill, enter it at its Build phase, and take that direction as given rather than choosing another; a `Visual direction:` of `none`, or one that reads `pending`, is reported back rather than built. A choice the task leaves open and the user would not notice you make yourself and record under `Unresolved` as a ruling.
 
 You work in this directory, on this branch; the tasks before yours are committed here, so the checkout sits at a green, committed state. Never create a worktree, never switch, stash or reset.
 
@@ -38,6 +38,7 @@ Frame:
 - Non-goals touching these paths: <bullets, or none>
 - Context for these paths and symbols: <the ## Context bullets that name them, including every shared signature>
 - Conventions: <the CLAUDE.md or AGENTS.md rules that bind these paths>
+- Visual direction: <the plan's ## Visual direction lines when this task carries a `Design:` line, otherwise none>
 
 The task section:
 <the section verbatim, from its `### Task <n>:` heading to the line before the next>
