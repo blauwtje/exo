@@ -78,19 +78,29 @@ A message a rule sends alone ends the turn by itself: the report waits for the t
 A decision made before that message is reported there.
 A question whose options are the readings of the request names no rival: the user picks the reading.
 
+## A question
+
+Every question exo puts to the user, a next stage, a workspace, a finish or an approval, has one shape, because the user answers it by typing a digit.
+
+1. **Plain lines, no tool.** The options are lines in the reply that end the turn; a structured question tool, a form or a picker is never used, because the pick must arrive as a digit the next step reads.
+2. **One option per line**, written `(<n>) <Label> (Recommended): <what it does>`: a label of one to three words, then one short clause saying what happens, never why, and never a command, a model or an effort.
+3. **One option is marked**, the recommended one, and it comes first except in the next stage's fixed order; stopping or keeping things as they are comes last. Label, marker and clause are in the conversation's language.
+4. **Nothing follows the options** except the one model line `## The next stage` allows.
+5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
+
 ## Never in an ending
 
 - Reasoning for a decision nobody disputed, an alternative you did not take except the rival reading of a request that read two ways, or a recap of what the reader just read.
 - An inventory of work you did not do, except a requested part that is blocked and a check that did not run.
-- A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question, each option one line, the recommended one first, except the next stage's question, whose order is fixed below.
+- A menu of commands. A question ends a turn only when the choice is the user's and the routes differ; then it is one question in the shape `## A question` gives, except the next stage's question, whose order is fixed below.
 
 ## The next stage
 
 A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks, even when no other question is open: where and on which model the next stage runs is the user's choice.
 
-1. **Numbered lines, in a fixed order.** The options are numbered lines that end the turn, which the user answers by typing the digit, and no other question shape is used. After `shaping`: 1) run `planning` in this session, 2) stop here. After `planning`: 1) `/exo:implementing <plan>`, 2) `/exo:implementing-batch <plan>`, 3) stop here. Another stage skill lists the stages it opens in that same shape, stopping last.
-2. **Running the next stage in this session is recommended**, because the session that produced the artifact already holds the facts it rests on. The mark moves to the stop line when the context is high: a compaction notice has appeared in this session, or this stage is the second one to finish in it. The stop line then names the command to run after a context clear.
-3. **Every option that starts a stage names its command, model and effort**, with the reason in one clause, from this table.
+1. **Fixed order.** The options follow `## A question`. After `shaping`: (1) Planning, (2) Stop. After `planning`: (1) Implementing, (2) Implementing batch, (3) Stop. Another stage skill lists the stages it opens in that same order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
+2. **Running the next stage in this session is recommended**, because the session that produced the artifact already holds the facts it rests on. `(Recommended)` moves to the stop line when the context is high: a compaction notice has appeared in this session, or this stage is the second one to finish in it. The stop line's clause then names the command to run after a context clear.
+3. **One model line.** When the recommended stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause; when they match, there is no line.
 4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller, which owns the ending.
 
 | Next stage | Model and effort | Because |
