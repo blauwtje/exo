@@ -1,35 +1,40 @@
 # Pressure scenarios
 
-A skill is tested by the prompt most likely to make the model skip it. The enemy is the academic prompt, which the baseline passes by reciting the rule and so proves nothing. The overcorrection is a scenario so contrived the model treats it as a puzzle instead of a job.
+A skill is proven by the prompt that most tempts the model to ignore it. The enemy is the quiz-style prompt, which the run without the skill passes by quoting the rule back and so proves nothing. The overcorrection is a setup so artificial the model solves it as a riddle rather than doing the work.
 
-## Which skills need one
+## What each kind of file needs
 
-- A skill that enforces a discipline the model finds costly (a test first, a proof before a fix, a question before a build): pressure scenarios, at least three.
-- A skill that teaches a technique or a pattern: one application case, one variation, one case with a detail missing, and a counter-example where the pattern does not apply.
-- A reference: a retrieval case, an application case and a gap case where the answer is not in it; no pressure.
+- A skill guarding a costly habit, such as writing the test first, proving a cause before fixing, or asking before building: three pressure scenarios or more.
+- A skill teaching a technique or pattern: a case that applies it, a case that varies it, a case missing one detail, and a case where the pattern must not be used.
+- A reference: one case that looks something up, one that applies it, and one whose answer the reference does not hold; no pressure.
 
-## The seven pressures
+## Sources of pressure
 
-Time, sunk cost, authority, money, exhaustion, social, and pragmatism.
-One pressure makes a usable case; three combined make a strong one, because a skill that survives one pressure still folds under the second.
+Pressure comes from the situation, from the model's own investment, and from the people involved:
 
-## Elements of a scenario
+- the situation: a deadline, a cost or a budget, and a plain "it works, ship it";
+- investment: work already sunk into the wrong path, and the fatigue of a long session;
+- people: someone senior who wants the shortcut, and the social cost of saying no.
 
-- Concrete options the model must choose between, each plausible, with real file paths, numbers and names.
-- A constraint that makes the right option expensive: a deadline, a stakeholder, a passing pipeline, hours already spent.
-- A prompt that asks what the model does, not what it should do; advice is free, action is the test.
-- No deferral exit: the human is away, the tool budget is fixed, the decision cannot be postponed.
-- A preamble stating the scenario is real and the model must choose and act.
+One pressure gives a usable case; stack three for a strong one, because a skill that holds against one pressure still folds under the next.
 
-## Running the case
+## Building the prompt
 
-1. Run the case without the skill on the model the skill runs on, because a rule Sonnet needs is noise to Opus and the reverse.
-2. Record the choice and the rationalization verbatim; the exact wording is the material the skill answers.
-3. Run the same case with the skill loaded; a pass counts only when the baseline failed.
-4. Save the case as `evals/<skill>-<case>/prompt.md` with a grader under `graders/` stating the expected behavior as an observable, so the next edit can rerun it.
+- Offer concrete choices that each look reasonable, with real paths, figures and names.
+- Make the right choice costly: a cut-off time, an approver waiting, a green pipeline, hours already spent.
+- Ask what the model does next, never what it ought to do; advice costs nothing, and only an action tests the skill.
+- Close the escape routes: nobody can be reached, the tool budget is fixed, and the choice cannot wait.
+- Open by saying the situation is real and the model has to choose and act.
+
+## Running it
+
+1. Run the case without the skill on the model the skill targets, because a rule one model needs is noise to another.
+2. Copy the chosen action and the justification word for word; that wording is what the skill has to answer.
+3. Run the case again with the skill loaded; it counts as a pass only when the run without the skill failed.
+4. Save it as `evals/<skill>-<case>/prompt.md` with a grader under `graders/` stating the expected behavior as something observable, so any later edit can rerun it.
 
 ## Judgment
 
-- A case the baseline fails outranks a case that reads well.
-- Combined pressures outrank a single pressure when the skill guards a discipline.
-- Action outranks advice: a prompt answered with "one should" is rewritten until the model has to act.
+- A case the run without the skill fails outranks a case that reads well.
+- Stacked pressures outrank a single one when the skill guards a habit.
+- Action outranks advice: a prompt the model answers with "one should" is rewritten until it has to act.

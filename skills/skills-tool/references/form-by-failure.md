@@ -1,32 +1,30 @@
 # Form by failure
 
-The baseline failure decides the shape of the rule that stops it. The enemy is a prohibition written for a shaping problem, which produces more of the unwanted output than no guidance at all. The overcorrection is a recipe so complete it forbids the judgment the case needed.
+The mistake seen in the run without the skill decides the shape of the rule that prevents it. The enemy is a ban aimed at an output-shape problem, which yields more of the unwanted output than saying nothing. The overcorrection is a recipe so detailed it leaves no room for the judgment the case needs.
 
-## Classify the failure first
+## Match the mistake to its form
 
-Read the baseline transcript and name which of these happened; the first match decides the form.
+Read that run's transcript and take the first description below that fits; it sets the form.
 
-| Baseline failure | Form | Example |
-|---|---|---|
-| Knew the rule and skipped it under pressure | A bright line plus a rationalization table and red flags | "No production edit before the failing test exists." |
-| Produced output of the wrong shape | A recipe: what the output is, in order, with its slots | "A report is the verdict, then the evidence, then the open items." |
-| Left out one element | A required slot in the template, marked so an empty slot is visible | "`Done when:` names the observable result; a blank line fails." |
-| Behaved right in one case and wrong in another | A conditional keyed to an observable predicate | "When the diff touches a persisted format, read the migration reference." |
+1. **The model knew the rule and dropped it under pressure.** Write a bright line with a table of the excuses it gave and a red flags section. Example: "No schema change ships without its down migration."
+2. **The output had the wrong structure.** Write a recipe listing the output's parts in order, with a slot for each. Example: "An incident note is the impact, then the timeline, then the follow-ups."
+3. **One part was missing.** Add a required slot to the template, marked so an empty one stands out. Example: "`Rollback:` names the command that undoes the change; leaving it blank fails."
+4. **Right in one situation, wrong in another.** Write a condition on something the model can observe. Example: "When a changed file sits under `migrations/`, read the data reference first."
 
-## Why prohibitions fail on shaping problems
+## Why a ban misfires on a shape problem
 
-- A model told "do not X" holds X in mind and produces it in the gap the rule left; a recipe fills the gap instead.
-- A nuance clause such as "unless it matters" reopens the decision the rule was meant to close; write the exception as its own conditional on a predicate the model can observe.
-- An exemption clause such as "this does not apply to code blocks" still suppresses code blocks; restructure so the rule cannot reach the exempt output.
+- "Do not produce X" keeps X in view, and the model fills the space the ban leaves with X; a recipe fills that space with the right output instead.
+- A hedge such as "unless it matters" hands back the decision the rule meant to settle; state the exception as a separate condition the model can check.
+- An exemption such as "tables are exempt from this" still dampens the exempt output; restructure so the rule never reaches that output at all.
 
 ## Degrees of freedom
 
-- Many valid approaches: prose that names the goal and the constraint, no steps.
-- One approach with parameters: a short ladder or a template with slots.
-- A fragile sequence where one wrong step corrupts state: an exact command or a script the skill runs, never prose the model may paraphrase.
+- Several good approaches exist: prose stating the goal and the limit, with no steps.
+- One approach with settings: a short ladder, or a template with slots.
+- A brittle sequence where one wrong step damages state: an exact command or a script the skill runs, never prose the model could reword.
 
 ## Judgment
 
-- The baseline failure's form outranks the author's habit; a discipline toolkit on a shaping failure is a fault.
-- An exception as a separate conditional outranks a nuance clause inside the rule.
-- The lowest degree of freedom that still allows the valid approaches outranks the most complete one.
+- The form the observed mistake calls for outranks the writer's habit; discipline machinery on a shape problem is a fault.
+- An exception written as its own condition outranks a hedge inside the rule.
+- The least freedom that still admits every good approach outranks the most detailed form.
