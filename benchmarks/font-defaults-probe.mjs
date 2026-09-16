@@ -78,11 +78,18 @@ function askForTypefaces(brief, model, avoided) {
   return new Promise((resolve) => {
     const child = spawn('claude', args, { cwd: workdir, stdio: ['ignore', 'pipe', 'pipe'] });
     let reply = '';
+    let complaint = '';
     child.stdout.on('data', (chunk) => { reply += chunk; });
-    child.on('error', (error) => resolve({ reply: '', error: error.message }));
+    // A pipe nobody reads fills and blocks the child once its buffer is full.
+    child.stderr.on('data', (chunk) => { complaint += chunk; });
+    child.on('error', (error) => {
+      fs.rmSync(workdir, { recursive: true, force: true });
+      resolve({ reply: '', error: error.message });
+    });
     child.on('close', (code) => {
       fs.rmSync(workdir, { recursive: true, force: true });
-      resolve({ reply: reply.trim(), error: code === 0 ? null : `claude exited ${code}` });
+      const failure = `claude exited ${code}: ${complaint.trim().slice(0, 200)}`;
+      resolve({ reply: reply.trim(), error: code === 0 ? null : failure });
     });
   });
 }

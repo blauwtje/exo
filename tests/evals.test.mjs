@@ -8,6 +8,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parseDocument } from 'yaml';
+import { OVERUSED_FONTS } from '../skills/designing/scripts/overused-fonts.mjs';
 
 const evalsRoot = fileURLToPath(new URL('../evals/', import.meta.url));
 const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
@@ -46,6 +47,19 @@ const caseNames = fs.existsSync(evalsRoot)
 
 test('evals/ holds at least one case', () => {
   assert.ok(caseNames.length > 0, 'no case directory under evals/');
+});
+
+// A grader is frontmatter and cannot import the banned list, so this one spells
+// every family into its pattern; a copy left behind grades a run against faces
+// the plugin no longer bans.
+test('the face grader of designing-distinct-direction lists every banned family', () => {
+  const label = 'designing-distinct-direction/graders/avoids-default-faces.md';
+  const grader = path.join(evalsRoot, 'designing-distinct-direction', 'graders', 'avoids-default-faces.md');
+  const { pattern } = frontmatter(grader, label);
+  for (const family of OVERUSED_FONTS) {
+    const listed = pattern.includes(`(${family}|`) || pattern.includes(`|${family}|`);
+    assert.ok(listed, `${label} does not list ${family}`);
+  }
 });
 
 for (const caseName of caseNames) {
