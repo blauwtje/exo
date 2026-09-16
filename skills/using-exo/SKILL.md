@@ -14,7 +14,7 @@ Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rul
 3. Use no skill for a version-only bump, a git-only operation or a read-only question no skill description claims.
 4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change, which `designing` owns.
    Read the ranges, edit, run the check that proves it, report: a skill around two files costs more than the edit.
-5. Issue and pull-request workflows run only when the user invokes them: name `/exo:issuing`, `/exo:ship-issue <n>` or `/exo:merge-prs` instead of doing that work by hand, because those skills carry the gates a hand-run skips.
+5. Issue and pull-request workflows run only when the user invokes them: name `/exo:issuing` or `/exo:merge-prs` instead of doing that work by hand, because those skills carry the gates a hand-run skips.
 
 ## When several fire
 
