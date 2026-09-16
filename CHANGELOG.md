@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.23 - 2026-09-16
+
 ## 0.3.22 - 2026-09-16
 
 ## 0.3.21 - 2026-09-15
