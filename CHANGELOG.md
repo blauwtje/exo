@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The eval case check skips `evals/results/`, where `claude plugin eval` writes its reports, and git ignores that directory, so `npm run check` passes after an eval run.
+
 ## 0.4.0 - 2026-09-16
 
 ### Highlights

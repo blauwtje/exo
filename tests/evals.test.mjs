@@ -33,9 +33,13 @@ function frontmatter(file, label) {
   return fields;
 }
 
+// `claude plugin eval` writes each run's report under evals/results/ unless
+// --output-dir says otherwise; that directory holds output, never a case.
+const RUNNER_OUTPUT_DIRECTORY = 'results';
+
 const caseNames = fs.existsSync(evalsRoot)
   ? fs.readdirSync(evalsRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
+      .filter((entry) => entry.isDirectory() && entry.name !== RUNNER_OUTPUT_DIRECTORY)
       .map((entry) => entry.name)
       .sort()
   : [];

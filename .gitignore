@@ -5,3 +5,4 @@ node_modules/
 docs/
 benchmarks/fixtures/
 benchmarks/runs/
+evals/results/
