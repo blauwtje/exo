@@ -1,15 +1,16 @@
-// `implementing` stays model-invocable, so a push must wait for the user's
-// answer to the tail question. The one exception is a release run, and the
-// skill enters it only when the plan's `Branch:` names the default branch and
-// the root CLAUDE.md or AGENTS.md commits and releases there. The model judges
-// that instruction by reading it; no pattern matches it, so this test guards
-// the skill text that states the gate, not a run.
+// `implementing` stays model-invocable, so the run commits only where the
+// workspace question placed it and pushes only after the finish question. The
+// model follows these rules by reading them; no pattern matches a run, so this
+// test guards the skill text that states them.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-const SKILL = fs.readFileSync(new URL('../skills/implementing/SKILL.md', import.meta.url), 'utf8');
+const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
+const SKILL = read('implementing/SKILL.md');
+const WORKSPACE = read('implementing/references/workspace.md');
+const FINISHING = read('implementing/references/finishing.md');
 
 function loopStep(number) {
   const step = SKILL.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
@@ -17,16 +18,19 @@ function loopStep(number) {
   return step[0];
 }
 
-test('a plan branch other than the default is created without a push', () => {
+test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes("On the default branch while `Branch:` names another, `git switch -c <Branch:>`; the first push waits for the tail's pull-request answer."));
+  assert.ok(branchStep.includes('settle where the run commits as `references/workspace.md` says, before any dispatch'));
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
+  assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
 
-test('only a default-branch plan in a repository that releases there becomes a release run', () => {
-  const branchStep = loopStep(1);
-  assert.ok(branchStep.includes("On the default branch while `Branch:` names it too, read the root `CLAUDE.md` or `AGENTS.md`: when it states both that work is committed on the default branch and that this session runs its release steps there, stay there and treat the run as a release run"));
-  assert.ok(branchStep.includes('otherwise branch as `<type>/<slug>`'), 'a repository without release instructions gets a branch');
+test('the workspace question offers a branch, a worktree and the current branch, in that order', () => {
+  const branch = WORKSPACE.indexOf('(1) Branch (Recommended):');
+  const worktree = WORKSPACE.indexOf('(2) Worktree:');
+  const current = WORKSPACE.indexOf('(3) Current branch:');
+  assert.ok(branch !== -1 && branch < worktree && worktree < current);
+  assert.ok(!WORKSPACE.includes('git push'), 'the workspace step pushes nothing');
 });
 
 test('a green task commits and pushes nothing', () => {
@@ -35,19 +39,20 @@ test('a green task commits and pushes nothing', () => {
   assert.ok(!commitStep.includes('git push'), 'step 6 runs no push');
 });
 
-test('the tail pushes only after the question, except on a release run', () => {
+test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7);
-  const questionStart = tailStep.indexOf('Any other run asks one question');
-  const firstPush = tailStep.indexOf('git push');
-  assert.ok(questionStart !== -1, 'the tail asks a question outside a release run');
-  assert.ok(firstPush > questionStart, 'no push is named before the question');
-  assert.ok(tailStep.includes('push and open the pull request; push and stop; or keep the branch local'));
-  assert.ok(tailStep.includes('A release run then follows the repository\'s release steps in order, pushing where they push, and asks no pull-request question.'));
+  assert.ok(tailStep.includes('`references/finishing.md`'));
+  assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
+  const question = FINISHING.indexOf('## The question');
+  const firstPush = FINISHING.indexOf('git push');
+  assert.ok(question !== -1 && firstPush > question, 'no push is named before the question');
+  assert.ok(FINISHING.includes('(1) Open PR (Recommended):'));
+  assert.ok(FINISHING.includes('(3) Keep local:'));
 });
 
-test('the authorization line grants no push before the tail answer and no merge', () => {
+test('the authorization line grants no push before the finish answer and no merge', () => {
   const authorization = SKILL.match(/^Invoking `\/exo:implementing` on a plan authorizes .+$/m);
   assert.ok(authorization, 'the authorization line exists');
-  assert.ok(authorization[0].includes('a push or a pull request only after your answer to the tail question'));
+  assert.ok(authorization[0].includes('a push or a pull request only after your answer to the finish question'));
   assert.ok(!authorization[0].includes('merge'), 'implementing grants no merge');
 });

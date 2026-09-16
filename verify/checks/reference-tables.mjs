@@ -39,6 +39,8 @@ const EXPECTED_OWNER_ROWS = {
     '../research/scout-prompt.md',
   ],
   'skills/implementing/SKILL.md': [
+    'references/workspace.md',
+    'references/finishing.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'plan-author-prompt.md',
