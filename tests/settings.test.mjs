@@ -1,0 +1,91 @@
+// settings.mjs resolves each exo setting from the local file, the project file,
+// the plugin's global options and the schema default, in that order, and
+// writes only the two files a repository holds.
+
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { fixture, run } from './harness.mjs';
+
+const SETTINGS = fileURLToPath(new URL('../skills/settings/scripts/settings.mjs', import.meta.url));
+
+async function writeJson(file, value) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function workspace({ project, local, global } = {}) {
+  const root = await fixture();
+  const configDirectory = await fixture();
+  if (project) await writeJson(path.join(root, '.claude', 'exo.json'), project);
+  if (local) await writeJson(path.join(root, '.claude', 'exo.local.json'), local);
+  if (global) {
+    await writeJson(path.join(configDirectory, 'settings.json'), { pluginConfigs: { 'exo@blauwtje': { options: global } } });
+  }
+  const env = { CLAUDE_PROJECT_DIR: root, CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PLUGIN_OPTION_SPECS: '' };
+  return { root, env };
+}
+
+async function settings(space, args, extraEnv = {}) {
+  return run(SETTINGS, args, { cwd: space.root, env: { ...space.env, ...extraEnv } });
+}
+
+test('with nothing set the schema default applies', async () => {
+  const result = await settings(await workspace(), ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default)');
+});
+
+test('local outranks project, which outranks global', async () => {
+  const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
+  assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
+  const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project)');
+  const globalOnly = await workspace({ global: { specs: 'both' } });
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global)');
+});
+
+test('the hook environment carries the global value when it is set', async () => {
+  const space = await workspace({ global: { specs: 'docs' } });
+  const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global)');
+});
+
+test('set writes the project file and rejects a value the schema does not allow', async () => {
+  const space = await workspace();
+  const written = await settings(space, ['set', 'specs', 'issues', '--scope', 'project']);
+  assert.equal(written.code, 0, written.stderr);
+  const stored = JSON.parse(await fs.readFile(path.join(space.root, '.claude', 'exo.json'), 'utf8'));
+  assert.deepEqual(stored, { specs: 'issues' });
+  const rejected = await settings(space, ['set', 'specs', 'wiki', '--scope', 'project']);
+  assert.equal(rejected.code, 1);
+  assert.match(rejected.stderr, /specs=wiki is not one of docs, issues, both/);
+});
+
+test('set refuses the global scope and points at /config', async () => {
+  const result = await settings(await workspace(), ['set', 'specs', 'issues', '--scope', 'global']);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /\/config/);
+});
+
+test('a local value in a git repository adds its file to .gitignore', async () => {
+  const space = await workspace();
+  assert.equal(spawnSync('git', ['-C', space.root, 'init', '-q']).status, 0);
+  // A global excludes file that ignores .claude/ would hide the entry this test expects.
+  const result = await settings(space, ['set', 'specs', 'both', '--scope', 'local'], { GIT_CONFIG_GLOBAL: '/dev/null' });
+  assert.equal(result.code, 0, result.stderr);
+  const ignore = await fs.readFile(path.join(space.root, '.gitignore'), 'utf8');
+  assert.ok(ignore.split('\n').includes('.claude/exo.local.json'), ignore);
+});
+
+test('a project file that is not JSON is named in the context line, and defaults apply', async () => {
+  const space = await workspace();
+  await fs.mkdir(path.join(space.root, '.claude'), { recursive: true });
+  await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
+  const result = await settings(space, ['context']);
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\); .*exo\.json is not valid JSON/);
+});

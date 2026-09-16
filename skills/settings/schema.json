@@ -1,0 +1,8 @@
+{
+  "specs": {
+    "type": "string",
+    "options": ["docs", "issues", "both"],
+    "default": "docs",
+    "description": "where shaping stores a spec: docs/specs files, GitHub issues, or both"
+  }
+}
