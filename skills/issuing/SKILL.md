@@ -19,9 +19,11 @@ plan. An issue is a spec before a plan; a plan reads it and never depends on
 it staying open.
 
 Invoking this skill authorizes creating the issues it showed you and you
-approved, with their labels, type, project fields, relations and milestone.
-It never closes an issue, never deletes one, and never edits an existing one,
-except to add a relation to a parent or a blocker you named.
+approved, with their labels, type, project fields, relations and milestone,
+and creating the default labels `references/fields.md` names when the
+repository defines none of its own. It never closes an issue, never deletes
+one, and never edits an existing one, except to add a relation to a parent or
+a blocker you named.
 
 ## Steps
 
@@ -31,22 +33,10 @@ except to add a relation to a parent or a blocker you named.
    parent plus sub-issues and ask once, listing the split you would make.
    Never invent an issue the request does not ask for.
 
-2. **Read the repository, invent nothing.** The vocabulary is whatever this
-   repository defines, not what a project of this kind usually has:
-
-   ```
-   gh label list --limit 100 --json name --jq '[.[].name]'
-   gh api graphql -f query='{repository(owner:"<o>",name:"<r>"){issueTypes(first:20){nodes{name}}}}' --jq '[.data.repository.issueTypes.nodes[].name]'
-   gh api repos/{owner}/{repo}/milestones --jq '[.[]|{number,title}]'
-   gh project list --owner <o> --format json --jq '[.projects[]|{number,title}]'
-   gh project field-list <nr> --owner <o> --format json --jq '[.fields[]|select(.options)|{id,name,options:[.options[]|{id,name}]}]'
-   ```
-
-   Read the language of the last five issues with
-   `gh issue list --limit 5 --json title,body --jq '[.[].title]'`. A label,
-   type, milestone, project field or option this repository does not define is
-   left off the issue and named in the report, never approximated by a similar
-   one and never created.
+2. **Read the repository, invent nothing.** Read its labels, issue types,
+   milestones, project fields and issue templates, and pick the vocabulary,
+   as `references/fields.md` says. Read the language of the last five issues
+   with `gh issue list --limit 5 --json title,body --jq '[.[].title]'`.
 
 3. **Ground the references.** Send a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` the paths and symbols the
    goal sentences name, so `References` carries real paths. Skip this step for
@@ -58,18 +48,8 @@ except to add a relation to a parent or a blocker you named.
    Create nothing before the yes.
 
 5. **Create in dependency order.** A parent before its children, a blocker
-   before what it blocks:
-
-   ```
-   gh issue create --title <title> --body-file <f> --label <l> --type <type> \
-     --parent <n> --blocked-by <n> --milestone <m> --project <title>
-   ```
-
-   Pass only the flags whose values Step 2 confirmed. Project fields are set
-   after creation, per field: read the item id with
-   `gh project item-list <nr> --owner <o> --format json --jq '.items[]|select(.content.number==<n>)|.id'`,
-   then
-   `gh project item-edit --id <item> --project-id <proj> --field-id <field> --single-select-option-id <opt>`.
+   before what it blocks, with the commands and field settings in
+   `references/fields.md`.
 
 6. **Read back.** `gh issue view <n> --json number,title,labels,milestone,url`
    per created issue, and report the URLs, plus everything Step 2 said this
@@ -95,14 +75,15 @@ never repeat in the body what the metadata already shows: labels, type,
 parent, blocked-by and milestone appear beside the issue, and a second copy
 in the body goes stale on the first edit.
 
-Priority and Effort are project fields or existing labels or nothing. When
-this repository defines neither, leave them off and say so; never write them
-into the body as prose.
+Size, effort and priority are the repository's own project fields or labels,
+or the default labels in `references/fields.md` when it has none; never prose
+in the body.
 
 ## References
 
 | File | Read it when |
 |---|---|
+| `references/fields.md` | Steps 2 and 5, before reading the repository and before creating. |
 | `../research/scout-prompt.md` | Step 3, before the discovery dispatch. |
 
 ## Judgment
