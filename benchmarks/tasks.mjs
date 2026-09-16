@@ -26,8 +26,9 @@ export const NO_RUN = 'Write the implementation (include tests if you normally w
   + 'Do not run a dev server, install dependencies, run a database, or open a browser to verify -- '
   + 'just write the code and stop. Only the code you write is measured, not its execution.';
 
-// arms/terse.md is the body of the caveman skill (benchmarks/arms/caveman-SKILL.md
-// in dietrichgebert/ponytail) at its default "full" level, sent verbatim.
+// arms/terse.md is the body of the caveman skill (juliusbrussee/caveman, MIT,
+// as benchmarks/arms/caveman-SKILL.md in dietrichgebert/ponytail ships it) at
+// its default "full" level, sent verbatim; THIRD_PARTY_NOTICES.md carries the notice.
 const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url), 'utf8').trim();
 
 // baseline gets NO_RUN alone; a prompt arm appends its text to the system
