@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.3.25 - 2026-09-16
+
+### Fixed
+
+- `implementing` builds a `Design:` task whose `## Visual direction` records no direction in the session under `designing`, as the model table already said, instead of ending the turn.
+
 ## 0.3.24 - 2026-09-16
 
 ### Changed
