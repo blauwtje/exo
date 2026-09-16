@@ -17,7 +17,7 @@ Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` o
 
 - **Stages, not a chat.** A request is shaped before it is planned, planned before it is built, and a failure is diagnosed before anything is fixed. Each stage ends by asking which stage runs next and on which model.
 - **The main context keeps the decisions.** Codebase discovery, builds, reviews and documentation reads run in delegates with their own prompts, so file dumps never land in the session.
-- **Right-sized code.** Before every edit the model walks a six-rung ladder and stops at the first rung that answers: does it need to exist, does the repository already have it, does the standard library, the platform or an installed dependency do it, and only then the minimum that passes.
+- **Right-sized code.** Before every edit the model settles a four-rung ladder and takes the first rung that fits: leave out what no request needs, reuse what the repository has, borrow from the standard library, the platform or an installed dependency, and write new code last, as little as passes.
 - **Measured, not claimed.** A read guard refuses unbounded and repeated reads, and a ledger books every figure the API reported. Nothing is estimated.
 
 ## Skills
@@ -63,14 +63,12 @@ These leave the machine, so only you can start them.
 
 **The ladder** holds before every edit that adds or replaces code:
 
-1. Need: a use imagined for later is skipped.
-2. Present: reuse what the repository already has.
-3. Standard library: call it.
-4. Platform: use the native feature.
-5. Installed: use the dependency, and add none for what ten lines cover.
-6. Minimum: the fewest statements that pass, one thing per line.
+1. Need: nothing is built for a use the request does not name.
+2. Reuse: what the repository already has is called, not copied.
+3. Borrow: the standard library, then a platform feature, then an installed dependency, and no new dependency for ten lines.
+4. Write: new code comes last, as few statements as pass, one action per line.
 
-Whatever rung the code lands on, a guard at a trust boundary, error handling that keeps data safe, security, accessibility and anything you asked for by name are built in full.
+On every rung, checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility and anything you asked for by name are built completely.
 
 ## Settings
 
