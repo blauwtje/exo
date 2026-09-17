@@ -95,7 +95,7 @@ function bookedRow({ calls = {}, usageById = {}, guard = {}, hookMs = 0 }) {
 // seconds of guard runs, and 1.5 MB withheld over two refusals.
 function measuredRow() {
   return bookedRow({
-    calls: { msg_1: { mixed: false, start: '2026-09-11T10:00:00.000Z', end: '2026-09-11T10:01:58.000Z' } },
+    calls: { msg_1: { kind: 'skill', mixed: false, start: '2026-09-11T10:00:00.000Z', end: '2026-09-11T10:01:58.000Z' } },
     usageById: { msg_1: { input: 2000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 400, model: 'claude-fable-5-1' } },
     guard: {
       hookMs: 2000,
@@ -222,9 +222,9 @@ test('a call whose model has no price dashes the cost row', async () => {
   await writeConfig(directory);
   const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
   const counts = { input: 1000, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0 };
-  const priced = bookedRow({ calls: { m1: { mixed: false, start: null, end: null } },
+  const priced = bookedRow({ calls: { m1: { kind: 'skill', mixed: false, start: null, end: null } },
     usageById: { m1: { ...counts, model: 'claude-fable-5-1' } } });
-  const unpriced = bookedRow({ calls: { m2: { mixed: false, start: null, end: null } },
+  const unpriced = bookedRow({ calls: { m2: { kind: 'skill', mixed: false, start: null, end: null } },
     usageById: { m2: { ...counts, model: 'claude-unlisted-9' } } });
   await writeLedger(directory, { s1: priced, s2: unpriced });
   const result = await runWithStdin(['report'], '', env);

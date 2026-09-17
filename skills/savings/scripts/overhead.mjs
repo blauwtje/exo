@@ -3,7 +3,9 @@
 // Read the read guard refused is exo's own work and counts whole, at the usage
 // the API reported for it and the wall time between the entry before it and its
 // last line; exo's hook runs count the duration the harness records for them.
-// No figure here is derived from a ratio or from a character count.
+// Each such call books its kind: a skill load, or a re-read after a capped or a
+// duplicate refusal. No figure here is derived from a ratio or from a character
+// count.
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,11 +14,18 @@ import { countsCost } from './pricing.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 
 // A row booked under another version is read again from the start.
-export const OVERHEAD_VERSION = 3;
+export const OVERHEAD_VERSION = 4;
+
+// What an exo call was for: loading a skill, or reading a file again after the
+// guard refused it whole (capped) or refused a repeat (duplicate).
+export const WORK_KINDS = ['skill', 'capped', 'duplicate'];
+export const GUARD_KINDS = ['capped', 'duplicate'];
 
 const PLUGIN_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const SKILL_PREFIX = 'exo:';
 const REFUSAL_PREFIX = 'exo read guard:';
+// read-guard.mjs words a duplicate refusal with this phrase and a capped one without it.
+const DUPLICATE_PHRASE = ' is unchanged since your read ';
 
 let hookCommandsCache = null;
 
@@ -61,7 +70,9 @@ function isApiCall(usage) {
 function bookRefusals(transcript, entry) {
   for (const result of refusalResults(entry)) {
     const filePath = transcript.reads[result.tool_use_id];
-    if (filePath !== undefined) transcript.refused.push(filePath);
+    if (filePath === undefined) continue;
+    const kind = result.content.includes(DUPLICATE_PHRASE) ? 'duplicate' : 'capped';
+    transcript.refused.push({ filePath, kind });
   }
 }
 
@@ -75,7 +86,8 @@ function openCall(transcript, message) {
 // A call counts whole when every tool call in it loads an exo skill or
 // re-issues a Read the guard refused just before; any other tool call is work
 // of its own. One response streams as one line per content block, so each
-// line may add tool calls.
+// line may add tool calls. A call that both loads a skill and re-reads books
+// as a skill load.
 function bookToolCalls(overhead, transcript, entry) {
   const message = entry.message;
   const call = transcript.openCall;
@@ -85,9 +97,14 @@ function bookToolCalls(overhead, transcript, entry) {
     if (toolCall.name === 'Read' && typeof filePath === 'string') transcript.reads[toolCall.id] = filePath;
     const skill = toolCall.input?.skill;
     const loadsExoSkill = toolCall.name === 'Skill' && typeof skill === 'string' && skill.startsWith(SKILL_PREFIX);
-    const reissuesRead = toolCall.name === 'Read' && call.refused.includes(filePath);
-    if (!loadsExoSkill && !reissuesRead) call.otherTool = true;
-    if (loadsExoSkill || reissuesRead) overhead.calls[message.id] ??= { mixed: false, start: call.start, end: null };
+    const refusal = toolCall.name === 'Read' ? call.refused.find((refused) => refused.filePath === filePath) : undefined;
+    if (!loadsExoSkill && refusal === undefined) {
+      call.otherTool = true;
+      continue;
+    }
+    const kind = loadsExoSkill ? 'skill' : refusal.kind;
+    overhead.calls[message.id] ??= { kind, mixed: false, start: call.start, end: null };
+    if (loadsExoSkill) overhead.calls[message.id].kind = 'skill';
   }
   const booking = overhead.calls[message.id];
   if (booking === undefined) return;
@@ -97,6 +114,18 @@ function bookToolCalls(overhead, transcript, entry) {
 
 export function emptyOverhead() {
   return { version: OVERHEAD_VERSION, hookMs: 0, transcripts: {}, calls: {} };
+}
+
+export function emptyWork() {
+  return { calls: 0, tokens: 0, cost: 0, costKnown: true, time: 0 };
+}
+
+// The shape measuredTotals returns, all zero.
+export function emptyTotals() {
+  const totals = { ...emptyWork(), hookTime: 0, refusals: 0, bytesWithheld: 0, work: {}, guards: {} };
+  for (const kind of WORK_KINDS) totals.work[kind] = emptyWork();
+  for (const kind of GUARD_KINDS) totals.guards[kind] = { refusals: 0, bytesWithheld: 0 };
+  return totals;
 }
 
 // A call is new when its id differs from the open call's, since one call's
@@ -118,39 +147,50 @@ export function bookOverhead(session, entry, file) {
   if (typeof entry.timestamp === 'string') transcript.lastTimestamp = entry.timestamp;
 }
 
+function addCall(figures, tokens, callCost) {
+  figures.calls += 1;
+  figures.tokens += tokens;
+  if (callCost === null) figures.costKnown = false;
+  else figures.cost += callCost;
+}
+
 // What exo cost this session and what its read guard kept out of context:
 // weighted tokens and price for the calls that were exo's alone, their wall
 // time plus exo's hook runs, and the guard's refusals with the bytes they
-// withheld. costKnown is false when a call's model is missing from prices.mjs,
-// because an unknown price is never guessed.
+// withheld; then the same figures split by the kind of call and by guard.
+// costKnown is false when a call's model is missing from prices.mjs, because
+// an unknown price is never guessed.
 export function measuredTotals(session) {
   const overhead = session.overhead?.version === OVERHEAD_VERSION ? session.overhead : emptyOverhead();
   const guard = session.guard ?? {};
-  const totals = {
-    calls: 0,
-    tokens: 0,
-    cost: 0,
-    costKnown: true,
-    time: overhead.hookMs + (guard.hookMs ?? 0),
-    refusals: 0,
-    bytesWithheld: 0
-  };
+  const totals = emptyTotals();
+  totals.hookTime = overhead.hookMs + (guard.hookMs ?? 0);
+  totals.time = totals.hookTime;
   for (const [id, call] of Object.entries(overhead.calls)) {
     if (call.mixed) continue;
+    const work = totals.work[call.kind];
     const usage = session.usageById?.[id];
     if (usage !== undefined) {
       const weighted = sumCounts([usage]);
-      totals.calls += 1;
-      totals.tokens += weighted.weightedInput + weighted.output;
+      const tokens = weighted.weightedInput + weighted.output;
       const callCost = countsCost(usage, usage.model ?? session.model);
-      if (callCost === null) totals.costKnown = false;
-      else totals.cost += callCost;
+      addCall(totals, tokens, callCost);
+      addCall(work, tokens, callCost);
     }
-    if (call.start !== null && call.end !== null) totals.time += Date.parse(call.end) - Date.parse(call.start);
+    if (call.start !== null && call.end !== null) {
+      const callTime = Date.parse(call.end) - Date.parse(call.start);
+      totals.time += callTime;
+      work.time += callTime;
+    }
   }
   for (const refusal of Object.values(guard.refusals ?? {})) {
+    const bytesWithheld = refusal.bytesWithheld ?? 0;
     totals.refusals += 1;
-    totals.bytesWithheld += refusal.bytesWithheld ?? 0;
+    totals.bytesWithheld += bytesWithheld;
+    const byGuard = totals.guards[refusal.kind];
+    if (byGuard === undefined) continue;
+    byGuard.refusals += 1;
+    byGuard.bytesWithheld += bytesWithheld;
   }
   return totals;
 }

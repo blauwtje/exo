@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { emptySession } from '../skills/savings/scripts/ledger.mjs';
-import { OVERHEAD_VERSION, measuredTotals } from '../skills/savings/scripts/overhead.mjs';
+import { OVERHEAD_VERSION, WORK_KINDS, measuredTotals } from '../skills/savings/scripts/overhead.mjs';
 import { ingestTranscript } from '../skills/savings/scripts/transcript.mjs';
 import { fixture } from './harness.mjs';
 
@@ -21,6 +21,7 @@ const AGENT_LINES = ['- general-purpose: Multi-step tasks.', '- claude: Catch-al
 const SESSION_CONTEXT = '\n# Using exo\n\nEvery exo skill is invoked as exo:<name>.';
 const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n\n# Debug\n\nProve the cause first.`;
 const REFUSAL = 'exo read guard: /repo/big.ts has 600 lines and an unbounded read is capped at 400; locate the range first.';
+const DUPLICATE_REFUSAL = 'exo read guard: /repo/small.ts (offset 1, limit 20) is unchanged since your read at 2026-09-11T10:00:00.000Z in this context window; use that copy, or pass a different offset and limit to read it again.';
 const TEXT = [{ type: 'text', text: 'done' }];
 
 function usage({ input = 5, cacheRead = 0, cache5m = 0, cache1h = 0, output = 10 }) {
@@ -36,6 +37,10 @@ function call(id, timestamp, content, { model = 'claude-fable-5-1', counts = { c
 
 function skillUse(name) {
   return { type: 'tool_use', id: `toolu_${name}`, name: 'Skill', input: { skill: name } };
+}
+
+function readUse(id, filePath, range = {}) {
+  return { type: 'tool_use', id, name: 'Read', input: { file_path: filePath, ...range } };
 }
 
 function toolResult(uuid, timestamp, block) {
@@ -150,4 +155,47 @@ test('a transcript booked by an older version is read again from the start, to t
   assert.equal(ingestTranscript(legacy, transcript), true);
   assert.deepEqual(legacy.overhead, fresh.overhead);
   assert.deepEqual(legacy.usageById, fresh.usageById);
+});
+
+test('each exo call books its kind, and the split by kind adds up to the totals', async () => {
+  const guard = {
+    hookMs: 60,
+    refusals: {
+      toolu_big: { kind: 'capped', bytesWithheld: 4000, reader: 'main', filePath: '/repo/big.ts', open: true },
+      toolu_small: { kind: 'duplicate', bytesWithheld: 300, reader: 'main', filePath: '/repo/small.ts', open: true }
+    }
+  };
+  const session = await ingest([
+    { type: 'user', uuid: 'p1', timestamp: '2026-09-11T10:00:00.000Z', message: { role: 'user', content: 'go' } },
+    call('msg_skill', '2026-09-11T10:00:02.000Z', [skillUse('exo:debug')]),
+    call('msg_big', '2026-09-11T10:00:03.000Z', [readUse('toolu_big', '/repo/big.ts')]),
+    toolResult('r1', '2026-09-11T10:00:04.000Z', { type: 'tool_result', tool_use_id: 'toolu_big', is_error: true, content: REFUSAL }),
+    call('msg_capped', '2026-09-11T10:00:06.000Z', [readUse('toolu_big2', '/repo/big.ts', { offset: 1, limit: 50 })]),
+    toolResult('r2', '2026-09-11T10:00:07.000Z', { type: 'tool_result', tool_use_id: 'toolu_big2', content: 'line 1' }),
+    call('msg_small', '2026-09-11T10:00:08.000Z', [readUse('toolu_small', '/repo/small.ts', { offset: 1, limit: 20 })]),
+    toolResult('r3', '2026-09-11T10:00:09.000Z', { type: 'tool_result', tool_use_id: 'toolu_small', is_error: true, content: DUPLICATE_REFUSAL }),
+    call('msg_duplicate', '2026-09-11T10:00:12.000Z', [readUse('toolu_small2', '/repo/small.ts', { offset: 21, limit: 20 })]),
+    toolResult('r4', '2026-09-11T10:00:13.000Z', { type: 'tool_result', tool_use_id: 'toolu_small2', content: 'line 21' }),
+    call('msg_again', '2026-09-11T10:00:14.000Z', [readUse('toolu_big3', '/repo/big.ts')]),
+    toolResult('r5', '2026-09-11T10:00:16.000Z', { type: 'tool_result', tool_use_id: 'toolu_big3', is_error: true, content: REFUSAL }),
+    call('msg_both', '2026-09-11T10:00:18.000Z', [readUse('toolu_big4', '/repo/big.ts', { offset: 51, limit: 50 })]),
+    call('msg_both', '2026-09-11T10:00:19.000Z', [skillUse('exo:planning')])
+  ], { guard });
+  const kinds = Object.fromEntries(Object.entries(session.overhead.calls).map(([id, booked]) => [id, booked.kind]));
+  // A call that re-reads and loads a skill books as a skill load.
+  assert.deepEqual(kinds, { msg_skill: 'skill', msg_capped: 'capped', msg_duplicate: 'duplicate', msg_both: 'skill' });
+  const totals = measuredTotals(session);
+  assert.deepEqual([totals.work.skill.calls, totals.work.capped.calls, totals.work.duplicate.calls], [2, 1, 1]);
+  near(totals.work.skill.time, 2000 + 3000);
+  near(totals.work.capped.time, 2000);
+  near(totals.work.duplicate.time, 3000);
+  assert.equal(totals.hookTime, 60);
+  const split = WORK_KINDS.map((kind) => totals.work[kind]);
+  const splitSum = (field) => split.reduce((sum, work) => sum + work[field], 0);
+  assert.equal(splitSum('calls'), totals.calls);
+  near(splitSum('tokens'), totals.tokens);
+  near(splitSum('cost'), totals.cost);
+  // The hook runs are the only time outside the split.
+  near(splitSum('time') + totals.hookTime, totals.time);
+  assert.deepEqual(totals.guards, { capped: { refusals: 1, bytesWithheld: 4000 }, duplicate: { refusals: 1, bytesWithheld: 300 } });
 });
