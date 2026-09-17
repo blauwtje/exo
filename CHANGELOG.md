@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `replies` setting, `tight` by default, drops preamble, recap and filler from replies while code, paths, errors and warnings stay whole; `standard` restores full prose.
+
 ### Changed
 
 - Every delegate prompt caps its report in lines and `npm run check` fails on one that does not; the scout returns one line per location, and the branch reviewer one line per finding.

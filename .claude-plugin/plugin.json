@@ -16,6 +16,13 @@
       "description": "docs: files under docs/specs. issues: GitHub issues. both: a file plus a linked issue. Not sure? Keep docs. A project overrides this in .claude/exo.json.",
       "options": ["docs", "issues", "both"],
       "default": "docs"
+    },
+    "replies": {
+      "type": "string",
+      "title": "How replies are written",
+      "description": "tight: no preamble, recap or filler; code, paths, errors and warnings stay whole. standard: full prose. An output style outranks this. A project overrides this in .claude/exo.json.",
+      "options": ["tight", "standard"],
+      "default": "tight"
     }
   }
 }
