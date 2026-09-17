@@ -14,6 +14,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - Every delegate prompt caps its report in lines and `npm run check` fails on one that does not; the scout returns one line per location, and the branch reviewer one line per finding.
+- The rules injected into every session are about a sixth shorter and now state how replies follow the `replies` setting and that long command output goes to a log.
 
 ## 0.5.0 - 2026-09-17
 
