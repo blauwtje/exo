@@ -15,7 +15,7 @@ import process from 'node:process';
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
   'skills', 'verify', 'verify.mjs', 'README.md',
-  'CONTRIBUTING.md', 'benchmarks/README.md'
+  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md'
 ];
 
 function read(root, relative) {

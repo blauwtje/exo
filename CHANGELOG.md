@@ -11,6 +11,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
 - `benchmarks/font-defaults-probe.mjs` measures which typefaces models pick for unrelated briefs, unprompted and again with the overused list forbidden.
+- `/exo:savings guard-lines <lines>` sets the line count above which the read guard refuses a whole-file read, and the savings report names the current limit.
 
 ### Changed
 
@@ -20,6 +21,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The overused-font list is rebuilt from a criterion recorded in `overused-fonts.mjs`: Google Fonts' most popular families, platform and browser defaults, the `create-next-app` faces, and the faces models pick unprompted or fall back on, now 66 families; the craft recipes and check tests spell their CSS samples anew.
 - `skills-tool` and its form, pressure, plugging and shape references are rewritten in exo's own words and structure, with the same loop, rules and bounds.
 - `deepen` restates its scope, terms and audit with new card fields (Files, Friction, Refactor, Payoff, Confidence), and `debug`, `implementing`, `implementing-batch` and `merge-prs` reword single passages, with the same triggers and bounds.
+- `/exo:savings` prints a boxed savings report: exo's cost beside the text the read guard held back with a line saying why there is no net, a guard table that sets each guard's held-back text beside what its re-reads cost, a cost table split into skill loads, re-reads and hooks, and a plain-words list of what is and is not measured. The word "ledger" is gone from every user-facing text. The first report after the update reads every stored transcript again; a session whose transcript is gone keeps what the guard held back and loses its cost figures.
+- The README explains exo in its own words, adds a check that it works, folds its how-it-works sections into one list and the ladder, says how to weigh and tune the read guard, and drops the credits; the note on adding a setting moves to `CONTRIBUTING.md`.
 
 ### Fixed
 
