@@ -21,6 +21,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The seven eval graders that check a question expect `1.` numbering with the recommended option first and its label in bold.
 - `designing` states the preview's price, then offers it as two numbered options with the preview recommended.
 
+### Fixed
+
+- A plan for a folder that is not a git repository yet runs end to end: the plan leaves the init to the executor, and `implementing` runs `git init -b main` in a folder that holds only the plan's `docs/`.
+
 ## 0.7.0 - 2026-09-17
 
 ### Highlights
