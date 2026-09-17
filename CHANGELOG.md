@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.6.0 - 2026-09-17
+
+### Highlights
+
+- **Replies are tight by default.** The new `replies` setting drops preamble, recap and filler, and `standard` brings full prose back.
+- **`/exo:savings` fits in five lines.** It prints cost, refused reads and that the saving is not measured, with no tables.
+- **exo spends fewer tokens per session.** The injected rules are a sixth shorter, and every delegate report is capped in lines.
+
 ### Added
 
 - The `replies` setting, `tight` by default, drops preamble, recap and filler from replies while code, paths, errors and warnings stay whole; `standard` restores full prose.
