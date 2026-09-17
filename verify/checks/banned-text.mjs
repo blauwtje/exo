@@ -41,7 +41,7 @@ export function checkBannedText(report, repository) {
   const errors = [];
   // Process files and prompts come from the listed skills; every SKILL.md is
   // read too, listed or not.
-  const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.everySkillFile()]);
+  const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.agentFiles(), ...repository.everySkillFile()]);
   for (const file of files) {
     const relative = repository.relative(file);
     const content = repository.text(file);

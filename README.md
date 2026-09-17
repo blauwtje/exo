@@ -27,7 +27,7 @@ The first prints `on`. The second prints the cost report, which stays at zero un
 ## How exo works
 
 - **Steps.** A request is shaped, planned, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
-- **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session.
+- **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:explorer` agent on Haiku, and the final branch review and the post-build design critique run in the `exo:branch-reviewer` and `exo:design-critic` agents on Opus at high effort; all three live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:savings guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read.
 - **The savings counter.** A hook books what exo's own work cost and which reads the read guard refused; `/exo:savings` prints the report.

@@ -7,6 +7,25 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `exo:explorer` agent searches code on `haiku` with read-only tools and a 20-turn limit, and the `exo:branch-reviewer` agent reviews a finished plan branch on `opus` at `high` effort, so the session no longer pastes their prompts into every dispatch.
+- The `exo:design-critic` agent runs the post-build design critique on `opus` at `high` effort with a 30-turn limit, which a `general-purpose` dispatch could not pin.
+- `tests/agents.test.mjs` checks every agent file without dispatching one: supported frontmatter keys, no effort on `haiku`, a turn budget equal to `maxTurns`, script flags that exist and a dispatching skill for each agent.
+
+### Changed
+
+- `implementing-batch` sends discovery to the explorer only when it spans several files or a direct search failed.
+- The explorer groups callers and tests, ends a longer report on a `Count:` line, and returns locations only when asked for a fix; the branch reviewer weighs each finding as `defect`, `hazard` or `question`, in file order.
+- `skills/implementing/plan-author-prompt.md` is now `drift-repairer-prompt.md`, named for what it does: it repairs the one task that reported `PLAN DRIFT`.
+- `designing` sends Phase 1 file discovery to the explorer when the request names no files, and resumes a critic that returned without its faults file instead of dispatching a second one.
+- The explorer and the design critic start without the CLAUDE.md files, and the explorer reports only locations a tool result showed it, batches independent searches in one turn and carries a worked report.
+
+### Removed
+
+- `skills/designing/critic-prompt.md`, replaced by the `exo:design-critic` agent.
+- `skills/research/scout-prompt.md` and `skills/implementing/branch-reviewer-prompt.md`, replaced by the two agents.
+
 ## 0.6.0 - 2026-09-17
 
 ### Highlights

@@ -10,7 +10,7 @@ Turn an outcome into a recommendation or a buildable brief before implementation
 
 ## Decision gate
 
-Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision is open only while the request, the repository's own conventions, and the ranges read this turn all fail to settle it; a decision this skill would make the obvious way is already closed. Zero open decisions means leave this skill and write no brief: a clear goal goes to `planning` when another session or executor runs it, and to `implementing-batch` when it builds here. Size is not the gate, because a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. One or more open decisions means use one mode below. Establish the facts through a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
+Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision is open only while the request, the repository's own conventions, and the ranges read this turn all fail to settle it; a decision this skill would make the obvious way is already closed. Zero open decisions means leave this skill and write no brief: a clear goal goes to `planning` when another session or executor runs it, and to `implementing-batch` when it builds here. Size is not the gate, because a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. One or more open decisions means use one mode below. Establish the facts through the `exo:explorer` agent when the request names no path, and read here only the ranges it returns, because search output kept here outlives the brief.
 
 ## Two modes
 
@@ -48,7 +48,6 @@ State the recommendation as the current default and continue in the same message
 | File | Read it when |
 |---|---|
 | `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
-| `../research/scout-prompt.md` | Before a codebase discovery dispatch, which runs on `sonnet`. |
 
 ## Judgment
 

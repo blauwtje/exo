@@ -20,7 +20,6 @@ const EXPECTED_OWNER_ROWS = {
     '../implementing-batch/references/security.md',
     '../implementing-batch/references/data-migration.md',
     '../implementing-batch/references/test-design.md',
-    '../research/scout-prompt.md',
   ],
   'skills/implementing-batch/SKILL.md': [
     '../implementing/references/workspace.md',
@@ -30,34 +29,28 @@ const EXPECTED_OWNER_ROWS = {
     'references/data-migration.md',
     'references/test-design.md',
     'references/performance.md',
-    '../research/scout-prompt.md',
   ],
   'skills/planning/SKILL.md': [
     'references/handoff-spec.md',
     'references/example-handoff.md',
     '../implementing-batch/references/data-migration.md',
-    '../research/scout-prompt.md',
   ],
   'skills/deepen/SKILL.md': [
     '../planning/references/handoff-spec.md',
-    '../research/scout-prompt.md',
   ],
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
     'references/finishing.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
-    'plan-author-prompt.md',
-    'branch-reviewer-prompt.md',
+    'drift-repairer-prompt.md',
   ],
   'skills/research/SKILL.md': [
     'researcher-prompt.md',
-    'scout-prompt.md',
   ],
   'skills/savings/SKILL.md': [],
   'skills/shaping/SKILL.md': [
     '../issuing/references/fields.md',
-    '../research/scout-prompt.md',
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',
@@ -69,7 +62,6 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/designing/SKILL.md': [
     'builder-prompt.md',
-    'critic-prompt.md',
     'references/phase-direction.md',
     'references/phase-build.md',
     'references/phase-critique.md',

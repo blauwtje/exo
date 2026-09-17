@@ -4,13 +4,13 @@
 const RETURN_CAP = /\bat most (\d+|[a-z]+) lines\b/i;
 
 export function checkReturnCaps(report, repository) {
-  const uncapped = repository.promptFiles()
+  const uncapped = [...repository.promptFiles(), ...repository.agentFiles()]
     .filter((file) => !RETURN_CAP.test(repository.text(file)))
     .map((file) => repository.relative(file));
   report.assert(
     uncapped.length === 0,
     'delegate return caps',
-    'every delegate prompt caps its report in lines',
+    'every delegate prompt and agent caps its report in lines',
     `no 'at most <n> lines' cap in ${uncapped.join(', ')}`
   );
 }

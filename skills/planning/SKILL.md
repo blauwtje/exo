@@ -27,7 +27,7 @@ An outcome with no chosen solution borrows `shaping` for its product and archite
 
 ## Investigate
 
-Delegate locating the files, symbols, and call sites the plan will name to a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md`, then confirm each here by reading only the range around it: a session that greps the tree or opens whole files carries that output into every later turn. A name not read this session may not appear in a step. For a deliverable plan, write each step's code in full while the file is open: the executor pastes it, so this session writes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
+Delegate locating the files, symbols, and call sites the plan will name to the `exo:explorer` agent, then confirm each here by reading only the range around it: a session that greps the tree or opens whole files carries that output into every later turn. A name not read this session may not appear in a step. For a deliverable plan, write each step's code in full while the file is open: the executor pastes it, so this session writes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 
@@ -62,7 +62,6 @@ Take the model and effort for the session that runs it from the table under `## 
 | `references/handoff-spec.md` | Before writing any plan deliverable: a planning-mode plan file, a requested plan, or a handoff document. Do not load for the inline row. |
 | `references/example-handoff.md` | Once, before composing the first task of a deliverable plan; do not load for the inline row. |
 | `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
-| `../research/scout-prompt.md` | Before a codebase discovery dispatch, which runs on `sonnet`. |
 
 ## Judgment
 

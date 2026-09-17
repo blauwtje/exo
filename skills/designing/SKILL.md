@@ -56,7 +56,6 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | File | Read it when |
 |---|---|
 | `builder-prompt.md` | Phase 3, before every build dispatch. |
-| `critic-prompt.md` | Phase 4, before the post-build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
 | `references/phase-critique.md` | Before the first edit of a full or bounded redesign, for the baseline pair; Phase 4 before the post-build dispatch. |
@@ -69,7 +68,7 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | `references/motion.md` | Phase 3 for the recorded motion decision, and before any animation at every size. |
 | `references/interaction-qa.md` | Phase 3 when the surface has controls, flows, disclosure, or reachable states; Phase 5 its `## Pre-ship interaction sweep` section alone. |
 | `references/feedback-and-status.md` | Phase 3 only when the surface waits on the network, applies a change before its response arrives, or reports status outside the region that changed; Phase 5 its `## Sweep` section alone. |
-| `references/visual-critique.md` | Phase 4, read by the critic dispatched from `critic-prompt.md`; this session reads its faults.md. |
+| `references/visual-critique.md` | Phase 4, read by the `exo:design-critic` agent; this session reads its faults.md. |
 | `references/craft-recipes.md` | Phase 3 after `contract-selected.json` exists, before the first CSS of a ground, surface, motion, or type treatment. |
 | `references/component-system.md` | Phase 1 only when the repository ships a component layer, its `## Adopt before authoring` section alone; Phase 3 before building a control, field, or surface the design repeats. |
 | `references/tokens.md` | Phase 2 only past the role tokens `references/implementation.md` lists: a token pipeline or DTCG file in the repository, a second theme or brand, or a ramp generated against target contrast. |
@@ -95,7 +94,7 @@ A complaint names a fault in the words of the person who saw it, and those words
 
 ## Phase 1 — Context
 
-State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief. Read durable design context through `scripts/context.mjs --surface <name> --needs color,typography,controls,motion`, reporting a `potentially-stale` or `unknown` status rather than resolving it silently. For a bounded redesign, record the baseline first — hierarchy, density rhythm, geometry, type contrast, surface depth, interaction emphasis — and name which the complaint is about. Keep a list of every repository path and line range this phase read; Build hands it to each builder as `FILES`.
+State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief. Read durable design context through `scripts/context.mjs --surface <name> --needs color,typography,controls,motion`, reporting a `potentially-stale` or `unknown` status rather than resolving it silently. For a bounded redesign, record the baseline first — hierarchy, density rhythm, geometry, type contrast, surface depth, interaction emphasis — and name which the complaint is about. When the request does not name the surface's files, delegate locating its markup, styles, tokens and components to the `exo:explorer` agent and read here only the ranges under its `Read next:`, because a session that greps the tree carries that output into every later phase. Keep a list of every repository path and line range this phase read; Build hands it to each builder as `FILES`.
 
 For a full or bounded redesign, write the content inventory and collect at least three subject observations, mapping each as `observation → visual/content behavior → repeated echo` under the rules in `references/composition.md`. Ask one question only when a missing fact materially changes scope, behavior, or a claim; never substitute a product-category aesthetic for missing evidence.
 

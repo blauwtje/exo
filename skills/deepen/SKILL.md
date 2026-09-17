@@ -11,7 +11,7 @@ Find the refactors that give a module a small interface over a large body of wor
 ## Scope, taken from the argument
 
 - A named target, whether a path, module, subsystem, layer or a pain the user describes, is matched to real paths, and the audit stays inside them.
-- With no target, ask a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` where commit history keeps coming back, the files and areas changed again and again, and take the ranges it names as the scope. Widen to the whole tree only when the changes scatter too much to show a cluster or the user asks for a full audit, and even then read through ranges the scout names, because reading the whole tree here fills the context before any card exists.
+- With no target, ask the `exo:explorer` agent where commit history keeps coming back, the files and areas changed again and again, and take the ranges it names as the scope. Widen to the whole tree only when the changes scatter too much to show a cluster or the user asks for a full audit, and even then read through ranges the explorer names, because reading the whole tree here fills the context before any card exists.
 - The output opens with the scope, how it was picked and what was left out on purpose. The user is never asked to pick a scope.
 
 ## Terms
@@ -29,7 +29,7 @@ Use these words and no substitute such as component, service, unit, API, boundar
 
 ## The audit
 
-1. Read the scoped code and its callers in the ranges a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` names, with an offset and a limit, never a whole file longer than 100 lines. Record friction rather than rule breaks, for example:
+1. Read the scoped code and its callers in the ranges the `exo:explorer` agent names, with an offset and a limit, never a whole file longer than 100 lines. Record friction rather than rule breaks, for example:
    - one idea that can only be followed by jumping through a chain of tiny files;
    - a module whose signature asks callers to know nearly everything it does;
    - logic split into small pure helpers that are easy to test, while the defects live in the code that wires them together;
@@ -53,7 +53,6 @@ Fill in whatever the code settles: the files, the refactor, the resulting interf
 | File | Read it when |
 |---|---|
 | `../planning/references/handoff-spec.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
-| `../research/scout-prompt.md` | Before a codebase discovery dispatch, which runs on `sonnet`. |
 
 ## Judgment
 
@@ -61,4 +60,4 @@ Fill in whatever the code settles: the files, the refactor, the resulting interf
 - Failing existing behavior outranks this skill: an unproven failure routes to `debug`, and a finding that explains a live symptom is a `debug` hypothesis, not an audit card.
 - A single named refactor or rename is a decided change for `implementing-batch`; this skill exists for the open question of where and what to improve.
 - Migration cost is part of every recommendation: a deepening that invalidates the whole test suite must say so in its card.
-- Report mode ends the turn at the ranked cards and plan mode when the plan validates; after a compaction notice, treat unread code as unread and ask a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` for its ranges again before asserting anything, because a card may only name code opened this session.
+- Report mode ends the turn at the ranked cards and plan mode when the plan validates; after a compaction notice, treat unread code as unread and ask the `exo:explorer` agent for its ranges again before asserting anything, because a card may only name code opened this session.

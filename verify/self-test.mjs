@@ -141,7 +141,7 @@ const SCENARIOS = [
   { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
     read(root, 'skills/implementing-batch/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
-    replaceText(root, 'skills/research/scout-prompt.md', 'at most 30 lines', 'a short report') }
+    replaceText(root, 'skills/research/researcher-prompt.md', 'at most 25 lines', 'a short report') }
 ];
 
 function copyVerificationFixture(repository, destination) {

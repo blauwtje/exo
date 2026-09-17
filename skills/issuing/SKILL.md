@@ -38,7 +38,7 @@ a blocker you named.
    as `references/fields.md` says. Read the language of the last five issues
    with `gh issue list --limit 5 --json title,body --jq '[.[].title]'`.
 
-3. **Ground the references.** Send a `general-purpose` delegate on `sonnet` from `../research/scout-prompt.md` the paths and symbols the
+3. **Ground the references.** Send the `exo:explorer` agent the paths and symbols the
    goal sentences name, so `References` carries real paths. Skip this step for
    an issue that names no code.
 
@@ -84,7 +84,6 @@ in the body.
 | File | Read it when |
 |---|---|
 | `references/fields.md` | Steps 2 and 5, before reading the repository and before creating. |
-| `../research/scout-prompt.md` | Step 3, before the discovery dispatch. |
 
 ## Judgment
 

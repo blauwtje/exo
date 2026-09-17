@@ -62,6 +62,13 @@ export function createRepository(root) {
     // keeps to the portable-language rules.
     promptFiles: () => walk(skillsRoot, (full) => full.endsWith('-prompt.md')
       && path.basename(path.dirname(path.dirname(full))) === 'skills'),
+    // A plugin agent's body is its system prompt, so it keeps to the same rules
+    // as a delegate prompt.
+    agentFiles: () => {
+      const agentsRoot = path.join(absoluteRoot, 'agents');
+      if (!fs.existsSync(agentsRoot)) return [];
+      return walk(agentsRoot, (full) => full.endsWith('.md'));
+    },
     // ReadAllLines drops the newline that ends the last line; split does not.
     lines: (file) => {
       const text = fs.readFileSync(file, 'utf8');
