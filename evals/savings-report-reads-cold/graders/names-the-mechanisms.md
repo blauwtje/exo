@@ -1,13 +1,13 @@
 ---
 type: llm
 criteria: >-
-  PASS when the response names the two measured mechanisms the report lists: the big-file
-  guard, which refused whole-file reads of files over 400 lines (70 refused, 290 KB), and
-  the repeat guard, which refused a second read of unchanged lines (2 refused, 8 KB). PASS
-  also requires that it treats helpers and building only what is needed as listed but not
-  measured, or leaves them out, and never gives either a figure. FAIL when it omits either
-  guard, credits a figure to helpers or to building only what is needed, or names a
-  mechanism the report does not list.
+  PASS when the response names both read-guard mechanisms from the report as two separate
+  things, in any wording: the big-file guard, which refuses a whole-file read of a long
+  file, and the repeat guard, which refuses a second read of lines already read. Their
+  figures are not required. Mentioning anything else, such as helpers, building only what
+  is needed, skill loading, re-reads or the prompt cache, neither passes nor fails this
+  criterion. FAIL only when the response leaves out either guard, or treats the refusals
+  as one undivided guard without naming the refusal of repeated lines.
 ---
 
-Passes when a reader new to exo can say which listed mechanisms refused reads.
+Passes when a reader new to exo can name the big-file guard and the repeat guard as the mechanisms that refused reads.
