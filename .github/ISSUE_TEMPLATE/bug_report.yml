@@ -1,0 +1,53 @@
+name: Bug report
+description: A skill, hook or command does something wrong.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What exo did, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The prompt or command you ran, in order.
+      placeholder: |
+        1. Start Claude Code in a repository.
+        2. Ask ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: exo-version
+    attributes:
+      label: exo version
+      description: The release you installed, such as 0.4.0.
+    validations:
+      required: true
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: Shown by `claude --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output or transcript
+      description: The relevant lines only. Remove secrets first.
+      render: text

@@ -11,6 +11,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
 - `benchmarks/font-defaults-probe.mjs` measures which typefaces models pick for unrelated briefs, unprompted and again with the overused list forbidden.
+- The repository has issue forms for bugs and feature requests, a pull request checklist, a security policy that points to private vulnerability reporting, and the Contributor Covenant code of conduct.
 - `/exo:savings guard-lines <lines>` sets the line count above which the read guard refuses a whole-file read, and the savings report names the current limit.
 
 ### Changed
