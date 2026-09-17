@@ -43,7 +43,7 @@ Checks at a trust boundary, failure handling that keeps data from being lost, an
 # Context
 
 - **Replies.** The `replies` value in the `exo settings:` line sets how replies are written, `tight` when the line is absent; an output style outranks it. `tight`: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. `standard`: full prose.
-- **Command output.** A command whose output may run past forty lines writes it to a log under the directory `git rev-parse --git-dir` prints, and only the failing lines are read back.
+- **Command output.** A command whose output may run past forty lines logs it under `git rev-parse --git-dir`, or a temp directory outside git, and only failing lines are read back.
 - **Progress.** A run of more than one step keeps its progress in the harness's task list: one line per step written before the first starts, set in progress when it starts and completed when it lands. No message between two steps, except a blocked step, a failed check or a question only the user can answer.
 
 # Closing
