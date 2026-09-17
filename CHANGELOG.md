@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - A GitHub Release is titled `v<version>`, and its notes group changes under New, Improved, Fixed and Removed, list the pull requests since the previous tag and end on a link to every commit since that tag.
+- The full verifier checks the `settings` skill: `verify/budgets.mjs` lists it and `verify/checks/reference-tables.mjs` holds its empty reference-owner contract.
 
 ## 0.7.0 - 2026-09-17
 
