@@ -16,7 +16,10 @@
     "smoke": "bash tests/smoke.sh",
     "check": "npm run validate:self",
     "bump": "node bump.mjs",
-    "release-notes": "node release-notes.mjs"
+    "release-notes": "node release-notes.mjs",
+    "eval-reasons": "node eval-reasons.mjs",
+    "eval:savings-report": "node eval-case.mjs --case savings-report-reads-cold --mode full",
+    "eval:savings-report:draft": "node eval-case.mjs --case savings-report-reads-cold --mode draft"
   },
   "devDependencies": {
     "yaml": "^2.9.1"

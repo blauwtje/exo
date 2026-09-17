@@ -12,6 +12,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
 - `benchmarks/font-defaults-probe.mjs` measures which typefaces models pick for unrelated briefs, unprompted and again with the overused list forbidden.
 - The repository has issue forms for bugs and feature requests, a pull request checklist, a security policy that points to private vulnerability reporting, and the Contributor Covenant code of conduct.
+- `npm run eval-reasons` stores a reasoned judge vote beside every failed llm grader vote of an eval run, in `judge-reasons.json`, and prints each grader's pass rate per arm.
+- `npm run eval:savings-report` runs the `savings-report-reads-cold` eval on the no-plugin arm with Sonnet as judge and every run in flight, and `npm run eval:savings-report:draft` runs three of them for iterating on the report's wording.
 - `/exo:savings guard-lines <lines>` sets the line count above which the read guard refuses a whole-file read, and the cost report names the current limit.
 
 ### Changed

@@ -1,6 +1,6 @@
 ---
 name: savings-report-reads-cold
-runs: 3
+runs: 10
 max_turns: 6
 ---
 

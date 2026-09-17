@@ -34,6 +34,20 @@ A new setting is one entry in `skills/settings/schema.json` plus the matching `u
 
 `evals/` is tracked. A case is `evals/<skill>-<case>/prompt.md` with its graders beside it; `tests/evals.test.mjs` checks that layout. The case's `name:` equals its directory name because `claude plugin eval . --case <glob>` filters on `name:`, not on the directory. A glob that matches no case still exits 0, so check the case count in the output before trusting a green run.
 
+The runner's llm judges answer one word and keep no reasoning. `npm run eval-reasons [results-dir]` asks one more judge, on the run's judge model, to reason and then vote on every failed llm grader vote, writes `judge-reasons.json` beside `aggregate-result.json`, and prints each grader's pass rate per arm. A run without `--judge-model` records no judge model, and the file then names the runner default as its source, so runs judged by different models are not compared unawares.
+
+### savings-report-reads-cold
+
+This case is not part of `npm run check`: it calls a model for every run. Run it when the report text in `skills/savings/scripts/savings.mjs` or one of the case's graders changes. `eval-case.mjs` runs it with Sonnet as judge, splits the runs over several runner processes (the runner allows at most 8 in flight each), and by default starts every run at once.
+
+| Command | Runs | Measured on 2026-09-17 |
+|---|---|---|
+| `npm run eval:savings-report:draft` | 3, no-plugin arm | 122 s, $1.00 |
+| `npm run eval:savings-report` | 10, no-plugin arm | 130 s, $3.30 |
+| `npm run eval:savings-report -- --arm both` | 10 per arm | 148 s, $7.12 |
+
+The draft is for iterating on wording and is never a verdict: at 3 runs one answer moves a pass rate by a third. Take a verdict from the full run, and judge it on the no-plugin arm, the cold reader; the plugin arm still loads exo's hooks and skill list. Add `--arm both` only when `skills/savings/SKILL.md` or the session hook's text changes, because that text is all that differs between the arms. Every command writes its results under `evals/results/` and reasons only about failed votes.
+
 `docs/` is git-ignored: research notes, specs and plans live outside the repository.
 
 ## Benchmarks
