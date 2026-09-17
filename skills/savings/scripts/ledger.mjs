@@ -141,7 +141,7 @@ function withLedgerLock(work) {
       removeStaleLock(lock, found.mtimeMs);
       continue;
     }
-    if (Date.now() > deadline) throw new Error(`ledger locked by another hook for over ${LOCK_WAIT_MS} ms`);
+    if (Date.now() > deadline) throw new Error(`savings counter locked by another hook for over ${LOCK_WAIT_MS} ms`);
     sleep(20);
   }
   try {

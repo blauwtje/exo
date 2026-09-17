@@ -99,6 +99,6 @@ test('a live lock makes the waiter give up without writing', async () => {
   await fs.mkdir(path.join(directory, 'sessions.json.lock'));
   const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
   assert.notEqual(result.code, 0);
-  assert.match(result.stderr, /ledger locked by another hook for over 8000 ms/);
+  assert.match(result.stderr, /savings counter locked by another hook for over 8000 ms/);
   assert.equal(await fs.access(path.join(directory, 'sessions.json')).catch(() => 'absent'), 'absent');
 });
