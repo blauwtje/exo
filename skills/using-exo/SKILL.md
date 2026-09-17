@@ -66,8 +66,8 @@ A decision made on the user's behalf is one line naming the choice and what it c
 Every question exo puts to the user has one shape, because the user answers it by typing a digit.
 
 1. **Plain lines, no tool.** The options are lines in the reply that end the turn; a structured question tool, a form or a picker is never used.
-2. **One option per line**, written `(<n>) <Label> (Recommended): <what it does>`: a label of one to three words, then one short clause saying what happens, never why, and never a command, a model or an effort.
-3. **One option is marked**, the recommended one, first except in the next stage's fixed order; stopping or keeping things as they are comes last. Label, marker and clause are in the reply's language, as the language rule under `# Context` sets.
+2. **One option per line**, numbered `1.`, `2.`, `3.` and written `<n>. **<Label>**: <what it does>`, the recommended one as `1. **<Label> (Recommended)**: <what it does>`: a bold label of one to three words, then a few words saying what happens, never why, and never a command, a model or an effort.
+3. **The recommended option is number 1**, in every question and in the next stage's fixed order; stopping or keeping things as they are comes last unless it is the recommended one. Label, marker and clause are in the reply's language, as the language rule under `# Context` sets.
 4. **Nothing follows the options** except the one model line `## The next stage` allows.
 5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
 
@@ -81,8 +81,8 @@ Every question exo puts to the user has one shape, because the user answers it b
 
 A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
 
-1. **Fixed order.** The options follow `## A question`. After `shaping`: (1) Planning, (2) Stop. After `planning`: (1) Implementing, (2) Implementing batch, (3) Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
-2. **This session is recommended**, because it already holds the facts. `(Recommended)` moves to the stop line when a compaction notice has appeared in this session or this stage is the second to finish in it; the stop line's clause then names the command to run after a context clear.
+1. **Fixed order.** The options follow `## A question`. After `shaping`: 1. Planning, 2. Stop. After `planning`: 1. Implementing, 2. Implementing batch, 3. Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
+2. **This session is recommended**, because it already holds the facts. When a compaction notice has appeared in this session or this stage is the second to finish in it, stopping is recommended instead: it moves to number 1 with `(Recommended)`, the stages keep their order below it, and its text names the command to run after a context clear.
 3. **One model line.** When the recommended stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.
 4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
 
