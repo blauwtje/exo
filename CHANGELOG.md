@@ -19,6 +19,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Every exo question numbers its options `1.`, `2.`, `3.`, puts the recommended option first as `1. **Label (Recommended)**`, the next stage included, and keeps each option to a few words.
 - The workspace, finish and `settings` questions use that shape, and a repository that commits on its default branch puts the current branch first.
 - The seven eval graders that check a question expect `1.` numbering with the recommended option first and its label in bold.
+- `designing` states the preview's price, then offers it as two numbered options with the preview recommended.
 
 ## 0.7.0 - 2026-09-17
 

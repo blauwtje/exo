@@ -33,3 +33,12 @@ test('the next stage keeps its fixed order and moves a recommended stop to numbe
   assert.ok(nextStage.includes('**One model line.**'));
   assert.ok(!nextStage.includes('names its command, model and effort'));
 });
+
+test('designing offers its preview as two numbered options, the preview recommended', () => {
+  const designing = fs.readFileSync(new URL('../skills/designing/SKILL.md', import.meta.url), 'utf8');
+  const preview = designing.indexOf('1. **Browser preview (Recommended)**:');
+  const text = designing.indexOf('2. **Decide in text**:');
+  assert.ok(preview !== -1 && preview < text, 'the preview is option 1 and text option 2');
+  assert.ok(designing.includes('Two options in the shape `## A question` in `using-exo` gives end the message'));
+  assert.ok(designing.includes('about 3,500 extra tokens per direction'), 'the offer keeps its price');
+});
