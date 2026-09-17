@@ -2,7 +2,7 @@
 
 [![quality](https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg)](https://github.com/blauwtje/exo/actions/workflows/quality.yml)
 
-One engineering process for Claude Code, packaged as a plugin. Skills take turns from shaping to merge, delegates keep discovery and builds out of the main context, and a ledger shows what the plugin cost and what it kept out.
+exo is a Claude Code plugin that gives Claude one way of working: decide what to build, plan it, build it and review it, each as its own step. It is built for the ways a long session goes wrong: code nobody asked for, whole files read to find one function, and a context so full that earlier decisions drop out of it.
 
 ## Install
 
@@ -13,12 +13,26 @@ One engineering process for Claude Code, packaged as a plugin. Skills take turns
 
 Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` on `PATH`.
 
-## Why
+## Check that it works
 
-- **Stages, not a chat.** A request is shaped before it is planned, planned before it is built, and a failure is diagnosed before anything is fixed. Each stage ends by asking which stage runs next and on which model.
-- **The main context keeps the decisions.** Codebase discovery, builds, reviews and documentation reads run in delegates with their own prompts, so file dumps never land in the session.
-- **Right-sized code.** Before every edit the model settles a four-rung ladder and takes the first rung that fits: leave out what no request needs, reuse what the repository has, borrow from the standard library, the platform or an installed dependency, and write new code last, as little as passes.
-- **Measured, not claimed.** A read guard refuses unbounded and repeated reads, and a ledger books every figure the API reported. Nothing is estimated.
+Start a new session and run:
+
+```text
+/exo:savings status
+/exo:savings
+```
+
+The first prints `on`. The second prints the savings report, which stays at zero until exo has done some work. In a clone of this repository, `npm run check` runs every check.
+
+## How exo works
+
+- **Steps.** A request is shaped, planned, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
+- **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session.
+- **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
+- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go, and refuses to read lines again that have not changed since the last read.
+- **The savings counter.** A hook books what exo's own work cost and how much text the read guard held back; `/exo:savings` prints the report.
+
+A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
 
 ## Skills
 
@@ -42,7 +56,7 @@ Every skill is invoked as `/exo:<name>`; the model may also start one when its t
 | `designing <surface>` | A page, component or visual axis changes: typography, color, spacing, motion, copy. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
-| `savings [report, on, off, status]` | You ask what exo cost or withheld, or switch the ledger and read guard off or on. |
+| `savings [report, on, off, status, guard-lines]` | You ask what exo cost or held back, switch the savings counter and read guard off or on, or change the guard's big-file limit. |
 | `settings [key value scope]` | You show or change an exo setting for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
@@ -55,13 +69,9 @@ These leave the machine, so only you can start them.
 | `issuing <scope>` | You file GitHub issues as specs, with the labels and fields the repository defines. |
 | `merge-prs [numbers]` | You merge open pull requests behind gates read from the GitHub API. |
 
-## How it works
+## The ladder
 
-**The session hook** injects the `using-exo` body at startup, resume, clear and compaction. That body holds the skill precedence, the right-sizing ladder and the closing rules, so the model carries them without invoking a skill.
-
-**Delegates** are the harness's own general-purpose agent with a role prompt that sits beside the dispatching skill. The skill names the model per call: `sonnet` for mechanical builds, discovery and documentation reads, `opus` for debugging, plan repair, design critique and the branch review.
-
-**The ladder** holds before every edit that adds or replaces code:
+Before every edit that adds or replaces code, Claude takes the first rung that fits:
 
 1. Need: nothing is built for a use the request does not name.
 2. Reuse: what the repository already has is called, not copied.
@@ -70,21 +80,17 @@ These leave the machine, so only you can start them.
 
 On every rung, checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility and anything you asked for by name are built completely.
 
-## Settings
-
-exo reads each setting from four layers, highest first: `.claude/exo.local.json` (this machine, git-ignored), `.claude/exo.json` (the repository, committed so every collaborator shares it), the plugin's global options, then the default. The global options are asked when the plugin is enabled and change later in `/config`; `/exo:settings` shows every value with its layer and writes the two repository files.
-
-| Key | Values | Default | Effect |
-|---|---|---|---|
-| `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
-
-A new setting is one entry in `skills/settings/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` holds the two together.
-
 ## Savings
 
-The `Stop` hook books every turn's API usage into a ledger at `~/.claude/exo/savings/sessions.json`. The read guard, a hook pair on `Read`, refuses an unbounded read of a file over 400 lines and a repeat read of an unchanged range, and books the bytes it kept out. `/exo:savings` prints one panel over every session: refusals, bytes withheld, and the calls, tokens, price and time exo's own work took.
+`/exo:savings` prints one report over every session of the last 30 days, in every project. It shows what exo's own work cost, in tokens, API list price and time, and how much file text the read guard held back, in bytes. Those are different units, so the report prints no net figure, and it does not claim that exo pays for itself.
 
-One switch turns the ledger, the status line segment and the read guard off together:
+To judge the guard, read its table in the report: each guard's held-back text stands beside the re-reads it caused and what they cost. When the re-reads cost more than that text is worth to you, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
+
+```text
+/exo:savings guard-lines 800
+```
+
+One switch turns the counter, the status line segment and the read guard off together:
 
 ```bash
 node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" off   # or on, status, report
@@ -102,6 +108,14 @@ fi
 
 The segment reads `exo 1.5 MB withheld · 2.4k tok · $0.04 · 2m`.
 
+## Settings
+
+exo reads each setting from four layers, highest first: `.claude/exo.local.json` (this machine, git-ignored), `.claude/exo.json` (the repository, committed so every collaborator shares it), the plugin's global options, then the default. The global options are asked when the plugin is enabled and change later in `/config`; `/exo:settings` shows every value with its layer and writes the two repository files.
+
+| Key | Values | Default | Effect |
+|---|---|---|---|
+| `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
+
 ## Develop
 
 ```bash
@@ -110,13 +124,9 @@ npm run check            # the gate before any commit: verifier, self-test and s
 claude --plugin-dir .    # run the working tree instead of the installed copy
 ```
 
-`CONTRIBUTING.md` covers the checks, the evals, how skills dispatch delegates, and the hooks. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
+`CONTRIBUTING.md` covers the checks, the evals, how skills hand work to helpers, the hooks and the savings counter. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
 
-A change lands under `## Unreleased` in the changelog without a version change, so the installed plugin updates only on a release. A release raises the version with `npm run bump`, tags `v<version>`, and publishes a GitHub Release whose notes `npm run release-notes` renders from the changelog: highlights, then Added, Changed, Fixed and Removed, then the upgrade commands. `CLAUDE.md` lists the steps.
-
-## Credits
-
-exo was inspired by [ponytail](https://github.com/dietrichgebert/ponytail), [caveman](https://github.com/juliusbrussee/caveman), [superpowers](https://github.com/obra/superpowers), [impeccable](https://github.com/pbakaus/impeccable), [Matt Pocock's skills](https://github.com/mattpocock/skills) and [smallest-complete](https://github.com/JetXu-LLM/smallest-complete).
+A change lands under `## Unreleased` in `CHANGELOG.md` without a version change, so the installed plugin updates only on a release. `CLAUDE.md` lists the release steps.
 
 ## License
 
