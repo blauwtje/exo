@@ -76,6 +76,17 @@ export function savingsEnabled() {
   return config.enabled !== false;
 }
 
+export const DEFAULT_GUARD_LINES = 400;
+
+// The line count above which the read guard refuses a whole-file read:
+// "readGuardLines" in config.json when it is a whole number of at least 1,
+// otherwise the default, so a broken hand edit never switches the guard off.
+export function guardLines() {
+  const configured = readJson(configFile(), {}).readGuardLines;
+  if (Number.isSafeInteger(configured) && configured >= 1) return configured;
+  return DEFAULT_GUARD_LINES;
+}
+
 export function emptySession() {
   return {
     started: null,

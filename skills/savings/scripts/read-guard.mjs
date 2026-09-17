@@ -5,7 +5,8 @@
 // books the read that succeeded. Each refusal is booked under its tool call
 // with the bytes it kept out of context, and each run books its own time,
 // because a hook run on Read leaves no transcript entry. `readGuard: false`
-// in the savings config.json switches the guard alone off; EXO_SAVINGS=off or
+// in the savings config.json switches the guard alone off, and
+// `readGuardLines` sets how many lines make a file large; EXO_SAVINGS=off or
 // `enabled: false` switches everything off.
 //
 //   node read-guard.mjs         PreToolUse hook on Read: stdin is the hook JSON
@@ -18,9 +19,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { configFile, readJson, savingsEnabled, updateSession } from './ledger.mjs';
+import { configFile, guardLines, readJson, savingsEnabled, updateSession } from './ledger.mjs';
 
-const UNBOUNDED_READ_CAP = 400;
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.ipynb']);
 
 function guardEnabled() {
@@ -96,11 +96,12 @@ function refusalOf(session, target) {
   const unbounded = input.offset === undefined && input.limit === undefined;
   if (!unbounded) return null;
   const lines = fileLines(filePath);
-  if (lines.length <= UNBOUNDED_READ_CAP) return null;
+  const lineLimit = guardLines();
+  if (lines.length <= lineLimit) return null;
   return {
     kind: 'capped',
     bytesWithheld: Buffer.byteLength(lines.join('\n')),
-    reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${UNBOUNDED_READ_CAP}; locate the range first, then read it with offset and limit, or pass limit explicitly to read more.`
+    reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${lineLimit}; locate the range first, then read it with offset and limit, or pass limit explicitly to read more.`
   };
 }
 

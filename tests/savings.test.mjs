@@ -340,3 +340,22 @@ test('a switch under an EXO_SAVINGS override says the environment outranks it', 
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^EXO_SAVINGS=on in the environment outranks the switch\.$/m);
 });
+
+test('guard-lines writes readGuardLines beside the other switches, and refuses a value that is not a whole number of at least 1', async () => {
+  const directory = await fixture();
+  const env = { CLAUDE_CONFIG_DIR: directory };
+  const configFile = path.join(directory, 'exo', 'savings', 'config.json');
+  await runWithStdin(['off'], '', env);
+  const raised = await run(SAVINGS, ['guard-lines', '800'], { env });
+  assert.equal(raised.code, 0, raised.stderr);
+  assert.equal(raised.stdout, 'exo read guard now refuses a whole-file read of a file over 800 lines\n');
+  assert.deepEqual(JSON.parse(await fs.readFile(configFile, 'utf8')), { enabled: false, readGuard: true, readGuardLines: 800 });
+  for (const value of ['0', '-5', '12.5', 'lots']) {
+    const refused = await run(SAVINGS, ['guard-lines', value], { env });
+    assert.equal(refused.code, 1, value);
+    assert.match(refused.stderr, /^savings: guard-lines needs a whole number of at least 1/);
+  }
+  const missing = await run(SAVINGS, ['guard-lines'], { env });
+  assert.equal(missing.code, 1);
+  assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).readGuardLines, 800);
+});

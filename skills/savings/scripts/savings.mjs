@@ -5,12 +5,14 @@
 // an estimate. The ledger is fed from the transcript the harness writes
 // (transcript.mjs) and from the status line it renders.
 //
-//   node savings.mjs record      Stop hook: stdin is the hook JSON
-//   node savings.mjs statusline  status line: stdin is the status JSON; prints one segment
-//   node savings.mjs report      prints the panel as a fenced fixed-width grid
-//   node savings.mjs status      prints on or off
-//   node savings.mjs off | on    writes "enabled" into config.json: one switch for
-//                                the counter, the status line and the read guard
+//   node savings.mjs record            Stop hook: stdin is the hook JSON
+//   node savings.mjs statusline        status line: stdin is the status JSON; prints one segment
+//   node savings.mjs report            prints the panel as a fenced fixed-width grid
+//   node savings.mjs status            prints on or off
+//   node savings.mjs off | on          writes "enabled" into config.json: one switch for
+//                                      the counter, the status line and the read guard
+//   node savings.mjs guard-lines <n>   writes "readGuardLines" into config.json: the line
+//                                      count above which a whole-file read is refused
 //
 // A hook failure never blocks the turn.
 
@@ -128,6 +130,17 @@ function setEnabled(enabled) {
   if (notice !== null) process.stdout.write(`${notice}\n`);
 }
 
+// A whole number from 1 up; anything else is refused before config.json is
+// written, because the guard would read it as the default.
+function setGuardLines(argument) {
+  const lineLimit = Number(argument);
+  if (!/^\d+$/.test(argument ?? '') || !Number.isSafeInteger(lineLimit) || lineLimit < 1) {
+    throw new Error(`guard-lines needs a whole number of at least 1, got ${argument ?? 'nothing'}`);
+  }
+  writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), readGuardLines: lineLimit });
+  process.stdout.write(`exo read guard now refuses a whole-file read of a file over ${lineLimit} lines\n`);
+}
+
 // Code points, not terminal cells: the grid pads metric labels and formatted
 // numbers only, all single width, so a code point count is the cell's width.
 function displayWidth(text) {
@@ -190,7 +203,13 @@ function report() {
 
 const command = process.argv[2];
 const HOOK_COMMANDS = { record, statusline };
-const CLI_COMMANDS = { report, status, on: () => setEnabled(true), off: () => setEnabled(false) };
+const CLI_COMMANDS = {
+  report,
+  status,
+  on: () => setEnabled(true),
+  off: () => setEnabled(false),
+  'guard-lines': () => setGuardLines(process.argv[3])
+};
 if (command in HOOK_COMMANDS) {
   try {
     HOOK_COMMANDS[command](readStdin());
@@ -207,6 +226,6 @@ if (command in HOOK_COMMANDS) {
     process.exit(1);
   }
 } else {
-  console.error('usage: savings.mjs record|statusline|report|status|on|off');
+  console.error('usage: savings.mjs record|statusline|report|status|on|off|guard-lines <lines>');
   process.exit(1);
 }

@@ -176,3 +176,14 @@ test('the guard books no capped or duplicate counters beside its refusals', asyn
   const guard = (await ledger(configDirectory)).s1.guard;
   assert.deepEqual(Object.keys(guard).sort(), ['hookMs', 'refusals']);
 });
+
+test('readGuardLines in config.json moves the big-file limit, and a value that is not a whole number keeps 400', async () => {
+  const raised = await guardFixture({ readGuardLines: 800 });
+  assert.equal(decision(await runGuard([], readInput(raised.file), raised.env)), null);
+  const lowered = await guardFixture({ readGuardLines: 100 });
+  const loweredVerdict = decision(await runGuard([], readInput(lowered.file), lowered.env));
+  assert.match(loweredVerdict.permissionDecisionReason, /has 600 lines and an unbounded read is capped at 100/);
+  const broken = await guardFixture({ readGuardLines: 'lots' });
+  const brokenVerdict = decision(await runGuard([], readInput(broken.file), broken.env));
+  assert.match(brokenVerdict.permissionDecisionReason, /is capped at 400/);
+});
