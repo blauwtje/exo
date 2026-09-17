@@ -43,6 +43,7 @@ Checks at a trust boundary, failure handling that keeps data from being lost, an
 # Context
 
 - **Replies.** The `replies` value in the `exo settings:` line sets how replies are written, `tight` when the line is absent; an output style outranks it. `tight`: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. `standard`: full prose.
+- **Language.** Every reply, report and question is written in the language of the user's latest message, also when the skill that shaped it is written in English; a session whose only message is a command that opens a plan writes in the plan's language. Code, commits, issues and the files a skill writes keep the language the repository already uses.
 - **Command output.** A command whose output may run past forty lines logs it under `git rev-parse --git-dir`, or a temp directory outside git, and only failing lines are read back.
 - **Progress.** A run of more than one step keeps its progress in the harness's task list: one line per step written before the first starts, set in progress when it starts and completed when it lands. No message between two steps, except a blocked step, a failed check or a question only the user can answer.
 
@@ -66,7 +67,7 @@ Every question exo puts to the user has one shape, because the user answers it b
 
 1. **Plain lines, no tool.** The options are lines in the reply that end the turn; a structured question tool, a form or a picker is never used.
 2. **One option per line**, written `(<n>) <Label> (Recommended): <what it does>`: a label of one to three words, then one short clause saying what happens, never why, and never a command, a model or an effort.
-3. **One option is marked**, the recommended one, first except in the next stage's fixed order; stopping or keeping things as they are comes last. Label, marker and clause are in the conversation's language.
+3. **One option is marked**, the recommended one, first except in the next stage's fixed order; stopping or keeping things as they are comes last. Label, marker and clause are in the reply's language, as the language rule under `# Context` sets.
 4. **Nothing follows the options** except the one model line `## The next stage` allows.
 5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
 

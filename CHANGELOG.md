@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `using-exo` writes every reply, report and question in the language of the user's latest message, or of the plan when a session opens on one; the eval `using-exo-replies-in-the-users-language` covers both.
+
 ### Changed
 
 - A GitHub Release is titled `v<version>`, and its notes group changes under New, Improved, Fixed and Removed, list the pull requests since the previous tag and end on a link to every commit since that tag.
