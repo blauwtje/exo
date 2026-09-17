@@ -13,7 +13,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { configDirectory } from '../../savings/scripts/ledger.mjs';
+import { configDirectory } from '#config-directory';
 
 const SCHEMA = JSON.parse(fs.readFileSync(new URL('../schema.json', import.meta.url), 'utf8'));
 const PROJECT_FILE = path.join('.claude', 'exo.json');
