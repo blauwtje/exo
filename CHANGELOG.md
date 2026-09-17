@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.7.0 - 2026-09-17
+
+### Highlights
+
+- **Three helpers are now plugin agents.** `exo:explorer`, `exo:branch-reviewer` and `exo:design-critic` pin their own model, effort, tools and turn limit.
+- **The design critique can no longer run away.** It stops at 30 turns, and a critic that returns without its faults file is resumed instead of started again.
+- **`designing` keeps file searches out of your session.** Phase 1 discovery goes to the explorer when the request names no files.
+
 ### Added
 
 - The `exo:explorer` agent searches code on `haiku` with read-only tools and a 20-turn limit, and the `exo:branch-reviewer` agent reviews a finished plan branch on `opus` at `high` effort, so the session no longer pastes their prompts into every dispatch.
