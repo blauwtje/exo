@@ -25,11 +25,12 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
 
-test('the workspace question offers a branch, a worktree and the current branch, in that order', () => {
-  const branch = WORKSPACE.indexOf('(1) Branch (Recommended):');
-  const worktree = WORKSPACE.indexOf('(2) Worktree:');
-  const current = WORKSPACE.indexOf('(3) Current branch:');
+test('the workspace question offers a branch, a worktree and the current branch, recommended first', () => {
+  const branch = WORKSPACE.indexOf('1. **Branch (Recommended)**:');
+  const worktree = WORKSPACE.indexOf('2. **Worktree**:');
+  const current = WORKSPACE.indexOf('3. **Current branch**:');
   assert.ok(branch !== -1 && branch < worktree && worktree < current);
+  assert.ok(WORKSPACE.includes('the current branch becomes `1. **Current branch (Recommended)**`'));
   assert.ok(!WORKSPACE.includes('git push'), 'the workspace step pushes nothing');
 });
 
@@ -46,8 +47,8 @@ test('the tail pushes only through the finish question', () => {
   const question = FINISHING.indexOf('## The question');
   const firstPush = FINISHING.indexOf('git push');
   assert.ok(question !== -1 && firstPush > question, 'no push is named before the question');
-  assert.ok(FINISHING.includes('(1) Open PR (Recommended):'));
-  assert.ok(FINISHING.includes('(3) Keep local:'));
+  assert.ok(FINISHING.includes('1. **Open PR (Recommended)**:'));
+  assert.ok(FINISHING.includes('3. **Keep local**:'));
 });
 
 test('the authorization line grants no push before the finish answer and no merge', () => {

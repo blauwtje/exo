@@ -26,9 +26,9 @@ The effective values when this skill loaded, each with the layer it came from:
 1. **Show** the block above for a request that only asks what is set, and run nothing, because a second run prints the same block.
 2. **Pick the layer** from the request: everyone on this repository is `project`, only this person here is `local`, every project on this machine is `global`. A request that names none asks, in the shape `## A question` in `using-exo` gives:
    ```text
-   (1) Project (Recommended): everyone on this repository, committed in .claude/exo.json
-   (2) Local: only you, in this repository
-   (3) Global: every project on this machine
+   1. **Project (Recommended)**: everyone, via .claude/exo.json
+   2. **Local**: only you, in this repository
+   3. **Global**: every project on this machine
    ```
 3. **Set** a project or local value with `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project|local>`, then run `show`, because the block above predates the change. Relay a rejection as the script printed it.
 4. **Point** a global value at `/config`, where each exo option is a row, and run nothing, because the harness owns that file.
