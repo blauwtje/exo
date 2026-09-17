@@ -17,6 +17,7 @@ import { checkDescriptionBudgets } from './verify/checks/description-budgets.mjs
 import { checkBannedText } from './verify/checks/banned-text.mjs';
 import { checkReferenceTables } from './verify/checks/reference-tables.mjs';
 import { checkSharedContracts } from './verify/checks/shared-contracts.mjs';
+import { checkReturnCaps } from './verify/checks/return-caps.mjs';
 import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
 import { checkSkillScripts } from './verify/checks/skill-scripts.mjs';
 import { checkSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
@@ -55,6 +56,7 @@ checkDescriptionBudgets(report, repository);
 checkBannedText(report, repository);
 checkReferenceTables(report, repository);
 checkSharedContracts(report, repository);
+checkReturnCaps(report, repository);
 checkScriptSyntax(report, repository);
 checkSkillScripts(report, repository);
 checkSkillScriptBehavior(report, repository);

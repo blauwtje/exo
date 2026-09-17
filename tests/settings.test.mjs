@@ -25,7 +25,7 @@ async function workspace({ project, local, global } = {}) {
   if (global) {
     await writeJson(path.join(configDirectory, 'settings.json'), { pluginConfigs: { 'exo@blauwtje': { options: global } } });
   }
-  const env = { CLAUDE_PROJECT_DIR: root, CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PLUGIN_OPTION_SPECS: '' };
+  const env = { CLAUDE_PROJECT_DIR: root, CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '' };
   return { root, env };
 }
 
@@ -36,22 +36,29 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default)');
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default)');
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project)');
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default)');
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global)');
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default)');
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global)');
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default)');
+});
+
+test('replies is tight by default and standard when the project sets it', async () => {
+  const unset = await workspace();
+  assert.equal((await settings(unset, ['get', 'replies'])).stdout.trim(), 'tight');
+  const project = await workspace({ project: { replies: 'standard' } });
+  assert.equal((await settings(project, ['get', 'replies'])).stdout.trim(), 'standard');
 });
 
 test('set writes the project file and rejects a value the schema does not allow', async () => {
@@ -87,7 +94,7 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\); .*exo\.json is not valid JSON/);
 });
 
 test('every schema key is a userConfig entry with the same type, options and default', async () => {

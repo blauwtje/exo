@@ -4,5 +4,11 @@
     "options": ["docs", "issues", "both"],
     "default": "docs",
     "description": "where shaping stores a spec: docs/specs files, GitHub issues, or both"
+  },
+  "replies": {
+    "type": "string",
+    "options": ["tight", "standard"],
+    "default": "tight",
+    "description": "how the session writes replies: tight drops preamble, recap and filler; standard keeps full prose"
   }
 }

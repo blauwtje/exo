@@ -82,9 +82,9 @@ On every rung, checks at a trust boundary, failure handling that keeps data from
 
 ## Savings
 
-`/exo:savings` prints one report over every session of the last 30 days, in every project. It leads with what exo's own work cost, at API list price and in time, then counts the reads the read guard refused and their file text in bytes. What exo saved is not measured, and the report says so: refused text was never sent, so it has no token count or price. exo's token total appears once, in the footer, and never beside a cost.
+`/exo:savings` prints a short report over every session of the last 30 days, in every project: what exo's own work cost at API list price with its calls and time, and the reads the read guard refused with their file text in bytes. What exo saved is not measured, and the report says so: refused text was never sent, so it has no token count or price.
 
-To spend less on the guard, read its table in the report: each guard's refusals stand beside the re-reads they caused and what those cost. To refuse fewer reads, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
+To refuse fewer reads, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
 
 ```text
 /exo:savings guard-lines 800
@@ -115,6 +115,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 | Key | Values | Default | Effect |
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
+| `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
 
 ## Develop
 

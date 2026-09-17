@@ -39,5 +39,5 @@ Hard boundaries:
 - Start no background session and dispatch no other delegate. Never ask the user questions.
 
 Report to: <directory `git rev-parse --git-dir` prints>/branch-review.md
-Write the report there and return it, at most 30 lines: the verdict `CLEAN`, `FIXED` or `BLOCKED` first; then at most twelve findings, each `file:line`, the question or rule it answers, one sentence of evidence, and `fixed` or `reported`; then Proof, each Final verification command with its result.
+Write the report there and return it, at most 30 lines: the verdict `CLEAN`, `FIXED` or `BLOCKED` first; then at most twelve findings, one line each: `file:line`, the question or rule it answers, one sentence of evidence, and `fixed` or `reported`; then Proof, each Final verification command with its result.
 ```
