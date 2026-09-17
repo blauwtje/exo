@@ -27,9 +27,9 @@ The report as the script printed it when this skill loaded:
 
 1. **Relay** the report above for a request that only asks for the figures, and run nothing, because a second run is a tool call the reader waits on for the same figures. The exception is a notice in place of the report, such as shell execution disabled by policy: then run `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" report`.
 2. **Change** with `node "${CLAUDE_SKILL_DIR}/scripts/savings.mjs" off`, `on` or `guard-lines <lines>`, then `report`, because the report above shows the state before the change. The script refuses a limit that is not a whole number of at least 1; relay its error line and change nothing by hand.
-3. **Relay** the report unchanged, keeping the ```` ```text ```` fence the script printed around it, because its tables are padded to one width and line up only in a monospace block. After a change, the script's one-line confirmation goes above the fence.
+3. **Relay** the report unchanged, keeping the ```` ```text ```` fence the script printed around it, because its tables are padded to one width and line up only in a monospace block. After a change, the script's one-line confirmation goes above the fence. The script's switch line under the fence, `Turn off with` or `Turn on with`, stays, because it is the only place the reader sees the switch.
 4. **Write** nothing of your own above the fence, not the report's `exo savings report` title and not the opening line an output style asks for: the report is the whole answer, and a line above it repeats what the reader is about to read.
-5. **Add** no prose under the fence restating the report's rows, naming them an estimate, explaining the cost basis or working out a net, because the report already says what it measures and why it prints no net.
+5. **Add** no prose of your own under the fence restating the report's rows, naming them an estimate, explaining the cost basis or working out a net, because the report already says what it measures and why it prints no net.
 
 ## Judgment
 
