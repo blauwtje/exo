@@ -12,7 +12,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
 - `benchmarks/font-defaults-probe.mjs` measures which typefaces models pick for unrelated briefs, unprompted and again with the overused list forbidden.
 - The repository has issue forms for bugs and feature requests, a pull request checklist, a security policy that points to private vulnerability reporting, and the Contributor Covenant code of conduct.
-- `/exo:savings guard-lines <lines>` sets the line count above which the read guard refuses a whole-file read, and the savings report names the current limit.
+- `/exo:savings guard-lines <lines>` sets the line count above which the read guard refuses a whole-file read, and the cost report names the current limit.
 
 ### Changed
 
@@ -22,7 +22,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The overused-font list is rebuilt from a criterion recorded in `overused-fonts.mjs`: Google Fonts' most popular families, platform and browser defaults, the `create-next-app` faces, and the faces models pick unprompted or fall back on, now 66 families; the craft recipes and check tests spell their CSS samples anew.
 - `skills-tool` and its form, pressure, plugging and shape references are rewritten in exo's own words and structure, with the same loop, rules and bounds.
 - `deepen` restates its scope, terms and audit with new card fields (Files, Friction, Refactor, Payoff, Confidence), and `debug`, `implementing`, `implementing-batch` and `merge-prs` reword single passages, with the same triggers and bounds.
-- `/exo:savings` prints a boxed savings report: exo's cost beside the text the read guard held back with a line saying why there is no net, a guard table that sets each guard's held-back text beside what its re-reads cost, a cost table split into skill loads, re-reads and hooks, and a plain-words list of what is and is not measured. The word "ledger" is gone from every user-facing text. The first report after the update reads every stored transcript again; a session whose transcript is gone keeps what the guard held back and loses its cost figures.
+- `/exo:savings` prints a boxed cost report: exo's cost as the headline, the reads the read guard refused with their file text, a line saying flatly that what exo saved is not measured because refused text has no token count or price, a cost table split into skill loads, re-reads and hooks with no token column, a guard table that sets each guard's refusals beside what its re-reads cost, a plain-words list of what is and is not measured, what to switch to spend less, and exo's token total once in the footer, away from any cost. The word "ledger" is gone from every user-facing text. The first report after the update reads every stored transcript again; a session whose transcript is gone keeps what the guard held back and loses its cost figures.
+- The status line segment reads `exo cost $0.04 · 2m · 2 reads refused`: cost first, refusals as a count, and no token or byte figure beside the cost.
 - The README explains exo in its own words, adds a check that it works, folds its how-it-works sections into one list and the ladder, says how to weigh and tune the read guard, and drops the credits; the note on adding a setting moves to `CONTRIBUTING.md`.
 
 ### Fixed

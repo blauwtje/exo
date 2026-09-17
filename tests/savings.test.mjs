@@ -170,7 +170,7 @@ test('reading older rows again neither brings back an expired row nor moves a ro
   assert.equal(ledger.recent.overhead.version, OVERHEAD_VERSION);
 });
 
-test('the report shows the headline, both ruled tables with totals, what is not measured, and the limit to tune', async () => {
+test('the report leads with cost, says the saving is not measured, and keeps the token total away from cost and refusals', async () => {
   const directory = await fixture();
   await writeConfig(directory, { readGuardLines: 800 });
   const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
@@ -180,36 +180,49 @@ test('the report shows the headline, both ruled tables with totals, what is not 
   const output = result.stdout;
   // Fenced, because the columns line up only in a monospace block.
   assert.match(output, /^```text$/m);
-  assert.match(output, /^│  exo savings report · on +│$/m);
+  assert.match(output, /^│  exo cost report · on +│$/m);
   assert.match(output, /^│  All projects, last 30 days · 1 session +│$/m);
   // Every session in one report, in one project or another: no section per project.
   assert.doesNotMatch(output, /^── /m);
   // 2,000 input and 400 output weigh 2,400 and price at Fable's $10 and $50 per million;
   // two seconds of hook runs and 118 seconds of call.
-  assert.match(output, /^  exo cost    \$0\.04    2\.4k tokens · 1 call · 2m$/m);
-  assert.match(output, /^  Held back   1\.5 MB   of file text kept out of Claude's view$/m);
-  assert.match(output, /^  \$0\.04 cost, 1\.5 MB held back: two units, so no net number\.$/m);
-  assert.match(output, /^│ Guard +│ Times │ Held back │ Re-reads │ +Cost │$/m);
-  assert.match(output, /^│ Big file refused │ +1 │ +1\.0 MB │ +0 │ +\$0\.00 │$/m);
+  assert.match(output, /^  exo cost   \$0\.04    1 call · 2m$/m);
+  assert.match(output, /^  Refused    2 reads  1\.5 MB of file text never sent to Claude$/m);
+  assert.match(output, /^  What exo saved is not measured\. Refused text was never sent,$/m);
+  assert.match(output, /^  so no token count or price exists for it\.$/m);
+  assert.match(output, /^│ Work +│ Calls │ Time │ +Cost │$/m);
+  assert.match(output, /^│ Loading exo skills +│ +1 │ +2m │ +\$0\.04 │$/m);
+  assert.match(output, /^│ Re-reads after a refusal │ +0 │ +0m │ +\$0\.00 │$/m);
+  assert.match(output, /^│ exo hooks +│ +- │ +0m │ +- │$/m);
+  assert.match(output, /^│ Total +│ +1 │ +2m │ +\$0\.04 │$/m);
+  assert.match(output, /^│ Guard +│ Refused │ File text │ Re-reads │ +Cost │$/m);
+  assert.match(output, /^│ Big file +│ +1 │ +1\.0 MB │ +0 │ +\$0\.00 │$/m);
   assert.match(output, /^│ Same lines again │ +1 │ +512 KB │ +0 │ +\$0\.00 │$/m);
   assert.match(output, /^│ Total +│ +2 │ +1\.5 MB │ +0 │ +\$0\.00 │$/m);
-  assert.match(output, /^│ Loading exo skills +│ +1 │ +2\.4k │ +2m │ +\$0\.04 │$/m);
-  assert.match(output, /^│ Re-reads after a guard │ +0 │ +0 │ +0m │ +\$0\.00 │$/m);
-  assert.match(output, /^│ exo hooks +│ +- │ +- │ +0m │ +- │$/m);
-  assert.match(output, /^│ Total +│ +1 │ +2\.4k │ +2m │ +\$0\.04 │$/m);
-  assert.match(output, /^  Big-file guard +1 time · 1\.0 MB held back$/m);
+  assert.match(output, /^What exo does, and what this report measures$/m);
+  assert.match(output, /^  Big-file guard +1 refused · 1\.0 MB$/m);
   assert.match(output, /^    Claude asked to read a file of over 800 lines in one go\.$/m);
-  assert.match(output, /^  Repeat guard +1 time · 512 KB held back$/m);
+  assert.match(output, /^  Repeat guard +1 refused · 512 KB$/m);
   assert.match(output, /^  Helpers +not measured$/m);
   assert.match(output, /^  Build only what is needed +not measured$/m);
-  assert.match(output, /^reads, raise its limit of 800 lines with$/m);
-  assert.match(output, /^\/exo:savings guard-lines <lines>\.$/m);
+  assert.match(output, /^To spend less: re-reads after a refusal cost \$0\.00\.$/m);
+  assert.match(output, /^To refuse fewer reads, raise the big-file limit of 800$/m);
+  assert.match(output, /^lines with \/exo:savings guard-lines <lines>\.$/m);
+  assert.match(output, /^Loading skills cost \$0\.04 and has no switch; only$/m);
+  assert.match(output, /^Tokens: exo's calls came to 2\.4k in all\. Text read back from$/m);
   assert.match(output, /^Not counted: the instructions exo adds when a session starts\.$/m);
   assert.match(output, /^Turn off with `\/exo:savings off`\.$/m);
-  // Nothing is an estimate or a saving, and the internal name stays internal.
-  assert.doesNotMatch(output, /≈|saved|ledger/i);
-  const widest = Math.max(...output.split('\n').map((line) => [...line].length));
-  assert.ok(widest <= 66, `report is ${widest} columns`);
+  // The token total is one footer line, so no line or row sets it beside a cost
+  // or beside the refused text, and no reader is handed a rate.
+  const lines = output.split('\n');
+  const tokenLines = lines.filter((line) => /\d(\.\d)?[kM]? tokens|\btok\b|Tokens/.test(line));
+  assert.deepEqual(tokenLines, ["Tokens: exo's calls came to 2.4k in all. Text read back from"]);
+  const tokenIndex = lines.indexOf(tokenLines[0]);
+  for (const nearby of lines.slice(tokenIndex - 2, tokenIndex + 3)) assert.doesNotMatch(nearby, /\$\d|\d (B|KB|MB)\b|refused/i);
+  // Nothing is an estimate, a saving figure or a net, and the internal name stays internal.
+  assert.doesNotMatch(output, /≈|two units|no net|held back|withheld|ledger/i);
+  const widest = Math.max(...lines.map((line) => [...line].length));
+  assert.ok(widest <= 62, `report is ${widest} columns`);
 });
 
 test('an empty counter prints a report of zeros', async () => {
@@ -218,17 +231,17 @@ test('an empty counter prints a report of zeros', async () => {
   const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^│  All projects, last 30 days · 0 sessions +│$/m);
-  assert.match(result.stdout, /^  Held back   0 B     of file text kept out of Claude's view$/m);
+  assert.match(result.stdout, /^  Refused    0 reads  0 B of file text never sent to Claude$/m);
   assert.match(result.stdout, /^│ Total +│ +0 │ +0 B │ +0 │ +\$0\.00 │$/m);
-  assert.match(result.stdout, /^reads, raise its limit of 400 lines with$/m);
+  assert.match(result.stdout, /^To refuse fewer reads, raise the big-file limit of 400$/m);
 });
 
-test('the status line segment carries the same measured figures', async () => {
+test('the status line segment leads with cost and counts refusals, never tokens or refused bytes', async () => {
   const directory = await fixture();
   await writeConfig(directory);
   await writeLedger(directory, { s1: measuredRow() });
   const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '' };
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo 1.5 MB withheld · 2.4k tok · $0.04 · 2m');
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo cost $0.04 · 2m · 2 reads refused');
 });
 
 test('a Skill call to an exo skill reaches the segment from the transcript alone', async () => {
@@ -242,7 +255,7 @@ test('a Skill call to an exo skill reaches the segment from the transcript alone
   const { configDirectory, transcript } = await transcriptFixture(lines, []);
   const env = { CLAUDE_CONFIG_DIR: configDirectory };
   await runWithStdin(['record'], JSON.stringify({ session_id: 's1', transcript_path: transcript }), env);
-  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo 0 B withheld · 2.4k tok · $0.04 · 2m');
+  assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo cost $0.04 · 2m · 0 reads refused');
 });
 
 test('a call whose model has no price dashes every cost it reaches', async () => {
@@ -258,10 +271,9 @@ test('a call whose model has no price dashes every cost it reaches', async () =>
   const result = await runWithStdin(['report'], '', env);
   assert.equal(result.code, 0, result.stderr);
   // One of the two sessions has no price, so the cost over both cannot be totalled.
-  assert.match(result.stdout, /^  exo cost    - +2\.0k tokens · 2 calls · 0m$/m);
-  assert.match(result.stdout, /^  Unpriced cost, 0 B held back: two units, so no net number\.$/m);
-  assert.match(result.stdout, /^│ Loading exo skills +│ +2 │ +2\.0k │ +0m │ +- │$/m);
-  assert.match(result.stdout, /^│ Total +│ +2 │ +2\.0k │ +0m │ +- │$/m);
+  assert.match(result.stdout, /^  exo cost   - +2 calls · 0m$/m);
+  assert.match(result.stdout, /^│ Loading exo skills +│ +2 │ +0m │ +- │$/m);
+  assert.match(result.stdout, /^│ Total +│ +2 │ +0m │ +- │$/m);
 });
 
 test('an unknown command fails with usage', async () => {
@@ -298,7 +310,7 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
-  assert.match(panel, /^│  exo savings report · off +│$/m);
+  assert.match(panel, /^│  exo cost report · off +│$/m);
   assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; the counter, the status line segment and the read guard follow at once\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));

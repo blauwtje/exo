@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // The savings counter: what exo itself cost in tokens, price and wall time,
-// and what its read guard kept out of context, summed over every session the
+// and what its read guard refused to send, summed over every session the
 // counter holds. Every figure is one the harness reported; nothing here is an
 // estimate. The counter is fed from the transcript the harness writes
 // (transcript.mjs) and from the status line it renders.
 //
 //   node savings.mjs record            Stop hook: stdin is the hook JSON
 //   node savings.mjs statusline        status line: stdin is the status JSON; prints one segment
-//   node savings.mjs report            prints the savings report inside a text fence
+//   node savings.mjs report            prints the cost report inside a text fence
 //   node savings.mjs status            prints on or off
 //   node savings.mjs off | on          writes "enabled" into config.json: one switch for
 //                                      the counter, the status line and the read guard
@@ -27,13 +27,7 @@ import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
 const DEFAULT_CONFIG = { enabled: true, readGuard: true };
 const BOX_WIDTH = 62;
 const MECHANISM_WIDTH = 62;
-const GUARD_LABELS = { capped: 'Big file refused', duplicate: 'Same lines again' };
-const FOOTER_LINES = [
-  'Tokens: the word pieces Claude reads and writes. Text read back',
-  'from the prompt cache counts a tenth, text written to it more.',
-  'Cost: what these tokens cost at API list price, not your bill.',
-  'Not counted: the instructions exo adds when a session starts.'
-];
+const GUARD_LABELS = { capped: 'Big file', duplicate: 'Same lines again' };
 
 // A cost is known only when every part of it is.
 function addWork(target, source) {
@@ -100,8 +94,10 @@ function money(value, known) {
   return `$${Math.abs(value).toFixed(2)}`;
 }
 
+// Cost first, as in the report. Refusals are a count, never bytes, and the
+// token total stays in the report's footer: beside a cost it gives a rate.
 function segment(measured) {
-  return `exo ${bytes(measured.bytesWithheld)} withheld · ${compact(measured.tokens)} tok · ${money(measured.cost, measured.costKnown)} · ${duration(measured.time)}`;
+  return `exo cost ${money(measured.cost, measured.costKnown)} · ${duration(measured.time)} · ${counted(measured.refusals, 'read')} refused`;
 }
 
 function readStdin() {
@@ -177,18 +173,19 @@ function titleBoxLines(titleLines) {
   return [`┌${edge}┐`, boxed(''), ...titleLines.map(boxed), boxed(''), `└${edge}┘`];
 }
 
-// Cost and held-back text side by side, then the line that says why they are
-// not subtracted.
+// Cost is the headline and the refusals follow as a count with their file
+// text. The refused text was never sent, so it has no token count or price,
+// and the saving it stands for is not measured: the report says so flatly.
 function headlineLines(measured) {
   const cost = money(measured.cost, measured.costKnown);
-  const heldBack = bytes(measured.bytesWithheld);
-  const valueWidth = Math.max(displayWidth(cost), displayWidth(heldBack));
-  const costDetail = `${compact(measured.tokens)} tokens · ${counted(measured.calls, 'call')} · ${duration(measured.time)}`;
-  const costPhrase = measured.costKnown ? `${cost} cost` : 'Unpriced cost';
+  const refused = counted(measured.refusals, 'read');
+  const valueWidth = Math.max(displayWidth(cost), displayWidth(refused));
   return [
-    `  exo cost    ${padEnd(cost, valueWidth)}   ${costDetail}`,
-    `  Held back   ${padEnd(heldBack, valueWidth)}   of file text kept out of Claude's view`,
-    `  ${costPhrase}, ${heldBack} held back: two units, so no net number.`
+    `  exo cost   ${padEnd(cost, valueWidth)}  ${counted(measured.calls, 'call')} · ${duration(measured.time)}`,
+    `  Refused    ${padEnd(refused, valueWidth)}  ${bytes(measured.bytesWithheld)} of file text never sent to Claude`,
+    '',
+    '  What exo saved is not measured. Refused text was never sent,',
+    '  so no token count or price exists for it.'
   ];
 }
 
@@ -217,7 +214,7 @@ function rereadWork(measured) {
   return rereads;
 }
 
-// Each guard's refusals and held-back text beside the re-reads it caused and
+// Each guard's refusals and refused file text beside the re-reads it caused and
 // their cost: the trade a user weighs before changing the guard.
 function guardTableLines(measured) {
   const rows = GUARD_KINDS.map((kind) => {
@@ -227,26 +224,27 @@ function guardTableLines(measured) {
   });
   const rereads = rereadWork(measured);
   rows.push(['Total', compact(measured.refusals), bytes(measured.bytesWithheld), compact(rereads.calls), money(rereads.cost, rereads.costKnown)]);
-  return tableLines(['Guard', 'Times', 'Held back', 'Re-reads', 'Cost'], rows);
+  return tableLines(['Guard', 'Refused', 'File text', 'Re-reads', 'Cost'], rows);
 }
 
+// No token column: a row with both tokens and cost gives a rate.
 function costTableLines(measured) {
-  const workRow = (label, work) => [label, compact(work.calls), compact(work.tokens), duration(work.time), money(work.cost, work.costKnown)];
+  const workRow = (label, work) => [label, compact(work.calls), duration(work.time), money(work.cost, work.costKnown)];
   const rows = [
     workRow('Loading exo skills', measured.work.skill),
-    workRow('Re-reads after a guard', rereadWork(measured)),
-    ['exo hooks', '-', '-', duration(measured.hookTime), '-'],
+    workRow('Re-reads after a refusal', rereadWork(measured)),
+    ['exo hooks', '-', duration(measured.hookTime), '-'],
     workRow('Total', measured)
   ];
-  return tableLines(['Work', 'Calls', 'Tokens', 'Time', 'Cost'], rows);
+  return tableLines(['Work', 'Calls', 'Time', 'Cost'], rows);
 }
 
-// Every mechanism exo saves by, with its measured figure or `not measured`,
+// Every mechanism exo works by, with its measured figure or `not measured`,
 // so the measured part never reads as the whole picture.
 function mechanismLines(measured, lineLimit) {
   const guardFigure = (kind) => {
     const guard = measured.guards[kind];
-    return `${counted(guard.refusals, 'time')} · ${bytes(guard.bytesWithheld)} held back`;
+    return `${compact(guard.refusals)} refused · ${bytes(guard.bytesWithheld)}`;
   };
   const mechanisms = [
     ['Big-file guard', guardFigure('capped'), [
@@ -266,7 +264,7 @@ function mechanismLines(measured, lineLimit) {
       'already exists, and then writes as little as works.'
     ]]
   ];
-  const lines = ['How exo saves, in plain words'];
+  const lines = ['What exo does, and what this report measures'];
   for (const [name, figure, description] of mechanisms) {
     const figureWidth = MECHANISM_WIDTH - 2 - displayWidth(name);
     lines.push('', `  ${name}${padStart(figure, figureWidth)}`);
@@ -275,19 +273,35 @@ function mechanismLines(measured, lineLimit) {
   return lines;
 }
 
-function tuningLines(lineLimit) {
+// What the user can switch to spend less, and the cost no switch reaches.
+function tuningLines(measured, lineLimit) {
+  const rereads = rereadWork(measured);
+  const skills = measured.work.skill;
   return [
-    'Is the big-file guard worth it? Its row in the first table shows',
-    'what it held back beside what its re-reads cost. To refuse fewer',
-    `reads, raise its limit of ${lineLimit} lines with`,
-    '/exo:savings guard-lines <lines>.'
+    `To spend less: re-reads after a refusal cost ${money(rereads.cost, rereads.costKnown)}.`,
+    `To refuse fewer reads, raise the big-file limit of ${lineLimit}`,
+    'lines with /exo:savings guard-lines <lines>.',
+    `Loading skills cost ${money(skills.cost, skills.costKnown)} and has no switch; only`,
+    'disabling the exo plugin stops it.'
+  ];
+}
+
+// The one place the token total appears, on a line of its own, away from any
+// cost and any refused text, so no line or row gives a price per token.
+function footerLines(measured) {
+  return [
+    `Tokens: exo's calls came to ${compact(measured.tokens)} in all. Text read back from`,
+    'the prompt cache counts a tenth, text written to it more.',
+    'Cost: what these calls cost at API list price, not your bill.',
+    "Time: the calls' wall time plus exo's hook runs.",
+    'Not counted: the instructions exo adds when a session starts.'
   ];
 }
 
 // The report inside a code fence, because its tables line up only in a
 // monospace block. Every session the counter holds, whatever project it ran
-// in. No net line: cost is in tokens and held-back text in bytes, and no
-// measured rate turns one into the other.
+// in. No saving and no net: the refused text was never sent, so nothing
+// measured turns its bytes into tokens or money.
 function report() {
   const sessions = refreshStaleSessions(readLedger());
   const measured = measuredLedger(sessions);
@@ -297,23 +311,23 @@ function report() {
   const lines = [
     '```text',
     ...titleBoxLines([
-      `exo savings report · ${enabled ? 'on' : 'off'}`,
+      `exo cost report · ${enabled ? 'on' : 'off'}`,
       `All projects, last ${SESSION_RETENTION_DAYS} days · ${counted(sessionCount, 'session')}`
     ]),
     '',
     ...headlineLines(measured),
     '',
-    'What the guards held back, and what their re-reads cost',
-    ...guardTableLines(measured),
-    '',
     'What exo cost',
     ...costTableLines(measured),
     '',
+    'What the read guard refused, and what its re-reads cost',
+    ...guardTableLines(measured),
+    '',
     ...mechanismLines(measured, lineLimit),
     '',
-    ...tuningLines(lineLimit),
+    ...tuningLines(measured, lineLimit),
     '',
-    ...FOOTER_LINES,
+    ...footerLines(measured),
     '```',
     '',
     enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'

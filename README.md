@@ -22,15 +22,15 @@ Start a new session and run:
 /exo:savings
 ```
 
-The first prints `on`. The second prints the savings report, which stays at zero until exo has done some work. In a clone of this repository, `npm run check` runs every check.
+The first prints `on`. The second prints the cost report, which stays at zero until exo has done some work. In a clone of this repository, `npm run check` runs every check.
 
 ## How exo works
 
 - **Steps.** A request is shaped, planned, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
-- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go, and refuses to read lines again that have not changed since the last read.
-- **The savings counter.** A hook books what exo's own work cost and how much text the read guard held back; `/exo:savings` prints the report.
+- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:savings guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read.
+- **The savings counter.** A hook books what exo's own work cost and which reads the read guard refused; `/exo:savings` prints the report.
 
 A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
 
@@ -56,7 +56,7 @@ Every skill is invoked as `/exo:<name>`; the model may also start one when its t
 | `designing <surface>` | A page, component or visual axis changes: typography, color, spacing, motion, copy. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
-| `savings [report, on, off, status, guard-lines]` | You ask what exo cost or held back, switch the savings counter and read guard off or on, or change the guard's big-file limit. |
+| `savings [report, on, off, status, guard-lines]` | You ask what exo cost or refused, switch the savings counter and read guard off or on, or change the guard's big-file limit. |
 | `settings [key value scope]` | You show or change an exo setting for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
@@ -82,9 +82,9 @@ On every rung, checks at a trust boundary, failure handling that keeps data from
 
 ## Savings
 
-`/exo:savings` prints one report over every session of the last 30 days, in every project. It shows what exo's own work cost, in tokens, API list price and time, and how much file text the read guard held back, in bytes. Those are different units, so the report prints no net figure, and it does not claim that exo pays for itself.
+`/exo:savings` prints one report over every session of the last 30 days, in every project. It leads with what exo's own work cost, at API list price and in time, then counts the reads the read guard refused and their file text in bytes. What exo saved is not measured, and the report says so: refused text was never sent, so it has no token count or price. exo's token total appears once, in the footer, and never beside a cost.
 
-To judge the guard, read its table in the report: each guard's held-back text stands beside the re-reads it caused and what they cost. When the re-reads cost more than that text is worth to you, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
+To spend less on the guard, read its table in the report: each guard's refusals stand beside the re-reads they caused and what those cost. To refuse fewer reads, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
 
 ```text
 /exo:savings guard-lines 800
@@ -106,7 +106,7 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
-The segment reads `exo 1.5 MB withheld · 2.4k tok · $0.04 · 2m`.
+The segment reads `exo cost $0.04 · 2m · 2 reads refused`.
 
 ## Settings
 
