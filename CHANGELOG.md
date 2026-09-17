@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-17
+
+### Highlights
+
+- **`/exo:savings` is now a cost report.** It leads with what exo cost, lists the reads the guard refused, and says plainly that the saving is not measured.
+- **The word "ledger" is gone from everything you read.** The status line reads `exo cost $0.04 · 2m · 2 reads refused`, and the guard's big-file limit is a setting.
+- **Every file is exo's own work.** The skills are rewritten in exo's own words, the third-party notices are removed, and the README is shorter.
+
 ### Added
 
 - The `designing-distinct-direction` eval checks that a direction decided in text names typefaces outside the overused list and ties palette, ground and signature moment to its subject.
@@ -34,7 +42,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
-- `THIRD_PARTY_NOTICES.md` and `LICENSES/Apache-2.0.txt`: every file is now exo's own work under PolyForm Noncommercial 1.0.0, and the README credits name the plugins that inspired exo without a license claim.
+- `THIRD_PARTY_NOTICES.md` and `LICENSES/Apache-2.0.txt`: every file is now exo's own work under PolyForm Noncommercial 1.0.0.
 
 ## 0.4.0 - 2026-09-16
 
