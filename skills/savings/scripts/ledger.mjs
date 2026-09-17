@@ -14,7 +14,8 @@ import process from 'node:process';
 // gives up before its own hook's timeout kills it mid-write.
 const LOCK_WAIT_MS = 8000;
 const LOCK_STALE_MS = 15000;
-const SESSION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+export const SESSION_RETENTION_DAYS = 30;
+const SESSION_RETENTION_MS = SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 export function configDirectory() {
   return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
