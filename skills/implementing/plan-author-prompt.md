@@ -16,5 +16,5 @@ Hard boundaries:
 - Bash runs only `sed -n`, `awk` and read-only git (`diff`, `status`, `log`); nothing that writes a file or installs.
 - Never ask the user questions; a fact the tree cannot settle goes in the report as the reason the task stays unrepaired.
 
-Return, and nothing else: the plan path, the task number rewritten, and any fact that kept the task unrepaired.
+Return, and nothing else, in at most five lines: the plan path, the task number rewritten, and any fact that kept the task unrepaired.
 ```

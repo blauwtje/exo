@@ -139,7 +139,9 @@ const SCENARIOS = [
   { name: 'broken-skill-script', mutate: (root) =>
     append(root, 'skills/designing/scripts/capture.mjs', '\nexport function broken( {\n') },
   { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
-    read(root, 'skills/implementing-batch/references/data-migration.md')) }
+    read(root, 'skills/implementing-batch/references/data-migration.md')) },
+  { name: 'uncapped-delegate-report', mutate: (root) =>
+    replaceText(root, 'skills/research/scout-prompt.md', 'at most 30 lines', 'a short report') }
 ];
 
 function copyVerificationFixture(repository, destination) {
