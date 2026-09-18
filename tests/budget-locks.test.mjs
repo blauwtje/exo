@@ -1,7 +1,7 @@
-// The two always-on budgets are locked to measured values in verify/budgets.mjs:
-// growth fails, shrinking passes, and neither check re-locks itself. The fixtures
-// copy this repository's own skills/, because each lock is a fact about this
-// corpus and a synthetic corpus would sit under any number.
+// The budgets in verify/budgets.mjs are locked to measured values: growth
+// fails, shrinking passes, and no check re-locks itself. The fixtures copy this
+// repository's own skills/, because each lock is a fact about this corpus and a
+// synthetic corpus would sit under any number.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,9 +11,10 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK } from '../verify/budgets.mjs';
+import { DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK } from '../verify/budgets.mjs';
 import { checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
+import { checkRestatement } from '../verify/checks/restatement.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const USING_EXO = 'skills/using-exo/SKILL.md';
@@ -21,7 +22,7 @@ const USING_EXO = 'skills/using-exo/SKILL.md';
 // and the total is what fails.
 const COUNTED_SKILL = 'skills/research/SKILL.md';
 
-// Both checks read nothing outside skills/, so the fixture copies that alone.
+// Every check here reads nothing outside skills/, so the fixture copies that alone.
 function skillsFixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-budget-lock-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -117,4 +118,64 @@ test('a paragraph below the using-exo frontmatter fails the injected lock', (t) 
   assert.equal(run.counts.FAIL, 1, run.detail);
   assert.match(run.detail, new RegExp(`${INJECTED_CONTEXT_LOCK.bytes} locked`));
   assert.equal(injectedBytes(run.detail), baseline + paragraph.length, run.detail);
+});
+
+function restatedBytes(detail) {
+  const measured = detail.match(/restates (\d+) bytes/);
+  assert.ok(measured, `no restated byte count in: ${detail}`);
+  return Number(measured[1]);
+}
+
+function editUsingExo(root, rewrite) {
+  const file = path.join(root, USING_EXO);
+  const text = fs.readFileSync(file, 'utf8');
+  const edited = rewrite(text);
+  assert.notEqual(edited, text, `${USING_EXO} did not change`);
+  fs.writeFileSync(file, edited, 'utf8');
+}
+
+test('the untouched restatement sits at or under its lock', (t) => {
+  const root = skillsFixture(t);
+
+  const run = verdict(root, checkRestatement);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
+  assert.match(run.detail, new RegExp(`${RESTATEMENT_LOCK.bytes} locked`));
+});
+
+test('a sentence added to a restated section fails the restatement lock', (t) => {
+  const root = skillsFixture(t);
+  const baseline = restatedBytes(verdict(root, checkRestatement).detail);
+  const padding = 'x'.repeat(RESTATEMENT_LOCK.bytes - baseline);
+  const paragraph = `${padding}Every reply names the skill it followed.\n\n`;
+  editUsingExo(root, (text) => text.replace('## When several fire\n\n', `## When several fire\n\n${paragraph}`));
+
+  const run = verdict(root, checkRestatement);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.match(run.detail, new RegExp(`${RESTATEMENT_LOCK.bytes} locked`));
+  assert.equal(restatedBytes(run.detail), baseline + paragraph.length, run.detail);
+});
+
+test('a sentence added outside the restated sections leaves the restatement lock alone', (t) => {
+  const root = skillsFixture(t);
+  const baseline = restatedBytes(verdict(root, checkRestatement).detail);
+  editUsingExo(root, (text) => text.replace('## The ladder\n\n', '## The ladder\n\nEvery reply names the skill it followed.\n\n'));
+
+  const run = verdict(root, checkRestatement);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
+  assert.equal(restatedBytes(run.detail), baseline, run.detail);
+});
+
+test('a renamed restated heading fails and names the heading', (t) => {
+  const root = skillsFixture(t);
+  // The skill body also names this heading in prose, so only the line that is
+  // the heading is renamed here.
+  editUsingExo(root, (text) => text.replace('\n## The next stage\n', '\n## Next stage\n'));
+
+  const run = verdict(root, checkRestatement);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.match(run.detail, /has no "## The next stage" heading/);
 });
