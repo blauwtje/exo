@@ -47,3 +47,13 @@ test('the repeat guard runs on Bash and Edit before the tool call', () => {
   assert.equal(guards.length, 1);
   assert.deepEqual(guards[0].matcher.split('|').sort(), ['Bash', 'Edit']);
 });
+
+test('routing opens on a prompt, names the skill that fired, and closes on Stop', () => {
+  const routing = hookEntries().filter((entry) => entry.hook.command.includes('routing.mjs'));
+  const wiring = routing.map((entry) => [entry.event, entry.matcher ?? null, entry.hook.command.split(' ').pop()]).sort();
+  assert.deepEqual(wiring, [
+    ['PreToolUse', 'Skill', 'fired'],
+    ['Stop', null, 'close'],
+    ['UserPromptSubmit', null, 'open']
+  ]);
+});
