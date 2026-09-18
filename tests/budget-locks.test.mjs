@@ -52,7 +52,23 @@ function editDescription(root, relative, rewrite) {
   fs.writeFileSync(file, edited, 'utf8');
 }
 
-test('the untouched corpus sits at both locks', (t) => {
+// A lock may sit above the corpus: shrinking passes and re-locks nothing, so a
+// later trim leaves the measured value below the locked one. Every case
+// therefore measures the untouched fixture and grows it to a fixed distance past
+// the lock, instead of assuming the two are still equal.
+function countedTotal(detail) {
+  const measured = detail.match(/total (?:is )?(\d+) chars/);
+  assert.ok(measured, `no counted description total in: ${detail}`);
+  return Number(measured[1]);
+}
+
+function injectedBytes(detail) {
+  const measured = detail.match(/injects (\d+) bytes/);
+  assert.ok(measured, `no injected byte count in: ${detail}`);
+  return Number(measured[1]);
+}
+
+test('the untouched corpus sits at or under both locks', (t) => {
   const root = skillsFixture(t);
 
   const descriptions = verdict(root, checkDescriptionBudgets);
@@ -64,37 +80,41 @@ test('the untouched corpus sits at both locks', (t) => {
   assert.match(injected.detail, new RegExp(`${INJECTED_CONTEXT_LOCK.bytes} locked`));
 });
 
-test('50 more chars in a counted description fail, naming the locked total and the new one', (t) => {
+test('50 chars past the locked total fail, naming the locked total and the new one', (t) => {
   const root = skillsFixture(t);
-  editDescription(root, COUNTED_SKILL, (value) => `${'x'.repeat(50)}${value}`);
+  const baseline = countedTotal(verdict(root, checkDescriptionBudgets).detail);
+  const growth = DESCRIPTION_TOTAL_LOCK.chars - baseline + 50;
+  editDescription(root, COUNTED_SKILL, (value) => `${'x'.repeat(growth)}${value}`);
 
   const run = verdict(root, checkDescriptionBudgets);
 
   assert.equal(run.counts.FAIL, 1, run.detail);
-  assert.match(run.detail, new RegExp(String(DESCRIPTION_TOTAL_LOCK.chars + 50)));
+  assert.equal(countedTotal(run.detail), DESCRIPTION_TOTAL_LOCK.chars + 50, run.detail);
   assert.match(run.detail, new RegExp(`${DESCRIPTION_TOTAL_LOCK.chars} locked`));
 });
 
 test('50 fewer chars pass and the check re-locks nothing', (t) => {
   const root = skillsFixture(t);
+  const baseline = countedTotal(verdict(root, checkDescriptionBudgets).detail);
   editDescription(root, COUNTED_SKILL, (value) => value.slice(0, value.length - 50));
 
   const run = verdict(root, checkDescriptionBudgets);
 
   assert.equal(run.counts.PASS, 1, run.detail);
-  assert.match(run.detail, new RegExp(String(DESCRIPTION_TOTAL_LOCK.chars - 50)));
+  assert.equal(countedTotal(run.detail), baseline - 50, run.detail);
   assert.match(run.detail, new RegExp(`${DESCRIPTION_TOTAL_LOCK.chars} locked`));
 });
 
 test('a paragraph below the using-exo frontmatter fails the injected lock', (t) => {
   const root = skillsFixture(t);
-  const paragraph = '\nEvery reply names the skill it followed.\n';
+  const baseline = injectedBytes(verdict(root, checkInjectedContext).detail);
+  const padding = 'x'.repeat(INJECTED_CONTEXT_LOCK.bytes - baseline);
+  const paragraph = `\n${padding}Every reply names the skill it followed.\n`;
   fs.appendFileSync(path.join(root, USING_EXO), paragraph, 'utf8');
 
   const run = verdict(root, checkInjectedContext);
 
   assert.equal(run.counts.FAIL, 1, run.detail);
   assert.match(run.detail, new RegExp(`${INJECTED_CONTEXT_LOCK.bytes} locked`));
-  const injected = Number(run.detail.match(/injects (\d+) bytes/)[1]);
-  assert.equal(injected, INJECTED_CONTEXT_LOCK.bytes + paragraph.length);
+  assert.equal(injectedBytes(run.detail), baseline + paragraph.length, run.detail);
 });
