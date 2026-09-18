@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.8.0 - 2026-09-18
+
+### Highlights
+
+- **Every exo question now has one shape.** Options are numbered `1.`, `2.`, `3.` with the recommended one first, and you answer by typing a digit.
+- **exo replies in your language.** Every reply, report and question follows the language of your latest message, or of the plan a session opens on.
+- **A plan can start a folder that is not a repository yet.** `implementing` runs `git init -b main` itself instead of stopping to ask.
+
 ### Added
 
 - `using-exo` writes every reply, report and question in the language of the user's latest message, or of the plan when a session opens on one; the eval `using-exo-replies-in-the-users-language` covers both.
