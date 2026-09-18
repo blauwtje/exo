@@ -13,6 +13,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `CLAUDE.md` is rebuilt around commands and hard rules, and adds a section on eval cost that names the cheap path: one case per run, a draft before a verdict, `--arm both` as the exception, `timeout_seconds` per case, free graders first and a `--max-cost-usd` ceiling.
 - A GitHub Release is titled `v<version>`, and its notes group changes under New, Improved, Fixed and Removed, list the pull requests since the previous tag and end on a link to every commit since that tag.
 - The full verifier checks the `settings` skill: `verify/budgets.mjs` lists it and `verify/checks/reference-tables.mjs` holds its empty reference-owner contract.
 - `configDirectory()` lives in `lib/config-directory.mjs`, imported as `#config-directory`, so no skill script imports from another skill's folder.
