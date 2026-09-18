@@ -186,11 +186,23 @@ test('the report is a few fenced lines: cost, refusals and a saving that is not 
     'Cost     $0.04 · 1 call · 2m',
     'Refused  2 reads · 1.5 MB of file text never sent',
     'Saved    not measured: refused text has no token count or price',
+    'Skills   none 0',
     '```',
     'Turn off with `/exo:savings off`.'
   ]);
   // No box, no table, no estimate and no internal name.
   assert.doesNotMatch(result.stdout, /│|┌|≈|withheld|record/);
+});
+
+test('the report names the skills that fired, most first, and the turns that matched none', async () => {
+  const directory = await fixture();
+  await writeConfig(directory);
+  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '', EXO_SAVINGS: '' };
+  const routed = { ...measuredRow(), routing: { open: false, fired: false, skills: { planning: 1, implementing: 4 }, none: 7 } };
+  await writeRecord(directory, { s1: routed });
+  const result = await run(SAVINGS, ['report'], { env, cwd: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Skills   implementing 4 · planning 1 · none 7$/m);
 });
 
 test('an empty counter prints a report of zeros', async () => {

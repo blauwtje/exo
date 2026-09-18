@@ -148,6 +148,38 @@ function setGuardLines(argument) {
   process.stdout.write(`exo read guard now refuses a whole-file read of a file over ${lineLimit} lines\n`);
 }
 
+// Which skills fired and how many turns matched none, summed over every
+// session the record holds.
+function routingTotals(sessions) {
+  const skills = {};
+  let none = 0;
+  for (const session of Object.values(sessions)) {
+    const routing = session.routing ?? {};
+    for (const [name, count] of Object.entries(routing.skills ?? {})) {
+      skills[name] = (skills[name] ?? 0) + count;
+    }
+    none += routing.none ?? 0;
+  }
+  return { skills, none };
+}
+
+// At most five skills so the line stays one line; the rest are summed under
+// "other", never dropped. `none` closes the line, because it is the count the
+// line exists for.
+const ROUTING_NAMES = 5;
+
+function routingLine(totals) {
+  const byCount = (first, second) => second[1] - first[1] || first[0].localeCompare(second[0]);
+  const ranked = Object.entries(totals.skills).sort(byCount);
+  const parts = [];
+  for (const [name, count] of ranked.slice(0, ROUTING_NAMES)) parts.push(`${name} ${compact(count)}`);
+  let rest = 0;
+  for (const [, count] of ranked.slice(ROUTING_NAMES)) rest += count;
+  if (rest > 0) parts.push(`other ${compact(rest)}`);
+  parts.push(`none ${compact(totals.none)}`);
+  return `Skills   ${parts.join(' · ')}`;
+}
+
 // Every session the counter holds, whatever project it ran in, in a fence so
 // the labels line up. No saving and no net: the refused text was never sent,
 // so nothing measured turns its bytes into tokens or money.
@@ -162,6 +194,7 @@ function report() {
     `Cost     ${money(measured.cost, measured.costKnown)} · ${counted(measured.calls, 'call')} · ${duration(measured.time)}`,
     `Refused  ${counted(measured.refusals, 'read')} · ${bytes(measured.bytesWithheld)} of file text never sent`,
     'Saved    not measured: refused text has no token count or price',
+    routingLine(routingTotals(sessions)),
     '```',
     enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'
   ];
