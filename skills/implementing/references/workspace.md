@@ -24,6 +24,15 @@ The default branch is the one `git symbolic-ref --short refs/remotes/origin/HEAD
 
 Every landed unit then commits in Conventional Commits where the pick put it. Nothing is pushed: a push waits for the question in `finishing.md`.
 
+## Wave worktrees
+
+A wave, as `implementing` step 3 forms it, builds each of its tasks in a worktree of its own, so two delegates never edit one checkout. The run creates, lands and removes them; a delegate never does.
+
+1. **Create.** For each task of the wave run `git worktree add --detach "<root>-task-<n>" HEAD`, where `<root>` is what `git rev-parse --show-toplevel` prints: a sibling folder, detached so no branch is left behind. Then run the plan's `Worktree setup:` command inside it, because a fresh worktree holds no ignored file such as installed dependencies; `Worktree setup: none` runs nothing. A failed `git worktree add` or setup command discards the wave before any dispatch.
+2. **Brief.** Each brief names its worktree as the checkout, and as the report directory what `git rev-parse --absolute-git-dir` prints in the run's checkout, because a worktree's own git directory goes when the worktree does.
+3. **Land.** With every report green, run each task's `Commit:` block inside its worktree, then on the run branch `git cherry-pick <sha>` for each task in plan order, where `<sha>` is what `git -C "<root>-task-<n>" rev-parse HEAD` prints. A cherry-pick that stops on a conflict is undone with `git cherry-pick --abort`, the worktrees are removed, and the turn ends naming both tasks, because the plan called independent two tasks that edit one region.
+4. **Remove.** Run `git worktree remove "<root>-task-<n>"` for each task of the wave. A discarded wave adds `--force`, because its edits were never committed and the plan holds the code that rebuilds them. No turn ends, stops or asks while `git worktree list` still prints a `-task-` path this run made.
+
 ## Judgment
 
 - An explicit instruction in the request, such as a branch name, "work on main" or "use a worktree", is the answer, so the question is not asked.
