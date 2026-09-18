@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A risky change is built test-first: `skills/implementing-batch/references/test-design.md` defines risky, a risky plan task carries a `Risk:` line and writes its failing test before its code, the implementer and the bug fixer quote the failing output before the edit and the passing output after it, and the branch review reports a risky task that shows neither.
+- The eval case `planning-risky-task-goes-red-first`.
+
 ## 0.15.0 - 2026-09-18
 
 ### Highlights

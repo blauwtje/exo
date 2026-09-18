@@ -34,6 +34,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/plan-spec.md',
     'references/example-plan.md',
     '../implementing-batch/references/data-migration.md',
+    '../implementing-batch/references/test-design.md',
     '../implementing-batch/references/security.md',
   ],
   'skills/deepen/SKILL.md': [
@@ -106,6 +107,8 @@ const EXPECTED_CONTRACTS = {
       'After the baseline and before adding or changing an automated test or production behavior, only when logic or public behavior changes or the request adds or changes an automated test, and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
   },
   'skills/planning/SKILL.md': {
+    '../implementing-batch/references/test-design.md':
+      'Before composing the first task, to decide which tasks are risky and therefore write their test first.',
     '../implementing-batch/references/data-migration.md':
       'After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
     '../implementing-batch/references/security.md':

@@ -33,6 +33,8 @@ Discovery is the only work this skill delegates. This session chooses the design
 
 An affected path that crosses a security boundary makes that reference's checks steps inside each task touching it, each with its own `Run:` and `Expected:`, never a warning in the plan's Context: the executor runs steps, and a note it can read past is a check nobody performs.
 
+A risky task carries the `Risk:` line and the failing-test step that `references/plan-spec.md` rule 3 fixes, decided while writing the task and never left to the executor to notice.
+
 The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove. It opens with `Repository:` and `Branch:` on their own lines, and a folder that is not a git repository yet still gets both: `Branch:` reads `main`, the branch that init creates, with one basis line handing `git init -b main` to the executor, never an init step for the owner.
 
 ## Depth
@@ -64,6 +66,7 @@ Take the model and effort for the session that runs it from the table under `## 
 | `references/plan-spec.md` | Before writing any plan deliverable: a planning-mode plan file or a requested plan. Do not load for the inline row. |
 | `references/example-plan.md` | Once, before composing the first task of a deliverable plan; do not load for the inline row. |
 | `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
+| `../implementing-batch/references/test-design.md` | Before composing the first task, to decide which tasks are risky and therefore write their test first. |
 | `../implementing-batch/references/security.md` | After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
 
 ## Judgment
