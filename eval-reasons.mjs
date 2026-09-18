@@ -10,6 +10,7 @@
 //
 // Writes judge-reasons.json into the results directory and prints each grader's
 // pass rate across runs, per arm; a run that ended in an error is counted apart.
+// Then prints one GATE line per arm, the verdict a plan's final verification reads.
 
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
@@ -23,6 +24,11 @@ const DEFAULT_JUDGE_MODEL = 'haiku';
 const CONCURRENT_JUDGES = 4;
 const JUDGE_TIMEOUT_MS = 180_000;
 const SYSTEM_PROMPT = 'You are a strict evaluation judge for coding-agent traces.';
+// A gate tolerates one failed run per grader, because the one-word judge fails
+// correct answers often enough that n of n fails a working skill; CONTRIBUTING.md
+// holds the measurement. Below three runs one failure is most of the arm, so no gate.
+const TOLERATED_FAILED_RUNS = 1;
+const MINIMUM_GATE_RUNS = 3;
 
 function newestResultsDirectory() {
   if (!fs.existsSync(RESULTS_ROOT)) return undefined;
@@ -157,6 +163,57 @@ function printPassRates(graded, reasoned, erroredByArm) {
   }
 }
 
+// Failed runs per grader of one arm, free graders included. An errored run fails
+// every grader, a grader without a verdict fails as it does in the pass-rate table,
+// and a failed llm verdict the reasoning judge reversed is counted apart.
+function failedRunsByGrader(evalCase, arm, runs, reversedVotes) {
+  const erroredRuns = runs.filter((run) => run.error).length;
+  const counts = new Map(evalCase.graders.map((grader) => [grader.name, { failed: erroredRuns, reversed: 0 }]));
+  runs.forEach((run, runIndex) => {
+    if (run.error) return;
+    for (const grader of run.graders ?? []) {
+      if (grader.passed === true) continue;
+      if (!counts.has(grader.name)) counts.set(grader.name, { failed: erroredRuns, reversed: 0 });
+      const count = counts.get(grader.name);
+      count.failed++;
+      if (reversedVotes.has(`${evalCase.name}\t${arm}\t${runIndex}\t${grader.name}`)) count.reversed++;
+    }
+  });
+  return counts;
+}
+
+// PASS: no grader failed more than the tolerated runs. DISPUTED: one did, but
+// only through verdicts the reasoning judge reversed, so judge-reasons.json is
+// read before anything is rerun. FAIL: one did on verdicts both judges share.
+function printGates(aggregate, reasoned) {
+  const reversedVotes = new Set(reasoned
+    .filter((record) => record.reasonedPassed === true)
+    .map((record) => `${record.case}\t${record.arm}\t${record.run}\t${record.grader}`));
+  for (const evalCase of aggregate.cases) {
+    for (const [arm, runs] of Object.entries(evalCase.arms)) {
+      // eval-case.mjs marks a draft run, which is for wording and never a verdict.
+      if (aggregate.suite?.authoritative === false) {
+        console.log(`GATE NONE\t${evalCase.name}\t${arm}\tdraft run, a gate needs the full run`);
+        continue;
+      }
+      if (runs.length < MINIMUM_GATE_RUNS) {
+        console.log(`GATE NONE\t${evalCase.name}\t${arm}\t${runs.length} runs, a gate needs ${MINIMUM_GATE_RUNS}`);
+        continue;
+      }
+      const counts = [...failedRunsByGrader(evalCase, arm, runs, reversedVotes)];
+      const overTolerance = counts.filter(([, count]) => count.failed > TOLERATED_FAILED_RUNS);
+      if (overTolerance.length === 0) {
+        console.log(`GATE PASS\t${evalCase.name}\t${arm}\tno grader failed more than ${TOLERATED_FAILED_RUNS} of ${runs.length} runs`);
+        continue;
+      }
+      const upheld = overTolerance.filter(([, count]) => count.failed - count.reversed > TOLERATED_FAILED_RUNS);
+      const verdict = upheld.length === 0 ? 'DISPUTED' : 'FAIL';
+      const failures = overTolerance.map(([name, count]) => `${name} failed ${count.failed} of ${runs.length} runs, ${count.reversed} reversed by the reasoning judge`);
+      console.log(`GATE ${verdict}\t${evalCase.name}\t${arm}\t${failures.join('; ')}`);
+    }
+  }
+}
+
 const resultsDirectory = process.argv[2] ?? newestResultsDirectory();
 if (resultsDirectory === undefined) {
   console.error('no results directory given and none under evals/results/');
@@ -176,10 +233,8 @@ const judgeModel = recordedJudgeModel ?? DEFAULT_JUDGE_MODEL;
 const judgeModelSource = recordedJudgeModel === undefined ? 'runner default, not recorded by the run' : 'recorded by the run';
 const collected = collectVotes(aggregate);
 const graded = collected.filter((vote) => vote.grader !== null);
-if (graded.length === 0) {
-  console.error(`${aggregateFile} holds no llm grader votes`);
-  process.exit(1);
-}
+// A case graded by free graders alone, or one whose every run errored, still gets its gate.
+if (graded.length === 0) console.error(`${aggregateFile} holds no llm grader votes`);
 const erroredByArm = new Map();
 for (const vote of collected.filter((entry) => entry.grader === null)) {
   erroredByArm.set(vote.arm, (erroredByArm.get(vote.arm) ?? 0) + 1);
@@ -193,4 +248,5 @@ const reasons = { judgeModel, judgeModelSource, costUsd, votes: records, errors 
 fs.writeFileSync(reasonsFile, `${JSON.stringify(reasons, null, 2)}\n`);
 console.log(`judge model: ${judgeModel} (${judgeModelSource})`);
 printPassRates(graded, records, erroredByArm);
+printGates(aggregate, records);
 console.error(`wrote ${reasonsFile}`);
