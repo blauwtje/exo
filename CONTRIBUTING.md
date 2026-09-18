@@ -92,12 +92,13 @@ The draft is for iterating on wording and is never a verdict: at 3 runs one answ
 
 ## Hooks
 
-`hooks/hooks.json` wires five hook groups:
+`hooks/hooks.json` wires six hook groups:
 
 - **SessionStart**, on startup, resume, clear and compaction. It writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set), makes the read guard forget its reads and the repeat guard forget its calls after a clear or compaction, and injects the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others. Without `jq` it still writes the pointer but injects no body, and says so on stderr.
 - **PreToolUse** and **PostToolUse** on `Read`: the read guard, in `skills/savings/scripts/read-guard.mjs`. Without `node` the hook fails and the read goes through unguarded.
 - **PreToolUse** on `Bash` and `Edit`: the repeat guard, in `skills/savings/scripts/repeat-guard.mjs`. It denies the third identical call in one context window and books the denial; without `node` the call goes through unguarded.
 - **UserPromptSubmit**, **PreToolUse** on `Skill` and **Stop**: the routing book, in `skills/savings/scripts/routing.mjs`. The prompt opens the turn, a `Skill` call names what fired in it, and `Stop` closes it; a turn that closes with no skill named books `none`.
+- **UserPromptSubmit**: the restatement, in `skills/savings/scripts/restate.mjs`. Once the transcript has grown `RESTATE_INTERVAL_BYTES` (600,000) since the rules were last injected, the next prompt carries the sections `lib/restatement.mjs` names, cut out of `skills/using-exo/SKILL.md` at that moment, so no second copy of them exists. Every SessionStart moves the measuring point, `RESTATEMENT_LOCK` in `verify/budgets.mjs` locks the size, and `exo savings off` stops it, because the measuring point lives in the savings record. A fault exits 0 with nothing on stdout.
 - **Stop**: books the turn's API usage into the savings counter.
 
 The hook entry pins `"shell": "bash"` so a Windows host without Git Bash does not fall back to PowerShell, and `.gitattributes` forces LF so the shebang survives a Windows checkout. The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.

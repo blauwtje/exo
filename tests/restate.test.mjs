@@ -128,3 +128,30 @@ test('a fault exits 0 with nothing on stdout', async () => {
   assert.equal(withoutTranscript.code, 0);
   assert.equal(withoutTranscript.stdout, '');
 });
+
+const SESSION_HOOK = path.join(REPOSITORY, 'hooks', 'session-start.sh');
+
+function jqAvailable() {
+  return new Promise((resolve) => execFile('jq', ['--version'], (error) => resolve(!error)));
+}
+
+const withoutJq = (await jqAvailable()) ? false : 'jq is not on PATH';
+
+function runSessionHook(hookInput, env) {
+  return new Promise((resolve) => {
+    const child = execFile('bash', [SESSION_HOOK], { env: { ...process.env, ...env }, timeout: 30_000 },
+      (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) }));
+    child.stdin.end(JSON.stringify(hookInput));
+  });
+}
+
+test('every session start moves the measuring point and still prints one JSON object', { skip: withoutJq }, async () => {
+  const { env, configDirectory, transcript, prompt } = await restateFixture();
+  await runRestate([], prompt, env);
+  const grown = START_BYTES + RESTATE_INTERVAL_BYTES;
+  await growTo(transcript, grown);
+  const started = await runSessionHook({ session_id: 's1', transcript_path: transcript, source: 'resume' }, env);
+  assert.equal(started.code, 0, started.stderr);
+  assert.equal(JSON.parse(started.stdout).hookSpecificOutput.hookEventName, 'SessionStart');
+  assert.equal(await baseline(configDirectory), grown);
+});

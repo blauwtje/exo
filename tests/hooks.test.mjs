@@ -57,3 +57,11 @@ test('routing opens on a prompt, names the skill that fired, and closes on Stop'
     ['UserPromptSubmit', null, 'open']
   ]);
 });
+
+test('the restatement runs on every prompt and takes no matcher', () => {
+  const restatement = hookEntries().filter((entry) => entry.hook.command.includes('restate.mjs'));
+  assert.equal(restatement.length, 1);
+  assert.equal(restatement[0].event, 'UserPromptSubmit');
+  assert.equal(restatement[0].matcher, undefined);
+  assert.ok(restatement[0].hook.command.endsWith('restate.mjs"'), restatement[0].hook.command);
+});
