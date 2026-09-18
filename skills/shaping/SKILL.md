@@ -6,7 +6,7 @@ argument-hint: <outcome to shape>
 
 # Shaping
 
-Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before doing any work. Resolve defaults, ask at most one gated question, and keep moving.
+Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before doing any work. Decide the routine choices, ask each decision the user would notice within a small budget, and keep moving.
 
 ## Decision gate
 
@@ -35,13 +35,17 @@ Both modes add three decisions:
 
 Resolve “this” from the first source containing a candidate: working-tree diff, most recent failing check, then last touched file. Use it when that source identifies exactly one path or symbol. Ask only when the first non-empty source identifies two or more candidates and the request names no path, symbol, or failure that distinguishes them. Take the diff as `git diff --stat` and the failing check as its last 40 lines, because the referent is a path and the full content belongs to the step that edits it.
 
-Ask at most one implementation question, with a recommendation, only when all three facts are true:
+Sort each open decision by one test: would the user notice the other answer in the finished result without reading the code?
 
-1. neither the request nor repository conventions select an option;
-2. at least two options remain after inspecting the relevant code;
-3. choosing one changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration.
+- **Noticeable, so asked:** what is in and out of scope, what counts as done, what happens in a case the request does not mention, and what the user sees or reads.
+- **Costly, so asked:** a choice that changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration.
+- **Routine, so decided:** names, file placement, internal structure, a dependency the manifest already lists, and any choice with one conventional answer.
 
-State the recommendation as the current default and continue in the same message. Only the unresolved-referent case above stops for an answer. Every other open point becomes a stated assumption.
+Inspect the relevant code before asking, because a question the repository answers is not asked. Ask one question per message in the shape `## A question` in `using-exo` gives, the recommended answer as option 1, and name the decision inside the question. Every question's last option is **Go**: each decision still open takes its recommended answer.
+
+Choose each question from the answers so far, never from a list fixed at the start. Ask first the decision whose answer can close others; an answer may open a follow-up on a noticeable decision, and a decision an answer already settled is never asked. Size the budget to the request: about 2 questions for a small change, about 5 for a feature, and at most 8 for a large or unclear request, never more. Open every question with its place, such as `Question 3 of about 5`, and correct the estimate when an answer changes it, because a user who cannot see the end stops answering with care.
+
+Stop asking when no noticeable or costly decision is open, when the budget is spent, or when the user says go in any words. Write the brief after the last answer, because a brief written earlier is rewritten by the next one. Every routine decision, and every decision go or the budget closed, is listed under **Decisions I made** with its recommended answer, as an assumption the user can overturn.
 
 ## References
 

@@ -8,7 +8,7 @@ import path from 'node:path';
 
 const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
-const VISUAL_DESIGN_REFERENCE_COUNT = 20;
+const VISUAL_DESIGN_REFERENCE_COUNT = 21;
 const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
 const EXPECTED_OWNER_ROWS = {
@@ -68,6 +68,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/phase-build.md',
     'references/phase-critique.md',
     'references/visual-direction.md',
+    'references/sketch-tab.md',
     'references/direction-preview.md',
     'references/composition.md',
     'references/typography.md',

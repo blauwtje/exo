@@ -19,7 +19,7 @@ node scripts/pick.mjs --comps <dir> --contracts <contracts.json> \
 
 ## Before the picker
 
-The picker starts in the message that writes the comps, right after the chooser takes the preview option the skill's `## Asking` section defines. The labels file was written beside the contracts, before the offer.
+The picker runs only when the user asks to see directions whole, after the message that names its price as the skill's `## Asking` section says; every other visual choice belongs to `sketch-tab.md`. The picker starts in the message that writes the comps, and the labels file is written just before it.
 
 - One message holds a Write per comp and the `pick.mjs` start under the Bash tool's `run_in_background`. The order inside the message does not matter, because the picker opens the tab only once the last comp exists.
 - No `capture.mjs`, `inspect-render.mjs`, screenshot, or image read of a comp before the picker: the picker is the comps' first render and the chooser's eyes are the critique. A headless capture engine is not the chooser's browser either, so a repair made against it fixes a defect the chooser might never have seen.

@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: '(^|\n)(>[ \t]?)?1\. \*\*Browser preview \(Recommended\)\*\*: [^\n]+(\n(>[ \t]?)?)+2\. \*\*Decide in text\*\*: [^\n]+(\n+(`{3}|-{3}))?\s*$'
+pattern: '(^|\n)(>[ \t]?)?1\. \*\*Browser preview \(Recommended\)\*\*: [^\n]+(\n(>[ \t]?)?)+2\. \*\*Decide for me\*\*: [^\n]+(\n+(`{3}|-{3}))?\s*$'
 match: contains
 ---
 

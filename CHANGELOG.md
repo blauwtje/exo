@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Visual choices arrive as quick sketches in one browser tab.** The tab opens once and stays open, each color, type, spacing or layout question appears in it within about half a minute, one click answers, and a revision lands in the same tab.
+- **`shaping` asks what you would notice.** It puts scope, what counts as done, unmentioned cases and what the user sees to you one question at a time, within a budget of about 2, 5 or at most 8, and decides routine choices itself.
+
+### Added
+
+- `skills/designing/scripts/sketch-tab.mjs` serves the newest sketch in a folder to one tab and records each click in `answers.jsonl`: `--serve` runs once per session, `--wait` prints the answer for one sketch, and `references/sketch-tab.md` holds the sketch rules.
+- The eval cases `shaping-asks-the-noticeable-decision` and `designing-asks-no-visual-question-in-text`.
+
+### Changed
+
+- `shaping`'s question gate asks every noticeable or costly decision, chosen from the answers so far, shows its place such as `Question 3 of about 5`, and ends every question on **Go**; what go or the budget closes takes its recommended answer under **Decisions I made**.
+- `designing` never puts a visual choice to the terminal: it goes to the sketch tab, and when the browser is declined the session decides, states the choice in one line and applies a correction. The offer's second option is now **Decide for me**.
+- Full comps through `pick.mjs` are built only when the user asks to see a direction whole, and only the recommended contract is filled before the offer.
+
 ## 0.14.2 - 2026-09-18
 
 ### Changed
@@ -243,7 +259,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- `THIRD_PARTY_NOTICES.md` and `LICENSES/Apache-2.0.txt` carry the notices for the material reused from ponytail, caveman, superpowers, mattpocock/skills, smallest-complete and impeccable, and `LICENSE` opens with the licensor's required notice.
+- Third-party notice files cover the material reused from other projects, and `LICENSE` opens with the licensor's required notice.
 
 ### Changed
 
