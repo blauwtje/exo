@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A long session hears the routing rules again: once the transcript has grown 600,000 bytes since they were last injected, the next prompt carries `## Before acting`, `## When several fire` and `## The next stage`, read from `skills/using-exo/SKILL.md` at that moment and locked to 3,242 bytes in `verify/budgets.mjs`. `exo savings off` stops it.
+
 ## 0.11.0 - 2026-09-18
 
 ### Added

@@ -6,7 +6,8 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#config-directory": "./lib/config-directory.mjs"
+    "#config-directory": "./lib/config-directory.mjs",
+    "#restatement": "./lib/restatement.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {
