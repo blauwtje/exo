@@ -7,6 +7,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.8.1 - 2026-09-18
+
+### Highlights
+
+- **The design critique got cheaper.** `designing` captures the post-build renders and runs the layout checks itself, and dispatches `design-critic` only to judge them, on `medium` effort within 12 turns.
+- **A visual change no longer routes by file count.** `designing` owns the turn at any file count, `shaping` goes first when the surface data is undecided, and `implementing-batch` owns it when non-visual behavior is added.
+
 ### Changed
 
 - `designing` Phase 4 captures the post-build pair and runs the layout checks itself and dispatches `design-critic` only to judge them, on `medium` effort within 12 turns; faults now cap at four and each names the file and selector its repair edits. `## Size the request` opens with the rule that decides the entry for a visual change: this skill owns the turn at any file count, `shaping` goes first when the surface's data is undecided, and `implementing-batch` owns it when non-visual behavior is added. `implementation.md` requires one styling mechanism per surface and `visual-direction.md` derives the reference set from evidence the session can open.
