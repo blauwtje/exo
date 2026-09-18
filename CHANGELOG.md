@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.9.1 - 2026-09-18
+
 ### Changed
 
 - The savings store on disk is named the savings record: `skills/savings/scripts/record.mjs` replaces the old module, its exported names follow, and the retired word is gone from the repository.
