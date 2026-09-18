@@ -8,7 +8,7 @@ Read the renders and answer the rubric first, from the images alone. Only then o
 
 ## The rubric
 
-Answer all ten from the renders:
+Answer all ten from the renders, in your own reasoning and not in faults.md: that file carries faults, never the rubric's answers.
 
 1. What makes this look assembled rather than art-directed?
 2. Where does one visual grammar repeat past usefulness?
@@ -50,7 +50,9 @@ These defaults make a page look generated. One stays only when a contract field 
 
 ## The fault contract
 
-A redesign finds at least three faults against the brief, a content obligation, the quality floor, a mapped relationship, or repository convention: at least one naming missing content, a broken relationship, or a missing subject mapping, and at least one craft fault — absent atmosphere, an unbuilt signature moment, untransitioned states, unthemed browser finish. A new piece finds and repairs at least one rendered fault, rendering its affected widths before and after. Each fault names its region, the observed pattern, the missing evidence, the job the region currently performs, the exact repairing edit, and how the final render will show the repair; "looks polished or premium" is not a finding.
+A redesign returns three or four faults, a new piece one, and each fault is five lines in this order: `Region:` the name a reader of the render would use; `Defect:` what is wrong, in one sentence; `Evidence:` the render file, a check-ui finding type, or an inspect-render figure; `Target:` the file plus the selector, declaration or element the repair edits; `Repair:` the edit, naming the property and the direction of the change. A fault with no `Target:` line is dropped, because a fault the repairer has to locate costs more to apply than it saves.
+
+The set covers at least one content or relationship fault, missing content, a broken relationship, or a missing subject mapping, and at least one craft fault, absent atmosphere, an unbuilt signature moment, untransitioned states, or an unthemed browser finish. "Looks polished or premium" is not a finding.
 
 Fix them and render again. A redesign also removes one accessory with no content job and strengthens one relationship held in only one region, reverting either change if it hides an action, state, claim, or its evidence.
 
