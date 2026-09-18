@@ -14,7 +14,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // edit in the same commit as the text it pays for, which is the whole mechanism.
 // The date records when the number was measured; nothing enforces its age.
 export const DESCRIPTION_TOTAL_LOCK = { chars: 3889, measured: '2026-09-18' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 8801, measured: '2026-09-18' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 8940, measured: '2026-09-18' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size

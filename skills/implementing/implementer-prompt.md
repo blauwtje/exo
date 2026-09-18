@@ -42,7 +42,11 @@ The task section:
 <the section verbatim, from its `### Task <n>:` heading to the line before the next>
 
 Report to: <report directory>/implementer-<n>.md
-Write the report there and return it, at most 25 lines: Landed (the task number and one line per path with what changed), Proof (each `Run:` command and at most ten lines of its output, with the log path for the rest), Unresolved (drift, rulings on choices the task left open, gotchas worth recording, out-of-scope paths you noticed, work the budget cut short, or `none`).
+Write the report there, at most 25 lines: Landed (the task number and one line per path with what changed), Proof (each `Run:` command and at most ten lines of its output, with the log path for the rest), Unresolved (drift, rulings on choices the task left open, gotchas worth recording, out-of-scope paths you noticed, work the budget cut short, or `none`).
+Return that report itself only on drift, on a failed `Run:` or on work you could not finish, because the caller acts on every line of it. A green task returns these lines and nothing else, and the report stays in the file:
+Task <n>: GREEN
+<each `Run:` command>: pass
+Report: <the path above>
 ```
 
 The brief names the plan's fields instead of paraphrasing them: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green, and the `Commit:` block is the caller's, never the delegate's.

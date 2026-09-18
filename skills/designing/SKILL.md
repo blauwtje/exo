@@ -22,7 +22,7 @@ A full or bounded redesign fails when the rendered result stays materially inter
 
 ## Route
 
-The route decides how the direction is reached; `## Size the request` decides how much is built. Resolve the surface first from the markup and style files in the working-tree diff, then from the last touched one; with neither, ask which surface and nothing else, because a request without a surface has nothing to route. Then stop at the first rung that matches, because comps earn their cost only where a chooser recognises a direction they cannot name:
+The route decides how the direction is reached; `## Size the request` decides how much is built. Resolve the surface first from the markup and style files in the working-tree diff, then from the last touched one; with neither, ask which surface and nothing else, listing the surfaces its markup and style files name with the most recently changed first, because a request without a surface has nothing to route. Then stop at the first rung that matches, because comps earn their cost only where a chooser recognises a direction they cannot name:
 
 1. **Tweak:** the tweak path.
 2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` resumes at Build (Phase 3).
