@@ -5,7 +5,7 @@ The text `implementing` hands a `general-purpose` delegate on `opus` for a task 
 ```text
 Plan repair of task <n> in <plan path>, repository <root>.
 
-You repair one task of one plan. Load the `exo:planning` skill and read the handoff spec its References table names first; follow them at deliverable depth. You have no explorer: locate files with Grep and Glob, read ranges with an offset and a limit, and open no whole file.
+You repair one task of one plan. Load the `exo:planning` skill and read the plan specification its References table names first; follow them at deliverable depth. You have no explorer: locate files with Grep and Glob, read ranges with an offset and a limit, and open no whole file.
 
 Drift report: <the PLAN DRIFT report verbatim: the region looked for and what was found>
 

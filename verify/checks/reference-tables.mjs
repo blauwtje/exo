@@ -31,12 +31,13 @@ const EXPECTED_OWNER_ROWS = {
     'references/performance.md',
   ],
   'skills/planning/SKILL.md': [
-    'references/handoff-spec.md',
-    'references/example-handoff.md',
+    'references/plan-spec.md',
+    'references/example-plan.md',
     '../implementing-batch/references/data-migration.md',
+    '../implementing-batch/references/security.md',
   ],
   'skills/deepen/SKILL.md': [
-    '../planning/references/handoff-spec.md',
+    '../planning/references/plan-spec.md',
   ],
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
@@ -106,9 +107,11 @@ const EXPECTED_CONTRACTS = {
   'skills/planning/SKILL.md': {
     '../implementing-batch/references/data-migration.md':
       'After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
+    '../implementing-batch/references/security.md':
+      'After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
   },
   'skills/deepen/SKILL.md': {
-    '../planning/references/handoff-spec.md':
+    '../planning/references/plan-spec.md':
       'Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact\'s sections, order, and step contents. Do not load in report mode.',
   },
 };

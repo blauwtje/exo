@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('implementing/references/workspace.md');
-const HANDOFF = read('planning/references/handoff-spec.md');
+const PLAN_SPEC = read('planning/references/plan-spec.md');
 
 test('the workspace step initialises a folder that holds only the plan docs', () => {
   const outside = WORKSPACE.match(/^1\. \*\*Outside git, never\.\*\* .+$/m);
@@ -20,7 +20,7 @@ test('the workspace step initialises a folder that holds only the plan docs', ()
 });
 
 test('a plan for a new folder leaves no init step to the owner', () => {
-  const basis = HANDOFF.match(/^2\. `## Plan basis`: .+$/m);
+  const basis = PLAN_SPEC.match(/^2\. `## Plan basis`: .+$/m);
   assert.ok(basis, 'the Plan basis rule exists');
   assert.ok(basis[0].includes('the executor runs `git init -b main` there before the first task'));
   assert.ok(basis[0].includes('never an init step for the owner'));
