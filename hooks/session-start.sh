@@ -35,4 +35,25 @@ body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' 
 # from this one line instead of opening the settings files themselves.
 settings=$(node "$root/skills/settings/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
 body="$body"$'\n\n'"$settings"
+# A handoff the user wrote before a clear sits beside the branch it belongs to,
+# so a session resuming that work is told where it is instead of searching for
+# it. Only the pointer is injected: the file itself is often longer than this
+# whole body, and most sessions here are not the one it was written for.
+cwd=$(printf '%s' "$input" | jq -r '.cwd // ""')
+if [ -n "$cwd" ]; then
+  # The commit sentence is added only inside a repository, where the reader has
+  # a HEAD to compare the file against.
+  staleness=""
+  if git_dir=$(git -C "$cwd" rev-parse --absolute-git-dir 2>/dev/null); then
+    scope=$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    handoff_file="$git_dir/exo/handoff/$scope.md"
+    staleness=" On reading it, compare the commit on its \`Written:\` line with \`git rev-parse --short HEAD\` and say so when they differ."
+  else
+    scope=$(basename "$cwd")
+    handoff_file="$config_dir/handoff/$scope.md"
+  fi
+  if [ -f "$handoff_file" ]; then
+    body="$body"$'\n\n'"A handoff for \`$scope\` sits at \`$handoff_file\`. Read it only when this session continues that work.$staleness"
+  fi
+fi
 jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'

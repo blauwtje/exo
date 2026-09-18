@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `/exo:handoff` saves an unfinished session to `<git-dir>/exo/handoff/<branch>.md`, so a fresh session continues after a clear: goal, current state with the plan task and the uncommitted paths `git status --short` lists, decisions and who made them, files touched, what is proven and by which command, the single next step and the open questions, as pointers rather than pasted content. It overwrites the handoff of that branch, works per worktree, is never committed, and falls back to `~/.claude/exo/handoff/<folder>.md` outside a repository. You start it yourself; nothing else does.
+- A session that starts on a branch with a handoff is told the path in one line, to read only when it continues that work and to compare the file's `Written:` commit with the current one.
+
+### Changed
+
+- `planning` no longer fires on the word handoff: it owns plans, `/exo:handoff` owns the live state of an unfinished session. `references/handoff-spec.md` and `references/example-handoff.md` are now `references/plan-spec.md` and `references/example-plan.md`, which is what they always described.
+- A plan whose affected paths cross authentication, ownership, secrets, untrusted input, network, file or process execution, cryptography or regulated data loads the security reference `implementing-batch` already uses, and folds its checks into the tasks touching those paths as steps with their own `Run:` and `Expected:`.
+- The branch review reads a deleted test, a removed or loosened assertion and an added skip or exclusive marker as a defect, unless the plan named that test a non-goal or asked for the change in a task.
+- The `planning` body now states that a plan for a folder that is not a git repository yet writes `Branch: main`; the value sat only in `references/plan-spec.md`, which a session that cannot read it replaced with `Branch: none`.
+
 ## 0.13.1 - 2026-09-18
 
 ### Changed

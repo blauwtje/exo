@@ -52,7 +52,7 @@ Fill in whatever the code settles: the files, the refactor, the resulting interf
 
 | File | Read it when |
 |---|---|
-| `../planning/references/handoff-spec.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
+| `../planning/references/plan-spec.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
 
 ## Judgment
 

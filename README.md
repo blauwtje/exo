@@ -43,7 +43,7 @@ Every skill is invoked as `/exo:<name>`; the model may also start one when its t
 | Skill | Use it when |
 |---|---|
 | `shaping <outcome>` | A request names a result but leaves open what counts as done, what data it holds or which architecture carries it. |
-| `planning <topic, spec or issue>` | A plan or handoff is asked for, a planning mode is active, or the work has two or more edit-order dependencies. A shaped issue plans without shaping again. |
+| `planning <topic, spec or issue>` | A plan is asked for, a planning mode is active, or the work has two or more edit-order dependencies. A shaped issue plans without shaping again. |
 | `implementing [plan]` | A plan runs or resumes: one delegated build and one commit per task, independent tasks built together in worktrees of their own, then one branch review. |
 | `implementing-batch <change>` | A decided change builds in this session and touches more than two files, a dependency, a public signature, a persisted format or a security boundary. |
 | `debug <symptom>` | Existing behavior fails and the cause is not yet proven. Outranks every other stage until it is. |

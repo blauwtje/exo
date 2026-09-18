@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use when a read-only planning mode is active, the user asks for a plan or a handoff, another session will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge; one-file, typo, rename, or version-bump edits; git-only operations; an unproven failure outside a planning turn; or an architecture audit, which deepen owns.
+description: Use when a read-only planning mode is active, the user asks for a plan, another session will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge; one-file, typo, rename, or version-bump edits; git-only operations; an unproven failure outside a planning turn; or an architecture audit, which deepen owns.
 argument-hint: <what to plan, a spec path, or an issue number>
 ---
 
@@ -31,18 +31,20 @@ Delegate locating the files, symbols, and call sites the plan will name to the `
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 
-The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove. It opens with `Repository:` and `Branch:` on their own lines, and a folder that is not a git repository yet still gets both, with one basis line handing `git init -b main` to the executor, never an init step for the owner.
+An affected path that crosses a security boundary makes that reference's checks steps inside each task touching it, each with its own `Run:` and `Expected:`, never a warning in the plan's Context: the executor runs steps, and a note it can read past is a check nobody performs.
+
+The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove. It opens with `Repository:` and `Branch:` on their own lines, and a folder that is not a git repository yet still gets both: `Branch:` reads `main`, the branch that init creates, with one basis line handing `git init -b main` to the executor, never an init step for the owner.
 
 ## Depth
 
 | Executor | Output |
 |---|---|
 | This session continues straight into the edits and nobody asked for a plan | Inline: at most 20 lines in the current message with ordered steps, affected paths, each edge's reason, and the final verification. |
-| A read-only planning mode, a requested plan, or another executor | Deliverable: the artifact `references/handoff-spec.md` defines, written to the harness-designated plan file when one exists, otherwise `docs/plans/<topic>.md`. |
+| A read-only planning mode, a requested plan, or another executor | Deliverable: the artifact `references/plan-spec.md` defines, written to the harness-designated plan file when one exists, otherwise `docs/plans/<topic>.md`. |
 
 A deliverable plan is never message-only: a fresh session with zero context must be able to open the artifact and execute it. Update an existing plan for the same topic rather than creating a sibling, and extend it with edits rather than rewriting the file, because a rewrite re-enters every task into the context.
 
-Before ending the turn, read the plan once against the rules in `references/handoff-spec.md` and against the brief's acceptance list: a step without code, a step without `Run:` and `Expected:`, a task without its `Commit:` block, a placeholder, or an acceptance check that reaches no step, no `## Final verification` line and no non-goal is repaired now, because the executor cannot.
+Before ending the turn, read the plan once against the rules in `references/plan-spec.md` and against the brief's acceptance list: a step without code, a step without `Run:` and `Expected:`, a task without its `Commit:` block, a placeholder, or an acceptance check that reaches no step, no `## Final verification` line and no non-goal is repaired now, because the executor cannot.
 
 ## Handing it over
 
@@ -59,9 +61,10 @@ Take the model and effort for the session that runs it from the table under `## 
 
 | File | Read it when |
 |---|---|
-| `references/handoff-spec.md` | Before writing any plan deliverable: a planning-mode plan file, a requested plan, or a handoff document. Do not load for the inline row. |
-| `references/example-handoff.md` | Once, before composing the first task of a deliverable plan; do not load for the inline row. |
+| `references/plan-spec.md` | Before writing any plan deliverable: a planning-mode plan file or a requested plan. Do not load for the inline row. |
+| `references/example-plan.md` | Once, before composing the first task of a deliverable plan; do not load for the inline row. |
 | `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
+| `../implementing-batch/references/security.md` | After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
 
 ## Judgment
 

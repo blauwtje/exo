@@ -20,6 +20,7 @@ Against the standard:
 - Failures handled at the boundary that owns them, never swallowed.
 - No comment telling the change's story; a comment states a constraint of the code as it stands.
 - Tests where the standard or the repository's conventions demand them, registered the way the repository registers them.
+- A deleted test file or case, an assertion the diff removed or loosened, and a skip, exclusive or disabled marker the diff added are each a `defect` unless the plan names that test among its non-goals or asks for the change in a task: a suite that stopped checking the behavior reports its own silence as green. Find them in the diff's removed lines, and report each one with the removed text rather than restoring it yourself, because the repair is the code the assertion caught and that code is the plan's, not this pass's.
 
 A finding is confirmed when the diff, a range you read or a command's output shows it. A rule the standard does not state is not a finding, and style, naming and structure are findings only where the standard names them or where they change what the plan asked for.
 

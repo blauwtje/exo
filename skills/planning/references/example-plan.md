@@ -2,7 +2,7 @@
 
 Show the plan grammar filled in in full, not simplified for readability. The enemy is a worked example that quietly drops a required field because it reads better than the real thing. The overcorrection is a second, looser grammar that examples get to use and deliverable plans do not.
 
-This is one complete plan against `handoff-spec.md`: every header section, `## Visual direction` included because Task 3 carries a `Design:` line, and three tasks, each with complete code, a `Run:` and `Expected:` per changing step, and a `Commit:` block with the `Plan-task:` trailer.
+This is one complete plan against `plan-spec.md`: every header section, `## Visual direction` included because Task 3 carries a `Design:` line, and three tasks, each with complete code, a `Run:` and `Expected:` per changing step, and a `Commit:` block with the `Plan-task:` trailer.
 
 ## Goal
 
@@ -145,5 +145,5 @@ git commit -m "feat(refunds): show the refund reason on the detail page" -m "Pla
 
 ## Judgment
 
-- When this example and `handoff-spec.md` disagree, the specification wins and this file is the one to fix.
+- When this example and `plan-spec.md` disagree, the specification wins and this file is the one to fix.
 - A field left out here for brevity would be a field left out of real plans; nothing is left out.
