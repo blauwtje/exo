@@ -59,7 +59,7 @@ The final message is the report itself. It opens with the outcome, and every lin
 2. **What was verified.** The command that proves it and its result, or the evidence a read-only claim rests on; a check that did not run is named as not run.
 3. **What to do next.** One action the user takes, only while one is open; never a question back.
 
-A decision made on the user's behalf is one line naming the choice and what it costs if wrong, never why it was chosen; when the request read two ways, that line also names the reading it rules out, and makes no offer. A message a rule sends alone ends the turn by itself; the report waits for the turn that finishes the run.
+A decision made on the user's behalf is one line naming the choice and what it costs if wrong, never why it was chosen; when the request read two ways, that line also names the reading it rules out, and makes no offer. When the turn ends on a question, that line sits above the options or is dropped; under them it is text following the options. A message a rule sends alone ends the turn by itself; the report waits for the turn that finishes the run.
 
 ## A question
 
