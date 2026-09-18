@@ -10,11 +10,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - `using-exo` writes every reply, report and question in the language of the user's latest message, or of the plan when a session opens on one; the eval `using-exo-replies-in-the-users-language` covers both.
+- `eval-reasons.mjs` ends on one `GATE` line per arm: `PASS` when no grader failed more than one run, `DISPUTED` when only verdicts the reasoning judge reversed broke it, `FAIL` otherwise, and `NONE` for a draft or under three runs. A plan gates on that line instead of a count such as `(3/3)`.
+- `tests/evals.test.mjs` fails a case without a free grader and an llm criterion that words layout, such as `ends on` or `on their own lines`; the cases and graders older than the rule sit in two lists that only shrink.
 
 ### Changed
 
 - A decision made on the user's behalf sits above the options or is dropped when the turn ends on a question, so nothing follows the options.
-- The `designing-offers-the-preview` grader states the offer-alone rule as a checkable one: the message ends on the two numbered options with no text after them.
+- `designing-offers-the-preview` asks for the offer message last and checks that the answer ends on its two numbered options with a regex grader; the judge had read the same ending both ways.
+- `planning-plans-a-new-folder`, `implementing-inits-a-new-folder` and `using-exo-closing-line` check their layout and literals with regex graders, and their llm criteria keep only what needs judgment; the `implementing` criterion no longer asks a session without a checkout to execute a command.
+- The three cases that gate a plan on three runs carry `runs: 5`, because a coin flip passes two of three runs half the time.
+- `CONTRIBUTING.md` holds the measured judge noise, what a judge may grade and the gate; `CLAUDE.md` names the three rules a session gets wrong without them.
 - `CLAUDE.md` is rebuilt around commands and hard rules, and adds a section on eval cost that names the cheap path: one case per run, a draft before a verdict, `--arm both` as the exception, `timeout_seconds` per case, free graders first and a `--max-cost-usd` ceiling.
 - A GitHub Release is titled `v<version>`, and its notes group changes under New, Improved, Fixed and Removed, list the pull requests since the previous tag and end on a link to every commit since that tag.
 - The full verifier checks the `settings` skill: `verify/budgets.mjs` lists it and `verify/checks/reference-tables.mjs` holds its empty reference-owner contract.
@@ -28,6 +33,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - A plan for a folder that is not a git repository yet runs end to end: the plan leaves the init to the executor, and `implementing` runs `git init -b main` in a folder that holds only the plan's `docs/`. Both rules sit in the skill bodies rather than in a reference alone, so a run that never opens the reference still follows them.
 - A decision line in a report names the choice and its cost, never why it was chosen.
+- `eval-reasons.mjs` no longer exits 1 on a run without an llm verdict, so a case graded by free graders alone, or one whose every run errored, still ends `eval-case.mjs` on its gate.
 
 ## 0.7.0 - 2026-09-17
 

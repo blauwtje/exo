@@ -1,6 +1,6 @@
 ---
 name: implementing-inits-a-new-folder
-runs: 3
+runs: 5
 max_turns: 6
 timeout_seconds: 900
 ---

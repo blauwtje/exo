@@ -1,6 +1,6 @@
 ---
 name: planning-plans-a-new-folder
-runs: 3
+runs: 5
 max_turns: 8
 timeout_seconds: 900
 ---
