@@ -20,6 +20,11 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/routing.mjs\" open",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/restate.mjs\"",
+            "timeout": 10
           }
         ]
       }
