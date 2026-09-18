@@ -59,6 +59,7 @@ git commit -m "feat(orders): add nullable refund_reason column" -m "Plan-task: 1
 ### Task 2: Serialize refundReason on the refund response
 
 Depends on: Task 1
+Risk: the public response shape of `serializeRefund`
 
 Files:
 - Modify: `src/routes/refunds.js` (`serializeRefund`)

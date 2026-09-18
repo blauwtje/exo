@@ -2,6 +2,20 @@
 
 Prove the changed contract through its lowest stable observable boundary. The enemy is a green test coupled to the implementation that can pass while user-visible behavior is wrong. The overcorrection is rebuilding an end-to-end environment for logic a repository test runner already exposes. Choose the nearest existing test level that observes the contract.
 
+## Risky or routine
+
+A change is risky when any one of these holds:
+- it crosses a security boundary;
+- it changes a persisted format or runs a migration;
+- it changes a public signature;
+- it decides money or order;
+- it fixes a reported bug;
+- the user asked for it to be built test-first.
+
+Every other change is routine and proves itself the ordinary way.
+
+A risky change takes `## Red before green` as written, quoting the failing output before the production edit and the passing output after it.
+
 ## Define the proof
 
 Write one sentence before the test: `Given <public input/state>, the caller observes <output/effect> instead of <old result>.` Select the nearest repository test that can observe that result through a public function, response, event, persisted record, file, or command output.

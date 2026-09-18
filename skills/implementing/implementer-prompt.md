@@ -14,6 +14,7 @@ Before any edit:
 2. Read nothing of the plan beyond this brief.
 3. Write each step's code as given, adapting only formatting to the repository's formatter. Leave out a comment that tells the change's story and name it under `Unresolved`.
 4. Confirm each `Modify:` region exists once and reads as the step's code implies. Missing, duplicated or already changed is drift: make no edit and report `PLAN DRIFT: Task <n>` with the region you looked for and what you found.
+5. A task with a `Risk:` line proves itself red then green: write the test step's code, run its `Run:`, and quote the failing output; then write the production step's code, rerun, and quote the pass. A `Run:` that passes before the production code exists proves nothing about the change: report it under `Unresolved` rather than taking it as green.
 
 The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins with no comparison.
 1. Need: build only for a use the request names today; a use that might come later stays out and is listed in the report.
@@ -42,7 +43,7 @@ The task section:
 <the section verbatim, from its `### Task <n>:` heading to the line before the next>
 
 Report to: <report directory>/implementer-<n>.md
-Write the report there, at most 25 lines: Landed (the task number and one line per path with what changed), Proof (each `Run:` command and at most ten lines of its output, with the log path for the rest), Unresolved (drift, rulings on choices the task left open, gotchas worth recording, out-of-scope paths you noticed, work the budget cut short, or `none`).
+Write the report there, at most 25 lines: Landed (the task number and one line per path with what changed), Proof (each `Run:` command and at most ten lines of its output, with the log path for the rest; for a `Risk:` task the failing output before the production edit and the passing output after it), Unresolved (drift, rulings on choices the task left open, gotchas worth recording, out-of-scope paths you noticed, work the budget cut short, or `none`).
 Return that report itself only on drift, on a failed `Run:` or on work you could not finish, because the caller acts on every line of it. A green task returns these lines and nothing else, and the report stays in the file:
 Task <n>: GREEN
 <each `Run:` command>: pass

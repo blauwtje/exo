@@ -12,6 +12,8 @@ Failing command: <the Run: command>
 Output: <at most ten lines, or the log path>
 Paths in scope: <the task's Files: paths>
 
+The failing command above is the red proof: quote its failure before the edit and its pass after, and write no new test for it.
+
 The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins with no comparison.
 1. Need: build only for a use the request names today; a use that might come later stays out and is listed in the report.
 2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by its name or its role, build on that one rather than writing a second.
@@ -26,5 +28,5 @@ Hard boundaries:
 - Two fix attempts that leave the symptom standing end the work: report both attempts and stop.
 
 Report to: <directory `git rev-parse --git-dir` prints>/bug-fixer-<n>.md
-Write the report there and return it, and nothing else: Mechanism (the causal line and why it produced the symptom, at most three lines), Edits (each path with one line on what changed), Proof (the command re-run and at most ten output lines, with the log path for the rest), Unresolved (what remains, or `none`).
+Write the report there and return it, and nothing else: Mechanism (the causal line and why it produced the symptom, at most three lines), Edits (each path with one line on what changed), Proof (the failing output before the edit and the same command re-run after it, at most ten output lines each, with the log path for the rest), Unresolved (what remains, or `none`).
 ```
