@@ -1,4 +1,4 @@
-// What exo itself cost a session, booked entry by entry while the ledger reads
+// What exo itself cost a session, booked entry by entry while the record reads
 // a transcript. An API call whose only tool calls load exo skills or re-issue a
 // Read the read guard refused is exo's own work and counts whole, at the usage
 // the API reported for it and the wall time between the entry before it and its
@@ -9,7 +9,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readJson } from './ledger.mjs';
+import { readJson } from './record.mjs';
 import { countsCost } from './pricing.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 

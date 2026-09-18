@@ -19,8 +19,8 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import {
-  SESSION_RETENTION_DAYS, configFile, readJson, readLedger, savingsEnabled, updateSession, writeJson
-} from './ledger.mjs';
+  SESSION_RETENTION_DAYS, configFile, readJson, readRecord, savingsEnabled, updateSession, writeJson
+} from './record.mjs';
 import { emptyTotals, measuredTotals } from './overhead.mjs';
 import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
 
@@ -36,7 +36,7 @@ function addWork(target, source) {
 }
 
 // Every session's measured figures summed, split the way measuredTotals splits them.
-function measuredLedger(sessions) {
+function measuredRecord(sessions) {
   const totals = emptyTotals();
   for (const session of Object.values(sessions)) {
     const measured = measuredTotals(session);
@@ -101,7 +101,7 @@ function readStdin() {
   return JSON.parse(fs.readFileSync(0, 'utf8'));
 }
 
-function record(hookInput) {
+function recordSession(hookInput) {
   if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
   updateSession(hookInput.session_id, (session) => ingestTranscript(session, hookInput.transcript_path));
@@ -109,11 +109,11 @@ function record(hookInput) {
 
 function statusline(statusInput) {
   if (!savingsEnabled()) return;
-  let sessions = readLedger();
+  let sessions = readRecord();
   if (typeof statusInput.session_id === 'string') {
     sessions = updateSession(statusInput.session_id, (session) => ingestTranscript(session, statusInput.transcript_path));
   }
-  process.stdout.write(segment(measuredLedger(refreshStaleSessions(sessions))));
+  process.stdout.write(segment(measuredRecord(refreshStaleSessions(sessions))));
 }
 
 function status() {
@@ -152,8 +152,8 @@ function setGuardLines(argument) {
 // the labels line up. No saving and no net: the refused text was never sent,
 // so nothing measured turns its bytes into tokens or money.
 function report() {
-  const sessions = refreshStaleSessions(readLedger());
-  const measured = measuredLedger(sessions);
+  const sessions = refreshStaleSessions(readRecord());
+  const measured = measuredRecord(sessions);
   const enabled = savingsEnabled();
   const sessionCount = Object.keys(sessions).length;
   const lines = [
@@ -171,7 +171,7 @@ function report() {
 }
 
 const command = process.argv[2];
-const HOOK_COMMANDS = { record, statusline };
+const HOOK_COMMANDS = { record: recordSession, statusline };
 const CLI_COMMANDS = {
   report,
   status,

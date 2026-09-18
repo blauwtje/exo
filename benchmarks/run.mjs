@@ -130,7 +130,7 @@ function runClaude(args, workdir, cellDirectory) {
     const startedAt = Date.now();
     const child = spawn('claude', args, {
       cwd: workdir,
-      env: { ...process.env, EXO_SAVINGS_DIR: path.join(cellDirectory, 'ledger') },
+      env: { ...process.env, EXO_SAVINGS_DIR: path.join(cellDirectory, 'record') },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
@@ -174,9 +174,9 @@ function runSafeCheck(task, workdir) {
   });
 }
 
-// The user's own ledger must stay untouched: a session id that lands there
+// The user's own record must stay untouched: a session id that lands there
 // means the installed plugin ran instead of, or beside, the arm's plugin.
-function userLedgerHolds(sessionId) {
+function userRecordHolds(sessionId) {
   const configDirectory = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
   const file = path.join(configDirectory, 'exo', 'savings', 'sessions.json');
   try {
@@ -186,9 +186,9 @@ function userLedgerHolds(sessionId) {
   }
 }
 
-function cellLedgerSessions(cellDirectory) {
+function cellRecordSessions(cellDirectory) {
   try {
-    return Object.keys(JSON.parse(fs.readFileSync(path.join(cellDirectory, 'ledger', 'sessions.json'), 'utf8'))).length;
+    return Object.keys(JSON.parse(fs.readFileSync(path.join(cellDirectory, 'record', 'sessions.json'), 'utf8'))).length;
   } catch {
     return 0;
   }
@@ -206,8 +206,8 @@ async function runCell(cell, fixtureDirectory) {
       task: task.id, tier: task.tier, arm, run, model: MODELS[model],
       exitCode: outcome.exitCode, timedOut: outcome.timedOut, wallMs: outcome.wallMs,
       resultParsed: result !== null,
-      ledgerSessions: cellLedgerSessions(cellDirectory),
-      userLedgerTouched: result !== null && typeof result.session_id === 'string' ? userLedgerHolds(result.session_id) : null
+      recordSessions: cellRecordSessions(cellDirectory),
+      userRecordTouched: result !== null && typeof result.session_id === 'string' ? userRecordHolds(result.session_id) : null
     };
     if (task.tier === 'template') {
       Object.assign(checks, measureWorkdir(workdir, task));

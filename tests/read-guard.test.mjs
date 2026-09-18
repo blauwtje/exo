@@ -40,7 +40,7 @@ function readInput(file, range = {}, toolUseId = 'toolu_1') {
   return { session_id: 's1', tool_name: 'Read', tool_use_id: toolUseId, tool_input: { file_path: file, ...range } };
 }
 
-async function ledger(configDirectory) {
+async function record(configDirectory) {
   return JSON.parse(await fs.readFile(path.join(configDirectory, 'exo', 'savings', 'sessions.json'), 'utf8'));
 }
 
@@ -56,7 +56,7 @@ test('refuses an unbounded read of a file over 400 lines and books the whole fil
   assert.equal(verdict.hookEventName, 'PreToolUse');
   assert.equal(verdict.permissionDecision, 'deny');
   assert.match(verdict.permissionDecisionReason, /has 600 lines and an unbounded read is capped at 400/);
-  const session = (await ledger(configDirectory)).s1;
+  const session = (await record(configDirectory)).s1;
   assert.deepEqual(Object.keys(session.guard.refusals), ['toolu_1']);
   const wholeFile = Buffer.byteLength(await fs.readFile(file, 'utf8'));
   assert.deepEqual(session.guard.refusals.toolu_1, { kind: 'capped', bytesWithheld: wholeFile, reader: 'main', filePath: file, open: true });
@@ -69,12 +69,12 @@ test('a later read of a capped file by the same reader gives its bytes back, unt
   const ranged = readInput(file, { offset: 1, limit: 50 }, 'toolu_2');
   await runGuard(['book'], ranged, env);
   const rangeBytes = Buffer.byteLength(Array.from({ length: 50 }, (_, index) => `line ${index + 1}`).join('\n'));
-  assert.equal((await ledger(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, wholeFile - rangeBytes);
+  assert.equal((await record(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, wholeFile - rangeBytes);
   await runGuard(['book'], { ...ranged, agent_id: 'a1' }, env);
-  assert.equal((await ledger(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, wholeFile - rangeBytes);
+  assert.equal((await record(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, wholeFile - rangeBytes);
   await runGuard(['reset'], { session_id: 's1', source: 'compact' }, env);
   await runGuard(['book'], readInput(file, { offset: 51, limit: 50 }, 'toolu_3'), env);
-  const refusal = (await ledger(configDirectory)).s1.guard.refusals.toolu_1;
+  const refusal = (await record(configDirectory)).s1.guard.refusals.toolu_1;
   assert.deepEqual([refusal.open, refusal.bytesWithheld], [false, wholeFile - rangeBytes]);
 });
 
@@ -83,16 +83,16 @@ test('reads of a capped file never give back more than the refusal withheld', as
   await runGuard([], readInput(file), env);
   await runGuard(['book'], readInput(file, { limit: 600 }, 'toolu_2'), env);
   await runGuard(['book'], readInput(file, { offset: 1, limit: 300 }, 'toolu_3'), env);
-  assert.equal((await ledger(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, 0);
+  assert.equal((await record(configDirectory)).s1.guard.refusals.toolu_1.bytesWithheld, 0);
 });
 
-test('every run that reaches the ledger books its own time, an allowed read included', async () => {
+test('every run that reaches the record books its own time, an allowed read included', async () => {
   const { env, configDirectory, file } = await guardFixture();
   assert.equal(decision(await runGuard([], readInput(file, { offset: 1, limit: 20 }), env)), null);
-  const afterPre = (await ledger(configDirectory)).s1.guard.hookMs;
+  const afterPre = (await record(configDirectory)).s1.guard.hookMs;
   assert.ok(afterPre > 0, `hookMs ${afterPre}`);
   await runGuard(['book'], readInput(file, { offset: 1, limit: 20 }), env);
-  assert.ok((await ledger(configDirectory)).s1.guard.hookMs > afterPre);
+  assert.ok((await record(configDirectory)).s1.guard.hookMs > afterPre);
 });
 
 test('a booked ranged read is refused on an unchanged re-read with the earlier bytes, and a change lets it through', async () => {
@@ -103,13 +103,13 @@ test('a booked ranged read is refused on an unchanged re-read with the earlier b
   const repeat = decision(await runGuard([], readInput(file, { offset: 100, limit: 50 }, 'toolu_9'), env));
   assert.equal(repeat.permissionDecision, 'deny');
   assert.match(repeat.permissionDecisionReason, /is unchanged since your read at/);
-  let session = (await ledger(configDirectory)).s1;
+  let session = (await record(configDirectory)).s1;
   assert.equal(session.guard.refusals.toolu_9.kind, 'duplicate');
   assert.equal(session.guard.refusals.toolu_9.bytesWithheld, session.reads[Object.keys(session.reads)[0]].bytes);
 
   await fs.appendFile(file, '\nline 601');
   assert.equal(decision(await runGuard([], ranged, env)), null);
-  session = (await ledger(configDirectory)).s1;
+  session = (await record(configDirectory)).s1;
   assert.deepEqual(Object.keys(session.guard.refusals), ['toolu_9']);
 });
 
@@ -140,7 +140,7 @@ test('reset forgets the reads so the next identical read passes', async () => {
   const ranged = readInput(file, { offset: 1, limit: 20 });
   await runGuard(['book'], ranged, env);
   await runGuard(['reset'], { session_id: 's1', source: 'compact' }, env);
-  assert.deepEqual((await ledger(configDirectory)).s1.reads, {});
+  assert.deepEqual((await record(configDirectory)).s1.reads, {});
   assert.equal(decision(await runGuard([], ranged, env)), null);
 });
 
@@ -162,7 +162,7 @@ test('a file of exactly 400 lines with a final newline passes an unbounded read'
   assert.equal(decision(await runGuard([], readInput(file), env)), null);
 });
 
-test('EXO_SAVINGS=off never refuses and writes no ledger', async () => {
+test('EXO_SAVINGS=off never refuses and writes no record', async () => {
   const { env, configDirectory, file } = await guardFixture();
   const off = { ...env, EXO_SAVINGS: 'off' };
   assert.equal(decision(await runGuard([], readInput(file), off)), null);
@@ -173,7 +173,7 @@ test('EXO_SAVINGS=off never refuses and writes no ledger', async () => {
 test('the guard books no capped or duplicate counters beside its refusals', async () => {
   const { env, configDirectory, file } = await guardFixture();
   await runGuard([], readInput(file), env);
-  const guard = (await ledger(configDirectory)).s1.guard;
+  const guard = (await record(configDirectory)).s1.guard;
   assert.deepEqual(Object.keys(guard).sort(), ['hookMs', 'refusals']);
 });
 

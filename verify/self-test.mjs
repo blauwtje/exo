@@ -68,7 +68,7 @@ const SCENARIOS = [
   } },
   { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
     'more than two source/test/config files must change', 'more than one source/test/config file must change') },
-  { name: 'drifted-ledger-rule', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
+  { name: 'drifted-record-rule', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
     'from the working tree diff before the next edit', 'from memory before the next edit') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },

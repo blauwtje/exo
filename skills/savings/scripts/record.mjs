@@ -1,4 +1,4 @@
-// The savings ledger on disk: one JSON file keyed by session id, written
+// The savings record on disk: one JSON file keyed by session id, written
 // through a rename so a status line render never reads a half file, and
 // updated behind a directory lock so two hooks firing at once lose nothing.
 // Shared by savings.mjs (usage and overhead per session) and read-guard.mjs
@@ -17,18 +17,18 @@ const LOCK_STALE_MS = 15000;
 export const SESSION_RETENTION_DAYS = 30;
 const SESSION_RETENTION_MS = SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
-// EXO_SAVINGS_DIR relocates the ledger and its config alone, so a benchmark
-// cell keeps its own ledger while the session keeps its login and settings.
-function ledgerDirectory() {
+// EXO_SAVINGS_DIR relocates the record and its config alone, so a benchmark
+// cell keeps its own record while the session keeps its login and settings.
+function recordDirectory() {
   return process.env.EXO_SAVINGS_DIR || path.join(configDirectory(), 'exo', 'savings');
 }
 
-export function ledgerFile() {
-  return path.join(ledgerDirectory(), 'sessions.json');
+export function recordFile() {
+  return path.join(recordDirectory(), 'sessions.json');
 }
 
 export function configFile() {
-  return path.join(ledgerDirectory(), 'config.json');
+  return path.join(recordDirectory(), 'config.json');
 }
 
 export function readJson(file, fallback) {
@@ -39,10 +39,10 @@ export function readJson(file, fallback) {
   }
 }
 
-// A missing ledger is an empty one; any other read or parse failure throws,
-// because a ledger written back without being read drops every session in it.
-export function readLedger() {
-  const file = ledgerFile();
+// A missing record is an empty one; any other read or parse failure throws,
+// because a record written back without being read drops every session in it.
+export function readRecord() {
+  const file = recordFile();
   let text;
   try {
     text = fs.readFileSync(file, 'utf8');
@@ -117,8 +117,8 @@ function removeStaleLock(lock, staleMtimeMs) {
 
 // A directory is the lock because mkdir is atomic on every platform Node
 // runs on; a lock older than LOCK_STALE_MS belongs to a hook that died.
-function withLedgerLock(work) {
-  const lock = `${ledgerFile()}.lock`;
+function withRecordLock(work) {
+  const lock = `${recordFile()}.lock`;
   fs.mkdirSync(path.dirname(lock), { recursive: true });
   const deadline = Date.now() + LOCK_WAIT_MS;
   for (;;) {
@@ -163,12 +163,12 @@ function pruneSessions(sessions, now) {
   return pruned;
 }
 
-// mutate returns true when the session changed; the ledger is written only
+// mutate returns true when the session changed; the record is written only
 // then, or when a stale session was pruned. A row written by an older
 // version gains the fields it lacks.
 export function updateSession(sessionId, mutate) {
-  return withLedgerLock(() => {
-    const sessions = readLedger();
+  return withRecordLock(() => {
+    const sessions = readRecord();
     const session = { ...emptySession(), ...(sessions[sessionId] ?? {}) };
     const changed = mutate(session);
     const now = Date.now();
@@ -176,7 +176,7 @@ export function updateSession(sessionId, mutate) {
     if (changed || pruned || sessions[sessionId] === undefined) {
       session.touched = new Date(now).toISOString();
       sessions[sessionId] = session;
-      writeJson(ledgerFile(), sessions);
+      writeJson(recordFile(), sessions);
     }
     return sessions;
   });
@@ -186,11 +186,11 @@ export function updateSession(sessionId, mutate) {
 // rows are pruned first, so mutate never brings one back, and no row's
 // touched moves. mutate returns true when it changed a row.
 export function updateSessions(mutate) {
-  return withLedgerLock(() => {
-    const sessions = readLedger();
+  return withRecordLock(() => {
+    const sessions = readRecord();
     const pruned = pruneSessions(sessions, Date.now());
     const changed = mutate(sessions);
-    if (changed || pruned) writeJson(ledgerFile(), sessions);
+    if (changed || pruned) writeJson(recordFile(), sessions);
     return sessions;
   });
 }

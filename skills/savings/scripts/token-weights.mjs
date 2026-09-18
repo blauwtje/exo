@@ -1,4 +1,4 @@
-// One weighting for a token count, shared by the savings ledger and the
+// One weighting for a token count, shared by the savings record and the
 // benchmark scorer so both divide the same figure: input + 0.1 × cache read +
 // 1.25 × 5-minute cache write + 2 × 1-hour cache write, plus output.
 

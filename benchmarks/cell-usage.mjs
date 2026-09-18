@@ -6,7 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { emptySession } from '../skills/savings/scripts/ledger.mjs';
+import { emptySession } from '../skills/savings/scripts/record.mjs';
 import { sumCounts } from '../skills/savings/scripts/token-weights.mjs';
 import { findTranscript, ingestTranscript, sumTokens } from '../skills/savings/scripts/transcript.mjs';
 
