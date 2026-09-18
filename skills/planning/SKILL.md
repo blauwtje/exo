@@ -31,7 +31,7 @@ Delegate locating the files, symbols, and call sites the plan will name to the `
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 
-The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove.
+The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove. It opens with `Repository:` and `Branch:` on their own lines, and a folder that is not a git repository yet still gets both, with one basis line handing `git init -b main` to the executor, never an init step for the owner.
 
 ## Depth
 
