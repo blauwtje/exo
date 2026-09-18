@@ -43,6 +43,7 @@ Checks at a trust boundary, failure handling that keeps data from being lost, an
 # Context
 
 - **Replies.** The `replies` value in the `exo settings:` line sets how replies are written, `tight` when the line is absent; an output style outranks it. `tight`: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. `standard`: full prose.
+- **Language.** Every reply, report and question is written in the language of the user's latest message, also when the skill that shaped it is written in English; a session whose only message is a command that opens a plan writes in the plan's language. Code, commits, issues and the files a skill writes keep the language the repository already uses.
 - **Command output.** A command whose output may run past forty lines logs it under `git rev-parse --git-dir`, or a temp directory outside git, and only failing lines are read back.
 - **Progress.** A run of more than one step keeps its progress in the harness's task list: one line per step written before the first starts, set in progress when it starts and completed when it lands. No message between two steps, except a blocked step, a failed check or a question only the user can answer.
 
@@ -58,15 +59,15 @@ The final message is the report itself. It opens with the outcome, and every lin
 2. **What was verified.** The command that proves it and its result, or the evidence a read-only claim rests on; a check that did not run is named as not run.
 3. **What to do next.** One action the user takes, only while one is open; never a question back.
 
-A decision made on the user's behalf is one line naming the choice and what it costs if wrong; when the request read two ways, that line also names the reading it rules out, and makes no offer. A message a rule sends alone ends the turn by itself; the report waits for the turn that finishes the run.
+A decision made on the user's behalf is one line naming the choice and what it costs if wrong, never why it was chosen; when the request read two ways, that line also names the reading it rules out, and makes no offer. When the turn ends on a question, that line sits above the options or is dropped; under them it is text following the options. A message a rule sends alone ends the turn by itself; the report waits for the turn that finishes the run.
 
 ## A question
 
 Every question exo puts to the user has one shape, because the user answers it by typing a digit.
 
 1. **Plain lines, no tool.** The options are lines in the reply that end the turn; a structured question tool, a form or a picker is never used.
-2. **One option per line**, written `(<n>) <Label> (Recommended): <what it does>`: a label of one to three words, then one short clause saying what happens, never why, and never a command, a model or an effort.
-3. **One option is marked**, the recommended one, first except in the next stage's fixed order; stopping or keeping things as they are comes last. Label, marker and clause are in the conversation's language.
+2. **One option per line**, numbered `1.`, `2.`, `3.` and written `<n>. **<Label>**: <what it does>`, the recommended one as `1. **<Label> (Recommended)**: <what it does>`: a bold label of one to three words, then a few words saying what happens, never why, and never a command, a model or an effort.
+3. **The recommended option is number 1**, in every question and in the next stage's fixed order; stopping or keeping things as they are comes last unless it is the recommended one. Label, marker and clause are in the reply's language, as the language rule under `# Context` sets.
 4. **Nothing follows the options** except the one model line `## The next stage` allows.
 5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
 
@@ -80,8 +81,8 @@ Every question exo puts to the user has one shape, because the user answers it b
 
 A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
 
-1. **Fixed order.** The options follow `## A question`. After `shaping`: (1) Planning, (2) Stop. After `planning`: (1) Implementing, (2) Implementing batch, (3) Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
-2. **This session is recommended**, because it already holds the facts. `(Recommended)` moves to the stop line when a compaction notice has appeared in this session or this stage is the second to finish in it; the stop line's clause then names the command to run after a context clear.
+1. **Fixed order.** The options follow `## A question`. After `shaping`: 1. Planning, 2. Stop. After `planning`: 1. Implementing, 2. Implementing batch, 3. Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
+2. **This session is recommended**, because it already holds the facts. When a compaction notice has appeared in this session or this stage is the second to finish in it, stopping is recommended instead: it moves to number 1 with `(Recommended)`, the stages keep their order below it, and its text names the command to run after a context clear.
 3. **One model line.** When the recommended stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.
 4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
 

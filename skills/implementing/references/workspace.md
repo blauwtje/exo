@@ -4,17 +4,17 @@ Ask where a code-changing run commits before its first edit, and commit only whe
 
 ## When it is asked
 
-1. **Outside git, never.** When `git rev-parse --show-toplevel` fails, nothing is committed and the report says so in one line.
+1. **Outside git, never.** When `git rev-parse --show-toplevel` fails, nothing is committed and the report says so in one line. A run on a plan whose `Repository:` line names the current folder is the exception: when `ls -A` there lists nothing but `docs`, it runs `git init -b main` and commits on `main` without asking, because a repository with no commit has nothing to branch from; when it lists anything else, the run stops before any edit and names those entries, because an init would capture files the plan never named. A plan whose `Repository:` folder sits inside another repository, where `git rev-parse --show-toplevel` prints a parent folder, stops the same way and names both paths.
 2. **In a chosen place, never.** Inside a linked worktree, where `git rev-parse --git-dir` and `git rev-parse --git-common-dir` differ, or on a branch other than the default one, the run commits there and the report names it, because asking would offer a branch off a branch.
 3. **Otherwise first.** The question is the run's first message, before any edit or dispatch, in the shape `## A question` in `using-exo` gives, and the run stops until the digit arrives:
 
 ```text
-(1) Branch (Recommended): a new branch in this folder
-(2) Worktree: a separate folder, your checkout stays untouched
-(3) Current branch: commit straight onto <default branch>
+1. **Branch (Recommended)**: a new branch here
+2. **Worktree**: a separate folder, checkout untouched
+3. **Current branch**: commit onto <default branch>
 ```
 
-The default branch is the one `git symbolic-ref --short refs/remotes/origin/HEAD` names after `origin/`; without that ref it is the current branch. When the root `CLAUDE.md` or `AGENTS.md` states that work is committed on the default branch, `(Recommended)` moves to option 3 and the options keep their order, because that rule is the repository's own answer; the question is still asked.
+The default branch is the one `git symbolic-ref --short refs/remotes/origin/HEAD` names after `origin/`; without that ref it is the current branch. When the root `CLAUDE.md` or `AGENTS.md` states that work is committed on the default branch, the current branch becomes `1. **Current branch (Recommended)**`, followed by `2. **Branch**` and `3. **Worktree**`, because that rule is the repository's own answer; the question is still asked.
 
 ## Carrying out the pick
 

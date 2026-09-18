@@ -5,7 +5,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { configDirectory, emptySession, updateSessions } from './ledger.mjs';
+import { configDirectory } from '#config-directory';
+import { emptySession, updateSessions } from './ledger.mjs';
 import { OVERHEAD_VERSION, bookOverhead, emptyOverhead } from './overhead.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 

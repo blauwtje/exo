@@ -5,9 +5,9 @@
 // (reads withheld).
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { configDirectory } from '#config-directory';
 
 // Every hook in hooks/hooks.json times out after 10 s, so a lock older than
 // LOCK_STALE_MS outlived any hook and belongs to one that died, and a waiter
@@ -16,10 +16,6 @@ const LOCK_WAIT_MS = 8000;
 const LOCK_STALE_MS = 15000;
 export const SESSION_RETENTION_DAYS = 30;
 const SESSION_RETENTION_MS = SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-
-export function configDirectory() {
-  return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-}
 
 // EXO_SAVINGS_DIR relocates the ledger and its config alone, so a benchmark
 // cell keeps its own ledger while the session keeps its login and settings.

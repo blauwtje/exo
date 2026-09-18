@@ -5,6 +5,9 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#config-directory": "./lib/config-directory.mjs"
+  },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {
     "node": ">=22"

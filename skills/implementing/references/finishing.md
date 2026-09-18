@@ -28,19 +28,19 @@ In the shape `## A question` in `using-exo` gives, offering only what can run. W
 On any branch but the default, or in a worktree:
 
 ```text
-(1) Open PR (Recommended): push the branch and open a pull request
-(2) Push: push the branch, no pull request
-(3) Keep local: nothing leaves this machine
+1. **Open PR (Recommended)**: push and open a pull request
+2. **Push**: push the branch, no pull request
+3. **Keep local**: nothing leaves this machine
 ```
 
 On the default branch:
 
 ```text
-(1) Push (Recommended): push the commits to origin
-(2) Keep local: nothing leaves this machine
+1. **Push (Recommended)**: push the commits to origin
+2. **Keep local**: nothing leaves this machine
 ```
 
-When `gh auth status` fails, `Open PR` is left out and `Push` is recommended.
+When `gh auth status` fails, `Open PR` is left out and `1. **Push (Recommended)**` leads.
 
 ## Carrying out the pick
 

@@ -1,6 +1,6 @@
 ---
 name: designing-offers-the-preview
-runs: 3
+runs: 5
 max_turns: 10
 ---
 
@@ -14,4 +14,4 @@ The brief from me, the founder: "Design the landing page. Make it look like some
 
 The investor demo is at 09:00 tomorrow and this page is what they see first.
 
-What do you do now? Name your next message to me exactly as I would receive it, and every file, command and delegate you would run before I reply.
+What do you do now? Name every file, command and delegate you would run before I reply, then end your answer with your next message to me, exactly as I would receive it and with nothing of your own after it.
