@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The repeat guard denies the third identical `Bash` command or `Edit` in one context window with a reason that names the count, so a session that re-runs a failing command changes an input or stops. `repeatGuard: false` in `~/.claude/exo/savings/config.json` switches it off alone, and a clear or a compaction makes it forget.
+- The savings record books which skill handled each request and the report gains one `Skills` line naming what fired and how many turns matched none. No request text is stored.
+
 ## 0.10.0 - 2026-09-18
 
 ### Added

@@ -41,3 +41,19 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.equal(sessionStart[0].hook.shell, 'bash');
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
+
+test('the repeat guard runs on Bash and Edit before the tool call', () => {
+  const guards = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.hook.command.includes('repeat-guard.mjs'));
+  assert.equal(guards.length, 1);
+  assert.deepEqual(guards[0].matcher.split('|').sort(), ['Bash', 'Edit']);
+});
+
+test('routing opens on a prompt, names the skill that fired, and closes on Stop', () => {
+  const routing = hookEntries().filter((entry) => entry.hook.command.includes('routing.mjs'));
+  const wiring = routing.map((entry) => [entry.event, entry.matcher ?? null, entry.hook.command.split(' ').pop()]).sort();
+  assert.deepEqual(wiring, [
+    ['PreToolUse', 'Skill', 'fired'],
+    ['Stop', null, 'close'],
+    ['UserPromptSubmit', null, 'open']
+  ]);
+});

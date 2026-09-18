@@ -17,10 +17,13 @@ if ! command -v jq >/dev/null; then
   exit 0
 fi
 # A clear or a compaction empties the context, so the read guard forgets which
-# ranges the model still holds.
+# ranges the model still holds and the repeat guard forgets which calls it saw.
 source=$(printf '%s' "$input" | jq -r '.source // ""')
 case "$source" in
-  clear|compact) printf '%s' "$input" | node "$root/skills/savings/scripts/read-guard.mjs" reset ;;
+  clear|compact)
+    printf '%s' "$input" | node "$root/skills/savings/scripts/read-guard.mjs" reset
+    printf '%s' "$input" | node "$root/skills/savings/scripts/repeat-guard.mjs" reset
+    ;;
 esac
 skill="$root/skills/using-exo/SKILL.md"
 [ -f "$skill" ] || exit 0
