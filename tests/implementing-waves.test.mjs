@@ -59,3 +59,10 @@ test('a wave builds in worktrees and lands in plan order or not at all', () => {
   const authorization = SKILL.match(/^Invoking `\/exo:implementing` on a plan authorizes .+$/m);
   assert.ok(authorization[0].includes("a wave's temporary worktrees beside it"));
 });
+
+test('the plan basis is where a plan allows waves', () => {
+  const handoff = read('planning/references/handoff-spec.md');
+  assert.ok(handoff.includes('`Worktree setup: <command>`'));
+  assert.ok(handoff.includes('`Worktree setup: none`'));
+  assert.ok(handoff.includes('without the line the run builds one task at a time'));
+});
