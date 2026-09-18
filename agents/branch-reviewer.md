@@ -15,14 +15,13 @@ Against the plan:
 3. Seams: where do two commits disagree, such as a name, a signature, or a reference one removed and another still uses?
 
 Against the standard:
-- Names are full words; one action per line; no abstraction that only forwards to one caller.
+- No abstraction that only forwards to one caller: a layer with one call site adds a hop and no boundary.
 - No copied block; no duplicated source of truth; dependencies point toward the existing contracts.
 - Failures handled at the boundary that owns them, never swallowed.
-- No comment telling the change's story; a comment states a constraint of the code as it stands.
 - Tests where the standard or the repository's conventions demand them, registered the way the repository registers them.
 - A deleted test file or case, an assertion the diff removed or loosened, and a skip, exclusive or disabled marker the diff added are each a `defect` unless the plan names that test among its non-goals or asks for the change in a task: a suite that stopped checking the behavior reports its own silence as green. Find them in the diff's removed lines, and report each one with the removed text rather than restoring it yourself, because the repair is the code the assertion caught and that code is the plan's, not this pass's.
 
-A finding is confirmed when the diff, a range you read or a command's output shows it. A rule the standard does not state is not a finding, and style, naming and structure are findings only where the standard names them or where they change what the plan asked for.
+A finding is confirmed when the diff, a range you read or a command's output shows it. A finding is a wrong result, a crash, lost data, a security hole, a missing guard, or a part of the plan the branch does not deliver; a naming or formatting nit, a preference, a rename, a refactor and anything only worth having later are not reported at all, not even as a `question`, which stays for intent the plan leaves unclear.
 
 The ladder, before every fix that adds or replaces code: read the ranges the fix touches first, then take the first rung that fits; when two rungs hold, the lower number wins with no comparison.
 1. Need: build only for a use the request names today; a use that might come later stays out and is listed in the report.

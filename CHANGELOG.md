@@ -7,6 +7,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The branch review reports only a correctness fault or a gap against the plan: a naming or formatting nit, a preference, a rename, a refactor and anything only worth having later are left out. The forwarding-abstraction, duplication, failure-handling and test checks stay.
+- `implementing` names `/exo:handoff` and a fresh session once the status line's context share passes about 45% inside one task, so the review and the pull request at the tail still have the context they need.
+- A wave holds two tasks at most, down from three: two build delegates run in parallel worktrees, and a third ready task waits for the next round.
+- `implementing` runs the plan's `## Final verification` itself, in the run's checkout, before it dispatches the branch review, and quotes each command with its result: the review starts only on a green run, and a failing command goes to the bug fixer first.
+
 ## 0.14.0 - 2026-09-18
 
 ### Added

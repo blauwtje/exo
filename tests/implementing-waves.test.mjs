@@ -41,10 +41,10 @@ function loopStep(number) {
   return step[0];
 }
 
-test('step 3 forms a wave only from the plan, three tasks at most', () => {
+test('step 3 forms a wave only from the plan, two tasks at most', () => {
   const landedStep = loopStep(3);
   assert.ok(landedStep.includes('`Worktree setup:`'));
-  assert.ok(landedStep.includes('three at most'));
+  assert.ok(landedStep.includes('two at most'));
   assert.ok(landedStep.includes('never a guess from paths'));
 });
 
