@@ -92,7 +92,7 @@ The draft is for iterating on wording and is never a verdict: at 3 runs one answ
 
 ## Hooks
 
-`hooks/hooks.json` wires six hook groups:
+`hooks/hooks.json` wires five hook groups:
 
 - **SessionStart**, on startup, resume, clear and compaction. It writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set), makes the read guard forget its reads and the repeat guard forget its calls after a clear or compaction, and injects the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others. Without `jq` it still writes the pointer but injects no body, and says so on stderr.
 - **PreToolUse** and **PostToolUse** on `Read`: the read guard, in `skills/savings/scripts/read-guard.mjs`. Without `node` the hook fails and the read goes through unguarded.
