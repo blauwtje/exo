@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.14.2 - 2026-09-18
+
 ### Changed
 
 - `eval-case.mjs` no longer defaults to the no-plugin arm: a run without `--arm no-plugin`, `plugin` or `both` exits 1 before any paid run and names the case and the three arms, because a skill-behavior case graded without exo loaded scores 0 and still pays. `npm run eval:savings-report` and its draft pass `--arm no-plugin` themselves.
