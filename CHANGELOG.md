@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.14.0 - 2026-09-18
+
 ### Added
 
 - `/exo:handoff` saves an unfinished session to `<git-dir>/exo/handoff/<branch>.md`, so a fresh session continues after a clear: goal, current state with the plan task and the uncommitted paths `git status --short` lists, decisions and who made them, files touched, what is proven and by which command, the single next step and the open questions, as pointers rather than pasted content. It overwrites the handoff of that branch, works per worktree, is never committed, and falls back to `~/.claude/exo/handoff/<folder>.md` outside a repository. You start it yourself; nothing else does.
