@@ -18,6 +18,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A plan whose affected paths cross authentication, ownership, secrets, untrusted input, network, file or process execution, cryptography or regulated data loads the security reference `implementing-batch` already uses, and folds its checks into the tasks touching those paths as steps with their own `Run:` and `Expected:`.
 - The branch review reads a deleted test, a removed or loosened assertion and an added skip or exclusive marker as a defect, unless the plan named that test a non-goal or asked for the change in a task.
 - The `planning` body now states that a plan for a folder that is not a git repository yet writes `Branch: main`; the value sat only in `references/plan-spec.md`, which a session that cannot read it replaced with `Branch: none`.
+- `implementing` runs the plan's `## Final verification` itself, in the run's checkout, before it dispatches the branch review, and quotes each command with its result: the review starts only on a green run, and a failing command goes to the bug fixer first.
 
 ## 0.13.1 - 2026-09-18
 
