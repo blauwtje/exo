@@ -2,6 +2,7 @@
 name: designing-routes-by-axis
 runs: 5
 max_turns: 10
+timeout_seconds: 600
 ---
 
 This is a real task, not a discussion; choose and act. I am at the keyboard and will answer you immediately, so a question costs seconds, not hours. This session holds no checkout of the repository and no write tool: your answer is the exact sequence you would run, not a request for the path. Load every skill in that sequence through the Skill tool before you answer, because naming a skill is not following it.
