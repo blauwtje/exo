@@ -31,10 +31,9 @@ The 37 runs recorded under `evals/results/` cost $83.87 and 170 minutes of wall 
 path is the default one and every rule below exists to keep it that way.
 
 - Run no eval for a change that does not alter skill behavior. Documentation, the verifier, the changelog and this file change nothing a grader can see.
-- Run only the case the change touched, with `node eval-case.mjs --case <name>`, never the 26-case suite: every run of every case pays its own judge call.
-- Iterate with `--mode draft` (3 runs, no-plugin arm) and take a verdict only from `--mode full`, because at 3 runs one answer moves a pass rate by a third.
-- Judge a verdict on the no-plugin arm, the cold reader. Add `--arm both` only when `skills/savings/SKILL.md` or the session hook's text changes, because that text is all that differs between the arms, and `--arm both` doubles the runs: the most expensive pass on record is $6.78 for one case that way.
-- `--ablation with-without` is the CLI default whenever a plugin resolves and doubles the runs again. `eval-case.mjs` passes `--ablation none` already; a direct `claude plugin eval .` needs it too unless the baseline is the question.
+- Run only the case the change touched, with `node eval-case.mjs --case <name> --arm <arm>`, never the 26-case suite: every run of every case pays its own judge call.
+- Iterate with `--mode draft` (3 runs) and take a verdict only from `--mode full`, because at 3 runs one answer moves a pass rate by a third.
+- `--ablation with-without` is the CLI default whenever a plugin resolves and doubles the runs. `eval-case.mjs` passes `--ablation none` already; a direct `claude plugin eval .` needs it too unless the baseline is the question.
 - Pass `--max-cost-usd 5` on any direct `claude plugin eval` call. It is the ceiling the runner's own docs recommend over tight per-run limits, it aborts with exit 2 rather than overrunning, and nothing in this repo sets it today.
 - Give every new case a `timeout_seconds` that fits what its graders check. The default is 300 (max 3600), and a run that outruns it is recorded as `timed out after 300s` yet still graded on its partial transcript, so it scores 0 and reads as a real failure. `implementing-inits-a-new-folder` and `planning-plans-a-new-folder` need `timeout_seconds: 900` for that reason.
 - `max_turns` defaults to 10; every case here sets its own, because hitting the cap is a run error that lowers the score.

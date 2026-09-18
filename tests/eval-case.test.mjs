@@ -66,7 +66,7 @@ async function mergedAggregate(directory, stdout) {
 }
 
 test('the full run keeps the case run count and splits it over runner processes above their cap of 8', async () => {
-  const { directory, outcome, calls } = await runCase(['--mode', 'full', '--concurrency', '10']);
+  const { directory, outcome, calls } = await runCase(['--mode', 'full', '--arm', 'no-plugin', '--concurrency', '10']);
   assert.equal(outcome.code, 0, outcome.stderr);
   assert.deepEqual(calls.map((call) => [flag(call, '--runs'), flag(call, '--concurrency')]), [['5', '5'], ['5', '5']]);
   assert.ok(calls.every((call) => !call.includes('--ablation') && flag(call, '--judge-model') === 'sonnet'));
@@ -81,7 +81,7 @@ test('the full run keeps the case run count and splits it over runner processes 
 });
 
 test('the draft runs three no-plugin runs in one process and says it is not authoritative', async () => {
-  const { outcome, calls } = await runCase(['--mode', 'draft']);
+  const { outcome, calls } = await runCase(['--mode', 'draft', '--arm', 'no-plugin']);
   assert.equal(outcome.code, 0, outcome.stderr);
   assert.deepEqual(calls.map((call) => [flag(call, '--runs'), flag(call, '--concurrency')]), [['3', '3']]);
   assert.match(outcome.stdout, /^DRAFT: not authoritative\./m);
@@ -99,8 +99,17 @@ test('both arms run the plugin arm from the repository with ablation off, every 
   assert.deepEqual(Object.keys(aggregate.cases[0].arms).sort(), ['no-plugin', 'plugin']);
 });
 
+test('a run without a valid --arm refuses before any runner call and names the case and the arms', async () => {
+  for (const armArgs of [[], ['--arm', 'plugins']]) {
+    const { outcome, calls } = await runCase(['--mode', 'draft', ...armArgs]);
+    assert.equal(outcome.code, 1, `${JSON.stringify(armArgs)} ran`);
+    assert.match(outcome.stderr, new RegExp(`--arm is required for case ${CASE}: no-plugin .*, plugin .* or both `));
+    assert.deepEqual(calls, []);
+  }
+});
+
 test('a runner result without the case fails instead of reporting nothing', async () => {
-  const { outcome } = await runCase(['--mode', 'draft'], { STAND_IN_NO_CASE: '1' });
+  const { outcome } = await runCase(['--mode', 'draft', '--arm', 'no-plugin'], { STAND_IN_NO_CASE: '1' });
   assert.equal(outcome.code, 1);
   assert.match(outcome.stderr, /expected case count 1/);
 });

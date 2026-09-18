@@ -4,14 +4,16 @@
 // eval-reasons.mjs, which prints each grader's pass rate per arm and asks a
 // reasoning judge about every failed vote.
 //
-//   node eval-case.mjs --case <name> [--mode full|draft] [--arm no-plugin|plugin|both]
+//   node eval-case.mjs --case <name> --arm no-plugin|plugin|both [--mode full|draft]
 //                      [--concurrency <runs in flight>]
 //
+// --arm has no default: the no-plugin arm loads no exo skill or hook, so a case
+// that grades skill behavior scores 0 there and still pays for every run.
 // --concurrency defaults to every run of every arm at once: 20 runs in flight
 // finished without an errored run on one subscription, and a case never has
 // more runs than that to spread.
 // full   the case's own `runs:` per arm, the verdict.
-// draft  3 runs, no-plugin arm, for iterating on wording; never a verdict.
+// draft  3 runs per arm, for iterating on wording; never a verdict.
 //
 // The no-plugin arm runs from a scratch directory that holds only the case, so
 // no plugin resolves: that is the runner's own no-plugin arm, a case with no
@@ -108,9 +110,9 @@ if (caseName === undefined) fail('--case <name> is required');
 const caseDirectory = path.join(ROOT, 'evals', caseName);
 if (!fs.existsSync(path.join(caseDirectory, 'prompt.md'))) fail(`evals/${caseName}/prompt.md does not exist`);
 if (!['full', 'draft'].includes(options.mode)) fail('--mode must be full or draft');
-const armChoice = options.arm ?? 'no-plugin';
+const armChoice = options.arm;
 const arms = ARMS_BY_CHOICE[armChoice];
-if (arms === undefined) fail('--arm must be no-plugin, plugin or both');
+if (arms === undefined) fail(`--arm is required for case ${caseName}: no-plugin (no exo skill or hook loads), plugin (exo loaded) or both (doubles the runs)`);
 const draft = options.mode === 'draft';
 const runsPerArm = draft ? DRAFT_RUNS : caseRuns(caseDirectory);
 const concurrency = options.concurrency === undefined ? runsPerArm * arms.length : Number(options.concurrency);
