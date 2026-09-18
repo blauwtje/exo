@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.14.1 - 2026-09-18
+
 ### Changed
 
 - The branch review reports only a correctness fault or a gap against the plan: a naming or formatting nit, a preference, a rename, a refactor and anything only worth having later are left out. The forwarding-abstraction, duplication, failure-handling and test checks stay.
