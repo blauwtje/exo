@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- A question stands alone: one a turn, with nothing written, edited or run until the answer arrives. `shaping`'s explore mode leads with the direction it recommends, and the surface question in `designing` lists the surfaces it can see, most recently changed first.
+- A green build and a `CLEAN` branch review return their verdict lines instead of the whole report: the task number with `GREEN`, one line per `Run:`, and the report path the caller opens only when it needs the rest. Drift, a failure, `FIXED` and `BLOCKED` still return everything.
+
 ## 0.13.0 - 2026-09-18
 
 ### Added

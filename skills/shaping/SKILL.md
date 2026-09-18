@@ -14,7 +14,7 @@ Count the product decisions the request leaves open: what counts as done; which 
 
 ## Two modes
 
-**Explore.** Use only when the user asks for options or a comparison. Give directions that differ on at least one named architecture, data, dependency, or interaction choice. State the trade-off and recommend one. Produce no file or brief.
+**Explore.** Use only when the user asks for options or a comparison. Give directions that differ on at least one named architecture, data, dependency, or interaction choice. State the trade-off and put the direction you recommend first. Produce no file or brief.
 
 **Specify.** Use when the user wants the outcome built. State the brief in the current message:
 
