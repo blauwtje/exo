@@ -146,3 +146,53 @@ test('a write past the budget is refused and names what to retire first', async 
   assert.match(refusal.stderr, /over the 2000 byte budget/);
   assert.match(refusal.stderr, /fact number 0 about this repository/);
 });
+
+test('verify keeps a line whose refs are intact and reports nothing dropped', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n  cut:\n');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml#cut');
+  const verified = await memory(root, 'verify');
+  assert.equal(verified.code, 0, verified.stderr);
+  assert.match(verified.stdout, /1 line verified, 0 dropped/);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.match(rendered, /- the release workflow cuts the version/);
+});
+
+test('verify drops a line whose file is gone and names it', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  fs.rmSync(path.join(root, 'release.yml'));
+  const verified = await memory(root, 'verify');
+  assert.equal(verified.code, 0, verified.stderr);
+  assert.match(verified.stdout, /dropped "the release workflow cuts the version": release\.yml/);
+  assert.match(verified.stdout, /0 lines verified, 1 dropped/);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  const [understanding, history] = rendered.split('## Decisions');
+  assert.doesNotMatch(understanding, /the release workflow cuts the version/);
+  assert.match(history, /dropped, release\.yml no longer exist: the release workflow cuts the version/);
+});
+
+test('a second verify does not re-report a line already dropped', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  fs.rmSync(path.join(root, 'release.yml'));
+  await memory(root, 'verify');
+  const again = await memory(root, 'verify');
+  assert.match(again.stdout, /0 lines verified, 0 dropped/);
+  assert.doesNotMatch(again.stdout, /^dropped /m);
+});
+
+test('verify drops a line whose symbol is gone', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n  cut:\n');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml#cut');
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n  build:\n');
+  const verified = await memory(root, 'verify');
+  assert.match(verified.stdout, /dropped "the release workflow cuts the version": release\.yml#cut/);
+});

@@ -170,6 +170,29 @@ function writeClaim(cwd, state, claim, refs, replaces) {
   return bytes;
 }
 
+// A live line stays live only while every path and symbol it names is still
+// there. A line that fails is marked dropped and keeps its place in the history,
+// never removed: the claim and the refs that killed it are the only record that
+// exo ever believed it. A line already superseded or dropped is not re-checked.
+function verifyLines(cwd, state) {
+  const date = today();
+  let checked = 0;
+  const dropped = [];
+  const lines = state.lines.map((line) => {
+    if (line.superseded !== null || line.dropped !== null) return line;
+    checked += 1;
+    const missing = line.refs.filter((ref) => {
+      const { symbol, target } = resolveRef(cwd, ref);
+      if (!fs.existsSync(target)) return true;
+      return symbol !== undefined && !fs.readFileSync(target, 'utf8').includes(symbol);
+    });
+    if (missing.length === 0) return line;
+    dropped.push({ claim: line.claim, missing });
+    return { ...line, dropped: { date, missing } };
+  });
+  return { lines, live: checked - dropped.length, dropped };
+}
+
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -216,6 +239,19 @@ if (command === 'paths') {
   } catch (error) {
     fail(error.message);
   }
+} else if (command === 'verify') {
+  // A ref reaches this point already resolved once at write time, so a throw
+  // here means the state was edited by hand; it stops the prune rather than
+  // deleting lines it could not check.
+  try {
+    const state = readState(cwd);
+    const { lines, live, dropped } = verifyLines(cwd, state);
+    for (const entry of dropped) console.log(`dropped "${entry.claim}": ${entry.missing.join(', ')}`);
+    if (dropped.length > 0) writeState(cwd, { candidates: state.candidates, lines });
+    console.log(`${live} line${live === 1 ? '' : 's'} verified, ${dropped.length} dropped`);
+  } catch (error) {
+    fail(error.message);
+  }
 } else {
-  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose or write`);
+  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write or verify`);
 }
