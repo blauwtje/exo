@@ -81,6 +81,37 @@ function fail(message) {
   process.exit(1);
 }
 
+// Both files are written together, so a reader never sees a claim the state has
+// already retired.
+function writeState(cwd, state) {
+  fs.mkdirSync(memoryDirectory(cwd), { recursive: true });
+  fs.writeFileSync(stateFile(cwd), `${JSON.stringify(state, null, 2)}\n`);
+  fs.writeFileSync(memoryFile(cwd), render(state));
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// A claim is proposed only once two distinct sessions have booked it, so one
+// session cannot teach exo something it misheard.
+const ATTESTATIONS_REQUIRED = 2;
+
+// A second booking from the same session replaces that session's quote rather
+// than counting twice: a session that repeats itself has still seen the claim once.
+function book(state, claim, quote, session) {
+  const attestations = (state.candidates[claim] ?? []).filter((entry) => entry.session !== session);
+  attestations.push({ session, date: today(), quote });
+  state.candidates[claim] = attestations;
+  return attestations.length;
+}
+
+function proposable(state) {
+  return Object.entries(state.candidates)
+    .filter(([, attestations]) => attestations.length >= ATTESTATIONS_REQUIRED)
+    .map(([claim, attestations]) => ({ claim, attestations }));
+}
+
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -101,6 +132,23 @@ if (command === 'paths') {
   console.log(memoryFile(cwd));
 } else if (command === 'render') {
   process.stdout.write(render(readState(cwd)));
+} else if (command === 'book') {
+  if (values.claim === undefined || values.quote === undefined || values.session === undefined) {
+    fail('book needs --claim, --quote and --session');
+  }
+  const state = readState(cwd);
+  const attestations = book(state, values.claim, values.quote, values.session);
+  writeState(cwd, state);
+  console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
+} else if (command === 'propose') {
+  const candidates = proposable(readState(cwd));
+  if (candidates.length === 0) {
+    console.log('no claim is attested twice yet');
+  }
+  for (const { claim, attestations } of candidates) {
+    console.log(claim);
+    for (const entry of attestations) console.log(`  ${entry.date}: ${entry.quote}`);
+  }
 } else {
-  fail(`unknown command ${command ?? '(none)'}; expected paths or render`);
+  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book or propose`);
 }

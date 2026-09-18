@@ -45,3 +45,34 @@ test('an empty memory renders both sections and writes no file', async () => {
   assert.match(result.stdout, /## Decisions\n\nNothing has been written yet\./);
   assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
 });
+
+test('a claim booked in one session is not proposed', async () => {
+  const root = await repository();
+  const booked = await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'no, it is node --test', '--session', 'one');
+  assert.equal(booked.code, 0, booked.stderr);
+  const proposed = await memory(root, 'propose');
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /no claim is attested twice yet/);
+  assert.doesNotMatch(proposed.stdout, /the suite runs under node --test/);
+});
+
+test('a second booking from the same session does not make a second attestation', async () => {
+  const root = await repository();
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'no, it is node --test', '--session', 'one');
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'again, node --test', '--session', 'one');
+  const proposed = await memory(root, 'propose');
+  assert.match(proposed.stdout, /no claim is attested twice yet/);
+});
+
+test('a claim booked in two sessions is proposed with both dated quotes', async () => {
+  const root = await repository();
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'no, it is node --test', '--session', 'one');
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'I said node --test', '--session', 'two');
+  const proposed = await memory(root, 'propose');
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /the suite runs under node --test/);
+  assert.match(proposed.stdout, /no, it is node --test/);
+  assert.match(proposed.stdout, /I said node --test/);
+  const today = new Date().toISOString().slice(0, 10);
+  assert.equal(proposed.stdout.split(today).length - 1, 2);
+});
