@@ -5,7 +5,7 @@ commands and internals; this file only names what a session here gets wrong with
 
 ## Commands
 
-- `npm run check` is the gate before any commit. A clean run ends `SUMMARY PASS=15 FAIL=0 WARN=0 UNRUN=0`.
+- `npm run check` is the gate before any commit. A clean run ends `SUMMARY PASS=16 FAIL=0 WARN=0 UNRUN=0`.
 - `npm test` prints Node's spec reporter, which marks a failure `✖`, not `not ok`: a grep of its log for `not ok` finds nothing while tests fail.
 - `npm run check` runs the tests once, inside the verifier's `skill script behavior` check, which uses the TAP reporter: its FAIL line names each failing test as a `not ok` line.
 - `CONTRIBUTING.md` holds the rest of the command table, the hook wiring, the delegate models and the savings internals.
