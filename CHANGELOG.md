@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.9.0 - 2026-09-18
+
 ### Added
 
 - `.github/workflows/release.yml` cuts the release on a merge to `main`: it runs `npm run check`, `npm run bump`, commits `chore(release): <version>`, tags `v<version>` and publishes the GitHub Release from `npm run release-notes`. `npm run release-pending` prints `yes` or `no` so a merge that records nothing under `## Unreleased` is told apart from a failed bump, and `CLAUDE.md` and `CONTRIBUTING.md` name the workflow as the only route that raises a version.
