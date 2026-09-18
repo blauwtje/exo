@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { emptySession } from '../skills/savings/scripts/ledger.mjs';
+import { emptySession } from '../skills/savings/scripts/record.mjs';
 import { OVERHEAD_VERSION, WORK_KINDS, measuredTotals } from '../skills/savings/scripts/overhead.mjs';
 import { ingestTranscript } from '../skills/savings/scripts/transcript.mjs';
 import { fixture } from './harness.mjs';

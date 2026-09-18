@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { configFile, guardLines, readJson, savingsEnabled, updateSession } from './ledger.mjs';
+import { configFile, guardLines, readJson, savingsEnabled, updateSession } from './record.mjs';
 
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.ipynb']);
 
@@ -52,7 +52,7 @@ function fileLines(filePath) {
   return fs.readFileSync(filePath, 'utf8').replace(/\n$/, '').split('\n');
 }
 
-// The file, its stat, its reader and the ledger key a hook call is about, or
+// The file, its stat, its reader and the record key a hook call is about, or
 // null when the guard has nothing to say about this call.
 function readTarget(hookInput) {
   if (!guardEnabled()) return null;
@@ -75,7 +75,7 @@ function readTarget(hookInput) {
 }
 
 // performance.now() counts from the start of this Node process, so the run's
-// bootstrap, module loading and work are in; the spawn before it, the ledger
+// bootstrap, module loading and work are in; the spawn before it, the record
 // write after it and the exit are not.
 function bookRunTime(guard) {
   guard.hookMs = (guard.hookMs ?? 0) + performance.now();
@@ -105,7 +105,7 @@ function refusalOf(session, target) {
   };
 }
 
-// An allowed read writes the ledger too, to book the run's time: that write
+// An allowed read writes the record too, to book the run's time: that write
 // measured 0.17 ms against a 25 ms run.
 function guardRead(hookInput) {
   const target = readTarget(hookInput);

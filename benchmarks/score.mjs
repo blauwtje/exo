@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { readJson } from '../skills/savings/scripts/ledger.mjs';
+import { readJson } from '../skills/savings/scripts/record.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 

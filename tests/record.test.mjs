@@ -1,4 +1,4 @@
-// The ledger relocates with EXO_SAVINGS_DIR, answers one enabled switch from
+// The record relocates with EXO_SAVINGS_DIR, answers one enabled switch from
 // EXO_SAVINGS or config.json, serializes concurrent updates behind a lock, and
 // prunes sessions untouched for thirty days.
 
@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const LEDGER = fileURLToPath(new URL('../skills/savings/scripts/ledger.mjs', import.meta.url));
+const RECORD = fileURLToPath(new URL('../skills/savings/scripts/record.mjs', import.meta.url));
 
 function runModule(source, env) {
   return new Promise((resolve) => {
@@ -26,12 +26,12 @@ function runModule(source, env) {
   });
 }
 
-const IMPORT = `import { ledgerFile, savingsEnabled, updateSession } from ${JSON.stringify(LEDGER)};`;
+const IMPORT = `import { recordFile, savingsEnabled, updateSession } from ${JSON.stringify(RECORD)};`;
 
-test('EXO_SAVINGS_DIR relocates the ledger away from the config directory', async () => {
+test('EXO_SAVINGS_DIR relocates the record away from the config directory', async () => {
   const configDirectory = await fixture();
-  const savingsDirectory = path.join(configDirectory, 'cell-ledger');
-  const result = await runModule(`${IMPORT} console.log(ledgerFile());`, { CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS_DIR: savingsDirectory });
+  const savingsDirectory = path.join(configDirectory, 'cell-record');
+  const result = await runModule(`${IMPORT} console.log(recordFile());`, { CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS_DIR: savingsDirectory });
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout.trim(), path.join(savingsDirectory, 'sessions.json'));
 });
@@ -72,14 +72,14 @@ test('a session untouched for thirty days is pruned, an undated one is kept', as
   assert.match(sessions.fresh.touched, /^\d{4}-\d{2}-\d{2}T/);
 });
 
-test('a ledger that does not parse is left untouched and the update throws', async () => {
+test('a record that does not parse is left untouched and the update throws', async () => {
   const directory = await fixture();
-  const ledger = path.join(directory, 'sessions.json');
-  await fs.writeFile(ledger, '{not json');
+  const record = path.join(directory, 'sessions.json');
+  await fs.writeFile(record, '{not json');
   const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
   assert.notEqual(result.code, 0);
   assert.match(result.stderr, /sessions\.json is not valid JSON/);
-  assert.equal(await fs.readFile(ledger, 'utf8'), '{not json');
+  assert.equal(await fs.readFile(record, 'utf8'), '{not json');
 });
 
 test('a lock older than the stale threshold is taken over', async () => {

@@ -1,4 +1,4 @@
-// Reads the transcript the harness writes into a ledger row: usage per API
+// Reads the transcript the harness writes into a record row: usage per API
 // call, and the overhead exo adds.
 // The format is internal to the harness and may change between releases; a
 // line that does not parse is skipped, never fatal.
@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { configDirectory } from '#config-directory';
-import { emptySession, updateSessions } from './ledger.mjs';
+import { emptySession, updateSessions } from './record.mjs';
 import { OVERHEAD_VERSION, bookOverhead, emptyOverhead } from './overhead.mjs';
 import { sumCounts, usageCounts } from './token-weights.mjs';
 
@@ -116,7 +116,7 @@ export function refreshStaleSessions(sessions) {
     if (stored.overhead?.version === OVERHEAD_VERSION) continue;
     latest = updateSessions((current) => {
       const row = current[sessionId];
-      // Pruned, or read again by a hook, since the caller read the ledger.
+      // Pruned, or read again by a hook, since the caller read the record.
       if (row === undefined || row.overhead?.version === OVERHEAD_VERSION) return false;
       const session = { ...emptySession(), ...row };
       if (!ingestTranscript(session, session.transcript ?? findTranscript(sessionId))) session.overhead = emptyOverhead();

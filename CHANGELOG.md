@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The savings store on disk is named the savings record: `skills/savings/scripts/record.mjs` replaces the old module, its exported names follow, and the retired word is gone from the repository.
+
 ## 0.9.0 - 2026-09-18
 
 ### Added
@@ -110,7 +114,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Highlights
 
 - **`/exo:savings` is now a cost report.** It leads with what exo cost, lists the reads the guard refused, and says plainly that the saving is not measured.
-- **The word "ledger" is gone from everything you read.** The status line reads `exo cost $0.04 · 2m · 2 reads refused`, and the guard's big-file limit is a setting.
+- **The internal bookkeeping word is gone from everything you read.** The status line reads `exo cost $0.04 · 2m · 2 reads refused`, and the guard's big-file limit is a setting.
 - **Every file is exo's own work.** The skills are rewritten in exo's own words, the third-party notices are removed, and the README is shorter.
 
 ### Added
@@ -130,7 +134,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The overused-font list is rebuilt from a criterion recorded in `overused-fonts.mjs`: Google Fonts' most popular families, platform and browser defaults, the `create-next-app` faces, and the faces models pick unprompted or fall back on, now 66 families; the craft recipes and check tests spell their CSS samples anew.
 - `skills-tool` and its form, pressure, plugging and shape references are rewritten in exo's own words and structure, with the same loop, rules and bounds.
 - `deepen` restates its scope, terms and audit with new card fields (Files, Friction, Refactor, Payoff, Confidence), and `debug`, `implementing`, `implementing-batch` and `merge-prs` reword single passages, with the same triggers and bounds.
-- `/exo:savings` prints a boxed cost report: exo's cost as the headline, the reads the read guard refused with their file text, a line saying flatly that what exo saved is not measured because refused text has no token count or price, a cost table split into skill loads, re-reads and hooks with no token column, a guard table that sets each guard's refusals beside what its re-reads cost, a plain-words list of what is and is not measured, what to switch to spend less, and exo's token total once in the footer, away from any cost. The word "ledger" is gone from every user-facing text. The first report after the update reads every stored transcript again; a session whose transcript is gone keeps what the guard held back and loses its cost figures.
+- `/exo:savings` prints a boxed cost report: exo's cost as the headline, the reads the read guard refused with their file text, a line saying flatly that what exo saved is not measured because refused text has no token count or price, a cost table split into skill loads, re-reads and hooks with no token column, a guard table that sets each guard's refusals beside what its re-reads cost, a plain-words list of what is and is not measured, what to switch to spend less, and exo's token total once in the footer, away from any cost. The internal bookkeeping word is gone from every user-facing text. The first report after the update reads every stored transcript again; a session whose transcript is gone keeps what the guard held back and loses its cost figures.
 - The status line segment reads `exo cost $0.04 · 2m · 2 reads refused`: cost first, refusals as a count, and no token or byte figure beside the cost.
 - The README explains exo in its own words, adds a check that it works, folds its how-it-works sections into one list and the ladder, says how to weigh and tune the read guard, and drops the credits; the note on adding a setting moves to `CONTRIBUTING.md`.
 
@@ -328,10 +332,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `capture.mjs` waits for the screenshot browser to exit before it removes the
   browser profile, and retries that removal, so a capture no longer fails with
   `ENOTEMPTY` on CI.
-- A savings ledger that cannot be read or parsed is left untouched: the hook
-  reports the error instead of rewriting the ledger with the current session
+- A savings record that cannot be read or parsed is left untouched: the hook
+  reports the error instead of rewriting the record with the current session
   alone.
-- The ledger lock waits up to 8 seconds and counts a lock as stale only after
+- The record lock waits up to 8 seconds and counts a lock as stale only after
   15 seconds, past the hook timeout, so a slow hook keeps its lock.
 - The session hook also runs on `resume`, so the plugin-root pointer follows a
   bump, and without `jq` it exits 0 with a notice on stderr.
@@ -361,7 +365,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
-- The ledger no longer writes a session's cost, duration, token or line totals,
+- The record no longer writes a session's cost, duration, token or line totals,
   nor the guard's capped and duplicate counters: nothing read them.
 - `researcher-prompt.md` drops its GitHub shortlist mode, which no skill
   dispatched.
@@ -405,7 +409,7 @@ release, and a body rewrite that keeps the trigger is a patch.
   the ratio override in `config.json`, and the calibrated character, byte and
   millisecond rates that sized exo's text in context; `benchmarks/score.mjs
   --publish` now records its measured cut in `benchmarks/results/<date>.md`
-  alone. `OVERHEAD_VERSION` rises to 3, so every ledger row is re-read from its
+  alone. `OVERHEAD_VERSION` rises to 3, so every record row is re-read from its
   transcript on the next turn.
 - The codebase discovery scout runs on `sonnet` instead of inheriting the
   session's model: locating files and symbols is mechanical.
@@ -503,7 +507,7 @@ release, and a body rewrite that keeps the trigger is a patch.
   an explicit ask for the minimal or lean version is answered from the same
   text. Its three evals are renamed `using-exo-*`.
 - The savings panel's 30-day trend, the `exo:right-sizing` attribution in the
-  ledger, and the right-sizing column in `benchmarks/score.mjs`.
+  record, and the right-sizing column in `benchmarks/score.mjs`.
 - `validate-plan.mjs` and its test: the new plan grammar has no machine
   validator; the planning session reads the plan once against the spec's rules.
 - The per-file line and character ceilings and the `line budgets` check: a

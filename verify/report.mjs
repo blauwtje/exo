@@ -1,4 +1,4 @@
-// The verifier's result ledger. Every check reports through one report object,
+// The verifier's result record. Every check reports through one report object,
 // so the process exit code follows from the tally alone and a check never calls
 // process.exit itself.
 

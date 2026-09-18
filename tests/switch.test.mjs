@@ -59,15 +59,15 @@ test('the session hook carries the right-sizing ladder whether exo savings are o
 
 test('a resumed session rewrites the plugin-root pointer and only a compaction resets the read guard', { skip: withoutJq }, async () => {
   const configDirectory = await fixture();
-  const ledger = path.join(configDirectory, 'exo', 'savings', 'sessions.json');
+  const record = path.join(configDirectory, 'exo', 'savings', 'sessions.json');
   const resumed = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'resume');
   assert.equal(resumed.code, 0, resumed.stderr);
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
-  assert.equal(await fs.access(ledger).catch(() => 'absent'), 'absent');
+  assert.equal(await fs.access(record).catch(() => 'absent'), 'absent');
   const compacted = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'compact');
   assert.equal(compacted.code, 0, compacted.stderr);
-  assert.equal(await fs.access(ledger).catch(() => 'absent'), undefined);
+  assert.equal(await fs.access(record).catch(() => 'absent'), undefined);
 });
 
 test('without jq the hook still writes the plugin-root pointer and exits 0 with a notice', async () => {
