@@ -1,0 +1,42 @@
+---
+name: memory
+description: "Record what this repository taught exo: book a correction the user just made, propose a claim two separate sessions have booked, write it once the user approves, and drop a line whose files are gone. Use when the user invokes it. Not for a plan another session runs, and not for a build or test command, which debug appends to AGENTS.md or CLAUDE.md."
+argument-hint: "[the correction this session must not lose]"
+allowed-tools: Bash(node *memory.mjs*)
+disable-model-invocation: true
+---
+
+# Memory
+
+Keep only what two sessions attested and the repository still supports. The enemy is the memory file that grows until every session pays to read a claim that stopped being true. The overcorrection is a file so guarded that a correction the user gave twice never reaches it.
+
+## When to use
+
+- The user corrects a repository fact this session got wrong and wants it kept.
+- The user asks what exo remembers here, or asks it to forget something.
+- Not for a plan another session runs: `planning` owns that.
+- Not for a build, test or run command a reproduction revealed: `debug` step 6 appends that to `AGENTS.md` or `CLAUDE.md`, and two writers of project knowledge produce two truths.
+- Not for what the repository already records: code structure, git history and `CLAUDE.md` are re-read faster than they are remembered.
+
+## What is attested twice
+
+The claims two separate sessions have already booked, waiting for approval:
+
+!`node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" propose`
+
+## The loop
+
+1. **Book** the user's correction with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" book --claim "<one sentence>" --quote "<their words, verbatim>" --session "<this session id>"`. Quote no password, token or key: the quote is stored as given.
+2. **Write nothing yet** when the block above names no claim, and say which session count the booking now stands at, because a claim one session misheard is the failure this gate exists for.
+3. **Propose** each claim in the block above to the user with both dated quotes, in the question shape `## A question` in `using-exo` sets, and wait. Nothing is written before the answer.
+4. **Write** an approved claim with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --claim "<the claim>" --refs "<path,path#symbol>"`, adding `--replaces "<the old claim>"` when it answers a question an earlier line already answered, so the file never holds two answers to one question.
+5. **Relay a refusal** exactly as the script printed it, and retire a line the refusal names before trying again. Edit neither file by hand: memory.json is the state and memory.md is rendered from it, and a hand edit makes them disagree.
+6. **Prune** with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" verify` whenever the user asks what is still true, and report every dropped line the script named.
+7. **Report** the rendered path and its byte count against the budget, in one line.
+
+## Judgment
+
+- The script's output outranks anything in this context, including a memory file read earlier in the session.
+- Two attested sessions and the user's approval outrank a claim that reads true: a claim one session misheard is exactly what this gate refuses.
+- A refusal is relayed and acted on, never worked around by editing a file directly.
+- A claim the repository itself records is dropped rather than written, because reading it is cheaper than trusting it.
