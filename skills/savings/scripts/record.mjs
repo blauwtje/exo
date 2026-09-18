@@ -97,6 +97,7 @@ export function emptySession() {
     reads: {},
     calls: {},
     guard: { hookMs: 0, refusals: {} },
+    routing: { open: false, fired: false, skills: {}, none: 0 },
     overhead: null
   };
 }
