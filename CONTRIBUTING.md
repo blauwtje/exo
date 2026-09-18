@@ -112,4 +112,6 @@ The hook entry pins `"shell": "bash"` so a Windows host without Git Bash does no
 
 ## Releasing
 
-`CLAUDE.md` names the release route. In short: `npm run check`, `npm run bump`, one Conventional Commit on `main`, push, then update the marketplace and reinstall the plugin. The marketplace compares only the manifest version, so an unbumped release installs as a no-op.
+Merging to `main` releases. `.github/workflows/release.yml` asks `npm run release-pending` whether `## Unreleased` holds an entry; when it does, the job runs `npm run check`, `npm run bump`, commits `chore(release): <version>`, tags `v<version>`, pushes both and publishes the GitHub Release from `npm run release-notes`. A merge that records nothing under `## Unreleased` cuts no release and fails nothing.
+
+So a pull request carries its changelog entry, and its `### Highlights` when the change deserves them, but never a version: the workflow reads the level off those sections. Its push carries `GITHUB_TOKEN`, which starts no further workflow run, so the release commit does not release itself. After the release lands, `claude plugin marketplace update blauwtje` and `claude plugin update exo@blauwtje` install it locally; the marketplace compares only the manifest version, so an unbumped release installs as a no-op.

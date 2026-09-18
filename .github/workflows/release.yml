@@ -1,0 +1,57 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# One release at a time: two merges landing together would otherwise bump the
+# same version twice and race on the push to main.
+concurrency:
+  group: release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # release-notes.mjs reads the commits and the previous tag.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - id: pending
+        run: echo "release=$(node release-pending.mjs)" >> "$GITHUB_OUTPUT"
+      - if: steps.pending.outputs.release == 'yes'
+        run: npm run check
+      - if: steps.pending.outputs.release == 'yes'
+        run: npm run --silent bump
+      - if: steps.pending.outputs.release == 'yes'
+        id: version
+        run: echo "version=$(node -p 'require("./.claude-plugin/plugin.json").version')" >> "$GITHUB_OUTPUT"
+      # The bot push carries GITHUB_TOKEN, which starts no further workflow run,
+      # so the release commit does not trigger this job again.
+      - if: steps.pending.outputs.release == 'yes'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -am "chore(release): ${VERSION}"
+          git tag -a "v${VERSION}" -m "exo ${VERSION}"
+          git push origin HEAD:main
+          git push origin "v${VERSION}"
+      - if: steps.pending.outputs.release == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npm run --silent release-notes > "${RUNNER_TEMP}/release-notes.md"
+          gh release create "v${VERSION}" --title "v${VERSION}" --notes-file "${RUNNER_TEMP}/release-notes.md"
+      - if: steps.pending.outputs.release == 'no'
+        run: echo 'CHANGELOG.md records nothing under ## Unreleased, so this merge cuts no release.'
