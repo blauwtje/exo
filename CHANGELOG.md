@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.10.0 - 2026-09-18
+
 ### Added
 
 - `verify/budgets.mjs` locks the two always-on budgets to their measured values: the model-invocable description total and the body `hooks/session-start.sh` injects into every session. Growth fails `npm run check` naming the locked number and the new one, shrinking passes, and no check re-locks itself, so raising a lock is a hand edit in the commit that pays for the text.
