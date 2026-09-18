@@ -12,9 +12,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { configDirectory } from '#config-directory';
+import { MEMORY_BUDGET } from '#budgets';
 
 // The memory belongs to the repository, not to one branch or one worktree, so it
 // sits in the common git directory every linked worktree shares. Outside a
@@ -112,6 +114,62 @@ function proposable(state) {
     .map(([claim, attestations]) => ({ claim, attestations }));
 }
 
+// A ref names a file this repository still holds, optionally a symbol inside it
+// as `<path>#<symbol>`. It is resolved against the root and rejected when it
+// escapes: a ref is model-written text, and verify opens whatever it names.
+function resolveRef(cwd, ref) {
+  const [relative, symbol] = ref.split('#');
+  const root = path.resolve(cwd);
+  if (relative === '' || path.isAbsolute(relative)) throw new Error(`ref ${ref} is not a path inside the repository`);
+  const target = path.resolve(root, relative);
+  if (target !== root && !target.startsWith(root + path.sep)) throw new Error(`ref ${ref} is not a path inside the repository`);
+  return { relative, symbol, target };
+}
+
+function parseRefs(cwd, refs) {
+  const listed = (refs ?? '').split(',').map((ref) => ref.trim()).filter((ref) => ref !== '');
+  for (const ref of listed) resolveRef(cwd, ref);
+  return listed;
+}
+
+// The refusal names what has to go, oldest live line first, because a writer
+// told only that it is over budget has to open the file to act on it.
+function budgetRefusal(state, bytes) {
+  const live = state.lines.filter((line) => line.superseded === null && line.dropped === null);
+  const oldest = [...live].sort((left, right) => (left.written < right.written ? -1 : 1));
+  const named = oldest.slice(0, 3).map((line) => `${line.written} ${line.claim}`);
+  return `refused: memory.md would be ${bytes} bytes, over the ${MEMORY_BUDGET.bytes} byte budget. Retire one of these lines, oldest first, or archive the decision history: ${named.join('; ')}`;
+}
+
+// The write happens only after the user approved the proposal, which is why this
+// runs as its own command rather than at the end of propose.
+function writeClaim(cwd, state, claim, refs, replaces) {
+  const attestations = state.candidates[claim] ?? [];
+  if (attestations.length < ATTESTATIONS_REQUIRED) {
+    throw new Error(`refused: "${claim}" is attested in ${attestations.length} session(s), and ${ATTESTATIONS_REQUIRED} are required`);
+  }
+  const written = today();
+  const next = { candidates: { ...state.candidates }, lines: state.lines.map((line) => ({ ...line })) };
+  delete next.candidates[claim];
+  if (replaces !== undefined) {
+    const predecessor = next.lines.find((line) => line.claim === replaces && line.superseded === null && line.dropped === null);
+    if (predecessor === undefined) throw new Error(`refused: no live line reads "${replaces}"`);
+    predecessor.superseded = { date: written, by: claim };
+  }
+  next.lines.push({
+    claim,
+    refs,
+    written,
+    quotes: attestations.map((entry) => ({ date: entry.date, quote: entry.quote })),
+    superseded: null,
+    dropped: null
+  });
+  const bytes = Buffer.byteLength(render(next), 'utf8');
+  if (bytes > MEMORY_BUDGET.bytes) throw new Error(budgetRefusal(next, bytes));
+  writeState(cwd, next);
+  return bytes;
+}
+
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -149,6 +207,15 @@ if (command === 'paths') {
     console.log(claim);
     for (const entry of attestations) console.log(`  ${entry.date}: ${entry.quote}`);
   }
+} else if (command === 'write') {
+  if (values.claim === undefined) fail('write needs --claim');
+  try {
+    const refs = parseRefs(cwd, values.refs);
+    const bytes = writeClaim(cwd, readState(cwd), values.claim, refs, values.replaces);
+    console.log(`wrote "${values.claim}"; ${memoryFile(cwd)} is now ${bytes} of ${MEMORY_BUDGET.bytes} bytes`);
+  } catch (error) {
+    fail(error.message);
+  }
 } else {
-  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book or propose`);
+  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose or write`);
 }

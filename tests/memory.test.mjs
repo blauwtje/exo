@@ -76,3 +76,73 @@ test('a claim booked in two sessions is proposed with both dated quotes', async 
   const today = new Date().toISOString().slice(0, 10);
   assert.equal(proposed.stdout.split(today).length - 1, 2);
 });
+
+async function attested(root, claim) {
+  await memory(root, 'book', '--claim', claim, '--quote', `first: ${claim}`, '--session', 'one');
+  await memory(root, 'book', '--claim', claim, '--quote', `second: ${claim}`, '--session', 'two');
+}
+
+test('a claim attested once is refused', async () => {
+  const root = await repository();
+  await memory(root, 'book', '--claim', 'one writer only', '--quote', 'only one writer', '--session', 'one');
+  const written = await memory(root, 'write', '--claim', 'one writer only', '--refs', '');
+  assert.equal(written.code, 1);
+  assert.match(written.stderr, /attested in 1 session/);
+});
+
+test('a ref outside the repository is refused and nothing is written', async () => {
+  const root = await repository();
+  await attested(root, 'the release workflow cuts the version');
+  const escaping = await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', '../outside.txt');
+  assert.equal(escaping.code, 1);
+  assert.match(escaping.stderr, /not a path inside the repository/);
+  const absolute = await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', path.join(root, 'inside.txt'));
+  assert.equal(absolute.code, 1);
+  assert.match(absolute.stderr, /not a path inside the repository/);
+  // book writes both files on every attestation, so the refusal is proven by the
+  // claim reaching neither, not by memory.md being absent.
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.doesNotMatch(rendered, /the release workflow cuts the version/);
+  const state = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+  assert.deepEqual(state.lines, []);
+});
+
+test('an approved claim reaches both sections of the rendered file', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the release workflow cuts the version');
+  const written = await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  assert.equal(written.code, 0, written.stderr);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.match(rendered, /- the release workflow cuts the version \(refs: release\.yml\)/);
+  assert.match(rendered, new RegExp(`- ${new Date().toISOString().slice(0, 10)} the release workflow cuts the version`));
+});
+
+test('a replacing fact leaves exactly one live answer and marks the old one', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the version is raised by hand');
+  await memory(root, 'write', '--claim', 'the version is raised by hand', '--refs', 'release.yml');
+  await attested(root, 'the release workflow cuts the version');
+  const replaced = await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml', '--replaces', 'the version is raised by hand');
+  assert.equal(replaced.code, 0, replaced.stderr);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  const understanding = rendered.split('## Decisions')[0];
+  assert.doesNotMatch(understanding, /raised by hand/);
+  assert.match(rendered, /superseded by "the release workflow cuts the version": the version is raised by hand/);
+});
+
+test('a write past the budget is refused and names what to retire first', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  let refusal = null;
+  for (let index = 0; index < 40 && refusal === null; index += 1) {
+    const claim = `fact number ${index} about this repository and the way it is built and released`;
+    await attested(root, claim);
+    const written = await memory(root, 'write', '--claim', claim, '--refs', 'release.yml');
+    if (written.code !== 0) refusal = written;
+  }
+  assert.notEqual(refusal, null, 'no write was ever refused');
+  assert.match(refusal.stderr, /over the 2000 byte budget/);
+  assert.match(refusal.stderr, /fact number 0 about this repository/);
+});
