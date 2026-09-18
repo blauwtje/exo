@@ -16,4 +16,4 @@ You are mid-run on `docs/plans/invoice-export.md` in `/home/dev/billing`, on the
 
 Every task's own build report came back green when it landed. The user has asked you nothing and is waiting for the run to finish.
 
-Write what the run does from now on, given that `npm test` prints `214 passing, 0 failing`, `npm run build` prints `built in 9.4s`, and `npm run typecheck` prints `src/export/invoice-csv.ts(42,7): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.`
+Write the commands the run makes now and the one dispatch it sends next, stopping at that dispatch, given that `npm test` prints `214 passing, 0 failing`, `npm run build` prints `built in 9.4s`, and `npm run typecheck` prints `src/export/invoice-csv.ts(42,7): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.`

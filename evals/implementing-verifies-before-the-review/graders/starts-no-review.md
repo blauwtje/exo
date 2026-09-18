@@ -4,4 +4,4 @@ pattern: 'branch-reviewer'
 match: not_contains
 ---
 
-Passes when no branch review is dispatched while a Final verification command still fails.
+Passes when the next dispatch is the repair, not the review, while a Final verification command still fails.
