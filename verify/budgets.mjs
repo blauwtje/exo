@@ -20,3 +20,9 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 8940, measured: '2026-09-18' };
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
 // several times over.
 export const RESTATEMENT_LOCK = { bytes: 3242, measured: '2026-09-18' };
+
+// The rendered project-memory file, which a session opens by path. It is a
+// ceiling the writer enforces before it writes, not a lock the verifier reads:
+// a file that only grows costs more to read than it saves, and one irrelevant
+// line measurably lowers accuracy.
+export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
