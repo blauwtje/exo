@@ -95,6 +95,7 @@ export function emptySession() {
     offsets: {},
     usageById: {},
     reads: {},
+    calls: {},
     guard: { hookMs: 0, refusals: {} },
     overhead: null
   };
