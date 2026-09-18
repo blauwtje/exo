@@ -20,7 +20,9 @@ commands and internals; this file only names what a session here gets wrong with
 
 - A change to this plugin adds one line under `## Unreleased` in `CHANGELOG.md`, in its `### Added`, `### Changed`, `### Fixed` or `### Removed` section. It bumps no version and pushes nothing, because users receive a change only through a release.
 - The verifier's `plugin version` check fails while the tree differs from `origin/main` and `## Unreleased` is empty, and when a raised version has no dated changelog section: record the change, or raise the version with `npm run bump`, never by hand.
-- A release runs only when the user asks for one: write at most three bold lead sentences under `### Highlights` in `## Unreleased`, run `npm run check`, then `npm run bump` (it reads the level off those sections), commit `chore(release): <version>`, and `git tag -a v<version> -m "exo <version>"`. The push waits for the finish question. After a push, `npm run --silent release-notes > "$(git rev-parse --git-dir)/release-notes.md"`, `gh release create v<version> --title "v<version>" --notes-file "$(git rev-parse --git-dir)/release-notes.md"`, then `claude plugin marketplace update blauwtje` and `claude plugin update exo@blauwtje`, and tell the user to restart Claude Code.
+- A merge to `main` cuts the release: `.github/workflows/release.yml` runs `npm run check`, `npm run bump`, commits `chore(release): <version>`, tags `v<version>` and publishes the GitHub Release, and a merge whose `## Unreleased` is empty cuts nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand: a hand-cut version collides with the next merge.
+- A change the user should read about first carries at most three bold lead sentences under `### Highlights` in `## Unreleased`, written in the pull request that records the change, never in a release commit.
+- After the workflow lands a release, `claude plugin marketplace update blauwtje` and `claude plugin update exo@blauwtje` install it, and the user restarts Claude Code.
 
 ## Evals cost real money
 
