@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.15.0 - 2026-09-18
+
 ### Highlights
 
 - **Visual choices arrive as quick sketches in one browser tab.** The tab opens once and stays open, each color, type, spacing or layout question appears in it within about half a minute, one click answers, and a revision lands in the same tab.
