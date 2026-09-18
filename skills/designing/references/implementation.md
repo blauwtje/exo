@@ -13,7 +13,7 @@ Read the project's browser targets before choosing syntax, and follow an existin
 - **Single-file deliverables** (artifacts, single HTML demos) change nothing structurally: one organized `<style>` block in `<head>` *is* the stylesheet. With no imports to carry the layers, declare `@layer reset, tokens, base, layout, components, utilities` once at the top and define the tokens in one `:root` block.
 - Mirror the layer order in stylesheet order, and let component rules follow page order, so the stylesheet reads top-to-bottom like the page.
 - Behavior lives in script files (or one `<script>` block in single-file mode). No inline `onclick=""` handlers; wire events with `addEventListener` or the framework's idiom.
-- In a Tailwind project, do not introduce `@apply` when the repository has none.
+- **One styling mechanism.** Write the surface's styles the way one already-styled sibling file writes them, and read that file before the first declaration. A second mechanism beside it, a stylesheet in a utility-class project, utility classes in a modules project, or a runtime style library added for this surface, renders as two spacing and color systems on one page. In a Tailwind project, do not introduce `@apply` when the repository has none.
 
 ## Tokens and palette derivation
 
