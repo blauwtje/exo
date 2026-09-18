@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.13.0 - 2026-09-18
+
 ### Added
 
 - `implementing` builds independent plan tasks together: when a plan's `## Plan basis` carries a `Worktree setup:` line, up to three ready tasks without a `Design:` line each build in a git worktree of their own, their commits land on the run branch in plan order through `git cherry-pick`, one report that is not green discards the whole wave before anything commits, and no worktree outlives the wave. A plan without that line runs one task at a time as before, and `planning` writes the line when at least two tasks do not depend on each other.
