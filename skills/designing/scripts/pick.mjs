@@ -78,7 +78,6 @@ const DEFAULT_LABELS = {
   failed: 'Your choice did not arrive. Say it in the conversation instead.'
 };
 
-const LABEL_KEYS = Object.keys(DEFAULT_LABELS);
 // The one label that carries a variant's seat mark; dropping {n} would leave a
 // tile headed 'Option .' with no way to tell which of three it is.
 const NUMBERED_LABELS = ['fallbackTitle'];
@@ -156,11 +155,11 @@ const COMP_RESET = '*,*::before,*::after{box-sizing:border-box}'
 // forwards its keys from inside the frame in both cases.
 const OPENS_ITS_OWN_DOCUMENT = /^\s*<(?:!doctype|html)\b/i;
 
-function compDocument(markup, lang) {
+export function compDocument(markup, lang, shim = DEMO_SHIM) {
   if (OPENS_ITS_OWN_DOCUMENT.test(markup)) {
     return markup.includes('</body>')
-      ? markup.replace('</body>', `${DEMO_SHIM}\n</body>`)
-      : `${markup}\n${DEMO_SHIM}`;
+      ? markup.replace('</body>', `${shim}\n</body>`)
+      : `${markup}\n${shim}`;
   }
   return `<!doctype html>
 <html lang="${escapeHtml(lang)}"><head><meta charset="utf-8">
@@ -168,11 +167,11 @@ function compDocument(markup, lang) {
 <style>${COMP_RESET}</style>
 </head><body>
 ${markup}
-${DEMO_SHIM}
+${shim}
 </body></html>`;
 }
 
-function requireTimeout(text) {
+export function requireTimeout(text) {
   if (text === undefined) return DEFAULT_TIMEOUT_SECONDS;
   const seconds = Number(text);
   if (!Number.isInteger(seconds) || seconds < 1) {
@@ -216,7 +215,7 @@ function requireRecommendationNote(text, recommended) {
 
 // CI, a display-less SSH session, or a display-less Linux box cannot show a
 // tab. --no-open skips the check because the caller then opens the URL itself.
-function headlessReason() {
+export function headlessReason() {
   if (process.env.CI) return 'CI is set';
   if (process.env.SSH_CONNECTION && !process.env.DISPLAY) return 'SSH session without DISPLAY';
   if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
@@ -225,7 +224,7 @@ function headlessReason() {
   return null;
 }
 
-function openSystemBrowser(url) {
+export function openSystemBrowser(url) {
   const command = process.platform === 'darwin' ? { file: 'open', args: [url] }
     : process.platform === 'win32' ? { file: process.env.ComSpec ?? 'cmd.exe', args: ['/c', 'start', '', url] }
       : { file: 'xdg-open', args: [url] };
@@ -399,17 +398,19 @@ async function waitForEveryComp(variants, deadline, timeoutSeconds) {
 
 /** The chooser's own copy, written by the skill in the language the
  *  conversation runs in. Every key is optional: what the file leaves out falls
- *  back to English, so a partial file still yields a screen with no blanks. */
-export async function readLabels(labelsFile) {
-  if (labelsFile === undefined) return DEFAULT_LABELS;
+ *  back to English, so a partial file still yields a screen with no blanks.
+ *  `defaults` names the keys a screen knows; the sketch tab passes its own. */
+export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
+  if (labelsFile === undefined) return defaults;
   const written = await readJsonFlag(labelsFile, '--labels');
   if (written === null || typeof written !== 'object' || Array.isArray(written)) {
     throw new UsageError('--labels file must hold an object of label keys');
   }
-  const words = { ...DEFAULT_LABELS };
+  const labelKeys = Object.keys(defaults);
+  const words = { ...defaults };
   for (const [name, value] of Object.entries(written)) {
-    if (!LABEL_KEYS.includes(name)) {
-      throw new UsageError(`--labels holds unknown key '${name}', expected one of ${LABEL_KEYS.join(', ')}`);
+    if (!labelKeys.includes(name)) {
+      throw new UsageError(`--labels holds unknown key '${name}', expected one of ${labelKeys.join(', ')}`);
     }
     if (typeof value !== 'string' || value.trim() === '') {
       throw new UsageError(`--labels key '${name}' must be a non-empty string`);
@@ -425,8 +426,26 @@ export async function readLabels(labelsFile) {
   return words;
 }
 
-const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) =>
+export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+
+// The chrome both screens of this skill wear, the picker and the sketch tab,
+// so a chooser who moves from one to the other stays in one tool.
+export const CHROME_TOKENS = `      color-scheme: light dark;
+      --ground: light-dark(oklch(0.982 0.003 85), oklch(0.238 0.004 85));
+      --surface: light-dark(oklch(1 0 0), oklch(0.292 0.005 85));
+      --ink: light-dark(oklch(0.24 0.010 85), oklch(0.955 0.003 85));
+      --ink-muted: light-dark(oklch(0.505 0.010 85), oklch(0.735 0.006 85));
+      --border: light-dark(oklch(0.885 0.005 85), oklch(0.365 0.006 85));
+      /* The hairline that separates surfaces is not the edge that identifies a
+         control: that one owes 3:1 against its own fill, so it is its own token. */
+      --border-control: light-dark(oklch(0.60 0.010 85), oklch(0.575 0.008 85));
+      /* Amber, and only on marks the size of a coin: the comps carry the colour
+         being judged, so chrome that competes with them is chrome that lies. */
+      --accent: light-dark(oklch(0.52 0.145 52), oklch(0.765 0.135 68));
+      --accent-ink: light-dark(oklch(0.99 0 0), oklch(0.22 0.03 68));
+      --font-stack: ui-sans-serif, system-ui, sans-serif;
+      --radius-control: 8px;`;
 
 function page(variants, key, { words, recommended, recommendedNote }) {
   // The recommendation is expressed as the first seat rather than as a sentence
@@ -493,24 +512,10 @@ ${fontLinks}
   @layer tokens, base, layout, components;
   @layer tokens {
     :root {
-      color-scheme: light dark;
-      --ground: light-dark(oklch(0.982 0.003 85), oklch(0.238 0.004 85));
-      --surface: light-dark(oklch(1 0 0), oklch(0.292 0.005 85));
-      --ink: light-dark(oklch(0.24 0.010 85), oklch(0.955 0.003 85));
-      --ink-muted: light-dark(oklch(0.505 0.010 85), oklch(0.735 0.006 85));
-      --border: light-dark(oklch(0.885 0.005 85), oklch(0.365 0.006 85));
-      /* The hairline that separates surfaces is not the edge that identifies a
-         control: that one owes 3:1 against its own fill, so it is its own token. */
-      --border-control: light-dark(oklch(0.60 0.010 85), oklch(0.575 0.008 85));
-      /* Amber, and only on marks the size of a coin: the comps carry the colour
-         being judged, so chrome that competes with them is chrome that lies. */
-      --accent: light-dark(oklch(0.52 0.145 52), oklch(0.765 0.135 68));
-      --accent-ink: light-dark(oklch(0.99 0 0), oklch(0.22 0.03 68));
+${CHROME_TOKENS}
       /* Black around an enlarged comp whose shape differs from the window's, so
          the letterbox reads as no part of any direction. */
       --letterbox: oklch(0 0 0);
-      --font-stack: ui-sans-serif, system-ui, sans-serif;
-      --radius-control: 8px;
       --radius-card: 12px;
       --gap: 12px;
       --pad: 12px;
@@ -915,14 +920,14 @@ ${seated.map(tile).join('\n')}
 </script></body></html>`;
 }
 
-function send(response, status, type, body) {
+export function send(response, status, type, body) {
   response.writeHead(status, type ? { 'content-type': type } : {});
   response.end(body);
 }
 
 /** Resolve one comp asset inside its own variant directory, refusing anything
  *  that escapes it, so a comp cannot serve the rest of the filesystem. */
-async function resolveAsset(variant, relative) {
+export async function resolveAsset(variant, relative) {
   let decoded;
   try {
     decoded = decodeURIComponent(relative);
@@ -943,6 +948,25 @@ async function resolveAsset(variant, relative) {
   return real === variant.directory || real.startsWith(variant.directory + path.sep) ? real : null;
 }
 
+/** True when the request names this server by its loopback address, which a
+ *  page on another site rebinding its own name to 127.0.0.1 cannot do. */
+export function askedOfLoopback(request, port) {
+  return [`127.0.0.1:${port}`, `localhost:${port}`].includes(request.headers.host);
+}
+
+/** True when an answer can only have come from this server's own page. A
+ *  served frame runs scripts and can read the key out of its own URL, so the
+ *  key alone proves nothing. Both of these a frame cannot forge: its sandbox
+ *  gives it a null Origin, and a JSON content-type from an opaque origin needs
+ *  a preflight this server fails. */
+export function sentByOwnPage(request, port) {
+  const origin = request.headers.origin;
+  const foreignOrigin = origin !== undefined
+    && ![`http://127.0.0.1:${port}`, `http://localhost:${port}`].includes(origin);
+  const isJson = (request.headers['content-type'] ?? '').startsWith('application/json');
+  return !foreignOrigin && isJson;
+}
+
 /** Serve the picker on a random localhost port. Returns the URL to print and a
  *  promise that resolves on the first valid answer or rejects at the deadline,
  *  which the wait for the comps has already spent part of. */
@@ -960,8 +984,7 @@ async function serve(variants, key, presentation, timeoutSeconds, deadline) {
   const server = http.createServer(async (request, response) => {
     const { port } = server.address();
     const url = new URL(request.url, `http://127.0.0.1:${port}`);
-    const local = [`127.0.0.1:${port}`, `localhost:${port}`].includes(request.headers.host);
-    if (!local) return send(response, 403, null, '');
+    if (!askedOfLoopback(request, port)) return send(response, 403, null, '');
 
     // Comp assets carry the key in the path, not the query, so a comp's own
     // relative URLs resolve without every stylesheet and font needing a token.
@@ -985,15 +1008,7 @@ async function serve(variants, key, presentation, timeoutSeconds, deadline) {
     }
     if (request.method !== 'POST' || url.pathname !== '/answer') return send(response, 404, null, '');
 
-    // A comp runs scripts and can read the key out of its own URL, so the key
-    // alone no longer proves the picker page sent this. Both of these a comp
-    // frame cannot forge: its sandbox gives it a null Origin, and a JSON
-    // content-type from an opaque origin needs a preflight this server fails.
-    const origin = request.headers.origin;
-    const foreignOrigin = origin !== undefined
-      && ![`http://127.0.0.1:${port}`, `http://localhost:${port}`].includes(origin);
-    const isJson = (request.headers['content-type'] ?? '').startsWith('application/json');
-    if (foreignOrigin || !isJson) return send(response, 403, null, '');
+    if (!sentByOwnPage(request, port)) return send(response, 403, null, '');
 
     let body = '';
     request.on('data', (chunk) => { body += chunk; });
