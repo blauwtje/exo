@@ -1,6 +1,6 @@
 ---
 name: using-exo-closing-line
-runs: 3
+runs: 5
 max_turns: 6
 ---
 

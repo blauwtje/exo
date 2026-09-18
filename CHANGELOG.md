@@ -23,7 +23,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- A plan for a folder that is not a git repository yet runs end to end: the plan leaves the init to the executor, and `implementing` runs `git init -b main` in a folder that holds only the plan's `docs/`.
+- A plan for a folder that is not a git repository yet runs end to end: the plan leaves the init to the executor, and `implementing` runs `git init -b main` in a folder that holds only the plan's `docs/`. Both rules sit in the skill bodies rather than in a reference alone, so a run that never opens the reference still follows them.
+- A decision line in a report names the choice and its cost, never why it was chosen.
 
 ## 0.7.0 - 2026-09-17
 
