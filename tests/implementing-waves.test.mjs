@@ -32,3 +32,30 @@ test('the implementer brief names its checkout and still writes nothing through 
   assert.ok(IMPLEMENTER.includes('Report to: <report directory>/implementer-<n>.md'));
   assert.ok(IMPLEMENTER.includes('`push`, `worktree`, and no `gh` command at all'));
 });
+
+const SKILL = read('implementing/SKILL.md');
+
+function loopStep(number) {
+  const step = SKILL.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
+  assert.ok(step, `step ${number} exists`);
+  return step[0];
+}
+
+test('step 3 forms a wave only from the plan, three tasks at most', () => {
+  const landedStep = loopStep(3);
+  assert.ok(landedStep.includes('`Worktree setup:`'));
+  assert.ok(landedStep.includes('three at most'));
+  assert.ok(landedStep.includes('never a guess from paths'));
+});
+
+test('a wave builds in worktrees and lands in plan order or not at all', () => {
+  const dispatchStep = loopStep(5);
+  assert.ok(dispatchStep.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
+  assert.ok(dispatchStep.includes('in one message'));
+  const commitStep = loopStep(6);
+  assert.ok(commitStep.includes('only when every report in it is green'));
+  assert.ok(commitStep.includes('`git cherry-pick <sha>` brings the commits onto the branch in plan order'));
+  assert.ok(commitStep.includes('no task of it commits'));
+  const authorization = SKILL.match(/^Invoking `\/exo:implementing` on a plan authorizes .+$/m);
+  assert.ok(authorization[0].includes("a wave's temporary worktrees beside it"));
+});
