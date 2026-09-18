@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.13.1 - 2026-09-18
+
 ### Changed
 
 - A question stands alone: one a turn, with nothing written, edited or run until the answer arrives. `shaping`'s explore mode leads with the direction it recommends, and the surface question in `designing` lists the surfaces it can see, most recently changed first.
