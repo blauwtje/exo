@@ -8,6 +8,7 @@
   "imports": {
     "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
+    "#memory-store": "./lib/memory-store.mjs",
     "#restatement": "./lib/restatement.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
