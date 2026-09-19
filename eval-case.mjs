@@ -5,7 +5,7 @@
 // reasoning judge about every failed vote.
 //
 //   node eval-case.mjs --case <name> --arm no-plugin|plugin|both [--mode full|draft]
-//                      [--concurrency <runs in flight>]
+//                      [--concurrency <runs in flight>] [--keep-temp]
 //
 // --arm has no default: the no-plugin arm loads no exo skill or hook, so a case
 // that grades skill behavior scores 0 there and still pays for every run.
@@ -14,6 +14,7 @@
 // more runs than that to spread.
 // full   the case's own `runs:` per arm, the verdict.
 // draft  3 runs per arm, for iterating on wording; never a verdict.
+// --keep-temp leaves each run's scaffold directory, and so its trace.jsonl, in place.
 //
 // The no-plugin arm runs from a scratch directory that holds only the case, so
 // no plugin resolves: that is the runner's own no-plugin arm, a case with no
@@ -58,13 +59,17 @@ function stageNoPluginTarget(caseName) {
   return scratch;
 }
 
-function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm }) {
+function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp }) {
   const args = [
     'plugin', 'eval', target, '--case', caseName, '--runs', String(runs),
     '--concurrency', String(concurrency), '--judge-model', JUDGE_MODEL, '--threshold', '0',
-    '--output-dir', outputDirectory, '--no-publish', '--trust-plugin'
+    '--output-dir', outputDirectory, '--no-publish', '--trust-plugin',
+    // The runner intersects this operator grant with each case's own allowed_tools,
+    // so a case that lists no Bash entry still runs with no shell.
+    '--allow-tools', 'Bash(*node *memory.mjs*)'
   ];
   if (pluginArm) args.push('--ablation', 'none');
+  if (keepTemp) args.push('--keep-temp');
   return new Promise((resolve, reject) => {
     const child = spawn('claude', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
     const prefix = (chunk) => String(chunk).split('\n').filter((line) => line.trim()).map((line) => `[${label}] ${line}`).join('\n');
@@ -101,7 +106,8 @@ const { values: options } = parseArgs({
     case: { type: 'string' },
     mode: { type: 'string', default: 'full' },
     arm: { type: 'string' },
-    concurrency: { type: 'string' }
+    concurrency: { type: 'string' },
+    'keep-temp': { type: 'boolean', default: false }
   }
 });
 
@@ -132,7 +138,7 @@ for (const arm of arms) {
   sizes.forEach((runs, index) => {
     const label = `${arm}-${index + 1}`;
     const concurrencyForShard = Math.min(runs, RUNNER_CONCURRENCY_CAP, inFlightPerShard);
-    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin' });
+    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'] });
   });
 }
 

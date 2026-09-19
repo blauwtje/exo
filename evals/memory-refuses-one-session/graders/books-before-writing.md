@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: 'memory\.mjs" book'
+target: trace
+pattern: 'memory\.mjs(\\")? book --claim'
 match: contains
 ---
 
