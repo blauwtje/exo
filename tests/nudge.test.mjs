@@ -140,3 +140,16 @@ test('stats counts fires against bookings', async () => {
   assert.match(result.stdout, /^2 nudged, 1 booked, 50% hit rate$/m);
   assert.match(result.stdout, /\\bno,: 1/);
 });
+
+test('stats counts a booking as a hit only when a nudge in its session came first', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const bookedLine = (session) => `${JSON.stringify({ date: '2026-09-19', event: 'booked', session, claim: 'the lock is 3889' })}\n`;
+  await fs.mkdir(path.dirname(logPath(directory)), { recursive: true });
+  await fs.appendFile(logPath(directory), bookedLine('s1'));
+  await runNudge([], { session_id: 's1', cwd: directory, prompt: 'no, it is 17' }, environment);
+  await fs.appendFile(logPath(directory), bookedLine('never-nudged'));
+  await fs.appendFile(logPath(directory), bookedLine('s1'));
+  await fs.appendFile(logPath(directory), bookedLine('s1'));
+  const result = await runNudge(['stats', '--cwd', directory], '', environment);
+  assert.match(result.stdout, /^1 nudged, 1 booked, 100% hit rate$/m);
+});

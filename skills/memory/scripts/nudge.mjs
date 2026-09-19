@@ -106,12 +106,30 @@ function readLog(cwd) {
   }
 }
 
+// A booking is a hit only when a nudge in its session came before it and no
+// earlier booking already answered that nudge. memory.mjs logs every booking,
+// also one /exo:memory made with no nudge, and counting those would tune the
+// marker list on bookings the markers never caused and push the rate past 100%.
+function countHits(entries) {
+  const openNudges = new Map();
+  let hits = 0;
+  for (const entry of entries) {
+    const open = openNudges.get(entry.session) ?? 0;
+    if (entry.event === 'nudged') openNudges.set(entry.session, open + 1);
+    if (entry.event === 'booked' && open > 0) {
+      openNudges.set(entry.session, open - 1);
+      hits += 1;
+    }
+  }
+  return hits;
+}
+
 function stats(cwd) {
   const entries = readLog(cwd).map((line) => JSON.parse(line));
   const nudged = entries.filter((entry) => entry.event === 'nudged');
-  const booked = entries.filter((entry) => entry.event === 'booked');
-  const rate = nudged.length === 0 ? 0 : Math.round((100 * booked.length) / nudged.length);
-  console.log(`${nudged.length} nudged, ${booked.length} booked, ${rate}% hit rate`);
+  const hits = countHits(entries);
+  const rate = nudged.length === 0 ? 0 : Math.round((100 * hits) / nudged.length);
+  console.log(`${nudged.length} nudged, ${hits} booked, ${rate}% hit rate`);
   const perMarker = new Map();
   for (const entry of nudged) perMarker.set(entry.marker, (perMarker.get(entry.marker) ?? 0) + 1);
   const ranked = [...perMarker].sort((first, second) => second[1] - first[1]);
