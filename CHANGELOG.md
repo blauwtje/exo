@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.18.0 - 2026-09-19
+
 ### Added
 
 - A prompt that looks like a correction now nudges the session to book it: a `UserPromptSubmit` hook matches a list of correction markers, injects one sentence naming the `memory.mjs book` command, and logs every fire with the marker that matched. `node skills/memory/scripts/nudge.mjs stats --cwd .` prints fires, bookings and the hit rate, so the marker list is tuned on real prompts. `/exo:memory` is unchanged and still books what the markers miss.
