@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.17.0 - 2026-09-19
+
 ### Highlights
 
 - **A repository now remembers what you corrected, and every session reads it.** Run `/exo:memory` when a session gets a repository fact wrong; the claim lands in a file at `<git common dir>/exo/memory.md` that the session hook points every later session at.
