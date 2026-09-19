@@ -39,7 +39,13 @@ export function run(file, args, options = {}) {
         stderr: String(stderr)
       })
     );
-    if (options.input !== undefined) child.stdin.end(options.input);
+    if (options.input !== undefined) {
+      // A child that exits before reading its stdin fails this write with EPIPE, and an
+      // unhandled stream error aborts the whole test file; the execFile callback above
+      // still reports the child's real outcome.
+      child.stdin.on('error', () => {});
+      child.stdin.end(options.input);
+    }
   });
 }
 

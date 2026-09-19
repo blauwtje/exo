@@ -12,6 +12,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A repository gets a project memory exo writes: `/exo:memory` books a correction with the user's own words, proposes a claim only once two separate sessions have booked it, writes it after the user approves, marks a replaced fact superseded so the file never holds two answers to one question, refuses a write past the 2,000-byte budget while naming what to retire, and drops a line whose files or symbols are gone. It sits at `<git common dir>/exo/memory.md`, is never committed, and the session hook injects a pointer to it rather than its body.
 - The eval case `memory-refuses-one-session`.
 
+### Fixed
+
+- `tests/harness.mjs` no longer aborts a whole test file when a script exits before reading the stdin it is fed: the EPIPE that write raises was uncaught, so it was charged to whichever test was in flight.
+
 ## 0.16.0 - 2026-09-18
 
 ### Added
