@@ -66,6 +66,15 @@ test('the restatement runs on every prompt and takes no matcher', () => {
   assert.ok(restatement[0].hook.command.endsWith('restate.mjs"'), restatement[0].hook.command);
 });
 
+test('the memory nudge runs on every prompt and approves its own booking before a Bash call', () => {
+  const nudges = hookEntries().filter((entry) => entry.hook.command.includes('nudge.mjs'));
+  const wiring = nudges.map((entry) => [entry.event, entry.matcher ?? null, entry.hook.command.split(' ').pop()]).sort();
+  assert.deepEqual(wiring, [
+    ['PreToolUse', 'Bash', 'approve'],
+    ['UserPromptSubmit', null, '"${CLAUDE_PLUGIN_ROOT}/skills/memory/scripts/nudge.mjs"']
+  ]);
+});
+
 test('the session hook points at a memory file only where one exists', () => {
   const hook = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-start.sh'), 'utf8');
   assert.match(hook, /--git-common-dir/, 'the memory pointer does not resolve the common git directory');

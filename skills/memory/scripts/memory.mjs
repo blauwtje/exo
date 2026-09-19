@@ -13,20 +13,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
-import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { configDirectory } from '#config-directory';
 import { MEMORY_BUDGET } from '#budgets';
-
-// The memory belongs to the repository, not to one branch or one worktree, so it
-// sits in the common git directory every linked worktree shares. Outside a
-// repository it falls back beside the savings record, keyed by the working
-// directory's own name, the way a handoff does.
-function memoryDirectory(cwd) {
-  const common = spawnSync('git', ['-C', cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' });
-  if (common.status === 0) return path.join(common.stdout.trim(), 'exo');
-  return path.join(configDirectory(), 'exo', 'memory', path.basename(path.resolve(cwd)));
-}
+import { appendNudgeLog, memoryDirectory } from '#memory-store';
 
 function stateFile(cwd) {
   return path.join(memoryDirectory(cwd), 'memory.json');
@@ -226,6 +215,9 @@ if (command === 'paths') {
   const state = readState(cwd);
   const attestations = book(state, values.claim, values.quote, values.session);
   writeState(cwd, state);
+  // The nudge hook logs what it fired on; a booking logged here is the other
+  // half of that measurement, and without it a hit rate cannot be read back.
+  appendNudgeLog(cwd, { event: 'booked', session: values.session, claim: values.claim });
   console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
 } else if (command === 'propose') {
   const candidates = proposable(readState(cwd));

@@ -92,16 +92,18 @@ The draft is for iterating on wording and is never a verdict: at 3 runs one answ
 
 ## Hooks
 
-`hooks/hooks.json` wires six hook groups:
+`hooks/hooks.json` wires seven hook groups:
 
 - **SessionStart**, on startup, resume, clear and compaction. It writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set), makes the read guard forget its reads and the repeat guard forget its calls after a clear or compaction, and injects the `using-exo` body, because a skill body is read only when invoked and that one says when to invoke the others. Without `jq` it still writes the pointer but injects no body, and says so on stderr.
 - **PreToolUse** and **PostToolUse** on `Read`: the read guard, in `skills/savings/scripts/read-guard.mjs`. Without `node` the hook fails and the read goes through unguarded.
 - **PreToolUse** on `Bash` and `Edit`: the repeat guard, in `skills/savings/scripts/repeat-guard.mjs`. It denies the third identical call in one context window and books the denial; without `node` the call goes through unguarded.
 - **UserPromptSubmit**, **PreToolUse** on `Skill` and **Stop**: the routing book, in `skills/savings/scripts/routing.mjs`. The prompt opens the turn, a `Skill` call names what fired in it, and `Stop` closes it; a turn that closes with no skill named books `none`.
 - **UserPromptSubmit**: the restatement, in `skills/savings/scripts/restate.mjs`. Once the transcript has grown `RESTATE_INTERVAL_BYTES` (600,000) since the rules were last injected, the next prompt carries the sections `lib/restatement.mjs` names, cut out of `skills/using-exo/SKILL.md` at that moment, so no second copy of them exists. Every SessionStart moves the measuring point, `RESTATEMENT_LOCK` in `verify/budgets.mjs` locks the size, and `exo savings off` stops it, because the measuring point lives in the savings record. A fault exits 0 with nothing on stdout.
+- **UserPromptSubmit**: the memory nudge, in `skills/memory/scripts/nudge.mjs`. A prompt matching one of its correction markers gets one sentence naming the `memory.mjs book` command, and the fire is appended to `<git common dir>/exo/nudge-log.jsonl` with the marker that matched; `memory.mjs book` appends its own line there, so `node skills/memory/scripts/nudge.mjs stats --cwd .` prints the hit rate the marker list is tuned on, counting a booking only when a nudge in its session came first. The hook classifies nothing beyond the marker, so most fires are ignored by design, and `/exo:memory` books what the markers miss. A fault exits 0 with nothing on stdout.
+- **PreToolUse** on `Bash`: the booking approval, `node skills/memory/scripts/nudge.mjs approve`. It returns `permissionDecision: "allow"` for the book command the nudge prints, so a booking shows no permission prompt and no user writes a rule naming an installed path that changes with every release. It allows only `node "<its own memory.mjs>" book` followed by `--claim`, `--quote` and `--session` with double-quoted values holding no double quote, dollar sign, backtick, backslash or line break, and prints nothing for any other command, which leaves that command to the user's rules and the prompt. A user's own deny or ask rule still wins over the approval, and a fault approves nothing.
 - **Stop**: books the turn's API usage into the savings counter.
 
-The hook entry pins `"shell": "bash"` so a Windows host without Git Bash does not fall back to PowerShell, and `.gitattributes` forces LF so the shebang survives a Windows checkout. The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
+The hook entry pins `"shell": "bash"` so a Windows host without Git Bash does not fall back to PowerShell, and `.gitattributes` forces LF so the shebang survives a Windows checkout. The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration. The booking approval caps nothing, because it allows one command of the plugin's own and leaves every other to that configuration.
 
 ## Savings counter internals
 
