@@ -6,9 +6,16 @@
 // prompt and books only the first kind, and /exo:memory books what this misses.
 //
 //   node nudge.mjs                UserPromptSubmit hook: stdin is the hook JSON
+//   node nudge.mjs approve        PreToolUse hook on Bash: allows that book command
 //   node nudge.mjs stats --cwd .  print fires, bookings and the hit rate
 //
-// A fault never blocks a prompt: any error exits 0 with nothing on stdout.
+// A plugin cannot ship a permission rule, and a rule a user writes names the
+// installed path, which changes with every release. So approve allows the one
+// command this file prints and says nothing about any other, which leaves the
+// user's own rules and the permission prompt to decide those.
+//
+// A fault never blocks a prompt: any error exits 0 with nothing on stdout, and
+// for approve that means no approval.
 
 import fs from 'node:fs';
 import process from 'node:process';
@@ -17,6 +24,14 @@ import { fileURLToPath } from 'node:url';
 import { appendNudgeLog, nudgeLogFile } from '#memory-store';
 
 const MEMORY_SCRIPT = fileURLToPath(new URL('./memory.mjs', import.meta.url));
+const BOOK_COMMAND = `node "${MEMORY_SCRIPT}" book`;
+
+// What may follow BOOK_COMMAND in an approved call: the three flags the nudge
+// prints, each with a double-quoted value. A value holds no double quote,
+// dollar sign, backtick, backslash or line break, because those are what the
+// shell expands or what ends the quotes, so an approved call runs memory.mjs
+// and nothing else. A quote that needs one of them gets the permission prompt.
+const BOOK_ARGUMENTS = /^(?: --(?:claim|quote|session) "[^"$`\\\r\n]*")+$/;
 
 // Measured against 261 prompts typed in this repository's own history: this
 // list fires on about 4% of them, and roughly one fire in ten is a correction.
@@ -61,9 +76,24 @@ function nudge(hookInput) {
     marker: marker.source,
     prompt: hookInput.prompt.slice(0, LOGGED_PROMPT_CHARS)
   });
-  const command = `node "${MEMORY_SCRIPT}" book --claim "<one sentence>" --quote "<the user's words, verbatim>" --session "${session}"`;
+  const command = `${BOOK_COMMAND} --claim "<one sentence>" --quote "<the user's words, verbatim>" --session "${session}"`;
   const additionalContext = `exo: this prompt may correct a repository fact. When it does, book it with \`${command}\`, quoting no password, token or key. When it corrects no repository fact, ignore this line and write nothing about it.`;
   const hookSpecificOutput = { hookEventName: 'UserPromptSubmit', additionalContext };
+  process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
+}
+
+function approve(hookInput) {
+  if (hookInput.tool_name !== 'Bash') return;
+  const command = hookInput.tool_input?.command;
+  if (typeof command !== 'string') return;
+  if (!command.startsWith(BOOK_COMMAND)) return;
+  const bookArguments = command.slice(BOOK_COMMAND.length);
+  if (!BOOK_ARGUMENTS.test(bookArguments)) return;
+  const hookSpecificOutput = {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'allow',
+    permissionDecisionReason: 'exo: books a correction into this repository\'s memory'
+  };
   process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
 }
 
@@ -92,6 +122,8 @@ try {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: { cwd: { type: 'string' } } });
   if (positionals[0] === 'stats') {
     stats(values.cwd ?? process.cwd());
+  } else if (positionals[0] === 'approve') {
+    approve(JSON.parse(fs.readFileSync(0, 'utf8')));
   } else {
     nudge(JSON.parse(fs.readFileSync(0, 'utf8')));
   }

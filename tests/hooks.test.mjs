@@ -66,11 +66,13 @@ test('the restatement runs on every prompt and takes no matcher', () => {
   assert.ok(restatement[0].hook.command.endsWith('restate.mjs"'), restatement[0].hook.command);
 });
 
-test('the memory nudge runs on every prompt', () => {
+test('the memory nudge runs on every prompt and approves its own booking before a Bash call', () => {
   const nudges = hookEntries().filter((entry) => entry.hook.command.includes('nudge.mjs'));
-  assert.equal(nudges.length, 1);
-  assert.equal(nudges[0].event, 'UserPromptSubmit');
-  assert.equal(nudges[0].matcher, undefined);
+  const wiring = nudges.map((entry) => [entry.event, entry.matcher ?? null, entry.hook.command.split(' ').pop()]).sort();
+  assert.deepEqual(wiring, [
+    ['PreToolUse', 'Bash', 'approve'],
+    ['UserPromptSubmit', null, '"${CLAUDE_PLUGIN_ROOT}/skills/memory/scripts/nudge.mjs"']
+  ]);
 });
 
 test('the session hook points at a memory file only where one exists', () => {
