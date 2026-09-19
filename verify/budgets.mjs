@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'debug', 'deepen', 'designing', 'implementing', 'implementing-batch', 'planning', 'research', 'savings', 'settings', 'shaping', 'skills-tool'
+  'debug', 'deepen', 'designing', 'implementing', 'implementing-batch', 'memory', 'planning', 'research', 'savings', 'settings', 'shaping', 'skills-tool'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -20,3 +20,9 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 8940, measured: '2026-09-18' };
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
 // several times over.
 export const RESTATEMENT_LOCK = { bytes: 3242, measured: '2026-09-18' };
+
+// The rendered project-memory file, which a session opens by path. It is a
+// ceiling the writer enforces before it writes, not a lock the verifier reads:
+// a file that only grows costs more to read than it saves, and one irrelevant
+// line measurably lowers accuracy.
+export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };

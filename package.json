@@ -6,6 +6,7 @@
   "private": true,
   "type": "module",
   "imports": {
+    "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#restatement": "./lib/restatement.mjs"
   },

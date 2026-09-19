@@ -65,3 +65,10 @@ test('the restatement runs on every prompt and takes no matcher', () => {
   assert.equal(restatement[0].matcher, undefined);
   assert.ok(restatement[0].hook.command.endsWith('restate.mjs"'), restatement[0].hook.command);
 });
+
+test('the session hook points at a memory file only where one exists', () => {
+  const hook = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-start.sh'), 'utf8');
+  assert.match(hook, /--git-common-dir/, 'the memory pointer does not resolve the common git directory');
+  assert.match(hook, /if \[ -f "\$memory_file" \]/, 'the memory pointer is added without testing for the file');
+  assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
+});

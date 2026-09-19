@@ -55,5 +55,18 @@ if [ -n "$cwd" ]; then
   if [ -f "$handoff_file" ]; then
     body="$body"$'\n\n'"A handoff for \`$scope\` sits at \`$handoff_file\`. Read it only when this session continues that work.$staleness"
   fi
+  # The project memory belongs to the repository rather than to one branch, so
+  # it sits in the common git directory a linked worktree shares. Only the
+  # pointer is injected: the body is read by the session that needs it, and the
+  # hook's own output ceiling has no room for a second file.
+  memory_file=""
+  if memory_dir=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
+    memory_file="$memory_dir/exo/memory.md"
+  else
+    memory_file="$config_dir/memory/$(basename "$cwd")/memory.md"
+  fi
+  if [ -f "$memory_file" ]; then
+    body="$body"$'\n\n'"A project memory for this repository sits at \`$memory_file\`. Read it before changing code you have not read here, and run \`/exo:memory\` to change it."
+  fi
 fi
 jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'
