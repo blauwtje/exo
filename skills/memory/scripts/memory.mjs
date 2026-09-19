@@ -148,6 +148,12 @@ function writeClaim(cwd, state, claim, refs, replaces) {
   if (attestations.length < ATTESTATIONS_REQUIRED) {
     throw new Error(`refused: "${claim}" is attested in ${attestations.length} session(s), and ${ATTESTATIONS_REQUIRED} are required`);
   }
+  // One live line per claim: a claim two later sessions attest again is already
+  // in the file, and a second copy of it costs every session the budget twice.
+  const live = state.lines.find((line) => line.claim === claim && line.superseded === null && line.dropped === null);
+  if (live !== undefined) {
+    throw new Error(`refused: "${claim}" is already live, written ${live.written}. Supersede it with --replaces or retire it rather than writing it twice`);
+  }
   const written = today();
   const next = { candidates: { ...state.candidates }, lines: state.lines.map((line) => ({ ...line })) };
   delete next.candidates[claim];

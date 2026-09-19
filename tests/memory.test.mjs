@@ -196,3 +196,17 @@ test('verify drops a line whose symbol is gone', async () => {
   const verified = await memory(root, 'verify');
   assert.match(verified.stdout, /dropped "the release workflow cuts the version": release\.yml#cut/);
 });
+
+test('a claim already live is refused rather than written a second time', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  await attested(root, 'the release workflow cuts the version');
+  const again = await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  assert.equal(again.code, 1);
+  assert.match(again.stderr, /is already live, written/);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  const understanding = rendered.split('## Decisions')[0];
+  assert.equal(understanding.split('the release workflow cuts the version').length - 1, 1);
+});

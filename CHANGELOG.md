@@ -9,7 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- A repository gets a project memory exo writes: `/exo:memory` books a correction with the user's own words, proposes a claim only once two separate sessions have booked it, writes it after the user approves, marks a replaced fact superseded so the file never holds two answers to one question, refuses a write past the 2,000-byte budget while naming what to retire, and drops a line whose files or symbols are gone. It sits at `<git common dir>/exo/memory.md`, is never committed, and the session hook injects a pointer to it rather than its body.
+- A repository gets a project memory exo writes: `/exo:memory` books a correction with the user's own words, proposes a claim only once two separate sessions have booked it, writes it after the user approves, marks a replaced fact superseded so the file never holds two answers to one question, refuses a second copy of a claim that is already live, refuses a write past the 2,000-byte budget while naming what to retire, and drops a line whose files or symbols are gone. It sits at `<git common dir>/exo/memory.md`, is never committed, and the session hook injects a pointer to it rather than its body.
 - The eval case `memory-refuses-one-session`.
 
 ### Fixed
