@@ -22,6 +22,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { constants as fsConstants, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { parseFlags, UsageError } from '#script-flags';
 
 export const DISCOVERY_DISABLED_ENV = 'UI_DESIGN_TEST_DISABLE_BROWSER_DISCOVERY';
 
@@ -51,8 +52,9 @@ const OBSCURA_MISSING_CAPABILITIES = [
 const OBSCURA_READY_TIMEOUT_MS = 10_000;
 const OBSCURA_STOP_GRACE_MS = 2_000;
 
-/** Invalid arguments: the caller gets exit 2 and an empty stdout. */
-export class UsageError extends Error {}
+// The flag grammar lives in `#script-flags`; this skill's scripts read it here,
+// beside the other CLI helpers they import.
+export { parseFlags, UsageError };
 
 /** A required capability is missing: the caller gets exit 3. */
 export class CapabilityError extends Error {
@@ -60,32 +62,6 @@ export class CapabilityError extends Error {
     super(message);
     this.payload = payload ?? null;
   }
-}
-
-export function parseFlags(argv, spec) {
-  const values = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index];
-    if (!token.startsWith('--')) throw new UsageError(`unexpected argument '${token}'`);
-    const name = token.slice(2);
-    const kind = spec[name];
-    if (!kind) throw new UsageError(`unknown flag '${token}'`);
-    if (kind === 'boolean') {
-      values[name] = true;
-      continue;
-    }
-    const value = argv[index + 1];
-    if (value === undefined || value.startsWith('--')) {
-      throw new UsageError(`flag '${token}' needs a value`);
-    }
-    index += 1;
-    if (kind === 'list') {
-      (values[name] ??= []).push(value);
-    } else {
-      values[name] = value;
-    }
-  }
-  return values;
 }
 
 // Every flag naming a JSON input fails the same three ways — absent, unreadable,

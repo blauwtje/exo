@@ -37,7 +37,7 @@ Write `docs/research/<library>.md` only when the user asks for a file, or a name
 
 ## Red flags
 
-| Thought | Reality |
+| The excuse | What holds |
 |---|---|
 | "I know this API." | Knowing the concept is not knowing this version; read the lockfile. |
 | "The latest docs will do." | The install is older; the answer diverges across minor versions. |

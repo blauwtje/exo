@@ -40,7 +40,8 @@ Every section is an H3, because a repository's issue form renders each of its fi
 - `### Done when`: checkable criteria as a task list, each a state a reader verifies without reading the diff; a brief's Acceptance.
 - `### Out of scope`: what a reader would otherwise assume is included.
 - `### References`: the paths and symbols the criteria rest on, one per line.
-- `### Decided`: optional, only for a constraint the user settled that the criteria do not already carry; a brief's Decisions.
+- `### Decided`: for a brief, one line per decision it closed, as `<decision>: <answer> (<you, code: path, or exo>)`, because later wishes reopen only the lines they touch; a brief's Decisions.
+- A Spec no brief produced keeps `### Decided` optional, only for a constraint the user settled that the criteria do not already carry.
 
 **Report**, for what needs no shaping: a bug, a regression, a chore or a documentation fix.
 

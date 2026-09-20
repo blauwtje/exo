@@ -26,11 +26,11 @@ The route decides how the direction is reached; `## Size the request` decides ho
 
 1. **Tweak:** the tweak path.
 2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` resumes at Build (Phase 3).
-3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as the one who chooses between rendered directions: the offer in `## Asking`.
+3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as the one who chooses between rendered directions: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** docs/design/DESIGN.md with a `scripts/context.mjs` status other than `absent`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it, while neither the user nor the brief lets that identity be replaced: one direction in text and no offer. A component library in the manifest is not that evidence on its own, because its defaults are the template this skill exists to replace.
 6. **Tool surface:** an open identity on an app view, dashboard, admin or settings page, form, documentation page, internal tool, or component: one direction in text from Phase 1 evidence and the nearest sibling surface where one exists, and no offer, because scanability and existing expectations outrank expression there.
-7. **Expression surface:** an open identity on a landing, marketing, pricing, portfolio, or launch page, whose job is a first impression on someone who has not adopted the product: the offer in `## Asking`.
+7. **Expression surface:** an open identity on a landing, marketing, pricing, portfolio, or launch page, whose job is a first impression on someone who has not adopted the product: the offer in `## Asking` of `references/intake.md`.
 
 A surface neither list names takes rung 6 and the report names rung 7 as the rival reading, because the user can still ask for directions while a picker's spent minutes stay spent. A vague complaint routes the same way: it sizes the request, and the evidence picks the rung. A user who leaves the look to this skill has not asked for text: rung 7 still offers.
 
@@ -38,27 +38,9 @@ A surface neither list names takes rung 6 and the report names rung 7 as the riv
 
 Context; direction; build; critique the render; check.
 
-## Run directory
+## Intake
 
-Every run past a tweak writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript. It holds `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `font-candidates.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md. Every `node scripts/*.mjs` call redirects stdout into `$RUN` and the session reads the fields it needs with `jq` or `sed -n`, never the whole file: a JSON line that reaches the transcript is carried into every turn after it. `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` is what writes it. Agents receive `$RUN` and exchange files under it; they return reports, never file contents.
-
-## Asking
-
-Name the decision an answer changes before asking anything; a question with no named decision is not asked. Then sort it by one test: would the user answer it better by seeing it? Color, type, spacing, layout, motion, imagery and every other choice between looks is a visual choice. A visual choice is never a terminal question, because a color named in words is not the color the user would see. It reaches the user as a sketch in the browser tab, or it is decided and never asked.
-
-- A one-line brief is not a reason to ask. Derive the three Phase 1 facts, state them in one line as assumptions, and build.
-- Rungs 3 and 7 of `## Route` offer the preview once, and render nothing before the answer. The offer is its own message with nothing else in it, sent where the direction is the open question. It names the decision, which direction the build takes, and the price in plain words: one browser tab opens and stays open for the session, each visual choice appears in it as a rough sketch within about half a minute, a sketch costs about 1,000 extra tokens, one click answers, and deciding without it costs nothing extra. Two options in the shape `## A question` in `using-exo` gives end the message, and the user answers with the digit:
-
-  ```text
-  1. **Browser preview (Recommended)**: open one tab and sketch the <n> directions in it
-  2. **Decide for me**: build <title of the recommended contract>
-  ```
-
-  An offer that drops the price is not the offer, because a chooser who was not told the price did not agree to it. The preview option starts `scripts/sketch-tab.mjs --serve` and writes the first sketch in the same message, under `references/sketch-tab.md`; the click names the contract that `references/phase-direction.md` then freezes. Every later visual choice, and every revision the user asks for, is one more sketch file in that tab, with no second offer.
-- On the second option, or an exit 3, no visual question is asked for the rest of the session: the `--recommend` contract is the selection, each further visual choice is decided from the contract and Phase 1 evidence and stated in one line, the choice and what it costs if wrong and never why, and a correction is applied without a question back. The exception is a user who then asks to see options, which opens the tab with no second offer.
-- Full comps through `pick.mjs` are built only when the user asks to see a direction whole, for the directions the sketches left standing, and the message names their price first: about 3,500 extra tokens per direction and one to three minutes.
-- Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question. Beyond the offer, ask one only while an unanswered fact blocks a decision the brief, the repository, and Phase 1 evidence cannot settle, and name that decision inside the question; a visual choice is never that fact. Stop after two rounds, then state the assumption and build.
-- A planning turn routes by `## Route` and makes the offer on rungs 3 and 7, because a direction frozen without it was chosen for the user. On the preview option it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `references/phase-direction.md` says; on the second option, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0`. Either way that output is carried verbatim in the Edit block of the plan's first Build step, which writes docs/design/direction.json. The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call, because every mode of that script reads a file under `$RUN` and that mode refuses the write: the plan records `Direction: pending at rung <n>` under `## Visual direction` with the evidence that placed it there, and the build session runs Phase 2 from that rung before Build.
+Read `references/intake.md` before Phase 1: the rule for when a question is asked at all, the run directory every render and log is written under as `$RUN`, and the table from a complaint's own words to the reference that owns the fault.
 
 ## References
 
@@ -66,6 +48,8 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 
 | File | Read it when |
 |---|---|
+| `references/intake.md` | Before Phase 1, for the asking rule, the run directory, and the symptom-to-reference table. |
+| `references/phase-detail.md` | At Phase 1 for the context rules, before the first Build edit for the floor, before the critique dispatch, and at Phase 5 for the sweep. |
 | `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
@@ -89,26 +73,9 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | `references/performance-budget.md` | Phase 3 only when the build adds a hero raster, a font the repository does not load, or a persistent effect; Phase 5 its `## Outcome thresholds` and `## Hard failures` sections alone. |
 | `references/internationalization.md` | Phase 1 when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script. |
 
-## Symptoms
-
-A complaint names a fault in the words of the person who saw it, and those words are not the words the fault is written under. This table is the only step between the two: it says which file owns the symptom, and that file's own row above says when it may be read. A symptom with no row here is diagnosed in Phase 4, not guessed at.
-
-| Reported as | Owned by |
-|---|---|
-| flat, cheap, unfinished, generic, or like a template | `references/visual-critique.md`, its `## Slop tropes` and `## Unsupported-pattern test` |
-| empty, bare, or too much white space | `references/composition.md`, its `## Build density without clutter`, against every quiet region's named job in `references/visual-direction.md` |
-| cluttered, noisy, or hard to scan | `references/composition.md` for grouping and pacing, `references/typography.md` its `## Scale` for the hierarchy |
-| cramped, misaligned, or spaced inconsistently | `references/implementation.md`, and `references/component-system.md` its `## Scales, not values` |
-| the type reads wrong, dated, or hard to read | `references/typography.md` |
-| the colours look muddy, garish, or washed out | `references/visual-direction.md` its `## Palette`, and `references/tokens.md` past the role tokens |
-| the page jumps, stalls, or feels slow to arrive | `references/performance-budget.md` for the cause, `references/feedback-and-status.md` for what is shown while it waits |
-| the motion distracts, or nothing seems to respond | `references/motion.md` for the first, `references/interaction-qa.md` for the second |
-
 ## Phase 1 — Context
 
-State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief. Read durable design context through `scripts/context.mjs --surface <name> --needs color,typography,controls,motion`, reporting a `potentially-stale` or `unknown` status rather than resolving it silently. For a bounded redesign, record the baseline first — hierarchy, density rhythm, geometry, type contrast, surface depth, interaction emphasis — and name which the complaint is about. When the request does not name the surface's files, delegate locating its markup, styles, tokens and components to the `exo:explorer` agent and read here only the ranges under its `Read next:`, because a session that greps the tree carries that output into every later phase. Keep a list of every repository path and line range this phase read; Build hands it to each builder as `FILES`.
-
-For a full or bounded redesign, write the content inventory and collect at least three subject observations, mapping each as `observation → visual/content behavior → repeated echo` under the rules in `references/composition.md`. Ask one question only when a missing fact materially changes scope, behavior, or a claim; never substitute a product-category aesthetic for missing evidence.
+State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief. Read `references/phase-detail.md`, its `## Context`, before collecting anything: the durable-context call, the baseline record a bounded redesign starts from, the discovery dispatch, and the observation mapping. Keep a list of every repository path and line range this phase read; Build hands it to each builder as `FILES`.
 
 ## Phase 2 — Direction
 
@@ -116,27 +83,15 @@ Decide the direction in this session, before any production code changes, under 
 
 ## Phase 3 — Build
 
-Read `references/phase-build.md` before the first edit or builder dispatch: where the surface builds, how builders are briefed, and what binds them. The floor, whose state, timing, and reachability mechanics live in `references/interaction-qa.md`:
-
-- no horizontal scroll from 360px through 1440px;
-- body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;
-- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;
-- targets at least 24×24 CSS px — the WCAG 2.2 AA minimum, exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation — with 44×44 as the enhanced target and the default under a coarse pointer;
-- reduced-motion handling for every animation and semantic HTML beneath styling;
-- reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;
-- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property; anything costlier carries the cost disclosure `references/performance-budget.md` defines.
-
-The underdesign floor, checked before the critique: the ground is a designed surface, not an untouched flat neutral; raised surfaces carry the direction's material, not one grey shadow each; type carries a voice through a second weight, width, or family; the recorded motion decision is built; every browser surface on the finish list in `references/implementation.md` is themed; and no slop trope from `references/visual-critique.md` stands without recorded provenance. `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration; the shapes live in `references/craft-recipes.md`.
+Read `references/phase-build.md` before the first edit or builder dispatch: where the surface builds, how builders are briefed, and what binds them. Read `references/phase-detail.md`, its `## The build floor`, in the same breath: the accessibility, reflow, motion and performance floor no build goes under, and the underdesign floor checked before the critique.
 
 ## Phase 4 — Visual critique
 
-A full or bounded redesign renders at three checkpoints under the render budget in `references/phase-critique.md`: read it before the baseline capture, which comes before the first edit.
-
-This session produces the evidence and the agent judges it: run `scripts/capture.mjs` for the post-build pair, `scripts/check-ui.mjs` at 390x844 and 1440x900, and `scripts/inspect-render.mjs` over that pair, each redirected into `$RUN`, then dispatch `exo:design-critic` with `RUN` and `SKILL`. Those four calls cost about 20 seconds here and a third of the agent's turn budget there. The reviewer meets the fault contract in `references/visual-critique.md` — three or four faults for a redesign, one repaired rendered fault for a new piece, each naming its region, defect, evidence, target, and repairing edit. One fault may name the direction itself; its repair is a new direction, not another polish pass, so the cycle ends there: repair the other faults, take the final pair, and report the direction fault with the renders as the one open action, because a second direction, build, and critique cycle doubles the run on the critic's judgment alone.
+A full or bounded redesign renders at three checkpoints under the render budget in `references/phase-critique.md`: read it before the baseline capture, which comes before the first edit. The four calls this session makes, the agent it dispatches and the fault contract the critic meets are in `references/phase-detail.md`, its `## The critique dispatch`.
 
 ## Phase 5 — QA
 
-Read the `scripts/check-ui.mjs` findings for 390px and 1440px with `jq` from `$RUN/check-ui-390.json` and `$RUN/check-ui-1440.json`, repairing every `content-clipped` and `element-overlap` finding before the design is reported complete, then the interaction and accessibility sweep — including the recorded motion decision's route, the sweep in `references/accessibility.md`, and, where that file's predicate applies, the locale and RTL rerun in `references/internationalization.md` — then exercise one interactive control; the final render is this session's own capture. Report the outcome numbers from `references/performance-budget.md` beside the design, naming which were measured under throttling and which were not. A redesign is complete only when the post-build and final pairs exist under `$RUN/renders/`, with the baseline pair before them for a surface that rendered before the run, source and rendered pixels changed between consecutive checkpoints, and the fixed faults include one content or relationship fault and one craft fault. With no render path, report visual verification as blocked, name what went unchecked, and do not report the design complete. Close under the closing rule in `using-exo`: what the surface now does, the checks that ran with their results, and the one open action.
+Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-overlap repairs, the interaction and accessibility passes, the render checkpoints a redesign is complete only with, and what to report when there is no render path.
 
 ## Judgment
 

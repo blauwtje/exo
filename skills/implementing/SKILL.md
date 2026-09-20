@@ -29,7 +29,7 @@ Invoking `/exo:implementing` on a plan authorizes the workspace you pick at step
 
 ## Red flags
 
-| Thought | Reality |
+| The excuse | What holds |
 |---|---|
 | "I'll read the plan once to get the picture." | The frame plus one task is the picture; the rest is paid on every turn. |
 | "This task is small, I'll build it here." | Small edits still fill the session; only a `Design:` task whose direction is not yet frozen belongs here. |
@@ -43,6 +43,7 @@ Invoking `/exo:implementing` on a plan authorizes the workspace you pick at step
 |---|---|
 | `references/workspace.md` | Step 1, before the first dispatch, and step 5, before a wave's first worktree. |
 | `references/finishing.md` | Step 7, once the review's fixes are committed. |
+| `../issuing/references/fields.md` | Step 7, before opening a pull request, for the body and the fields `references/finishing.md` takes from it. |
 | `implementer-prompt.md` | Step 5, before every build dispatch. |
 | `bug-fixer-prompt.md` | Step 5, before a dispatch on a failed `Run:` with no causal line. |
 | `drift-repairer-prompt.md` | Step 5, before a dispatch on `PLAN DRIFT`. |

@@ -36,14 +36,14 @@ A skill earns its place only by stopping a mistake the model makes when the skil
 
 1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; save it as `evals/<skill>-<case>/prompt.md` with a grader next to it, in the layout `tests/evals.test.mjs` checks.
 2. **Watch it happen.** Give that prompt alone to a `general-purpose` delegate on the model the skill under test runs on, or to `claude -p` in a scratch repository without `--plugin-dir`, and copy down the exact justification it gives.
-3. **Choose the form.** Sort the mistake with `references/form-by-failure.md`, then write the skill in the shape above and in the register `references/wording.md` sets.
+3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape above and in the register `references/wording.md` sets.
 4. **Watch it stop.** Rerun the prompt with the skill: the same delegate told to load it, or `claude -p --plugin-dir <clone>`; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
 5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
 6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
 
 ## Red flags
 
-| Thought | Reality |
+| The excuse | What holds |
 |---|---|
 | "The body has room to explain itself." | Each rule gets one reason clause; reasons that need a paragraph belong in a reference. |
 | "An edit this small needs no test run." | Without the run lacking the skill, the edit is a guess about what the model does. |
@@ -56,7 +56,7 @@ A skill earns its place only by stopping a mistake the model makes when the skil
 | File | Read it when |
 |---|---|
 | `references/pressure-scenarios.md` | Writing the prompt in step 1, and whenever the run without the skill passes a prompt that only asks for the rule. |
-| `references/form-by-failure.md` | In step 3, before writing the first rule, to pick the form the observed mistake calls for. |
+| `references/where-a-fix-lives.md` | In step 3, before writing the first rule, to find the cheapest place that stops the observed mistake. |
 | `references/wording.md` | In step 3, when two phrasings compete or the tone of a rule is unclear. |
 | `references/description.md` | In step 3 for the frontmatter, and in step 5 when a symptom is added to the description. |
 | `references/skill-shape.md` | In step 3 when the skill starts from nothing; never for a change to an existing skill. |

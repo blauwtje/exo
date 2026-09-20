@@ -29,6 +29,8 @@ This ladder holds before every edit that adds or replaces code; no skill call br
 
 ## The ladder
 
+This ladder keeps complexity low by reusing what exists and writing no second copy of it. The tokens and time that saves are the result it is measured against.
+
 Read the ranges the change touches and trace how control and data move through them, then settle the rungs in order in one pass and take the first that fits; when two rungs hold, the lower number wins with no comparison, because comparing rungs is overbuilding moved into your head. Decide it without asking and edit in the same turn.
 
 1. **Need.** Build only for a use the request names today; a use that might come later stays out and is listed in the report.

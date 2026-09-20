@@ -8,7 +8,7 @@ import path from 'node:path';
 
 const TABLE_ROW = /^\|\s*`(?<path>[^`]+\.md)`\s*\|\s*(?<readWhen>.*?)\s*\|\s*\r?$/gm;
 const TABLE_HEADER = /^\| File \| Read it when \|\r?$/m;
-const VISUAL_DESIGN_REFERENCE_COUNT = 21;
+const VISUAL_DESIGN_REFERENCE_COUNT = 23;
 const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
 const EXPECTED_OWNER_ROWS = {
@@ -43,6 +43,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
     'references/finishing.md',
+    '../issuing/references/fields.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'drift-repairer-prompt.md',
@@ -53,18 +54,25 @@ const EXPECTED_OWNER_ROWS = {
   'skills/savings/SKILL.md': [],
   'skills/settings/SKILL.md': [],
   'skills/memory/SKILL.md': [],
+  'skills/prototyping/SKILL.md': [],
+  'skills/implementing-test-first/SKILL.md': [
+    '../implementing-batch/references/test-design.md',
+  ],
   'skills/shaping/SKILL.md': [
     '../issuing/references/fields.md',
+    'references/interview-page.md',
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',
-    'references/form-by-failure.md',
+    'references/where-a-fix-lives.md',
     'references/wording.md',
     'references/description.md',
     'references/skill-shape.md',
     'references/plugging-holes.md',
   ],
   'skills/designing/SKILL.md': [
+    'references/intake.md',
+    'references/phase-detail.md',
     'builder-prompt.md',
     'references/phase-direction.md',
     'references/phase-build.md',

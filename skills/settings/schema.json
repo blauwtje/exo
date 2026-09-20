@@ -10,5 +10,11 @@
     "options": ["tight", "standard"],
     "default": "tight",
     "description": "how the session writes replies: tight drops preamble, recap and filler; standard keeps full prose"
+  },
+  "interview": {
+    "type": "string",
+    "options": ["chat", "page"],
+    "default": "chat",
+    "description": "where shaping asks its questions: chat asks in the conversation; page opens a browser tab that shows every decision"
   }
 }

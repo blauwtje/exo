@@ -36,9 +36,9 @@ A session hook loads these rules at startup, resume, clear and compaction, so th
 
 ## Skills
 
-Every skill is invoked as `/exo:<name>`; the model may also start one when its trigger matches.
+Every skill is invoked as `/exo:<name>`. The first group Claude may also start on its own when its trigger matches; the second runs only when you type it.
 
-### Stages
+### Model-invoked
 
 | Skill | Use it when |
 |---|---|
@@ -48,26 +48,29 @@ Every skill is invoked as `/exo:<name>`; the model may also start one when its t
 | `implementing-batch <change>` | A decided change builds in this session and touches more than two files, a dependency, a public signature, a persisted format or a security boundary. |
 | `debug <symptom>` | Existing behavior fails and the cause is not yet proven. Outranks every other stage until it is. |
 | `deepen [path]` | You want to know where the architecture should improve without naming the change. |
-
-### Support
-
-| Skill | Use it when |
-|---|---|
 | `designing <surface>` | A page, component or visual axis changes: typography, color, spacing, motion, copy. |
+| `implementing-test-first <behavior>` | A behavior is built test-first: the observable boundaries are named and confirmed, then one failing test and the least code that passes it, per behavior. |
+| `prototyping <question>` | A decision about logic, state or data flow needs running code first: a throwaway that answers it, parked on its own branch while only the decision reaches real code. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
 | `savings [report, on, off, status, guard-lines]` | You ask what exo cost or refused, switch the savings counter and read guard off or on, or change the guard's big-file limit. |
 | `settings [key value scope]` | You show or change an exo setting for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
-### Workflows
+### User-invoked
 
-These leave the machine, so only you can start them.
+These carry `disable-model-invocation: true`, so Claude never starts one itself: they leave the machine, or they write a record only you should approve.
 
 | Skill | Use it when |
 |---|---|
-| `issuing <scope>` | You file GitHub issues as specs, with the labels and fields the repository defines. |
+| `handoff` | You save an unfinished session's live state to a file a fresh session reads after a clear. |
+| `memory` | You record what this repository taught exo, approve a claim two sessions have booked, or drop a line whose files are gone. |
+| `issuing <scope>` | You file GitHub issues as specs, with the labels, type, relations, milestone and project fields the repository defines. |
 | `merge-prs [numbers]` | You merge open pull requests behind gates read from the GitHub API. |
+
+Each skill also has a page under `docs/skills/`, written for a person: what the skill is for and what it leaves behind, without the instruction the model reads.
+
+`skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so nothing staged there is listed, invoked or counted against a budget. Promotion means all five of: the folder moves to `skills/<name>/`, the name joins `EXPECTED_SKILLS` in `verify/budgets.mjs`, it gets a reference contract in `verify/checks/reference-tables.mjs`, its description is paid for in the description budgets, and it gets a page under `docs/skills/`.
 
 ## The ladder
 
@@ -106,6 +109,8 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
+The segment closes on the context the session holds, such as `context 120k · edge`. Under 100k tokens it names the count alone; from 100k it says `edge`, from 150k `dull, hand off soon`, and from 200k `write a handoff, then clear`, because a session reads and reasons worse the more it carries. `/exo:handoff` writes the file the next session starts from.
+
 The segment reads `exo cost $0.04 · 2m · 2 reads refused`.
 
 ## Settings
@@ -116,6 +121,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
+| `interview` | `chat`, `page` | `chat` | Where `shaping` asks its questions. `chat` asks in the conversation, answered with a digit; `page` opens one browser tab that shows every decision, open and closed, and takes each answer as a click. A single question, and a machine that cannot open a browser, stay in the conversation. |
 
 ## Develop
 

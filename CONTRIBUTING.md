@@ -18,6 +18,8 @@ An installed plugin runs from Claude Code's cache copy, so an edit is live only 
 
 CI runs `npm run check` on Node 22 and 24 for every push to `main` and every pull request.
 
+The `derivation` check fails the build when a name exo does not own reaches a shipped file, and when a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names are held base64-encoded inside `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids.
+
 `npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through the TAP reporter, so its failure line names each failing test as `not ok`.
 
 ## Editing a skill
@@ -25,6 +27,12 @@ CI runs `npm run check` on Node 22 and 24 for every push to `main` and every pul
 Load the `skills-tool` skill before any skill or delegate-prompt edit; it holds the shape and size rules the verifier enforces. `verify/budgets.mjs` names the skills the full verifier checks. Every other skill still passes the frontmatter, portable-language and description-budget checks, so add a skill there once it reaches that shape.
 
 A skill whose work leaves the machine (issues, pull requests, merges) is slash-only, with `disable-model-invocation: true`. Every other skill stays model-invocable so a next-stage answer can start it, and its description opens with `Use when`.
+
+`ABOUT.md` at the repository root says what exo is and holds exo's domain words with the synonym each one replaces. A skill body, a reply and a commit use the left column; the `derivation` check reads the file for names exo does not own.
+
+`skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so a skill nested there is listed nowhere, invoked by nobody and counted in no budget; `verify/repository.mjs` skips the folder for the same reason. Promotion means all five of: the folder moves to `skills/<name>/`, the name joins `EXPECTED_SKILLS` in `verify/budgets.mjs`, it gets a reference contract in `verify/checks/reference-tables.mjs`, its description is paid for in `DESCRIPTION_TOTAL_LOCK` and `TOTAL_WARN`, and it gets a page under `docs/skills/`. A skill is written from a discipline that has been read, never from a one-line description.
+
+A `SKILL.md` stays under 15,000 bytes, which the `skill body budgets` check enforces: a body is paid for on every run of its skill, so bulk lives in `references/` and the body names the step that opens it. A skill is split into two only when the halves fire at different moments, because a second skill adds its trigger to every session's listing.
 
 ## Adding a setting
 

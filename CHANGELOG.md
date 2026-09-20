@@ -7,6 +7,37 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**Every exo skill now declares which side invokes it, and `README.md` lists the model-invoked and the user-invoked group separately.** **`shaping` now interviews from a decision map until nothing is open, reopens the brief you already have instead of filing a second issue, and can ask on a browser page with every decision in view.** **A `derivation` check fails the build on a name exo does not own and on a third-party notice file, so PolyForm Noncommercial 1.0.0 stays the whole licence.**
+
+### Added
+
+- A `derivation` verifier check fails the build when a name exo does not own reaches a shipped file, or when a third-party notice file appears at the repository root. The names are held base64-encoded inside the check, because a plaintext list would itself be the text it forbids.
+- `skills/implementing-test-first/SKILL.md`: name the observable boundaries the tests read and get them confirmed before the first test, then one behavior per cycle, failing test first, least code second, and restructuring held until the last cycle, reading the test-design reference instead of restating it.
+- `skills/prototyping/SKILL.md`: write the open question down, send a question about a look to `designing`, build a throwaway no production path can reach, park it on a `temp/<name>` branch that is never merged, and build the decision fresh.
+- `ABOUT.md` names exo's domain words and the synonym each one replaces, including the savings record and its counter.
+- A human-facing page per skill under `docs/skills/`, the one part of `docs/` that ships.
+- An `interview` setting, `chat` or `page`. With `page`, `shaping` asks in one browser tab that shows every decision, open and closed, and takes each answer as a click; a single question and a machine without a browser stay in the conversation.
+- The status line segment closes on the context the session holds, such as `context 120k · edge`, and says when to write a handoff and clear.
+- A `skill body budgets` check fails any `SKILL.md` over 15,000 bytes.
+- `skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so nothing staged there is listed, invoked, or counted against the description budget; `README.md` says what promotion requires.
+
+### Changed
+
+- The right-sizing ladder in `skills/using-exo/SKILL.md` opens on what it is for: low complexity through reuse, no second copy of code this repository already holds, and the tokens and the time that saves as the result it is measured against.
+- `skills/shaping/SKILL.md` runs its interview from a decision map: no budget ends it and no guess closes a decision. A map of three or more open decisions stands above the first question and shows beside each one what it waits on. Every question carries its place, one plain sentence, what the answer changes, and the options; the brief names for every decision who closed it; and new wishes for work that already has a brief, an issue or a plan reopen that brief and edit it where it stands. Both modes now write with the words of the repository's own vocabulary file and record a word they settle as a decision.
+- `skills/skills-tool/references/form-by-failure.md` is replaced by `references/where-a-fix-lives.md`, which places a fix in the cheapest home that stops the mistake, and the two columns of every `## Red flags` table are now `The excuse` and `What holds`.
+- The flag grammar and the page chrome that `designing`'s scripts and `shaping`'s question page share live in `lib/script-flags.mjs` and `lib/page-chrome.mjs`, and a test fails an import alias that points into a skill folder.
+- `README.md` lists the skills in two groups, model-invoked and user-invoked, and covers `handoff` and `memory`, which it had never listed.
+- `skills/designing/SKILL.md` keeps its routing, its reference table and its judgment; its asking rules, its symptom list, its run-directory contract and its phase detail moved into `skills/designing/references/`, where the phase that acts on them opens them.
+
+### Fixed
+
+- `memory.mjs` fails `render`, `book` and `propose` in one line on a state file that does not parse, where it printed a stack.
+- The session hook's three reset calls no longer share the stdout that carries its JSON.
+- `skills/implementing/SKILL.md` names `../issuing/references/fields.md`, which its finishing reference sends the reader to.
+
 ## 0.20.2 - 2026-09-20
 
 ### Fixed

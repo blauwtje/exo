@@ -49,6 +49,7 @@ import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
 import { CapabilityError, parseFlags, parseViewport, readJsonFlag, UsageError } from './capture.mjs';
 
 const DEFAULT_TIMEOUT_SECONDS = 600;
@@ -426,26 +427,9 @@ export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
   return words;
 }
 
-export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-
-// The chrome both screens of this skill wear, the picker and the sketch tab,
-// so a chooser who moves from one to the other stays in one tool.
-export const CHROME_TOKENS = `      color-scheme: light dark;
-      --ground: light-dark(oklch(0.982 0.003 85), oklch(0.238 0.004 85));
-      --surface: light-dark(oklch(1 0 0), oklch(0.292 0.005 85));
-      --ink: light-dark(oklch(0.24 0.010 85), oklch(0.955 0.003 85));
-      --ink-muted: light-dark(oklch(0.505 0.010 85), oklch(0.735 0.006 85));
-      --border: light-dark(oklch(0.885 0.005 85), oklch(0.365 0.006 85));
-      /* The hairline that separates surfaces is not the edge that identifies a
-         control: that one owes 3:1 against its own fill, so it is its own token. */
-      --border-control: light-dark(oklch(0.60 0.010 85), oklch(0.575 0.008 85));
-      /* Amber, and only on marks the size of a coin: the comps carry the colour
-         being judged, so chrome that competes with them is chrome that lies. */
-      --accent: light-dark(oklch(0.52 0.145 52), oklch(0.765 0.135 68));
-      --accent-ink: light-dark(oklch(0.99 0 0), oklch(0.22 0.03 68));
-      --font-stack: ui-sans-serif, system-ui, sans-serif;
-      --radius-control: 8px;`;
+// The chrome lives in `#page-chrome`; the sketch tab reads it here, beside the
+// other picker parts it imports.
+export { CHROME_TOKENS, escapeHtml };
 
 function page(variants, key, { words, recommended, recommendedNote }) {
   // The recommendation is expressed as the first seat rather than as a sentence

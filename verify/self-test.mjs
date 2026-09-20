@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 
@@ -50,6 +51,10 @@ const SCENARIOS = [
     append(root, 'skills/shaping/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>
     append(root, 'skills/shaping/SKILL.md', '\nUse WebSearch when useful.\n') },
+  { name: 'derived-name', mutate: (root) =>
+    append(root, 'skills/shaping/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
+  { name: 'oversized-skill-body', mutate: (root) =>
+    append(root, 'skills/settings/SKILL.md', `\n${'- A line no body has room for.\n'.repeat(500)}`) },
   { name: 'broken-reference', mutate: (root) =>
     replaceText(root, 'skills/implementing-batch/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>
@@ -92,9 +97,9 @@ const SCENARIOS = [
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.', '') },
   { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
-  { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/designing/references/intake.md',
     'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call', 'A read-only planning mode runs the same calls') },
-  { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
     'its repair is a new direction, not another polish pass, so the cycle ends there', 'its repair is a return to Phase 2') },
   { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/deepen/SKILL.md',
     'every other planning turn belongs to', 'planning turns belong to') },
@@ -124,7 +129,7 @@ const SCENARIOS = [
   { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/references/phase-critique.md',
     'baseline before the first edit, post-build before the critique fixes, and final after them',
     'capture the surface before and after building') },
-  { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
     'never substitute a product-category aesthetic for missing evidence',
     'pick a fitting product-category aesthetic') },
   { name: 'dropped-motion-evidence-contract', mutate: (root) => replaceText(root, 'skills/designing/references/motion.md',

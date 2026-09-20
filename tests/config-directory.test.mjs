@@ -39,3 +39,11 @@ test('no skill script imports from another skill folder', () => {
   }
   assert.deepEqual(offenders, []);
 });
+
+// An alias into a skill folder is the same reach with the path hidden.
+test('no import alias points into a skill folder', () => {
+  const manifestText = fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8');
+  const aliases = Object.entries(JSON.parse(manifestText).imports);
+  const offenders = aliases.filter(([, target]) => target.startsWith('./skills/'));
+  assert.deepEqual(offenders, []);
+});

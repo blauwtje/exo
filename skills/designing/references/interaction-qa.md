@@ -42,7 +42,7 @@ Hover and active belong to every pointer control, and visible focus to every int
 ## Input modality
 
 - **Keyboard:** every control reachable in DOM order, focus visible (the quality floor), what opens closes with Escape, arrow keys inside composite widgets.
-- **Coarse pointer:** the target floor is the Phase 3 floor in SKILL.md (WCAG 2.2 AA 2.5.8 at 24×24 CSS px, AAA 2.5.5 at 44×44, the default for a touch-first surface). No hover-only affordance: any hover-revealed action has a visible-on-touch equivalent.
+- **Coarse pointer:** the target floor is `## The build floor` of `phase-detail.md` (WCAG 2.2 AA 2.5.8 at 24×24 CSS px, AAA 2.5.5 at 44×44, the default for a touch-first surface). No hover-only affordance: any hover-revealed action has a visible-on-touch equivalent.
 - At 390px, re-verify the disclosure patterns and the primary action's reachability.
 
 ## Pre-ship interaction sweep

@@ -223,3 +223,20 @@ test('book records the booking in the nudge log', async () => {
   assert.equal(entries[0].claim, 'the verifier reports 17 checks');
   assert.match(entries[0].date, /^\d{4}-\d{2}-\d{2}$/);
 });
+
+test('a state file that does not parse fails every command with one line, never a stack', async () => {
+  const root = await repository();
+  const statePath = (await memory(root, 'paths')).stdout.trim().split('\n')[0];
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  fs.writeFileSync(statePath, '{ not json');
+  const commands = [
+    ['render'],
+    ['propose'],
+    ['book', '--claim', 'Tests live in tests/', '--quote', 'tests live in tests/', '--session', 's1']
+  ];
+  for (const args of commands) {
+    const result = await memory(root, ...args);
+    assert.equal(result.code, 1, args[0]);
+    assert.doesNotMatch(result.stderr, /\n\s+at /, `${args[0]} printed a stack`);
+  }
+});

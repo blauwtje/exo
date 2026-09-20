@@ -4,13 +4,14 @@
 // with disable-model-invocation: true stays out of that listing and the total.
 // DESCRIPTION_TOTAL_LOCK fails that same total as soon as it passes what it last
 // measured at: the ceiling catches one oversized addition, the lock catches the
-// slow growth nobody decided on.
+// slow growth nobody decided on. TOTAL_WARN is raised by hand in the commit that
+// pays for the triggers, the same way the lock is.
 
 import { readFrontmatter } from '../frontmatter.mjs';
 import { DESCRIPTION_TOTAL_LOCK } from '../budgets.mjs';
 
 const PER_SKILL_LIMIT = 400;
-const TOTAL_WARN = 4000;
+const TOTAL_WARN = 4650;
 
 export function checkDescriptionBudgets(report, repository) {
   let total = 0;
