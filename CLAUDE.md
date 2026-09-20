@@ -22,7 +22,8 @@ commands and internals; this file only names what a session here gets wrong with
 - The verifier's `plugin version` check fails while the tree differs from `origin/main` and `## Unreleased` is empty, and when a raised version has no dated changelog section: record the change, or raise the version with `npm run bump`, never by hand.
 - A merge to `main` cuts the release: `.github/workflows/release.yml` runs `npm run check`, `npm run bump`, commits `chore(release): <version>`, tags `v<version>` and publishes the GitHub Release, and a merge whose `## Unreleased` is empty cuts nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand: a hand-cut version collides with the next merge.
 - A change the user should read about first carries at most three bold lead sentences under `### Highlights` in `## Unreleased`, written in the pull request that records the change, never in a release commit.
-- After the workflow lands a release, `claude plugin marketplace update blauwtje` and `claude plugin update exo@blauwtje` install it, and the user restarts Claude Code.
+- Once `gh run list --workflow release.yml --limit 1` shows the release succeeded on the merge, the session installs it without being asked: it runs `claude plugin marketplace update blauwtje`, then `claude plugin update exo@blauwtje`, and tells the user to restart Claude Code, which is the one step left to them.
+- After that update it removes every version folder under the config directory's `plugins/cache/blauwtje/exo/` except the new one and the one this session loaded, because a running session still reads its hooks and skills from the version it started on, and it lists the folders before removing them.
 
 ## Evals cost real money
 

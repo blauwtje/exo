@@ -10,7 +10,8 @@
 //
 // Writes judge-reasons.json into the results directory and prints each grader's
 // pass rate across runs, per arm; a run that ended in an error is counted apart.
-// Then prints one GATE line per arm, the verdict a plan's final verification reads.
+// Then prints one GATE line per arm, the verdict a plan's final verification
+// reads; a grader in NON_GATING_GRADERS is named on that line and left out of it.
 
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
@@ -29,6 +30,16 @@ const SYSTEM_PROMPT = 'You are a strict evaluation judge for coding-agent traces
 // holds the measurement. Below three runs one failure is most of the arm, so no gate.
 const TOLERATED_FAILED_RUNS = 1;
 const MINIMUM_GATE_RUNS = 3;
+// Graders the GATE line leaves out, by case. The pass-rate table still counts
+// them, so a downgraded grader stays readable; only the verdict ignores it. A
+// grader lands here when reruns move its verdict and not the skill's behavior.
+// `dispatches-for-what-the-map-leaves-open` did that over three paid full runs:
+// 3 of 5 every time, a different run failing each time and for a different
+// reason, and the case scaffolds no map file, so no run can narrow a dispatch
+// against what a real map would already have resolved.
+const NON_GATING_GRADERS = new Map([
+  ['planning-reads-the-repository-map', ['dispatches-for-what-the-map-leaves-open']]
+]);
 
 function newestResultsDirectory() {
   if (!fs.existsSync(RESULTS_ROOT)) return undefined;
@@ -200,16 +211,31 @@ function printGates(aggregate, reasoned) {
         console.log(`GATE NONE\t${evalCase.name}\t${arm}\t${runs.length} runs, a gate needs ${MINIMUM_GATE_RUNS}`);
         continue;
       }
-      const counts = [...failedRunsByGrader(evalCase, arm, runs, reversedVotes)];
+      // A renamed case or grader leaves a stale name here, and a silent no-op would
+      // gate a grader the case still documents as downgraded, so the name is
+      // matched against the graders this run carries and a miss is reported.
+      const downgraded = NON_GATING_GRADERS.get(evalCase.name) ?? [];
+      const graderNames = new Set(evalCase.graders.map((grader) => grader.name));
+      const stale = downgraded.filter((name) => !graderNames.has(name));
+      if (stale.length > 0) console.error(`NON_GATING_GRADERS names ${stale.join(', ')} for ${evalCase.name}, which this run does not grade`);
+      const nonGating = new Set(downgraded.filter((name) => graderNames.has(name)));
+      // A verdict that ignores a grader says so, so no reader takes it for the whole case.
+      const leftOut = nonGating.size === 0 ? '' : `; left out of the gate: ${[...nonGating].join(', ')}`;
+      const counts = [...failedRunsByGrader(evalCase, arm, runs, reversedVotes)].filter(([name]) => !nonGating.has(name));
+      // Every grader downgraded leaves nothing to check, and a PASS then reads as a verdict it is not.
+      if (counts.length === 0) {
+        console.log(`GATE NONE\t${evalCase.name}\t${arm}\tno gating grader left${leftOut}`);
+        continue;
+      }
       const overTolerance = counts.filter(([, count]) => count.failed > TOLERATED_FAILED_RUNS);
       if (overTolerance.length === 0) {
-        console.log(`GATE PASS\t${evalCase.name}\t${arm}\tno grader failed more than ${TOLERATED_FAILED_RUNS} of ${runs.length} runs`);
+        console.log(`GATE PASS\t${evalCase.name}\t${arm}\tno grader failed more than ${TOLERATED_FAILED_RUNS} of ${runs.length} runs${leftOut}`);
         continue;
       }
       const upheld = overTolerance.filter(([, count]) => count.failed - count.reversed > TOLERATED_FAILED_RUNS);
       const verdict = upheld.length === 0 ? 'DISPUTED' : 'FAIL';
       const failures = overTolerance.map(([name, count]) => `${name} failed ${count.failed} of ${runs.length} runs, ${count.reversed} reversed by the reasoning judge`);
-      console.log(`GATE ${verdict}\t${evalCase.name}\t${arm}\t${failures.join('; ')}`);
+      console.log(`GATE ${verdict}\t${evalCase.name}\t${arm}\t${failures.join('; ')}${leftOut}`);
     }
   }
 }

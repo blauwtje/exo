@@ -114,10 +114,11 @@ function dispatchBilling(tokens) {
 }
 
 test('the script holds the figures against the pass mark, so no reader has to', () => {
-  const costly = [dispatchBilling(9000), dispatchBilling(12000), dispatchBilling(40000)];
+  const costly = [dispatchBilling(29000), dispatchBilling(36000), dispatchBilling(120000)];
   const allHold = passMarks({ measurements: [MEASURED, NAMES_ENOUGH], dispatches: costly, verdict: VERDICT });
   assert.deepEqual(allHold.map((row) => row.holds), [true, true, true, true, true]);
-  assert.deepEqual(allHold.map((row) => row.measured), ['100%', '20', '12 ms', '12000', 'Yes']);
+  assert.deepEqual(allHold.map((row) => row.measured), ['100%', '20', '12 ms', '36000', 'Yes']);
+  assert.match(allHold[3].mark, /at least 30000 tokens, 10 times the 3000 a full map costs a session/);
 
   const halfKept = { ...MEASURED, scriptFilesWithNames: 10, scriptFilesWithNamesKept: 4 };
   const slow = { ...MEASURED, namedFiles: PASS_MARK.secondRepositoryNamedFiles - 1, milliseconds: PASS_MARK.secondRepositoryMilliseconds + 1 };
@@ -128,7 +129,7 @@ test('the script holds the figures against the pass mark, so no reader has to', 
 });
 
 test('the report states the pass mark, its outcome and the verdict before the figures', () => {
-  const passing = spikeReport({ commit: COMMIT, measurements: [MEASURED, NAMES_ENOUGH], dispatches: [dispatchBilling(12000)], verdict: VERDICT });
+  const passing = spikeReport({ commit: COMMIT, measurements: [MEASURED, NAMES_ENOUGH], dispatches: [dispatchBilling(36000)], verdict: VERDICT });
   assert.match(passing, /^Outcome: every mark holds, so stage two is worth building\.$/m);
   assert.ok(passing.includes(`\nVerdict on the capped map of the second repository, from reading it: ${VERDICT}\n`), passing);
   assert.ok(passing.indexOf('| Pass mark, fixed before the measurement |') < passing.indexOf('| Tracked files |'), passing);
