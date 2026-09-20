@@ -5,7 +5,10 @@
 
 import { Buffer } from 'node:buffer';
 
-export const DEFAULT_CAP = 4000;
+// The default size of a map, about 3000 tokens: the size at which this
+// repository keeps the exported names of most of its JavaScript and TypeScript
+// files, measured on issue 34 against a repository of 4195 tracked files.
+export const DEFAULT_CAP = 12000;
 
 const ROOT = '.';
 
