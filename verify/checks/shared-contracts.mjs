@@ -53,11 +53,13 @@ const PINNED_SENTENCES = {
     '- targets at least 24×24 CSS px — the WCAG 2.2 AA minimum, exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation — with 44×44 as the enhanced target and the default under a coarse pointer;',
     'This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
     'never substitute a product-category aesthetic for missing evidence',
-    'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
-    'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call',
     'its repair is a new direction, not another polish pass, so the cycle ends there',
+  ],
+  'skills/designing/references/intake.md': [
+    'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
+    'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call',
   ],
   'skills/designing/references/phase-direction.md': [
     'validate the set with `--check` to status ok before building any variant',

@@ -35,11 +35,11 @@ test('the next stage keeps its fixed order and moves a recommended stop to numbe
 });
 
 test('designing offers its preview as two numbered options, the preview recommended', () => {
-  const designing = fs.readFileSync(new URL('../skills/designing/SKILL.md', import.meta.url), 'utf8');
-  const preview = designing.indexOf('1. **Browser preview (Recommended)**:');
-  const decided = designing.indexOf('2. **Decide for me**:');
+  const intake = fs.readFileSync(new URL('../skills/designing/references/intake.md', import.meta.url), 'utf8');
+  const preview = intake.indexOf('1. **Browser preview (Recommended)**:');
+  const decided = intake.indexOf('2. **Decide for me**:');
   assert.ok(preview !== -1 && preview < decided, 'the preview is option 1 and deciding for the user option 2');
-  assert.ok(designing.includes('Two options in the shape `## A question` in `using-exo` gives end the message'));
-  assert.ok(designing.includes('a sketch costs about 1,000 extra tokens'), 'the offer keeps its price');
-  assert.ok(designing.includes('about 3,500 extra tokens per direction'), 'full comps keep theirs');
+  assert.ok(intake.includes('Two options in the shape `## A question` in `using-exo` gives end the message'));
+  assert.ok(intake.includes('a sketch costs about 1,000 extra tokens'), 'the offer keeps its price');
+  assert.ok(intake.includes('about 3,500 extra tokens per direction'), 'full comps keep theirs');
 });
