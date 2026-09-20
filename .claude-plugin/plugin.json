@@ -23,6 +23,13 @@
       "description": "tight: no preamble, recap or filler; code, paths, errors and warnings stay whole. standard: full prose. An output style outranks this. A project overrides this in .claude/exo.json.",
       "options": ["tight", "standard"],
       "default": "tight"
+    },
+    "interview": {
+      "type": "string",
+      "title": "Where shaping asks its questions",
+      "description": "chat: in the conversation, answered with a digit. page: a browser tab that shows every open and closed decision, answered with one click, for a few hundred extra tokens per question. Not sure? Keep chat. A project overrides this in .claude/exo.json.",
+      "options": ["chat", "page"],
+      "default": "chat"
     }
   }
 }
