@@ -207,26 +207,38 @@ if (command === 'paths') {
   console.log(stateFile(cwd));
   console.log(memoryFile(cwd));
 } else if (command === 'render') {
-  process.stdout.write(render(readState(cwd)));
+  try {
+    process.stdout.write(render(readState(cwd)));
+  } catch (error) {
+    fail(error.message);
+  }
 } else if (command === 'book') {
   if (values.claim === undefined || values.quote === undefined || values.session === undefined) {
     fail('book needs --claim, --quote and --session');
   }
-  const state = readState(cwd);
-  const attestations = book(state, values.claim, values.quote, values.session);
-  writeState(cwd, state);
-  // The nudge hook logs what it fired on; a booking logged here is the other
-  // half of that measurement, and without it a hit rate cannot be read back.
-  appendNudgeLog(cwd, { event: 'booked', session: values.session, claim: values.claim });
-  console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
-} else if (command === 'propose') {
-  const candidates = proposable(readState(cwd));
-  if (candidates.length === 0) {
-    console.log('no claim is attested twice yet');
+  try {
+    const state = readState(cwd);
+    const attestations = book(state, values.claim, values.quote, values.session);
+    writeState(cwd, state);
+    // The nudge hook logs what it fired on; a booking logged here is the other
+    // half of that measurement, and without it a hit rate cannot be read back.
+    appendNudgeLog(cwd, { event: 'booked', session: values.session, claim: values.claim });
+    console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
+  } catch (error) {
+    fail(error.message);
   }
-  for (const { claim, attestations } of candidates) {
-    console.log(claim);
-    for (const entry of attestations) console.log(`  ${entry.date}: ${entry.quote}`);
+} else if (command === 'propose') {
+  try {
+    const candidates = proposable(readState(cwd));
+    if (candidates.length === 0) {
+      console.log('no claim is attested twice yet');
+    }
+    for (const { claim, attestations } of candidates) {
+      console.log(claim);
+      for (const entry of attestations) console.log(`  ${entry.date}: ${entry.quote}`);
+    }
+  } catch (error) {
+    fail(error.message);
   }
 } else if (command === 'write') {
   if (values.claim === undefined) fail('write needs --claim');

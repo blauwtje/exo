@@ -21,13 +21,13 @@ fi
 source=$(printf '%s' "$input" | jq -r '.source // ""')
 case "$source" in
   clear|compact)
-    printf '%s' "$input" | node "$root/skills/savings/scripts/read-guard.mjs" reset
-    printf '%s' "$input" | node "$root/skills/savings/scripts/repeat-guard.mjs" reset
+    printf '%s' "$input" | node "$root/skills/savings/scripts/read-guard.mjs" reset >/dev/null
+    printf '%s' "$input" | node "$root/skills/savings/scripts/repeat-guard.mjs" reset >/dev/null
     ;;
 esac
 # Every source ends with the whole body injected below, so the restatement
 # measures transcript growth from this point.
-printf '%s' "$input" | node "$root/skills/savings/scripts/restate.mjs" reset
+printf '%s' "$input" | node "$root/skills/savings/scripts/restate.mjs" reset >/dev/null
 skill="$root/skills/using-exo/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
