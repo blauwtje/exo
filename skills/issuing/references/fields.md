@@ -54,7 +54,7 @@ Every section is an H3, because a repository's issue form renders each of its fi
 
 - A parent the brief or request names: `--parent <n>`. A blocker: `--blocked-by <n>`. A related issue that is neither: one `Related: #<n>` line under `### References`.
 - Several issues from one request are created parent first, then each blocker before what it blocks.
-- The pull request carrying an issue's work ends its body with `Closes #<n>`, one line per issue it closes.
+- The pull request carrying an issue's work carries one `Closes #<n>` line per issue it closes, where the repository's pull-request template puts that line and at the end of the body when it has no template.
 
 ## Create and set
 
@@ -67,7 +67,7 @@ Pass only the flags whose values the reading above confirmed or the default set 
 
 ## The pull request
 
-Its body follows the repository's own pull-request template when it has one, and ends on its `Closes #<n>` line. Its labels, milestone and project field values are the closed issue's, copied rather than derived a second time, so the two never disagree; with no issue behind it they are derived here from what the pull request changes.
+Its body follows the repository's own pull-request template when it has one, filling that template's own `Closes #<n>` line rather than adding a second one; without a template the body ends on that line. Its labels, milestone and project field values are the closed issue's, copied rather than derived a second time, so the two never disagree; with no issue behind it they are derived here from what the pull request changes.
 
 ```
 gh pr create --base <default> --title <conventional subject> --body-file <f> \
