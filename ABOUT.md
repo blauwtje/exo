@@ -12,7 +12,7 @@ because two words for one thing turn into two things.
 
 | exo says | Not | Because |
 |---|---|---|
-| savings record, counter | ledger | the record is what exo booked and the counter is what reports it; a ledger implies double entry and a balance exo never keeps |
+| savings record, counter | any other name | the record is what exo booked and the counter is what reports it; exo keeps no double entry and no balance |
 | helper, delegate | subagent | the harness word ages with the product, and the portable-language check refuses it inside skill text |
 | skill | command, prompt | a user invokes a skill as `/exo:<name>` and the model invokes one by its trigger; both are the same file |
 | trigger | activation, routing rule | a skill's `description` is its trigger, and a trigger is public surface: renaming one is a breaking change |
