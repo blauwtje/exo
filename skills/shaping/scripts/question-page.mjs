@@ -24,8 +24,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#designing/capture.mjs';
-import { CHROME_TOKENS, escapeHtml } from '#designing/pick.mjs';
+import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
+import { parseFlags, UsageError } from '#script-flags';
 
 const SKETCH_TAB = fileURLToPath(new URL('../../designing/scripts/sketch-tab.mjs', import.meta.url));
 const LABELS_FILE = 'labels.json';
