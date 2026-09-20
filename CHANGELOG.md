@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- One standard now decides every issue and pull request exo creates. `skills/issuing/references/fields.md` holds the field vocabulary, how priority, size and estimate are read off the body, the two body shapes, Spec for a brief or feature work and Report for a bug, a regression, a chore or a documentation fix, and the pull request's own labels, milestone, project fields and `Closes #<n>` line, which it had carried for no pull request before. `issuing`, `shaping`'s `specs=issues` path and `implementing`'s finishing reference read that one file instead of each holding a copy, and this repository's issue and pull-request templates carry the same section names, so an item a person files and one exo files read alike.
+
 ## 0.20.0 - 2026-09-20
 
 ### Added

@@ -62,22 +62,11 @@ the language of the recent pull requests and commits
 (`gh pr list --limit 5 --json title --jq '[.[].title]'`,
 `git log -5 --format=%s`). The skill's own text stays English.
 
-- One sentence naming the outcome, in the present tense, first line.
-- `Done when`: checkable criteria as a task list, each one a state a reader
-  can verify without reading the diff.
-- `Out of scope`: what a reader would otherwise assume is included.
-- `References`: the paths and symbols from Step 3, one per line.
-- `Decided`: optional, only for a constraint the user settled that the
-  criteria do not already carry.
-
-Never write a background or motivation section, never quote the prompt, and
-never repeat in the body what the metadata already shows: labels, type,
-parent, blocked-by and milestone appear beside the issue, and a second copy
-in the body goes stale on the first edit.
-
-Size, effort and priority are the repository's own project fields or labels,
-or the default labels in `references/fields.md` when it has none; never prose
-in the body.
+Take the shape from `references/fields.md`: Spec for a brief or for feature
+work, Report for a bug, a regression, a chore or a documentation fix. That
+file holds both section lists, the ban on a background section and on
+repeating the metadata, and how priority, size and estimate are read off the
+body; no field and no section is decided here.
 
 ## References
 

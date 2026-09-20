@@ -3,51 +3,44 @@ description: A skill, hook or command does something wrong.
 labels: ["bug"]
 body:
   - type: textarea
-    id: what-happened
+    id: what-happens
     attributes:
-      label: What happened
-      description: What exo did, and what you expected instead.
+      label: What happens
+      description: One or two sentences naming what exo does today.
     validations:
       required: true
   - type: textarea
-    id: reproduce
+    id: expected
     attributes:
-      label: Steps to reproduce
-      description: The prompt or command you ran, in order.
+      label: Expected
+      description: What should happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: The prompts or commands that produce it, in order.
       placeholder: |
-        1. Start Claude Code in a repository.
+        1. Start a session in a repository.
         2. Ask ...
         3. See ...
     validations:
       required: true
-  - type: input
-    id: exo-version
+  - type: textarea
+    id: environment
     attributes:
-      label: exo version
-      description: The release you installed, such as 0.4.0.
-    validations:
-      required: true
-  - type: input
-    id: claude-code-version
-    attributes:
-      label: Claude Code version
-      description: Shown by `claude --version`.
-    validations:
-      required: true
-  - type: dropdown
-    id: platform
-    attributes:
-      label: Platform
-      options:
-        - macOS
-        - Linux
-        - Windows
-        - Other
+      label: Environment
+      description: The exo release, the CLI version from `claude --version`, and your operating system, one per line.
+      placeholder: |
+        exo 0.20.0
+        claude 2.0.0
+        macOS 15.5
     validations:
       required: true
   - type: textarea
-    id: logs
+    id: evidence
     attributes:
-      label: Output or transcript
-      description: The relevant lines only. Remove secrets first.
+      label: Evidence
+      description: The relevant output or transcript lines only. Remove secrets first.
       render: text
