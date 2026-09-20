@@ -11,6 +11,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `planning` builds a map of the repository with `skills/planning/scripts/repo-map.mjs` and reads it before it dispatches `exo:explorer`, so a cold session sees where a kind of thing lives before it pays for a search, and the generator's default cap rises from 4,000 to 12,000 bytes, the size at which this repository keeps the exported names of most of its JavaScript and TypeScript files.
 
+### Changed
+
+- `CLAUDE.md` has a session in this repository install a landed release itself: after the release workflow succeeds it updates the marketplace and the plugin, then clears the cached exo versions no session uses, leaving the user only the restart.
+- `planning` reads the repository map as its own step before the dispatch, and ties the dispatch to it: the explorer is asked only for what the map left unresolved, and a path the map already names is confirmed by reading its range in the planning session instead.
+- `eval-reasons.mjs` can leave a grader out of a case's `GATE` line through `NON_GATING_GRADERS`, which names it on that line and keeps it in the pass-rate table, and `planning-reads-the-repository-map` now gates on its `runs-the-map-before-the-dispatch` regex grader alone.
+
 ## 0.19.0 - 2026-09-20
 
 ### Added
