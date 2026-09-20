@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `node skills/planning/scripts/repo-map.mjs` builds a map of the repository it runs in: every tracked path, the exported names of its JavaScript and TypeScript files and the `scripts`, `bin`, `main` and `exports` of a `package.json`, with no file body. It writes `<git common dir>/exo/map.md`, holds it to 4,000 bytes by leaving a folder that does not fit as one line with its file count, and rebuilds it only after a commit changed a tracked path. No skill calls it yet and no session pays for it: `node benchmarks/map-spike.mjs <exo> <second repository> --verdict "<sentence>"` first measures what the map keeps against what `exo:explorer` dispatches cost, and holds the figures against a pass mark the script fixes beforehand.
+
 ## 0.18.0 - 2026-09-19
 
 ### Added
