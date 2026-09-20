@@ -53,6 +53,8 @@ const SCENARIOS = [
     append(root, 'skills/shaping/SKILL.md', '\nUse WebSearch when useful.\n') },
   { name: 'derived-name', mutate: (root) =>
     append(root, 'skills/shaping/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
+  { name: 'oversized-skill-body', mutate: (root) =>
+    append(root, 'skills/settings/SKILL.md', `\n${'- A line no body has room for.\n'.repeat(500)}`) },
   { name: 'broken-reference', mutate: (root) =>
     replaceText(root, 'skills/implementing-batch/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>

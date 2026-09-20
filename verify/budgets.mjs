@@ -29,3 +29,9 @@ export const RESTATEMENT_LOCK = { bytes: 3242, measured: '2026-09-18' };
 // a file that only grows costs more to read than it saves, and one irrelevant
 // line measurably lowers accuracy.
 export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
+
+// A skill body is loaded whole when its skill fires and stays in the context
+// for the rest of the session. 15,000 bytes is about 3,750 tokens, under the
+// 500 lines first-party guidance sets for a body, and the smallest round number
+// the largest body, designing's, fits under once its phases live in references.
+export const SKILL_BODY_LIMIT = { bytes: 15000 };

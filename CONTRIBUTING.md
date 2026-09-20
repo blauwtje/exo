@@ -32,6 +32,8 @@ A skill whose work leaves the machine (issues, pull requests, merges) is slash-o
 
 `skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so a skill nested there is listed nowhere, invoked by nobody and counted in no budget; `verify/repository.mjs` skips the folder for the same reason. Promotion means all five of: the folder moves to `skills/<name>/`, the name joins `EXPECTED_SKILLS` in `verify/budgets.mjs`, it gets a reference contract in `verify/checks/reference-tables.mjs`, its description is paid for in `DESCRIPTION_TOTAL_LOCK` and `TOTAL_WARN`, and it gets a page under `docs/skills/`. A skill is written from a discipline that has been read, never from a one-line description.
 
+A `SKILL.md` stays under 15,000 bytes, which the `skill body budgets` check enforces: a body is paid for on every run of its skill, so bulk lives in `references/` and the body names the step that opens it. A skill is split into two only when the halves fire at different moments, because a second skill adds its trigger to every session's listing.
+
 ## Adding a setting
 
 A new setting is one entry in `skills/settings/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` holds the two together.
