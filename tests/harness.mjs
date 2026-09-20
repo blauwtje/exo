@@ -2,7 +2,7 @@
 // `node --test` runs every *.test.mjs file in its own process, so the cleanup
 // hook registered here belongs to whichever test file imported it.
 
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -55,4 +55,35 @@ export async function jsonFixture(name, value) {
   const file = path.join(directory, name);
   await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
   return file;
+}
+
+// A fixed identity and no signing, so a commit works on a machine that has
+// neither configured.
+const GIT_SETTINGS = ['-c', 'user.name=exo-test', '-c', 'user.email=exo-test@example.com', '-c', 'commit.gpgsign=false'];
+
+/** Run git in `directory` and return what it printed, trimmed. */
+export function git(directory, ...args) {
+  const output = execFileSync('git', ['-C', directory, ...GIT_SETTINGS, ...args], { encoding: 'utf8' });
+  return output.trim();
+}
+
+/** Write `files`, a map of relative path to content, under `root` and commit them all. */
+export async function commitFiles(root, files, subject) {
+  for (const [relativePath, content] of Object.entries(files)) {
+    const target = path.join(root, relativePath);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, content);
+  }
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', subject);
+}
+
+// A real repository on branch main with `files` in its first commit. The root
+// goes through realpath: macOS reaches its temp directory through a symlink,
+// and git reports the resolved path, which no path built from mkdtemp matches.
+export async function gitRepository(files) {
+  const root = await fs.realpath(await fixture());
+  git(root, 'init', '-q', '-b', 'main');
+  await commitFiles(root, files, 'chore: seed the fixture');
+  return root;
 }
