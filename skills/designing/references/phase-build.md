@@ -13,5 +13,5 @@ A surface whose direction was decided before this run — a plan's `Contract:`, 
 
 ## Judgment
 
-- The floor and the underdesign floor in the skill body bind every build, in this session and in every builder.
+- The floor and the underdesign floor in `## The build floor` of `phase-detail.md` bind every build, in this session and in every builder.
 - A reachable state left unstyled or a placeholder region still standing keeps the surface unfinished, whatever the checks report.
