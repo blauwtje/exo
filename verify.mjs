@@ -17,6 +17,7 @@ import { checkDescriptionBudgets } from './verify/checks/description-budgets.mjs
 import { checkInjectedContext } from './verify/checks/injected-context.mjs';
 import { checkRestatement } from './verify/checks/restatement.mjs';
 import { checkBannedText } from './verify/checks/banned-text.mjs';
+import { checkDerivation } from './verify/checks/derivation.mjs';
 import { checkReferenceTables } from './verify/checks/reference-tables.mjs';
 import { checkSharedContracts } from './verify/checks/shared-contracts.mjs';
 import { checkReturnCaps } from './verify/checks/return-caps.mjs';
@@ -58,6 +59,7 @@ checkDescriptionBudgets(report, repository);
 checkInjectedContext(report, repository);
 checkRestatement(report, repository);
 checkBannedText(report, repository);
+checkDerivation(report, repository);
 checkReferenceTables(report, repository);
 checkSharedContracts(report, repository);
 checkReturnCaps(report, repository);

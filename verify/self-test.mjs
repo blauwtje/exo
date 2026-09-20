@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 
@@ -50,6 +51,8 @@ const SCENARIOS = [
     append(root, 'skills/shaping/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>
     append(root, 'skills/shaping/SKILL.md', '\nUse WebSearch when useful.\n') },
+  { name: 'derived-name', mutate: (root) =>
+    append(root, 'skills/shaping/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
   { name: 'broken-reference', mutate: (root) =>
     replaceText(root, 'skills/implementing-batch/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>

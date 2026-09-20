@@ -18,6 +18,8 @@ An installed plugin runs from Claude Code's cache copy, so an edit is live only 
 
 CI runs `npm run check` on Node 22 and 24 for every push to `main` and every pull request.
 
+The `derivation` check fails the build when a name exo does not own reaches a shipped file, and when a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names are held base64-encoded inside `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids.
+
 `npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through the TAP reporter, so its failure line names each failing test as `not ok`.
 
 ## Editing a skill
