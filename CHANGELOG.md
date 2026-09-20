@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `shaping`'s `specs=issues` path sets the project fields the repository defines again. The guard 0.20.1 added read as "set no project field", so a spec issue landed with its priority, size and estimate empty; it now names only what it may not create, a label, a type or a milestone the repository does not already define, and sets every field it does. The Spec sections in `skills/issuing/references/fields.md` name which part of a brief each one carries, so `shaping` no longer repeats that mapping.
+
 ## 0.20.1 - 2026-09-20
 
 ### Changed
