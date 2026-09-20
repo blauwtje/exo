@@ -13,8 +13,11 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // Growth fails, shrinking passes, and no check re-locks itself: a raise is a hand
 // edit in the same commit as the text it pays for, which is the whole mechanism.
 // The date records when the number was measured; nothing enforces its age.
+// The injected body is 91% of the 10,000-character hook-output ceiling, and the
+// hook appends about 430 further characters at runtime, so the next addition to
+// using-exo buys its bytes out of that body.
 export const DESCRIPTION_TOTAL_LOCK = { chars: 3889, measured: '2026-09-18' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 8940, measured: '2026-09-18' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 9101, measured: '2026-09-20' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
