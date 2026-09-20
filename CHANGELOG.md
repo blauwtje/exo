@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.21.0 - 2026-09-20
+
 ### Highlights
 
 **Every exo skill now declares which side invokes it, and `README.md` lists the model-invoked and the user-invoked group separately.** **`shaping` now interviews from a decision map until nothing is open, reopens the brief you already have instead of filing a second issue, and can ask on a browser page with every decision in view.** **A `derivation` check fails the build on a name exo does not own and on a third-party notice file, so PolyForm Noncommercial 1.0.0 stays the whole licence.**
