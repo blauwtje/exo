@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Guard on Read: in PreToolUse it refuses an unbounded read of a large file so
-// the model reads a located range instead, and refuses a second read of a
+// the model reads a located range instead, except the repository map, which is
+// generated and capped where it is written, and refuses a second read of a
 // range unchanged since the first in this context window; in PostToolUse it
 // books the read that succeeded. Each refusal is booked under its tool call
 // with the bytes it kept out of context, and each run books its own time,
@@ -19,9 +20,33 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { memoryDirectory } from '#memory-store';
 import { configFile, guardLines, readJson, savingsEnabled, updateSession } from './record.mjs';
 
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.ipynb']);
+
+const MAP_NAME = 'map.md';
+
+// A path a symlink reaches is the same file, and git reports the exo directory
+// with the links resolved; a directory that cannot be resolved compares as it
+// was given.
+function resolvedDirectory(directory) {
+  try {
+    return fs.realpathSync(directory);
+  } catch {
+    return directory;
+  }
+}
+
+// The repository map skills/planning/scripts/repo-map.mjs writes is generated,
+// held to its own cap and printed to be read whole, so the line cap does not
+// apply to it. Only that one file is exempt: the exo directory comes from git,
+// so a map.md in a tracked folder named exo stays capped.
+function isRepositoryMap(filePath, cwd) {
+  if (path.basename(filePath) !== MAP_NAME) return false;
+  const read = resolvedDirectory(path.dirname(path.resolve(filePath)));
+  return read === resolvedDirectory(memoryDirectory(cwd));
+}
 
 function guardEnabled() {
   if (!savingsEnabled()) return false;
@@ -71,7 +96,8 @@ function readTarget(hookInput) {
   // agent's reads are tracked apart from the main thread's.
   const reader = typeof hookInput.agent_id === 'string' ? hookInput.agent_id : 'main';
   const key = `${reader}:${filePath}:${input.offset ?? 0}:${input.limit ?? 0}`;
-  return { input, filePath, stat, key, reader };
+  const cwd = typeof hookInput.cwd === 'string' && hookInput.cwd !== '' ? hookInput.cwd : process.cwd();
+  return { input, filePath, stat, key, reader, cwd };
 }
 
 // performance.now() counts from the start of this Node process, so the run's
@@ -84,7 +110,7 @@ function bookRunTime(guard) {
 // A duplicate would have returned the earlier read's bytes again; a capped
 // read would have returned the whole file.
 function refusalOf(session, target) {
-  const { input, filePath, stat, key } = target;
+  const { input, filePath, stat, key, cwd } = target;
   const previous = session.reads[key];
   if (previous && previous.mtimeMs === stat.mtimeMs && previous.size === stat.size) {
     return {
@@ -95,6 +121,7 @@ function refusalOf(session, target) {
   }
   const unbounded = input.offset === undefined && input.limit === undefined;
   if (!unbounded) return null;
+  if (isRepositoryMap(filePath, cwd)) return null;
   const lines = fileLines(filePath);
   const lineLimit = guardLines();
   if (lines.length <= lineLimit) return null;

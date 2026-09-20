@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `CLAUDE.md` has a session in this repository install a landed release itself: after the release workflow succeeds it updates the marketplace and the plugin, then clears the cached exo versions no session uses, leaving the user only the restart.
 - `planning` reads the repository map as its own step before the dispatch, and ties the dispatch to it: the explorer is asked only for what the map left unresolved, and a path the map already names is confirmed by reading its range in the planning session instead.
+- The read guard lets an unbounded read of the repository map through: `<git common dir>/exo/map.md` is generated, capped where it is written and printed to be read whole. The exemption reaches that one path and the cap alone: a map.md anywhere else stays capped, and a second read of the map in one context window is still refused as unchanged.
 - `eval-reasons.mjs` can leave a grader out of a case's `GATE` line through `NON_GATING_GRADERS`, which names it on that line and keeps it in the pass-rate table, and `planning-reads-the-repository-map` now gates on its `runs-the-map-before-the-dispatch` regex grader alone.
 
 ## 0.19.0 - 2026-09-20

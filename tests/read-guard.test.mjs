@@ -9,9 +9,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture } from './harness.mjs';
+import { fixture, gitRepository, run } from './harness.mjs';
 
 const GUARD = fileURLToPath(new URL('../skills/savings/scripts/read-guard.mjs', import.meta.url));
+const REPO_MAP = fileURLToPath(new URL('../skills/planning/scripts/repo-map.mjs', import.meta.url));
+const OVER_CAP = Array.from({ length: 600 }, (_, index) => `line ${index + 1}`).join('\n');
 
 function runGuard(args, hookInput, env) {
   return new Promise((resolve) => {
@@ -186,4 +188,51 @@ test('readGuardLines in config.json moves the big-file limit, and a value that i
   const broken = await guardFixture({ readGuardLines: 'lots' });
   const brokenVerdict = decision(await runGuard([], readInput(broken.file), broken.env));
   assert.match(brokenVerdict.permissionDecisionReason, /is capped at 400/);
+});
+
+// The map the generator prints, filled past the cap. The path comes from the
+// generator, so a map that moves fails this test instead of losing its
+// exemption in silence.
+async function repositoryMapOverCap(root) {
+  const built = await run(REPO_MAP, [], { cwd: root });
+  assert.equal(built.code, 0, built.stderr);
+  const file = built.stdout.trim();
+  await fs.writeFile(file, OVER_CAP);
+  return file;
+}
+
+test('the repository map passes an unbounded read, and no other path in the repository does', async () => {
+  const { env } = await guardFixture();
+  const root = await gitRepository({ 'README.md': '# Fixture\n' });
+  const map = await repositoryMapOverCap(root);
+  assert.equal(decision(await runGuard([], { ...readInput(map), cwd: root }, env)), null);
+  const beside = path.join(path.dirname(map), 'memory.md');
+  await fs.writeFile(beside, OVER_CAP);
+  const besideVerdict = decision(await runGuard([], { ...readInput(beside), cwd: root }, env));
+  assert.match(besideVerdict.permissionDecisionReason, /memory\.md has 600 lines/);
+  const tracked = path.join(root, 'exo', 'map.md');
+  await fs.mkdir(path.dirname(tracked), { recursive: true });
+  await fs.writeFile(tracked, OVER_CAP);
+  const trackedVerdict = decision(await runGuard([], { ...readInput(tracked), cwd: root }, env));
+  assert.match(trackedVerdict.permissionDecisionReason, /has 600 lines/);
+});
+
+test('the map is exempt through a symlinked path to the same repository', async () => {
+  const { env } = await guardFixture();
+  const root = await gitRepository({ 'README.md': '# Fixture\n' });
+  const map = await repositoryMapOverCap(root);
+  const link = path.join(await fixture(), 'linked-root');
+  await fs.symlink(root, link);
+  const throughLink = path.join(link, path.relative(root, map));
+  assert.equal(decision(await runGuard([], { ...readInput(throughLink), cwd: link }, env)), null);
+});
+
+test('the map exemption is the cap alone: a second read of it in one context window is still refused', async () => {
+  const { env } = await guardFixture();
+  const root = await gitRepository({ 'README.md': '# Fixture\n' });
+  const map = await repositoryMapOverCap(root);
+  await runGuard(['book'], { ...readInput(map), cwd: root }, env);
+  const repeat = decision(await runGuard([], { ...readInput(map), cwd: root }, env));
+  assert.equal(repeat.permissionDecision, 'deny');
+  assert.match(repeat.permissionDecisionReason, /unchanged since your read/);
 });
