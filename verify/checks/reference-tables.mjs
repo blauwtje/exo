@@ -59,6 +59,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/shaping/SKILL.md': [
     '../issuing/references/fields.md',
+    'references/interview-page.md',
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',

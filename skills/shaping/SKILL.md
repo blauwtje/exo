@@ -72,6 +72,7 @@ Question <n>, <k> still open
 - A path or an identifier appears only beside what it means, because the reader answers from the product, never from the code.
 - Any answer counts: a reply in words is read as the decision it names, and is asked again only when it fits two options.
 - "I don't know" gets the difference in two sentences with one example from the user's own product, then the same options once more. A second one takes the recommended answer, listed as exo's.
+- With `interview=page` in the `exo settings:` line and two or more open decisions, the question goes to the browser page under `references/interview-page.md`, and the conversation carries only what each answer closed and opened.
 
 ## A stored brief
 
@@ -88,6 +89,7 @@ New wishes for work that already has a brief reopen that brief, because a second
 | File | Read it when |
 |---|---|
 | `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
+| `references/interview-page.md` | Before the first question, only when `interview=page` stands in the `exo settings:` line and the map holds two or more open decisions. |
 
 ## Judgment
 
