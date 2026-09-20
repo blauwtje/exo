@@ -43,6 +43,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
     'references/finishing.md',
+    '../issuing/references/fields.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'drift-repairer-prompt.md',

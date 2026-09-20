@@ -28,17 +28,16 @@ commands and internals; this file only names what a session here gets wrong with
 ## Evals cost real money
 
 <!-- Measured 2026-09-18 by summing costUsd and durationSeconds over evals/results/*/aggregate-result.json; stale once more runs land there. -->
-The 37 runs recorded under `evals/results/` cost $83.87 and 170 minutes of wall clock, so the cheap
-path is the default one and every rule below exists to keep it that way.
+Every run recorded under `evals/results/` cost real money and minutes of wall clock: the `costUsd` and `durationSeconds` of each top-level `aggregate-result.json` there add up to today's totals. The cheap path is the default one and every rule below exists to keep it that way.
 
 - Run no eval for a change that does not alter skill behavior. Documentation, the verifier, the changelog and this file change nothing a grader can see.
-- Run only the case the change touched, with `node eval-case.mjs --case <name> --arm <arm>`, never the 26-case suite: every run of every case pays its own judge call.
+- Run only the case the change touched, with `node eval-case.mjs --case <name> --arm <arm>`, never the whole suite: every run of every case pays its own judge call.
 - Iterate with `--mode draft` (3 runs) and take a verdict only from `--mode full`, because at 3 runs one answer moves a pass rate by a third.
 - `--ablation with-without` is the CLI default whenever a plugin resolves and doubles the runs. `eval-case.mjs` passes `--ablation none` already; a direct `claude plugin eval .` needs it too unless the baseline is the question.
 - Pass `--max-cost-usd 5` on any direct `claude plugin eval` call. It is the ceiling the runner's own docs recommend over tight per-run limits, it aborts with exit 2 rather than overrunning, and nothing in this repo sets it today.
 - Give every new case a `timeout_seconds` that fits what its graders check. The default is 300 (max 3600), and a run that outruns it is recorded as `timed out after 300s` yet still graded on its partial transcript, so it scores 0 and reads as a real failure. `implementing-inits-a-new-folder` and `planning-plans-a-new-folder` need `timeout_seconds: 900` for that reason.
 - `max_turns` defaults to 10; every case here sets its own, because hitting the cap is a run error that lowers the score.
-- Where text sits, how it is laid out and whether a literal appears is a free grader (`regex`, `tool_used`, `tool_order`, `file_exists`), never an `llm` criterion: a free grader costs nothing and reads every run the same way, while a second judge reversed 45% of the one-word judge's failed verdicts. `tests/evals.test.mjs` fails a new case without a free grader and an llm criterion that words layout; `CONTRIBUTING.md` `### What a judge may grade` holds the rule and the measurement. 28 of this repo's 40 graders are `llm`, which is why almost every run pays.
+- Where text sits, how it is laid out and whether a literal appears is a free grader (`regex`, `tool_used`, `tool_order`, `file_exists`), never an `llm` criterion: a free grader costs nothing and reads every run the same way, while a second judge reversed 45% of the one-word judge's failed verdicts. `tests/evals.test.mjs` fails a new case without a free grader and an llm criterion that words layout; `CONTRIBUTING.md` `### What a judge may grade` holds the rule and the measurement.
 - A plan's `## Final verification` gates an eval on the `GATE PASS` line a full `eval-case.mjs` run prints, never on a count such as `(3/3)`: n of n fails a flawless skill four times in ten under that judge. `GATE DISPUTED` is settled by reading `judge-reasons.json`, not by a rerun, and a case that gates a plan carries `runs: 5`.
 - A case grants no tool unless its `prompt.md` lists `allowed_tools`, so a run cannot `Read` a skill's `references/`: a rule a case grades sits in the `SKILL.md` body, or the case grants `Read`.
 - `eval-case.mjs` pins `JUDGE_MODEL = 'sonnet'`; the CLI's own default is `haiku`. Sonnet is the deliberate choice for these rubrics, so do not widen it to new scripts without asking.
