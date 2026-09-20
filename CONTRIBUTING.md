@@ -30,6 +30,8 @@ A skill whose work leaves the machine (issues, pull requests, merges) is slash-o
 
 `ABOUT.md` at the repository root says what exo is and holds exo's domain words with the synonym each one replaces. A skill body, a reply and a commit use the left column; the `derivation` check reads the file for names exo does not own.
 
+`skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so a skill nested there is listed nowhere, invoked by nobody and counted in no budget; `verify/repository.mjs` skips the folder for the same reason. Promotion means all five of: the folder moves to `skills/<name>/`, the name joins `EXPECTED_SKILLS` in `verify/budgets.mjs`, it gets a reference contract in `verify/checks/reference-tables.mjs`, its description is paid for in `DESCRIPTION_TOTAL_LOCK` and `TOTAL_WARN`, and it gets a page under `docs/skills/`. A skill is written from a discipline that has been read, never from a one-line description.
+
 ## Adding a setting
 
 A new setting is one entry in `skills/settings/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` holds the two together.
