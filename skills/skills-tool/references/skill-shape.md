@@ -24,7 +24,7 @@ description: <The moments it fires, then "Not for ..." naming the cases it leave
 
 ## Red flags
 
-| Thought | Reality |
+| The excuse | What holds |
 |---|---|
 | "<the excuse>" | <what holds instead> |
 

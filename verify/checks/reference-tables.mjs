@@ -64,7 +64,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',
-    'references/form-by-failure.md',
+    'references/where-a-fix-lives.md',
     'references/wording.md',
     'references/description.md',
     'references/skill-shape.md',
