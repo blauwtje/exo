@@ -36,11 +36,11 @@ Every section is an H3, because a repository's issue form renders each of its fi
 
 **Spec**, for a brief `shaping` produced and for any feature work:
 
-- `### Outcome`: one sentence naming the result, in the present tense.
-- `### Done when`: checkable criteria as a task list, each a state a reader verifies without reading the diff.
+- `### Outcome`: one sentence naming the result, in the present tense; a brief's Goal.
+- `### Done when`: checkable criteria as a task list, each a state a reader verifies without reading the diff; a brief's Acceptance.
 - `### Out of scope`: what a reader would otherwise assume is included.
 - `### References`: the paths and symbols the criteria rest on, one per line.
-- `### Decided`: optional, only for a constraint the user settled that the criteria do not already carry.
+- `### Decided`: optional, only for a constraint the user settled that the criteria do not already carry; a brief's Decisions.
 
 **Report**, for what needs no shaping: a bug, a regression, a chore or a documentation fix.
 
