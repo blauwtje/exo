@@ -2,7 +2,8 @@
 .claude/
 node_modules/
 .DS_Store
-docs/
+docs/*
+!docs/skills/
 benchmarks/fixtures/
 benchmarks/runs/
 evals/results/
