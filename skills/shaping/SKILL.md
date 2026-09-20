@@ -48,7 +48,7 @@ The map sets how long the interview runs: no budget ends it and no guess closes 
 
 1. **Map what is asked.** Put every noticeable or costly decision on the map, one line each, in the user's words. Beside it goes the open decision it waits on, because its options change with that answer.
 2. **Close what the repository answers.** Inspect the relevant code before asking. A decision it settles is closed by the code, with the path as evidence, and is never asked.
-3. **Show the map from three.** A map of three or more open decisions stands above the first question. A shorter one shows only its place line, because a map of two is noise.
+3. **Show the map from three.** A map of three or more open decisions stands above the first question, each line ending on what it waits on. A shorter one shows only its place line, because a map of two is noise.
 4. **Ask what waits on nothing.** One decision per message, chosen from the answers so far: the one whose answer closes the most others.
 5. **Count, never budget.** Open every question with its place, such as `Question 2, 3 still open`. After an answer, say in one line what it closed and what it opened, because a user who cannot see the end stops answering with care.
 6. **End on an empty map, or on Go.** **Go** is every question's last option: each decision still open takes its recommended answer. Write the brief after the last answer, because a brief written earlier is rewritten by the next one.
@@ -59,6 +59,9 @@ The map sets how long the interview runs: no budget ends it and no guess closes 
 The reader has not seen the code, so every part is written for that reader, in this order:
 
 ```text
+<only above the first question, from three open decisions, one line each:>
+- <an open decision in the user's words>: <this question | waits on nothing | waits on <that decision>>
+
 Question <n>, <k> still open
 **<the decision as one question in everyday words?>**
 <one line: what the user will see differ in the finished result>
