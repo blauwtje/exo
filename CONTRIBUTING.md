@@ -64,7 +64,7 @@ A case grants no tool unless its `prompt.md` lists `allowed_tools`, so a run can
 
 An errored run counts as a failed run of every grader, and so does a grader that recorded no verdict. One failed run is tolerated because n of n asks for more than the judge can deliver: passing 3 of 3 nineteen times in twenty takes a 98.3% per-run pass rate and 5 of 5 takes 99.0%, while a flawless skill under the 16% above shows 84% and passes those gates 58% and 41% of the time. With one failure tolerated it passes 93% of the time at three runs and 81% at five. Three runs cannot tell a working skill from a coin flip, which passes 2 of 3 half the time, so a case that gates a plan carries `runs: 5`, where the coin flip passes 19% of the time.
 
-A grader can be left out of the gate without leaving the case: `NON_GATING_GRADERS` in `eval-reasons.mjs` names it by case, the pass-rate table still counts it, and every `GATE` line of that case ends with `left out of the gate: <name>`. A grader belongs there when a rerun moves its own verdict rather than the skill's behavior, and the constant's comment carries the evidence that showed it.
+A grader can be left out of the gate without leaving the case: `NON_GATING_GRADERS` in `eval-reasons.mjs` names it by case, the pass-rate table still counts it, and every `GATE PASS`, `GATE DISPUTED` and `GATE FAIL` line of that case ends with `left out of the gate: <name>`, a `GATE NONE` line only when the downgrade is what emptied the gate. A grader belongs there when a rerun moves its own verdict rather than the skill's behavior, and the constant's comment carries the evidence that showed it.
 
 ### savings-report-reads-cold
 

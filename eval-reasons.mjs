@@ -211,10 +211,22 @@ function printGates(aggregate, reasoned) {
         console.log(`GATE NONE\t${evalCase.name}\t${arm}\t${runs.length} runs, a gate needs ${MINIMUM_GATE_RUNS}`);
         continue;
       }
-      const nonGating = new Set(NON_GATING_GRADERS.get(evalCase.name) ?? []);
+      // A renamed case or grader leaves a stale name here, and a silent no-op would
+      // gate a grader the case still documents as downgraded, so the name is
+      // matched against the graders this run carries and a miss is reported.
+      const downgraded = NON_GATING_GRADERS.get(evalCase.name) ?? [];
+      const graderNames = new Set(evalCase.graders.map((grader) => grader.name));
+      const stale = downgraded.filter((name) => !graderNames.has(name));
+      if (stale.length > 0) console.error(`NON_GATING_GRADERS names ${stale.join(', ')} for ${evalCase.name}, which this run does not grade`);
+      const nonGating = new Set(downgraded.filter((name) => graderNames.has(name)));
       // A verdict that ignores a grader says so, so no reader takes it for the whole case.
       const leftOut = nonGating.size === 0 ? '' : `; left out of the gate: ${[...nonGating].join(', ')}`;
       const counts = [...failedRunsByGrader(evalCase, arm, runs, reversedVotes)].filter(([name]) => !nonGating.has(name));
+      // Every grader downgraded leaves nothing to check, and a PASS then reads as a verdict it is not.
+      if (counts.length === 0) {
+        console.log(`GATE NONE\t${evalCase.name}\t${arm}\tno gating grader left${leftOut}`);
+        continue;
+      }
       const overTolerance = counts.filter(([, count]) => count.failed > TOLERATED_FAILED_RUNS);
       if (overTolerance.length === 0) {
         console.log(`GATE PASS\t${evalCase.name}\t${arm}\tno grader failed more than ${TOLERATED_FAILED_RUNS} of ${runs.length} runs${leftOut}`);

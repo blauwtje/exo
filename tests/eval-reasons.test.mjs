@@ -159,6 +159,16 @@ test('a non-gating grader stays in the pass-rate table and out of the gate', asy
   assert.match(outcome.stdout, /\tplugin\tdispatches-for-what-the-map-leaves-open\t0% \(0\/3\)\t3\t0\t0$/m);
 });
 
+test('a stale non-gating name is reported and gates as usual', async () => {
+  const missed = 'nothing about guards';
+  const aggregate = gateAggregate([missed, missed, missed], [true, true, true]);
+  const [evalCase] = aggregate.cases;
+  evalCase.name = 'planning-reads-the-repository-map';
+  const { outcome } = await runWithStandIn(aggregate);
+  assert.match(outcome.stderr, /NON_GATING_GRADERS names dispatches-for-what-the-map-leaves-open for planning-reads-the-repository-map, which this run does not grade/);
+  assert.match(outcome.stdout, /^GATE FAIL\tplanning-reads-the-repository-map\tplugin\tnames-the-mechanisms failed 3 of 3 runs, 0 reversed by the reasoning judge$/m);
+});
+
 test('judges with the run judge model, and with haiku when the run named none', async () => {
   const named = await runWithStandIn(aggregateWith({ judgeModel: 'sonnet' }));
   assert.deepEqual((await fs.readFile(named.log, 'utf8')).trim().split('\n'), ['sonnet', 'sonnet']);
