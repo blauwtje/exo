@@ -28,6 +28,8 @@ Load the `skills-tool` skill before any skill or delegate-prompt edit; it holds 
 
 A skill whose work leaves the machine (issues, pull requests, merges) is slash-only, with `disable-model-invocation: true`. Every other skill stays model-invocable so a next-stage answer can start it, and its description opens with `Use when`.
 
+`ABOUT.md` at the repository root says what exo is and holds exo's domain words with the synonym each one replaces. A skill body, a reply and a commit use the left column; the `derivation` check reads the file for names exo does not own.
+
 ## Adding a setting
 
 A new setting is one entry in `skills/settings/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` holds the two together.
