@@ -91,10 +91,31 @@ function money(value, known) {
   return `$${Math.abs(value).toFixed(2)}`;
 }
 
+// Where a session's context stands, by the tokens it holds and not by its share
+// of the window: reading and reasoning decline with what the model carries, and
+// a larger window only moves where it ends. Below the first band the segment
+// names the count alone.
+const CONTEXT_BANDS = [
+  { from: 200_000, word: 'write a handoff, then clear' },
+  { from: 150_000, word: 'dull, hand off soon' },
+  { from: 100_000, word: 'edge' }
+];
+
+// The status input carries context_window.total_input_tokens, the input, cache
+// read and cache write tokens of the latest response; it is absent or null
+// until the first response, and the segment then says nothing about context.
+function contextBand(statusInput) {
+  const tokens = statusInput.context_window?.total_input_tokens;
+  if (typeof tokens !== 'number') return '';
+  const count = `${Math.round(tokens / 1000)}k`;
+  const band = CONTEXT_BANDS.find((each) => tokens >= each.from);
+  return band ? ` · context ${count} · ${band.word}` : ` · context ${count}`;
+}
+
 // Cost first, as in the report. Refusals are a count, never bytes, and the
 // token total stays in the report's footer: beside a cost it gives a rate.
-function segment(measured) {
-  return `exo cost ${money(measured.cost, measured.costKnown)} · ${duration(measured.time)} · ${counted(measured.refusals, 'read')} refused`;
+function segment(measured, statusInput) {
+  return `exo cost ${money(measured.cost, measured.costKnown)} · ${duration(measured.time)} · ${counted(measured.refusals, 'read')} refused${contextBand(statusInput)}`;
 }
 
 function readStdin() {
@@ -113,7 +134,7 @@ function statusline(statusInput) {
   if (typeof statusInput.session_id === 'string') {
     sessions = updateSession(statusInput.session_id, (session) => ingestTranscript(session, statusInput.transcript_path));
   }
-  process.stdout.write(segment(measuredRecord(refreshStaleSessions(sessions))));
+  process.stdout.write(segment(measuredRecord(refreshStaleSessions(sessions)), statusInput));
 }
 
 function status() {

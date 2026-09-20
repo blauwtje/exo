@@ -237,6 +237,19 @@ test('a Skill call to an exo skill reaches the segment from the transcript alone
   assert.equal((await runWithStdin(['statusline'], '{}', env)).stdout, 'exo cost $0.04 · 2m · 0 reads refused');
 });
 
+test('the segment closes on the context band the status input reports', async () => {
+  const { configDirectory } = await transcriptFixture();
+  const env = { CLAUDE_CONFIG_DIR: configDirectory };
+  const segmentFor = async (statusInput) => (await runWithStdin(['statusline'], JSON.stringify(statusInput), env)).stdout;
+  const withTokens = (tokens) => segmentFor({ context_window: { total_input_tokens: tokens } });
+  assert.match(await withTokens(84_000), / · context 84k$/);
+  assert.match(await withTokens(120_000), / · context 120k · edge$/);
+  assert.match(await withTokens(170_000), / · context 170k · dull, hand off soon$/);
+  assert.match(await withTokens(210_000), / · context 210k · write a handoff, then clear$/);
+  assert.doesNotMatch(await segmentFor({}), /context/);
+  assert.doesNotMatch(await segmentFor({ context_window: { total_input_tokens: null } }), /context/);
+});
+
 test('a call whose model has no price dashes every cost it reaches', async () => {
   const directory = await fixture();
   await writeConfig(directory);

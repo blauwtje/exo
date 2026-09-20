@@ -109,6 +109,8 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
+The segment closes on the context the session holds, such as `context 120k · edge`. Under 100k tokens it names the count alone; from 100k it says `edge`, from 150k `dull, hand off soon`, and from 200k `write a handoff, then clear`, because a session reads and reasons worse the more it carries. `/exo:handoff` writes the file the next session starts from.
+
 The segment reads `exo cost $0.04 · 2m · 2 reads refused`.
 
 ## Settings
