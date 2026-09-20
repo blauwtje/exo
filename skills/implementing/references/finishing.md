@@ -44,7 +44,7 @@ When `gh auth status` fails, `Open PR` is left out and `1. **Push (Recommended)*
 
 ## Carrying out the pick
 
-- **Open PR.** `git push -u origin <branch>`, then `gh pr create --base <default> --title <conventional title> --body-file <file>` with the goal, the proof line, and `Closes #<n>` when the work came from issue `<n>`. The report names `/exo:merge-prs <pr>` next, because a merge is that command's gate.
+- **Open PR.** `git push -u origin <branch>`, then create the pull request as `## The pull request` in `../../issuing/references/fields.md` says: the body carries the goal, the proof line and `Closes #<n>` when the work came from issue `<n>`, and the labels, milestone and project fields are copied from that issue rather than derived a second time. Without an issue behind it, that file derives them from what the pull request changes. The report names `/exo:merge-prs <pr>` next, because a merge is that command's gate.
 - **Push.** `git push -u origin <branch>` on a branch, `git push --follow-tags` on the default branch.
 - **Keep local.** Nothing runs; the report names the branch.
 
