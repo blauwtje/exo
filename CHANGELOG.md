@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.20.0 - 2026-09-20
+
 ### Added
 
 - `planning` builds a map of the repository with `skills/planning/scripts/repo-map.mjs` and reads it before it dispatches `exo:explorer`, so a cold session sees where a kind of thing lives before it pays for a search, and the generator's default cap rises from 4,000 to 12,000 bytes, the size at which this repository keeps the exported names of most of its JavaScript and TypeScript files.
