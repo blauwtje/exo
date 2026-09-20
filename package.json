@@ -9,7 +9,8 @@
     "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#memory-store": "./lib/memory-store.mjs",
-    "#restatement": "./lib/restatement.mjs"
+    "#restatement": "./lib/restatement.mjs",
+    "#designing/*": "./skills/designing/scripts/*"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {
