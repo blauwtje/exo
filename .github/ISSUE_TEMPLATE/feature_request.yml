@@ -3,21 +3,28 @@ description: Suggest a skill, a setting or a change to how exo works.
 labels: ["enhancement"]
 body:
   - type: textarea
-    id: problem
+    id: outcome
     attributes:
-      label: Problem
-      description: What goes wrong or takes too long today.
+      label: Outcome
+      description: One sentence, in the present tense, naming what becomes true.
     validations:
       required: true
   - type: textarea
-    id: proposal
+    id: done-when
     attributes:
-      label: Proposal
-      description: What exo should do instead.
+      label: Done when
+      description: Checkable criteria, one per line, each a state you can verify without reading the code.
     validations:
       required: true
   - type: textarea
-    id: alternatives
+    id: out-of-scope
     attributes:
-      label: Alternatives
-      description: Workarounds or other tools you tried.
+      label: Out of scope
+      description: What a reader would otherwise assume is included.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Paths, symbols or links the criteria rest on, one per line.
