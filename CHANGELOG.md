@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The session hook keeps its whole output under the 10,000 characters a hook string may hold: on a long path it leaves out the memory pointer, then the handoff pointer, and says so on stderr, where a longer string reached the model as a 2,000-character preview without the rules.
+
 ## 0.21.0 - 2026-09-20
 
 ### Highlights

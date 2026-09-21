@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { RESTATED_SKILL, RESTATE_INTERVAL_BYTES, restatementText } from '#restatement';
+import { HOOK_OUTPUT_CAP } from '#budgets';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
@@ -154,4 +155,24 @@ test('every session start moves the measuring point and still prints one JSON ob
   assert.equal(started.code, 0, started.stderr);
   assert.equal(JSON.parse(started.stdout).hookSpecificOutput.hookEventName, 'SessionStart');
   assert.equal(await baseline(configDirectory), grown);
+});
+
+test('a long working directory drops a pointer and never the rules', { skip: withoutJq }, async () => {
+  const { env, configDirectory, transcript } = await restateFixture();
+  const scope = 'w'.repeat(240);
+  const workingDirectory = path.join(configDirectory, scope);
+  await fs.mkdir(workingDirectory);
+  await fs.mkdir(path.join(configDirectory, 'exo', 'handoff'), { recursive: true });
+  await fs.writeFile(path.join(configDirectory, 'exo', 'handoff', `${scope}.md`), 'handoff\n');
+  await fs.mkdir(path.join(configDirectory, 'exo', 'memory', scope), { recursive: true });
+  await fs.writeFile(path.join(configDirectory, 'exo', 'memory', scope, 'memory.md'), 'memory\n');
+  const started = await runSessionHook({ session_id: 's1', transcript_path: transcript, source: 'startup', cwd: workingDirectory }, env);
+  assert.equal(started.code, 0, started.stderr);
+  const injected = JSON.parse(started.stdout).hookSpecificOutput.additionalContext;
+  assert.ok(injected.length <= HOOK_OUTPUT_CAP.chars, `the hook printed ${injected.length} characters`);
+  assert.match(injected, /## The next stage/);
+  assert.match(injected, /exo settings:/);
+  assert.match(started.stderr, /pointer left out/);
+  const hook = await fs.readFile(SESSION_HOOK, 'utf8');
+  assert.match(hook, new RegExp(`^output_cap=${HOOK_OUTPUT_CAP.chars}$`, 'm'));
 });

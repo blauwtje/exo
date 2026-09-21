@@ -35,6 +35,20 @@ body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' 
 # from this one line instead of opening the settings files themselves.
 settings=$(node "$root/skills/settings/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
 body="$body"$'\n\n'"$settings"
+# A hook output string over this many characters reaches the model as a file
+# path and a 2,000-character preview, which would cut the rules themselves. The
+# body and the settings line always go; a pointer goes only while the whole
+# string stays under the cap, and a pointer left out is named on stderr.
+# verify/budgets.mjs holds the same number as HOOK_OUTPUT_CAP.
+output_cap=10000
+append_pointer() {
+  local candidate="$body"$'\n\n'"$2"
+  if [ "${#candidate}" -le "$output_cap" ]; then
+    body="$candidate"
+  else
+    echo "exo: $1 pointer left out, the session context would pass $output_cap characters" >&2
+  fi
+}
 # A handoff the user wrote before a clear sits beside the branch it belongs to,
 # so a session resuming that work is told where it is instead of searching for
 # it. Only the pointer is injected: the file itself is often longer than this
@@ -53,12 +67,11 @@ if [ -n "$cwd" ]; then
     handoff_file="$config_dir/handoff/$scope.md"
   fi
   if [ -f "$handoff_file" ]; then
-    body="$body"$'\n\n'"A handoff for \`$scope\` sits at \`$handoff_file\`. Read it only when this session continues that work.$staleness"
+    append_pointer "handoff" "A handoff for \`$scope\` sits at \`$handoff_file\`. Read it only when this session continues that work.$staleness"
   fi
   # The project memory belongs to the repository rather than to one branch, so
   # it sits in the common git directory a linked worktree shares. Only the
-  # pointer is injected: the body is read by the session that needs it, and the
-  # hook's own output ceiling has no room for a second file.
+  # pointer is injected: the body is read by the session that needs it.
   memory_file=""
   if memory_dir=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
     memory_file="$memory_dir/exo/memory.md"
@@ -66,7 +79,7 @@ if [ -n "$cwd" ]; then
     memory_file="$config_dir/memory/$(basename "$cwd")/memory.md"
   fi
   if [ -f "$memory_file" ]; then
-    body="$body"$'\n\n'"A project memory for this repository sits at \`$memory_file\`. Read it before changing code you have not read here, and run \`/exo:memory\` to change it."
+    append_pointer "memory" "A project memory for this repository sits at \`$memory_file\`. Read it before changing code you have not read here, and run \`/exo:memory\` to change it."
   fi
 fi
 jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'
