@@ -104,9 +104,34 @@ test('an unreadable user settings file still shows the other layers and names th
   const result = await settings(space, ['show']);
   await fs.chmod(userSettings, 0o644);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^specs = issues \(project\): /m);
-  assert.match(result.stdout, /^replies = tight \(default\): /m);
+  assert.match(result.stdout, /^1\. specs = issues {2}\(project\)$/m);
+  assert.match(result.stdout, /^2\. replies = tight {2}\(default\)$/m);
   assert.ok(result.stdout.includes(`${userSettings} could not be read (EACCES)`), result.stdout);
+});
+
+test('show marks the current option and names every layer the winner overrides', async () => {
+  const space = await workspace({ local: { specs: 'both' }, project: { specs: 'issues' }, global: { specs: 'docs', interview: 'page' } });
+  const result = await settings(space, ['show']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^1\. specs = both {2}\(local\)$/m);
+  assert.match(result.stdout, /^ {3}options: docs {2}issues {2}\[both\]$/m);
+  assert.match(result.stdout, /^ {3}overrides: project=issues, global=docs$/m);
+  assert.match(result.stdout, /^3\. interview = page {2}\(global, changed via \/config\)$/m);
+  const longest = Math.max(...result.stdout.split('\n').map((line) => line.length));
+  assert.ok(longest <= 76, `a line runs to ${longest} columns`);
+});
+
+test('menu asks for the setting, and with a key for a value other than the current one', async () => {
+  const space = await workspace({ project: { specs: 'issues' } });
+  const settingQuestion = await settings(space, ['menu']);
+  assert.equal(settingQuestion.code, 0, settingQuestion.stderr);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('1. **specs**: change it, now issues\n2. **replies**: change it, now tight\n3. **interview**: change it, now chat\n4. **Keep**: change nothing'), settingQuestion.stdout);
+  const valueQuestion = await settings(space, ['menu', 'specs']);
+  assert.ok(valueQuestion.stdout.trimEnd().endsWith('1. **docs**: set specs to docs\n2. **both**: set specs to both\n3. **Keep issues**: change nothing'), valueQuestion.stdout);
+  assert.doesNotMatch(valueQuestion.stdout, /replies/);
+  const unknown = await settings(space, ['menu', 'wiki']);
+  assert.equal(unknown.code, 1);
+  assert.match(unknown.stderr, /unknown setting wiki/);
 });
 
 test('every schema key is a userConfig entry with the same type, options and default', async () => {
