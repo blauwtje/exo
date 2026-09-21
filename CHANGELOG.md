@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.22.2 - 2026-09-21
+
 ### Changed
 
 - `/exo:settings` opens on an overview the script prints, with each setting's value, layer, options and overridden layers, and changes a value through numbered questions for the setting, the value and the layer.
