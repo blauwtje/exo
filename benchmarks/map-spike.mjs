@@ -41,11 +41,10 @@ export const PASS_MARK = {
   exoNamedShare: 0.5,
   secondRepositoryNamedFiles: 20,
   secondRepositoryMilliseconds: 2000,
-  dispatchTokensPerMapToken: 10
+  // An absolute count, never derived from the map's cap: a raised cap would
+  // otherwise move the mark after the measurement it was fixed for.
+  dispatchTokens: 10000
 };
-
-// A rough rate for prose and paths, used only to set a full map beside a dispatch.
-const BYTES_PER_TOKEN = 4;
 
 // One line that opens on its answer and holds no slash, so the sentence written
 // after reading the second repository's map cannot carry a path out of it.
@@ -170,8 +169,6 @@ function statisticRow(title, values, format) {
 export function passMarks({ measurements, dispatches, verdict }) {
   const [exo, second] = measurements;
   const namedShare = exo.scriptFilesWithNames === 0 ? 0 : exo.scriptFilesWithNamesKept / exo.scriptFilesWithNames;
-  const mapTokens = DEFAULT_CAP / BYTES_PER_TOKEN;
-  const tokensNeeded = mapTokens * PASS_MARK.dispatchTokensPerMapToken;
   const medianTokens = dispatches.length === 0 ? null : median(dispatches.map((dispatch) => dispatch.tokens));
   return [
     {
@@ -190,9 +187,9 @@ export function passMarks({ measurements, dispatches, verdict }) {
       holds: second.milliseconds <= PASS_MARK.secondRepositoryMilliseconds
     },
     {
-      mark: `The median explorer dispatch bills at least ${tokensNeeded} tokens, ${PASS_MARK.dispatchTokensPerMapToken} times the ${mapTokens} a full map costs a session`,
+      mark: `The median explorer dispatch bills at least ${PASS_MARK.dispatchTokens} tokens`,
       measured: medianTokens === null ? 'none' : wholeNumber(medianTokens),
-      holds: medianTokens !== null && medianTokens >= tokensNeeded
+      holds: medianTokens !== null && medianTokens >= PASS_MARK.dispatchTokens
     },
     {
       mark: 'Whoever read the capped map of the second repository answers Yes: it shows which folder to open for a file',
