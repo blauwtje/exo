@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.22.1 - 2026-09-21
+
 ### Fixed
 
 - `benchmarks/map-spike.mjs` holds the dispatch mark at a fixed 10,000 tokens instead of deriving it from the map's default cap, so raising the cap no longer moves a mark committed before the measurement.
