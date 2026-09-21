@@ -82,8 +82,12 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
     '--max-cost-usd', String(MAX_COST_USD),
     '--output-dir', outputDirectory, '--no-publish', '--trust-plugin',
     // The runner intersects this operator grant with each case's own allowed_tools,
-    // so a case that lists no Bash entry still runs with no shell.
-    '--allow-tools', 'Bash(*node *memory.mjs*)'
+    // so a case that lists no Bash entry still runs with no shell. The setup entries are the
+    // read-only `!` commands its skill runs on load; without a grant the load fails before a turn.
+    '--allow-tools', 'Bash(*node *memory.mjs*)',
+    '--allow-tools', 'Bash(node *settings.mjs* show)',
+    '--allow-tools', 'Bash(node *savings.mjs* status)',
+    '--allow-tools', 'Bash(node *savings.mjs* guard)'
   ];
   if (pluginArm) args.push('--ablation', 'none');
   if (keepTemp) args.push('--keep-temp');

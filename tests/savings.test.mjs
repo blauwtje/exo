@@ -378,3 +378,25 @@ test('guard-lines writes readGuardLines beside the other switches, and refuses a
   assert.equal(missing.code, 1);
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).readGuardLines, 800);
 });
+
+test('guard prints the read guard state, switches readGuard beside the other keys, and refuses anything but on or off', async () => {
+  const directory = await fixture();
+  const env = { CLAUDE_CONFIG_DIR: directory };
+  const configFile = path.join(directory, 'exo', 'savings', 'config.json');
+  const fresh = await run(SAVINGS, ['guard'], { env });
+  assert.equal(fresh.code, 0, fresh.stderr);
+  assert.equal(fresh.stdout, 'read guard on, 400 lines\n');
+  await run(SAVINGS, ['guard-lines', '800'], { env });
+  const off = await run(SAVINGS, ['guard', 'off'], { env });
+  assert.equal(off.code, 0, off.stderr);
+  assert.equal(off.stdout, 'exo read guard off\n');
+  assert.deepEqual(JSON.parse(await fs.readFile(configFile, 'utf8')), { enabled: true, readGuard: false, readGuardLines: 800 });
+  const state = await run(SAVINGS, ['guard'], { env });
+  assert.equal(state.stdout, 'read guard off, 800 lines\n');
+  const on = await run(SAVINGS, ['guard', 'on'], { env });
+  assert.equal(on.stdout, 'exo read guard on\n');
+  assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).readGuard, true);
+  const refused = await run(SAVINGS, ['guard', 'maybe'], { env });
+  assert.equal(refused.code, 1);
+  assert.match(refused.stderr, /^savings: guard needs on or off, got maybe/);
+});

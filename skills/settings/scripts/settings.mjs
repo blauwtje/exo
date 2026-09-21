@@ -53,10 +53,23 @@ function readLayer(file) {
   return values;
 }
 
+// The user settings file can exist yet be closed to this process, as under an OS
+// sandbox that denies reads of the config directory. The other layers still apply,
+// and the note names the file so its values are not mistaken for defaults.
+function readUserSettings() {
+  const file = path.join(configDirectory(), 'settings.json');
+  try {
+    return { userSettings: readLayer(file), unreadable: null };
+  } catch (error) {
+    if (error.code !== 'EACCES' && error.code !== 'EPERM') throw error;
+    return { userSettings: {}, unreadable: `${file} could not be read (${error.code}); a global value it holds shows as default` };
+  }
+}
+
 // A hook process receives CLAUDE_PLUGIN_OPTION_<KEY>; any other caller reads the
 // same value from the user settings file the harness stores plugin options in.
 function globalLayer() {
-  const userSettings = readLayer(path.join(configDirectory(), 'settings.json'));
+  const { userSettings, unreadable } = readUserSettings();
   const pluginConfigs = userSettings.pluginConfigs ?? {};
   const pluginId = Object.keys(pluginConfigs).find((id) => id.startsWith(PLUGIN_PREFIX));
   const stored = pluginId === undefined ? {} : (pluginConfigs[pluginId].options ?? {});
@@ -69,7 +82,7 @@ function globalLayer() {
       values[key] = stored[key];
     }
   }
-  return values;
+  return { values, unreadable };
 }
 
 function invalidReason(key, value) {
@@ -85,7 +98,7 @@ function layers(root) {
   return [
     { name: 'local', source: LOCAL_FILE, values: readLayer(path.join(root, LOCAL_FILE)) },
     { name: 'project', source: PROJECT_FILE, values: readLayer(path.join(root, PROJECT_FILE)) },
-    { name: 'global', source: '/config', values: globalLayer() }
+    { name: 'global', source: '/config', ...globalLayer() }
   ];
 }
 
@@ -109,7 +122,8 @@ function contextLine(root) {
       const { value, layer } = resolve(key, stack);
       return `${key}=${value} (${layer})`;
     });
-    return `exo settings: ${parts.join(', ')}`;
+    const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
+    return [`exo settings: ${parts.join(', ')}`, ...notes].join('; ');
   } catch (error) {
     const defaults = Object.entries(SCHEMA).map(([key, entry]) => `${key}=${entry.default} (default)`);
     return `exo settings: ${defaults.join(', ')}; ${error.message}`;
@@ -122,7 +136,8 @@ function show(root) {
     const { value, layer } = resolve(key, stack);
     return `${key} = ${value} (${layer}): ${entry.description}`;
   });
-  console.log(['```text', ...lines, '```'].join('\n'));
+  const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
+  console.log(['```text', ...lines, '```', ...notes].join('\n'));
 }
 
 // Appending to a file that lacks a final newline would glue the entry onto its last line.

@@ -53,6 +53,9 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/savings/SKILL.md': [],
   'skills/settings/SKILL.md': [],
+  'skills/setup/SKILL.md': [
+    'references/setup-map.md',
+  ],
   'skills/memory/SKILL.md': [],
   'skills/prototyping/SKILL.md': [],
   'skills/implementing-test-first/SKILL.md': [

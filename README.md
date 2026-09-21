@@ -65,6 +65,7 @@ These carry `disable-model-invocation: true`, so Claude never starts one itself:
 |---|---|
 | `handoff` | You save an unfinished session's live state to a file a fresh session reads after a clear. |
 | `memory` | You record what this repository taught exo, approve a claim two sessions have booked, or drop a line whose files are gone. |
+| `setup` | You walk through every exo setting on one page and save only what you change. |
 | `issuing <scope>` | You file GitHub issues as specs, with the labels, type, relations, milestone and project fields the repository defines. |
 | `merge-prs [numbers]` | You merge open pull requests behind gates read from the GitHub API. |
 
