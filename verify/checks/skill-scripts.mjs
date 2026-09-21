@@ -10,7 +10,7 @@ import process from 'node:process';
 
 const PACKAGE_MANAGER_CALL = /\b(exec|execSync|execFile|execFileSync|spawn|spawnSync)\s*\(\s*['"`](npm|npx|yarn|pnpm)\b/i;
 const MACHINE_PATH = /(\/var\/folders\/|\/private\/var\/folders\/|[A-Za-z]:\\Users\\)/;
-const SCRIPT_LINK = /scripts\/([A-Za-z0-9._-]+\.mjs)/g;
+const SCRIPT_LINK = /(?:\.\.\/([A-Za-z0-9._-]+)\/)?scripts\/([A-Za-z0-9._-]+\.mjs)/g;
 
 function scriptFolders(repository) {
   return repository.skillDirectories()
@@ -60,9 +60,11 @@ export function checkSkillScripts(report, repository) {
     let skillRoot = path.dirname(file);
     if (path.basename(skillRoot) === 'references') skillRoot = path.dirname(skillRoot);
     for (const match of repository.text(file).matchAll(SCRIPT_LINK)) {
-      const target = path.join(skillRoot, 'scripts', match[1]);
+      const [link, siblingSkill, scriptName] = match;
+      const owningRoot = siblingSkill ? path.join(repository.skillsRoot, siblingSkill) : skillRoot;
+      const target = path.join(owningRoot, 'scripts', scriptName);
       if (!(fs.existsSync(target) && fs.statSync(target).isFile())) {
-        problems.push(`${repository.relative(file)} links missing ${match[0]}`);
+        problems.push(`${repository.relative(file)} links missing ${link}`);
       }
     }
   }
