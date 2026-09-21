@@ -32,6 +32,10 @@ const ROOT = import.meta.dirname;
 const RUNNER_CONCURRENCY_CAP = 8;
 const JUDGE_MODEL = 'sonnet';
 const DRAFT_RUNS = 3;
+// The ceiling per runner process, not per case: the runner checks it before each
+// run starts, so runs in flight can pass it, and an arm split over two processes
+// can spend it twice.
+const MAX_COST_USD = 5;
 const ARMS_BY_CHOICE = { 'no-plugin': ['no-plugin'], plugin: ['plugin'], both: ['no-plugin', 'plugin'] };
 
 function fail(message) {
@@ -63,6 +67,7 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
   const args = [
     'plugin', 'eval', target, '--case', caseName, '--runs', String(runs),
     '--concurrency', String(concurrency), '--judge-model', JUDGE_MODEL, '--threshold', '0',
+    '--max-cost-usd', String(MAX_COST_USD),
     '--output-dir', outputDirectory, '--no-publish', '--trust-plugin',
     // The runner intersects this operator grant with each case's own allowed_tools,
     // so a case that lists no Bash entry still runs with no shell.
@@ -77,7 +82,9 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
     child.stderr.on('data', (chunk) => console.error(prefix(chunk)));
     child.on('error', reject);
     child.on('close', (code) => {
-      if (code !== 0) reject(new Error(`${label}: claude plugin eval exited ${code}`));
+      // The runner exits 2 when the ceiling left runs unstarted or the credential was rejected: a partial result is no verdict.
+      if (code === 2) reject(new Error(`${label}: the runner exited 2, either because the cost ceiling of $${MAX_COST_USD} stopped it before every run started or because the credential was rejected; partial results in ${outputDirectory}, no verdict`));
+      else if (code !== 0) reject(new Error(`${label}: claude plugin eval exited ${code}`));
       else resolve();
     });
   });

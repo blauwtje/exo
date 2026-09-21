@@ -14,12 +14,14 @@ const CASE = 'savings-report-reads-cold';
 
 // Logs each call, then writes the aggregate a single-arm runner writes: every run passes,
 // or no case at all when STAND_IN_NO_CASE is set.
+// STAND_IN_EXIT sets the exit code the stand-in runner returns.
 const STAND_IN = `#!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
 const args = process.argv.slice(2);
 const value = (flag) => args[args.indexOf(flag) + 1];
 fs.appendFileSync(process.env.STAND_IN_LOG, JSON.stringify(args) + '\\n');
+if (process.env.STAND_IN_EXIT) process.exit(Number(process.env.STAND_IN_EXIT));
 const runs = Array.from({ length: Number(value('--runs')) }, () => ({
   costUsd: 0.25, judgeCostUsd: 0.05, error: null,
   graders: [{ name: 'names-the-mechanisms', passed: true, judgeVotes: [true, true, true], evidence: 'text' }]
@@ -112,4 +114,18 @@ test('a runner result without the case fails instead of reporting nothing', asyn
   const { outcome } = await runCase(['--mode', 'draft', '--arm', 'no-plugin'], { STAND_IN_NO_CASE: '1' });
   assert.equal(outcome.code, 1);
   assert.match(outcome.stderr, /expected case count 1/);
+});
+
+test('every runner call carries the cost ceiling', async () => {
+  const { outcome, calls } = await runCase(['--arm', 'both']);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(calls.length, 4);
+  assert.ok(calls.every((call) => flag(call, '--max-cost-usd') === '5'));
+});
+
+test('a runner stopped by the cost ceiling ends the run without a verdict', async () => {
+  const { outcome } = await runCase(['--mode', 'draft', '--arm', 'no-plugin'], { STAND_IN_EXIT: '2' });
+  assert.equal(outcome.code, 1);
+  assert.match(outcome.stderr, /cost ceiling of \$5/);
+  assert.doesNotMatch(outcome.stdout, /^GATE /m);
 });
