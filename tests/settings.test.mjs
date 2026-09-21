@@ -97,6 +97,18 @@ test('a project file that is not JSON is named in the context line, and defaults
   assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), interview=chat \(default\); .*exo\.json is not valid JSON/);
 });
 
+test('an unreadable user settings file still shows the other layers and names the file', async () => {
+  const space = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
+  const userSettings = path.join(space.env.CLAUDE_CONFIG_DIR, 'settings.json');
+  await fs.chmod(userSettings, 0o000);
+  const result = await settings(space, ['show']);
+  await fs.chmod(userSettings, 0o644);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^specs = issues \(project\): /m);
+  assert.match(result.stdout, /^replies = tight \(default\): /m);
+  assert.ok(result.stdout.includes(`${userSettings} could not be read (EACCES)`), result.stdout);
+});
+
 test('every schema key is a userConfig entry with the same type, options and default', async () => {
   const schema = JSON.parse(await fs.readFile(new URL('../skills/settings/schema.json', import.meta.url), 'utf8'));
   const plugin = JSON.parse(await fs.readFile(new URL('../.claude-plugin/plugin.json', import.meta.url), 'utf8'));

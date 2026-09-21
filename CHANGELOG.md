@@ -16,6 +16,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `eval-case.mjs` grants the three read-only commands `/exo:setup` runs on load, so a setup case no longer ends on a permission denial before its first turn.
 
+### Fixed
+
+- `settings.mjs show` and `context` show the project and local layers when the harness settings file cannot be read, and name that file, instead of failing, so `/exo:setup` loads under an OS sandbox that denies the config directory.
+
 ## 0.21.1 - 2026-09-21
 
 ### Changed
