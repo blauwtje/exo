@@ -34,7 +34,7 @@ fs.mkdirSync(value('--output-dir'), { recursive: true });
 fs.writeFileSync(path.join(value('--output-dir'), 'aggregate-result.json'), JSON.stringify(aggregate));
 `;
 
-async function scratchRepository() {
+async function scratchRepository(caseYaml) {
   const directory = await fixture();
   for (const relative of ['eval-case.mjs', 'eval-reasons.mjs']) {
     await fs.copyFile(path.join(REPOSITORY, relative), path.join(directory, relative));
@@ -43,14 +43,15 @@ async function scratchRepository() {
   const caseDirectory = path.join(directory, 'evals', CASE);
   await fs.mkdir(path.join(caseDirectory, 'graders'), { recursive: true });
   await fs.writeFile(path.join(caseDirectory, 'prompt.md'), `---\nname: ${CASE}\nruns: 10\n---\n\nWhat did exo save?\n`);
+  if (caseYaml !== undefined) await fs.writeFile(path.join(caseDirectory, 'case.yaml'), caseYaml);
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'claude'), STAND_IN, { mode: 0o755 });
   return directory;
 }
 
-async function runCase(args, extraEnv = {}) {
-  const directory = await scratchRepository();
+async function runCase(args, extraEnv = {}, caseYaml = undefined) {
+  const directory = await scratchRepository(caseYaml);
   const log = path.join(directory, 'calls.log');
   const outcome = await run(path.join(directory, 'eval-case.mjs'), ['--case', CASE, ...args], {
     cwd: directory,
@@ -139,4 +140,17 @@ test('a named subject model reaches every runner call and the merged aggregate',
   const unnamed = await runCase(['--mode', 'draft', '--arm', 'no-plugin']);
   assert.ok(unnamed.calls.every((call) => !call.includes('--model')));
   assert.equal((await mergedAggregate(unnamed.directory, unnamed.outcome.stdout)).suite.subjectModel, 'runner default');
+});
+
+test('only a case whose case.yaml names a scaffold script runs with --scaffold', async () => {
+  const withScript = `schema_version: "1.1"\nname: ${CASE}\ncontext:\n  scaffold_script: scaffold.sh\n`;
+  const scaffolded = await runCase(['--mode', 'draft', '--arm', 'both'], {}, withScript);
+  assert.equal(scaffolded.outcome.code, 0, scaffolded.outcome.stderr);
+  assert.equal(scaffolded.calls.length, 2);
+  assert.ok(scaffolded.calls.every((call) => call.includes('--scaffold')));
+  const withReadGrantOnly = `schema_version: "1.1"\nname: ${CASE}\ncontext:\n  add_dirs:\n    - resources\n`;
+  const readOnly = await runCase(['--mode', 'draft', '--arm', 'both'], {}, withReadGrantOnly);
+  assert.ok(readOnly.calls.every((call) => !call.includes('--scaffold')));
+  const plain = await runCase(['--mode', 'draft', '--arm', 'both']);
+  assert.ok(plain.calls.every((call) => !call.includes('--scaffold')));
 });

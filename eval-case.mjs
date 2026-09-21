@@ -17,6 +17,10 @@
 // draft  3 runs per arm, for iterating on wording; never a verdict.
 // --keep-temp leaves each run's scaffold directory, and so its trace.jsonl, in place.
 //
+// A run starts in an empty working directory. A case that needs files there names a
+// context.scaffold_script in its case.yaml, and the runner runs that script only under
+// --scaffold, as you and outside the sandbox: the flag goes to such a case and no other.
+//
 // The no-plugin arm runs from a scratch directory that holds only the case, so
 // no plugin resolves: that is the runner's own no-plugin arm, a case with no
 // plugin directory. The plugin arm runs from the repository with --ablation none.
@@ -51,6 +55,13 @@ function caseRuns(caseDirectory) {
   return Number.isInteger(runs) ? runs : 3;
 }
 
+function namesScaffoldScript(caseDirectory) {
+  const caseFile = path.join(caseDirectory, 'case.yaml');
+  if (!fs.existsSync(caseFile)) return false;
+  const context = parseDocument(fs.readFileSync(caseFile, 'utf8')).toJS()?.context;
+  return typeof context?.scaffold_script === 'string';
+}
+
 // Split an arm's runs over as few runner processes as keep `inFlight` runs going.
 function shardSizes(runs, inFlight) {
   const processes = Math.ceil(Math.min(runs, inFlight) / RUNNER_CONCURRENCY_CAP);
@@ -64,7 +75,7 @@ function stageNoPluginTarget(caseName) {
   return scratch;
 }
 
-function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp, model }) {
+function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp, model, scaffold }) {
   const args = [
     'plugin', 'eval', target, '--case', caseName, '--runs', String(runs),
     '--concurrency', String(concurrency), '--judge-model', JUDGE_MODEL, '--threshold', '0',
@@ -76,6 +87,7 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
   ];
   if (pluginArm) args.push('--ablation', 'none');
   if (keepTemp) args.push('--keep-temp');
+  if (scaffold) args.push('--scaffold');
   if (model !== undefined) args.push('--model', model);
   return new Promise((resolve, reject) => {
     const child = spawn('claude', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -131,6 +143,7 @@ const arms = ARMS_BY_CHOICE[armChoice];
 if (arms === undefined) fail(`--arm is required for case ${caseName}: no-plugin (no exo skill or hook loads), plugin (exo loaded) or both (doubles the runs)`);
 const draft = options.mode === 'draft';
 const runsPerArm = draft ? DRAFT_RUNS : caseRuns(caseDirectory);
+const scaffold = namesScaffoldScript(caseDirectory);
 const concurrency = options.concurrency === undefined ? runsPerArm * arms.length : Number(options.concurrency);
 if (!Number.isInteger(concurrency) || concurrency < 1) fail('--concurrency must be a whole number of at least 1');
 const stamp = new Date().toISOString().replaceAll(':', '-').replace('.', '-');
@@ -148,7 +161,7 @@ for (const arm of arms) {
   sizes.forEach((runs, index) => {
     const label = `${arm}-${index + 1}`;
     const concurrencyForShard = Math.min(runs, RUNNER_CONCURRENCY_CAP, inFlightPerShard);
-    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'], model: options.model });
+    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'], model: options.model, scaffold });
   });
 }
 
