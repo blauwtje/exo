@@ -54,6 +54,37 @@ const GRADERS_WITH_STRUCTURAL_WORDING = [
   'shaping-stores-in-issues/graders/creates-the-issue.md',
   'using-exo-names-the-rival-reading/graders/names-the-rival-reading.md'
 ];
+// Cases older than the rule that a case sets its own timeout. The default of 300
+// seconds grades a run it cut on its partial transcript, which scores 0 and reads
+// as a real failure. The list only shrinks: an entry leaves when its case gains
+// `timeout_seconds`, and no name is added.
+const CASES_WITHOUT_A_TIMEOUT = [
+  'debug-fourth-patch',
+  'designing-asks-no-visual-question-in-text',
+  'designing-dashboard-no-offer',
+  'designing-distinct-direction',
+  'designing-offers-the-preview',
+  'designing-settled-identity-no-offer',
+  'implementing-asks-the-workspace',
+  'implementing-batch-asks-the-workspace',
+  'implementing-batch-finishes-on-the-question',
+  'implementing-batch-two-file-floor',
+  'implementing-runs-the-list',
+  'implementing-verifies-before-the-review',
+  'implementing-workspace-follows-the-repository',
+  'planning-reads-a-shaped-issue',
+  'savings-relays-fenced',
+  'savings-report-reads-cold',
+  'shaping-ends-on-the-stage-screen',
+  'shaping-falls-back-to-the-file',
+  'shaping-stores-in-issues',
+  'using-exo-closing-line',
+  'using-exo-existing-helper',
+  'using-exo-keeps-guard',
+  'using-exo-names-the-rival-reading',
+  'using-exo-native-input',
+  'using-exo-replies-in-the-users-language'
+];
 // Every skill the plugin ships, not only the ones budgets.mjs verifies: a case
 // may pin the behavior of a skill whose shape the verifier does not police.
 // Longest name first so `implementing-batch-x` resolves to implementing-batch, not implementing.
@@ -123,6 +154,11 @@ for (const caseName of caseNames) {
       typeof promptFields.name === 'string' && promptFields.name.length > 0,
       `${caseName}/prompt.md lacks a name frontmatter line`
     );
+    assert.ok(Number.isInteger(promptFields.max_turns), `${caseName}/prompt.md sets no max_turns: the default of 10 ends a longer run as an error`);
+    const hasTimeout = Number.isInteger(promptFields.timeout_seconds);
+    const listedWithoutTimeout = CASES_WITHOUT_A_TIMEOUT.includes(caseName);
+    assert.ok(hasTimeout || listedWithoutTimeout, `${caseName}/prompt.md sets no timeout_seconds: the default of 300 grades a cut run as a failure`);
+    assert.ok(!hasTimeout || !listedWithoutTimeout, `${caseName} sets timeout_seconds now: remove it from CASES_WITHOUT_A_TIMEOUT`);
 
     const gradersRoot = path.join(evalsRoot, caseName, 'graders');
     assert.ok(fs.existsSync(gradersRoot), `${caseName} has no graders directory`);
@@ -149,9 +185,12 @@ for (const caseName of caseNames) {
   });
 }
 
-test('the two shrinking lists name only what exists under evals/', () => {
+test('the three shrinking lists name only what exists under evals/', () => {
   for (const caseName of CASES_WITHOUT_A_FREE_GRADER) {
     assert.ok(caseNames.includes(caseName), `CASES_WITHOUT_A_FREE_GRADER names ${caseName}, which is not a case`);
+  }
+  for (const caseName of CASES_WITHOUT_A_TIMEOUT) {
+    assert.ok(caseNames.includes(caseName), `CASES_WITHOUT_A_TIMEOUT names ${caseName}, which is not a case`);
   }
   for (const graderLabel of GRADERS_WITH_STRUCTURAL_WORDING) {
     assert.ok(fs.existsSync(path.join(evalsRoot, graderLabel)), `GRADERS_WITH_STRUCTURAL_WORDING names ${graderLabel}, which does not exist`);

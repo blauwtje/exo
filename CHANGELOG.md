@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `eval-case.mjs` passes `--max-cost-usd 5` to every runner process and reports a runner the ceiling stopped as a stopped run with no verdict, so the ceiling no longer depends on remembering the flag.
+- `tests/evals.test.mjs` fails a case without `max_turns` or `timeout_seconds`; the 25 cases older than the rule sit in a list that may only shrink.
 
 ### Fixed
 
