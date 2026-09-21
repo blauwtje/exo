@@ -5,7 +5,8 @@
 // reasoning judge about every failed vote.
 //
 //   node eval-case.mjs --case <name> --arm no-plugin|plugin|both [--mode full|draft]
-//                      [--concurrency <runs in flight>] [--keep-temp]
+//                      [--concurrency <runs in flight>] [--model <subject model>] [--keep-temp]
+// --model names the model under test; without it the runner picks, and the result says so.
 //
 // --arm has no default: the no-plugin arm loads no exo skill or hook, so a case
 // that grades skill behavior scores 0 there and still pays for every run.
@@ -63,7 +64,7 @@ function stageNoPluginTarget(caseName) {
   return scratch;
 }
 
-function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp }) {
+function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp, model }) {
   const args = [
     'plugin', 'eval', target, '--case', caseName, '--runs', String(runs),
     '--concurrency', String(concurrency), '--judge-model', JUDGE_MODEL, '--threshold', '0',
@@ -75,6 +76,7 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
   ];
   if (pluginArm) args.push('--ablation', 'none');
   if (keepTemp) args.push('--keep-temp');
+  if (model !== undefined) args.push('--model', model);
   return new Promise((resolve, reject) => {
     const child = spawn('claude', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
     const prefix = (chunk) => String(chunk).split('\n').filter((line) => line.trim()).map((line) => `[${label}] ${line}`).join('\n');
@@ -114,6 +116,7 @@ const { values: options } = parseArgs({
     mode: { type: 'string', default: 'full' },
     arm: { type: 'string' },
     concurrency: { type: 'string' },
+    model: { type: 'string' },
     'keep-temp': { type: 'boolean', default: false }
   }
 });
@@ -145,11 +148,12 @@ for (const arm of arms) {
   sizes.forEach((runs, index) => {
     const label = `${arm}-${index + 1}`;
     const concurrencyForShard = Math.min(runs, RUNNER_CONCURRENCY_CAP, inFlightPerShard);
-    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'] });
+    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'], model: options.model });
   });
 }
 
-console.log(`${options.mode} run of ${caseName}: ${runsPerArm} runs per arm (${arms.join(', ')}), judge ${JUDGE_MODEL}, ${shards.map((shard) => `${shard.label} ${shard.runs}x${shard.concurrency}`).join(', ')}`);
+const subjectModel = options.model ?? 'runner default';
+console.log(`${options.mode} run of ${caseName}: ${runsPerArm} runs per arm (${arms.join(', ')}), subject ${subjectModel}, judge ${JUDGE_MODEL}, ${shards.map((shard) => `${shard.label} ${shard.runs}x${shard.concurrency}`).join(', ')}`);
 if (draft) console.log('DRAFT: not authoritative. Use it to iterate on wording; take a verdict from the full run.');
 
 const startedAt = Date.now();
@@ -177,7 +181,7 @@ for (const shard of shards) {
 }
 
 const merged = {
-  suite: { caseFilter: caseName, judgeModel: JUDGE_MODEL, mode: options.mode, authoritative: !draft, concurrency },
+  suite: { caseFilter: caseName, subjectModel, judgeModel: JUDGE_MODEL, mode: options.mode, authoritative: !draft, concurrency },
   durationSeconds: evalSeconds,
   costUsd,
   cases: [{ name: caseName, graders, arms: armRuns }]

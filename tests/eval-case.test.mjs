@@ -129,3 +129,14 @@ test('a runner stopped by the cost ceiling ends the run without a verdict', asyn
   assert.match(outcome.stderr, /cost ceiling of \$5/);
   assert.doesNotMatch(outcome.stdout, /^GATE /m);
 });
+
+test('a named subject model reaches every runner call and the merged aggregate', async () => {
+  const named = await runCase(['--mode', 'draft', '--arm', 'no-plugin', '--model', 'opus']);
+  assert.equal(named.outcome.code, 0, named.outcome.stderr);
+  assert.ok(named.calls.every((call) => flag(call, '--model') === 'opus'));
+  assert.equal((await mergedAggregate(named.directory, named.outcome.stdout)).suite.subjectModel, 'opus');
+  assert.match(named.outcome.stdout, /subject opus/);
+  const unnamed = await runCase(['--mode', 'draft', '--arm', 'no-plugin']);
+  assert.ok(unnamed.calls.every((call) => !call.includes('--model')));
+  assert.equal((await mergedAggregate(unnamed.directory, unnamed.outcome.stdout)).suite.subjectModel, 'runner default');
+});

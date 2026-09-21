@@ -11,6 +11,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `eval-case.mjs` passes `--max-cost-usd 5` to every runner process and reports a runner the ceiling stopped as a stopped run with no verdict, so the ceiling no longer depends on remembering the flag.
 - `tests/evals.test.mjs` fails a case without `max_turns` or `timeout_seconds`; the 25 cases older than the rule sit in a list that may only shrink.
+- `eval-case.mjs` takes `--model <subject model>`, passes it to every runner process and writes it to the merged result as `suite.subjectModel`, `runner default` when none is named, so a result says which model it measured.
 
 ### Fixed
 
