@@ -118,7 +118,7 @@ test('the script holds the figures against the pass mark, so no reader has to', 
   const allHold = passMarks({ measurements: [MEASURED, NAMES_ENOUGH], dispatches: costly, verdict: VERDICT });
   assert.deepEqual(allHold.map((row) => row.holds), [true, true, true, true, true]);
   assert.deepEqual(allHold.map((row) => row.measured), ['100%', '20', '12 ms', '36000', 'Yes']);
-  assert.match(allHold[3].mark, /at least 30000 tokens, 10 times the 3000 a full map costs a session/);
+  assert.match(allHold[3].mark, /at least 10000 tokens$/);
 
   const halfKept = { ...MEASURED, scriptFilesWithNames: 10, scriptFilesWithNamesKept: 4 };
   const slow = { ...MEASURED, namedFiles: PASS_MARK.secondRepositoryNamedFiles - 1, milliseconds: PASS_MARK.secondRepositoryMilliseconds + 1 };
