@@ -13,13 +13,15 @@
 //                                      the counter, the status line and the read guard
 //   node savings.mjs guard-lines <n>   writes "readGuardLines" into config.json: the line
 //                                      count above which a whole-file read is refused
+//   node savings.mjs guard [on|off]    prints the read guard's state and line limit, or
+//                                      writes "readGuard" into config.json: the guard alone
 //
 // A hook failure never blocks the turn.
 
 import fs from 'node:fs';
 import process from 'node:process';
 import {
-  SESSION_RETENTION_DAYS, configFile, readJson, readRecord, savingsEnabled, updateSession, writeJson
+  SESSION_RETENTION_DAYS, configFile, guardLines, readJson, readRecord, savingsEnabled, updateSession, writeJson
 } from './record.mjs';
 import { emptyTotals, measuredTotals } from './overhead.mjs';
 import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
@@ -169,6 +171,21 @@ function setGuardLines(argument) {
   process.stdout.write(`exo read guard now refuses a whole-file read of a file over ${lineLimit} lines\n`);
 }
 
+// Without an argument, prints the guard's own switch and its line limit.
+// Only "readGuard" is written, so "enabled" and "readGuardLines" survive the switch.
+function setGuard(argument) {
+  if (argument === undefined) {
+    const guardOn = readJson(configFile(), {}).readGuard !== false;
+    process.stdout.write(`read guard ${guardOn ? 'on' : 'off'}, ${guardLines()} lines\n`);
+    return;
+  }
+  if (argument !== 'on' && argument !== 'off') {
+    throw new Error(`guard needs on or off, got ${argument}`);
+  }
+  writeJson(configFile(), { ...readJson(configFile(), DEFAULT_CONFIG), readGuard: argument === 'on' });
+  process.stdout.write(`exo read guard ${argument}\n`);
+}
+
 // Which skills fired and how many turns matched none, summed over every
 // session the record holds.
 function routingTotals(sessions) {
@@ -231,7 +248,8 @@ const CLI_COMMANDS = {
   status,
   on: () => setEnabled(true),
   off: () => setEnabled(false),
-  'guard-lines': () => setGuardLines(process.argv[3])
+  'guard-lines': () => setGuardLines(process.argv[3]),
+  guard: () => setGuard(process.argv[3])
 };
 if (command in HOOK_COMMANDS) {
   try {
@@ -249,6 +267,6 @@ if (command in HOOK_COMMANDS) {
     process.exit(1);
   }
 } else {
-  console.error('usage: savings.mjs record|statusline|report|status|on|off|guard-lines <lines>');
+  console.error('usage: savings.mjs record|statusline|report|status|on|off|guard-lines <lines>|guard [on|off]');
   process.exit(1);
 }
