@@ -14,12 +14,14 @@ const CASE = 'savings-report-reads-cold';
 
 // Logs each call, then writes the aggregate a single-arm runner writes: every run passes,
 // or no case at all when STAND_IN_NO_CASE is set.
+// STAND_IN_EXIT sets the exit code the stand-in runner returns.
 const STAND_IN = `#!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
 const args = process.argv.slice(2);
 const value = (flag) => args[args.indexOf(flag) + 1];
 fs.appendFileSync(process.env.STAND_IN_LOG, JSON.stringify(args) + '\\n');
+if (process.env.STAND_IN_EXIT) process.exit(Number(process.env.STAND_IN_EXIT));
 const runs = Array.from({ length: Number(value('--runs')) }, () => ({
   costUsd: 0.25, judgeCostUsd: 0.05, error: null,
   graders: [{ name: 'names-the-mechanisms', passed: true, judgeVotes: [true, true, true], evidence: 'text' }]
@@ -32,7 +34,7 @@ fs.mkdirSync(value('--output-dir'), { recursive: true });
 fs.writeFileSync(path.join(value('--output-dir'), 'aggregate-result.json'), JSON.stringify(aggregate));
 `;
 
-async function scratchRepository() {
+async function scratchRepository(caseYaml) {
   const directory = await fixture();
   for (const relative of ['eval-case.mjs', 'eval-reasons.mjs']) {
     await fs.copyFile(path.join(REPOSITORY, relative), path.join(directory, relative));
@@ -41,14 +43,15 @@ async function scratchRepository() {
   const caseDirectory = path.join(directory, 'evals', CASE);
   await fs.mkdir(path.join(caseDirectory, 'graders'), { recursive: true });
   await fs.writeFile(path.join(caseDirectory, 'prompt.md'), `---\nname: ${CASE}\nruns: 10\n---\n\nWhat did exo save?\n`);
+  if (caseYaml !== undefined) await fs.writeFile(path.join(caseDirectory, 'case.yaml'), caseYaml);
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'claude'), STAND_IN, { mode: 0o755 });
   return directory;
 }
 
-async function runCase(args, extraEnv = {}) {
-  const directory = await scratchRepository();
+async function runCase(args, extraEnv = {}, caseYaml = undefined) {
+  const directory = await scratchRepository(caseYaml);
   const log = path.join(directory, 'calls.log');
   const outcome = await run(path.join(directory, 'eval-case.mjs'), ['--case', CASE, ...args], {
     cwd: directory,
@@ -112,4 +115,42 @@ test('a runner result without the case fails instead of reporting nothing', asyn
   const { outcome } = await runCase(['--mode', 'draft', '--arm', 'no-plugin'], { STAND_IN_NO_CASE: '1' });
   assert.equal(outcome.code, 1);
   assert.match(outcome.stderr, /expected case count 1/);
+});
+
+test('every runner call carries the cost ceiling', async () => {
+  const { outcome, calls } = await runCase(['--arm', 'both']);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(calls.length, 4);
+  assert.ok(calls.every((call) => flag(call, '--max-cost-usd') === '5'));
+});
+
+test('a runner stopped by the cost ceiling ends the run without a verdict', async () => {
+  const { outcome } = await runCase(['--mode', 'draft', '--arm', 'no-plugin'], { STAND_IN_EXIT: '2' });
+  assert.equal(outcome.code, 1);
+  assert.match(outcome.stderr, /cost ceiling of \$5/);
+  assert.doesNotMatch(outcome.stdout, /^GATE /m);
+});
+
+test('a named subject model reaches every runner call and the merged aggregate', async () => {
+  const named = await runCase(['--mode', 'draft', '--arm', 'no-plugin', '--model', 'opus']);
+  assert.equal(named.outcome.code, 0, named.outcome.stderr);
+  assert.ok(named.calls.every((call) => flag(call, '--model') === 'opus'));
+  assert.equal((await mergedAggregate(named.directory, named.outcome.stdout)).suite.subjectModel, 'opus');
+  assert.match(named.outcome.stdout, /subject opus/);
+  const unnamed = await runCase(['--mode', 'draft', '--arm', 'no-plugin']);
+  assert.ok(unnamed.calls.every((call) => !call.includes('--model')));
+  assert.equal((await mergedAggregate(unnamed.directory, unnamed.outcome.stdout)).suite.subjectModel, 'runner default');
+});
+
+test('only a case whose case.yaml names a scaffold script runs with --scaffold', async () => {
+  const withScript = `schema_version: "1.1"\nname: ${CASE}\ncontext:\n  scaffold_script: scaffold.sh\n`;
+  const scaffolded = await runCase(['--mode', 'draft', '--arm', 'both'], {}, withScript);
+  assert.equal(scaffolded.outcome.code, 0, scaffolded.outcome.stderr);
+  assert.equal(scaffolded.calls.length, 2);
+  assert.ok(scaffolded.calls.every((call) => call.includes('--scaffold')));
+  const withReadGrantOnly = `schema_version: "1.1"\nname: ${CASE}\ncontext:\n  add_dirs:\n    - resources\n`;
+  const readOnly = await runCase(['--mode', 'draft', '--arm', 'both'], {}, withReadGrantOnly);
+  assert.ok(readOnly.calls.every((call) => !call.includes('--scaffold')));
+  const plain = await runCase(['--mode', 'draft', '--arm', 'both']);
+  assert.ok(plain.calls.every((call) => !call.includes('--scaffold')));
 });

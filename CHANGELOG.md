@@ -7,6 +7,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `eval-case.mjs` passes `--max-cost-usd 5` to every runner process and reports a runner the ceiling stopped as a stopped run with no verdict, so the ceiling no longer depends on remembering the flag.
+- `tests/evals.test.mjs` fails a case without `max_turns` or `timeout_seconds`; the 25 cases older than the rule sit in a list that may only shrink.
+- `eval-case.mjs` takes `--model <subject model>`, passes it to every runner process and writes it to the merged result as `suite.subjectModel`, `runner default` when none is named, so a result says which model it measured.
+- `eval-case.mjs` passes `--scaffold` for a case whose `case.yaml` names a `context.scaffold_script`, and for no other case, because a run starts in an empty working directory and `context.add_dirs` copies nothing into it.
+
+### Fixed
+
+- The session hook keeps its whole output under the 10,000 characters a hook string may hold: on a long path it leaves out the memory pointer, then the handoff pointer, and says so on stderr, where a longer string reached the model as a 2,000-character preview without the rules.
+
 ## 0.21.0 - 2026-09-20
 
 ### Highlights

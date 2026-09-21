@@ -5,7 +5,8 @@
 // reasoning judge about every failed vote.
 //
 //   node eval-case.mjs --case <name> --arm no-plugin|plugin|both [--mode full|draft]
-//                      [--concurrency <runs in flight>] [--keep-temp]
+//                      [--concurrency <runs in flight>] [--model <subject model>] [--keep-temp]
+// --model names the model under test; without it the runner picks, and the result says so.
 //
 // --arm has no default: the no-plugin arm loads no exo skill or hook, so a case
 // that grades skill behavior scores 0 there and still pays for every run.
@@ -15,6 +16,10 @@
 // full   the case's own `runs:` per arm, the verdict.
 // draft  3 runs per arm, for iterating on wording; never a verdict.
 // --keep-temp leaves each run's scaffold directory, and so its trace.jsonl, in place.
+//
+// A run starts in an empty working directory. A case that needs files there names a
+// context.scaffold_script in its case.yaml, and the runner runs that script only under
+// --scaffold, as you and outside the sandbox: the flag goes to such a case and no other.
 //
 // The no-plugin arm runs from a scratch directory that holds only the case, so
 // no plugin resolves: that is the runner's own no-plugin arm, a case with no
@@ -32,6 +37,10 @@ const ROOT = import.meta.dirname;
 const RUNNER_CONCURRENCY_CAP = 8;
 const JUDGE_MODEL = 'sonnet';
 const DRAFT_RUNS = 3;
+// The ceiling per runner process, not per case: the runner checks it before each
+// run starts, so runs in flight can pass it, and an arm split over two processes
+// can spend it twice.
+const MAX_COST_USD = 5;
 const ARMS_BY_CHOICE = { 'no-plugin': ['no-plugin'], plugin: ['plugin'], both: ['no-plugin', 'plugin'] };
 
 function fail(message) {
@@ -44,6 +53,13 @@ function caseRuns(caseDirectory) {
   const delimited = prompt.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
   const runs = delimited ? parseDocument(delimited[1]).toJS()?.runs : undefined;
   return Number.isInteger(runs) ? runs : 3;
+}
+
+function namesScaffoldScript(caseDirectory) {
+  const caseFile = path.join(caseDirectory, 'case.yaml');
+  if (!fs.existsSync(caseFile)) return false;
+  const context = parseDocument(fs.readFileSync(caseFile, 'utf8')).toJS()?.context;
+  return typeof context?.scaffold_script === 'string';
 }
 
 // Split an arm's runs over as few runner processes as keep `inFlight` runs going.
@@ -59,10 +75,11 @@ function stageNoPluginTarget(caseName) {
   return scratch;
 }
 
-function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp }) {
+function runShard({ label, target, caseName, runs, concurrency, outputDirectory, pluginArm, keepTemp, model, scaffold }) {
   const args = [
     'plugin', 'eval', target, '--case', caseName, '--runs', String(runs),
     '--concurrency', String(concurrency), '--judge-model', JUDGE_MODEL, '--threshold', '0',
+    '--max-cost-usd', String(MAX_COST_USD),
     '--output-dir', outputDirectory, '--no-publish', '--trust-plugin',
     // The runner intersects this operator grant with each case's own allowed_tools,
     // so a case that lists no Bash entry still runs with no shell.
@@ -70,6 +87,8 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
   ];
   if (pluginArm) args.push('--ablation', 'none');
   if (keepTemp) args.push('--keep-temp');
+  if (scaffold) args.push('--scaffold');
+  if (model !== undefined) args.push('--model', model);
   return new Promise((resolve, reject) => {
     const child = spawn('claude', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
     const prefix = (chunk) => String(chunk).split('\n').filter((line) => line.trim()).map((line) => `[${label}] ${line}`).join('\n');
@@ -77,7 +96,9 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
     child.stderr.on('data', (chunk) => console.error(prefix(chunk)));
     child.on('error', reject);
     child.on('close', (code) => {
-      if (code !== 0) reject(new Error(`${label}: claude plugin eval exited ${code}`));
+      // The runner exits 2 when the ceiling left runs unstarted or the credential was rejected: a partial result is no verdict.
+      if (code === 2) reject(new Error(`${label}: the runner exited 2, either because the cost ceiling of $${MAX_COST_USD} stopped it before every run started or because the credential was rejected; partial results in ${outputDirectory}, no verdict`));
+      else if (code !== 0) reject(new Error(`${label}: claude plugin eval exited ${code}`));
       else resolve();
     });
   });
@@ -107,6 +128,7 @@ const { values: options } = parseArgs({
     mode: { type: 'string', default: 'full' },
     arm: { type: 'string' },
     concurrency: { type: 'string' },
+    model: { type: 'string' },
     'keep-temp': { type: 'boolean', default: false }
   }
 });
@@ -121,6 +143,7 @@ const arms = ARMS_BY_CHOICE[armChoice];
 if (arms === undefined) fail(`--arm is required for case ${caseName}: no-plugin (no exo skill or hook loads), plugin (exo loaded) or both (doubles the runs)`);
 const draft = options.mode === 'draft';
 const runsPerArm = draft ? DRAFT_RUNS : caseRuns(caseDirectory);
+const scaffold = namesScaffoldScript(caseDirectory);
 const concurrency = options.concurrency === undefined ? runsPerArm * arms.length : Number(options.concurrency);
 if (!Number.isInteger(concurrency) || concurrency < 1) fail('--concurrency must be a whole number of at least 1');
 const stamp = new Date().toISOString().replaceAll(':', '-').replace('.', '-');
@@ -138,11 +161,12 @@ for (const arm of arms) {
   sizes.forEach((runs, index) => {
     const label = `${arm}-${index + 1}`;
     const concurrencyForShard = Math.min(runs, RUNNER_CONCURRENCY_CAP, inFlightPerShard);
-    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'] });
+    shards.push({ arm, label, target, caseName, runs, concurrency: concurrencyForShard, outputDirectory: path.join(runDirectory, label), pluginArm: arm === 'plugin', keepTemp: options['keep-temp'], model: options.model, scaffold });
   });
 }
 
-console.log(`${options.mode} run of ${caseName}: ${runsPerArm} runs per arm (${arms.join(', ')}), judge ${JUDGE_MODEL}, ${shards.map((shard) => `${shard.label} ${shard.runs}x${shard.concurrency}`).join(', ')}`);
+const subjectModel = options.model ?? 'runner default';
+console.log(`${options.mode} run of ${caseName}: ${runsPerArm} runs per arm (${arms.join(', ')}), subject ${subjectModel}, judge ${JUDGE_MODEL}, ${shards.map((shard) => `${shard.label} ${shard.runs}x${shard.concurrency}`).join(', ')}`);
 if (draft) console.log('DRAFT: not authoritative. Use it to iterate on wording; take a verdict from the full run.');
 
 const startedAt = Date.now();
@@ -170,7 +194,7 @@ for (const shard of shards) {
 }
 
 const merged = {
-  suite: { caseFilter: caseName, judgeModel: JUDGE_MODEL, mode: options.mode, authoritative: !draft, concurrency },
+  suite: { caseFilter: caseName, subjectModel, judgeModel: JUDGE_MODEL, mode: options.mode, authoritative: !draft, concurrency },
   durationSeconds: evalSeconds,
   costUsd,
   cases: [{ name: caseName, graders, arms: armRuns }]

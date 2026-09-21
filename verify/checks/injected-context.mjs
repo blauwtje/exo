@@ -2,9 +2,9 @@
 // one text no skill has to be invoked for and the most expensive exo owns. It is
 // locked to the bytes it last measured at: growth fails, shrinking passes, and
 // raising INJECTED_CONTEXT_LOCK is a hand edit in the commit that pays for the
-// text. First-party documentation caps a hook output string, additionalContext
-// included, at 10,000 characters (https://code.claude.com/docs/en/hooks), and the
-// lock sits at 88% of that ceiling.
+// text. The hook keeps its whole output string under HOOK_OUTPUT_CAP in
+// verify/budgets.mjs by leaving a pointer out, so this check locks only the
+// authored body.
 
 import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
