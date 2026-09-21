@@ -12,6 +12,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `/exo:setup` walks through every exo setting on the question page, one click each with keeping first, and writes only the changed values after a review.
 - `savings.mjs guard` prints the read guard's state and line limit, and `guard on|off` switches the guard alone.
 
+### Changed
+
+- `eval-case.mjs` grants the three read-only commands `/exo:setup` runs on load, so a setup case no longer ends on a permission denial before its first turn.
+
 ## 0.21.1 - 2026-09-21
 
 ### Changed

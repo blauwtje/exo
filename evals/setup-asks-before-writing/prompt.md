@@ -3,6 +3,10 @@ name: setup-asks-before-writing
 runs: 5
 max_turns: 6
 timeout_seconds: 300
+allowed_tools:
+  - Bash(node *settings.mjs* show)
+  - Bash(node *savings.mjs* status)
+  - Bash(node *savings.mjs* guard)
 ---
 
 /exo:setup
