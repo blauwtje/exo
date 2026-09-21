@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.22.0 - 2026-09-21
+
 ### Added
 
 - `/exo:setup` walks through every exo setting on the question page, one click each with keeping first, and writes only the changed values after a review.
