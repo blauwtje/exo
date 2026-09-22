@@ -1,13 +1,16 @@
 # Implementer prompt
 
-The text `implementing` hands a `general-purpose` delegate for one task, on `sonnet`, or on `opus` when the task carries a `Design:` line with a frozen direction. Fill every field; the delegate reads nothing else, so a missing fact becomes a guess. `<checkout>` is the run's checkout, or the task's own worktree inside a wave; `<report directory>` is what `git rev-parse --absolute-git-dir` prints in the run's checkout.
+The text `implementing` hands a `general-purpose` delegate for one task, on `sonnet`, or on `opus` when the task carries a `Design:` line with a frozen direction. Fill every field; the delegate reads nothing else, so a missing fact becomes a guess. `<checkout>` is the run's checkout, the task's own worktree inside a wave, or `the worktree you start in` for a delegate dispatched with worktree isolation; `<report directory>` is what `git rev-parse --absolute-git-dir` prints in the run's checkout, or `your worktree's git directory` for that isolated delegate. `<wave>` is `none` except for that isolated delegate, as `references/workspace.md` says under `## Wave worktrees`.
 
 ```text
 Task <n> of <plan path>, branch <branch>, checkout <checkout>.
 
 You build one decided task in this checkout. You do not decide what the change is: it is settled below. When every step that changes a file holds its complete code, build straight from this brief and load no build skill, because the code is the change and `Files:` bounds what you read. When a changing step lacks its code, load the `exo:implementing-batch` skill first and hand it this one task as the decided change, whose steps and `Files:` stand in for its orientation and order; skip its discovery delegation, its retain-knowledge step, because a gotcha you find goes under `Unresolved`, its fresh-eyes step, because the caller's branch review owns the review, and its commit and finish, because the caller commits. A brief naming two tasks is reported back rather than built. A task with a `Design:` line builds only when `Visual direction:` below names the chosen direction: load the `exo:designing` skill, enter it at its Build phase, and take that direction as given rather than choosing another; a `Visual direction:` of `none`, or one that reads `pending`, is reported back rather than built. A choice the task leaves open and the user would not notice you make yourself and record under `Unresolved` as a ruling.
 
-You work only in the checkout named above, which is the repository or a worktree beside it: start every command with `cd <checkout> &&` and keep every path you read or edit under it, apart from the report directory named below, which sits outside a worktree. The tasks yours depends on are committed there, so it sits at a green, committed state. Never create a worktree, never switch, stash or reset.
+You work only in the checkout named above, which is the repository or a worktree beside it: start every command with `cd <checkout> &&` and keep every path you read or edit under it, apart from the report directory named below, which sits outside a worktree. The tasks yours depends on are committed there, so it sits at a green, committed state. Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree: an isolated session refuses every command after it.
+
+Wave: <wave>
+When Wave above is not `none`, first run `git switch --detach <its base sha>` and then its setup command, because your worktree may start on another commit; once the task is green, run its `Commit:` block and add `Commit: <git rev-parse HEAD>` to what you return. These are the only writing git commands you run.
 
 Before any edit:
 1. Read the conventions below, then `AGENTS.md` or `CLAUDE.md` at the root and the nearest one under each directory you touch. They outrank your defaults.
@@ -50,4 +53,4 @@ Task <n>: GREEN
 Report: <the path above>
 ```
 
-The brief names the plan's fields instead of paraphrasing them: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green, and the `Commit:` block is the caller's, never the delegate's.
+The brief names the plan's fields instead of paraphrasing them: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green, and the `Commit:` block is the caller's, never the delegate's, except under `Wave:`.
