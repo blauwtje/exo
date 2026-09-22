@@ -1,13 +1,14 @@
 #!/usr/bin/env node
-// The savings counter: what exo itself cost in tokens, price and wall time,
-// and what its read guard refused to send, summed over every session the
-// counter holds. Every figure is one the harness reported; nothing here is an
-// estimate. The counter is fed from the transcript the harness writes
-// (transcript.mjs) and from the status line it renders.
+// The savings ledger: what exo's read guard kept out of context, summed over
+// every session the counter holds and printed as an estimated token figure.
+// The guard books the bytes of each refused read; the estimate divides them by
+// CHARACTERS_PER_TOKEN when it prints, so the record stores no token figure
+// and nothing here is measured or billed. The Stop hook still reads the
+// transcript into the record (transcript.mjs), because the benchmark shares it.
 //
 //   node savings.mjs record            Stop hook: stdin is the hook JSON
-//   node savings.mjs statusline        status line: stdin is the status JSON; prints one segment
-//   node savings.mjs report            prints the cost report inside a text fence
+//   node savings.mjs statusline        status line: prints one segment from the record; reads no stdin
+//   node savings.mjs report            prints the savings report inside a text fence
 //   node savings.mjs status            prints on or off
 //   node savings.mjs off | on          writes "enabled" into config.json: one switch for
 //                                      the counter, the status line and the read guard
@@ -23,36 +24,34 @@ import process from 'node:process';
 import {
   SESSION_RETENTION_DAYS, configFile, guardLines, readJson, readRecord, savingsEnabled, updateSession, writeJson
 } from './record.mjs';
-import { emptyTotals, measuredTotals } from './overhead.mjs';
+import { GUARD_KINDS, measuredTotals } from './overhead.mjs';
 import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
 
 const DEFAULT_CONFIG = { enabled: true, readGuard: true };
 
-// A cost is known only when every part of it is.
-function addWork(target, source) {
-  target.calls += source.calls;
-  target.tokens += source.tokens;
-  target.time += source.time;
-  if (source.costKnown) target.cost += source.cost;
-  else target.costKnown = false;
+// Anthropic's glossary puts one token at about 3.5 English characters. The
+// guard booked bytes, not characters, so text outside ASCII overcounts slightly.
+const CHARACTERS_PER_TOKEN = 3.5;
+
+function estimatedTokens(bytesWithheld) {
+  return bytesWithheld / CHARACTERS_PER_TOKEN;
 }
 
-// Every session's measured figures summed, split the way measuredTotals splits them.
-function measuredRecord(sessions) {
-  const totals = emptyTotals();
+// The read guard's refusals over every session: a count and the bytes they
+// kept out of context, in total and by guard kind.
+function withheldRecord(sessions) {
+  const withheld = { refusals: 0, bytesWithheld: 0, guards: {} };
+  for (const kind of GUARD_KINDS) withheld.guards[kind] = { refusals: 0, bytesWithheld: 0 };
   for (const session of Object.values(sessions)) {
     const measured = measuredTotals(session);
-    addWork(totals, measured);
-    totals.hookTime += measured.hookTime;
-    totals.refusals += measured.refusals;
-    totals.bytesWithheld += measured.bytesWithheld;
-    for (const [kind, work] of Object.entries(measured.work)) addWork(totals.work[kind], work);
-    for (const [kind, guard] of Object.entries(measured.guards)) {
-      totals.guards[kind].refusals += guard.refusals;
-      totals.guards[kind].bytesWithheld += guard.bytesWithheld;
+    withheld.refusals += measured.refusals;
+    withheld.bytesWithheld += measured.bytesWithheld;
+    for (const kind of GUARD_KINDS) {
+      withheld.guards[kind].refusals += measured.guards[kind].refusals;
+      withheld.guards[kind].bytesWithheld += measured.guards[kind].bytesWithheld;
     }
   }
-  return totals;
+  return withheld;
 }
 
 function compact(value) {
@@ -70,54 +69,33 @@ function counted(value, noun) {
   return `${compact(value)} ${noun}${suffix}`;
 }
 
-const BYTES_PER_KB = 1024;
-
-// Binary units, because what the guard withheld is a file's own size.
-function bytes(value) {
-  if (value >= BYTES_PER_KB ** 2) return `${(value / BYTES_PER_KB ** 2).toFixed(1)} MB`;
-  if (value >= BYTES_PER_KB) return `${Math.round(value / BYTES_PER_KB)} KB`;
-  return `${Math.round(value)} B`;
+function segment(withheld) {
+  return `exo ≈${compact(estimatedTokens(withheld.bytesWithheld))} tokens saved`;
 }
 
-function duration(milliseconds) {
-  const minutes = Math.round(milliseconds / 60000);
-  if (minutes < 0) return `-${duration(-milliseconds)}`;
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}`;
+const GUARD_LABELS = { capped: 'Big-file reads refused', duplicate: 'Repeated reads refused' };
+
+// Every ledger label is padded to this width, so the ≈ figures line up in the fence.
+const LEDGER_LABEL_WIDTH = 29;
+
+function ledgerLine(label, bytesWithheld, suffix = '') {
+  return `${label.padEnd(LEDGER_LABEL_WIDTH)}≈ ${compact(estimatedTokens(bytesWithheld))}${suffix}`;
 }
 
-// A loss prints its minus before the currency sign; a value that rounds to zero prints $0.00.
-function money(value, known) {
-  if (!known) return '-';
-  if (Math.round(value * 100) < 0) return `-$${(-value).toFixed(2)}`;
-  return `$${Math.abs(value).toFixed(2)}`;
-}
-
-// Where a session's context stands, by the tokens it holds and not by its share
-// of the window: reading and reasoning decline with what the model carries, and
-// a larger window only moves where it ends. Below the first band the segment
-// names the count alone.
-const CONTEXT_BANDS = [
-  { from: 200_000, word: 'write a handoff, then clear' },
-  { from: 150_000, word: 'dull, hand off soon' },
-  { from: 100_000, word: 'edge' }
-];
-
-// The status input carries context_window.total_input_tokens, the input, cache
-// read and cache write tokens of the latest response; it is absent or null
-// until the first response, and the segment then says nothing about context.
-function contextBand(statusInput) {
-  const tokens = statusInput.context_window?.total_input_tokens;
-  if (typeof tokens !== 'number') return '';
-  const count = `${Math.round(tokens / 1000)}k`;
-  const band = CONTEXT_BANDS.find((each) => tokens >= each.from);
-  return band ? ` · context ${count} · ${band.word}` : ` · context ${count}`;
-}
-
-// Cost first, as in the report. Refusals are a count, never bytes, and the
-// token total stays in the report's footer: beside a cost it gives a rate.
-function segment(measured, statusInput) {
-  return `exo cost ${money(measured.cost, measured.costKnown)} · ${duration(measured.time)} · ${counted(measured.refusals, 'read')} refused${contextBand(statusInput)}`;
+// The lines inside the fence: one total, one indented line per read guard
+// kind and the estimate's basis; while nothing was refused, one sentence,
+// because a row of zeros reads as a measurement of nothing.
+function ledgerLines(withheld) {
+  if (withheld.refusals === 0) {
+    return [`Nothing refused yet: keep the read guard on and ask again after a session reads a file over ${guardLines()} lines whole, or the same range twice.`];
+  }
+  const lines = [ledgerLine('Tokens kept out of context', withheld.bytesWithheld)];
+  for (const kind of GUARD_KINDS) {
+    const guard = withheld.guards[kind];
+    lines.push(ledgerLine(`  ${GUARD_LABELS[kind]}`, guard.bytesWithheld, ` · ${counted(guard.refusals, 'read')}`));
+  }
+  lines.push('', `Estimated at ${CHARACTERS_PER_TOKEN} characters per token, the figure Anthropic documents; not measured or billed.`);
+  return lines;
 }
 
 function readStdin() {
@@ -130,13 +108,11 @@ function recordSession(hookInput) {
   updateSession(hookInput.session_id, (session) => ingestTranscript(session, hookInput.transcript_path));
 }
 
-function statusline(statusInput) {
+// The record only: the Stop hook already read the transcript into it, and a
+// render that read it again would pay that cost on every status line refresh.
+function statusline() {
   if (!savingsEnabled()) return;
-  let sessions = readRecord();
-  if (typeof statusInput.session_id === 'string') {
-    sessions = updateSession(statusInput.session_id, (session) => ingestTranscript(session, statusInput.transcript_path));
-  }
-  process.stdout.write(segment(measuredRecord(refreshStaleSessions(sessions)), statusInput));
+  process.stdout.write(segment(withheldRecord(readRecord())));
 }
 
 function status() {
@@ -186,53 +162,20 @@ function setGuard(argument) {
   process.stdout.write(`exo read guard ${argument}\n`);
 }
 
-// Which skills fired and how many turns matched none, summed over every
-// session the record holds.
-function routingTotals(sessions) {
-  const skills = {};
-  let none = 0;
-  for (const session of Object.values(sessions)) {
-    const routing = session.routing ?? {};
-    for (const [name, count] of Object.entries(routing.skills ?? {})) {
-      skills[name] = (skills[name] ?? 0) + count;
-    }
-    none += routing.none ?? 0;
-  }
-  return { skills, none };
-}
-
-// At most five skills so the line stays one line; the rest are summed under
-// "other", never dropped. `none` closes the line, because it is the count the
-// line exists for.
-const ROUTING_NAMES = 5;
-
-function routingLine(totals) {
-  const byCount = (first, second) => second[1] - first[1] || first[0].localeCompare(second[0]);
-  const ranked = Object.entries(totals.skills).sort(byCount);
-  const parts = [];
-  for (const [name, count] of ranked.slice(0, ROUTING_NAMES)) parts.push(`${name} ${compact(count)}`);
-  let rest = 0;
-  for (const [, count] of ranked.slice(ROUTING_NAMES)) rest += count;
-  if (rest > 0) parts.push(`other ${compact(rest)}`);
-  parts.push(`none ${compact(totals.none)}`);
-  return `Skills   ${parts.join(' · ')}`;
-}
-
 // Every session the counter holds, whatever project it ran in, in a fence so
-// the labels line up. No saving and no net: the refused text was never sent,
-// so nothing measured turns its bytes into tokens or money.
+// the figures line up. Only the read guard is counted: the repeat guard's
+// denials carry no text to estimate from.
 function report() {
   const sessions = refreshStaleSessions(readRecord());
-  const measured = measuredRecord(sessions);
+  const withheld = withheldRecord(sessions);
   const enabled = savingsEnabled();
   const sessionCount = Object.keys(sessions).length;
   const lines = [
     '```text',
-    `exo savings · ${enabled ? 'on' : 'off'} · last ${SESSION_RETENTION_DAYS} days · ${counted(sessionCount, 'session')}`,
-    `Cost     ${money(measured.cost, measured.costKnown)} · ${counted(measured.calls, 'call')} · ${duration(measured.time)}`,
-    `Refused  ${counted(measured.refusals, 'read')} · ${bytes(measured.bytesWithheld)} of file text never sent`,
-    'Saved    not measured: refused text has no token count or price',
-    routingLine(routingTotals(sessions)),
+    'exo savings',
+    `Last ${SESSION_RETENTION_DAYS} days · ${counted(sessionCount, 'session')} · local estimate`,
+    '',
+    ...ledgerLines(withheld),
     '```',
     enabled ? 'Turn off with `/exo:settings counter off`.' : 'Turn on with `/exo:settings counter on`.'
   ];
@@ -242,7 +185,7 @@ function report() {
 }
 
 const command = process.argv[2];
-const HOOK_COMMANDS = { record: recordSession, statusline };
+const HOOK_COMMANDS = { record: () => recordSession(readStdin()), statusline };
 const CLI_COMMANDS = {
   report,
   status,
@@ -253,7 +196,7 @@ const CLI_COMMANDS = {
 };
 if (command in HOOK_COMMANDS) {
   try {
-    HOOK_COMMANDS[command](readStdin());
+    HOOK_COMMANDS[command]();
   } catch (error) {
     // A counter fault must never block a turn or blank the status line.
     console.error(`savings: ${error.message}`);

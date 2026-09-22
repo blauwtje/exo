@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `/exo:savings` and the status line segment show only the tokens the read guard kept out of context, estimated at 3.5 characters per token from the bytes it booked and split into big-file and repeated reads; cost, calls, wall time, byte figures, the `Saved` and `Skills` lines and the context band leave the report and the segment, the segment no longer reads the transcript, and the routing book with its three hooks, `routing.mjs` and its test is gone.
+
 ## 0.24.2 - 2026-09-22
 
 ### Fixed
