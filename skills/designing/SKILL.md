@@ -75,7 +75,7 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 
 ## Phase 1 — Context
 
-State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief. Read `references/phase-detail.md`, its `## Context`, before collecting anything: the durable-context call, the baseline record a bounded redesign starts from, the discovery dispatch, and the observation mapping. Keep a list of every repository path and line range this phase read; Build hands it to each builder as `FILES`.
+A full or bounded redesign takes the baseline pair under `references/phase-critique.md` when the surface renders, then dispatches the `exo:design-discovery` agent on `sonnet` at `high` with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. It writes `$RUN/inventory.md` and the `FILES` list in `$RUN/files.md` and returns at most 20 lines; this session reads that report and asks its `## Open` questions, never the repository ranges. Every other path reads `references/phase-detail.md`, its `## Context`, which names the three facts and the `FILES` list Build hands each builder.
 
 ## Phase 2 — Direction
 
@@ -91,7 +91,7 @@ A full or bounded redesign renders at three checkpoints under the render budget 
 
 ## Phase 5 — QA
 
-Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-overlap repairs, the interaction and accessibility passes, the render checkpoints a redesign is complete only with, and what to report when there is no render path.
+Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-overlap repairs, the interaction and accessibility passes, the render checkpoints a redesign is complete only with, and what to report when there is no render path. Once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs the sweep, handed `RUN`, `SKILL`, `REPO` and that section, and returns at most 20 lines; before that line, the sweep runs here.
 
 ## Judgment
 
