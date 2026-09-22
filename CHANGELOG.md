@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.24.0 - 2026-09-22
+
 ### Highlights
 
 - **exo no longer ships paid evals: `npm run check` and the unit tests are the only gate.**
