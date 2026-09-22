@@ -464,6 +464,35 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     assert.equal(result.code, 2);
     assert.match(result.stderr, /--baseline/);
   });
+
+  async function ignoreFixture(ignoreEntries) {
+    const root = await fixture();
+    await fs.mkdir(path.join(root, 'docs', 'design'), { recursive: true });
+    await fs.writeFile(path.join(root, 'docs', 'design', 'check-ui-ignore.json'), JSON.stringify(ignoreEntries));
+    await fs.writeFile(path.join(root, 'baseline.json'), '{"static": {"status": "ok", "findings": []}}');
+    await fs.writeFile(path.join(root, 'styles.css'), '.intro {\n  margin: 0 !important;\n}\n');
+    return root;
+  }
+
+  it('lists a finding named in docs/design/check-ui-ignore.json as ignored', async () => {
+    const root = await ignoreFixture([
+      { type: 'important-override', file: 'styles.css', reason: 'vendor override the user confirmed' }
+    ]);
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    const { comparison } = JSON.parse(result.stdout);
+    const ignored = comparison.ignored.map((item) => [item.type, item.reason]);
+    assert.deepEqual(ignored, [['important-override', 'vendor override the user confirmed']]);
+    assert.ok(!comparison.new.some((item) => item.type === 'important-override'));
+    assert.ok(!comparison.blocking.some((item) => item.type === 'important-override'));
+  });
+
+  it('rejects an ignore entry without a reason, naming its index and field', async () => {
+    const root = await ignoreFixture([{ type: 'important-override', file: 'styles.css' }]);
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /entry 0: reason/);
+  });
 });
 
 describe('argument and JSON contracts', () => {

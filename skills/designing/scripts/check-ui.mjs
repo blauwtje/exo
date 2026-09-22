@@ -4,6 +4,10 @@
 //
 //   node scripts/check-ui.mjs [--url <url>] [--source <dir>] [--viewport <width>x<height>]
 //                             [--baseline <earlier check-ui JSON>]
+//
+// A --baseline run also reads confirmed false positives from docs/design/check-ui-ignore.json
+// under the working directory: a JSON array of { "type", "file", "reason" } strings, where
+// file is the finding's selector without its :line.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -959,6 +963,34 @@ export function compareFindings(baselineFindings, currentFindings, ignoreEntries
   return { counts, new: added, ignored, blocking };
 }
 
+const IGNORE_FILE = path.join('docs', 'design', 'check-ui-ignore.json');
+const IGNORE_FIELDS = ['type', 'file', 'reason'];
+
+async function readIgnoreEntries(directory) {
+  const file = path.join(directory, IGNORE_FILE);
+  const text = await fs.readFile(file, 'utf8').catch((error) => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (text === null) return [];
+  let entries;
+  try {
+    entries = JSON.parse(text);
+  } catch {
+    throw new UsageError(`${IGNORE_FILE} is not JSON`);
+  }
+  if (!Array.isArray(entries)) throw new UsageError(`${IGNORE_FILE} must hold an array of entries`);
+  entries.forEach((entry, index) => {
+    for (const field of IGNORE_FIELDS) {
+      const value = entry?.[field];
+      if (typeof value !== 'string' || value.trim() === '') {
+        throw new UsageError(`${IGNORE_FILE} entry ${index}: ${field} must be a non-empty string`);
+      }
+    }
+  });
+  return entries;
+}
+
 async function main(argv) {
   const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value', baseline: 'value' });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
@@ -975,7 +1007,8 @@ async function main(argv) {
   };
   if (baselineFindings) {
     const currentFindings = reportFindings(report);
-    report.comparison = compareFindings(baselineFindings, currentFindings, []);
+    const ignoreEntries = await readIgnoreEntries(process.cwd());
+    report.comparison = compareFindings(baselineFindings, currentFindings, ignoreEntries);
   }
   process.stdout.write(`${JSON.stringify(report)}\n`);
 }
