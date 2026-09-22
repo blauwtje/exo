@@ -465,6 +465,15 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     assert.match(result.stderr, /--baseline/);
   });
 
+  it('rejects a --baseline that is JSON but no check-ui report with exit 2', async () => {
+    const root = await fixture();
+    const baselineFile = path.join(root, 'package.json');
+    await fs.writeFile(baselineFile, '{"name": "site", "version": "1.0.0"}');
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', baselineFile]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /--baseline holds no check-ui findings/);
+  });
+
   async function ignoreFixture(ignoreEntries) {
     const root = await fixture();
     await fs.mkdir(path.join(root, 'docs', 'design'), { recursive: true });

@@ -901,6 +901,7 @@ function comparisonKey(entry) {
 }
 
 function reportFindings(report) {
+  if (typeof report?.static?.status !== 'string') return null;
   const staticFindings = report?.static?.findings ?? [];
   const renderedFindings = report?.rendered?.findings ?? [];
   if (!Array.isArray(staticFindings) || !Array.isArray(renderedFindings)) return null;
