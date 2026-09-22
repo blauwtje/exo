@@ -12,7 +12,7 @@ Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rul
 1. Match the request against the skill descriptions before the first tool call, including a clarifying question.
 2. When one fires, invoke and follow it; when it turns out wrong, say so and leave it.
 3. Use no skill for a version-only bump, a git-only operation or a read-only question no skill description claims.
-4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change, which `designing` owns at any file count.
+4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change or a test-first request, which `designing` and `implementing-batch` own at any file count.
 5. Issue and pull-request workflows run only when the user invokes them: name `/exo:issuing` or `/exo:merge-prs` instead of doing that work by hand.
 
 ## When several fire
