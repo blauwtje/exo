@@ -14,6 +14,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `designing` states its after-compaction resume rule (`$RUN` files, `contract-selected.json`, `renders/`, docs/design/DESIGN.md) above `## Size the request`, where a compaction's re-injection keeps it.
+- `designing` `references/internationalization.md` opens with its load condition, so a run that loads it on a single-locale product with no translation machinery and no right-to-left audience applies nothing from it.
 
 ### Removed
 
