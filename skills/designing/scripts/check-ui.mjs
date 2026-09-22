@@ -3,6 +3,7 @@
 // never a beauty score, and the script emits no aggregate quality number.
 //
 //   node scripts/check-ui.mjs [--url <url>] [--source <dir>] [--viewport <width>x<height>]
+//                             [--baseline <earlier check-ui JSON>]
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -885,10 +886,84 @@ export async function renderedAudit({ url, viewport, cwd }) {
   }
 }
 
+const ALWAYS_BLOCKING = new Set(['content-clipped', 'element-overlap']);
+
+function findingFile(entry) {
+  return entry.selector.replace(/:\d+$/, '');
+}
+
+function comparisonKey(entry) {
+  return `${entry.type}|${findingFile(entry)}|${entry.measured}`;
+}
+
+function reportFindings(report) {
+  const staticFindings = report?.static?.findings ?? [];
+  const renderedFindings = report?.rendered?.findings ?? [];
+  if (!Array.isArray(staticFindings) || !Array.isArray(renderedFindings)) return null;
+  const findings = [...staticFindings, ...renderedFindings];
+  const wellFormed = findings.every((entry) => typeof entry?.type === 'string' && typeof entry.selector === 'string');
+  return wellFormed ? findings : null;
+}
+
+async function readBaseline(file) {
+  const text = await fs.readFile(file, 'utf8').catch(() => null);
+  if (text === null) throw new UsageError(`--baseline cannot be read: ${file}`);
+  let report;
+  try {
+    report = JSON.parse(text);
+  } catch {
+    throw new UsageError(`--baseline is not JSON: ${file}`);
+  }
+  const findings = reportFindings(report);
+  if (!findings) throw new UsageError(`--baseline holds no check-ui findings: ${file}`);
+  return findings;
+}
+
+export function compareFindings(baselineFindings, currentFindings, ignoreEntries = []) {
+  const unmatched = new Map();
+  for (const entry of baselineFindings) {
+    const key = comparisonKey(entry);
+    unmatched.set(key, (unmatched.get(key) ?? 0) + 1);
+  }
+  const added = [];
+  const ignored = [];
+  const blocking = [];
+  let predating = 0;
+  for (const entry of currentFindings) {
+    const file = findingFile(entry);
+    const ignoreEntry = ignoreEntries.find((candidate) => candidate.type === entry.type && candidate.file === file);
+    if (ignoreEntry) {
+      ignored.push({ ...entry, reason: ignoreEntry.reason });
+      continue;
+    }
+    const key = comparisonKey(entry);
+    const baselineCount = unmatched.get(key) ?? 0;
+    const isNew = baselineCount === 0;
+    if (isNew) {
+      added.push(entry);
+    } else {
+      unmatched.set(key, baselineCount - 1);
+      predating += 1;
+    }
+    const isBlocking = ALWAYS_BLOCKING.has(entry.type) || (isNew && entry.confidence === 'definite');
+    if (isBlocking) blocking.push(entry);
+  }
+  const counts = {
+    before: baselineFindings.length,
+    after: currentFindings.length,
+    predating,
+    new: added.length,
+    ignored: ignored.length,
+    blocking: blocking.length
+  };
+  return { counts, new: added, ignored, blocking };
+}
+
 async function main(argv) {
-  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value' });
+  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value', baseline: 'value' });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
   const viewport = flags.viewport ? parseViewport(flags.viewport) : { width: 1440, height: 900 };
+  const baselineFindings = flags.baseline ? await readBaseline(flags.baseline) : null;
 
   const report = {
     static: flags.source
@@ -898,6 +973,10 @@ async function main(argv) {
       ? await renderedAudit({ url: requireUrl(flags.url), viewport, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
+  if (baselineFindings) {
+    const currentFindings = reportFindings(report);
+    report.comparison = compareFindings(baselineFindings, currentFindings, []);
+  }
   process.stdout.write(`${JSON.stringify(report)}\n`);
 }
 
