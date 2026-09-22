@@ -5,7 +5,7 @@ Ask where a code-changing run commits before its first edit, and commit only whe
 ## When it is asked
 
 1. **Outside git, never.** When `git rev-parse --show-toplevel` fails, nothing is committed and the report says so in one line. A run on a plan whose `Repository:` line names the current folder is the exception: when `ls -A` there lists nothing but `docs`, it runs `git init -b main` and commits on `main` without asking, because a repository with no commit has nothing to branch from; when it lists anything else, the run stops before any edit and names those entries, because an init would capture files the plan never named. A plan whose `Repository:` folder sits inside another repository, where `git rev-parse --show-toplevel` prints a parent folder, stops the same way and names both paths.
-2. **In a chosen place, never.** Inside a linked worktree, where `git rev-parse --git-dir` and `git rev-parse --git-common-dir` differ, or on a branch other than the default one, the run commits there and the report names it, because asking would offer a branch off a branch.
+2. **In a chosen place, never.** Inside a linked worktree, where `git rev-parse --git-dir` and `git rev-parse --git-common-dir` differ, or on a branch other than the default one, the run commits there and the report names it, because asking would offer a branch off a branch. The exception is a branch whose pull request `gh pr list --head <branch> --state merged --json number` already lists: it counts as the default branch, because a commit there stacks on history `main` holds and conflicts with itself at the next pull request.
 3. **Otherwise first.** The question is the run's first message, before any edit or dispatch, in the shape `## A question` in `using-exo` gives, and the run stops until the digit arrives:
 
 ```text
@@ -18,7 +18,7 @@ The default branch is the one `git symbolic-ref --short refs/remotes/origin/HEAD
 
 ## Carrying out the pick
 
-- **Branch.** `git switch -c <type>/<slug>`, named by the plan's `Branch:` line when it names a branch other than the default, otherwise from the goal.
+- **Branch.** `git switch -c <type>/<slug>`, from `origin/<default>` after `git fetch origin` when the run sits on a merged branch, named by the plan's `Branch:` line when it names a branch other than the default, otherwise from the goal.
 - **Worktree.** The harness's worktree tool when one is available; otherwise `git worktree add ../<repository>-<slug> -b <type>/<slug>`, a sibling folder outside the repository so nothing inside it is tracked, and every later command runs there.
 - **Current branch.** Stay; commits land on it.
 

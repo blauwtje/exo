@@ -25,27 +25,6 @@ commands and internals; this file only names what a session here gets wrong with
 - Once `gh run list --workflow release.yml --limit 1` shows the release succeeded on the merge, the session installs it without being asked: it runs `claude plugin marketplace update blauwtje`, then `claude plugin update exo@blauwtje`, and tells the user to restart Claude Code, which is the one step left to them.
 - After that update it removes every version folder under the config directory's `plugins/cache/blauwtje/exo/` except the new one and the one this session loaded, because a running session still reads its hooks and skills from the version it started on, and it lists the folders before removing them.
 
-## Evals cost real money
-
-<!-- Measured 2026-09-18 by summing costUsd and durationSeconds over evals/results/*/aggregate-result.json; stale once more runs land there. -->
-Every run recorded under `evals/results/` cost real money and minutes of wall clock: the `costUsd` and `durationSeconds` of each top-level `aggregate-result.json` there add up to today's totals. The cheap path is the default one and every rule below exists to keep it that way.
-
-- Run no eval for a change that does not alter skill behavior. Documentation, the verifier, the changelog and this file change nothing a grader can see.
-- A new case guards one of these, or it is not written: a skill firing or not firing on the right request, the finish question and its routes, a stop before a push, merge or issue creation, or a rule no free check in `npm run check` can see.
-- Run only the case the change touched, with `node eval-case.mjs --case <name> --arm <arm>`, never the whole suite: every run of every case pays its own judge call.
-- Iterate with `--mode draft` (3 runs) and take a verdict only from `--mode full`, because at 3 runs one answer moves a pass rate by a third.
-- `--ablation with-without` is the CLI default whenever a plugin resolves and doubles the runs. `eval-case.mjs` passes `--ablation none` already; a direct `claude plugin eval .` needs it too unless the baseline is the question.
-- Pass `--max-cost-usd 5` on any direct `claude plugin eval` call; `eval-case.mjs` passes it to each runner process already, as `MAX_COST_USD`. It is the ceiling the runner's own docs recommend over tight per-run limits, and it aborts with exit 2 rather than overrunning, which `eval-case.mjs` reports as a stopped run with no verdict.
-- Give every new case a `timeout_seconds` that fits what its graders check. The default is 300 (max 3600), and a run that outruns it is recorded as `timed out after 300s` yet still graded on its partial transcript, so it scores 0 and reads as a real failure. `implementing-inits-a-new-folder` and `planning-plans-a-new-folder` need `timeout_seconds: 900` for that reason.
-- `max_turns` defaults to 10; every case here sets its own, because hitting the cap is a run error that lowers the score.
-- Where text sits, how it is laid out and whether a literal appears is a free grader (`regex`, `tool_used`, `tool_order`, `file_exists`), never an `llm` criterion: a free grader costs nothing and reads every run the same way, while a second judge reversed 45% of the one-word judge's failed verdicts. `tests/evals.test.mjs` fails a new case without a free grader and an llm criterion that words layout; `CONTRIBUTING.md` `### What a judge may grade` holds the rule and the measurement.
-- A plan's `## Final verification` gates an eval on the `GATE PASS` line a full `eval-case.mjs` run prints, never on a count such as `(3/3)`: n of n fails a flawless skill four times in ten under that judge. `GATE DISPUTED` is settled by reading `judge-reasons.json`, not by a rerun, and a case that gates a plan carries `runs: 5`.
-- A case grants no tool unless its `prompt.md` lists `allowed_tools`, so a run cannot `Read` a skill's `references/`: a rule a case grades sits in the `SKILL.md` body, or the case grants `Read`.
-- A run starts in an empty working directory, and `context.add_dirs` in a `case.yaml` copies nothing into it: it only grants a read of the folder where it sits. A case that needs files names a `context.scaffold_script` that writes them, and `eval-case.mjs` passes `--scaffold` for such a case; a direct `claude plugin eval` call needs the flag too.
-- A run is in `dontAsk` mode under an OS sandbox that denies reads of its config directory, so a skill's `!` command needs a grant in both the case's `allowed_tools` and `eval-case.mjs`'s `--allow-tools`, and must not fail on an unreadable config file: either failure ends the load before turn 1, recorded as turns 0, cost 0 and error null.
-- `eval-case.mjs` pins `JUDGE_MODEL = 'sonnet'`; the CLI's own default is `haiku`. Sonnet is the deliberate choice for these rubrics, so do not widen it to new scripts without asking.
-- **IMPORTANT:** a red eval is reported to the owner with its numbers, never chased with reruns. Two verification passes per change is the maximum; after the second, stop and report.
-
 ## Environment
 
 - The session hook pins `"shell": "bash"` in `hooks.json`: without it, a Windows host without Git Bash
