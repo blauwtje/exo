@@ -1,7 +1,7 @@
 ---
 name: implementing-batch
-description: Use when a decided change builds in this session and inspection shows it modifies more than two source/test/config files, adds a dependency, changes a public signature, crosses a persisted format or security boundary, or reaches an uninspected file; also a whole plan run here. Not for a change reaching at most two files, a version bump, a git-only operation, or an unproven failure.
-argument-hint: <decided change or plan path>
+description: Use when a decided change builds in this session and inspection shows it modifies more than two source/test/config files, adds a dependency, changes a public signature, crosses a persisted format or security boundary, or reaches an uninspected file. Not for a plan file, a change reaching at most two files, a version bump, a git-only operation, or an unproven failure.
+argument-hint: <decided change>
 ---
 
 # Implement
@@ -57,10 +57,6 @@ Three conditions stop the loop and force an evidence report:
 ## Precedence
 
 `debug` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting. The `exo:explorer` agent owns read-only discovery; `code-review` owns the review context.
-
-## From a plan
-
-A plan written by `planning` runs here only when its tasks must build in this session; `implementing` runs one through delegated contexts and commits per task. Settle the workspace first, as step 3 says. Read `## Goal`, `## Plan basis`, `## Non-goals` and `## Context`, then the tasks one at a time in file order, extracted fence-aware between `### Task <n>:` headings. For each: confirm every `Modify:` region reads as the step implies, write each step's code, run its `Run:` to its `Expected:`, and run the task's `Commit:` block under the plan's authorization before the next. A region missing, duplicated or already changed is drift: stop and report `PLAN DRIFT: Task <n>`. After the last task, end on step 8's finish with nothing left to commit.
 
 ## Judgment
 

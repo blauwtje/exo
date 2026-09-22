@@ -18,9 +18,9 @@ import { checkRestatement } from '../verify/checks/restatement.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const USING_EXO = 'skills/using-exo/SKILL.md';
-// A 311-char description, so 50 more stays inside the 400-char per-skill limit
-// and the total is what fails.
+// A counted description to shorten; growth goes to padding skills instead.
 const COUNTED_SKILL = 'skills/research/SKILL.md';
+const PER_SKILL_LIMIT = 400;
 
 // Every check here reads nothing outside skills/, so the fixture copies that alone.
 function skillsFixture(t) {
@@ -43,6 +43,20 @@ function verdict(root, check) {
     console.log = log;
   }
   return { counts: report.counts(), detail: printed.join('\n') };
+}
+
+// Adds `growth` counted chars as padding skills of at most PER_SKILL_LIMIT each,
+// so the per-skill cap never fires before the total, however far the corpus
+// sits under its lock.
+function growTotal(root, growth) {
+  let remaining = growth;
+  for (let index = 0; remaining > 0; index += 1) {
+    const length = Math.min(remaining, PER_SKILL_LIMIT);
+    const folder = path.join(root, 'skills', `padding-${index}`);
+    fs.mkdirSync(folder);
+    fs.writeFileSync(path.join(folder, 'SKILL.md'), `---\nname: padding-${index}\ndescription: ${'x'.repeat(length)}\n---\n\n# Padding\n`, 'utf8');
+    remaining -= length;
+  }
 }
 
 function editDescription(root, relative, rewrite) {
@@ -85,7 +99,7 @@ test('50 chars past the locked total fail, naming the locked total and the new o
   const root = skillsFixture(t);
   const baseline = countedTotal(verdict(root, checkDescriptionBudgets).detail);
   const growth = DESCRIPTION_TOTAL_LOCK.chars - baseline + 50;
-  editDescription(root, COUNTED_SKILL, (value) => `${'x'.repeat(growth)}${value}`);
+  growTotal(root, growth);
 
   const run = verdict(root, checkDescriptionBudgets);
 
