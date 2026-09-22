@@ -62,10 +62,11 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | `references/typography.md` | Phases 2–3 only when choosing or changing type. |
 | `references/controls.md` | Phase 3 before styling a button, field, menu, toggle, tab, or filter. |
 | `references/implementation.md` | Phase 3 before writing CSS or component code. |
+| `references/motion.md` | Phase 3 for the recorded motion decision, and before any animation at every size. |
 | `references/interaction-qa.md` | Phase 3 when the surface has controls, flows, disclosure, or reachable states; Phase 5 its `## Pre-ship interaction sweep` section alone. |
 | `references/feedback-and-status.md` | Phase 3 only when the surface waits on the network, applies a change before its response arrives, or reports status outside the region that changed; Phase 5 its `## Sweep` section alone. |
 | `references/visual-critique.md` | Phase 4, read by the `exo:design-critic` agent; this session reads its faults.md. |
-| `references/craft-recipes.md` | Phase 3 after `contract-selected.json` exists, before the first CSS of a ground, surface, or type treatment; its `## Motion` section alone for the recorded motion decision, and before any animation at every size. |
+| `references/craft-recipes.md` | Phase 3 after `contract-selected.json` exists, before the first CSS of a ground, surface, motion, or type treatment. |
 | `references/component-system.md` | Phase 1 only when the repository ships a component layer, its `## Adopt before authoring` section alone; Phase 3 before building a control, field, or surface the design repeats. |
 | `references/tokens.md` | Phase 2 only past the role tokens `references/implementation.md` lists: a token pipeline or DTCG file in the repository, a second theme or brand, or a ramp generated against target contrast. |
 | `references/icons-and-imagery.md` | Phase 3 only when the build draws or extends an icon set, places a raster or a chart, or the inventory names imagery. |

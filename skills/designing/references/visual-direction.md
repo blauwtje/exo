@@ -58,7 +58,7 @@ One coherent physical logic per direction: state the light source and the lighti
 - **Hard offset** — solid shadows and thick strokes, for a neobrutalist direction.
 - **Layered translucency** — blur and glass, only over real changing content.
 
-The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a subject-derived texture — grain, paper, graph grid, planning, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in `craft-recipes.md` `## Motion` and keeps a static fallback under reduced motion.
+The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a subject-derived texture — grain, paper, graph grid, planning, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in `motion.md` and keeps a static fallback under reduced motion.
 
 The focal point may earn what a tell denies elsewhere — a glow where the subject emits light, glass over its layered content, one gradient with named hue logic — when an observation and a named job back it.
 

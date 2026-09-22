@@ -67,7 +67,7 @@ const PINNED_SENTENCES = {
   'skills/designing/references/phase-direction.md': [
     'validate the set with `--check` to status ok before building any variant',
   ],
-  'skills/designing/references/craft-recipes.md': [
+  'skills/designing/references/motion.md': [
     'only exercised is motion-verified',
   ],
   'skills/designing/references/visual-critique.md': [

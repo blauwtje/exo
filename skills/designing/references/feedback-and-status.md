@@ -21,7 +21,7 @@ One rule cuts across all four. An indicator for an unpredictable wait appears no
 - It never shows a count the data has not confirmed: three skeleton rows followed by one real row is a worse answer than one skeleton row.
 - It carries no text, no fake headings, and no ellipsis. Invented placeholder words are read as content by anyone skimming, and by every screen reader.
 - Where the layout is unknown until the data arrives, use the determinate or indeterminate indicator instead: a skeleton for a shape nobody knows is a guess rendered at full opacity.
-- Under `prefers-reduced-motion: reduce` the shimmer is replaced, not deleted (`craft-recipes.md` `## Motion`), because the shimmer is what distinguishes a loading block from an empty one.
+- Under `prefers-reduced-motion: reduce` the shimmer is replaced, not deleted (`motion.md`), because the shimmer is what distinguishes a loading block from an empty one.
 
 ## Provisional results are a contract, not an optimization
 

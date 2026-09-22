@@ -20,7 +20,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Removed
 
 - `designing` `references/phase-critique.md`: its render budget, three checkpoints, one-reviewer cap, 12-call cap and no-browser-tool rule now live in `references/phase-detail.md` `## The critique dispatch`, and SKILL.md's Phase 1 no longer repeats the three-facts sentence.
-- `designing` `references/motion.md` folds into `references/craft-recipes.md` `## Motion`, which a builder loads as one section for the recorded motion decision and any animation; the `**Exit shorter than entry**` shape gives way to the exit example under `### Timing`.
 
 ## 0.26.0 - 2026-09-22
 
