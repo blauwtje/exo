@@ -32,9 +32,12 @@ export function resolveReviewer({ reviewer, shortstatOutput }) {
 
 function main(argv) {
   const flags = parseFlags(argv, { base: 'value', reviewer: 'value' });
-  if (flags.reviewer === undefined && flags.base === undefined) throw new UsageError("flag '--base' is required");
+  const base = flags.base ?? '';
+  // An empty base makes git read `...HEAD` as HEAD...HEAD, an empty diff that
+  // would pick the light reviewer for a branch of any size.
+  if (flags.reviewer === undefined && base === '') throw new UsageError("flag '--base' needs a revision");
   const shortstatOutput = flags.reviewer === undefined
-    ? execFileSync('git', ['diff', '--shortstat', `${flags.base}...HEAD`], { encoding: 'utf8' })
+    ? execFileSync('git', ['diff', '--shortstat', `${base}...HEAD`], { encoding: 'utf8' })
     : '';
   process.stdout.write(`${resolveReviewer({ reviewer: flags.reviewer, shortstatOutput })}\n`);
 }

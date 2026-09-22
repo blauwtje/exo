@@ -2,9 +2,14 @@
 // and only a named --reviewer override moves the pick off that reading.
 
 import assert from 'node:assert/strict';
+import process from 'node:process';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { parseShortstat, pickReviewer, resolveReviewer } from '../skills/implementing/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
+
+const SCRIPT = fileURLToPath(new URL('../skills/implementing/scripts/pick-reviewer.mjs', import.meta.url));
 
 test('parses files, insertions and deletions out of a shortstat line', () => {
   assert.deepEqual(parseShortstat(' 3 files changed, 9 insertions(+), 1 deletion(-)'), { files: 3, changedLines: 10 });
@@ -29,6 +34,13 @@ test('a named override wins over the diff reading', () => {
 
 test('an unnamed reviewer in the override is rejected', () => {
   assert.throws(() => resolveReviewer({ reviewer: 'budget is tight', shortstatOutput: '' }), UsageError);
+});
+
+test('an empty base is rejected, not read as a change of no size', () => {
+  const run = spawnSync(process.execPath, [SCRIPT, '--base', ''], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.equal(run.stdout, '');
+  assert.match(run.stderr, /--base/);
 });
 
 test('with no override, the diff reading decides', () => {
