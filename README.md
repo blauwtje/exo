@@ -21,7 +21,7 @@ Start a new session and run:
 /exo:savings
 ```
 
-It prints the cost report, which stays at zero until exo has done some work. In a clone of this repository, `npm run check` runs every check.
+It prints the savings report, which says nothing was refused yet until the read guard has kept a read out of context. In a clone of this repository, `npm run check` runs every check.
 
 ## How exo works
 
@@ -29,7 +29,7 @@ It prints the cost report, which stays at zero until exo has done some work. In 
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:explorer` agent on Haiku, and the final branch review and the post-build design critique run in the `exo:branch-reviewer` and `exo:design-critic` agents on Opus at high effort; all three live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:settings guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read.
-- **The savings counter.** A hook books what exo's own work cost and which reads the read guard refused; `/exo:savings` prints the report.
+- **The savings counter.** The read guard books the bytes of every read it refuses; `/exo:savings` prints them as an estimated token saving.
 
 A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
 
@@ -53,7 +53,7 @@ Every skill is invoked as `/exo:<name>`. The first group Claude may also start o
 | `prototyping <question>` | A decision about logic, state or data flow needs running code first: a throwaway that answers it, parked on its own branch while only the decision reaches real code. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
-| `savings` | You ask what exo cost or what the read guard refused. |
+| `savings` | You ask what exo saved or what the read guard kept out of context. |
 | `settings [key value scope]` | You set up exo with no argument, or show or change one setting, the savings counter and the read guard included, for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
@@ -83,7 +83,7 @@ On every rung, checks at a trust boundary, failure handling that keeps data from
 
 ## Savings
 
-`/exo:savings` prints a short report over every session of the last 30 days, in every project: what exo's own work cost at API list price with its calls and time, and the reads the read guard refused with their file text in bytes. What exo saved is not measured, and the report says so: refused text was never sent, so it has no token count or price.
+`/exo:savings` prints a short ledger over every session of the last 30 days, in every project: the tokens the read guard kept out of context, split into the big-file reads and the repeated reads it refused. The figure is a local estimate from the bytes of the refused text at 3.5 characters per token, the ratio Anthropic documents; nothing in it is measured or billed, and the report prints no cost.
 
 To refuse fewer reads, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
 
@@ -97,7 +97,7 @@ One switch turns the counter, the status line segment and the read guard off tog
 node "$(cat ~/.claude/exo/plugin-root)/skills/savings/scripts/savings.mjs" off   # or on, status, report
 ```
 
-`EXO_SAVINGS=off` in the environment outranks the file it writes. To show the running total in your status line, add this after your script has read stdin into `$input`:
+`EXO_SAVINGS=off` in the environment outranks the file it writes. To show the running estimate in your status line, add this after your script has read stdin into `$input`:
 
 ```bash
 plugin_root_file="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo/plugin-root"
@@ -107,9 +107,7 @@ if [ -f "$plugin_root_file" ]; then
 fi
 ```
 
-The segment closes on the context the session holds, such as `context 120k · edge`. Under 100k tokens it names the count alone; from 100k it says `edge`, from 150k `dull, hand off soon`, and from 200k `write a handoff, then clear`, because a session reads and reasons worse the more it carries. `/exo:handoff` writes the file the next session starts from.
-
-The segment reads `exo cost $0.04 · 2m · 2 reads refused`.
+The segment reads `exo ≈449k tokens saved`; it reads the record the Stop hook keeps and nothing from stdin.
 
 ## Settings
 
