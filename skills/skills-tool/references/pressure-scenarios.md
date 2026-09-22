@@ -31,7 +31,7 @@ One pressure gives a usable case; stack three for a strong one, because a skill 
 1. Run the case without the skill on the model the skill targets, because a rule one model needs is noise to another.
 2. Copy the chosen action and the justification word for word; that wording is what the skill has to answer.
 3. Run the case again with the skill loaded; it counts as a pass only when the run without the skill failed.
-4. Save it as `evals/<skill>-<case>/prompt.md` with a grader under `graders/` stating the expected behavior as something observable, so any later edit can rerun it.
+4. Keep the prompt and both justifications in the edit's report and save no file, because a case on disk invites a paid rerun on every later edit.
 
 ## Judgment
 

@@ -14,6 +14,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - **A finished run ships in one answer: pick `PR + merge` and exo pushes, opens the pull request, waits for the checks and merges once the GitHub API reads it clean.**
 - **`issuing` starts on a plain request to file an issue, with no slash command and no approval step.**
 - **Three skills are gone: `setup` is `/exo:settings` with no argument, `implementing-test-first` is a route inside `implementing-batch`, and `merge-prs` is part of the new `shipping`.**
+- **exo no longer ships paid evals: `npm run check` and the unit tests are the only gate.**
 
 ### Added
 
@@ -33,6 +34,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `setup`, folded into `settings`.
 - `implementing-test-first`, folded into `implementing-batch`.
 - `merge-prs`, folded into `shipping`.
+- The paid evals: `evals/`, `eval-case.mjs`, `eval-reasons.mjs`, their tests and npm scripts, and the `yaml` dependency only they used.
 
 ## 0.22.2 - 2026-09-21
 

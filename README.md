@@ -129,7 +129,7 @@ npm run check            # the gate before any commit: verifier, self-test and s
 claude --plugin-dir .    # run the working tree instead of the installed copy
 ```
 
-`CONTRIBUTING.md` covers the checks, the evals, how skills hand work to helpers, the hooks and the savings counter. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
+`CONTRIBUTING.md` covers the checks, how skills hand work to helpers, the hooks and the savings counter. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
 
 A change lands under `## Unreleased` in `CHANGELOG.md` without a version change, so the installed plugin updates only on a release. `CLAUDE.md` lists the release steps.
 

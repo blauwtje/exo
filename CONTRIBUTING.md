@@ -2,7 +2,7 @@
 
 ## Set up
 
-Clone the repository anywhere you keep projects and run `npm install` once. The verifier itself runs on the Node standard library; the eval-layout test needs the `yaml` package. You need Node 22 or newer, plus `bash` and `jq` on `PATH`.
+Clone the repository anywhere you keep projects and run `npm install` once. The verifier and the tests run on the Node standard library. You need Node 22 or newer, plus `bash` and `jq` on `PATH`.
 
 An installed plugin runs from Claude Code's cache copy, so an edit is live only after a release. To run the working tree instead, start Claude Code with `claude --plugin-dir <your clone>`.
 
@@ -12,7 +12,7 @@ An installed plugin runs from Claude Code's cache copy, so an edit is live only 
 |---|---|
 | `npm run check` | The gate before any commit: the verifier, its self-test and the script tests. |
 | `npm run validate` | The structural checks over the skill corpus. |
-| `npm test` | The script, hook, benchmark and eval-layout tests under `tests/`. |
+| `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
 
@@ -37,56 +37,6 @@ A `SKILL.md` stays under 15,000 bytes, which the `skill body budgets` check enfo
 ## Adding a setting
 
 A new setting is one entry in `skills/settings/schema.json` plus the matching `userConfig` entry in `.claude-plugin/plugin.json`; `tests/settings.test.mjs` holds the two together.
-
-## Evals
-
-`evals/` is tracked. A case is `evals/<skill>-<case>/prompt.md` with its graders beside it; `tests/evals.test.mjs` checks that layout. The case's `name:` equals its directory name because `claude plugin eval . --case <glob>` filters on `name:`, not on the directory. A glob that matches no case still exits 0, so check the case count in the output before trusting a green run.
-
-A case earns its cost only when it guards a skill firing or not firing on the right request, the finish question and its routes, a stop before a push, merge or issue creation, or a rule no free check in `npm run check` can see. Wording, layout or a literal that a free grader or a `verify/` check reads is never a case of its own.
-
-The runner's llm judges answer one word and keep no reasoning. `npm run eval-reasons [results-dir]` asks one more judge, on the run's judge model, to reason and then vote on every failed llm grader vote, writes `judge-reasons.json` beside `aggregate-result.json`, and prints each grader's pass rate per arm. A run without `--judge-model` records no judge model, and the file then names the runner default as its source, so runs judged by different models are not compared unawares.
-
-### What a judge may grade
-
-The one-word judge is the noisiest part of a run. Over the 17 Sonnet-judged runs with a `judge-reasons.json` on 2026-09-18, the runner failed 93 of 256 llm verdicts and the reasoning judge, same model and same criterion, reversed 42 of them: 45% of the failures, 16% of all verdicts. 83 of the 93 failures were unanimous, so the three votes move together and do not average the noise away. In `planning-plans-a-new-folder` three replies with the same `Repository:` line got one unanimous pass and two unanimous fails.
-
-So a grader splits by what decides it:
-
-- Where text sits, how it is laid out, and whether a literal appears is a free grader: `regex` (`match: contains`, `not_contains` or `count:N`, against `last_message` unless `target:` says otherwise), `tool_used`, `tool_order` or `file_exists`. It costs nothing and gives the same verdict on the same output.
-- An `llm` criterion keeps only what needs judgment, such as who is told to run a command or whether a line gives a reason.
-- A prompt that asks for a message inside a longer answer puts that message last, so a regex anchored on `\s*$` sees where the message ends. A judge cannot tell a quoted message's end from the answer's.
-- A criterion never demands what the prompt rules out: a session with no checkout names its commands, and the criterion says naming them passes.
-
-`tests/evals.test.mjs` enforces the first two: a case without a free grader fails, and so does an llm criterion that words layout (`opens with`, `ends on`, `ends with`, `on their own lines`, `numbered`). The cases and graders older than the rule sit in two lists in that test, and both lists only shrink. A new regex grader is tried against the recorded replies before any run pays for it: each run's last message is the `evidence` of its llm grader in `aggregate-result.json`.
-
-A case grants no tool unless its `prompt.md` lists `allowed_tools`, so a run cannot `Read` a skill's `references/` and says so in its reply. A rule a case grades has to sit in the `SKILL.md` body, or the case has to grant `Read`.
-
-### The gate
-
-`eval-reasons.mjs` ends on one `GATE` line per arm, and that line is what a plan's `## Final verification` names, never a count such as `(3/3)`:
-
-| Line | Meaning |
-|---|---|
-| `GATE PASS` | No grader failed more than one run. |
-| `GATE DISPUTED` | A grader did, but only through verdicts the reasoning judge reversed. Read `judge-reasons.json`; do not rerun. |
-| `GATE FAIL` | A grader failed more than one run on verdicts both judges share, or a free grader did. |
-| `GATE NONE` | A draft run, or fewer than three runs. |
-
-An errored run counts as a failed run of every grader, and so does a grader that recorded no verdict. One failed run is tolerated because n of n asks for more than the judge can deliver: passing 3 of 3 nineteen times in twenty takes a 98.3% per-run pass rate and 5 of 5 takes 99.0%, while a flawless skill under the 16% above shows 84% and passes those gates 58% and 41% of the time. With one failure tolerated it passes 93% of the time at three runs and 81% at five. Three runs cannot tell a working skill from a coin flip, which passes 2 of 3 half the time, so a case that gates a plan carries `runs: 5`, where the coin flip passes 19% of the time.
-
-A grader can be left out of the gate without leaving the case: `NON_GATING_GRADERS` in `eval-reasons.mjs` names it by case, the pass-rate table still counts it, and every `GATE PASS`, `GATE DISPUTED` and `GATE FAIL` line of that case ends with `left out of the gate: <name>`, a `GATE NONE` line only when the downgrade is what emptied the gate. A grader belongs there when a rerun moves its own verdict rather than the skill's behavior, and the constant's comment carries the evidence that showed it.
-
-### savings-report-reads-cold
-
-This case is not part of `npm run check`: it calls a model for every run. Run it when the report text in `skills/savings/scripts/savings.mjs` or one of the case's graders changes. `eval-case.mjs` runs it with Sonnet as judge, splits the runs over several runner processes (the runner allows at most 8 in flight each), and by default starts every run at once.
-
-| Command | Runs | Measured on 2026-09-17 |
-|---|---|---|
-| `npm run eval:savings-report:draft` | 3, no-plugin arm | 122 s, $1.00 |
-| `npm run eval:savings-report` | 10, no-plugin arm | 130 s, $3.30 |
-| `npm run eval:savings-report -- --arm both` | 10 per arm | 148 s, $7.12 |
-
-The draft is for iterating on wording and is never a verdict: at 3 runs one answer moves a pass rate by a third. Take a verdict from the full run, and judge it on the no-plugin arm, the cold reader; the plugin arm still loads exo's hooks and skill list. Add `--arm both` only when `skills/savings/SKILL.md` or the session hook's text changes, because that text is all that differs between the arms. Every command writes its results under `evals/results/` and reasons only about failed votes.
 
 `docs/` is git-ignored: research notes, specs and plans live outside the repository.
 
