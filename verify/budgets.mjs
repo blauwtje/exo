@@ -19,13 +19,13 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // absolute paths, and leaves a pointer out before it passes the cap, so the next
 // addition to using-exo buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 4621, measured: '2026-09-20' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 9101, measured: '2026-09-20' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 4490, measured: '2026-09-22' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 9074, measured: '2026-09-22' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
 // several times over.
-export const RESTATEMENT_LOCK = { bytes: 3242, measured: '2026-09-18' };
+export const RESTATEMENT_LOCK = { bytes: 3215, measured: '2026-09-22' };
 
 // The rendered project-memory file, which a session opens by path. It is a
 // ceiling the writer enforces before it writes, not a lock the verifier reads:
