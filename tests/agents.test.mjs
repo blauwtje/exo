@@ -127,10 +127,10 @@ test('every agent a skill dispatches has a file, and every agent file is dispatc
 
 test('the inputs the design critic expects are the ones designing hands it', () => {
   const critic = agents.find((agent) => agent.frontmatter.name === 'design-critic');
-  const dispatchText = fs.readFileSync(path.join(skillsRoot, 'designing', 'references', 'phase-critique.md'), 'utf8');
+  const dispatchText = fs.readFileSync(path.join(skillsRoot, 'designing', 'references', 'phase-detail.md'), 'utf8');
   for (const input of ['`RUN`', '`SKILL`']) {
     assert.ok(critic.body.includes(input), `the critic does not expect ${input}`);
-    assert.ok(dispatchText.includes(input), `phase-critique.md does not hand over ${input}`);
+    assert.ok(dispatchText.includes(input), `phase-detail.md does not hand over ${input}`);
   }
 });
 

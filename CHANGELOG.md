@@ -11,6 +11,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `designing`: `scripts/direction.mjs --shape` prints the script's header, the `space.json` and contract shape, and nothing else; Phase 2 names that call instead of sending the session into the script to find the shape.
 
+### Removed
+
+- `designing` `references/phase-critique.md`: its render budget, three checkpoints, one-reviewer cap, 12-call cap and no-browser-tool rule now live in `references/phase-detail.md` `## The critique dispatch`, and SKILL.md's Phase 1 no longer repeats the three-facts sentence.
+
 ## 0.26.0 - 2026-09-22
 
 ### Added

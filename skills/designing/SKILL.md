@@ -49,11 +49,10 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | File | Read it when |
 |---|---|
 | `references/intake.md` | Before Phase 1, for the asking rule, the run directory, and the symptom-to-reference table. |
-| `references/phase-detail.md` | At Phase 1 for the context rules, before the first Build edit for the floor, before the critique dispatch, and at Phase 5 for the sweep. |
+| `references/phase-detail.md` | At Phase 1 for the context rules, before the first Build edit for the floor, before the first edit of a full or bounded redesign for the baseline pair and at Phase 4 before the post-build dispatch, both from its `## The critique dispatch`, and at Phase 5 for the sweep. |
 | `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
-| `references/phase-critique.md` | Before the first edit of a full or bounded redesign, for the baseline pair; Phase 4 before the post-build dispatch. |
 | `references/visual-direction.md` | Phase 2 for every direction decision; Phase 1 when the repository or docs/design/DESIGN.md holds a design system to extract. |
 | `references/sketch-tab.md` | Phase 2 on rungs 3 and 7, after `--check` reports ok and before the offer; on any other path, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Phase 2, only when the user asks to see a direction whole, before building the comps the picker shows. |
@@ -75,7 +74,7 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 
 ## Phase 1 — Context
 
-A full or bounded redesign takes the baseline pair under `references/phase-critique.md` when the surface renders, then dispatches the `exo:design-discovery` agent on `sonnet` at `high` with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. It writes `$RUN/inventory.md` and the `FILES` list in `$RUN/files.md` and returns at most 20 lines; this session reads that report and asks its `## Open` questions, never the repository ranges. Every other path reads `references/phase-detail.md`, its `## Context`, which names the three facts and the `FILES` list Build hands each builder.
+A full or bounded redesign takes the baseline pair under `references/phase-detail.md`, its `## The critique dispatch`, when the surface renders, then dispatches the `exo:design-discovery` agent on `sonnet` at `high` with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. It writes `$RUN/inventory.md` and the `FILES` list in `$RUN/files.md` and returns at most 20 lines; this session reads that report and asks its `## Open` questions, never the repository ranges. Every other path reads `references/phase-detail.md`, its `## Context`.
 
 ## Phase 2 — Direction
 
@@ -87,7 +86,7 @@ Read `references/phase-build.md` before the first edit or builder dispatch: wher
 
 ## Phase 4 — Visual critique
 
-A full or bounded redesign renders at three checkpoints under the render budget in `references/phase-critique.md`: read it before the baseline capture, which comes before the first edit. The four calls this session makes, the agent it dispatches and the fault contract the critic meets are in `references/phase-detail.md`, its `## The critique dispatch`.
+A full or bounded redesign renders at three checkpoints under `references/phase-detail.md`, its `## The critique dispatch`: read it before the baseline capture, which comes before the first edit. That section holds the render budget, the four calls this session makes, the agent it dispatches, the fault contract the critic meets and the call cap after its report.
 
 ## Phase 5 — QA
 
