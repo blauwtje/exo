@@ -346,14 +346,14 @@ ${CHROME_TOKENS}
   .page { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 32px; max-inline-size: 1100px; margin-inline: auto; }
   .round { display: grid; gap: 24px; align-content: start; }
   h2 { margin: 0; }
-  .goal { margin: 0; color: var(--ink-muted); max-inline-size: 60ch; }
+  .goal { margin: 0; color: var(--ink-muted); max-inline-size: 60ch; text-wrap: pretty; }
   .term { font-weight: 650; }
   .card { display: grid; gap: 12px; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); }
   .card-place { margin: 0; font-size: 14px; font-weight: 650; color: var(--ink-muted); }
   .card-number { color: var(--ink); }
-  .card-question { font-size: 22px; line-height: 1.3; font-weight: 650; max-inline-size: 40ch; }
-  .card-changes, .card-why { margin: 0; max-inline-size: 60ch; }
-  .options { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .card-question { font-size: 26px; line-height: 1.25; font-weight: 700; max-inline-size: 40ch; text-wrap: balance; }
+  .card-changes, .card-why { margin: 0; max-inline-size: 60ch; text-wrap: pretty; }
+  .options { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
   .option { position: relative; }
   .option input { position: absolute; inset-block-start: 17px; inset-inline-start: 14px; margin: 0; accent-color: var(--accent); }
   .option label { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; min-block-size: 56px; padding: 12px 16px 12px 40px; border: 1px solid var(--border-control); border-radius: var(--radius-control); cursor: pointer; }
@@ -363,7 +363,7 @@ ${CHROME_TOKENS}
   .option input:checked + label { background: color-mix(in oklch, var(--accent) 12%, var(--surface)); }
   .option input:focus-visible + label { outline: 3px solid var(--accent); outline-offset: 2px; }
   .badge { margin-inline-start: 8px; padding: 1px 8px; font-size: 13px; font-weight: 550; color: var(--accent-ink); background: var(--accent); border-radius: 999px; }
-  .own { display: grid; gap: 4px; font-size: 15px; color: var(--ink-muted); }
+  .own { display: grid; gap: 4px; margin-block-start: 8px; font-size: 15px; color: var(--ink-muted); }
   .own input { font: inherit; color: var(--ink); background: var(--ground); padding: 8px 12px; border: 1px solid var(--border-control); border-radius: var(--radius-control); }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; }
   .actions button { font: inherit; font-weight: 650; min-block-size: 48px; padding: 10px 20px; color: var(--ink); background: var(--surface); border: 1px solid var(--border-control); border-radius: var(--radius-control); cursor: pointer; }
