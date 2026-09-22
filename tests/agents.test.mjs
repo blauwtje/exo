@@ -133,3 +133,17 @@ test('the inputs the design critic expects are the ones designing hands it', () 
     assert.ok(dispatchText.includes(input), `phase-critique.md does not hand over ${input}`);
   }
 });
+
+test('the two branch reviewers share one body and differ only in effort', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'branch-reviewer');
+  const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'branch-reviewer-deep');
+  assert.ok(deepReviewer, 'agents/branch-reviewer-deep.md exists');
+  assert.equal(reviewer.frontmatter.effort, 'medium');
+  assert.equal(deepReviewer.frontmatter.effort, 'high');
+  assert.equal(deepReviewer.body, reviewer.body, 'the two bodies differ');
+  assert.deepEqual(Object.keys(deepReviewer.frontmatter).sort(), Object.keys(reviewer.frontmatter).sort());
+  const sharedKeys = Object.keys(reviewer.frontmatter).filter((key) => !['name', 'description', 'effort'].includes(key));
+  for (const key of sharedKeys) {
+    assert.equal(deepReviewer.frontmatter[key], reviewer.frontmatter[key], `${key} differs between the two reviewers`);
+  }
+});

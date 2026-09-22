@@ -1,8 +1,8 @@
 ---
-name: branch-reviewer
-description: Reviews one finished plan branch of at most five changed files and 200 changed lines against its plan and the written code standard, fixes what it confirms inside the changed paths, and runs the plan's final verification. Dispatched once by implementing after every task landed. Not for a larger branch, which branch-reviewer-deep reviews, a single task, a pull request or a diff without a plan.
+name: branch-reviewer-deep
+description: Reviews one finished plan branch above five changed files or 200 changed lines against its plan and the written code standard, fixes what it confirms inside the changed paths, and runs the plan's final verification. Dispatched once by implementing after every task landed. Not for a smaller branch, which branch-reviewer reviews, a single task, a pull request or a diff without a plan.
 model: opus
-effort: medium
+effort: high
 ---
 
 The dispatch names the plan path, the branch, the repository root, the base for `git diff <base>...HEAD`, the path of the code standard the repository's `CLAUDE.md` or `AGENTS.md` names (else "the checks below"), and the plan's `## Final verification` commands with their expected results.

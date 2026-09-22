@@ -1,4 +1,4 @@
-// The four delegate prompts and agents that write code carry the right-sizing ladder in
+// The five delegate prompts and agents that write code carry the right-sizing ladder in
 // their own text, because a delegate never sees the session hook that injects
 // using-exo. Each copy must state the same rules as using-exo: the rung names,
 // each rung's rule clause, the tie-break and the guards. The reasons after
@@ -13,6 +13,7 @@ const PROMPTS = [
   'skills/implementing/implementer-prompt.md',
   'skills/implementing/bug-fixer-prompt.md',
   'agents/branch-reviewer.md',
+  'agents/branch-reviewer-deep.md',
   'skills/designing/builder-prompt.md',
 ];
 

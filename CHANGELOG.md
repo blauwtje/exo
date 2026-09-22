@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `exo:branch-reviewer-deep` agent, the branch review at `high` effort for a branch above five changed files or 200 changed lines, with the same body as `exo:branch-reviewer`, which now runs at `medium` on a branch within both numbers; `implementing` picks between the two by running `skills/implementing/scripts/pick-reviewer.mjs` against `git diff --shortstat`, because every review ran at `high` whatever the size of the change, and `tests/agents.test.mjs` keeps the two bodies identical. The script takes a `--reviewer <name>` override for a reviewer the user names directly; a remark about budget, a deadline or how the diff reads is not a named reviewer and does not move the pick.
+
+### Changed
+
+- The branch review file `branch-review.md` lists every confirmed finding instead of the first twelve; the cap of twelve now applies only to the report returned to the session, which names the file for the rest, because a thirteenth real defect was dropped without a trace.
+
 ## 0.24.3 - 2026-09-22
 
 ### Changed
