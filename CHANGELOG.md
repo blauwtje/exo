@@ -7,6 +7,31 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **A finished run ships in one answer: pick `PR + merge` and exo pushes, opens the pull request, waits for the checks and merges once the GitHub API reads it clean.**
+- **`issuing` starts on a plain request to file an issue, with no slash command and no approval step.**
+- **Three skills are gone: `setup` is `/exo:settings` with no argument, `implementing-test-first` is a route inside `implementing-batch`, and `merge-prs` is part of the new `shipping`.**
+
+### Added
+
+- `shipping` owns the finish of every code-changing run: the finish question, the push, the pull request, a check wait bounded at 20 minutes, and the merge behind the API gates `merge-prs` held.
+- `implementing-batch` runs a test-first route at any file count, quoting a red run before each production edit.
+
+### Changed
+
+- The finish question on a branch offers PR + merge, Open PR, Push and Keep local, and the pick runs to its end; a red check, a failed gate or a timeout leaves the pull request open with the reason.
+- `issuing` is model-invocable: a plain request creates the issues and reports their URLs, and it asks only when it proposes a split.
+- `/exo:settings` with no argument walks every setting, and it now switches the savings counter, the read guard and its line limit.
+- `savings` only reports; its switch line points at `/exo:settings counter off`.
+- `implementing` runs every plan and builds one of three tasks or fewer in its own session; `planning` hands over to `implementing` only.
+
+### Removed
+
+- `setup`, folded into `settings`.
+- `implementing-test-first`, folded into `implementing-batch`.
+- `merge-prs`, folded into `shipping`.
+
 ## 0.22.2 - 2026-09-21
 
 ### Changed

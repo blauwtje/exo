@@ -33,7 +33,6 @@ A speed-only symptom requires measurement before a hypothesis or edit. Read `../
 | File | Read it when |
 |---|---|
 | `../implementing/references/workspace.md` | Step 4, before the first production edit. |
-| `../implementing/references/finishing.md` | After Step 7, when no edits beyond the predicted fix remain. |
 | `../implementing-batch/references/performance.md` | Speed is the only symptom. Load before measurement; do not load for wrong-output failures. |
 | `../implementing-batch/references/critique.md` | Step 7 after proof, only when at least one listed size fact is true and `code-review` is absent. Do not load earlier. |
 | `../implementing-batch/references/security.md` | After Step 4 identifies the predicted change and before its first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
@@ -46,4 +45,4 @@ A speed-only symptom requires measurement before a hypothesis or edit. Read `../
 - A user-stated cause outranks investigation only after it matches the source and predicts the reproduction.
 - Reproduction and instrumentation outrank intuition, including the first hypothesis.
 - Go back to Step 1 instead of adding another patch when any of these shows: the repair reaches into a second owner; an old route and its replacement both still run; supporting code keeps growing while the behavior stays the same; or the path from input to symptom cannot be followed in a single reading. Each one means the proven cause was not the real cause.
-- After Step 7 the predicted fix commits in Conventional Commits where Step 4 placed it. Edits the proof leaves beyond it end the turn on the next-stage question in `using-exo`, offering `implementing-batch` for them; with none left, the turn ends on `../implementing/references/finishing.md`. After a compaction notice, re-run the Step 1 reproduction before the next edit, because the command, not memory, says whether the symptom still exists.
+- After Step 7 the predicted fix commits in Conventional Commits where Step 4 placed it. Edits the proof leaves beyond it end the turn on the next-stage question in `using-exo`, offering `implementing-batch` for them; with none left, the turn ends on `shipping`. After a compaction notice, re-run the Step 1 reproduction before the next edit, because the command, not memory, says whether the symptom still exists.

@@ -12,13 +12,13 @@ Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rul
 1. Match the request against the skill descriptions before the first tool call, including a clarifying question.
 2. When one fires, invoke and follow it; when it turns out wrong, say so and leave it.
 3. Use no skill for a version-only bump, a git-only operation or a read-only question no skill description claims.
-4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change, which `designing` owns at any file count.
-5. Issue and pull-request workflows run only when the user invokes them: name `/exo:issuing` or `/exo:merge-prs` instead of doing that work by hand.
+4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change or a test-first request, which `designing` and `implementing-batch` own at any file count.
+5. A push, pull request or merge runs through `shipping` and an issue through `issuing`, never by hand: the finish pick or a plain request authorizes it.
 
 ## When several fire
 
 - `debug` outranks the rest until a failure's cause is proven.
-- `shaping` decides what to build, `planning` orders it, `implementing` runs a plan, `implementing-batch` builds in the session; the earlier stage wins.
+- `shaping` decides what to build, `planning` orders it, `implementing` runs a plan, `implementing-batch` builds a change without one; the earlier stage wins.
 - `deepen` answers where the architecture should change; `shaping` decides the shape of a change the request already names.
 - `research`, `designing` and `skills-tool` are borrowed mid-turn and hand control back when a stage called them; alone, they own the turn, and `designing` sizes its own work in its `## Size the request`.
 - An instruction in CLAUDE.md or in the prompt outranks a skill.
@@ -84,7 +84,7 @@ Every question exo puts to the user has one shape, because the user answers it b
 
 A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
 
-1. **Fixed order.** The options follow `## A question`. After `shaping`: 1. Planning, 2. Stop. After `planning`: 1. Implementing, 2. Implementing batch, 3. Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
+1. **Fixed order.** The options follow `## A question`. After `shaping`: 1. Planning, 2. Stop. After `planning`: 1. Implementing, 2. Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
 2. **This session is recommended**, because it already holds the facts. When a compaction notice has appeared in this session or this stage is the second to finish in it, stopping is recommended instead: it moves to number 1 with `(Recommended)`, the stages keep their order below it, and its text names the command to run after a context clear.
 3. **One model line.** When the recommended stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.
 4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
@@ -92,6 +92,6 @@ A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a nex
 | Next stage | Model and effort | Because |
 |---|---|---|
 | `planning` | `opus` at `high` | a plan's code is pasted as written, so a slip repeats in every task. |
-| `implementing` or `implementing-batch`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `high` | that task builds in the session. |
-| `implementing` or `implementing-batch`, any other plan | `sonnet` at `high` | the plan holds every step's code, and a frozen direction builds in a delegate. |
-| `implementing-batch` without a plan | `opus` at `high` | it decides the change while building it. |
+| `implementing`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `high` | that task builds in the session. |
+| `implementing`, any other plan | `sonnet` at `high` | the plan holds every step's code, and a frozen direction builds in a delegate. |
+| `implementing-batch` | `opus` at `high` | it decides the change while building it. |

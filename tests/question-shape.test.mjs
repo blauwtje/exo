@@ -28,7 +28,7 @@ test('using-exo states one question shape with the recommended option first', ()
 test('the next stage keeps its fixed order and moves a recommended stop to number 1', () => {
   const nextStage = section('## The next stage');
   assert.ok(nextStage.includes('After `shaping`: 1. Planning, 2. Stop.'));
-  assert.ok(nextStage.includes('After `planning`: 1. Implementing, 2. Implementing batch, 3. Stop.'));
+  assert.ok(nextStage.includes('After `planning`: 1. Implementing, 2. Stop.'));
   assert.ok(nextStage.includes('it moves to number 1 with `(Recommended)`'));
   assert.ok(nextStage.includes('**One model line.**'));
   assert.ok(!nextStage.includes('names its command, model and effort'));

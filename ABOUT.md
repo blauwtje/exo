@@ -23,6 +23,6 @@ because two words for one thing turn into two things.
 | artifact | deliverable, output | the persisted file a stage leaves behind, which the next stage opens instead of re-deriving it |
 | read guard | file limit, truncation | the guard refuses a read and says so; it never returns part of a file as though it were the whole |
 | direction | theme, style, look | `designing` picks one visual direction, freezes it, and builds against that one |
-| observable boundary | test surface, hook point | `implementing-test-first` agrees the observable boundaries its tests read before the first test, the word the test-design reference already uses |
+| observable boundary | test surface, hook point | `implementing-batch`'s test-first route agrees the observable boundaries its tests read before the first test, the word the test-design reference already uses |
 | decision map | question list, backlog | `shaping` keeps every decision on one map with what it waits on and who closed it, and the brief stores that map so later wishes reopen only what they touch |
 | throwaway | proof of concept, demo | `prototyping` builds throwaway code, parks it on its own branch and keeps only the decision it settled |

@@ -188,7 +188,7 @@ test('the report is a few fenced lines: cost, refusals and a saving that is not 
     'Saved    not measured: refused text has no token count or price',
     'Skills   none 0',
     '```',
-    'Turn off with `/exo:savings off`.'
+    'Turn off with `/exo:settings counter off`.'
   ]);
   // No box, no table, no estimate and no internal name.
   assert.doesNotMatch(result.stdout, /│|┌|≈|withheld|record/);
@@ -301,7 +301,7 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
   assert.match(panel, /^exo savings · off · /m);
-  assert.match(panel, /^Turn on with `\/exo:savings on`\.$/m);
+  assert.match(panel, /^Turn on with `\/exo:settings counter on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; the counter, the status line segment and the read guard follow at once\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);

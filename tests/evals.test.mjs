@@ -26,7 +26,6 @@ const CASES_WITHOUT_A_FREE_GRADER = [
   'debug-fourth-patch',
   'implementing-asks-the-workspace',
   'implementing-batch-asks-the-workspace',
-  'implementing-batch-finishes-on-the-question',
   'implementing-batch-two-file-floor',
   'implementing-runs-the-list',
   'implementing-workspace-follows-the-repository',
@@ -46,7 +45,6 @@ const CASES_WITHOUT_A_FREE_GRADER = [
 const GRADERS_WITH_STRUCTURAL_WORDING = [
   'implementing-asks-the-workspace/graders/asks-before-building.md',
   'implementing-batch-asks-the-workspace/graders/asks-before-editing.md',
-  'implementing-batch-finishes-on-the-question/graders/overview-then-options.md',
   'implementing-batch-two-file-floor/graders/edits-without-the-loop.md',
   'implementing-workspace-follows-the-repository/graders/recommends-the-current-branch.md',
   'shaping-ends-on-the-stage-screen/graders/ends-on-the-stage-screen.md',
@@ -67,7 +65,6 @@ const CASES_WITHOUT_A_TIMEOUT = [
   'designing-settled-identity-no-offer',
   'implementing-asks-the-workspace',
   'implementing-batch-asks-the-workspace',
-  'implementing-batch-finishes-on-the-question',
   'implementing-batch-two-file-floor',
   'implementing-runs-the-list',
   'implementing-verifies-before-the-review',

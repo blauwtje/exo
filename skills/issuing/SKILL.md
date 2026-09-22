@@ -1,9 +1,8 @@
 ---
 name: issuing
-description: Write and create GitHub issues for this repository as specs, with the labels, type, relations, milestone and project fields the repository actually defines. Use when the user asks to file, open, write or split issues. Not for closing or editing an existing issue, for a plan, or for issues in a repository the working directory does not point at.
+description: Use when the user asks in plain words to file, open, write or split GitHub issues. Not for a brief shaping stores, closing or editing an existing issue, a plan, or a repository the working directory does not point at.
 argument-hint: <what the issue or issues should cover>
-disable-model-invocation: true
-allowed-tools: Bash(gh *), Bash(git *)
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh api graphql *), Bash(gh api repos/*), Bash(gh pr list *), Bash(git log *)
 model: opus
 effort: high
 ---
@@ -18,12 +17,12 @@ issue that never says when it is done, which pushes the whole spec into the
 plan. An issue is a spec before a plan; a plan reads it and never depends on
 it staying open.
 
-Invoking this skill authorizes creating the issues it showed you and you
-approved, with their labels, type, project fields, relations and milestone,
-and creating the default labels `references/fields.md` names when the
-repository defines none of its own. It never closes an issue, never deletes
-one, and never edits an existing one, except to add a relation to a parent or
-a blocker you named.
+A plain request to file, open, write or split issues authorizes creating them,
+with their labels, type, project fields, relations and milestone, and creating
+the default labels `references/fields.md` names when the repository defines
+none of its own. It never closes an issue, never deletes one, and never edits
+an existing one, except to add a relation to a parent or a blocker the user
+named.
 
 ## Steps
 
@@ -31,7 +30,8 @@ a blocker you named.
    which sentence came from which part of the request. An issue whose goal
    sentence needs an "and" for two unrelated outcomes is too big: propose a
    parent plus sub-issues and ask once, listing the split you would make.
-   Never invent an issue the request does not ask for.
+   That is the only question this skill asks, because the request approved
+   the rest. Never invent an issue the request does not ask for.
 
 2. **Read the repository, invent nothing.** Read its labels, issue types,
    milestones, project fields and issue templates, and pick the vocabulary,
@@ -42,18 +42,13 @@ a blocker you named.
    goal sentences name, so `References` carries real paths. Skip this step for
    an issue that names no code.
 
-4. **Show the draft, then ask once.** Print, per issue: the title, the body,
-   and one metadata line holding labels, type, parent, blocked-by, milestone
-   and project fields. Ask one approval question covering all of them.
-   Create nothing before the yes.
+4. **Create in dependency order**, in the same turn and with no approval
+   question first: a parent before its children, a blocker before what it
+   blocks, with the commands and field settings in `references/fields.md`.
 
-5. **Create in dependency order.** A parent before its children, a blocker
-   before what it blocks, with the commands and field settings in
-   `references/fields.md`.
-
-6. **Read back.** `gh issue view <n> --json number,title,labels,milestone,url`
-   per created issue, and report the URLs, plus everything Step 2 said this
-   repository does not define.
+5. **Read back.** `gh issue view <n> --json number,title,labels,milestone,url`
+   per created issue, and report each URL with its title and one metadata
+   line, plus everything Step 2 said this repository does not define.
 
 ## The body
 
@@ -72,7 +67,7 @@ body; no field and no section is decided here.
 
 | File | Read it when |
 |---|---|
-| `references/fields.md` | Steps 2 and 5, before reading the repository and before creating. |
+| `references/fields.md` | Steps 2 and 4, before reading the repository and before creating. |
 
 ## Judgment
 

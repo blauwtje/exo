@@ -14,7 +14,6 @@ const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data
 const EXPECTED_OWNER_ROWS = {
   'skills/debug/SKILL.md': [
     '../implementing/references/workspace.md',
-    '../implementing/references/finishing.md',
     '../implementing-batch/references/performance.md',
     '../implementing-batch/references/critique.md',
     '../implementing-batch/references/security.md',
@@ -23,11 +22,11 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/implementing-batch/SKILL.md': [
     '../implementing/references/workspace.md',
-    '../implementing/references/finishing.md',
     'references/critique.md',
     'references/security.md',
     'references/data-migration.md',
     'references/test-design.md',
+    'references/test-first.md',
     'references/performance.md',
   ],
   'skills/planning/SKILL.md': [
@@ -42,8 +41,6 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
-    'references/finishing.md',
-    '../issuing/references/fields.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'drift-repairer-prompt.md',
@@ -52,15 +49,14 @@ const EXPECTED_OWNER_ROWS = {
     'researcher-prompt.md',
   ],
   'skills/savings/SKILL.md': [],
-  'skills/settings/SKILL.md': [],
-  'skills/setup/SKILL.md': [
+  'skills/settings/SKILL.md': [
     'references/setup-map.md',
+  ],
+  'skills/shipping/SKILL.md': [
+    '../issuing/references/fields.md',
   ],
   'skills/memory/SKILL.md': [],
   'skills/prototyping/SKILL.md': [],
-  'skills/implementing-test-first/SKILL.md': [
-    '../implementing-batch/references/test-design.md',
-  ],
   'skills/shaping/SKILL.md': [
     '../issuing/references/fields.md',
     'references/interview-page.md',

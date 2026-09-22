@@ -31,6 +31,7 @@ commands and internals; this file only names what a session here gets wrong with
 Every run recorded under `evals/results/` cost real money and minutes of wall clock: the `costUsd` and `durationSeconds` of each top-level `aggregate-result.json` there add up to today's totals. The cheap path is the default one and every rule below exists to keep it that way.
 
 - Run no eval for a change that does not alter skill behavior. Documentation, the verifier, the changelog and this file change nothing a grader can see.
+- A new case guards one of these, or it is not written: a skill firing or not firing on the right request, the finish question and its routes, a stop before a push, merge or issue creation, or a rule no free check in `npm run check` can see.
 - Run only the case the change touched, with `node eval-case.mjs --case <name> --arm <arm>`, never the whole suite: every run of every case pays its own judge call.
 - Iterate with `--mode draft` (3 runs) and take a verdict only from `--mode full`, because at 3 runs one answer moves a pass rate by a third.
 - `--ablation with-without` is the CLI default whenever a plugin resolves and doubles the runs. `eval-case.mjs` passes `--ablation none` already; a direct `claude plugin eval .` needs it too unless the baseline is the question.

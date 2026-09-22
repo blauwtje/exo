@@ -84,10 +84,14 @@ function runShard({ label, target, caseName, runs, concurrency, outputDirectory,
     // The runner intersects this operator grant with each case's own allowed_tools,
     // so a case that lists no Bash entry still runs with no shell. The setup entries are the
     // read-only `!` commands its skill runs on load; without a grant the load fails before a turn.
+    // A skill whose frontmatter sets allowed-tools is never auto-allowed, so the Skill and Read
+    // entries let a case that lists them load issuing at all.
     '--allow-tools', 'Bash(*node *memory.mjs*)',
     '--allow-tools', 'Bash(node *settings.mjs* show)',
     '--allow-tools', 'Bash(node *savings.mjs* status)',
-    '--allow-tools', 'Bash(node *savings.mjs* guard)'
+    '--allow-tools', 'Bash(node *savings.mjs* guard)',
+    '--allow-tools', 'Skill(exo:issuing)',
+    '--allow-tools', 'Read(*/skills/issuing/references/*)'
   ];
   if (pluginArm) args.push('--ablation', 'none');
   if (keepTemp) args.push('--keep-temp');
