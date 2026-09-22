@@ -1,6 +1,6 @@
 ---
 name: shipping-asks-the-finish-question
-runs: 3
+runs: 5
 max_turns: 6
 timeout_seconds: 300
 ---
