@@ -25,12 +25,6 @@
     "check": "npm run validate:self",
     "bump": "node bump.mjs",
     "release-pending": "node release-pending.mjs",
-    "release-notes": "node release-notes.mjs",
-    "eval-reasons": "node eval-reasons.mjs",
-    "eval:savings-report": "node eval-case.mjs --case savings-report-reads-cold --arm no-plugin --mode full",
-    "eval:savings-report:draft": "node eval-case.mjs --case savings-report-reads-cold --arm no-plugin --mode draft"
-  },
-  "devDependencies": {
-    "yaml": "^2.9.1"
+    "release-notes": "node release-notes.mjs"
   }
 }

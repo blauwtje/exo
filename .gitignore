@@ -6,4 +6,3 @@ docs/*
 !docs/skills/
 benchmarks/fixtures/
 benchmarks/runs/
-evals/results/

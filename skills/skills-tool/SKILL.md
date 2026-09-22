@@ -34,7 +34,7 @@ A skill earns its place only by stopping a mistake the model makes when the skil
 
 ## The loop
 
-1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; save it as `evals/<skill>-<case>/prompt.md` with a grader next to it, in the layout `tests/evals.test.mjs` checks.
+1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; it lives in the edit, by hand or in a delegate, and is saved nowhere.
 2. **Watch it happen.** Give that prompt alone to a `general-purpose` delegate on the model the skill under test runs on, or to `claude -p` in a scratch repository without `--plugin-dir`, and copy down the exact justification it gives.
 3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape above and in the register `references/wording.md` sets.
 4. **Watch it stop.** Rerun the prompt with the skill: the same delegate told to load it, or `claude -p --plugin-dir <clone>`; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
