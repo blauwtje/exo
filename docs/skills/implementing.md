@@ -9,9 +9,9 @@ A session opens on a plan to run, or you say to run or resume one. It does not a
 ## What you get
 
 - One commit per task, carrying the task number, so a resumed session knows what has landed.
-- Independent tasks built together in worktrees of their own.
+- Independent tasks built together in worktrees of their own; a plan of three tasks or fewer built in the session instead.
 - One branch review at the end, against the plan and the written code standard.
-- A report naming what passed, what failed and what did not run.
+- The finish question `shipping` asks, whose pick is carried out to its end.
 
 ## Where its rules live
 

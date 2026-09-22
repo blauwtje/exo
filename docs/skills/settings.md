@@ -1,17 +1,18 @@
 # settings
 
-Shows and changes an exo setting, at the layer you choose.
+Shows and changes exo's settings: one at a time, or all of them in one walk.
 
 ## When it fires
 
-When you ask to see or change an exo setting, for every project, for one repository, or for this machine only.
+When you run `/exo:settings`, ask to set up or configure exo, or ask to see or change one setting, for every project, one repository, or this machine only.
 
 ## What you get
 
-- Every value with the layer it came from: this machine, the repository, the plugin's global options, then the default.
-- The two repository files written for you, one committed so collaborators share it, one git-ignored.
-- `specs`, which decides where shaping stores a brief, and `replies`, which decides how replies are written.
+- With nothing named, a walk through every setting on one page, or in the chat without a browser, where keeping what you have is always the first answer and nothing is saved before you confirm the review.
+- With a setting named, one question for the value and one for the layer, then the new overview.
+- `specs`, `replies` and `interview`, plus the savings counter, the read guard and its big-file limit.
+- The two repository files written for you, one committed so collaborators share it, one git-ignored; a value for every project is named for you to pick in `/config`.
 
 ## Where its rules live
 
-`skills/settings/SKILL.md`, with the schema beside it. The harness's own `settings.json`, its permissions and its hooks are not exo's to change, and the savings switch belongs to savings.
+`skills/settings/SKILL.md`, with the schema beside it and the walk's page map in `skills/settings/references/setup-map.md`. The harness's own `settings.json`, its permissions and its hooks are not exo's to change.

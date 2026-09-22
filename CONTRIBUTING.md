@@ -26,7 +26,7 @@ The `derivation` check fails the build when a name exo does not own reaches a sh
 
 Load the `skills-tool` skill before any skill or delegate-prompt edit; it holds the shape and size rules the verifier enforces. `verify/budgets.mjs` names the skills the full verifier checks. Every other skill still passes the frontmatter, portable-language and description-budget checks, so add a skill there once it reaches that shape.
 
-A skill whose work leaves the machine (issues, pull requests, merges) is slash-only, with `disable-model-invocation: true`. Every other skill stays model-invocable so a next-stage answer can start it, and its description opens with `Use when`.
+A skill whose work leaves the machine, a push, a pull request, a merge or an issue, runs only on the authorization its body names: the user's pick of a finish route or a plain request. It never deletes a branch or cuts a release. `handoff` and `memory` alone carry `disable-model-invocation: true`, because they write a record only the user should approve; every other skill stays model-invocable so a next-stage answer can start it, and its description opens with `Use when`.
 
 `ABOUT.md` at the repository root says what exo is and holds exo's domain words with the synonym each one replaces. A skill body, a reply and a commit use the left column; the `derivation` check reads the file for names exo does not own.
 
@@ -41,6 +41,8 @@ A new setting is one entry in `skills/settings/schema.json` plus the matching `u
 ## Evals
 
 `evals/` is tracked. A case is `evals/<skill>-<case>/prompt.md` with its graders beside it; `tests/evals.test.mjs` checks that layout. The case's `name:` equals its directory name because `claude plugin eval . --case <glob>` filters on `name:`, not on the directory. A glob that matches no case still exits 0, so check the case count in the output before trusting a green run.
+
+A case earns its cost only when it guards a skill firing or not firing on the right request, the finish question and its routes, a stop before a push, merge or issue creation, or a rule no free check in `npm run check` can see. Wording, layout or a literal that a free grader or a `verify/` check reads is never a case of its own.
 
 The runner's llm judges answer one word and keep no reasoning. `npm run eval-reasons [results-dir]` asks one more judge, on the run's judge model, to reason and then vote on every failed llm grader vote, writes `judge-reasons.json` beside `aggregate-result.json`, and prints each grader's pass rate per arm. A run without `--judge-model` records no judge model, and the file then names the runner default as its source, so runs judged by different models are not compared unawares.
 

@@ -18,18 +18,17 @@ Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` o
 Start a new session and run:
 
 ```text
-/exo:savings status
 /exo:savings
 ```
 
-The first prints `on`. The second prints the cost report, which stays at zero until exo has done some work. In a clone of this repository, `npm run check` runs every check.
+It prints the cost report, which stays at zero until exo has done some work. In a clone of this repository, `npm run check` runs every check.
 
 ## How exo works
 
 - **Steps.** A request is shaped, planned, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:explorer` agent on Haiku, and the final branch review and the post-build design critique run in the `exo:branch-reviewer` and `exo:design-critic` agents on Opus at high effort; all three live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
-- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:savings guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read.
+- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:settings guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read.
 - **The savings counter.** A hook books what exo's own work cost and which reads the read guard refused; `/exo:savings` prints the report.
 
 A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
@@ -44,30 +43,28 @@ Every skill is invoked as `/exo:<name>`. The first group Claude may also start o
 |---|---|
 | `shaping <outcome>` | A request names a result but leaves open what counts as done, what data it holds or which architecture carries it. |
 | `planning <topic, spec or issue>` | A plan is asked for, a planning mode is active, or the work has two or more edit-order dependencies. A shaped issue plans without shaping again. |
-| `implementing [plan]` | A plan runs or resumes: one delegated build and one commit per task, independent tasks built together in worktrees of their own, then one branch review. |
-| `implementing-batch <change>` | A decided change builds in this session and touches more than two files, a dependency, a public signature, a persisted format or a security boundary. |
+| `implementing [plan]` | A plan runs or resumes: one delegated build and one commit per task, independent tasks built together in worktrees of their own, then one branch review. A plan of three tasks or fewer builds in the session. |
+| `implementing-batch <change>` | A decided change builds in this session and touches more than two files, a dependency, a public signature, a persisted format or a security boundary, or you ask for it test-first, at any file count. |
+| `shipping [numbers]` | A code-changing run ends, or you ask to push, open a pull request or merge open pull requests: one question, then the route you pick runs to its end behind gates read from the GitHub API. |
 | `debug <symptom>` | Existing behavior fails and the cause is not yet proven. Outranks every other stage until it is. |
 | `deepen [path]` | You want to know where the architecture should improve without naming the change. |
 | `designing <surface>` | A page, component or visual axis changes: typography, color, spacing, motion, copy. |
-| `implementing-test-first <behavior>` | A behavior is built test-first: the observable boundaries are named and confirmed, then one failing test and the least code that passes it, per behavior. |
+| `issuing <scope>` | You ask in plain words to file GitHub issues: they are created as specs, with the labels, type, relations, milestone and project fields the repository defines. |
 | `prototyping <question>` | A decision about logic, state or data flow needs running code first: a throwaway that answers it, parked on its own branch while only the decision reaches real code. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
-| `savings [report, on, off, status, guard-lines]` | You ask what exo cost or refused, switch the savings counter and read guard off or on, or change the guard's big-file limit. |
-| `settings [key value scope]` | You show or change an exo setting for every project, one repository, or this machine only. |
+| `savings` | You ask what exo cost or what the read guard refused. |
+| `settings [key value scope]` | You set up exo with no argument, or show or change one setting, the savings counter and the read guard included, for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
 ### User-invoked
 
-These carry `disable-model-invocation: true`, so Claude never starts one itself: they leave the machine, or they write a record only you should approve.
+These carry `disable-model-invocation: true`, so Claude never starts one itself: they write a record only you should approve.
 
 | Skill | Use it when |
 |---|---|
 | `handoff` | You save an unfinished session's live state to a file a fresh session reads after a clear. |
 | `memory` | You record what this repository taught exo, approve a claim two sessions have booked, or drop a line whose files are gone. |
-| `setup` | You walk through every exo setting on one page and save only what you change. |
-| `issuing <scope>` | You file GitHub issues as specs, with the labels, type, relations, milestone and project fields the repository defines. |
-| `merge-prs [numbers]` | You merge open pull requests behind gates read from the GitHub API. |
 
 Each skill also has a page under `docs/skills/`, written for a person: what the skill is for and what it leaves behind, without the instruction the model reads.
 
@@ -91,7 +88,7 @@ On every rung, checks at a trust boundary, failure handling that keeps data from
 To refuse fewer reads, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
 
 ```text
-/exo:savings guard-lines 800
+/exo:settings guard-lines 800
 ```
 
 One switch turns the counter, the status line segment and the read guard off together:
