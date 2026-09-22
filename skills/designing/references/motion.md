@@ -47,8 +47,16 @@ Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or s
 | The delay between siblings in a stagger | 30–80ms, with the whole sequence inside 800ms |
 
 - A focus indicator appears at once; a transition may animate properties around focus, never the indicator itself.
-- An exit is quicker than its entry. Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)` as the default ease-out; a signature sequence takes its curve from how the subject physically moves, because the default curve there reads as borrowed.
+- Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)` as the default ease-out; a signature sequence takes its curve from how the subject physically moves, because the default curve there reads as borrowed.
+- An exit is shorter than its entry and runs on its own curve, never the entrance played in reverse. Declare the exit on the closed or leaving state itself: the entry keeps the longer duration token and the ease-out, the exit takes a shorter duration token and an ease-in such as `cubic-bezier(.3, 0, .8, .15)`, so the element leaves faster than it arrived and speeds up as it goes. A transition declared once on the base rule runs the same duration and curve both ways, which is the reversed entrance this rule forbids.
 - A springy or elastic curve belongs only to a brief whose world truly bounces, and never to a functional control.
+
+~~~css
+@media (prefers-reduced-motion: no-preference) {
+  .panel { transition: transform var(--dur-panel) var(--ease-out), opacity var(--dur-panel) var(--ease-out); }
+  .panel[data-state="closed"] { transition-duration: var(--dur-feedback); transition-timing-function: var(--ease-in); }
+}
+~~~
 
 Durations and curves live in tokens, and a transition lists its properties instead of `all`.
 
@@ -77,7 +85,16 @@ Use view transitions only for elements persisting across a state or navigation c
 
 ## Reduced motion
 
-Put every movement behind `@media (prefers-reduced-motion: no-preference)`. When the preference is `reduce`, the same state change happens instantly or as an opacity change, and no content or feedback is lost. This covers CSS animations, scroll timelines, view transitions and media that plays by itself.
+Put every transition and animation behind `@media (prefers-reduced-motion: no-preference)`, and never the state it leads to. The `:hover` offset, the `:active` press, the open panel and the selected tab are declared outside the query, so under `reduce` each state change still happens, instantly or as an opacity or color change in place of the travel, and no content or feedback is lost. A state change wrapped inside the query deletes feedback and breaks this rule; so does a blanket `* { animation: none; }` under `reduce` that stops a loading shimmer or a keyframed state change instead of replacing it with an opacity change. This covers CSS animations, scroll timelines, view transitions and media that plays by itself.
+
+~~~css
+.row:hover .chevron { transform: translateX(2px); }
+@media (prefers-reduced-motion: no-preference) {
+  .chevron { transition: transform var(--dur-feedback) var(--ease-out); }
+}
+~~~
+
+A mask or gradient fade that marks an edge, such as the fade at the end of a scrolling rail, is not motion: it stays exactly as it is under `reduce`. Only a mask whose position or size animates stops, and it stops at its final state.
 
 **The media query is the default, not the whole answer.** Where the surface carries a signature sequence, ambient motion, or autoplay, ship an in-product motion setting whose initial value is read from `prefers-reduced-motion` and which the person can then override either way. The operating-system switch is one all-or-nothing choice made far from this product, most people never find it, and someone who wants this surface still but not its parallax has nowhere else to say so. The setting drives the same token or class the media query does, so there is one code path and not two.
 
