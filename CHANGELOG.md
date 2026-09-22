@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.24.1 - 2026-09-22
+
 ### Highlights
 
 - **`shaping` asks every ready decision in one round of up to four numbered questions, instead of one question per message.**
