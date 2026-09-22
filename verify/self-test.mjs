@@ -134,7 +134,7 @@ const SCENARIOS = [
   { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
     'never substitute a product-category aesthetic for missing evidence',
     'pick a fitting product-category aesthetic') },
-  { name: 'dropped-motion-evidence-contract', mutate: (root) => replaceText(root, 'skills/designing/references/motion.md',
+  { name: 'dropped-motion-evidence-contract', mutate: (root) => replaceText(root, 'skills/designing/references/craft-recipes.md',
     'only exercised is motion-verified', 'a careful read of the code is enough') },
   { name: 'dropped-direction-contract-gate', mutate: (root) => replaceText(root, 'skills/designing/references/phase-direction.md',
     'validate the set with `--check` to status ok before building any variant',

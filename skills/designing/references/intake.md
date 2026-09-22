@@ -37,7 +37,7 @@ A complaint names a fault in the words of the person who saw it, and those words
 | the type reads wrong, dated, or hard to read | `typography.md` |
 | the colours look muddy, garish, or washed out | `visual-direction.md` its `## Palette`, and `tokens.md` past the role tokens |
 | the page jumps, stalls, or feels slow to arrive | `performance-budget.md` for the cause, `feedback-and-status.md` for what is shown while it waits |
-| the motion distracts, or nothing seems to respond | `motion.md` for the first, `interaction-qa.md` for the second |
+| the motion distracts, or nothing seems to respond | `craft-recipes.md` `## Motion` for the first, `interaction-qa.md` for the second |
 
 ## Judgment
 

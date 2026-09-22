@@ -10,10 +10,10 @@ Name the primary task, its decision points, and the path from arrival to done. T
 
 - Interactive elements read as interactive before they are touched: cursor, hover, and pressed states distinguish them from static text.
 - Every action acknowledges within one transition — a state change, a result, or a progress indicator.
-- Continuity: an element that appears or moves shows where it came from (the continuity job in `motion.md`).
+- Continuity: an element that appears or moves shows where it came from (the continuity job in `craft-recipes.md` `## Motion`).
 - Recovery is deterministic: undo for safely reversible actions, confirmation for irreversible or high-impact ones, never both on one action.
 - Every error surface carries its own recovery action, in the wording below.
-- State transitions run 120–200ms on hover, focus, and active, and 200–400ms on open and close, from the easing tokens (`motion.md`).
+- State transitions run 120–200ms on hover, focus, and active, and 200–400ms on open and close, from the easing tokens (`craft-recipes.md` `## Motion`).
 
 ## Progressive disclosure
 
