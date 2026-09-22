@@ -11,6 +11,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `designing`: `scripts/direction.mjs --shape` prints the script's header, the `space.json` and contract shape, and nothing else; Phase 2 names that call instead of sending the session into the script to find the shape.
 
+### Changed
+
+- `designing` states its after-compaction resume rule (`$RUN` files, `contract-selected.json`, `renders/`, docs/design/DESIGN.md) above `## Size the request`, where a compaction's re-injection keeps it.
+
 ### Removed
 
 - `designing` `references/phase-critique.md`: its render budget, three checkpoints, one-reviewer cap, 12-call cap and no-browser-tool rule now live in `references/phase-detail.md` `## The critique dispatch`, and SKILL.md's Phase 1 no longer repeats the three-facts sentence.

@@ -11,6 +11,8 @@ Design so the result cannot be mistaken for a template: every visual choice trac
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline, when supporting regions stay generic while one focal point carries the design, or when a large empty area has no content, grouping, pacing, or staging job. Technical correctness never compensates for an underdesigned result. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
+**After a compaction notice**, resume from the files, not the conversation: the newest run directory (`ls -dt /private/tmp/designing/*/ | head -1`) holds `contract-selected.json` for the direction, `renders/` for the checkpoints reached, and the build and fault reports; docs/design/DESIGN.md fixes the durable decisions, and Build reopens from `$RUN/contract-selected.json`.
+
 ## Size the request
 
 **Which entry.** This skill owns the turn for a visual change at any file count, because Build dispatches its own builders. Two facts move the entry and size is not one: a surface whose displayed data, settings or behavior is not yet decided goes to `shaping` first, and this skill follows for presentation; a change that also adds non-visual behavior, meaning state, persistence, a new dependency or a network call, is owned by `implementing-batch`, which borrows this skill for the look.
@@ -44,7 +46,7 @@ Read `references/intake.md` before Phase 1: the rule for when a question is aske
 
 ## References
 
-Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines; after a compaction, Build reopens from `$RUN/contract-selected.json`. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
 
 | File | Read it when |
 |---|---|
@@ -103,4 +105,3 @@ Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-over
 - A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become defaults to exceed deliberately; contrast, reduced-motion, and state coverage still hold.
 - A planning turn or a `shaping` brief records the selected direction under `## Visual direction`, a plan as `Contract: docs/design/direction.json`; a plan or brief carrying one copies that contract to `$RUN/contract-selected.json`, resumes at Build (Phase 3), and repeats neither Phase 1-2 nor the variant choice.
 - This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
-- After a compaction notice, resume from the files, not the conversation: the newest run directory (`ls -dt /private/tmp/designing/*/ | head -1`) holds `contract-selected.json` for the direction, `renders/` for the checkpoints reached, and the build and fault reports; docs/design/DESIGN.md fixes the durable decisions.
