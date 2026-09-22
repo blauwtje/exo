@@ -1,7 +1,8 @@
 ---
-name: implementing-batch-finishes-on-the-question
+name: shipping-asks-the-finish-question
 runs: 3
 max_turns: 6
+timeout_seconds: 300
 ---
 
 This session holds no checkout and no write tool: your answer is the exact commands you run, in order, and the exact final message, not a request for the files.
