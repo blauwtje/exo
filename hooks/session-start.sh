@@ -44,6 +44,14 @@ located() {
   fi
   local relative
   relative=$(node -e 'process.stdout.write(require("node:path").relative(process.argv[1], process.argv[2]))' "$top" "$1")
+  # A linked worktree keeps its handoff and memory under the main checkout, so
+  # the relative path climbs out of the root and only the full path resolves.
+  case "$relative" in
+    ..*|'')
+      printf '`%s`' "$1"
+      return
+      ;;
+  esac
   printf '`%s` from the repository root' "$relative"
 }
 pointers=""
