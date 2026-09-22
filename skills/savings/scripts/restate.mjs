@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Restates the routing rules in a long session. hooks/session-start.sh hands
+// Restates the skill rules in a long session. hooks/session-start.sh hands
 // the using-exo body over once, and every tool result after it pushes that
 // text further from the turn that needs it. On each prompt this hook measures
 // how far the transcript grew since the rules were last in front of the model,
