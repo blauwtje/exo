@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.23.0 - 2026-09-22
+
 ### Highlights
 
 - **A finished run ships in one answer: pick `PR + merge` and exo pushes, opens the pull request, waits for the checks and merges once the GitHub API reads it clean.**
