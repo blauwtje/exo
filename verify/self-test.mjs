@@ -67,7 +67,7 @@ const SCENARIOS = [
   { name: 'dangling-script-link', mutate: (root) =>
     replaceText(root, 'skills/designing/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
   { name: 'dangling-sibling-script-link', mutate: (root) =>
-    replaceText(root, 'skills/setup/SKILL.md', '../settings/scripts/settings.mjs', '../settings/scripts/absent.mjs') },
+    replaceText(root, 'skills/settings/SKILL.md', '../shaping/scripts/question-page.mjs', '../shaping/scripts/absent.mjs') },
   { name: 'noncanonical-skill-replacement', mutate: (root) => {
     const nested = path.join(root, 'skills/shaping/shaping');
     fs.mkdirSync(nested);

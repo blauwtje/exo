@@ -234,7 +234,7 @@ function report() {
     'Saved    not measured: refused text has no token count or price',
     routingLine(routingTotals(sessions)),
     '```',
-    enabled ? 'Turn off with `/exo:savings off`.' : 'Turn on with `/exo:savings on`.'
+    enabled ? 'Turn off with `/exo:settings counter off`.' : 'Turn on with `/exo:settings counter on`.'
   ];
   const notice = overrideNotice();
   if (notice !== null) lines.push('', notice);
