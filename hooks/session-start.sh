@@ -34,21 +34,19 @@ body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' 
 # Skills read project and global choices, such as where shaping stores a spec,
 # from this one line instead of opening the settings files themselves.
 settings=$(node "$root/skills/settings/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
-body="$body"$'\n\n'"$settings"
-# A hook output string over this many characters reaches the model as a file
-# path and a 2,000-character preview, which would cut the rules themselves. The
-# body and the settings line always go; a pointer goes only while the whole
-# string stays under the cap, and a pointer left out is named on stderr.
-# verify/budgets.mjs holds the same number as HOOK_OUTPUT_CAP.
-output_cap=10000
-append_pointer() {
-  local candidate="$body"$'\n\n'"$2"
-  if [ "${#candidate}" -le "$output_cap" ]; then
-    body="$candidate"
-  else
-    echo "exo: $1 pointer left out, the session context would pass $output_cap characters" >&2
+# A file inside the repository is named from its root, because a full path
+# grows with every folder above the checkout; one outside it keeps its full path.
+top=""
+located() {
+  if [ -z "$top" ]; then
+    printf '`%s`' "$1"
+    return
   fi
+  local relative
+  relative=$(node -e 'process.stdout.write(require("node:path").relative(process.argv[1], process.argv[2]))' "$top" "$1")
+  printf '`%s` from the repository root' "$relative"
 }
+pointers=""
 # A handoff the user wrote before a clear sits beside the branch it belongs to,
 # so a session resuming that work is told where it is instead of searching for
 # it. Only the pointer is injected: the file itself is often longer than this
@@ -59,15 +57,16 @@ if [ -n "$cwd" ]; then
   # a HEAD to compare the file against.
   staleness=""
   if git_dir=$(git -C "$cwd" rev-parse --absolute-git-dir 2>/dev/null); then
+    top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || top=""
     scope=$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
     handoff_file="$git_dir/exo/handoff/$scope.md"
-    staleness=" On reading it, compare the commit on its \`Written:\` line with \`git rev-parse --short HEAD\` and say so when they differ."
+    staleness=" Compare its \`Written:\` commit with \`git rev-parse --short HEAD\`."
   else
     scope=$(basename "$cwd")
     handoff_file="$config_dir/handoff/$scope.md"
   fi
   if [ -f "$handoff_file" ]; then
-    append_pointer "handoff" "A handoff for \`$scope\` sits at \`$handoff_file\`. Read it only when this session continues that work.$staleness"
+    pointers="${pointers}A handoff for \`$scope\` sits at $(located "$handoff_file"). Read it only when this session continues that work.$staleness"$'\n\n'
   fi
   # The project memory belongs to the repository rather than to one branch, so
   # it sits in the common git directory a linked worktree shares. Only the
@@ -79,7 +78,19 @@ if [ -n "$cwd" ]; then
     memory_file="$config_dir/memory/$(basename "$cwd")/memory.md"
   fi
   if [ -f "$memory_file" ]; then
-    append_pointer "memory" "A project memory for this repository sits at \`$memory_file\`. Read it before changing code you have not read here, and run \`/exo:memory\` to change it."
+    pointers="${pointers}A project memory for this repository sits at $(located "$memory_file"). Read it before changing code you have not read here, and run \`/exo:memory\` to change it."$'\n\n'
   fi
 fi
-jq -n --arg c "$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'
+# A hook output string over this many characters reaches the model as a file
+# path and a 2,000-character preview, which would cut the rules themselves. The
+# pointers and the settings line go first and always, so a cut falls on the
+# tail of the using-exo body and is named on stderr.
+# verify/budgets.mjs holds the same number as HOOK_OUTPUT_CAP.
+output_cap=10000
+head_text="$pointers$settings"$'\n\n'
+room=$((output_cap - ${#head_text}))
+if [ "${#body}" -gt "$room" ]; then
+  echo "exo: using-exo cut by $((${#body} - room)) characters, the session context would pass $output_cap" >&2
+  body="${body:0:room}"
+fi
+jq -n --arg c "$head_text$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'

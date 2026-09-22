@@ -12,6 +12,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `context` setting, in thousands of tokens and `80` by default, sets how large a session's context grows before a skill's next phase moves to a fresh context; `settings.mjs` shows, gets and sets it, `/exo:settings` asks it as a whole number, and a stored value that is not a whole number of at least 1 reads as the default.
 - A PostToolUse hook on `TaskUpdate`, `skills/savings/scripts/context-watch.mjs`, adds one `exo: context <n>k tokens, past <threshold>k` line when a completed task finds the main session's context past the `context` setting, and prints nothing under it, inside a delegate or on a fault.
 
+### Changed
+
+- The session hook puts the handoff and memory pointers and the settings line before the `using-exo` text and names a pointer's file from the repository root; when the context would pass 10,000 characters it cuts the tail of that text, never a pointer.
+
 ## 0.25.0 - 2026-09-22
 
 ### Added

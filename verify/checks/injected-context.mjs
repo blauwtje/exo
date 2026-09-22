@@ -3,8 +3,8 @@
 // locked to the bytes it last measured at: growth fails, shrinking passes, and
 // raising INJECTED_CONTEXT_LOCK is a hand edit in the commit that pays for the
 // text. The hook keeps its whole output string under HOOK_OUTPUT_CAP in
-// verify/budgets.mjs by leaving a pointer out, so this check locks only the
-// authored body.
+// verify/budgets.mjs by cutting the tail of this body, never a pointer, so this
+// check locks only the authored body.
 
 import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
