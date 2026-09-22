@@ -15,7 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `designing` states its after-compaction resume rule (`$RUN` files, `contract-selected.json`, `renders/`, docs/design/DESIGN.md) above `## Size the request`, where a compaction's re-injection keeps it.
 - `designing` `references/internationalization.md` opens with its load condition, so a run that loads it on a single-locale product with no translation machinery and no right-to-left audience applies nothing from it.
-- `designing`'s reduced-motion rule and exit rule are worded so a `sonnet` builder applies them: only the transition goes behind the media query, never the state change; an edge mask stays static; an exit takes its own shorter duration and curve.
+- `designing`'s reduced-motion rule and exit rule are worded so a `sonnet` builder applies them: only the transition goes behind the media query, never the state change; an edge mask stays static; an element that appears and disappears (panel, menu, dialog, toast) exits on its own shorter duration and curve, while hover and press feedback may use one transition both ways.
 
 ### Removed
 
