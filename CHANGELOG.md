@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - The session hook puts the handoff and memory pointers and the settings line before the `using-exo` text and names a pointer's file from the repository root; when the context would pass 10,000 characters it cuts the tail of that text, never a pointer.
+- `using-exo` `# Context` carries the context rule, which sends the phase after an `exo: context` line to a delegate or, when it asks the user, to a handoff, and the scope rule, which limits a phase to the artifacts and references its skill names; `implementing` drops its 45% status-line rule and points there.
 
 ## 0.25.0 - 2026-09-22
 

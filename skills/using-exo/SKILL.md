@@ -48,6 +48,8 @@ Checks at a trust boundary, failure handling that keeps data from being lost, an
 - **Language.** Every reply, report and question is written in the language of the user's latest message, also when the skill that shaped it is written in English; a session whose only message is a command that opens a plan writes in the plan's language. Code, commits, issues and the files a skill writes keep the language the repository already uses.
 - **Command output.** A command whose output may run past forty lines logs it under `git rev-parse --git-dir`, or a temp directory outside git, and only failing lines are read back.
 - **Progress.** A run of more than one step keeps its progress in the harness's task list: one line per step written before the first starts, set in progress when it starts and completed when it lands. No message between two steps, except a blocked step, a failed check or a question only the user can answer.
+- **Context.** After an `exo: context` line, delegate the next phase, or hand off if it asks the user.
+- **Scope.** Write only the artifacts a skill names, at the length needed; read a reference only at its row's phase.
 
 # Closing
 
