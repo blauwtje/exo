@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `exo:branch-reviewer-deep` agent, the branch review at `high` effort for a branch above five changed files or 200 changed lines, with the same body as `exo:branch-reviewer`, which now runs at `medium` on a branch within both numbers; `implementing` picks between the two from `git diff --shortstat`, because every review ran at `high` whatever the size of the change, and `tests/agents.test.mjs` keeps the two bodies identical.
+
 ## 0.24.3 - 2026-09-22
 
 ### Changed
