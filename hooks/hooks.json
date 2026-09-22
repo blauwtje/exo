@@ -71,6 +71,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/context-watch.mjs\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
