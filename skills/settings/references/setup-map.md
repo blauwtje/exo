@@ -8,29 +8,31 @@ Write the setup page's map so every setting shows its current value and keeping 
 
 ## The map file
 
-Write `$RUN/map.json` whole before each `--ask`. The first write asks `scope`:
+Write `$RUN/map.json` whole before each `--ask`. The first round asks `scope` and `counter`, the two settings that wait on nothing:
 
 ```json
 {
   "lang": "en",
   "goal": "Set up exo the way you work. The first answer always keeps what you have.",
-  "asked": "scope",
+  "round": 1,
   "words": {
     "mapTitle": "All settings",
-    "place": "Setting {n}, {k} still open",
+    "round": "Round {r} · {k} settings still open",
+    "question": "Setting {n}",
     "you": "You chose",
     "exo": "Follows the counter",
     "go": "Keep the rest",
     "goGives": "Every setting still open keeps its current value.",
-    "reviewQuestion": "Save these settings?",
+    "review": "Save these settings?",
     "done": "Yes, save them",
-    "doneGives": "exo writes only the values you changed."
+    "changeMarked": "Change what I marked"
   },
   "decisions": [
     {
-      "id": "scope", "name": "Where the exo settings apply", "state": "open",
+      "id": "scope", "name": "Where the exo settings apply", "state": "open", "number": 1,
       "question": "Where should your exo settings apply?",
       "changes": "It decides whether the next three settings hold in every repository or only in this one.",
+      "why": "One choice then holds wherever you work.",
       "options": [
         { "id": "global", "label": "Every project", "gives": "Your choice holds everywhere; you confirm it once in /config.", "recommended": true },
         { "id": "project", "label": "This repository, for everyone", "gives": "Everyone who clones it gets it once .claude/exo.json is committed." },
@@ -40,16 +42,25 @@ Write `$RUN/map.json` whole before each `--ask`. The first write asks `scope`:
     { "id": "specs", "name": "Where specs go", "state": "waits", "waitsOn": "scope" },
     { "id": "replies", "name": "How replies read", "state": "waits", "waitsOn": "scope" },
     { "id": "interview", "name": "Where shaping asks", "state": "waits", "waitsOn": "scope" },
-    { "id": "counter", "name": "Savings counter", "state": "open" },
+    {
+      "id": "counter", "name": "Savings counter", "state": "open", "number": 2,
+      "question": "Should exo count what it costs?",
+      "changes": "Now on, from the default.",
+      "why": "It keeps what you have now.",
+      "options": [
+        { "id": "keep", "label": "Keep on", "gives": "The cost shows in the status line.", "recommended": true },
+        { "id": "off", "label": "off", "gives": "No counting, no status line segment and no read guard." }
+      ]
+    },
     { "id": "guard", "name": "Read guard", "state": "waits", "waitsOn": "counter" },
     { "id": "guardLines", "name": "Big-file limit", "state": "waits", "waitsOn": "counter" }
   ]
 }
 ```
 
-- `lang`, `goal`, `words`, every `name`, `question`, `changes`, `label` and `gives` are written in the user's language.
-- Each setting's `changes` names its current value and the layer the `show` block printed for it, such as `now docs, from the default`.
-- A decision waiting on one just closed turns `open`, and the next `asked` is the first open one in the order above.
+- `lang`, `goal`, `words`, every `name`, `question`, `changes`, `why`, `label` and `gives` are written in the user's language.
+- Each setting's `changes` names its current value and the layer the `show` block printed for it, such as `now docs, from the default`, and the `why` of a keep answer says it keeps what the user has now.
+- A setting waiting on one just closed turns `open` and takes the next `number` in the next round, in the order above.
 
 ## Each setting
 

@@ -20,7 +20,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // addition to using-exo buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 4490, measured: '2026-09-22' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 9074, measured: '2026-09-22' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 9115, measured: '2026-09-22' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size

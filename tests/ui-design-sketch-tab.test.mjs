@@ -278,6 +278,42 @@ describe('sketch-tab.mjs', () => {
     }
   });
 
+  it('records the fields a form sends with its click, and refuses fields it cannot trust', async () => {
+    const folder = await fixture();
+    const tab = startTab(folder);
+    try {
+      const url = await tab.url;
+      const events = await openEvents(url);
+      await events.next();
+      await fs.writeFile(path.join(folder, '001-round.html'), `<title>Round 1</title>
+<form><input type="radio" name="choice-format" value="csv"><button type="button" data-choice="round">Send</button></form>`);
+      await events.next();
+      events.close();
+
+      const sent = { sketch: '001-round.html', choice: 'round', label: 'Send', steer: '' };
+      const listed = await answer(url, { ...sent, fields: ['choice-format'] });
+      assert.equal(listed.status, 400, 'fields are an object of names');
+      const unsafeName = await answer(url, { ...sent, fields: { 'choice format': 'csv' } });
+      assert.equal(unsafeName.status, 400, 'a field name is letters, digits, hyphens and underscores');
+      const notText = await answer(url, { ...sent, fields: { 'choice-format': 1 } });
+      assert.equal(notText.status, 400, 'a field value is text');
+      const crowded = Object.fromEntries(Array.from({ length: 65 }, (unused, index) => [`field-${index}`, 'x']));
+      const tooMany = await answer(url, { ...sent, fields: crowded });
+      assert.equal(tooMany.status, 400, 'a form holds at most 64 fields');
+
+      const accepted = await answer(url, { ...sent, fields: { 'choice-format': 'csv', 'words-format': ' ' } });
+      assert.equal(accepted.status, 200);
+      const waited = await run(SKETCH_TAB, ['--wait', folder, '--sketch', '001-round.html', '--timeout', '5']);
+      assert.equal(waited.code, 0, waited.stderr);
+      assert.deepEqual(JSON.parse(waited.stdout), {
+        sketch: '001-round.html', choice: 'round', label: 'Send', steer: '', fields: { 'choice-format': 'csv', 'words-format': ' ' }
+      });
+    } finally {
+      tab.stop();
+      await tab.exit;
+    }
+  });
+
   it('exits 3 from --wait when no answer arrives, and when no server runs at all', async () => {
     const served = await fixture();
     const tab = startTab(served);

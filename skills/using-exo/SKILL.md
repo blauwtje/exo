@@ -72,7 +72,7 @@ Every question exo puts to the user has one shape, because the user answers it b
 3. **The recommended option is number 1**, in every question and in the next stage's fixed order; stopping or keeping things as they are comes last unless it is the recommended one. Label, marker and clause are in the reply's language, as the language rule under `# Context` sets.
 4. **Nothing follows the options** except the one model line `## The next stage` allows.
 5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
-6. **One question a turn.** Nothing is written, edited or run until the answer arrives, because work done first is work the answer undoes.
+6. **One question a turn**, or one round of up to four in `shaping`. Nothing is written, edited or run until the answer arrives, because work done first is work the answer undoes.
 
 ## Never in an ending
 
