@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `designing`: `scripts/direction.mjs --shape` prints the script's header, the `space.json` and contract shape, and nothing else; Phase 2 names that call instead of sending the session into the script to find the shape.
+
+### Changed
+
+- `designing` states its after-compaction resume rule (`$RUN` files, `contract-selected.json`, `renders/`, docs/design/DESIGN.md) above `## Size the request`, where a compaction's re-injection keeps it.
+- `designing` `references/internationalization.md` opens with its load condition, so a run that loads it on a single-locale product with no translation machinery and no right-to-left audience applies nothing from it.
+- `designing`'s reduced-motion rule and exit rule are worded so a `sonnet` builder applies them: only the transition goes behind the media query, never the state change; an edge mask stays static; an element that appears and disappears (panel, menu, dialog, toast) exits on its own shorter duration and curve, while hover and press feedback may use one transition both ways.
+
+### Removed
+
+- `designing` `references/phase-critique.md`: its render budget, three checkpoints, one-reviewer cap, 12-call cap and no-browser-tool rule now live in `references/phase-detail.md` `## The critique dispatch`, and SKILL.md's Phase 1 no longer repeats the three-facts sentence.
+
 ## 0.26.0 - 2026-09-22
 
 ### Added

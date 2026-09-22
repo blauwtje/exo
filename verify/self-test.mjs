@@ -128,7 +128,7 @@ const SCENARIOS = [
     dropLines(root, 'skills/debug/SKILL.md', 'description:') },
   { name: 'effort-unknown-key', mutate: (root) =>
     replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\nmodel-effort: high') },
-  { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/references/phase-critique.md',
+  { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
     'baseline before the first edit, post-build before the critique fixes, and final after them',
     'capture the surface before and after building') },
   { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',

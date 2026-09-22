@@ -11,6 +11,8 @@ Design so the result cannot be mistaken for a template: every visual choice trac
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline, when supporting regions stay generic while one focal point carries the design, or when a large empty area has no content, grouping, pacing, or staging job. Technical correctness never compensates for an underdesigned result. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
+**After a compaction notice**, resume from the files, not the conversation: the newest run directory (`ls -dt /private/tmp/designing/*/ | head -1`) holds `contract-selected.json` for the direction, `renders/` for the checkpoints reached, and the build and fault reports; docs/design/DESIGN.md fixes the durable decisions, and Build reopens from `$RUN/contract-selected.json`.
+
 ## Size the request
 
 **Which entry.** This skill owns the turn for a visual change at any file count, because Build dispatches its own builders. Two facts move the entry and size is not one: a surface whose displayed data, settings or behavior is not yet decided goes to `shaping` first, and this skill follows for presentation; a change that also adds non-visual behavior, meaning state, persistence, a new dependency or a network call, is owned by `implementing-batch`, which borrows this skill for the look.
@@ -44,16 +46,15 @@ Read `references/intake.md` before Phase 1: the rule for when a question is aske
 
 ## References
 
-Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines; after a compaction, Build reopens from `$RUN/contract-selected.json`. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
 
 | File | Read it when |
 |---|---|
 | `references/intake.md` | Before Phase 1, for the asking rule, the run directory, and the symptom-to-reference table. |
-| `references/phase-detail.md` | At Phase 1 for the context rules, before the first Build edit for the floor, before the critique dispatch, and at Phase 5 for the sweep. |
+| `references/phase-detail.md` | At Phase 1 for the context rules, before the first Build edit for the floor, before the first edit of a full or bounded redesign for the baseline pair and at Phase 4 before the post-build dispatch, both from its `## The critique dispatch`, and at Phase 5 for the sweep. |
 | `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
-| `references/phase-critique.md` | Before the first edit of a full or bounded redesign, for the baseline pair; Phase 4 before the post-build dispatch. |
 | `references/visual-direction.md` | Phase 2 for every direction decision; Phase 1 when the repository or docs/design/DESIGN.md holds a design system to extract. |
 | `references/sketch-tab.md` | Phase 2 on rungs 3 and 7, after `--check` reports ok and before the offer; on any other path, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Phase 2, only when the user asks to see a direction whole, before building the comps the picker shows. |
@@ -75,7 +76,7 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 
 ## Phase 1 — Context
 
-A full or bounded redesign takes the baseline pair under `references/phase-critique.md` when the surface renders, then dispatches the `exo:design-discovery` agent on `sonnet` at `high` with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. It writes `$RUN/inventory.md` and the `FILES` list in `$RUN/files.md` and returns at most 20 lines; this session reads that report and asks its `## Open` questions, never the repository ranges. Every other path reads `references/phase-detail.md`, its `## Context`, which names the three facts and the `FILES` list Build hands each builder.
+A full or bounded redesign takes the baseline pair under `references/phase-detail.md`, its `## The critique dispatch`, when the surface renders, then dispatches the `exo:design-discovery` agent on `sonnet` at `high` with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. It writes `$RUN/inventory.md` and the `FILES` list in `$RUN/files.md` and returns at most 20 lines; this session reads that report and asks its `## Open` questions, never the repository ranges. Every other path reads `references/phase-detail.md`, its `## Context`.
 
 ## Phase 2 — Direction
 
@@ -87,7 +88,7 @@ Read `references/phase-build.md` before the first edit or builder dispatch: wher
 
 ## Phase 4 — Visual critique
 
-A full or bounded redesign renders at three checkpoints under the render budget in `references/phase-critique.md`: read it before the baseline capture, which comes before the first edit. The four calls this session makes, the agent it dispatches and the fault contract the critic meets are in `references/phase-detail.md`, its `## The critique dispatch`.
+A full or bounded redesign renders at three checkpoints under `references/phase-detail.md`, its `## The critique dispatch`: read it before the baseline capture, which comes before the first edit. That section holds the render budget, the four calls this session makes, the agent it dispatches, the fault contract the critic meets and the call cap after its report.
 
 ## Phase 5 — QA
 
@@ -104,4 +105,3 @@ Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-over
 - A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become defaults to exceed deliberately; contrast, reduced-motion, and state coverage still hold.
 - A planning turn or a `shaping` brief records the selected direction under `## Visual direction`, a plan as `Contract: docs/design/direction.json`; a plan or brief carrying one copies that contract to `$RUN/contract-selected.json`, resumes at Build (Phase 3), and repeats neither Phase 1-2 nor the variant choice.
 - This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
-- After a compaction notice, resume from the files, not the conversation: the newest run directory (`ls -dt /private/tmp/designing/*/ | head -1`) holds `contract-selected.json` for the direction, `renders/` for the checkpoints reached, and the build and fault reports; docs/design/DESIGN.md fixes the durable decisions.

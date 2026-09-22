@@ -414,6 +414,16 @@ describe('direction.mjs usage contract', () => {
     assert.ok(!VOCABULARY.ground.valid({ mechanism: 'Tide Band' }));
   });
 
+  it('prints the header block and nothing else for --shape', async () => {
+    const result = await run(DIRECTION, ['--shape']);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, '');
+    assert.ok(result.stdout.startsWith('Deal seeded, divergent direction axes'), result.stdout.slice(0, 80));
+    assert.ok(result.stdout.includes('below: {"schemaVersion":1,"axes":{<axis>:{"values":[{"id":<token>,'));
+    assert.ok(result.stdout.endsWith('--check names the shape and the allowed vocabulary of anything it rejects.\n'));
+    assert.ok(!result.stdout.includes('import '), 'the header stops before the imports');
+  });
+
   it('exits 2 without stdout for every usage error', async () => {
     const spaceFile = await jsonFixture('space.json', space());
     const contractsFile = await jsonFixture('contracts.json', filledContainer());
@@ -426,6 +436,7 @@ describe('direction.mjs usage contract', () => {
       ['--plan', '--seed', 'atlas', '--space', spaceFile, '--variants', '7'],
       ['--plan', '--seed', 'atlas', '--space', spaceFile, '--variants', 'many'],
       ['--plan', '--check', '--seed', 'atlas', '--space', spaceFile],
+      ['--shape', '--plan', '--seed', 'atlas', '--space', spaceFile],
       ['--check', '--contracts', contractsFile],
       ['--check', '--contracts', contractsFile, '--space', '/nonexistent/space.json'],
       ['--select', '--contracts', contractsFile],

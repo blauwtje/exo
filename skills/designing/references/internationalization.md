@@ -1,8 +1,6 @@
 # Internationalization
 
-Design for the sentence you did not write. The enemy is the layout that only holds English at the length the designer typed it: a fixed-width button, a hard-coded date, a name interpolated into a sentence that reorders itself in Hebrew. The overcorrection is a design flattened into shapeless boxes on the theory that something somewhere might be longer.
-
-Load this file when the product ships more than one language, when the repository already carries translation machinery, or when the audience from Phase 1 reads a right-to-left or non-Latin script. A single-locale prototype owes the logical properties and nothing else.
+Apply this file only when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script; a single-locale product with none of the three applies nothing from it, and a product that meets any of them designs for the sentence it did not write. The enemy is the layout that only holds English at the length the designer typed it: a fixed-width button, a hard-coded date, a name interpolated into a sentence that reorders itself in Hebrew. The overcorrection is a design flattened into shapeless boxes on the theory that something somewhere might be longer.
 
 ## Direction is markup
 
