@@ -1,7 +1,8 @@
 // `implementing` stays model-invocable, so the run commits only where the
-// workspace question placed it and pushes only after the finish question. The
-// model follows these rules by reading them; no pattern matches a run, so this
-// test guards the skill text that states them.
+// workspace question placed it and pushes, opens a pull request or merges only
+// through the finish question `shipping` asks. The model follows these rules by
+// reading them; no pattern matches a run, so this test guards the skill text
+// that states them.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ import { test } from 'node:test';
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const SKILL = read('implementing/SKILL.md');
 const WORKSPACE = read('implementing/references/workspace.md');
-const FINISHING = read('implementing/references/finishing.md');
+const SHIPPING = read('shipping/SKILL.md');
 
 function loopStep(number) {
   const step = SKILL.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
@@ -42,13 +43,26 @@ test('a green task commits and pushes nothing', () => {
 
 test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7);
-  assert.ok(tailStep.includes('`references/finishing.md`'));
+  assert.ok(tailStep.includes('Then end on `shipping`'));
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
-  const question = FINISHING.indexOf('## The question');
-  const firstPush = FINISHING.indexOf('git push');
+  const question = SHIPPING.indexOf('## The question');
+  const firstPush = SHIPPING.indexOf('git push');
   assert.ok(question !== -1 && firstPush > question, 'no push is named before the question');
-  assert.ok(FINISHING.includes('1. **Open PR (Recommended)**:'));
-  assert.ok(FINISHING.includes('3. **Keep local**:'));
+  const merge = SHIPPING.indexOf('1. **PR + merge (Recommended)**:');
+  const openPr = SHIPPING.indexOf('2. **Open PR**:');
+  const push = SHIPPING.indexOf('3. **Push**:');
+  const keep = SHIPPING.indexOf('4. **Keep local**:');
+  assert.ok(merge !== -1 && merge < openPr && openPr < push && push < keep, 'the four routes in order');
+});
+
+test('shipping merges only after the bounded wait and the API gate, and deletes no branch', () => {
+  const wait = SHIPPING.indexOf('scripts/wait-checks.mjs');
+  const gate = SHIPPING.indexOf('mergeStateStatus');
+  const merge = SHIPPING.indexOf('gh pr merge <n>');
+  const confirm = SHIPPING.indexOf('`state` `MERGED`');
+  assert.ok(wait !== -1 && wait < gate && gate < merge && merge < confirm, 'wait, gate, merge, confirm in order');
+  assert.ok(SHIPPING.includes('never with `--delete-branch`, `--admin` or `--auto`'));
+  assert.ok(SHIPPING.includes('stops after 20 minutes'));
 });
 
 test('the authorization line grants no push before the finish answer and no merge', () => {
@@ -58,11 +72,11 @@ test('the authorization line grants no push before the finish answer and no merg
   assert.ok(!authorization[0].includes('merge'), 'implementing grants no merge');
 });
 
-test('implementing-batch and debug settle the workspace and end on the finish question', () => {
+test('implementing-batch and debug settle the workspace and end on shipping', () => {
   for (const skill of ['implementing-batch', 'debug']) {
     const text = read(`${skill}/SKILL.md`);
     assert.ok(text.includes('`../implementing/references/workspace.md`'), `${skill} names the workspace step`);
-    assert.ok(text.includes('`../implementing/references/finishing.md`'), `${skill} names the finish step`);
+    assert.ok(text.includes('ends on `shipping`') || text.includes('end on `shipping`'), `${skill} names the finish`);
     assert.ok(!text.includes('git push'), `${skill} runs no push of its own`);
   }
 });

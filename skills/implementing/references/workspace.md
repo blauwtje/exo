@@ -22,7 +22,7 @@ The default branch is the one `git symbolic-ref --short refs/remotes/origin/HEAD
 - **Worktree.** The harness's worktree tool when one is available; otherwise `git worktree add ../<repository>-<slug> -b <type>/<slug>`, a sibling folder outside the repository so nothing inside it is tracked, and every later command runs there.
 - **Current branch.** Stay; commits land on it.
 
-Every landed unit then commits in Conventional Commits where the pick put it. Nothing is pushed: a push waits for the question in `finishing.md`.
+Every landed unit then commits in Conventional Commits where the pick put it. Nothing is pushed: a push waits for the finish question `shipping` asks.
 
 ## Wave worktrees
 
