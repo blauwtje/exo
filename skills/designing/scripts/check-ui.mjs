@@ -22,6 +22,21 @@ function finding({ type, confidence, selector, measured, threshold, note }) {
   return { type, confidence, selector, measured, threshold, note };
 }
 
+const BLOCK_COMMENT = String.raw`\/\*[\s\S]*?(?:\*\/|(?![\s\S]))`;
+const MARKUP_COMMENT = String.raw`<!--[\s\S]*?(?:-->|(?![\s\S]))`;
+const LINE_COMMENT = String.raw`(?<=^|[ \t])\/\/[^\n]*`;
+
+// Blanks comments to spaces and keeps newlines, so every line number still matches the file.
+// Strings are not tracked, because an apostrophe in markup text would open a false string:
+// a string holding ` //` or `/*` loses the text after it.
+function stripComments(text, extension) {
+  const kinds = [BLOCK_COMMENT];
+  if (MARKUP_EXTENSIONS.has(extension)) kinds.push(MARKUP_COMMENT);
+  if (extension !== '.css') kinds.push(LINE_COMMENT);
+  const comments = new RegExp(kinds.join('|'), 'gm');
+  return text.replace(comments, (comment) => comment.replace(/[^\r\n]/g, ' '));
+}
+
 async function* sourceFiles(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
@@ -406,7 +421,8 @@ export async function staticAudit(directory) {
     const extension = path.extname(file);
     const isStylesheet = ['.css', '.scss'].includes(extension);
     const isMarkup = MARKUP_EXTENSIONS.has(extension);
-    const text = await fs.readFile(file, 'utf8');
+    const source = await fs.readFile(file, 'utf8');
+    const text = stripComments(source, extension);
     const lines = text.split(/\r?\n/);
     let insideTokenBlock = false;
     const reportedOnce = new Set();

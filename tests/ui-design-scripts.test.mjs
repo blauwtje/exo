@@ -367,6 +367,42 @@ describe('check-ui.mjs static subset', () => {
   });
 });
 
+describe('check-ui.mjs comments, baseline and ignore file', () => {
+  it('skips tells inside code comments and keeps line numbers', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'styles.css'), [
+      '/* .old { transition: all 200ms ease; }',
+      '   lorem ipsum */',
+      '.hero {',
+      '  background: url(https://example.com/hero.png);',
+      '  transition: all 200ms ease;',
+      '}'
+    ].join('\n'));
+    await fs.writeFile(path.join(root, 'page.html'), [
+      '<!-- <button onclick="save()">Lorem ipsum</button> -->',
+      '<p>Opening hours</p>'
+    ].join('\n'));
+    await fs.writeFile(path.join(root, 'banner.tsx'), [
+      '// 🎉 launch day, lorem ipsum',
+      'export const Banner = () => (',
+      '  <a href="https://example.com">',
+      '    {/* 🎉 lorem ipsum */}',
+      '    Opening hours',
+      '  </a>',
+      ');'
+    ].join('\n'));
+
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const findings = JSON.parse(result.stdout).static.findings;
+    const commented = ['placeholder-copy', 'inline-event-handler', 'emoji-in-markup'];
+    const leaked = findings.filter((entry) => commented.includes(entry.type));
+    assert.deepEqual(leaked, []);
+    const transitions = findings.filter((entry) => entry.type === 'transition-all');
+    assert.deepEqual(transitions.map((entry) => entry.selector), ['styles.css:5']);
+  });
+});
+
 describe('argument and JSON contracts', () => {
   const invalid = [
     ['context.mjs', ['--needs', 'color']],
