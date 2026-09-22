@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `implementing` dispatches a wave's builds with the harness's worktree isolation when it has one, because a session isolated in a worktree refused every command its delegates ran in sibling `-task-` folders.
+
 ## 0.24.1 - 2026-09-22
 
 ### Highlights
