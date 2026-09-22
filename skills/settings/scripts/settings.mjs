@@ -89,9 +89,20 @@ function globalLayer() {
   return { values, unreadable };
 }
 
+// The command line and the hook environment hand every value over as a string,
+// and the harness stores a number option as one too.
+function typedValue(key, value) {
+  if (SCHEMA[key].type !== 'number' || typeof value !== 'string') return value;
+  if (!/^\d+$/.test(value)) return value;
+  return Number(value);
+}
+
 function invalidReason(key, value) {
   const entry = SCHEMA[key];
   if (typeof value !== entry.type) return `${key}=${value} is not a ${entry.type}`;
+  if (entry.type === 'number' && !(Number.isSafeInteger(value) && value >= 1)) {
+    return `${key}=${value} is not a whole number of at least 1`;
+  }
   if (entry.options && !entry.options.includes(value)) {
     return `${key}=${value} is not one of ${entry.options.join(', ')}`;
   }
@@ -106,11 +117,14 @@ function layers(root) {
   ];
 }
 
+// A number is a threshold a hook reads on every call, so a stored one that is
+// not a whole number of at least 1 reads as the default instead of stopping it.
 function resolve(key, stack) {
   for (const layer of stack) {
-    const value = layer.values[key];
-    if (value === undefined) continue;
+    if (layer.values[key] === undefined) continue;
+    const value = typedValue(key, layer.values[key]);
     const problem = invalidReason(key, value);
+    if (problem && SCHEMA[key].type === 'number') break;
     if (problem) throw new Error(`${layer.source}: ${problem}`);
     return { value, layer: layer.name };
   }
@@ -214,18 +228,19 @@ function set(root, key, value, scope) {
     throw new Error('a global value is set in /config under the exo plugin, not by this script');
   }
   if (scope !== 'project' && scope !== 'local') throw new Error('--scope must be project or local');
-  const problem = invalidReason(key, value);
+  const typed = typedValue(key, value);
+  const problem = invalidReason(key, typed);
   if (problem) throw new Error(problem);
 
   const relative = scope === 'local' ? LOCAL_FILE : PROJECT_FILE;
   const file = path.join(root, relative);
   const values = readLayer(file);
-  values[key] = value;
+  values[key] = typed;
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = `${file}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(values, null, 2)}\n`);
   fs.renameSync(temporary, file);
-  console.log(`${key}=${value} set in ${relative}`);
+  console.log(`${key}=${typed} set in ${relative}`);
 
   // check-ignore exits 0 for an ignored path, 1 for a tracked one, 128 outside git.
   const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);

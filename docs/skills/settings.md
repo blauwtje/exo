@@ -10,7 +10,7 @@ When you run `/exo:settings`, ask to set up or configure exo, or ask to see or c
 
 - With nothing named, a walk through every setting on one page, or in the chat without a browser, where keeping what you have is always the first answer and nothing is saved before you confirm the review.
 - With a setting named, one question for the value and one for the layer, then the new overview.
-- `specs`, `replies` and `interview`, plus the savings counter, the read guard and its big-file limit.
+- `specs`, `replies`, `interview` and `context`, the context size in thousands of tokens past which a skill's next phase moves to a fresh context, plus the savings counter, the read guard and its big-file limit.
 - The two repository files written for you, one committed so collaborators share it, one git-ignored; a value for every project is named for you to pick in `/config`.
 
 ## Where its rules live

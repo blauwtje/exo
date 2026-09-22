@@ -13,7 +13,7 @@ Change exo's settings only through its own scripts, one named setting or every s
 ## When to use
 
 - The user runs `/exo:settings` with nothing after it, or asks to set up, personalize or configure exo as a whole: take `## The walk`.
-- The user asks what a setting is or to change one, such as where specs go, the reply style, the savings counter, the read guard or its line limit: take `## One setting`.
+- The user asks what a setting is or to change one, such as where specs go, the reply style, the context threshold, the savings counter, the read guard or its line limit: take `## One setting`.
 - Not for the harness's own settings, permissions or hooks, and not for the savings figures, which `savings` reports.
 
 ## Where things stand
@@ -34,8 +34,8 @@ Take the first step whose answer the request and the digits so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a digit.
-3. **Ask the value** once the setting is known but no value: for `specs`, `replies` or `interview` run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `counter` or `guard` ask `on` or `off`, and for `guard-lines` a whole number of at least 1, in the shape `## A question` in `using-exo` gives.
-4. **Ask the layer** for `specs`, `replies` or `interview` once setting and value are known but no layer; the savings switches hold for this machine and take none:
+3. **Ask the value** once the setting is known but no value: for `specs`, `replies` or `interview` run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `counter` or `guard` ask `on` or `off`, and for `guard-lines` or `context` a whole number of at least 1, in the shape `## A question` in `using-exo` gives.
+4. **Ask the layer** for `specs`, `replies`, `interview` or `context` once setting and value are known but no layer; the savings switches hold for this machine and take none:
    ```text
    1. **Project (Recommended)**: everyone, via .claude/exo.json
    2. **Local**: only you, in this repository
@@ -61,8 +61,8 @@ A project value adds one line under the fence: collaborators receive it once `.c
 
 | Setting | Command |
 |---|---|
-| `specs`, `replies`, `interview` for this repository | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project or local>` |
-| `specs`, `replies`, `interview` for every project | None: the harness owns that file. The report names the value to pick for that key under exo in `/config`. |
+| `specs`, `replies`, `interview`, `context` for this repository | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project or local>` |
+| `specs`, `replies`, `interview`, `context` for every project | None: the harness owns that file. The report names the value to pick for that key under exo in `/config`. |
 | The savings counter, `counter` | `node "${CLAUDE_SKILL_DIR}/../savings/scripts/savings.mjs" on` or `off` |
 | The read guard, `guard` | `node "${CLAUDE_SKILL_DIR}/../savings/scripts/savings.mjs" guard on` or `guard off` |
 | The line limit, `guard-lines` | `node "${CLAUDE_SKILL_DIR}/../savings/scripts/savings.mjs" guard-lines <lines>` |

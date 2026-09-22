@@ -30,6 +30,13 @@
       "description": "chat: in the conversation, answered with a digit. page: a browser tab that shows every open and closed decision, answered with one click, for a few hundred extra tokens per question. Not sure? Keep chat. A project overrides this in .claude/exo.json.",
       "options": ["chat", "page"],
       "default": "chat"
+    },
+    "context": {
+      "type": "number",
+      "title": "Context before a fresh phase",
+      "description": "Thousands of tokens the session's context may reach; past it, the next phase of a skill runs in a helper or hands off. Not sure? Keep 80. A project overrides this in .claude/exo.json.",
+      "min": 1,
+      "default": 80
     }
   }
 }

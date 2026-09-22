@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `context` setting, in thousands of tokens and `80` by default, sets how large a session's context grows before a skill's next phase moves to a fresh context; `settings.mjs` shows, gets and sets it, `/exo:settings` asks it as a whole number, and a stored value that is not a whole number of at least 1 reads as the default.
+
 ## 0.25.0 - 2026-09-22
 
 ### Added
