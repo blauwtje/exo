@@ -16,7 +16,8 @@
 // connected for --idle seconds. Exit 3 means no browser can open here.
 //
 // --wait blocks until the tab records an answer for that one sketch and prints
-// it on stdout as one line, {"sketch","choice","label","steer"}. choice is null
+// it on stdout as one line, {"sketch","choice","label","steer"}, plus "fields"
+// when the click came from inside a form. choice is null
 // when the chooser sent a note without picking. Exit 2 is a usage error; exit 3
 // means no tab server runs for the folder or no answer arrived in time, and the
 // recommended option is then the selection.
@@ -52,6 +53,10 @@ const BROWSER_START_GRACE_MS = 8000;
 // an answer, and this server buffers no more than that.
 const ANSWER_BYTES_MAX = 16384;
 const STEER_CHARACTERS_MAX = 2000;
+// A click inside a form sends the form's fields with it, so a page of several
+// questions is one answer. Each field is one short answer; 64 of them is far
+// more than one page asks.
+const FIELDS_MAX = 64;
 
 const SKETCH_NAME = /^[A-Za-z0-9][\w.-]*\.html$/;
 const SKETCH_TITLE = /<title>([^<]*)<\/title>/i;
@@ -113,7 +118,9 @@ const SKETCH_SHIM = `<style>
   const offer = (choice) => {
     if (locked) return;
     const name = optionName(choice);
-    parent.postMessage({ sketchChoice: choice.dataset.choice, sketchLabel: name.slice(0, 120) }, '*');
+    const form = choice.closest('form');
+    const fields = form ? Object.fromEntries(new FormData(form)) : null;
+    parent.postMessage({ sketchChoice: choice.dataset.choice, sketchLabel: name.slice(0, 120), sketchFields: fields }, '*');
   };
   addEventListener('click', (event) => {
     if (event.target.closest?.('a[href]')) event.preventDefault();
@@ -267,13 +274,13 @@ ${CHROME_TOKENS}
     if (!document.hidden && shown) document.title = shown.question || words.fallbackQuestion;
   });
 
-  async function deliver(choice, label) {
+  async function deliver(choice, label, fields) {
     if (!shown || answered) return;
     let delivered = false;
     try {
       delivered = (await fetch('/answer?key=' + encodeURIComponent(key), {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sketch: shown.sketch, choice, label, steer: steer.value })
+        body: JSON.stringify({ sketch: shown.sketch, choice, label, steer: steer.value, fields })
       })).ok;
     } catch { delivered = false; }
     if (!delivered) {
@@ -288,17 +295,34 @@ ${CHROME_TOKENS}
 
   addEventListener('message', (event) => {
     if (event.source !== frame.contentWindow || typeof event.data?.sketchChoice !== 'string') return;
-    deliver(event.data.sketchChoice, String(event.data.sketchLabel ?? ''));
+    deliver(event.data.sketchChoice, String(event.data.sketchLabel ?? ''), event.data.sketchFields ?? null);
   });
-  sendNote.addEventListener('click', () => { if (steer.value.trim() !== '') deliver(null, ''); });
+  sendNote.addEventListener('click', () => { if (steer.value.trim() !== '') deliver(null, '', null); });
   steer.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !event.isComposing && steer.value.trim() !== '') deliver(null, '');
+    if (event.key === 'Enter' && !event.isComposing && steer.value.trim() !== '') deliver(null, '', null);
   });
 </script></body></html>`;
 }
 
+/** The fields a form sent with its click: null when none were sent, undefined
+ *  when they are not an object of plain names holding text, which refuses the
+ *  whole answer. Values are cut like the steer. */
+function readFields(fields) {
+  if (fields === undefined || fields === null) return null;
+  if (typeof fields !== 'object' || Array.isArray(fields)) return undefined;
+  const entries = Object.entries(fields);
+  if (entries.length > FIELDS_MAX) return undefined;
+  const read = {};
+  for (const [name, value] of entries) {
+    if (!PLAIN_CHOICE.test(name) || typeof value !== 'string') return undefined;
+    read[name] = value.slice(0, STEER_CHARACTERS_MAX);
+  }
+  return read;
+}
+
 /** The answer a POST body carries, or null when it names another sketch, an
- *  option the sketch on screen does not hold, or nothing at all. */
+ *  option the sketch on screen does not hold, fields it cannot trust, or
+ *  nothing at all. */
 function readAnswer(body, current) {
   let parsed = null;
   try { parsed = JSON.parse(body); } catch { return null; }
@@ -307,8 +331,12 @@ function readAnswer(body, current) {
   if (choice !== null && !current.choices.includes(choice)) return null;
   const steer = typeof parsed.steer === 'string' ? parsed.steer.trim().slice(0, STEER_CHARACTERS_MAX) : '';
   if (choice === null && steer === '') return null;
+  const fields = readFields(parsed.fields);
+  if (fields === undefined) return null;
   const label = typeof parsed.label === 'string' ? parsed.label.slice(0, 120) : '';
-  return { sketch: current.name, choice, label, steer, at: new Date().toISOString() };
+  const answer = { sketch: current.name, choice, label, steer, at: new Date().toISOString() };
+  if (fields !== null) answer.fields = fields;
+  return answer;
 }
 
 function collectBody(request) {
@@ -523,8 +551,9 @@ async function main(argv) {
       throw new UsageError('--wait needs --sketch <file.html>, the sketch whose answer it waits for');
     }
     const answer = await waitForAnswer(directory, flags.sketch, requireTimeout(flags.timeout));
-    const { sketch, choice, label, steer } = answer;
-    process.stdout.write(`${JSON.stringify({ sketch, choice, label, steer })}\n`);
+    const { sketch, choice, label, steer, fields } = answer;
+    const printed = fields === undefined ? { sketch, choice, label, steer } : { sketch, choice, label, steer, fields };
+    process.stdout.write(`${JSON.stringify(printed)}\n`);
     return;
   }
 
