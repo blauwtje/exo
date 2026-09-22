@@ -7,6 +7,7 @@
 //   node scripts/direction.mjs --plan --seed <token> --space <file> [--variants <2..6>]
 //   node scripts/direction.mjs --check --contracts <file> --space <file> [--candidates <file>]
 //   node scripts/direction.mjs --select --contracts <file> --index <n>
+//   node scripts/direction.mjs --shape
 //
 // --space is JSON, written from this header rather than from the validators
 // below: {"schemaVersion":1,"axes":{<axis>:{"values":[{"id":<token>,
@@ -22,8 +23,8 @@
 // --check names the shape and the allowed vocabulary of anything it rejects.
 
 import process from 'node:process';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { readFileSync, realpathSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
 
@@ -544,14 +545,28 @@ function requireIndex(text) {
   return index;
 }
 
+// --shape prints the header above the imports: the one documented shape of
+// --space and of a contract, so a caller never reads this file to learn it.
+function headerText() {
+  const source = readFileSync(fileURLToPath(import.meta.url), 'utf8');
+  const header = [];
+  for (const line of source.split('\n')) {
+    if (!line.startsWith('//')) break;
+    header.push(line.replace(/^\/\/ ?/, ''));
+  }
+  return `${header.join('\n')}\n`;
+}
+
 async function main(argv) {
   const flags = parseFlags(argv, {
-    plan: 'boolean', check: 'boolean', select: 'boolean',
+    plan: 'boolean', check: 'boolean', select: 'boolean', shape: 'boolean',
     seed: 'value', space: 'value', variants: 'value',
     contracts: 'value', candidates: 'value', index: 'value'
   });
-  const modes = ['plan', 'check', 'select'].filter((mode) => flags[mode]);
-  if (modes.length !== 1) throw new UsageError('exactly one of --plan, --check or --select is required');
+  const modes = ['plan', 'check', 'select', 'shape'].filter((mode) => flags[mode]);
+  if (modes.length !== 1) throw new UsageError('exactly one of --plan, --check, --select or --shape is required');
+
+  if (modes[0] === 'shape') return headerText();
 
   if (modes[0] === 'plan') {
     if (!flags.seed) throw new UsageError('--seed is required with --plan');
@@ -574,7 +589,8 @@ async function main(argv) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main(process.argv.slice(2)).then((report) => {
-    process.stdout.write(`${JSON.stringify(report)}\n`);
+    const output = typeof report === 'string' ? report : `${JSON.stringify(report)}\n`;
+    process.stdout.write(output);
   }).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

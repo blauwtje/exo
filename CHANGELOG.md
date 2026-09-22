@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `designing`: `scripts/direction.mjs --shape` prints the script's header, the `space.json` and contract shape, and nothing else; Phase 2 names that call instead of sending the session into the script to find the shape.
+
 ## 0.26.0 - 2026-09-22
 
 ### Added
