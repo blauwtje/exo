@@ -10,8 +10,10 @@ A surface whose direction was decided before this run — a plan's `Contract:`, 
 - When the subject's world names a technique, such as a canvas, an instrument or generative motion, that technique is built working and live, never faked by an image, a frozen SVG or a mock that does not move.
 - A component the design repeats stays unbuilt while any reachable entry of its state row has no styling.
 - A surface with no existing product stays unfinished while a content obligation from the inventory is missing or any region still holds placeholder material.
+- check-ui runs before the first edit, `scripts/check-ui.mjs` with `--source` on the surface's source root and `--url` when the surface already renders, at `--viewport 390x844` and `--viewport 1440x900`, into `$RUN/check-ui-baseline-390.json` and `$RUN/check-ui-baseline-1440.json`; every later check-ui run of the surface passes the matching file as `--baseline`, so its `comparison` holds the counts the report quotes.
 
 ## Judgment
 
 - The floor and the underdesign floor in `## The build floor` of `phase-detail.md` bind every build, in this session and in every builder.
 - A reachable state left unstyled or a placeholder region still standing keeps the surface unfinished, whatever the checks report.
+- A final check-ui run whose `comparison.blocking` is not empty keeps the surface unfinished: a new `definite` finding, or any `content-clipped` or `element-overlap` finding, is repaired before the design is reported finished, and each `potential` entry of `comparison.new` is repaired or named in the report.

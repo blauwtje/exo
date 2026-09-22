@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `designing`: `scripts/check-ui.mjs` skips matches inside code comments, takes `--baseline <file>` to report a `comparison` of new, predating, ignored and blocking findings, and reads user-confirmed false positives from `docs/design/check-ui-ignore.json`; a run checks its baseline before Build, reports the design finished only when that comparison blocks nothing, and quotes the checker's own counts.
+
 ## 0.27.0 - 2026-09-22
 
 ### Added

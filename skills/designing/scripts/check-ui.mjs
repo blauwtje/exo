@@ -3,6 +3,11 @@
 // never a beauty score, and the script emits no aggregate quality number.
 //
 //   node scripts/check-ui.mjs [--url <url>] [--source <dir>] [--viewport <width>x<height>]
+//                             [--baseline <earlier check-ui JSON>]
+//
+// A --baseline run also reads confirmed false positives from docs/design/check-ui-ignore.json
+// under the working directory: a JSON array of { "type", "file", "reason" } strings, where
+// file is the finding's selector without its :line.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -20,6 +25,21 @@ const SKIPPED_DIRECTORIES = new Set(['node_modules', '.git', 'dist', 'build', 'c
 
 function finding({ type, confidence, selector, measured, threshold, note }) {
   return { type, confidence, selector, measured, threshold, note };
+}
+
+const BLOCK_COMMENT = String.raw`\/\*[\s\S]*?(?:\*\/|(?![\s\S]))`;
+const MARKUP_COMMENT = String.raw`<!--[\s\S]*?(?:-->|(?![\s\S]))`;
+const LINE_COMMENT = String.raw`(?<=^|[ \t])\/\/[^\n]*`;
+
+// Blanks comments to spaces and keeps newlines, so every line number still matches the file.
+// Strings are not tracked, because an apostrophe in markup text would open a false string:
+// a string holding ` //` or `/*` loses the text after it.
+function stripComments(text, extension) {
+  const kinds = [BLOCK_COMMENT];
+  if (MARKUP_EXTENSIONS.has(extension)) kinds.push(MARKUP_COMMENT);
+  if (extension !== '.css') kinds.push(LINE_COMMENT);
+  const comments = new RegExp(kinds.join('|'), 'gm');
+  return text.replace(comments, (comment) => comment.replace(/[^\r\n]/g, ' '));
 }
 
 async function* sourceFiles(directory) {
@@ -406,7 +426,8 @@ export async function staticAudit(directory) {
     const extension = path.extname(file);
     const isStylesheet = ['.css', '.scss'].includes(extension);
     const isMarkup = MARKUP_EXTENSIONS.has(extension);
-    const text = await fs.readFile(file, 'utf8');
+    const source = await fs.readFile(file, 'utf8');
+    const text = stripComments(source, extension);
     const lines = text.split(/\r?\n/);
     let insideTokenBlock = false;
     const reportedOnce = new Set();
@@ -869,10 +890,113 @@ export async function renderedAudit({ url, viewport, cwd }) {
   }
 }
 
+const ALWAYS_BLOCKING = new Set(['content-clipped', 'element-overlap']);
+
+function findingFile(entry) {
+  return entry.selector.replace(/:\d+$/, '');
+}
+
+function comparisonKey(entry) {
+  return `${entry.type}|${findingFile(entry)}|${entry.measured}`;
+}
+
+function reportFindings(report) {
+  if (typeof report?.static?.status !== 'string') return null;
+  const staticFindings = report?.static?.findings ?? [];
+  const renderedFindings = report?.rendered?.findings ?? [];
+  if (!Array.isArray(staticFindings) || !Array.isArray(renderedFindings)) return null;
+  const findings = [...staticFindings, ...renderedFindings];
+  const wellFormed = findings.every((entry) => typeof entry?.type === 'string' && typeof entry.selector === 'string');
+  return wellFormed ? findings : null;
+}
+
+async function readBaseline(file) {
+  const text = await fs.readFile(file, 'utf8').catch(() => null);
+  if (text === null) throw new UsageError(`--baseline cannot be read: ${file}`);
+  let report;
+  try {
+    report = JSON.parse(text);
+  } catch {
+    throw new UsageError(`--baseline is not JSON: ${file}`);
+  }
+  const findings = reportFindings(report);
+  if (!findings) throw new UsageError(`--baseline holds no check-ui findings: ${file}`);
+  return findings;
+}
+
+export function compareFindings(baselineFindings, currentFindings, ignoreEntries = []) {
+  const unmatched = new Map();
+  for (const entry of baselineFindings) {
+    const key = comparisonKey(entry);
+    unmatched.set(key, (unmatched.get(key) ?? 0) + 1);
+  }
+  const added = [];
+  const ignored = [];
+  const blocking = [];
+  let predating = 0;
+  for (const entry of currentFindings) {
+    const file = findingFile(entry);
+    const ignoreEntry = ignoreEntries.find((candidate) => candidate.type === entry.type && candidate.file === file);
+    if (ignoreEntry) {
+      ignored.push({ ...entry, reason: ignoreEntry.reason });
+      continue;
+    }
+    const key = comparisonKey(entry);
+    const baselineCount = unmatched.get(key) ?? 0;
+    const isNew = baselineCount === 0;
+    if (isNew) {
+      added.push(entry);
+    } else {
+      unmatched.set(key, baselineCount - 1);
+      predating += 1;
+    }
+    const isBlocking = ALWAYS_BLOCKING.has(entry.type) || (isNew && entry.confidence === 'definite');
+    if (isBlocking) blocking.push(entry);
+  }
+  const counts = {
+    before: baselineFindings.length,
+    after: currentFindings.length,
+    predating,
+    new: added.length,
+    ignored: ignored.length,
+    blocking: blocking.length
+  };
+  return { counts, new: added, ignored, blocking };
+}
+
+const IGNORE_FILE = path.join('docs', 'design', 'check-ui-ignore.json');
+const IGNORE_FIELDS = ['type', 'file', 'reason'];
+
+async function readIgnoreEntries(directory) {
+  const file = path.join(directory, IGNORE_FILE);
+  const text = await fs.readFile(file, 'utf8').catch((error) => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (text === null) return [];
+  let entries;
+  try {
+    entries = JSON.parse(text);
+  } catch {
+    throw new UsageError(`${IGNORE_FILE} is not JSON`);
+  }
+  if (!Array.isArray(entries)) throw new UsageError(`${IGNORE_FILE} must hold an array of entries`);
+  entries.forEach((entry, index) => {
+    for (const field of IGNORE_FIELDS) {
+      const value = entry?.[field];
+      if (typeof value !== 'string' || value.trim() === '') {
+        throw new UsageError(`${IGNORE_FILE} entry ${index}: ${field} must be a non-empty string`);
+      }
+    }
+  });
+  return entries;
+}
+
 async function main(argv) {
-  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value' });
+  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value', baseline: 'value' });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
   const viewport = flags.viewport ? parseViewport(flags.viewport) : { width: 1440, height: 900 };
+  const baselineFindings = flags.baseline ? await readBaseline(flags.baseline) : null;
 
   const report = {
     static: flags.source
@@ -882,6 +1006,11 @@ async function main(argv) {
       ? await renderedAudit({ url: requireUrl(flags.url), viewport, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
+  if (baselineFindings) {
+    const currentFindings = reportFindings(report);
+    const ignoreEntries = await readIgnoreEntries(process.cwd());
+    report.comparison = compareFindings(baselineFindings, currentFindings, ignoreEntries);
+  }
   process.stdout.write(`${JSON.stringify(report)}\n`);
 }
 
