@@ -11,7 +11,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture } from './harness.mjs';
+import { HOOK_OUTPUT_CAP } from '#budgets';
+import { fixture, git, gitRepository } from './harness.mjs';
 
 const HOOK = fileURLToPath(new URL('../hooks/session-start.sh', import.meta.url));
 const PLUGIN_ROOT = path.dirname(path.dirname(HOOK));
@@ -27,6 +28,14 @@ function runHookWith(bash, env, source) {
 
 function runHook(env, source = 'startup') {
   return runHookWith('bash', { ...process.env, ...env }, source);
+}
+
+function runHookIn(env, cwd) {
+  return new Promise((resolve) => {
+    const child = execFile('bash', [HOOK], { env: { ...process.env, ...env }, timeout: 30_000 },
+      (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) }));
+    child.stdin.end(JSON.stringify({ session_id: 's1', source: 'startup', cwd }));
+  });
 }
 
 function toolPath(tool) {
@@ -89,13 +98,34 @@ test('without jq the hook still writes the plugin-root pointer and exits 0 with 
   assert.equal(pointer.trim(), PLUGIN_ROOT);
 });
 
-test('the session hook appends the settings line resolved for the project', { skip: withoutJq }, async () => {
+test('the session hook leads with the settings line resolved for the project', { skip: withoutJq }, async () => {
   const configDirectory = await fixture();
   const project = await fixture();
   await fs.mkdir(path.join(project, '.claude'));
   await fs.writeFile(path.join(project, '.claude', 'exo.json'), '{"specs":"issues"}\n');
-  const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '' });
+  const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_CONTEXT: '' });
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-  assert.ok(context.endsWith('exo settings: specs=issues (project), replies=tight (default), interview=chat (default)'), context.slice(-200));
+  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=80 (default)\n\n'), context.slice(0, 200));
+});
+
+test('on a 60-character branch both pointers go first, named from the repository root', { skip: withoutJq }, async () => {
+  const configDirectory = await fixture();
+  const repository = await gitRepository({ 'README.md': 'fixture\n' });
+  const branch = `feature/${'b'.repeat(52)}`;
+  assert.equal(branch.length, 60);
+  git(repository, 'checkout', '-q', '-b', branch);
+  const handoff = path.join(repository, '.git', 'exo', 'handoff', `${branch}.md`);
+  await fs.mkdir(path.dirname(handoff), { recursive: true });
+  await fs.writeFile(handoff, '# Handoff\n');
+  await fs.writeFile(path.join(repository, '.git', 'exo', 'memory.md'), '# Project memory\n');
+  const result = await runHookIn({ CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS: 'off' }, repository);
+  assert.equal(result.code, 0, result.stderr);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  const handoffPointer = `A handoff for \`${branch}\` sits at \`.git/exo/handoff/${branch}.md\` from the repository root.`;
+  const memoryPointer = 'A project memory for this repository sits at `.git/exo/memory.md` from the repository root.';
+  assert.ok(context.startsWith(handoffPointer), context.slice(0, 300));
+  assert.ok(context.includes(memoryPointer), context.slice(0, 600));
+  assert.ok(context.indexOf(memoryPointer) < context.indexOf('# Using exo'), 'the memory pointer follows the using-exo text');
+  assert.ok(context.length <= HOOK_OUTPUT_CAP.chars, `${context.length} characters`);
 });

@@ -77,3 +77,10 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /if \[ -f "\$memory_file" \]/, 'the memory pointer is added without testing for the file');
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
 });
+
+test('the context watch runs after a TaskUpdate and nowhere else', () => {
+  const watch = hookEntries().filter((entry) => entry.hook.command.includes('context-watch.mjs'));
+  assert.equal(watch.length, 1);
+  assert.equal(watch[0].event, 'PostToolUse');
+  assert.equal(watch[0].matcher, 'TaskUpdate');
+});

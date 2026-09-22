@@ -51,4 +51,4 @@ Invoking `/exo:implementing` on a plan authorizes the workspace you pick at step
 - Explicit user instructions outrank this skill; a named plan path outranks the search.
 - The plan's settled decisions outrank implementation defaults: `planning` owns the plan's text, the build delegate owns the build, the branch reviewer owns its findings, this skill owns routing and commits. A choice the plan leaves open and the user would not notice is ruled here and recorded in the commit body, never sent back as a question.
 - Repository state outranks memory: only a `Plan-task:` commit on the branch decides what has landed, and after a compaction notice step 3 runs again before any edit.
-- When the status line's context share passes about 45% inside one task, land that task, then name `/exo:handoff` and a fresh session in one line: the tail's review, commit and pull request need the context the rest of the run would spend.
+- An `exo: context` line follows the context rule in `using-exo`'s `# Context`, and the task in flight lands first.

@@ -157,7 +157,7 @@ test('every session start moves the measuring point and still prints one JSON ob
   assert.equal(await baseline(configDirectory), grown);
 });
 
-test('a long working directory drops a pointer and never the rules', { skip: withoutJq }, async () => {
+test('a long working directory keeps both pointers and cuts only the tail of the rules', { skip: withoutJq }, async () => {
   const { env, configDirectory, transcript } = await restateFixture();
   const scope = 'w'.repeat(240);
   const workingDirectory = path.join(configDirectory, scope);
@@ -170,9 +170,14 @@ test('a long working directory drops a pointer and never the rules', { skip: wit
   assert.equal(started.code, 0, started.stderr);
   const injected = JSON.parse(started.stdout).hookSpecificOutput.additionalContext;
   assert.ok(injected.length <= HOOK_OUTPUT_CAP.chars, `the hook printed ${injected.length} characters`);
+  const handoffPointer = `A handoff for \`${scope}\` sits at \`${path.join(configDirectory, 'exo', 'handoff', `${scope}.md`)}\`.`;
+  const memoryPointer = `A project memory for this repository sits at \`${path.join(configDirectory, 'exo', 'memory', scope, 'memory.md')}\`.`;
+  assert.ok(injected.startsWith(handoffPointer), injected.slice(0, 400));
+  assert.ok(injected.includes(memoryPointer), injected.slice(0, 900));
   assert.match(injected, /## The next stage/);
   assert.match(injected, /exo settings:/);
-  assert.match(started.stderr, /pointer left out/);
+  assert.doesNotMatch(started.stderr, /pointer left out/);
+  assert.match(started.stderr, new RegExp(`^exo: using-exo cut by \\d+ characters, the session context would pass ${HOOK_OUTPUT_CAP.chars}$`, 'm'));
   const hook = await fs.readFile(SESSION_HOOK, 'utf8');
   assert.match(hook, new RegExp(`^output_cap=${HOOK_OUTPUT_CAP.chars}$`, 'm'));
 });

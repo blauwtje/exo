@@ -7,6 +7,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `context` setting, in thousands of tokens and `80` by default, sets how large a session's context grows before a skill's next phase moves to a fresh context; `settings.mjs` shows, gets and sets it, `/exo:settings` asks it as a whole number, and a stored value that is not a whole number of at least 1 reads as the default.
+- A PostToolUse hook on `TaskUpdate`, `skills/savings/scripts/context-watch.mjs`, adds one `exo: context <n>k tokens, past <threshold>k` line when a completed task finds the main session's context past the `context` setting, and prints nothing under it, inside a delegate or on a fault.
+
+### Changed
+
+- The session hook puts the handoff and memory pointers and the settings line before the `using-exo` text and names a pointer's file from the repository root; when the context would pass 10,000 characters it cuts the tail of that text, never a pointer.
+- `using-exo` `# Context` carries the context rule, which sends the phase after an `exo: context` line to a delegate or, when it asks the user, to a handoff, and the scope rule, which limits a phase to the artifacts and references its skill names; `implementing` drops its 45% status-line rule and points there.
+- `designing` Phase 1 of a full or bounded redesign runs in the new `exo:design-discovery` agent on `sonnet` at `high`, which writes `$RUN/inventory.md` and `$RUN/files.md` and returns at most 20 lines, and Phase 5 QA runs in a `sonnet` delegate once an `exo: context` line has appeared.
+
 ## 0.25.0 - 2026-09-22
 
 ### Added

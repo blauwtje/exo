@@ -16,5 +16,10 @@
     "options": ["chat", "page"],
     "default": "chat",
     "description": "where shaping asks its questions: chat asks in the conversation; page opens a browser tab that shows every decision"
+  },
+  "context": {
+    "type": "number",
+    "default": 80,
+    "description": "thousands of tokens a session's context may reach before the next phase of a skill moves to a fresh context"
   }
 }
