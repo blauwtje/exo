@@ -235,7 +235,7 @@ describe('check-ui.mjs static subset', () => {
   });
 
   const TELLS = [
-    'overused-font', 'uniform-card-shadow', 'radial-halo', 'thin-border-wide-shadow', 'left-accent-card',
+    'overused-font', 'uniform-card-shadow', 'radial-halo', 'thin-border-wide-shadow', 'edge-accent-card',
     'gradient-text', 'transition-all', 'emoji-in-markup', 'aggressive-gradient-ground', 'kicker-above-heading'
   ];
 
@@ -261,7 +261,7 @@ describe('check-ui.mjs static subset', () => {
 
   it('reports a rounded card with a left accent bar', async () => {
     const tells = await tellsFor('.note {\n  border-left: 4px solid var(--accent);\n  border-radius: 12px;\n}\n');
-    assert.deepEqual(tells.map((entry) => entry.type), ['left-accent-card']);
+    assert.deepEqual(tells.map((entry) => entry.type), ['edge-accent-card']);
     assert.equal(tells[0].confidence, 'potential');
     assert.match(tells[0].selector, /^\.note \(styles\.css:1\)$/);
   });
@@ -440,6 +440,48 @@ describe('check-ui.mjs named anti-patterns', () => {
       'styles.css': 'body {\n  background: #ffffff;\n}\n.accent {\n  color: #39ff14;\n}\n'
     });
     assert.deepEqual(ofType(findings, 'neon-on-dark'), []);
+  });
+
+  it('reports a rounded card with a stripe on one edge, not on two', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.note {\n  border-top: 4px solid #0f766e;\n  border-radius: 12px;\n}',
+        '.frame {\n  border-left: 4px solid #0f766e;\n  border-right: 4px solid #0f766e;\n  border-radius: 12px;\n}'
+      ].join('\n')
+    });
+    const stripes = ofType(findings, 'edge-accent-card');
+    assert.equal(stripes.length, 1);
+    assert.equal(stripes[0].selector, '.note (styles.css:1)');
+    assert.equal(stripes[0].measured, 'border-top 4px, border-radius 12px');
+  });
+
+  it('reports a zero-offset colored glow and a wide accent-tinted shadow, not a neutral one', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.badge {\n  box-shadow: 0 0 8px rgba(34, 211, 238, 0.6);\n}',
+        '.cta {\n  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);\n}',
+        '.panel {\n  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);\n}',
+        '.title {\n  text-shadow: 0 0 12px #22d3ee;\n}'
+      ].join('\n')
+    });
+    const glows = ofType(findings, 'tinted-glow');
+    const selectors = glows.map((entry) => entry.selector);
+    assert.deepEqual(selectors, ['.badge (styles.css:1)', '.cta (styles.css:4)', '.title (styles.css:10)']);
+    assert.equal(glows[0].confidence, 'potential');
+    assert.equal(glows[0].measured, 'box-shadow 0px 0px 8px rgba(34, 211, 238, 0.6)');
+  });
+
+  it('reports a pill-shaped button rule and three rounded-full controls in one file', async () => {
+    const findings = await findingsFor({
+      'styles.css': '.btn-primary {\n  border-radius: 9999px;\n}\n.avatar {\n  border-radius: 9999px;\n}\n',
+      'page.html': [
+        '<button class="rounded-full px-4">Save</button>',
+        '<button class="rounded-full px-4">Share</button>',
+        '<a class="rounded-full px-4" href="/docs">Docs</a>'
+      ].join('\n')
+    });
+    const selectors = ofType(findings, 'pill-button').map((entry) => entry.selector).sort();
+    assert.deepEqual(selectors, ['.btn-primary (styles.css:1)', 'page.html:1']);
   });
 });
 

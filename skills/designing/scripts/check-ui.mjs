@@ -454,6 +454,70 @@ function paletteFindings(text, relative) {
   return findings;
 }
 
+const BORDER_SIDES = ['left', 'right', 'top', 'bottom', 'inline-start', 'inline-end', 'block-start', 'block-end'];
+const BUTTON_SELECTOR = /(?:^|[\s,>+~.])(?:button|btn|cta)(?![\w])/i;
+const PILL_CONTROL = /<(?:button|a)\b[^>]*\bclass(?:Name)?\s*=\s*["'][^"']*\brounded-full\b/gi;
+
+/** The one border side at least 3px wide, or null when no side or several sides are. */
+function accentEdge(body) {
+  const wide = [];
+  for (const side of BORDER_SIDES) {
+    const value = declaration(body, `border-${side}(?:-width)?`) ?? '';
+    const [first] = value.split(/\s+/);
+    const width = lengthPx(first);
+    if (width !== null && width >= 3) wide.push({ side, width });
+  }
+  return wide.length === 1 ? wide[0] : null;
+}
+
+/** A hued shadow centered on its element or blurred 12px or more; a var() color is not resolved and a layered shadow is not read. */
+function tintedGlowFindings(body, where) {
+  const findings = [];
+  for (const property of ['box-shadow', 'text-shadow']) {
+    const value = declaration(body, property);
+    if (!value || /\binset\b/i.test(value)) continue;
+    const lengths = shadowLengths(value);
+    const [token] = value.match(COLOR_TOKEN) ?? [];
+    if (!lengths || !token || !stopHue(token)) continue;
+    const [x, y, blur] = lengths;
+    const centered = x === 0 && y === 0 && blur > 0;
+    if (!centered && blur < 12) continue;
+    findings.push(finding({
+      type: 'tinted-glow', confidence: 'potential', selector: where,
+      measured: `${property} ${x}px ${y}px ${blur}px ${token}`,
+      threshold: 'shadows that model light, in a neutral or ground-derived tone',
+      note: 'colored glow: a zero-offset halo or an accent-tinted shadow'
+    }));
+  }
+  return findings;
+}
+
+/** A button rule whose radius makes a pill: 100px or more, or Tailwind v4's infinite radius. */
+function pillButtonFindings(selector, body, where) {
+  const radius = declaration(body, 'border-radius');
+  if (!radius || !BUTTON_SELECTOR.test(selector)) return [];
+  const [first] = radius.split(/\s+/);
+  const width = lengthPx(first);
+  const isPill = /infinity/i.test(radius) || (width !== null && width >= 100);
+  if (!isPill) return [];
+  return [finding({
+    type: 'pill-button', confidence: 'potential', selector: where,
+    measured: `border-radius ${radius}`, threshold: 'button shape set by the component system',
+    note: 'fully rounded pill on a button rule'
+  })];
+}
+
+/** Three or more buttons or links in one markup file carrying Tailwind's rounded-full. */
+function pillMarkupFindings(text, relative) {
+  const pills = [...text.matchAll(PILL_CONTROL)];
+  if (pills.length < 3) return [];
+  return [finding({
+    type: 'pill-button', confidence: 'potential', selector: `${relative}:${lineNumber(text, pills[0].index)}`,
+    measured: `${pills.length} buttons or links with rounded-full`, threshold: 'button shape set by the component system',
+    note: 'fully rounded pill on every button'
+  })];
+}
+
 function ruleFindings(text, relative, shadows) {
   const findings = [];
   for (const { selector, body, location } of cssRules(text, relative)) {
@@ -472,15 +536,17 @@ function ruleFindings(text, relative, shadows) {
         note: 'hairline border and a wide soft shadow on the same surface'
       }));
     }
-    const left = lengthPx((declaration(body, 'border-left(?:-width)?') ?? '').split(/\s+/)[0]);
+    const edge = accentEdge(body);
     const radius = lengthPx((declaration(body, 'border-radius') ?? '').split(/\s+/)[0]);
-    if (left !== null && left >= 3 && radius !== null && radius >= 8) {
+    if (edge && radius !== null && radius >= 8) {
       findings.push(finding({
-        type: 'left-accent-card', confidence: 'potential', selector: where,
-        measured: `border-left ${left}px, border-radius ${radius}px`, threshold: 'emphasis from hierarchy, not a stripe',
-        note: 'rounded card with a left accent bar'
+        type: 'edge-accent-card', confidence: 'potential', selector: where,
+        measured: `border-${edge.side} ${edge.width}px, border-radius ${radius}px`, threshold: 'emphasis from hierarchy, not a stripe',
+        note: 'rounded card with a colored stripe on one edge'
       }));
     }
+    findings.push(...tintedGlowFindings(body, where));
+    findings.push(...pillButtonFindings(selector, body, where));
     const background = declaration(body, 'background(?:-image)?');
     const gap = background && /linear-gradient\(/i.test(background) && GROUND_SELECTOR.test(selector)
       ? gradientHueGap(background)
@@ -555,6 +621,7 @@ export async function staticAudit(directory) {
     if (isStylesheet) findings.push(...paletteFindings(text, relative));
     if (isMarkup) findings.push(...kickerFindings(text, relative));
     if (isMarkup) findings.push(...markupFindings(text, relative));
+    if (isMarkup) findings.push(...pillMarkupFindings(text, relative));
   }
   findings.push(...uniformShadowFindings(shadows));
   return findings;
