@@ -8,6 +8,7 @@ import { readFrontmatter } from '../frontmatter.mjs';
 import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/shaping/scripts/question-page.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/implementing/scripts/pick-reviewer.mjs';
+import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/shipping/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
@@ -118,6 +119,7 @@ const PINNED_SENTENCES = {
   'CONTRIBUTING.md': [...REVIEW_THRESHOLD],
   'agents/branch-reviewer.md': [...REVIEW_THRESHOLD],
   'agents/branch-reviewer-deep.md': [...REVIEW_THRESHOLD],
+  'skills/shipping/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
 };
 
 // A doc list that restates a data asset: every name the asset lists appears

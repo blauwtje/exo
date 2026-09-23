@@ -26,6 +26,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `planning` loads about 350 fewer tokens: its body drops sentences plan-spec, implementing and using-exo's next-stage reference already own, its description is 298 characters, plan-spec names no other skill's file, the example plan opens with a contents list, and `deepen` lists implementing-batch's test-design reference for its plan mode.
 - `debug` loads about 250 fewer tokens: its description is 310 characters, the performance branch rides on the performance row, and the loop keeps its seven steps in fewer words.
 - `deepen` says its scope, terms, audit and modes in fewer words, reads the next-stage table and the question shape from the `using-exo` references, and its description drops from 371 to 285 characters.
+- `shipping` states its routes in fewer words, reads the question shape from the `using-exo` reference, and the verifier pins the 20-minute wait and exit 124 it states to the constants `wait-checks.mjs` exports.
 
 ### Fixed
 

@@ -182,7 +182,9 @@ const SCENARIOS = [
   { name: 'injected-body-over-ceiling', mutate: (root) =>
     append(root, 'skills/using-exo/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
   { name: 'drifted-review-threshold', mutate: (root) =>
-    replaceText(root, 'README.md', '200 changed lines', '250 changed lines') }
+    replaceText(root, 'README.md', '200 changed lines', '250 changed lines') },
+  { name: 'drifted-wait-bound', mutate: (root) =>
+    replaceText(root, 'skills/shipping/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
 ];
 
 function copyVerificationFixture(repository, destination) {
