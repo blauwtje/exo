@@ -69,6 +69,16 @@ test('an agent on haiku pins no effort, which that model does not take', () => {
   }
 });
 
+const NO_DELETE = 'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.';
+
+test('every agent that loads no CLAUDE.md carries the no-delete rule itself', () => {
+  const missing = agents
+    .filter((agent) => agent.frontmatter.omitClaudeMd === 'true')
+    .filter((agent) => !agent.body.includes(NO_DELETE))
+    .map((agent) => agent.fileName);
+  assert.deepEqual(missing, []);
+});
+
 test('every listed tool is a tool the harness has', () => {
   for (const agent of agents) {
     if (agent.frontmatter.tools === undefined) continue;

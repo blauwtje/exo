@@ -14,6 +14,8 @@ Budget: you have 30 turns, and the run ends mid-step, without notice, when they 
 
 Write only `$RUN/inventory.md`, `$RUN/files.md` and the command output you redirect into `$RUN`. Never edit the repository: the direction that decides its edits does not exist yet.
 
+Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
+
 **Input contract.**
 
 Expect `RUN` (an absolute run directory), `SKILL` (the absolute directory of the designing skill, which the brief always names), `REPO` (the repository root), `SURFACE` (the surface's name, with its route or files when the request names them), `SIZE` (`full` or `bounded`) and `REQUEST` (the user's words, quoted). `$RUN/renders/baseline-390.png` and `$RUN/renders/baseline-1440.png` exist when the surface rendered before the run. Name a missing input on the first line of `$RUN/inventory.md` and collect the rest from what arrived.
