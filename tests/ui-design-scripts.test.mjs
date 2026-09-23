@@ -471,6 +471,22 @@ describe('check-ui.mjs named anti-patterns', () => {
     assert.equal(glows[0].measured, 'box-shadow 0px 0px 8px rgba(34, 211, 238, 0.6)');
   });
 
+  it('reports no tinted glow for a wide shadow tinted from the ink hue', async () => {
+    const findings = await findingsFor({
+      'styles.css': '.card {\n  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);\n}\n'
+    });
+    assert.deepEqual(ofType(findings, 'tinted-glow'), []);
+  });
+
+  it('reports a zero-offset halo even at low blur, in a clearly saturated color', async () => {
+    const findings = await findingsFor({
+      'styles.css': '.pulse {\n  box-shadow: 0 0 24px rgba(124, 58, 237, 0.6);\n}\n'
+    });
+    const glows = ofType(findings, 'tinted-glow');
+    assert.equal(glows.length, 1);
+    assert.equal(glows[0].selector, '.pulse (styles.css:1)');
+  });
+
   it('reports a pill-shaped button rule and three rounded-full controls in one file', async () => {
     const findings = await findingsFor({
       'styles.css': '.btn-primary {\n  border-radius: 9999px;\n}\n.avatar {\n  border-radius: 9999px;\n}\n',

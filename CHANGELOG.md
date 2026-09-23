@@ -11,6 +11,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `designing`: `scripts/check-ui.mjs` reports ten more named template defaults as `potential` findings with file and line: `edge-accent-card` (a stripe on any one card edge, replacing `left-accent-card`), `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow` (zero-offset and accent-tinted glows), `pill-button`, `bounce-easing`, `card-entrance` and `monospace-label`.
 
+### Fixed
+
+- `designing`: `scripts/check-ui.mjs` `tinted-glow` no longer flags a wide shadow tinted from the ink hue, such as `rgba(15, 23, 42, 0.12)`; a non-halo shadow now needs a clearly saturated color (HSL saturation 40% or more, or oklch chroma 0.08 or more) to report, while a zero-offset halo still reports at any saturation.
+
 ## 0.28.0 - 2026-09-22
 
 ### Added

@@ -281,16 +281,32 @@ function emojiFindings(line, location) {
   })];
 }
 
-/** The 1-based line of a character offset in text. */
-function lineNumber(text, index) {
-  return text.slice(0, index).split('\n').length;
+/** Offsets where each line begins: entry 0 is line 1's start, and so on. */
+function lineStarts(text) {
+  const starts = [0];
+  for (let index = text.indexOf('\n'); index !== -1; index = text.indexOf('\n', index + 1)) {
+    starts.push(index + 1);
+  }
+  return starts;
 }
 
-function kickerFindings(text, relative) {
+/** The 1-based line for a character offset, found by binary search over precomputed line starts. */
+function lineNumber(starts, offset) {
+  let low = 0;
+  let high = starts.length - 1;
+  while (low < high) {
+    const mid = (low + high + 1) >> 1;
+    if (starts[mid] <= offset) low = mid;
+    else high = mid - 1;
+  }
+  return low + 1;
+}
+
+function kickerFindings(text, relative, starts) {
   return [...text.matchAll(KICKER_BEFORE_HEADING)].map((match) => finding({
     type: 'kicker-above-heading',
     confidence: 'definite',
-    selector: `${relative}:${lineNumber(text, match.index)}`,
+    selector: `${relative}:${lineNumber(starts, match.index)}`,
     measured: match[0].replace(/\s+/g, ' ').slice(0, 80),
     threshold: 'hierarchy carried by the heading itself',
     note: 'eyebrow/kicker/overline label stacked over the heading'
@@ -298,13 +314,13 @@ function kickerFindings(text, relative) {
 }
 
 /** Flat `selector { body }` pairs; a nested rule yields its innermost selector, at-rules are skipped. */
-function cssRules(text, relative) {
+function cssRules(text, relative, starts) {
   const rules = [];
   for (const match of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const selector = match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/\s+/g, ' ');
     if (!selector || selector.startsWith('@')) continue;
     const offset = match.index + match[1].length - match[1].trimStart().length;
-    rules.push({ selector, body: match[2], location: `${relative}:${lineNumber(text, offset)}` });
+    rules.push({ selector, body: match[2], location: `${relative}:${lineNumber(starts, offset)}` });
   }
   return rules;
 }
@@ -358,15 +374,44 @@ function hueOf([r, g, b]) {
   return (sector * 60 + 360) % 360;
 }
 
-/** Hue in degrees plus the model it was written in, or null for a near-grey stop. */
+/** Linear-light sRGB channel from a gamma-encoded 0-255 channel (css-color-4's sRGB-to-linear step). */
+function linearChannel(channel) {
+  const normalized = channel / 255;
+  return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+}
+
+/** OKLab chroma of an sRGB color, via the Ottosson OKLab conversion; used only for literal hex/rgb tokens. */
+function oklchChroma([r, g, b]) {
+  const [lr, lg, lb] = [r, g, b].map(linearChannel);
+  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const b2 = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  return Math.sqrt(a * a + b2 * b2);
+}
+
+/** Hue in degrees, the model it was written in, and whether the color is clearly saturated
+ *  (HSL saturation 40% or more, or oklch chroma 0.08 or more) rather than an ink-derived tint;
+ *  null for a near-grey stop. */
 function stopHue(token) {
   const hsl = /^hsla?\(\s*(-?[\d.]+)(?:deg)?[\s,]+(-?[\d.]+)%/i.exec(token);
-  if (hsl) return Number(hsl[2]) < 10 ? null : { model: 'hsl', hue: (Number(hsl[1]) % 360 + 360) % 360 };
+  if (hsl) {
+    const saturation = Number(hsl[2]);
+    return saturation < 10
+      ? null
+      : { model: 'hsl', hue: (Number(hsl[1]) % 360 + 360) % 360, saturated: saturation >= 40 };
+  }
   const oklch = /^oklch\(\s*[\d.]+%?[\s,]+([\d.]+)%?[\s,]+(-?[\d.]+)/i.exec(token);
-  if (oklch) return Number(oklch[1]) < 0.03 ? null : { model: 'oklch', hue: (Number(oklch[2]) % 360 + 360) % 360 };
+  if (oklch) {
+    const chroma = Number(oklch[1]);
+    return chroma < 0.03
+      ? null
+      : { model: 'oklch', hue: (Number(oklch[2]) % 360 + 360) % 360, saturated: chroma >= 0.08 };
+  }
   const rgb = parseColor(token);
   const hue = rgb ? hueOf(rgb) : null;
-  return hue === null ? null : { model: 'srgb', hue };
+  return hue === null ? null : { model: 'srgb', hue, saturated: oklchChroma(rgb) >= 0.08 };
 }
 
 /** Circular hue distance between the first two stops, or null when they use different models. */
@@ -428,9 +473,9 @@ function groundColors(rules) {
 }
 
 /** File-level palette reads: a cream ground, a purple accent, and neon over a near-black ground. */
-function paletteFindings(text, relative) {
+function paletteFindings(text, relative, starts) {
   const findings = [];
-  const grounds = groundColors(cssRules(text, relative));
+  const grounds = groundColors(cssRules(text, relative, starts));
   for (const ground of grounds) {
     if (!isCream(ground.token)) continue;
     findings.push(finding({
@@ -441,7 +486,7 @@ function paletteFindings(text, relative) {
   }
   const colors = [];
   for (const match of text.matchAll(COLOR_TOKEN)) {
-    colors.push({ token: match[0], location: `${relative}:${lineNumber(text, match.index)}` });
+    colors.push({ token: match[0], location: `${relative}:${lineNumber(starts, match.index)}` });
   }
   const purple = colors.find((color) => isPurple(color.token));
   if (purple) {
@@ -487,10 +532,11 @@ function tintedGlowFindings(body, where) {
     if (!value || /\binset\b/i.test(value)) continue;
     const lengths = shadowLengths(value);
     const [token] = value.match(COLOR_TOKEN) ?? [];
-    if (!lengths || !token || !stopHue(token)) continue;
+    const hue = token ? stopHue(token) : null;
+    if (!lengths || !hue) continue;
     const [x, y, blur] = lengths;
     const centered = x === 0 && y === 0 && blur > 0;
-    if (!centered && blur < 12) continue;
+    if (!centered && !(blur >= 12 && hue.saturated)) continue;
     findings.push(finding({
       type: 'tinted-glow', confidence: 'potential', selector: where,
       measured: `${property} ${x}px ${y}px ${blur}px ${token}`,
@@ -517,11 +563,11 @@ function pillButtonFindings(selector, body, where) {
 }
 
 /** Three or more buttons or links in one markup file carrying Tailwind's rounded-full. */
-function pillMarkupFindings(text, relative) {
+function pillMarkupFindings(text, relative, starts) {
   const pills = [...text.matchAll(PILL_CONTROL)];
   if (pills.length < 3) return [];
   return [finding({
-    type: 'pill-button', confidence: 'potential', selector: `${relative}:${lineNumber(text, pills[0].index)}`,
+    type: 'pill-button', confidence: 'potential', selector: `${relative}:${lineNumber(starts, pills[0].index)}`,
     measured: `${pills.length} buttons or links with rounded-full`, threshold: 'button shape set by the component system',
     note: 'fully rounded pill on every button'
   })];
@@ -573,9 +619,9 @@ function monospaceLabelFindings(selector, body, where) {
   })];
 }
 
-function ruleFindings(text, relative, shadows) {
+function ruleFindings(text, relative, shadows, starts) {
   const findings = [];
-  for (const { selector, body, location } of cssRules(text, relative)) {
+  for (const { selector, body, location } of cssRules(text, relative, starts)) {
     const where = `${selector} (${location})`;
     const shadow = declaration(body, 'box-shadow');
     const lengths = shadow ? shadowLengths(shadow) : null;
@@ -647,6 +693,7 @@ export async function staticAudit(directory) {
     const isMarkup = MARKUP_EXTENSIONS.has(extension);
     const source = await fs.readFile(file, 'utf8');
     const text = stripComments(source, extension);
+    const starts = lineStarts(text);
     const lines = text.split(/\r?\n/);
     let insideTokenBlock = false;
     const reportedOnce = new Set();
@@ -675,11 +722,11 @@ export async function staticAudit(directory) {
       if (isStylesheet) findings.push(...rawValueFindings(line, location, insideTokenBlock));
       if (isMarkup) findings.push(...emojiFindings(line, location));
     });
-    if (isStylesheet) findings.push(...ruleFindings(text, relative, shadows));
-    if (isStylesheet) findings.push(...paletteFindings(text, relative));
-    if (isMarkup) findings.push(...kickerFindings(text, relative));
+    if (isStylesheet) findings.push(...ruleFindings(text, relative, shadows, starts));
+    if (isStylesheet) findings.push(...paletteFindings(text, relative, starts));
+    if (isMarkup) findings.push(...kickerFindings(text, relative, starts));
     if (isMarkup) findings.push(...markupFindings(text, relative));
-    if (isMarkup) findings.push(...pillMarkupFindings(text, relative));
+    if (isMarkup) findings.push(...pillMarkupFindings(text, relative, starts));
   }
   findings.push(...uniformShadowFindings(shadows));
   return findings;
