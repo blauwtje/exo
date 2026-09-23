@@ -18,23 +18,22 @@ const SENTENCE_LENGTH = 60;
 test('the restatement carries each named section whole and nothing else of the body', () => {
   const text = restatementText(SKILL_TEXT);
   for (const heading of RESTATED_HEADINGS) assert.ok(text.includes(`\n\n${heading}\n`), heading);
-  assert.ok(text.trimEnd().endsWith('|'), 'the next-stage table ends the text');
+  assert.ok(text.trimEnd().endsWith('a reply of `1` carries out option 1 at once.'), 'the closing ends the text');
   assert.ok(!text.includes('## The ladder'));
   assert.ok(!text.includes('## The ending'));
-  assert.ok(!text.includes('\n# '));
+  assert.deepEqual(text.match(/\n# .+/g), ['\n# Closing'], 'no level-one section but the closing');
 });
 
 test('a section ends at the next heading of its own level or above', () => {
-  const skillText = ['# Top', '', '## Before acting', 'first', '### Deeper', 'kept', '', '## When several fire', 'second', '', '# Other', 'dropped', '', '## The next stage', 'third', ''].join('\n');
+  const skillText = ['# Top', '', '## Before acting', 'first', '### Deeper', 'kept', '', '## When several fire', 'second', '', '# Other', 'dropped', '', '# Closing', 'third', ''].join('\n');
   const sections = restatementText(skillText).split('\n\n').slice(1);
-  assert.deepEqual(sections, ['## Before acting\nfirst\n### Deeper\nkept', '## When several fire\nsecond', '## The next stage\nthird']);
+  assert.deepEqual(sections, ['## Before acting\nfirst\n### Deeper\nkept', '## When several fire\nsecond', '# Closing\nthird']);
 });
 
 test('a renamed heading throws and names it', () => {
-  // The skill body also names this heading in prose, so only the line that is
-  // the heading is renamed here.
-  const renamed = SKILL_TEXT.replace('\n## The next stage\n', '\n## Next stage\n');
-  assert.throws(() => restatementText(renamed), /has no "## The next stage" heading/);
+  // Only the heading line is renamed, so the error has to name the heading it lost.
+  const renamed = SKILL_TEXT.replace('\n## When several fire\n', '\n## Several fire\n');
+  assert.throws(() => restatementText(renamed), /has no "## When several fire" heading/);
 });
 
 test('no tracked file but the skill holds a restated sentence', () => {

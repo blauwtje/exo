@@ -4,6 +4,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { countsCost, modelPrice } from '../skills/savings/scripts/pricing.mjs';
+import PRICES from '../skills/savings/scripts/prices.mjs';
+import { COUNT_KEYS } from '../skills/savings/scripts/token-weights.mjs';
+
+test('every listed model prices exactly the usage counts', () => {
+  for (const [family, price] of Object.entries(PRICES.models)) {
+    assert.deepEqual(Object.keys(price).sort(), [...COUNT_KEYS].sort(), family);
+  }
+});
 
 test('a dated model id prices as its longest listed family', () => {
   assert.deepEqual(modelPrice('claude-haiku-4-5-20251001'), { input: 1, output: 5, cacheRead: 0.1, cache5m: 1.25, cache1h: 2 });

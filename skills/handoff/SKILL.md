@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "Save an unfinished session's live state to a file a fresh session reads after a clear: goal, current state, decisions and who made them, what is proven, the single next step. Use when the user invokes it. Not for a plan another executor runs, which planning owns, and not for finished work, which the commit and the pull request record."
+description: Use when the user invokes it to save an unfinished session's state for a fresh session after a clear. Not for a plan another executor runs, which planning owns, or finished work, which the commit and pull request record.
 argument-hint: "[what the next session must not lose]"
 disable-model-invocation: true
 ---
@@ -18,7 +18,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is the
 ## Where it goes
 
 1. Read the location, never guess it: `git rev-parse --git-dir` gives the directory and `git rev-parse --abbrev-ref HEAD` the branch, and the file is `<git-dir>/exo/handoff/<branch>.md`. Nothing under that directory is committed, and a linked worktree has one of its own, so a handoff cannot follow the wrong branch.
-2. A branch name holding `/` makes a nested path: create the parent directories first. A detached HEAD writes `HEAD.md`.
+2. A branch name holding `/` makes a nested path: create the parent directories first. A detached HEAD writes `<git-dir>/exo/handoff/HEAD.md`.
 3. Outside a git repository the file is `~/.claude/exo/handoff/<folder-name>.md`, the folder being the working directory's own name, under `CLAUDE_CONFIG_DIR` when that variable is set.
 4. Write the file whole, replacing any handoff already at that path: the state it held is what this clear discards.
 

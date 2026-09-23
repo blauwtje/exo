@@ -26,7 +26,7 @@ It prints the savings report, which says nothing was refused yet until the read 
 ## How exo works
 
 - **Steps.** A request is shaped, planned, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
-- **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:explorer` agent on Haiku, the discovery of a redesign in the `exo:design-discovery` agent on Sonnet at high effort, the final branch review in the `exo:branch-reviewer` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:branch-reviewer-deep` at high effort above that, and the post-build design critique in the `exo:design-critic` agent on Opus at high effort; all five live under `agents/`.
+- **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:explorer` agent on Haiku, the discovery of a redesign in the `exo:design-discovery` agent on Sonnet at high effort, the final branch review in the `exo:branch-reviewer` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:branch-reviewer-deep` at high effort above that, and the post-build design critique in the `exo:design-critic` agent on Opus at medium effort; all five live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:settings guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read.
 - **The savings counter.** The read guard books the bytes of every read it refuses; `/exo:savings` prints them as an estimated token saving.
@@ -118,6 +118,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
 | `interview` | `chat`, `page` | `chat` | Where `shaping` asks its questions. `chat` asks in the conversation, answered with a digit; `page` opens one browser tab that shows every decision, open and closed, and takes each answer as a click. A single question, and a machine that cannot open a browser, stay in the conversation. |
+| `context` | a whole number of at least 1 | `80` | Thousands of tokens the main session's context may reach. Past it, completing a task adds a note that the next phase runs in a helper, or hands off when it asks the user. A stored value that is not a whole number of at least 1 reads as the default. |
 
 ## Develop
 

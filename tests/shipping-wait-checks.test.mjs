@@ -8,6 +8,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
+import { TIMEOUT_EXIT } from '../skills/shipping/scripts/wait-checks.mjs';
 
 const WAIT_CHECKS = fileURLToPath(new URL('../skills/shipping/scripts/wait-checks.mjs', import.meta.url));
 
@@ -52,7 +53,7 @@ test('a red check exits 1', async () => {
 
 test('a watch past the limit stops with 124 and says the pull request stays open', async () => {
   const outcome = await waitChecks('hang', ['--pr', '12', '--minutes', '0.005']);
-  assert.equal(outcome.code, 124, outcome.stderr);
+  assert.equal(outcome.code, TIMEOUT_EXIT, outcome.stderr);
   assert.match(outcome.stdout, /no verdict after 0\.005 minutes; the pull request stays open/);
 });
 

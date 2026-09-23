@@ -28,7 +28,7 @@
 // answers.jsonl in the folder, which is also the record of what was chosen.
 
 import { randomBytes } from 'node:crypto';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
@@ -69,17 +69,7 @@ const ANSWERS_FILE = 'answers.jsonl';
 
 // The last resort for a key the --labels file leaves out; the skill writes the
 // tab's copy in the conversation's own language on every run.
-const DEFAULT_LABELS = {
-  lang: 'en',
-  waiting: 'The first sketch is on its way.',
-  fallbackQuestion: 'Which one fits best?',
-  hint: 'Click the one you like. This tab stays open for the next sketch.',
-  steer: 'Want anything changed?',
-  send: 'Send note',
-  received: 'Got it. The next sketch appears here.',
-  failed: 'Your answer did not arrive. Say it in the conversation instead.',
-  lost: 'This tab lost its session. Say your answer in the conversation instead.'
-};
+const DEFAULT_LABELS = JSON.parse(readFileSync(new URL('../assets/sketch-tab-labels.json', import.meta.url), 'utf8'));
 
 /** The name the tab and the answer repeat for a clicked option: its aria-label,
  *  else its first heading, else the start of its text. The shim carries this

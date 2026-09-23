@@ -16,6 +16,8 @@ test('using-exo states one reply-language rule for every reply, report and quest
 });
 
 test('the question options point at the reply-language rule instead of stating their own', () => {
-  assert.ok(USING_EXO.includes('as the language rule under `# Context` sets'));
+  const question = fs.readFileSync(new URL('../skills/using-exo/references/question.md', import.meta.url), 'utf8');
+  assert.ok(question.includes('as the language rule under `# Context` in using-exo sets'));
+  assert.ok(!question.includes("are in the conversation's language"));
   assert.ok(!USING_EXO.includes("are in the conversation's language"));
 });

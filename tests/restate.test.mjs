@@ -138,9 +138,9 @@ function jqAvailable() {
 
 const withoutJq = (await jqAvailable()) ? false : 'jq is not on PATH';
 
-function runSessionHook(hookInput, env) {
+function runSessionHook(hookInput, env, hook = SESSION_HOOK) {
   return new Promise((resolve) => {
-    const child = execFile('bash', [SESSION_HOOK], { env: { ...process.env, ...env }, timeout: 30_000 },
+    const child = execFile('bash', [hook], { env: { ...process.env, ...env }, timeout: 30_000 },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) }));
     child.stdin.end(JSON.stringify(hookInput));
   });
@@ -159,6 +159,13 @@ test('every session start moves the measuring point and still prints one JSON ob
 
 test('a long working directory keeps both pointers and cuts only the tail of the rules', { skip: withoutJq }, async () => {
   const { env, configDirectory, transcript } = await restateFixture();
+  const pluginRoot = await fixture();
+  for (const directory of ['hooks', 'skills', 'lib']) {
+    await fs.cp(path.join(REPOSITORY, directory), path.join(pluginRoot, directory), { recursive: true });
+  }
+  await fs.copyFile(path.join(REPOSITORY, 'package.json'), path.join(pluginRoot, 'package.json'));
+  // The committed body sits far under the cap, so the copy is padded past it.
+  await fs.appendFile(path.join(pluginRoot, RESTATED_SKILL), `${'x'.repeat(12000)}\n`);
   const scope = 'w'.repeat(240);
   const workingDirectory = path.join(configDirectory, scope);
   await fs.mkdir(workingDirectory);
@@ -166,7 +173,7 @@ test('a long working directory keeps both pointers and cuts only the tail of the
   await fs.writeFile(path.join(configDirectory, 'exo', 'handoff', `${scope}.md`), 'handoff\n');
   await fs.mkdir(path.join(configDirectory, 'exo', 'memory', scope), { recursive: true });
   await fs.writeFile(path.join(configDirectory, 'exo', 'memory', scope, 'memory.md'), 'memory\n');
-  const started = await runSessionHook({ session_id: 's1', transcript_path: transcript, source: 'startup', cwd: workingDirectory }, env);
+  const started = await runSessionHook({ session_id: 's1', transcript_path: transcript, source: 'startup', cwd: workingDirectory }, env, path.join(pluginRoot, 'hooks', 'session-start.sh'));
   assert.equal(started.code, 0, started.stderr);
   const injected = JSON.parse(started.stdout).hookSpecificOutput.additionalContext;
   assert.ok(injected.length <= HOOK_OUTPUT_CAP.chars, `the hook printed ${injected.length} characters`);
@@ -174,7 +181,7 @@ test('a long working directory keeps both pointers and cuts only the tail of the
   const memoryPointer = `A project memory for this repository sits at \`${path.join(configDirectory, 'exo', 'memory', scope, 'memory.md')}\`.`;
   assert.ok(injected.startsWith(handoffPointer), injected.slice(0, 400));
   assert.ok(injected.includes(memoryPointer), injected.slice(0, 900));
-  assert.match(injected, /## The next stage/);
+  assert.match(injected, /## Before acting/);
   assert.match(injected, /exo settings:/);
   assert.doesNotMatch(started.stderr, /pointer left out/);
   assert.match(started.stderr, new RegExp(`^exo: using-exo cut by \\d+ characters, the session context would pass ${HOOK_OUTPUT_CAP.chars}$`, 'm'));

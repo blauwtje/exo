@@ -7,8 +7,8 @@ import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 
-const FILE_LIMIT = 5;
-const LINE_LIMIT = 200;
+export const FILE_LIMIT = 5;
+export const LINE_LIMIT = 200;
 const REVIEWERS = ['exo:branch-reviewer', 'exo:branch-reviewer-deep'];
 
 export function parseShortstat(output) {

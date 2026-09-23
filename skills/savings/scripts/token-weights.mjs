@@ -6,6 +6,10 @@ const CACHE_READ_RATE = 0.1;
 const CACHE_5M_RATE = 1.25;
 const CACHE_1H_RATE = 2;
 
+// The usage counts by name: usageCounts returns them, sumCounts totals them
+// and every row of prices.mjs prices them.
+export const COUNT_KEYS = ['input', 'cacheRead', 'cache5m', 'cache1h', 'output'];
+
 // Reads the usage block the API returns, in the transcript and in the
 // `claude -p --output-format json` result alike.
 export function usageCounts(usage) {
@@ -20,9 +24,9 @@ export function usageCounts(usage) {
 }
 
 export function sumCounts(countsList) {
-  const totals = { input: 0, cacheRead: 0, cache5m: 0, cache1h: 0, output: 0 };
+  const totals = Object.fromEntries(COUNT_KEYS.map((key) => [key, 0]));
   for (const counts of countsList) {
-    for (const key of Object.keys(totals)) totals[key] += counts[key] ?? 0;
+    for (const key of COUNT_KEYS) totals[key] += counts[key] ?? 0;
   }
   totals.raw = totals.input + totals.cacheRead + totals.cache5m + totals.cache1h + totals.output;
   totals.weightedInput = totals.input

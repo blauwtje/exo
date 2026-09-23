@@ -32,6 +32,6 @@ The report as the script printed it when this skill loaded:
 ## Judgment
 
 - The script's output outranks any figure already in the context.
-- The report counts every session the counter holds from the last 30 days, whatever project it ran in; a single project's figure is not reported.
-- Estimated: the tokens the read guard kept out of context, from the bytes of the text it refused at 3.5 characters per token, the figure Anthropic documents. Not measured: that text was never sent, so no token count or price exists for it, and the report carries no cost, call or time figure.
+- The report counts every session the counter holds from the window the report names, whatever project it ran in; a single project's figure is not reported.
+- Estimated: the tokens the read guard kept out of context, from the bytes of the text it refused at the ratio the report names. Not measured: that text was never sent, so no token count or price exists for it, and the report carries no cost, call or time figure.
 - A report with no figures says nothing was refused yet; relay that sentence as it stands, because a zero typed in its place claims a measurement.

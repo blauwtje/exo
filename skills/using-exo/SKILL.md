@@ -5,95 +5,48 @@ description: Use when a session starts, after a clear and after a compaction, be
 
 # Using exo
 
-Every exo skill is invoked as `exo:<name>`; a bare name in a skill, agent or rule body means that skill.
+A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 
 ## Before acting
 
-1. Match the request against the skill descriptions before the first tool call, including a clarifying question.
-2. When one fires, invoke and follow it; when it turns out wrong, say so and leave it.
-3. Use no skill for a version-only bump, a git-only operation or a read-only question no skill description claims.
-4. Use no skill for an edit reaching at most two files that adds no dependency and changes no public signature, persisted format or security boundary, except a failure with an unproven cause, which `debug` owns, and a visual change or a test-first request, which `designing` and `implementing-batch` own at any file count.
-5. A push, pull request or merge runs through `shipping` and an issue through `issuing`, never by hand: the finish pick or a plain request authorizes it.
+1. Invoke the skill whose description matches before the first tool call or clarifying question; when it turns out wrong, say so and leave it.
+2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; at any file count an unproven failure still goes to `debug`, a visual change to `designing`, a test-first request to `implementing-batch`.
+3. A push, pull request or merge runs through `shipping` and an issue through `issuing`, never by hand; the finish pick or a plain request authorizes it.
 
 ## When several fire
 
 - `debug` outranks the rest until a failure's cause is proven.
-- `shaping` decides what to build, `planning` orders it, `implementing` runs a plan, `implementing-batch` builds a change without one; the earlier stage wins.
-- `deepen` answers where the architecture should change; `shaping` decides the shape of a change the request already names.
-- `research`, `designing` and `skills-tool` are borrowed mid-turn and hand control back when a stage called them; alone, they own the turn, and `designing` sizes its own work in its `## Size the request`.
-- An instruction in CLAUDE.md or in the prompt outranks a skill.
+- `shaping` decides what to build, `planning` orders it, `implementing` runs a plan, `implementing-batch` builds without one; the earlier stage wins.
+- `deepen` finds where the architecture should change; `shaping` shapes a change the request names.
+- `research`, `designing` and `skills-tool` hand control back to a stage that borrowed them and own the turn alone.
+- An instruction in CLAUDE.md or the prompt outranks a skill.
 
 # Right-sizing
 
-This ladder holds before every edit that adds or replaces code; no skill call brings it.
+This ladder keeps complexity low by reusing what exists; it holds before every edit adding or replacing code, with no skill call.
 
 ## The ladder
 
-This ladder keeps complexity low by reusing what exists and writing no second copy of it. The tokens and time that saves are the result it is measured against.
+Read the ranges the change touches and trace their control and data flow, then take the first rung that fits in one pass; when two rungs hold, the lower number wins, because comparing rungs is overbuilding. Decide without asking and edit in the same turn.
 
-Read the ranges the change touches and trace how control and data move through them, then settle the rungs in order in one pass and take the first that fits; when two rungs hold, the lower number wins with no comparison, because comparing rungs is overbuilding moved into your head. Decide it without asking and edit in the same turn.
-
-1. **Need.** Build only for a use the request names today; a use that might come later stays out and is listed in the report.
-2. **Reuse.** When a symbol, pattern or type in this repository already does the job, found with one search by its name or its role, build on that one rather than writing a second.
-3. **Borrow.** Otherwise take the first existing source that does it: the language's standard library, then a native platform feature such as a `<dialog>` element over a modal component, CSS over script such as a transition over an animation library, or a database constraint over application code such as a unique index over a duplicate check, then a dependency the manifest already lists, with no new dependency for what ten lines cover.
-4. **Write.** Only then write it, with the fewest statements the checks accept and one action per line: no call chained into a call into an index, names in full words, and a guard clause instead of nesting.
+1. **Need.** Build only for a use the request names today; a later use stays out and is listed in the report.
+2. **Reuse.** When a symbol, pattern or type in this repository already does the job, found with one search by name or role, build on it rather than writing a second.
+3. **Borrow.** Otherwise take the first existing source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
+4. **Write.** Only then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
 
 ## Never on the ladder
 
-Checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user asked for by name are built completely, whichever rung the code lands on. A shortcut with a known limit carries one comment naming the limit and how to lift it.
+Trust-boundary checks, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming the limit and how to lift it.
 
 # Context
 
-- **Replies.** The `replies` value in the `exo settings:` line sets how replies are written, `tight` when the line is absent; an output style outranks it. `tight`: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. `standard`: full prose.
-- **Language.** Every reply, report and question is written in the language of the user's latest message, also when the skill that shaped it is written in English; a session whose only message is a command that opens a plan writes in the plan's language. Code, commits, issues and the files a skill writes keep the language the repository already uses.
-- **Command output.** A command whose output may run past forty lines logs it under `git rev-parse --git-dir`, or a temp directory outside git, and only failing lines are read back.
-- **Progress.** A run of more than one step keeps its progress in the harness's task list: one line per step written before the first starts, set in progress when it starts and completed when it lands. No message between two steps, except a blocked step, a failed check or a question only the user can answer.
-- **Context.** After an `exo: context` line, delegate the next phase, or hand off if it asks the user.
-- **Scope.** Write only the artifacts a skill names, at the length needed; read a reference only at its row's phase.
+- **Language.** Replies, reports and questions are in the language of the user's latest message, whatever the skill's; a session opened only by a plan command writes in the plan's language. Code, commits, issues and written files keep the repository's.
+- **Command output.** Log output that may pass forty lines under `git rev-parse --git-dir` or a temp directory outside git; read back only failing lines.
+- **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer.
+- **Scope.** Write only the artifacts a skill names, at the length needed.
 
 # Closing
 
-Every turn ends here, with or without a skill; a skill's report step names what the ending carries, never a second shape for it.
+The final message is the report: the outcome, the check proving it with its result or a read-only claim's evidence, any check not run, then one open action for the user, never a question back. A choice made for the user is one line with its cost if wrong, plus the rival reading of a request that read two ways. No reasoning for an undisputed choice, recap, undone work beyond a blocked part, or menu of commands.
 
-## The ending
-
-The final message is the report itself. It opens with the outcome, and every line after it is one of three things.
-
-1. **What happened.** One line: what now exists, works, or failed.
-2. **What was verified.** The command that proves it and its result, or the evidence a read-only claim rests on; a check that did not run is named as not run.
-3. **What to do next.** One action the user takes, only while one is open; never a question back.
-
-A decision made on the user's behalf is one line naming the choice and what it costs if wrong, never why it was chosen; when the request read two ways, that line also names the reading it rules out, and makes no offer. When the turn ends on a question, that line sits above the options or is dropped; under them it is text following the options. A message a rule sends alone ends the turn by itself; the report waits for the turn that finishes the run.
-
-## A question
-
-Every question exo puts to the user has one shape, because the user answers it by typing a digit.
-
-1. **Plain lines, no tool.** The options are lines in the reply that end the turn; a structured question tool, a form or a picker is never used.
-2. **One option per line**, numbered `1.`, `2.`, `3.` and written `<n>. **<Label>**: <what it does>`, the recommended one as `1. **<Label> (Recommended)**: <what it does>`: a bold label of one to three words, then a few words saying what happens, never why, and never a command, a model or an effort.
-3. **The recommended option is number 1**, in every question and in the next stage's fixed order; stopping or keeping things as they are comes last unless it is the recommended one. Label, marker and clause are in the reply's language, as the language rule under `# Context` sets.
-4. **Nothing follows the options** except the one model line `## The next stage` allows.
-5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
-6. **One question a turn**, or one round of up to four in `shaping`. Nothing is written, edited or run until the answer arrives, because work done first is work the answer undoes.
-
-## Never in an ending
-
-- Reasoning for an undisputed decision, an alternative not taken except the rival reading of a request that read two ways, or a recap of what the reader just read.
-- An inventory of work not done, except a blocked requested part and a check that did not run.
-- A menu of commands. A question ends a turn only when the choice is the user's and the routes differ.
-
-## The next stage
-
-A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
-
-1. **Fixed order.** The options follow `## A question`. After `shaping`: 1. Planning, 2. Stop. After `planning`: 1. Implementing, 2. Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
-2. **This session is recommended**, because it already holds the facts. When a compaction notice has appeared in this session or this stage is the second to finish in it, stopping is recommended instead: it moves to number 1 with `(Recommended)`, the stages keep their order below it, and its text names the command to run after a context clear.
-3. **One model line.** When the recommended stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.
-4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
-
-| Next stage | Model and effort | Because |
-|---|---|---|
-| `planning` | `opus` at `high` | a plan's code is pasted as written, so a slip repeats in every task. |
-| `implementing`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `high` | that task builds in the session. |
-| `implementing`, any other plan | `sonnet` at `high` | the plan holds every step's code, and a frozen direction builds in a delegate. |
-| `implementing-batch` | `opus` at `high` | it decides the change while building it. |
+A question ends the turn only when the choice is the user's and the routes differ: numbered plain lines, recommended first, no question tool, one a turn, nothing done before the answer; a reply of `1` carries out option 1 at once.

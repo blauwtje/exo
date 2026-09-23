@@ -17,7 +17,7 @@ The description is the only text the model reads before deciding to load the ski
 
 ## Bounds
 
-- At most 400 characters, so the sum across the corpus stays inside what the harness shows the model.
+- Aim at 300 characters and stay within 375, so the sum across the corpus stays inside what the harness shows the model.
 - No angle brackets and no line breaks; the harness rejects both.
 - The name is a verb or gerund for a process (`shaping`, `planning`), a noun for a reference or tool (`research`, `skills-tool`).
 
@@ -25,4 +25,4 @@ The description is the only text the model reads before deciding to load the ski
 
 - A symptom the model would actually think outranks a category label.
 - A "not for" that names the owner outranks a bare exclusion.
-- Trigger-only outranks completeness: a description over 400 characters loses its weakest symptom, never a "not for".
+- Trigger-only outranks completeness: a description over its budget loses its weakest symptom, never a "not for".

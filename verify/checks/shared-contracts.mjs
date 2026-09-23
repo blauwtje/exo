@@ -5,6 +5,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
+import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/shaping/scripts/question-page.mjs';
+import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
+import { FILE_LIMIT, LINE_LIMIT } from '../../skills/implementing/scripts/pick-reviewer.mjs';
+import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
+import { CHARACTERS_PER_TOKEN, DEFAULT_GUARD_LINES, SESSION_RETENTION_DAYS } from '../../skills/savings/scripts/record.mjs';
+import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/shipping/scripts/wait-checks.mjs';
+
+// A doc writes a small count as a word, so a pin built from a constant spells it.
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const REVIEW_THRESHOLD = [`${NUMBER_WORDS[FILE_LIMIT]} changed files`, `${LINE_LIMIT} changed lines`];
+
+const thousands = (value) => value.toLocaleString('en-US');
 
 const LABEL_LIMIT = 70;
 const HANDSHAKE = /When a new visual surface does not name [^.]+; designing follows for presentation\./;
@@ -22,11 +34,13 @@ const PINNED_SENTENCES = {
   'skills/debug/SKILL.md': [
     'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
     'Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and offers `implementing-batch` on the next-stage question for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.',
+    ...REVIEW_THRESHOLD,
   ],
   'skills/implementing-batch/SKILL.md': [
     'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',
     'After a context compaction, rebuild what has landed from the working tree diff before the next edit',
     '`debug` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting.',
+    ...REVIEW_THRESHOLD,
   ],
   'skills/planning/SKILL.md': [
     'Resolve a vague referent from the first non-empty source: working-tree diff, most recent failing check, then last touched file.',
@@ -96,7 +110,85 @@ const PINNED_SENTENCES = {
     '- targets at least 24×24 CSS px — the WCAG 2.2 AA minimum, exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation — with 44×44 as the enhanced target and the default under a coarse pointer;',
     'The underdesign floor: the ground is a designed surface, not an untouched flat neutral',
   ],
+  'skills/skills-tool/SKILL.md': [
+    `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens, ${thousands(INJECTED_BODY_TOKENS.ceiling)} for the injected \`${INJECTED_BODY_TOKENS.skill}\`, and ${DESCRIPTION_CHARS.ceiling} characters.`,
+    `A reference holds one topic and names no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
+  ],
+  'skills/skills-tool/references/description.md': [
+    `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
+  ],
+  'README.md': [
+    ...REVIEW_THRESHOLD, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
+    `over ${DEFAULT_GUARD_LINES} lines`,
+    `last ${SESSION_RETENTION_DAYS} days`,
+    `${CHARACTERS_PER_TOKEN} characters per token`,
+  ],
+  'CONTRIBUTING.md': [
+    ...REVIEW_THRESHOLD,
+    `${CHARACTERS_PER_TOKEN} characters per token`,
+    `lines, ${DEFAULT_GUARD_LINES} unless set`,
+    `reads as ${DEFAULT_GUARD_LINES}`,
+  ],
+  'agents/branch-reviewer.md': [...REVIEW_THRESHOLD],
+  'agents/branch-reviewer-deep.md': [...REVIEW_THRESHOLD],
+  'skills/shipping/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
+  'skills/memory/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
+  'docs/skills/savings.md': [`last ${SESSION_RETENTION_DAYS} days`, `${CHARACTERS_PER_TOKEN} characters per token`],
+  'skills/settings/references/setup-map.md': [`\`${DEFAULT_GUARD_LINES}\` (the default)`],
 };
+
+// A doc list that restates a data asset: every name the asset lists appears
+// backticked in the doc section that states the list. The asset is read from
+// the repository under check, so a self-test mutation of either side fails.
+const PINNED_LISTS = [
+  { file: 'skills/designing/references/visual-critique.md', section: '## Slop tropes',
+    asset: 'skills/designing/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
+  { file: 'skills/designing/references/sketch-tab.md', section: '## The labels',
+    asset: 'skills/designing/assets/sketch-tab-labels.json', names: (json) => Object.keys(json) },
+  { file: 'skills/designing/references/direction-preview.md', section: '## What the chooser reads',
+    asset: 'skills/designing/assets/pick-labels.json', names: (json) => Object.keys(json) },
+  { file: 'skills/designing/references/phase-build.md', section: '## Judgment',
+    asset: 'skills/designing/assets/check-ui-findings.json', names: (json) => json.alwaysBlocking },
+];
+
+function checkPinnedLists(errors, repository) {
+  for (const { file, section, asset, names } of PINNED_LISTS) {
+    const text = repository.text(path.resolve(repository.root, file));
+    const start = text.indexOf(`\n${section}\n`);
+    if (start === -1) {
+      errors.push(`${file}: no ${section} section to hold the list from ${asset}`);
+      continue;
+    }
+    const end = text.indexOf('\n## ', start + section.length + 2);
+    const body = text.slice(start, end === -1 ? undefined : end);
+    const missing = names(JSON.parse(repository.text(path.resolve(repository.root, asset))))
+      .filter((name) => !body.includes(`\`${name}\``));
+    if (missing.length > 0) errors.push(`${file}: ${section} lacks ${missing.join(', ')} from ${asset}`);
+  }
+}
+
+// question-page.mjs owns the interview map's enums. interview-page.md keeps
+// them in its prose, because the model reading it never reads the script, so
+// this holds the prose to the script.
+const INTERVIEW_PAGE = 'skills/shaping/references/interview-page.md';
+
+function interviewPageDrift(repository) {
+  const file = path.resolve(repository.root, INTERVIEW_PAGE);
+  if (!fs.existsSync(file)) return [`${INTERVIEW_PAGE}: file is missing`];
+  const text = repository.text(file);
+  const errors = [];
+  for (const state of STATES) {
+    if (!text.includes(`"state": "${state}"`)) errors.push(`${INTERVIEW_PAGE}: the example map shows no "state": "${state}"`);
+  }
+  const closedBy = /`closedBy` \(([^)]*)\)/.exec(text);
+  const closers = closedBy === null ? [] : [...closedBy[1].matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  if (closers.join(', ') !== CLOSERS.join(', ')) {
+    errors.push(`${INTERVIEW_PAGE}: closedBy lists ${closers.join(', ') || 'nothing'}, the script accepts ${CLOSERS.join(', ')}`);
+  }
+  const optionsRange = `two to ${NUMBER_WORDS[OPTIONS_MAX]} \`options\``;
+  if (!text.includes(optionsRange)) errors.push(`${INTERVIEW_PAGE}: lacks "${optionsRange}", the script's OPTIONS_MAX`);
+  return errors;
+}
 
 export function checkSharedContracts(report, repository) {
   const errors = [];
@@ -114,6 +206,8 @@ export function checkSharedContracts(report, repository) {
     }
   }
 
+  checkPinnedLists(errors, repository);
+
   // The handshake sentence lives in two descriptions and must read the same in both.
   const handshakes = new Map();
   for (const skill of HANDSHAKE_SKILLS) {
@@ -128,6 +222,8 @@ export function checkSharedContracts(report, repository) {
   if (handshakes.size === 2 && handshakes.get('shaping') !== handshakes.get('designing')) {
     errors.push('shaping and designing handshake sentences are not byte-identical');
   }
+
+  errors.push(...interviewPageDrift(repository));
 
   report.assert(
     errors.length === 0,

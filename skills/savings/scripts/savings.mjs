@@ -22,16 +22,12 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import {
-  SESSION_RETENTION_DAYS, configFile, guardLines, readJson, readRecord, savingsEnabled, updateSession, writeJson
+  CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS, configFile, guardLines, readJson, readRecord, savingsEnabled, updateSession, writeJson
 } from './record.mjs';
 import { GUARD_KINDS, measuredTotals } from './overhead.mjs';
 import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
 
 const DEFAULT_CONFIG = { enabled: true, readGuard: true };
-
-// Anthropic's glossary puts one token at about 3.5 English characters. The
-// guard booked bytes, not characters, so text outside ASCII overcounts slightly.
-const CHARACTERS_PER_TOKEN = 3.5;
 
 function estimatedTokens(bytesWithheld) {
   return bytesWithheld / CHARACTERS_PER_TOKEN;

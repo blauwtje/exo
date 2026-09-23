@@ -37,13 +37,13 @@
 // fallbackTitle, choose, zoom, close, typeRole, steer, done, failed, plus lang,
 // the language tag that copy is written in. Only fallbackTitle keeps a {n}
 // placeholder, which stands for the seat's letter. Whatever it omits falls back
-// to the English string below. --recommend seats that variant first and badges
+// to its English string in assets/pick-labels.json. --recommend seats that variant first and badges
 // it, and --recommend-note puts one plain sentence of reasoning inside that
 // card.
 
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { createReadStream, realpathSync } from 'node:fs';
+import { createReadStream, readFileSync, realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
@@ -64,20 +64,7 @@ const DEFAULT_FRAME = { width: 1280, height: 800 };
 // conversation's own language on every run, and one English string per key is
 // what keeps the picker usable when a key is missing. {n} is a variant's
 // position.
-const DEFAULT_LABELS = {
-  lang: 'en',
-  title: 'Which one do you like best?',
-  hint: 'Try each one, then choose.',
-  recommended: 'Recommended',
-  fallbackTitle: 'Option {n}',
-  choose: 'Choose this',
-  zoom: 'Enlarge',
-  close: 'Close',
-  typeRole: 'Letters',
-  steer: 'Want anything changed?',
-  done: 'That is your pick. You can close this tab now.',
-  failed: 'Your choice did not arrive. Say it in the conversation instead.'
-};
+const DEFAULT_LABELS = JSON.parse(readFileSync(new URL('../assets/pick-labels.json', import.meta.url), 'utf8'));
 
 // The one label that carries a variant's seat mark; dropping {n} would leave a
 // tile headed 'Option .' with no way to tell which of three it is.

@@ -36,11 +36,11 @@ Set the display over two sentences of body at rendered sizes; reject the pair un
 
 ## Scale
 
-- Ratio between adjacent steps: **1.25 by default**; below it hierarchy flattens (`visual-critique.md`), so a tighter step needs a stated density or existing-scale reason. By density:
+- Ratio between adjacent steps: **1.25 by default**; below it hierarchy flattens (the `visual-critique` reference), so a tighter step needs a stated density or existing-scale reason. By density:
   - 1.25 — dense product UI, dashboards
   - 1.333–1.414 — marketing pages, moderate drama
   - 1.5–1.618+ — editorial and expressive work
-- Build the scale as fluid `clamp()` tokens (`implementation.md`); afterward use only the tokens.
+- Build the scale as fluid `clamp()` tokens (the `implementation` reference); afterward use only the tokens.
 - **Weights are steps too.** Separate hierarchy roles by at least 200 weight units (400 → 600). With a variable font, store each used value in a role token.
 - **Width is a hierarchy tool.** A condensed cut for display against normal-width body creates contrast without a second family.
 - **Oversized display** applies when the card names the headline as its focal point: 10–16vw via `clamp()`, tracking −1% to −3%, leading 0.95–1.05.

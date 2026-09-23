@@ -12,13 +12,17 @@
 // --minutes defaults to 20 and --grace-seconds to 120.
 
 import { spawn } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { UsageError, parseFlags } from '#script-flags';
 
-const DEFAULT_MINUTES = 20;
+// shipping's SKILL.md states these two figures; the shared contracts check pins
+// that text to these exports.
+export const DEFAULT_MINUTES = 20;
 const DEFAULT_GRACE_SECONDS = 120;
 const RETRY_MS = 15_000;
-const TIMEOUT_EXIT = 124;
+export const TIMEOUT_EXIT = 124;
 const NO_CHECKS = /no checks reported/i;
 
 function positiveNumber(text, fallback, name, allowZero) {
@@ -93,4 +97,6 @@ async function main() {
   process.exitCode = outcome.code;
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  await main();
+}

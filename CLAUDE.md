@@ -5,7 +5,7 @@ commands and internals; this file only names what a session here gets wrong with
 
 ## Commands
 
-- `npm run check` is the gate before any commit. A clean run ends `SUMMARY PASS=19 FAIL=0 WARN=0 UNRUN=0`.
+- `npm run check` is the gate before any commit. A clean run ends `SUMMARY PASS=20 FAIL=0 WARN=0 UNRUN=0`.
 - `npm test` prints Node's spec reporter, which marks a failure `✖`, not `not ok`: a grep of its log for `not ok` finds nothing while tests fail.
 - `npm run check` runs the tests once, inside the verifier's `skill script behavior` check, which uses the TAP reporter: its FAIL line names each failing test as a `not ok` line.
 - `CONTRIBUTING.md` holds the rest of the command table, the hook wiring, the delegate models and the savings internals.
@@ -15,7 +15,7 @@ commands and internals; this file only names what a session here gets wrong with
 - Every skill or delegate-prompt edit loads the `skills-tool` skill first; it carries the shape and size rules, and `verify.mjs` is what enforces them.
 - A skill, agent, rule, hook or `CLAUDE.md` edit also follows `~/.claude/rules/instruction-style.md` when that file exists: its `paths` trigger loads it only on a read of a matching file, never on a create.
 - Skills are namespaced `exo:<name>` when invoked; a bare name inside a skill or prompt body means that namespaced skill.
-- `verify/budgets.mjs` names the skills the full verifier checks; every other skill still passes the frontmatter, portable-language and description-budget checks, so add a skill there when it reaches the shape `skills-tool` describes.
+- `verify/budgets.mjs` names the skills the full verifier checks; every other skill still passes the frontmatter, portable-language, description-budget, body-budget and reference-shape checks, so add a skill there when it reaches the shape `skills-tool` describes.
 
 ## Changelog and release
 

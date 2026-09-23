@@ -14,12 +14,12 @@ Paths in scope: <the task's Files: paths>
 
 The failing command above is the red proof: quote its failure before the edit and its pass after, and write no new test for it.
 
-The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins with no comparison.
-1. Need: build only for a use the request names today; a use that might come later stays out and is listed in the report.
-2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by its name or its role, build on that one rather than writing a second.
-3. Borrow: otherwise take the first existing source that does it: the language's standard library, then a native platform feature such as a `<dialog>` element over a modal component, CSS over script such as a transition over an animation library, or a database constraint over application code such as a unique index over a duplicate check, then a dependency the manifest already lists, with no new dependency for what ten lines cover.
-4. Write: only then write it, with the fewest statements the checks accept and one action per line: no call chained into a call into an index, names in full words, and a guard clause instead of nesting.
-Checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user asked for by name are built completely, whichever rung the code lands on. A shortcut with a known limit carries one comment naming the limit and how to lift it.
+The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins.
+1. Need: build only for a use the request names today; a later use stays out and is listed in the report.
+2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by name or role, build on it rather than writing a second.
+3. Borrow: otherwise take the first existing source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
+4. Write: only then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
+Trust-boundary checks, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming the limit and how to lift it.
 
 Hard boundaries:
 - Edit only the paths in scope. A fix that needs a path outside them stops and reports that path and why.

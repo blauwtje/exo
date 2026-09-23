@@ -1,6 +1,6 @@
 ---
 name: research
-description: Use when a code decision hinges on how a pinned external library, framework, API or service behaves and a wrong recalled answer would still compile or type-check yet fail at runtime or at the provider boundary. Not for questions the repository's own code answers, a version bump alone, or a concept explanation.
+description: Use when a code decision hinges on how a pinned external library, framework, API or service behaves, and a wrong recalled answer would still compile or type-check yet fail at runtime. Not for what the repository's own code answers, a version bump alone, or a concept explanation.
 argument-hint: <library, version and question>
 effort: high
 ---

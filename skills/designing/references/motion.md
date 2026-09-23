@@ -2,17 +2,17 @@
 
 Choreograph motion as a concept decision, not a garnish. The enemy is unowned motion — scattered default effects and the uniform fade-up nobody chose. The overcorrection is mandated choreography, motion added to satisfy a rule rather than a job. Chosen stillness is a decision; unconsidered stillness is a default.
 
-Contents:
+## Contents
 
-- `## Motion thesis`
-- `## Job gate`
-- `## Materials`
-- `## Timing`
-- `## Continuity contract`
-- `## Scroll and view transitions`
-- `## Reduced motion`
-- `## Libraries`
-- `## Judgment`
+- [Motion thesis](#motion-thesis)
+- [Job gate](#job-gate)
+- [Materials](#materials)
+- [Timing](#timing)
+- [Continuity contract](#continuity-contract)
+- [Scroll and view transitions](#scroll-and-view-transitions)
+- [Reduced motion](#reduced-motion)
+- [Libraries](#libraries)
+- [Judgment](#judgment)
 
 ## Motion thesis
 
@@ -32,7 +32,7 @@ Name one primary job per animation; a secondary job only when it changes impleme
 2. **Feedback:** confirm an action or state change.
 3. **Orientation:** direct attention to the element that changed.
 4. **Signature:** the one orchestrated sequence tied to the thesis.
-5. **Atmosphere:** ambient background movement tied to `visual-direction.md`'s ground — optional, never carrying content, static under reduced motion, paused off-screen, under that file's material and blur limits.
+5. **Atmosphere:** ambient background movement tied to the `visual-direction` reference's ground — optional, never carrying content, static under reduced motion, paused off-screen, under that file's material and blur limits.
 
 Cut an animation with no listed job. Signature count follows the direction's spatial ambition: a workspace or a document surface earns one at most, while a narrative, spatial, or instrument-led direction may orchestrate several when each is tied to the thesis and none competes with another for the same moment. Record every planned sequence as trigger → target/state → job → timing token → repository mechanism → reduced-motion result → status. Report each **exercised** when driven in a render, **code-reviewed** when only its code path was read against the thesis, **unjudged** when neither; only exercised is motion-verified.
 

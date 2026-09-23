@@ -1,6 +1,6 @@
 ---
 name: prototyping
-description: "Use when a decision about logic, state or data flow needs running code before it is made: a state model, an algorithm choice, or an untried integration. Fires on words like prototype, throwaway or proof of concept, or on the thought of building the real thing to find out. Not for a decided change, which implementing-batch builds, or a look, which designing owns."
+description: "Use when a logic or data-flow decision needs running code first: a state model, an algorithm, an untried integration, a prototype, throwaway or proof of concept, or the urge to build it for real to find out. Not for a decided change, which implementing-batch builds, or a look, which designing owns."
 argument-hint: <the open question to try>
 ---
 

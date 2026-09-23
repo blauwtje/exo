@@ -3,9 +3,9 @@
 // every model.
 
 import PRICES from './prices.mjs';
+import { COUNT_KEYS } from './token-weights.mjs';
 
 const TOKENS_PER_PRICE_UNIT = 1e6;
-const COUNT_KEYS = ['input', 'cacheRead', 'cache5m', 'cache1h', 'output'];
 
 // A model id prices as the longest family it starts with.
 export function modelPrice(model) {

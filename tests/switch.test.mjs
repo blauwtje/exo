@@ -60,7 +60,7 @@ test('the session hook carries the right-sizing ladder whether exo savings are o
     const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
     assert.ok(context.includes('# Using exo'), context);
     for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
-    assert.ok(context.includes('hand control back when a stage called them; alone, they own the turn, and `designing` sizes its own work in its `## Size the request`.'), context);
+    assert.ok(context.includes('`research`, `designing` and `skills-tool` hand control back to a stage that borrowed them and own the turn alone.'), context);
     // The frontmatter is dropped, so the description never reaches the context twice.
     assert.ok(!context.includes('name: using-exo'), context);
   }
@@ -106,7 +106,7 @@ test('the session hook leads with the settings line resolved for the project', {
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_CONTEXT: '' });
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=80 (default)\n\n'), context.slice(0, 200));
+  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=80 (default). Replies are tight:'), context.slice(0, 200));
 });
 
 test('on a 60-character branch both pointers go first, named from the repository root', { skip: withoutJq }, async () => {

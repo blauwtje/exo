@@ -1,0 +1,14 @@
+{
+  "lang": "en",
+  "title": "Which one do you like best?",
+  "hint": "Try each one, then choose.",
+  "recommended": "Recommended",
+  "fallbackTitle": "Option {n}",
+  "choose": "Choose this",
+  "zoom": "Enlarge",
+  "close": "Close",
+  "typeRole": "Letters",
+  "steer": "Want anything changed?",
+  "done": "That is your pick. You can close this tab now.",
+  "failed": "Your choice did not arrive. Say it in the conversation instead."
+}

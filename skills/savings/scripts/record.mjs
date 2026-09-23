@@ -17,6 +17,11 @@ const LOCK_STALE_MS = 15000;
 export const SESSION_RETENTION_DAYS = 30;
 const SESSION_RETENTION_MS = SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
+// Anthropic's glossary puts one token at about 3.5 English characters. The
+// guard booked bytes, not characters, so text outside ASCII overcounts slightly.
+// Exported here because savings.mjs, which prints it, runs its command on import.
+export const CHARACTERS_PER_TOKEN = 3.5;
+
 // EXO_SAVINGS_DIR relocates the record and its config alone, so a benchmark
 // cell keeps its own record while the session keeps its login and settings.
 function recordDirectory() {
