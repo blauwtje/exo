@@ -31,14 +31,14 @@ import { parseFlags, UsageError } from '#script-flags';
 
 const SKETCH_TAB = fileURLToPath(new URL('../../designing/scripts/sketch-tab.mjs', import.meta.url));
 const LABELS_FILE = 'labels.json';
-const STATES = ['open', 'waits', 'closed'];
-const CLOSERS = ['you', 'code', 'exo'];
+export const STATES = ['open', 'waits', 'closed'];
+export const CLOSERS = ['you', 'code', 'exo'];
 // Every id becomes part of a form field name, and the sketch tab accepts a
 // field name made of these characters only.
 const PLAIN_ID = /^[A-Za-z0-9][\w-]*$/;
 // Four answers fill one card; a fifth answer is a decision that was not split
 // far enough to ask.
-const OPTIONS_MAX = 4;
+export const OPTIONS_MAX = 4;
 // A typed answer is a sentence or two; the tab itself cuts a field at 2,000.
 const OWN_ANSWER_MAX = 500;
 // The buttons that send the page, each with the whole form.

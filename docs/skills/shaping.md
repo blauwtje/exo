@@ -18,4 +18,4 @@ A request names a result, or brings new wishes for work that already has a brief
 
 ## Where its rules live
 
-`skills/shaping/SKILL.md`, with the page's protocol in `skills/shaping/references/interview-page.md` and its script in `skills/shaping/scripts/`.
+`skills/shaping/SKILL.md`, with reopening a stored brief in `skills/shaping/references/stored-brief.md`, the brief's sections in `skills/shaping/references/brief.md`, the issue path in `skills/shaping/references/brief-in-an-issue.md`, the page's protocol in `skills/shaping/references/interview-page.md` and its script in `skills/shaping/scripts/`.

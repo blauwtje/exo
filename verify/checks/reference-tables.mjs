@@ -67,10 +67,13 @@ const EXPECTED_OWNER_ROWS = {
   'skills/memory/SKILL.md': ['../using-exo/references/question.md'],
   'skills/prototyping/SKILL.md': [],
   'skills/shaping/SKILL.md': [
+    'references/stored-brief.md',
+    'references/brief.md',
+    'references/brief-in-an-issue.md',
     '../issuing/references/fields.md',
     'references/interview-page.md',
-    '../using-exo/references/next-stage.md',
     '../using-exo/references/question.md',
+    '../using-exo/references/next-stage.md',
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',

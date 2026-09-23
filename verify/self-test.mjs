@@ -79,6 +79,8 @@ const SCENARIOS = [
     'from the working tree diff before the next edit', 'from memory before the next edit') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
+  { name: 'drifted-closer-list', mutate: (root) => replaceText(root, 'skills/shaping/references/interview-page.md',
+    '`closedBy` (`you`, `code` or `exo`)', '`closedBy` (`you` or `code`)') },
   { name: 'shaping-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
     'Count the product decisions the request leaves open', 'Count the files the request changes') },
   { name: 'shaping-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',

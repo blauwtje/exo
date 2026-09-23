@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
+import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/shaping/scripts/question-page.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 
 const thousands = (value) => value.toLocaleString('en-US');
@@ -108,6 +109,30 @@ const PINNED_SENTENCES = {
   ],
 };
 
+// question-page.mjs owns the interview map's enums. interview-page.md keeps
+// them in its prose, because the model reading it never reads the script, so
+// this holds the prose to the script.
+const INTERVIEW_PAGE = 'skills/shaping/references/interview-page.md';
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'];
+
+function interviewPageDrift(repository) {
+  const file = path.resolve(repository.root, INTERVIEW_PAGE);
+  if (!fs.existsSync(file)) return [`${INTERVIEW_PAGE}: file is missing`];
+  const text = repository.text(file);
+  const errors = [];
+  for (const state of STATES) {
+    if (!text.includes(`"state": "${state}"`)) errors.push(`${INTERVIEW_PAGE}: the example map shows no "state": "${state}"`);
+  }
+  const closedBy = /`closedBy` \(([^)]*)\)/.exec(text);
+  const closers = closedBy === null ? [] : [...closedBy[1].matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  if (closers.join(', ') !== CLOSERS.join(', ')) {
+    errors.push(`${INTERVIEW_PAGE}: closedBy lists ${closers.join(', ') || 'nothing'}, the script accepts ${CLOSERS.join(', ')}`);
+  }
+  const optionsRange = `two to ${COUNT_WORDS[OPTIONS_MAX]} \`options\``;
+  if (!text.includes(optionsRange)) errors.push(`${INTERVIEW_PAGE}: lacks "${optionsRange}", the script's OPTIONS_MAX`);
+  return errors;
+}
+
 export function checkSharedContracts(report, repository) {
   const errors = [];
   for (const [relative, fragments] of Object.entries(PINNED_SENTENCES)) {
@@ -138,6 +163,8 @@ export function checkSharedContracts(report, repository) {
   if (handshakes.size === 2 && handshakes.get('shaping') !== handshakes.get('designing')) {
     errors.push('shaping and designing handshake sentences are not byte-identical');
   }
+
+  errors.push(...interviewPageDrift(repository));
 
   report.assert(
     errors.length === 0,
