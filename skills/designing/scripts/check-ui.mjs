@@ -114,6 +114,14 @@ const LINE_TELLS = [
     pattern: /(?:margin|padding|border|inset)-(?:left|right)\s*:|text-align\s*:\s*(?:left|right)\b/i,
     threshold: 'flow-relative properties, or a recorded reason for a screen-anchored edge',
     note: 'a physical edge does not mirror under dir="rtl"'
+  },
+  {
+    type: 'purple-palette',
+    confidence: 'potential',
+    oncePerFile: true,
+    pattern: /\b(?:bg|text|from|via|to|border|ring|fill|stroke|shadow)-(?:indigo|violet|purple)-(?:50|[1-9]00|950)\b/,
+    threshold: 'an accent hue the subject justifies',
+    note: 'indigo, violet or purple utility class, the default generated palette'
   }
 ];
 
@@ -265,11 +273,16 @@ function emojiFindings(line, location) {
   })];
 }
 
+/** The 1-based line of a character offset in text. */
+function lineNumber(text, index) {
+  return text.slice(0, index).split('\n').length;
+}
+
 function kickerFindings(text, relative) {
   return [...text.matchAll(KICKER_BEFORE_HEADING)].map((match) => finding({
     type: 'kicker-above-heading',
     confidence: 'definite',
-    selector: `${relative}:${text.slice(0, match.index).split('\n').length}`,
+    selector: `${relative}:${lineNumber(text, match.index)}`,
     measured: match[0].replace(/\s+/g, ' ').slice(0, 80),
     threshold: 'hierarchy carried by the heading itself',
     note: 'eyebrow/kicker/overline label stacked over the heading'
@@ -283,7 +296,7 @@ function cssRules(text, relative) {
     const selector = match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/\s+/g, ' ');
     if (!selector || selector.startsWith('@')) continue;
     const offset = match.index + match[1].length - match[1].trimStart().length;
-    rules.push({ selector, body: match[2], location: `${relative}:${text.slice(0, offset).split('\n').length}` });
+    rules.push({ selector, body: match[2], location: `${relative}:${lineNumber(text, offset)}` });
   }
   return rules;
 }
@@ -356,6 +369,89 @@ function gradientHueGap(value) {
   if (stops.length < 2 || stops[0].model !== stops[1].model) return null;
   const gap = Math.abs(stops[0].hue - stops[1].hue);
   return Math.min(gap, 360 - gap);
+}
+
+const COLOR_TOKEN = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\)/gi;
+// Indigo through purple; oklch has its own band because an oklch hue is not an HSL hue.
+const PURPLE_HUES = { srgb: [245, 290], hsl: [245, 290], oklch: [275, 310] };
+const GROUND_PROPERTY =
+  /(?:^|[;\s])(?:background(?:-color)?|--[\w-]*(?:bg|background|ground|canvas|page|paper)[\w-]*)\s*:\s*([^;]+)/gi;
+
+function isPurple(token) {
+  const stop = stopHue(token);
+  if (!stop) return false;
+  const [low, high] = PURPLE_HUES[stop.model];
+  return stop.hue >= low && stop.hue <= high;
+}
+
+/** A bright, near-fully saturated color; only hex and rgb literals are measured, because parseColor reads no other model. */
+function isNeon(token) {
+  const rgb = parseColor(token);
+  if (!rgb) return false;
+  const brightest = Math.max(...rgb);
+  return brightest >= 230 && brightest - Math.min(...rgb) >= 200;
+}
+
+function isNearBlack(token) {
+  const rgb = parseColor(token);
+  return rgb !== null && Math.max(...rgb) <= 48;
+}
+
+/** A warm off-white: light, low in chroma, hue between orange and yellow. */
+function isCream(token) {
+  const rgb = parseColor(token);
+  if (!rgb || Math.min(...rgb) < 200 || Math.max(...rgb) < 235) return false;
+  const hue = hueOf(rgb);
+  return hue !== null && hue >= 25 && hue <= 65;
+}
+
+/** Color literals a page-level ground declares, directly or through a ground-named custom property; var() is not resolved. */
+function groundColors(rules) {
+  const colors = [];
+  for (const { selector, body, location } of rules) {
+    if (!GROUND_SELECTOR.test(selector) && !/:root\b/.test(selector)) continue;
+    for (const declared of body.matchAll(GROUND_PROPERTY)) {
+      const tokens = declared[1].match(COLOR_TOKEN) ?? [];
+      for (const token of tokens) colors.push({ token, where: `${selector} (${location})` });
+    }
+  }
+  return colors;
+}
+
+/** File-level palette reads: a cream ground, a purple accent, and neon over a near-black ground. */
+function paletteFindings(text, relative) {
+  const findings = [];
+  const grounds = groundColors(cssRules(text, relative));
+  for (const ground of grounds) {
+    if (!isCream(ground.token)) continue;
+    findings.push(finding({
+      type: 'cream-ground', confidence: 'potential', selector: ground.where,
+      measured: ground.token, threshold: 'a ground color the subject justifies',
+      note: 'warm cream or beige page ground, the default editorial template'
+    }));
+  }
+  const colors = [];
+  for (const match of text.matchAll(COLOR_TOKEN)) {
+    colors.push({ token: match[0], location: `${relative}:${lineNumber(text, match.index)}` });
+  }
+  const purple = colors.find((color) => isPurple(color.token));
+  if (purple) {
+    findings.push(finding({
+      type: 'purple-palette', confidence: 'potential', selector: purple.location,
+      measured: purple.token, threshold: 'an accent hue the subject justifies',
+      note: 'indigo, violet or purple accent, the default generated palette'
+    }));
+  }
+  const darkGround = grounds.find((ground) => isNearBlack(ground.token));
+  const neon = darkGround ? colors.find((color) => isNeon(color.token)) : undefined;
+  if (neon) {
+    findings.push(finding({
+      type: 'neon-on-dark', confidence: 'potential', selector: neon.location,
+      measured: `${neon.token} over ${darkGround.token}`, threshold: 'accent brightness chosen against the ground',
+      note: 'saturated neon color on a near-black ground'
+    }));
+  }
+  return findings;
 }
 
 function ruleFindings(text, relative, shadows) {
@@ -456,6 +552,7 @@ export async function staticAudit(directory) {
       if (isMarkup) findings.push(...emojiFindings(line, location));
     });
     if (isStylesheet) findings.push(...ruleFindings(text, relative, shadows));
+    if (isStylesheet) findings.push(...paletteFindings(text, relative));
     if (isMarkup) findings.push(...kickerFindings(text, relative));
     if (isMarkup) findings.push(...markupFindings(text, relative));
   }

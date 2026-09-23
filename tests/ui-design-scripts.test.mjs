@@ -368,6 +368,81 @@ describe('check-ui.mjs static subset', () => {
   });
 });
 
+describe('check-ui.mjs named anti-patterns', () => {
+  async function findingsFor(files) {
+    const root = await fixture();
+    for (const [name, content] of Object.entries(files)) {
+      await fs.writeFile(path.join(root, name), content);
+    }
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    return JSON.parse(result.stdout).static.findings;
+  }
+
+  function ofType(findings, type) {
+    return findings.filter((entry) => entry.type === type);
+  }
+
+  it('reports a cream ground declared on body or through a ground custom property', async () => {
+    const findings = await findingsFor({
+      'styles.css': ':root {\n  --color-background: #faf7f2;\n}\nbody {\n  background: #f5f5dc;\n}\n'
+    });
+    const cream = ofType(findings, 'cream-ground');
+    assert.deepEqual(cream.map((entry) => entry.measured), ['#faf7f2', '#f5f5dc']);
+    assert.equal(cream[0].confidence, 'potential');
+    assert.equal(cream[1].selector, 'body (styles.css:4)');
+  });
+
+  it('reports no cream ground for a white ground or a cream card', async () => {
+    const findings = await findingsFor({
+      'styles.css': 'body {\n  background: #ffffff;\n}\n.card {\n  background: #faf7f2;\n}\n'
+    });
+    assert.deepEqual(ofType(findings, 'cream-ground'), []);
+  });
+
+  it('reports the first purple color of a stylesheet once', async () => {
+    const findings = await findingsFor({
+      'styles.css': '.button {\n  background: #7c3aed;\n}\n.link {\n  color: #6d28d9;\n}\n'
+    });
+    const purple = ofType(findings, 'purple-palette');
+    assert.equal(purple.length, 1);
+    assert.equal(purple[0].confidence, 'potential');
+    assert.equal(purple[0].selector, 'styles.css:2');
+    assert.equal(purple[0].measured, '#7c3aed');
+  });
+
+  it('reports an oklch purple token and an indigo utility class', async () => {
+    const findings = await findingsFor({
+      'tokens.css': ':root {\n  --accent: oklch(60.6% 0.25 292.7);\n}\n',
+      'page.html': '<main>\n  <a class="rounded bg-indigo-600 text-white">Start</a>\n</main>\n'
+    });
+    const selectors = ofType(findings, 'purple-palette').map((entry) => entry.selector).sort();
+    assert.deepEqual(selectors, ['page.html:2', 'tokens.css:2']);
+  });
+
+  it('reports no purple for a blue accent', async () => {
+    const findings = await findingsFor({ 'styles.css': '.button {\n  background: #2563eb;\n}\n' });
+    assert.deepEqual(ofType(findings, 'purple-palette'), []);
+  });
+
+  it('reports the first neon color over a near-black ground once', async () => {
+    const findings = await findingsFor({
+      'styles.css': 'body {\n  background: #0a0a0a;\n}\n.accent {\n  color: #39ff14;\n}\n.link {\n  color: #22d3ee;\n}\n'
+    });
+    const neon = ofType(findings, 'neon-on-dark');
+    assert.equal(neon.length, 1);
+    assert.equal(neon[0].selector, 'styles.css:5');
+    assert.equal(neon[0].measured, '#39ff14 over #0a0a0a');
+  });
+
+  it('reports no neon over a light ground', async () => {
+    const findings = await findingsFor({
+      'styles.css': 'body {\n  background: #ffffff;\n}\n.accent {\n  color: #39ff14;\n}\n'
+    });
+    assert.deepEqual(ofType(findings, 'neon-on-dark'), []);
+  });
+});
+
 describe('check-ui.mjs comments, baseline and ignore file', () => {
   it('skips tells inside code comments and keeps line numbers', async () => {
     const root = await fixture();
