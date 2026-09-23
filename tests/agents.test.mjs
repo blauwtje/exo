@@ -147,3 +147,11 @@ test('the two branch reviewers share one body and differ only in effort', () => 
     assert.equal(deepReviewer.frontmatter[key], reviewer.frontmatter[key], `${key} differs between the two reviewers`);
   }
 });
+
+test('the implementer pins sonnet at high effort whatever the session runs at', () => {
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'implementer');
+  assert.ok(implementer, 'agents/implementer.md exists');
+  assert.equal(implementer.frontmatter.model, 'sonnet');
+  assert.equal(implementer.frontmatter.effort, 'high');
+  assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
+});
