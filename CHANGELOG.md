@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `skills-tool`'s pressure-scenarios reference starts every case as the ordinary task and adds pressure only when the run without the skill passes it; it no longer tells a case to cut the model off, fix its tool budget or insist the situation is real, a framing the live API refused as `reasoning_extraction`.
+
 ## 0.34.0 - 2026-09-23
 
 ### Highlights
@@ -23,10 +27,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `implementing` runs at `medium` effort; the implementer agent and both branch reviewers keep their pins, and the next-stage model table says so.
 - `planning` sends discovery to `exo:explorer` by default and reads at most eight files directly before the plan is first written.
 - The README and CONTRIBUTING say that the read guard hooks `Read` only and covers no file content read through Bash.
-
-### Fixed
-
-- `skills-tool`'s pressure-scenarios reference starts every case as the ordinary task and adds pressure only when the run without the skill passes it; it no longer tells a case to cut the model off, fix its tool budget or insist the situation is real, a framing the live API refused as `reasoning_extraction`.
 
 ## 0.33.0 - 2026-09-23
 
