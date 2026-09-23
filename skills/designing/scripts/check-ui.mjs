@@ -87,6 +87,48 @@ const LINE_TELLS = [
     note: 'placeholder copy shipped in the markup'
   },
   {
+    type: 'invented-content',
+    confidence: 'potential',
+    skipsStylesheets: true,
+    pattern: /\b(?:John|Jane) (?:Doe|Smith)\b|\bJoe Bloggs\b/,
+    threshold: 'a person the brief or the repository names',
+    note: 'stock placeholder name in place of a real person'
+  },
+  {
+    type: 'invented-content',
+    confidence: 'potential',
+    skipsStylesheets: true,
+    pattern: /\b(?:Acme|Globex|Initech|Contoso|Fabrikam)\b/,
+    threshold: 'a company the brief or the repository names',
+    note: 'sample company name in place of a real one'
+  },
+  {
+    type: 'invented-content',
+    confidence: 'potential',
+    skipsStylesheets: true,
+    // One leading digit followed only by zeros or nines, such as $10, $49, $100 or $19.99.
+    pattern: /[$€£](?:[1-9]0+|[1-9]?9+)(?:\.(?:00|99))?(?![\d,.]?\d)/,
+    threshold: 'a price the brief or the repository states',
+    note: 'round placeholder price with no source'
+  },
+  {
+    type: 'invented-content',
+    confidence: 'potential',
+    skipsStylesheets: true,
+    // A user count with three or more digits, a thousands group, a k or m suffix or a plus; a decimal rating out of five; four stars or more.
+    pattern: /(?:\b\d{1,3}(?:,\d{3})+|\b\d+(?:\.\d+)?\s?[km]\b|\b\d{3,}|\b\d+\+)\+?\s+(?:happy |active |satisfied )?(?:users|customers|teams|companies|businesses|developers|clients|members)\b|\b[3-5]\.\d\s*(?:\/\s*5\b|out of 5\b|stars?\b)|[★⭐]{4,}/i,
+    threshold: 'a figure the brief or the repository sources',
+    note: 'user count or rating with no source'
+  },
+  {
+    type: 'invented-content',
+    confidence: 'potential',
+    skipsStylesheets: true,
+    pattern: /\b[A-Z][a-z]+ [A-Z][a-z]+,\s*(?:CEO|CTO|COO|CFO|Co-founder|Founder|Head of|VP of)\b/,
+    threshold: 'a quote the brief or the repository sources',
+    note: 'testimonial attribution with no source'
+  },
+  {
     type: 'float-layout',
     confidence: 'potential',
     pattern: /(^|[;{\s])float\s*:\s*(left|right)/i,
@@ -523,27 +565,27 @@ function isGroundProperty(property) {
   return namesGround && words.every((word) => GROUND_NOUNS.has(word) || GROUND_SCOPES.has(word));
 }
 
-function isPurple(token) {
+export function isPurple(token) {
   const color = oklchOf(token);
   if (!color || color.chroma < SATURATED_CHROMA) return false;
   return color.hue >= PURPLE_HUES[0] && color.hue <= PURPLE_HUES[1];
 }
 
 /** A bright, strongly saturated color outside the warm band: fluorescent green, cyan, magenta or yellow. */
-function isNeon(token) {
+export function isNeon(token) {
   const color = oklchOf(token);
   if (!color || color.lightness < 0.7 || color.chroma < 0.13) return false;
   return color.hue < WARM_HUES[0] || color.hue > WARM_HUES[1];
 }
 
 /** A near-black color opaque enough to be the ground; a translucent overlay sets no ground. */
-function isNearBlack(token) {
+export function isNearBlack(token) {
   const rgb = parseColor(token);
   return rgb !== null && Math.max(...rgb) <= 48 && alphaOf(token) >= 0.9;
 }
 
 /** A warm off-white: light, low in chroma, hue between orange and yellow. */
-function isCream(token) {
+export function isCream(token) {
   const rgb = parseColor(token);
   if (!rgb || Math.min(...rgb) < 200 || Math.max(...rgb) < 235) return false;
   const hue = hueOf(rgb);
@@ -1358,7 +1400,7 @@ const IGNORE_FILE = path.join('docs', 'design', 'check-ui-ignore.json');
 const IGNORE_FIELDS = ['type', 'file', 'reason'];
 // Every type this script reports; an ignore entry naming another type, such as a renamed one, matches nothing.
 const FINDING_TYPES = new Set([
-  'transition-all', 'inline-event-handler', 'important-override', 'placeholder-copy', 'float-layout',
+  'transition-all', 'inline-event-handler', 'important-override', 'placeholder-copy', 'invented-content', 'float-layout',
   'gradient-text', 'radial-halo', 'physical-direction-property', 'purple-palette', 'monospace-label',
   'svg-without-viewbox', 'image-without-alt', 'image-without-dimensions', 'srcset-without-sizes',
   'missing-lang-attribute', 'inline-style-attribute', 'raw-value-in-component-rule', 'overused-font',

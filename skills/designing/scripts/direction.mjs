@@ -20,6 +20,10 @@
 // or token is [a-z0-9-]+ and names a Phase 1 finding, never a built-in option;
 // every axis lists two or more values; an evidence kind is observation, brief,
 // repository or open-decision, and open-decision still records its reason.
+// A contract's palette.anchors entry is a color token, or {"color":<token>,
+// "evidence":<key>} when the color needs a reason: --check rejects a purple,
+// a cream, or a neon beside a near-black anchor as template-kit unless that
+// anchor's evidence is of kind brief or repository.
 // --check names the shape and the allowed vocabulary of anything it rejects.
 
 import process from 'node:process';
@@ -27,6 +31,7 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
+import { isCream, isNearBlack, isNeon, isPurple } from './check-ui.mjs';
 
 const TOKEN = /^[a-z0-9-]+$/;
 const SEED_TOKEN = /^[A-Za-z0-9._-]+$/;
@@ -347,6 +352,34 @@ function quietRegionFindings(contract, variant) {
   });
 }
 
+// Evidence kinds that let a kit color stand: the brief asked for it, or the repository already ships it.
+const KIT_EXEMPT_KINDS = ['brief', 'repository'];
+
+/** The check-ui kit a palette anchor color falls in, or null; neon counts only beside a near-black anchor. */
+function kitOf(color, hasNearBlackAnchor) {
+  if (isPurple(color)) return 'purple-palette';
+  if (isCream(color)) return 'cream-ground';
+  if (hasNearBlackAnchor && isNeon(color)) return 'neon-on-dark';
+  return null;
+}
+
+function templateKitFindings(contract, space, variant) {
+  const anchors = Array.isArray(contract.palette?.anchors) ? contract.palette.anchors : [];
+  const colors = anchors.map((anchor) => (typeof anchor === 'string' ? anchor : anchor?.color));
+  const hasNearBlackAnchor = colors.some((color) => typeof color === 'string' && isNearBlack(color));
+  const findings = [];
+  colors.forEach((color, index) => {
+    if (typeof color !== 'string') return;
+    const kit = kitOf(color, hasNearBlackAnchor);
+    if (kit === null) return;
+    const evidenceKey = typeof anchors[index] === 'string' ? undefined : anchors[index]?.evidence;
+    if (KIT_EXEMPT_KINDS.includes(space.evidence?.[evidenceKey]?.kind)) return;
+    findings.push(finding('template-kit', variant,
+      `palette.anchors[${index}] '${color}' falls in the ${kit} kit check-ui flags after the build; cite brief or repository evidence for it, or pick another anchor`));
+  });
+  return findings;
+}
+
 function locateCandidate(manifest, role, family, candidateId) {
   for (const entry of manifest.roles ?? []) {
     for (const candidate of entry.candidates ?? []) {
@@ -475,6 +508,7 @@ function contractFindings(contract, index, { space, seed, manifest }) {
   findings.push(...axisFindings(contract, space, index));
   findings.push(...evidenceReferenceFindings(contract, space, index));
   findings.push(...quietRegionFindings(contract, index));
+  findings.push(...templateKitFindings(contract, space, index));
   findings.push(...fontFindings(contract, manifest, index));
   const expectations = Array.isArray(contract.expectations) ? contract.expectations : [];
   if (expectations.length < 3) {
