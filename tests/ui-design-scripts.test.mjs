@@ -435,9 +435,9 @@ describe('check-ui.mjs named anti-patterns', () => {
     assert.equal(neon[0].measured, '#39ff14 over #0a0a0a');
   });
 
-  it('reports no neon over a light ground', async () => {
+  it('reports no neon over a light ground with a dark foreground token', async () => {
     const findings = await findingsFor({
-      'styles.css': 'body {\n  background: #ffffff;\n}\n.accent {\n  color: #39ff14;\n}\n'
+      'styles.css': ':root {\n  --foreground: #171717;\n}\nbody {\n  background: #ffffff;\n}\n.accent {\n  color: #39ff14;\n}\n'
     });
     assert.deepEqual(ofType(findings, 'neon-on-dark'), []);
   });
@@ -512,7 +512,7 @@ describe('check-ui.mjs named anti-patterns', () => {
         '.stat-label {\n  font-family: "JetBrains Mono", monospace;\n  font-size: 0.75rem;\n  text-transform: uppercase;\n}',
         'pre code {\n  font-family: ui-monospace, monospace;\n  font-size: 0.8rem;\n}'
       ].join('\n'),
-      'page.html': '<main>\n  <span class="font-mono text-xs uppercase">Latency</span>\n  <code class="font-mono">npm test</code>\n</main>\n'
+      'page.html': '<main>\n  <span class="font-mono text-xs uppercase">Latency</span>\n  <code class="font-mono text-xs">npm test</code>\n</main>\n'
     });
     const selectors = ofType(findings, 'monospace-label').map((entry) => entry.selector).sort();
     assert.deepEqual(selectors, ['.stat-label (styles.css:1)', 'page.html:2']);

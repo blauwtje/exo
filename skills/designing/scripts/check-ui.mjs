@@ -126,7 +126,8 @@ const LINE_TELLS = [
   {
     type: 'monospace-label',
     confidence: 'potential',
-    pattern: /\bclass(?:Name)?\s*=\s*["'](?=[^"']*\bfont-mono\b)(?=[^"']*(?:\buppercase\b|\btext-xs\b|\btracking-))[^"']*["']/,
+    // The lookbehind skips a class on a code, pre, kbd or samp tag opened on the same line.
+    pattern: /(?<!<(?:code|pre|kbd|samp)\b[^<>]*)\bclass(?:Name)?\s*=\s*["'](?=[^"']*\bfont-mono\b)(?=[^"']*(?:\buppercase\b|\btext-xs\b|\btracking-))[^"']*["']/,
     threshold: 'monospace for code and tabular figures only',
     note: 'font-mono utility on a small, uppercase or tracked label'
   }
@@ -370,7 +371,7 @@ function stopHue(token) {
 
 /** Circular hue distance between the first two stops, or null when they use different models. */
 function gradientHueGap(value) {
-  const stops = [...value.matchAll(/#[0-9a-f]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\)/gi)]
+  const stops = [...value.matchAll(COLOR_TOKEN)]
     .map((match) => stopHue(match[0]))
     .filter(Boolean);
   if (stops.length < 2 || stops[0].model !== stops[1].model) return null;
@@ -381,8 +382,9 @@ function gradientHueGap(value) {
 const COLOR_TOKEN = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\)/gi;
 // Indigo through purple; oklch has its own band because an oklch hue is not an HSL hue.
 const PURPLE_HUES = { srgb: [245, 290], hsl: [245, 290], oklch: [275, 310] };
+// A custom property named for a foreground holds a text color, never a ground.
 const GROUND_PROPERTY =
-  /(?:^|[;\s])(?:background(?:-color)?|--[\w-]*(?:bg|background|ground|canvas|page|paper)[\w-]*)\s*:\s*([^;]+)/gi;
+  /(?:^|[;\s])(?:background(?:-color)?|--(?![\w-]*foreground)[\w-]*(?:bg|background|ground|canvas|page|paper)[\w-]*)\s*:\s*([^;]+)/gi;
 
 function isPurple(token) {
   const stop = stopHue(token);
