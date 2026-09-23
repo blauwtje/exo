@@ -10,7 +10,7 @@ import { test } from 'node:test';
 
 const USING_EXO = new URL('../skills/using-exo/SKILL.md', import.meta.url);
 const PROMPTS = [
-  'skills/implementing/implementer-prompt.md',
+  'agents/implementer.md',
   'skills/implementing/bug-fixer-prompt.md',
   'agents/branch-reviewer.md',
   'agents/branch-reviewer-deep.md',

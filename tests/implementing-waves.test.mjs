@@ -8,7 +8,8 @@ import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('implementing/references/workspace.md');
-const IMPLEMENTER = read('implementing/implementer-prompt.md');
+const IMPLEMENTER_BRIEF = read('implementing/implementer-prompt.md');
+const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/implementer.md', import.meta.url), 'utf8');
 
 test('the run creates, lands and removes every wave worktree itself', () => {
   const start = WORKSPACE.indexOf('## Wave worktrees');
@@ -27,14 +28,15 @@ test('the run creates, lands and removes every wave worktree itself', () => {
   assert.ok(!section.includes('git branch'), 'a wave creates and deletes no branch');
 });
 
-test('the implementer brief names its checkout and still writes nothing through git', () => {
-  assert.ok(IMPLEMENTER.includes('Task <n> of <plan path>, branch <branch>, checkout <checkout>.'));
-  assert.ok(IMPLEMENTER.includes('start every command with `cd <checkout> &&`'));
-  assert.ok(IMPLEMENTER.includes('Never create a worktree, never switch, stash or reset.'));
-  assert.ok(IMPLEMENTER.includes('Report to: <report directory>/implementer-<n>.md'));
-  assert.ok(IMPLEMENTER.includes('`push`, `worktree`, and no `gh` command at all'));
-  assert.ok(IMPLEMENTER.includes('Never call a tool that enters or leaves a worktree'));
-  assert.ok(IMPLEMENTER.includes('first run `git switch --detach <its base sha>`'), 'an isolated delegate starts on the run branch commit');
+test('the implementer brief carries only the task fields, and the agent still writes nothing through git', () => {
+  assert.ok(IMPLEMENTER_BRIEF.includes('Task <n> of <plan path>, branch <branch>, checkout <checkout>.'));
+  assert.ok(IMPLEMENTER_BRIEF.includes('Report to: <report directory>/implementer-<n>.md'));
+  assert.ok(!IMPLEMENTER_BRIEF.includes('Hard boundaries:'), 'the rules live in agents/implementer.md');
+  assert.ok(IMPLEMENTER_AGENT.includes('start every command with `cd <checkout> &&`'));
+  assert.ok(IMPLEMENTER_AGENT.includes('Never create a worktree, never switch, stash or reset.'));
+  assert.ok(IMPLEMENTER_AGENT.includes('`push`, `worktree`, and no `gh` command at all'));
+  assert.ok(IMPLEMENTER_AGENT.includes('Never call a tool that enters or leaves a worktree'));
+  assert.ok(IMPLEMENTER_AGENT.includes('first run `git switch --detach <its base sha>`'), 'an isolated delegate starts on the run branch commit');
 });
 
 const SKILL = read('implementing/SKILL.md');
