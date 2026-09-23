@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- Plan builds run on the new `exo:implementer` agent, pinned to `sonnet` at `high` effort whatever the session's effort; the three agents that load no `CLAUDE.md` carry the rule against deleting past a blocked state; and a plan slices a cross-layer change into tasks that each run one path through every layer.
+
 ## 0.32.0 - 2026-09-23
 
 ### Added
