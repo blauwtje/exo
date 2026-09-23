@@ -6,7 +6,7 @@ Route a plan task that carries a `Design:` line by how settled its direction is.
 
 The plan's `## Visual direction` picks the route:
 
-- **It names the chosen direction.** The task goes to a `general-purpose` delegate on `opus` with a brief from [the implementer prompt](../implementer-prompt.md); the delegate enters `designing` at its Build phase and takes that direction as given.
+- **It names the chosen direction.** The task goes to the `exo:implementer` agent with the dispatch's model set to `opus`, with a brief from [the implementer prompt](../implementer-prompt.md); the agent enters `designing` at its Build phase and takes that direction as given.
 - **It reads `Direction: pending at rung <n>`.** The task builds in this session under `designing`, from its Direction phase.
 - **It records no direction.** The task builds in this session under `designing`, from its `## Route`.
 

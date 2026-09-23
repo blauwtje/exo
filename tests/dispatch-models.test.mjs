@@ -32,3 +32,13 @@ test('every general-purpose delegate dispatch names its model', () => {
   }
   assert.deepEqual(unnamed, []);
 });
+
+test('every build goes to the implementer agent, and a design build keeps opus', () => {
+  const skill = fs.readFileSync(path.join(skillsRoot, 'implementing', 'SKILL.md'), 'utf8');
+  const dispatchStep = skill.match(/^5\. \*\*Dispatch the build\.\*\*.+$/m)[0];
+  assert.ok(dispatchStep.includes('Each build goes to the `exo:implementer` agent'));
+  const designTasks = fs.readFileSync(path.join(skillsRoot, 'implementing', 'references', 'design-tasks.md'), 'utf8');
+  const designRoute = designTasks.match(/^- \*\*It names the chosen direction\.\*\*.+$/m)[0];
+  assert.ok(designRoute.includes('`exo:implementer` agent'), 'a design build names the implementer agent');
+  assert.ok(designRoute.includes('`opus`'), 'a design build keeps opus');
+});
