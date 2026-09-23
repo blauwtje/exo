@@ -2,7 +2,7 @@
 
 Give a repeated component a structure, not just a look: named parts, a state row that is complete before the first screen, and scales it draws from instead of values it invents. The enemy is the control that exists once, in one state, styled inline at its call site. The overcorrection is a component library nobody asked for, built ahead of the second consumer.
 
-`controls.md` owns how a control looks: silhouette, optical padding, tier, label. This file owns what it is made of. Where the two meet, `controls.md` decides the appearance and this file decides the structure.
+the `controls` reference owns how a control looks: silhouette, optical padding, tier, label. This file owns what it is made of. Where the two meet, the `controls` reference decides the appearance and this file decides the structure.
 
 ## Adopt before authoring
 
@@ -25,20 +25,20 @@ A component is unbuilt while any reachable row entry is unstyled. The row is res
 
 - Each entry differs by more than opacity: a surface step, an edge, an elevation change, or a weight change, so the state survives a colour-blind reading.
 - `focus-visible` is the accent ring at a stated offset, never the browser default and never removed.
-- Disabled shows the reason where the reason is knowable (`interaction-qa.md`), and never relies on the cursor alone.
+- Disabled shows the reason where the reason is knowable (the `interaction-qa` reference), and never relies on the cursor alone.
 - Loading, empty, and error are components of their own, inventoried with the rest, not markup improvised at the call site.
 
 ## Scales, not values
 
 - **Spacing** is one step function from one base; component rules reference steps, never raw pixels.
 - **Radius is a role, not a number:** a field radius, a control radius, and a surface radius derived from one base, so a dense input and an expressive card stay related without matching.
-- **Elevation is a hairline plus stacked shadows**, each tinted from the ink hue, with the light direction the ground already states. One blurred neutral shadow under everything is the tell `visual-critique.md` names.
+- **Elevation is a hairline plus stacked shadows**, each tinted from the ink hue, with the light direction the ground already states. One blurred neutral shadow under everything is the tell the `visual-critique` reference names.
 - **Type comes from three dials** — size, leading, and the flow between blocks — and heading steps, list indents, and the gap under a heading derive from them, so a scale change moves the whole rhythm at once.
-- **Every surface token carries its own ink token.** A filled control names the ink that sits on it, so no variant can inherit unreadable text; this is the pairing the contrast floor in `visual-direction.md` verifies.
+- **Every surface token carries its own ink token.** A filled control names the ink that sits on it, so no variant can inherit unreadable text; this is the pairing the contrast floor in the `visual-direction` reference verifies.
 
 ## Composite patterns
 
-A composite is a component made of components, and it is where a surface silently loses its state coverage. Name the ones this surface has before building any of them: table or grid with sort, selection and async loading; combobox or autocomplete; select and listbox; menu with submenus and typeahead; modal and non-modal dialog; collision-aware popover; tabs; accordion; radio group; toggle group; switch; slider; tooltip; drag-to-reorder; toast or notification queue; command or search palette; filter set; form layout with validation; pagination. Each one it has owes the state row above and the keyboard contract in `accessibility.md`.
+A composite is a component made of components, and it is where a surface silently loses its state coverage. Name the ones this surface has before building any of them: table or grid with sort, selection and async loading; combobox or autocomplete; select and listbox; menu with submenus and typeahead; modal and non-modal dialog; collision-aware popover; tabs; accordion; radio group; toggle group; switch; slider; tooltip; drag-to-reorder; toast or notification queue; command or search palette; filter set; form layout with validation; pagination. Each one it has owes the state row above and the keyboard contract in the `accessibility` reference.
 
 Two carry decisions a look cannot make, and both are settled explicitly or they are settled by accident ([React Aria Table](https://react-aria.adobe.com/Table) and [ComboBox](https://react-aria.adobe.com/ComboBox), read 2026-09-07; adobe/react-spectrum 15,854★):
 
@@ -52,7 +52,7 @@ The headless primitive libraries are worth reading for exactly this: they ship "
 
 ## Inventory, not kit
 
-Build the components the content inventory in `composition.md` names, and no speculative sibling. A component earns its second variant when a second consumer needs it, and earns extraction from a page when a third occurrence appears. Count the states the surface can enter before counting the components it needs.
+Build the components the content inventory in the `composition` reference names, and no speculative sibling. A component earns its second variant when a second consumer needs it, and earns extraction from a page when a third occurrence appears. Count the states the surface can enter before counting the components it needs.
 
 ## Judgment
 

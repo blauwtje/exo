@@ -18,6 +18,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `exo settings:` line now carries the active `replies` rule from `skills/settings/schema.json`, so `using-exo` no longer states it.
 - `using-exo` injects about 1,000 tokens instead of 2,300: the question format and the next-stage table move to `references/question.md` and `references/next-stage.md`, which the skills that ask or end a stage list in their tables, and the restatement repeats `# Closing` in place of the next-stage table.
 - `shaping` loads about 2,450 tokens instead of 3,460: reopening a stored brief, the brief's sections and the issue path move to `references/stored-brief.md`, `references/brief.md` and `references/brief-in-an-issue.md`, its description drops the two-file and named-change exclusions, and the verifier holds the interview page's states, closers and option count to `question-page.mjs`.
+- `designing`: the body drops to about 2,470 tokens and the description to 363 characters; the sketch recipe, the settled-identity evidence and the discovery dispatch inputs move into the `phase-build`, `intake` and `phase-detail` references, every reference names a sibling by its topic instead of its file, and `motion.md` and `visual-critique.md` open with a linked contents list.
 
 ## 0.31.0 - 2026-09-23
 

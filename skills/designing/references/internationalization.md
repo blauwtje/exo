@@ -30,13 +30,13 @@ Short strings grow the most. Expected translated length relative to the English 
 | 51–70 | 151–170% |
 | over 70 | around 130% |
 
-A one-word button label is therefore designed for two to three times its width. This rules out fixed-width single-line containers for short labels: tabs, chips, segmented controls, and buttons size to content or wrap. Verify: apply a 2× pseudo-localisation to every string under 20 characters and diff for clipping, wrapping, and overflow. This is the same failure surface as the text-spacing check in `accessibility.md`; run them together.
+A one-word button label is therefore designed for two to three times its width. This rules out fixed-width single-line containers for short labels: tabs, chips, segmented controls, and buttons size to content or wrap. Verify: apply a 2× pseudo-localisation to every string under 20 characters and diff for clipping, wrapping, and overflow. This is the same failure surface as the text-spacing check in the `accessibility` reference; run them together.
 
 ## Formats come from the platform
 
 `en-US` writes `26,254.39` and `5/24/2012`; `de-DE` writes `26.254,39` and `24.5.2012` ([MDN `Intl`, last modified 2025-09-24](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl)). No hard-coded separators, no `MM/DD/YYYY`, no `"s"` appended for a plural, no `"a, b and c"` assembled by hand, no hand-written "3 days ago". Use `Intl.NumberFormat`, `Intl.DateTimeFormat`, `Intl.PluralRules`, `Intl.RelativeTimeFormat`, and `Intl.ListFormat`. Verify: rerun the surface under `de-DE`, `ar-EG`, and `pl-PL` — the last has plural categories beyond one and other — and check separators, date order, and list joins all changed.
 
-Type carries its own obligation: the face chosen in `typography.md` covers the audience's scripts, and `font-variant-numeric: tabular-nums` still applies to changing figures in every locale.
+Type carries its own obligation: the face chosen in the `typography` reference covers the audience's scripts, and `font-variant-numeric: tabular-nums` still applies to changing figures in every locale.
 
 ## Judgment
 

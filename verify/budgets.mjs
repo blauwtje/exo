@@ -51,7 +51,7 @@ export const REFERENCE_CONTENTS_LINES = 100;
 // outlives its trim. The step that empties every list deletes this object.
 export const PENDING_TRIM = {
   ceilings: { fileBytes: 15000, descriptionChars: 400 },
-  body: ['designing', 'implementing-batch'],
-  description: ['designing', 'implementing-batch', 'planning'],
-  references: ['designing', 'planning'],
+  body: ['implementing-batch'],
+  description: ['implementing-batch', 'planning'],
+  references: ['planning'],
 };

@@ -2,7 +2,7 @@
 
 Put the built directions in front of the person deciding, whole and live, at a size where the type, the colour and the spacing can be read, and let one click settle it. The enemy is a comparison nobody can see: cards that fill in one by one, or taste polled in words the comps already answer. The overcorrection is a preview so staged that the chooser picks a presentation instead of a direction.
 
-`visual-direction.md` owns what a direction is. This file owns the screen that asks for one.
+the `visual-direction` reference owns what a direction is. This file owns the screen that asks for one.
 
 ## The command
 
@@ -19,7 +19,7 @@ node scripts/pick.mjs --comps <dir> --contracts <contracts.json> \
 
 ## Before the picker
 
-The picker runs only when the user asks to see directions whole, after the message that names its price as `## Asking` of `intake.md` says; every other visual choice belongs to `sketch-tab.md`. The picker starts in the message that writes the comps, and the labels file is written just before it.
+The picker runs only when the user asks to see directions whole, after the message that names its price as `## Asking` of the `intake` reference says; every other visual choice belongs to the `sketch-tab` reference. The picker starts in the message that writes the comps, and the labels file is written just before it.
 
 - One message holds a Write per comp and the `pick.mjs` start under the Bash tool's `run_in_background`. The order inside the message does not matter, because the picker opens the tab only once the last comp exists.
 - No `capture.mjs`, `inspect-render.mjs`, screenshot, or image read of a comp before the picker: the picker is the comps' first render and the chooser's eyes are the critique. A headless capture engine is not the chooser's browser either, so a repair made against it fixes a defect the chooser might never have seen.

@@ -2,6 +2,21 @@
 
 Judge the rendered pixels before re-reading the code that produced them. The enemy is the code review that rationalizes the pixels it just explained — the stylesheet always argues that the page is what it intended. The overcorrection is a critique that rejects a working design for novelty's sake.
 
+## Contents
+
+- [Order](#order)
+- [The rubric](#the-rubric)
+- [Diagnostics](#diagnostics)
+- [Unsupported-pattern test](#unsupported-pattern-test)
+- [Structural tells](#structural-tells)
+- [Slop tropes](#slop-tropes)
+- [The fault contract](#the-fault-contract)
+- [Two whole-page tests](#two-whole-page-tests)
+- [Craft sweep, against the render](#craft-sweep-against-the-render)
+- [Read every heading and button aloud](#read-every-heading-and-button-aloud)
+- [Hard floor](#hard-floor)
+- [Judgment](#judgment)
+
 ## Order
 
 Read the renders and answer the rubric first, from the images alone. Only then open the stylesheet, and only to find the repairing edit. A finding that could have been written without looking at a render is a code review, not a critique.
@@ -35,7 +50,7 @@ A cliché list alone convicts nothing, and the slop tropes below are defaults aw
 
 Findings the render can prove without taste: one surface anatomy repeated across unrelated content types; uniform spacing where nothing groups; flat hierarchy — adjacent type steps under a 1.25 ratio, or headings that are merely bold body; a single family whose display and body are separated by neither 200 weight units nor a width axis; a face with no candidate, repository, or brief provenance; emoji doing icon duty and mixed icon families (`scripts/check-ui.mjs` reports both); placeholder boxes where imagery was promised; numbered markers on content that is not a sequence.
 
-When a tell removes a default, replacement parity applies (`visual-direction.md`): deletion alone never passes.
+When a tell removes a default, replacement parity applies (the `visual-direction` reference): deletion alone never passes.
 
 ## Slop tropes
 
@@ -72,7 +87,7 @@ Fix them and render again. A redesign also removes one accessory with no content
 ## Craft sweep, against the render
 
 - [ ] Is the designed ground visible at both 390px and 1440px, with any texture perceptible where intended, not competing with content, and body-text contrast held on top of it?
-- [ ] Is every browser surface the implementation presents themed, down the finish list in `implementation.md`?
+- [ ] Is every browser surface the implementation presents themed, down the finish list in the `implementation` reference?
 - [ ] Are two atmosphere layers doing the same job?
 
 ## Read every heading and button aloud

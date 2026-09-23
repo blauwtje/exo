@@ -21,7 +21,7 @@ Run this loop for an open identity, one that does not exist yet or that the brie
 1. Inspect what exists first — repository assets, `docs/design/`, and any prior approved renders.
 2. Extract the relationships across composition, typography, chroma, geometry, imagery, material and light, and motion from evidence this session can open: the content inventory, the repository's own assets, `docs/design/`, and any prior approved renders. Record what to borrow and what to reject. Where visual research capability is available, a reference set widens that list and never replaces it, because a relationship no evidence supports is an invention, and one the build keeps is named as an assumption in the report. Do not route the decision through a named style label; the borrow-and-reject list is the output, not a style name.
 3. Deal three contracts below, then fill and `--check` the one this session recommends; nothing but the preview offer is asked between `--check` and the first sketch.
-4. On the preview option, sketch every dealt direction in one file for the sketch tab, under `sketch-tab.md`, and freeze the clicked one as `phase-direction.md` says. Only when the user asks to see directions whole, build one comp per standing direction — one screenful of the real surface, real content, one self-contained HTML file, no build step — into `variant-<n>/index.html` under scratch output outside the repository, and run `scripts/pick.mjs --comps <dir> --frame <w>x<h>`, which shows every comp live at one shared scale and prints the clicked index. The `title` and `description` on each contract are what the chooser reads: plain words, no axis ids; mark your own pick with `--recommend <n>`. The whole set is one turn's work, and the comps stay under the run directory after Build. `pick.mjs` exit 3: the recommended contract is the selection, with no question in the terminal, **before** any production code changes.
+4. On the preview option, sketch every dealt direction in one file for the sketch tab, under the `sketch-tab` reference, and freeze the clicked one as the `phase-direction` reference says. Only when the user asks to see directions whole, build one comp per standing direction — one screenful of the real surface, real content, one self-contained HTML file, no build step — into `variant-<n>/index.html` under scratch output outside the repository, and run `scripts/pick.mjs --comps <dir> --frame <w>x<h>`, which shows every comp live at one shared scale and prints the clicked index. The `title` and `description` on each contract are what the chooser reads: plain words, no axis ids; mark your own pick with `--recommend <n>`. The whole set is one turn's work, and the comps stay under the run directory after Build. `pick.mjs` exit 3: the recommended contract is the selection, with no question in the terminal, **before** any production code changes.
 5. Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 6. `--select` freezes the choice; the other variants stay under the run directory.
 
@@ -33,7 +33,7 @@ Each variant of an open identity or consequential redesign fills a contract from
 
 ## Palette
 
-Name tokens by role, never by hue — `--accent`, not `--orange`. Derivation mechanics live in `implementation.md`; this file decides.
+Name tokens by role, never by hue — `--accent`, not `--orange`. Derivation mechanics live in the `implementation` reference; this file decides.
 
 - **Topology is a named choice**, with no default: one ramp mixed from two anchors; several named ramps; or a regionally chromatic surface. Every ramp is deliberately anchored.
 - **Commitment is a named level**, with no default and no escalation trajectory: *restrained* — accent at the focal point and named signals only; *committed* — one saturated color carries a named set of whole regions; *drenched* — the surface is the color. The last two recut neutrals against the new ground and re-verify every pairing.
@@ -58,7 +58,7 @@ One coherent physical logic per direction: state the light source and the lighti
 - **Hard offset** — solid shadows and thick strokes, for a neobrutalist direction.
 - **Layered translucency** — blur and glass, only over real changing content.
 
-The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a subject-derived texture — grain, paper, graph grid, planning, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in `motion.md` and keeps a static fallback under reduced motion.
+The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a subject-derived texture — grain, paper, graph grid, planning, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in the `motion` reference and keeps a static fallback under reduced motion.
 
 The focal point may earn what a tell denies elsewhere — a glow where the subject emits light, glass over its layered content, one gradient with named hue logic — when an observation and a named job back it.
 
@@ -69,13 +69,13 @@ Inventory before invention: list what the repository and subject already own —
 - **Every image names one job** — evidence, instrument, identity, or mood tied to the direction. A region that cannot name its image's job loses the image, not the content.
 - **Data is material.** When the subject is data, the chart, table, or instrument is the art direction: built from page tokens, populated with real or labeled-assumption values.
 - **One icon family** — one stroke-width token, one view-box grid, sizes tied to the type scale. A display or symbol exception is open where the direction names it.
-- Decoration carrying no job is replaced up the ladder in `implementation.md`, not deleted.
+- Decoration carrying no job is replaced up the ladder in the `implementation` reference, not deleted.
 
 ## Whole-page visual logic
 
 The focal point leads, and supporting regions carry real art direction rather than generic backing: the same material grammar at lower intensity, their own content job, and a subject mapping that survives covering the focal element.
 
-When a tell from `visual-critique.md` removes a default: every removed default needs replacement parity: the content keeps or gains hierarchy, specificity, atmosphere, relationship clarity, or interaction feedback — deletion alone never passes. A replacement chosen for being the known non-default is still a default: every replacement traces to Phase 1 evidence, not to this list's negation.
+When a tell from the `visual-critique` reference removes a default: every removed default needs replacement parity: the content keeps or gains hierarchy, specificity, atmosphere, relationship clarity, or interaction feedback — deletion alone never passes. A replacement chosen for being the known non-default is still a default: every replacement traces to Phase 1 evidence, not to this list's negation.
 
 ## Judgment
 

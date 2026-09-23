@@ -14,11 +14,11 @@ Name the decision an answer changes before asking anything; a question with no n
   2. **Decide for me**: build <title of the recommended contract>
   ```
 
-  An offer that drops the price is not the offer, because a chooser who was not told the price did not agree to it. The preview option starts `scripts/sketch-tab.mjs --serve` and writes the first sketch in the same message, under `sketch-tab.md`; the click names the contract that `phase-direction.md` then freezes. Every later visual choice, and every revision the user asks for, is one more sketch file in that tab, with no second offer.
+  An offer that drops the price is not the offer, because a chooser who was not told the price did not agree to it. The preview option starts `scripts/sketch-tab.mjs --serve` and writes the first sketch in the same message, under the `sketch-tab` reference; the click names the contract that the `phase-direction` reference then freezes. Every later visual choice, and every revision the user asks for, is one more sketch file in that tab, with no second offer.
 - On the second option, or an exit 3, no visual question is asked for the rest of the session: the `--recommend` contract is the selection, each further visual choice is decided from the contract and Phase 1 evidence and stated in one line, the choice and what it costs if wrong and never why, and a correction is applied without a question back. The exception is a user who then asks to see options, which opens the tab with no second offer.
 - Full comps through `pick.mjs` are built only when the user asks to see a direction whole, for the directions the sketches left standing, and the message names their price first: about 3,500 extra tokens per direction and one to three minutes.
 - Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question. Beyond the offer, ask one only while an unanswered fact blocks a decision the brief, the repository, and Phase 1 evidence cannot settle, and name that decision inside the question; a visual choice is never that fact. Stop after two rounds, then state the assumption and build.
-- A planning turn routes by `## Route` and makes the offer on rungs 3 and 7, because a direction frozen without it was chosen for the user. On the preview option it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `phase-direction.md` says; on the second option, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0`. Either way the plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`, and that output is carried verbatim in the Edit block of the plan's first Build step, which writes that file. The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call, because every mode of that script reads a file under `$RUN` and that mode refuses the write: the plan records `Direction: pending at rung <n>` under `## Visual direction` with the evidence that placed it there, and the build session runs Phase 2 from that rung before Build.
+- A planning turn routes by `## Route` and makes the offer on rungs 3 and 7, because a direction frozen without it was chosen for the user. On the preview option it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as the `phase-direction` reference says; on the second option, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0`. Either way the plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`, and that output is carried verbatim in the Edit block of the plan's first Build step, which writes that file. The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call, because every mode of that script reads a file under `$RUN` and that mode refuses the write: the plan records `Direction: pending at rung <n>` under `## Visual direction` with the evidence that placed it there, and the build session runs Phase 2 from that rung before Build.
 
 ## The run directory
 
@@ -30,14 +30,18 @@ A complaint names a fault in the words of the person who saw it, and those words
 
 | Reported as | Owned by |
 |---|---|
-| flat, cheap, unfinished, generic, or like a template | `visual-critique.md`, its `## Slop tropes` and `## Unsupported-pattern test` |
-| empty, bare, or too much white space | `composition.md`, its `## Build density without clutter`, against every quiet region's named job in `visual-direction.md` |
-| cluttered, noisy, or hard to scan | `composition.md` for grouping and pacing, `typography.md` its `## Scale` for the hierarchy |
-| cramped, misaligned, or spaced inconsistently | `implementation.md`, and `component-system.md` its `## Scales, not values` |
-| the type reads wrong, dated, or hard to read | `typography.md` |
-| the colours look muddy, garish, or washed out | `visual-direction.md` its `## Palette`, and `tokens.md` past the role tokens |
-| the page jumps, stalls, or feels slow to arrive | `performance-budget.md` for the cause, `feedback-and-status.md` for what is shown while it waits |
-| the motion distracts, or nothing seems to respond | `motion.md` for the first, `interaction-qa.md` for the second |
+| flat, cheap, unfinished, generic, or like a template | the `visual-critique` reference, its `## Slop tropes` and `## Unsupported-pattern test` |
+| empty, bare, or too much white space | the `composition` reference, its `## Build density without clutter`, against every quiet region's named job in the `visual-direction` reference |
+| cluttered, noisy, or hard to scan | the `composition` reference for grouping and pacing, the `typography` reference its `## Scale` for the hierarchy |
+| cramped, misaligned, or spaced inconsistently | the `implementation` reference, and the `component-system` reference its `## Scales, not values` |
+| the type reads wrong, dated, or hard to read | the `typography` reference |
+| the colours look muddy, garish, or washed out | the `visual-direction` reference its `## Palette`, and the `tokens` reference past the role tokens |
+| the page jumps, stalls, or feels slow to arrive | the `performance-budget` reference for the cause, the `feedback-and-status` reference for what is shown while it waits |
+| the motion distracts, or nothing seems to respond | the `motion` reference for the first, the `interaction-qa` reference for the second |
+
+## Settled identity
+
+Rung 5 of the skill's `## Route` reads any one of these as a settled identity: docs/design/DESIGN.md with a `scripts/context.mjs` status other than `absent`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it.
 
 ## Judgment
 

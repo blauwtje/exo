@@ -1,6 +1,6 @@
 # Controls
 
-Give every control a designed anatomy: silhouette, weight, padding, edge, and label. The enemy is the framework default wearing the project's accent color — a button that would look identical in any other product. The overcorrection is a bespoke control that loses the affordance, state, or reachability the native one had. Accessibility mechanics — focus order, target size, state coverage — live in `interaction-qa.md`; this file is craft.
+Give every control a designed anatomy: silhouette, weight, padding, edge, and label. The enemy is the framework default wearing the project's accent color — a button that would look identical in any other product. The overcorrection is a bespoke control that loses the affordance, state, or reachability the native one had. Accessibility mechanics — focus order, target size, state coverage — live in the `interaction-qa` reference; this file is craft.
 
 ## Tactile hierarchy
 
@@ -50,6 +50,6 @@ One exception, and it is not a matter of taste: where the pair **is the consent*
 ## Judgment
 
 - Native control semantics outrank a bespoke silhouette; build the silhouette on the native element.
-- The state and reachability floor in `interaction-qa.md` outranks visual polish on any control.
+- The state and reachability floor in the `interaction-qa` reference outranks visual polish on any control.
 - Existing repository component conventions outrank these defaults; extend the primitive rather than adding a sibling.
 - A control that reads as its tier without color outranks one that needs the accent to be legible.
