@@ -122,6 +122,13 @@ const LINE_TELLS = [
     pattern: /\b(?:bg|text|from|via|to|border|ring|fill|stroke|shadow)-(?:indigo|violet|purple)-(?:50|[1-9]00|950)\b/,
     threshold: 'an accent hue the subject justifies',
     note: 'indigo, violet or purple utility class, the default generated palette'
+  },
+  {
+    type: 'monospace-label',
+    confidence: 'potential',
+    pattern: /\bclass(?:Name)?\s*=\s*["'](?=[^"']*\bfont-mono\b)(?=[^"']*(?:\buppercase\b|\btext-xs\b|\btracking-))[^"']*["']/,
+    threshold: 'monospace for code and tabular figures only',
+    note: 'font-mono utility on a small, uppercase or tracked label'
   }
 ];
 
@@ -518,6 +525,52 @@ function pillMarkupFindings(text, relative) {
   })];
 }
 
+const CUBIC_BEZIER = /cubic-bezier\(\s*[\d.]+\s*,\s*(-?[\d.]+)\s*,\s*[\d.]+\s*,\s*(-?[\d.]+)\s*\)/gi;
+const BOUNCE_NAME =
+  /\banimate-bounce\b|@keyframes\s+[\w-]*bounce|animation(?:-name)?\s*:[^;]*\bbounce|\bbounce\s*:\s*(?:0?\.\d*[1-9]|1\b)/i;
+const CARD_SELECTOR = /card|tile/i;
+const MONOSPACE = /\bmono(?:space)?\b|courier|menlo|consolas|monaco|fira code/i;
+const CODE_SELECTOR = /(?:^|[\s,>+~.])(?:code|pre|kbd|samp)(?![\w])/i;
+
+/** Easing that overshoots its end: a cubic-bezier y outside 0 to 1, a bounce animation, or a spring bounce above 0. */
+function bounceFindings(line, location) {
+  const curves = [...line.matchAll(CUBIC_BEZIER)];
+  const overshoots = curves.some((curve) => [curve[1], curve[2]].some((y) => Number(y) < 0 || Number(y) > 1));
+  if (!overshoots && !BOUNCE_NAME.test(line)) return [];
+  return [finding({
+    type: 'bounce-easing', confidence: 'potential', selector: location,
+    measured: line.trim().slice(0, 80), threshold: 'easing that settles without overshoot',
+    note: 'bounce, elastic or overshooting easing'
+  })];
+}
+
+/** An animation on a card or tile rule: the same entrance stamped on every card. */
+function cardEntranceFindings(selector, body, where) {
+  const animation = declaration(body, 'animation(?:-name)?');
+  if (!animation || /^none\b/i.test(animation) || !CARD_SELECTOR.test(selector)) return [];
+  return [finding({
+    type: 'card-entrance', confidence: 'potential', selector: where,
+    measured: `animation ${animation}`, threshold: 'motion that marks a state change, not every card arriving',
+    note: 'entrance animation on a card rule'
+  })];
+}
+
+/** A monospace family on a non-code rule that also sets it small, uppercase or tracked. */
+function monospaceLabelFindings(selector, body, where) {
+  const family = declaration(body, 'font-family');
+  if (!family || !MONOSPACE.test(family) || CODE_SELECTOR.test(selector)) return [];
+  const size = lengthPx(declaration(body, 'font-size'));
+  const tracking = lengthPx(declaration(body, 'letter-spacing'));
+  const uppercase = /\buppercase\b/i.test(declaration(body, 'text-transform') ?? '');
+  const isLabel = uppercase || (size !== null && size <= 13) || (tracking !== null && tracking > 0);
+  if (!isLabel) return [];
+  return [finding({
+    type: 'monospace-label', confidence: 'potential', selector: where,
+    measured: family, threshold: 'monospace for code and tabular figures only',
+    note: 'monospace label worn to look technical'
+  })];
+}
+
 function ruleFindings(text, relative, shadows) {
   const findings = [];
   for (const { selector, body, location } of cssRules(text, relative)) {
@@ -547,6 +600,8 @@ function ruleFindings(text, relative, shadows) {
     }
     findings.push(...tintedGlowFindings(body, where));
     findings.push(...pillButtonFindings(selector, body, where));
+    findings.push(...cardEntranceFindings(selector, body, where));
+    findings.push(...monospaceLabelFindings(selector, body, where));
     const background = declaration(body, 'background(?:-image)?');
     const gap = background && /linear-gradient\(/i.test(background) && GROUND_SELECTOR.test(selector)
       ? gradientHueGap(background)
@@ -614,6 +669,7 @@ export async function staticAudit(directory) {
       }
       findings.push(...inlineStyleFindings(line, location));
       findings.push(...fontFindings(line, location, overused));
+      findings.push(...bounceFindings(line, location));
       if (isStylesheet) findings.push(...rawValueFindings(line, location, insideTokenBlock));
       if (isMarkup) findings.push(...emojiFindings(line, location));
     });

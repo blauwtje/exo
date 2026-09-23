@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `designing`: `scripts/check-ui.mjs` reports ten more named template defaults as `potential` findings with file and line: `edge-accent-card` (a stripe on any one card edge, replacing `left-accent-card`), `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow` (zero-offset and accent-tinted glows), `pill-button`, `bounce-easing`, `card-entrance` and `monospace-label`.
+
 ## 0.28.0 - 2026-09-22
 
 ### Added

@@ -483,6 +483,40 @@ describe('check-ui.mjs named anti-patterns', () => {
     const selectors = ofType(findings, 'pill-button').map((entry) => entry.selector).sort();
     assert.deepEqual(selectors, ['.btn-primary (styles.css:1)', 'page.html:1']);
   });
+
+  it('reports an overshooting curve, a bounce animation and a spring bounce, not a settling curve', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.menu {\n  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);\n}',
+        '.icon {\n  animation: bounce 1s infinite;\n}',
+        '.fade {\n  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);\n}'
+      ].join('\n'),
+      'motion.js': 'export const spring = { type: "spring", bounce: 0.4 };\n'
+    });
+    const selectors = ofType(findings, 'bounce-easing').map((entry) => entry.selector).sort();
+    assert.deepEqual(selectors, ['motion.js:1', 'styles.css:2', 'styles.css:5']);
+  });
+
+  it('reports an animation on a card rule, not on a spinner', async () => {
+    const findings = await findingsFor({
+      'styles.css': '.feature-card {\n  animation: fade-up 600ms ease both;\n}\n.spinner {\n  animation: spin 1s linear infinite;\n}\n'
+    });
+    const entrances = ofType(findings, 'card-entrance');
+    assert.deepEqual(entrances.map((entry) => entry.selector), ['.feature-card (styles.css:1)']);
+    assert.equal(entrances[0].measured, 'animation fade-up 600ms ease both');
+  });
+
+  it('reports a small uppercase monospace label and a font-mono utility label, not code', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.stat-label {\n  font-family: "JetBrains Mono", monospace;\n  font-size: 0.75rem;\n  text-transform: uppercase;\n}',
+        'pre code {\n  font-family: ui-monospace, monospace;\n  font-size: 0.8rem;\n}'
+      ].join('\n'),
+      'page.html': '<main>\n  <span class="font-mono text-xs uppercase">Latency</span>\n  <code class="font-mono">npm test</code>\n</main>\n'
+    });
+    const selectors = ofType(findings, 'monospace-label').map((entry) => entry.selector).sort();
+    assert.deepEqual(selectors, ['.stat-label (styles.css:1)', 'page.html:2']);
+  });
 });
 
 describe('check-ui.mjs comments, baseline and ignore file', () => {
