@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Stop first.** The finish question after every stage now recommends stopping, with the command to run after a clear in that line, because the brief, plan and branch are on disk and a clear loses nothing the next stage reads.
+
+### Added
+
+- `implementing` reads the landed set, the next task or wave, its section, its frame fields and the drift of its `Modify:` regions from `scripts/next-task.mjs`, and lands a green task through `scripts/land-task.mjs`, which runs the task's `Commit:` block and checks its `Plan-task:` trailer, so the session extracts, checks and commits nothing by hand.
+
+### Changed
+
+- The next-stage question lists Stop first and recommends it after every stage; this session is the second option.
+- `implementing` runs at `medium` effort; the implementer agent and both branch reviewers keep their pins, and the next-stage model table says so.
+- `planning` sends discovery to `exo:explorer` by default and reads at most eight files directly before the plan is first written.
+- The README and CONTRIBUTING say that the read guard hooks `Read` only and covers no file content read through Bash.
+
 ## 0.33.0 - 2026-09-23
 
 ### Added
