@@ -12,6 +12,18 @@ A surface whose direction was decided before this run — a plan's `Contract:`, 
 - A surface with no existing product stays unfinished while a content obligation from the inventory is missing or any region still holds placeholder material.
 - check-ui runs before the first edit, `scripts/check-ui.mjs` with `--source` on the surface's source root and `--url` when the surface already renders, at `--viewport 390x844` and `--viewport 1440x900`, into `$RUN/check-ui-baseline-390.json` and `$RUN/check-ui-baseline-1440.json`; every later check-ui run of the surface passes the matching file as `--baseline`, so its `comparison` holds the counts the report quotes.
 
+## The piece path
+
+A new piece on the settled identity that rung 5 of the skill's `## Route` names builds in this session, with no baseline, inventory, comps, critic, or `scripts/inspect-render.mjs`:
+
+1. Read the rung 5 evidence and the output of the Phase 1 `scripts/context.mjs` call.
+2. Load `implementation.md` without `## Tokens and palette derivation`; read that section only when the piece adds a role token the repository lacks.
+3. Load `## Adopt before authoring` and `## The state row` from `component-system.md`, `## Tactile hierarchy` and `## Labels` from `controls.md`, and `## Anatomy of the composite controls` for a composite control.
+4. Build, then run the repository checks `## The mechanics` names.
+5. Take one post-build pair with `scripts/capture.mjs` and one `scripts/check-ui.mjs` run, repair what they show, and stop.
+
+Without that identity, a new piece extracts the existing tokens and patterns, runs every phase without variants against what the piece carries, and records one local motion decision before Build.
+
 ## Judgment
 
 - The floor and the underdesign floor in `## The build floor` of `phase-detail.md` bind every build, in this session and in every builder.

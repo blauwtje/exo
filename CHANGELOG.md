@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `designing`: when no stage called it, a build runs the repository's own type-check, lint and test commands for the touched files before `scripts/check-ui.mjs`, and the QA checks line reports their result; a failure in an untouched file is reported, not chased.
+- `designing`: the piece path's load list and post-build pair move from `SKILL.md` into `## The piece path` of `references/phase-build.md`, and a piece with a settled identity reads `references/implementation.md` without `## Tokens and palette derivation` unless it adds a role token the repository lacks.
 
 ## 0.29.1 - 2026-09-23
 
