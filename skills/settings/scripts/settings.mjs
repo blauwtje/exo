@@ -141,7 +141,8 @@ function contextLine(root) {
       return `${key}=${value} (${layer})`;
     });
     const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
-    return [`exo settings: ${parts.join(', ')}`, ...notes].join('; ');
+    const repliesRule = SCHEMA.replies.rules[resolve('replies', stack).value];
+    return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${repliesRule}`;
   } catch (error) {
     const defaults = Object.entries(SCHEMA).map(([key, entry]) => `${key}=${entry.default} (default)`);
     return `exo settings: ${defaults.join(', ')}; ${error.message}`;

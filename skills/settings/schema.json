@@ -9,7 +9,11 @@
     "type": "string",
     "options": ["tight", "standard"],
     "default": "tight",
-    "description": "how the session writes replies: tight drops preamble, recap and filler; standard keeps full prose"
+    "description": "how the session writes replies: tight drops preamble, recap and filler; standard keeps full prose",
+    "rules": {
+      "tight": "Replies are tight: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. An output style outranks this.",
+      "standard": "Replies are standard: full prose. An output style outranks this."
+    }
   },
   "interview": {
     "type": "string",

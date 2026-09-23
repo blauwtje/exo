@@ -9,6 +9,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
+import { readFileSync } from 'node:fs';
+
+const SCHEMA = JSON.parse(readFileSync(new URL('../skills/settings/schema.json', import.meta.url), 'utf8'));
+const TIGHT_RULE = `. ${SCHEMA.replies.rules.tight}`;
 
 const SETTINGS = fileURLToPath(new URL('../skills/settings/scripts/settings.mjs', import.meta.url));
 
@@ -36,22 +40,22 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), interview=chat (default), context=80 (default)');
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), interview=chat (default), context=80 (default)' + TIGHT_RULE);
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=80 (default)');
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=80 (default)' + TIGHT_RULE);
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), interview=chat (default), context=80 (default)');
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), interview=chat (default), context=80 (default)' + TIGHT_RULE);
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), interview=chat (default), context=80 (default)');
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), interview=chat (default), context=80 (default)' + TIGHT_RULE);
 });
 
 test('replies is tight by default and standard when the project sets it', async () => {
