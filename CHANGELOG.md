@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.31.0 - 2026-09-23
+
 ### Added
 
 - `benchmarks/sweep.mjs`: a local, opt-in sweep that runs every review, build, plan and whole-flow cell as its own `claude -p` process with a named model and effort, records defects found, false alarms, tokens and wall time per cell, and writes the reviewer's false-alarm rate and the winning plan cell to a dated results file; `skills-tool` now names the model and effort on every pressure-scenario run.
