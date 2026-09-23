@@ -1,10 +1,31 @@
-# Setup map
+# Setup walk
 
-Write the setup page's map so every setting shows its current value and keeping it costs one click. The enemy is a map whose recommended answer changes a value, which turns Go into a change the user never read. The overcorrection is an answer the scripts would reject: offer only the values each script accepts.
+Walk every setting through one page in rounds, and write only what the user changed once the review confirms. The enemy is a map whose recommended answer changes a value, which turns Go into a change the user never read. The overcorrection is an answer the scripts would reject: offer only the values each script accepts.
+
+## Contents
+
+- [The run folder](#the-run-folder)
+- [The rounds](#the-rounds)
+- [The map file](#the-map-file)
+- [Each setting](#each-setting)
+- [Judgment](#judgment)
 
 ## The run folder
 
 `RUN="$(git rev-parse --git-dir)/exo/setup"`, or a temp directory outside a git repository. It holds `map.json` and `questions/`, and nothing in it is committed.
+
+## The rounds
+
+`<page>` stands for the page command the skill's `## The walk` names.
+
+1. **Check the issue route.** Run `git remote get-url origin` and `gh auth status`. Offer `issues` and `both` only when origin is on GitHub and both pass, because either answer fails at the first spec otherwise.
+2. **Write the map** that `## The map file` below describes, in the user's language. Each setting's first answer keeps its current value and is the recommended one, so Go keeps every setting still open.
+3. **Serve the page once** under the Bash tool's `run_in_background`: `<page> --serve "$RUN/questions" --map "$RUN/map.json" 2> "$RUN/page.log"`.
+4. **Ask in rounds** with `<page> --ask "$RUN/questions" --map "$RUN/map.json" > "$RUN/answer.json"`. A round asks every open setting. After each answer, close each answered setting as `you` with its `round`, open the settings that waited on one just closed, raise `round`, rewrite the map and ask again. A `go` answer closes every open setting on its keep answer.
+5. **Close what the counter decides.** A counter answered `off` closes the guard and its line limit as `exo`, because the counter's off switch stops the guard as well.
+6. **Fall back to the chat** on exit 3, and at once when a step before it cannot run, such as a denied map write or no browser to open: ask each remaining setting in its own message, in the question shape, and never pick an answer for the user. Exit 2 names the map field to repair.
+7. **Review before writing.** With every setting closed, write the map with no open setting and ask once more: `done` confirms, and `reopen` or typed words return the settings they name as the next round. In the chat, list the changes and wait for a yes.
+8. **Write only the changes, then report.** Use the commands under `## The write commands` in the skill, and on a rejection relay it as printed and write nothing after it, because the user confirmed the set as a whole. Report one line per changed value and where it now lives.
 
 ## The map file
 
@@ -75,9 +96,10 @@ Every setting but `scope` offers its current value first, as `{ "id": "keep", "l
 | `guard` | Should exo refuse to read a big file whole? | `on`: it reads the part it needs. `off`: any file may be read whole. |
 | `guardLines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |
 
-`issues` and `both` are left out when the loop's first step found no working GitHub route. A value that is the current one appears only as `keep`.
+`issues` and `both` are left out when step 1 of `## The rounds` found no working GitHub route. A value that is the current one appears only as `keep`.
 
 ## Judgment
 
 - The current value outranks the default as the recommended answer.
 - An answer the scripts reject is never offered, even when the user typed it: ask that setting again with the accepted values.
+- The user's typed words outrank the click they came with.
