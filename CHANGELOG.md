@@ -19,6 +19,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `designing`: the rule that a run starts Build in the turn the direction is picked moves into `references/phase-direction.md`, the copy of a handed direction to `$RUN/contract-selected.json` into rung 2 of `## Route`, and a plan's `Contract:` record into the planning bullet of `references/intake.md`.
 - `designing`: `SKILL.md` holds one numbered `## The loop` of five steps in place of `## Intake` and the five phase sections and calls the `exo:design-critic` agent the critic throughout, so every run loads about 1890 words of it instead of 2274.
 - `designing`: `## The fault contract` in `references/visual-critique.md` shows one complete five-line fault in place of the label definitions.
+- `designing`: `references/motion.md` opens with a list of its sections.
 
 ## 0.29.1 - 2026-09-23
 
