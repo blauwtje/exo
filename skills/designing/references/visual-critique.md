@@ -39,7 +39,7 @@ When a tell removes a default, replacement parity applies (`visual-direction.md`
 
 ## Slop tropes
 
-These defaults make a page look generated. One stays only when a contract field or the wording of the brief justifies it and that justification is recorded; `scripts/check-ui.mjs` reports the code-detectable ones as `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`, `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, and `monospace-label`.
+These defaults make a page look generated. One stays only when a contract field or the wording of the brief justifies it and that justification is recorded; `scripts/check-ui.mjs` reports the code-detectable ones as `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`, `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, and `invented-content`.
 
 - Grounds: a gradient whose hue swings across the page, a saturated halo or glow in the middle, a gradient wash used as decoration.
 - Icons and imagery: emoji outside a stated brand use, and SVG drawings invented to fill a region; a labelled placeholder does better in both cases, with a request for the real material.

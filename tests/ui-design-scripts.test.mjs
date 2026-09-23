@@ -217,6 +217,25 @@ describe('check-ui.mjs static subset', () => {
     assert.equal(report.rendered.status, 'unavailable');
   });
 
+  it('reports invented people, companies, prices and social proof as potential invented-content', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'index.html'), [
+      '<p class="byline">Jane Doe</p>',
+      '<li>Trusted by Acme and Globex</li>',
+      '<span class="price">$49/mo</span>',
+      '<p>Join 10,000+ happy customers, rated 4.9/5</p>',
+      '<cite>Maria Lopez, CEO at Northwind</cite>',
+      '<p>Tide readings every 6 minutes from 14 stations, from $24 a month.</p>'
+    ].join('\n'));
+
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const invented = JSON.parse(result.stdout).static.findings.filter((entry) => entry.type === 'invented-content');
+    assert.deepEqual(invented.map((entry) => entry.selector).sort(),
+      ['index.html:1', 'index.html:2', 'index.html:3', 'index.html:4', 'index.html:5']);
+    assert.ok(invented.every((entry) => entry.confidence === 'potential'));
+  });
+
   it('reports no finding for a clean source tree and still exits 0', async () => {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'styles.css'), [
