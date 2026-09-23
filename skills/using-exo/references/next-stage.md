@@ -14,8 +14,8 @@ A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a nex
 | Next stage | Model and effort | Because |
 |---|---|---|
 | `planning` | `opus` at `high` | a plan's code is pasted as written, so a slip repeats in every task. |
-| `implementing`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `high` | that task builds in the session. |
-| `implementing`, any other plan | `sonnet` at `high` | the plan holds every step's code, and a frozen direction builds in a delegate. |
+| `implementing`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `medium` | that task builds in the session, and the skill pins `medium`. |
+| `implementing`, any other plan | `sonnet` at `medium` | the plan holds every step's code, a frozen direction builds in a delegate, and the implementer agent keeps `high`. |
 | `implementing-batch` | `opus` at `high` | it decides the change while building it. |
 
 ## Judgment
