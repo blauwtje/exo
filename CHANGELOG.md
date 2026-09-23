@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `node verify/skill-graph.mjs` answers where a skill section starts and ends, what points at a file and which strings a check pins to a doc, so an edit reads a line range instead of a whole file.
+
 ### Changed
 
 - Skill budgets are stricter: a skill body fails over 2,500 tokens (`using-exo` over 1,000), a description over 375 characters, and a reference that names another reference or runs past 100 lines without a contents list; skills not yet trimmed are listed in `PENDING_TRIM`.

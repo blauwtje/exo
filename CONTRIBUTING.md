@@ -15,6 +15,7 @@ An installed plugin runs from Claude Code's cache copy, so an edit is live only 
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
+| `node verify/skill-graph.mjs <command> [args]` | A read-only index over the skills, agents, hooks, root docs, `verify/` and `tests/`: `size`, `range`, `inbound`, `pins`, `refs`, `overlap` and `json`, each printing a compact answer instead of a whole file. |
 
 CI runs `npm run check` on Node 22 and 24 for every push to `main` and every pull request.
 
