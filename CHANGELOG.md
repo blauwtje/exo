@@ -12,6 +12,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `designing`: `scripts/direction.mjs --check` rejects a direction as `template-kit` when a palette anchor is a purple, a cream, or a neon beside a near-black anchor, the kits `scripts/check-ui.mjs` flags after the build, unless that anchor's evidence is of kind `brief` or `repository`; an anchor may be written as `{ "color", "evidence" }` to carry that evidence, and a plain color string stays valid.
 - `designing`: `scripts/check-ui.mjs` reports `invented-content` at `potential` confidence for a stock person name, a sample company name, a round placeholder price, and an unsourced user count, rating or testimonial attribution.
 
+### Changed
+
+- `designing`: when no stage called it, a build runs the repository's own type-check, lint and test commands for the touched files before `scripts/check-ui.mjs`, and the QA checks line reports their result; a failure in an untouched file is reported, not chased.
+
 ## 0.29.1 - 2026-09-23
 
 ### Changed
