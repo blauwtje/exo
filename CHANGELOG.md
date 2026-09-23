@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.29.0 - 2026-09-23
+
 ### Added
 
 - `designing`: `scripts/check-ui.mjs` reports eight more named template defaults as `potential` findings with file and line: `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow` (a zero-offset halo blurred 4px or more at any saturation, or an offset shadow blurred 12px or more in a clearly saturated color, oklch chroma 0.08 or more in any notation, so an ink-tinted shadow such as `rgba(15, 23, 42, 0.12)` stays quiet), `pill-button`, `bounce-easing`, `card-entrance` and `monospace-label`.
