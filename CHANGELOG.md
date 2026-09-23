@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.32.0 - 2026-09-23
+
 ### Added
 
 - `node verify/skill-graph.mjs` answers where a skill section starts and ends, what points at a file and which strings a check pins to a doc, so an edit reads a line range instead of a whole file.
