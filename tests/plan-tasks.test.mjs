@@ -31,6 +31,14 @@ test('parsePlan reads the frame and each task\'s dependencies, files and commit 
   assert.ok(!plan.tasks[1].section.includes('## Final verification'));
 });
 
+test('a commit subject reads the same through bash escapes and single quotes', () => {
+  const subjectOf = (commitLine) => parsePlan([
+    '### Task 1: Quote', '', 'Commit:', '```bash', 'git add .', commitLine, '```', ''
+  ].join('\n')).tasks[0].commitSubject;
+  assert.equal(subjectOf('git commit -m "feat: say \\"hi\\"" -m "Plan-task: 1"'), 'feat: say "hi"');
+  assert.equal(subjectOf("git commit -m 'feat: single' -m 'Plan-task: 1'"), 'feat: single');
+});
+
 test('a task heading inside a fence is code, not a task', () => {
   const inner = '### Task 9: Not a task';
   const plan = parsePlan(planFixture({ tasks: [

@@ -11,7 +11,8 @@ const TASK_HEADING = /^### Task (\d+): (.*)$/;
 const SECTION_HEADING = /^## (.+)$/;
 const FILE_LINE = /^- (Create|Modify|Test): `([^`]+)`(?: \(`([^`]+)`\))?/;
 const COMMIT_BLOCK = /^Commit:\n```bash\n([\s\S]*?)\n```/m;
-const COMMIT_SUBJECT = /git commit -m "([^"]+)"/;
+// The first `-m` argument, double-quoted with bash escapes or single-quoted.
+const COMMIT_SUBJECT = /git commit -m (?:"((?:[^"\\]|\\.)+)"|'([^']+)')/;
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const DECLARATION_KEYWORDS = /^(?:(?:export|default|async|function|const|let|var|class|def|pub|fn|func|static|public|private)\s+)+/;
 const LIST_MARKER = /^(?:[-*]|\d+\.)\s+/;
@@ -72,6 +73,7 @@ function describeTask({ number, title, lines }) {
     .filter((match) => match !== null)
     .map((match) => ({ kind: match[1], path: match[2], region: match[3] ?? null }));
   const commitBlock = section.match(COMMIT_BLOCK)?.[1] ?? null;
+  const subject = commitBlock?.match(COMMIT_SUBJECT) ?? null;
   return {
     number,
     title,
@@ -80,7 +82,7 @@ function describeTask({ number, title, lines }) {
     files,
     design: /^Design: /m.test(section),
     commitBlock,
-    commitSubject: commitBlock?.match(COMMIT_SUBJECT)?.[1] ?? null
+    commitSubject: subject === null ? null : subject[2] ?? subject[1].replace(/\\(["\\$`])/g, '$1')
   };
 }
 
@@ -104,7 +106,13 @@ export function frameOf(frame) {
 function commitsOf(root) {
   let log;
   try {
-    log = execFileSync('git', ['-C', root, 'log', '--format=%x1e%s%x1f%B'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    // Only commits with a Plan-task line are read, and without the default
+    // 1 MiB cap, which a long history's messages pass and fail with ENOBUFS.
+    log = execFileSync('git', ['-C', root, 'log', '--grep=^Plan-task: ', '--format=%x1e%s%x1f%B'], {
+      encoding: 'utf8',
+      maxBuffer: Infinity,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
   } catch (error) {
     if (/does not have any commits yet/.test(error.stderr ?? '')) return [];
     throw error;
