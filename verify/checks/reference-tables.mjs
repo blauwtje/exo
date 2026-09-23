@@ -51,6 +51,8 @@ const EXPECTED_OWNER_ROWS = {
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'drift-repairer-prompt.md',
+    '../using-exo/references/question.md',
+    'references/design-tasks.md',
   ],
   'skills/research/SKILL.md': [
     'researcher-prompt.md',

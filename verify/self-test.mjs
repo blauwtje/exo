@@ -15,7 +15,7 @@ import process from 'node:process';
 // javascript syntax check has the same modules to parse that the real run does,
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
-  'skills', 'verify', 'verify.mjs', 'README.md',
+  'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
   'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md'
 ];
 
@@ -181,6 +181,8 @@ const SCENARIOS = [
   } },
   { name: 'injected-body-over-ceiling', mutate: (root) =>
     append(root, 'skills/using-exo/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
+  { name: 'drifted-review-threshold', mutate: (root) =>
+    replaceText(root, 'README.md', '200 changed lines', '250 changed lines') }
 ];
 
 function copyVerificationFixture(repository, destination) {

@@ -7,6 +7,11 @@ import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
 import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/shaping/scripts/question-page.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
+import { FILE_LIMIT, LINE_LIMIT } from '../../skills/implementing/scripts/pick-reviewer.mjs';
+
+// A doc writes a small count as a word, so a pin built from a constant spells it.
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const REVIEW_THRESHOLD = [`${NUMBER_WORDS[FILE_LIMIT]} changed files`, `${LINE_LIMIT} changed lines`];
 
 const thousands = (value) => value.toLocaleString('en-US');
 
@@ -26,11 +31,13 @@ const PINNED_SENTENCES = {
   'skills/debug/SKILL.md': [
     'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
     'Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and offers `implementing-batch` on the next-stage question for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.',
+    ...REVIEW_THRESHOLD,
   ],
   'skills/implementing-batch/SKILL.md': [
     'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',
     'After a context compaction, rebuild what has landed from the working tree diff before the next edit',
     '`debug` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting.',
+    ...REVIEW_THRESHOLD,
   ],
   'skills/planning/SKILL.md': [
     'Resolve a vague referent from the first non-empty source: working-tree diff, most recent failing check, then last touched file.',
@@ -107,6 +114,10 @@ const PINNED_SENTENCES = {
   'skills/skills-tool/references/description.md': [
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
+  'README.md': [...REVIEW_THRESHOLD],
+  'CONTRIBUTING.md': [...REVIEW_THRESHOLD],
+  'agents/branch-reviewer.md': [...REVIEW_THRESHOLD],
+  'agents/branch-reviewer-deep.md': [...REVIEW_THRESHOLD],
 };
 
 // A doc list that restates a data asset: every name the asset lists appears
