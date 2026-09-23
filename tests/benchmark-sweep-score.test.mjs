@@ -103,6 +103,15 @@ test('a Fable cell that only ties Opus does not beat it', () => {
     /Winning plan cell: plan-opus-high \(0 rule breaches, 5000 tokens\)\. Fable 5\.1 beats Opus 5\.5 at high at no effort\./);
 });
 
+test('a plan cell that wrote no plan never wins or beats Opus', () => {
+  const records = [
+    record({ id: 'plan-opus-high', kind: 'plan', model: SWEEP_MODELS.opus, effort: 'high', defectsFound: 2, tokens: 5000 }),
+    record({ id: 'plan-fable-high', kind: 'plan', model: SWEEP_MODELS.fable, effort: 'high', defectsFound: null, tokens: 100, detail: 'no plan file' })
+  ];
+  assert.match(resultsMarkdown(META, records),
+    /Winning plan cell: plan-opus-high \(2 rule breaches, 5000 tokens\)\. Fable 5\.1 beats Opus 5\.5 at high at no effort\./);
+});
+
 test('the whole-flow line carries drift, review defects, cost and time', () => {
   const records = [record({ id: 'flow-c7', kind: 'flow', model: SWEEP_MODELS.sonnet, effort: 'high', defectsFound: 0, detail: '4/4 tasks landed, 0 drift reports, review verdict CLEAN' })];
   assert.match(resultsMarkdown(META, records),

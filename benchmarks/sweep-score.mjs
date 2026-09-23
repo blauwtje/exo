@@ -103,13 +103,15 @@ function comparePlans(left, right) {
   return (left.tokens ?? Number.MAX_SAFE_INTEGER) - (right.tokens ?? Number.MAX_SAFE_INTEGER);
 }
 
+// A plan cell that wrote no plan carries null breaches and takes no part in
+// the ranking, so an empty cell never outranks a written plan.
 function planLine(records) {
-  const plans = records.filter((record) => record.kind === 'plan');
-  if (plans.length === 0) return 'No plan cell ran, so Fable 5.1 routing stays unsettled.';
+  const plans = records.filter((record) => record.kind === 'plan' && record.defectsFound !== null);
+  if (plans.length === 0) return 'No plan cell wrote a plan, so Fable 5.1 routing stays unsettled.';
   const winner = [...plans].sort(comparePlans)[0];
   const winnerText = `Winning plan cell: ${winner.id} (${winner.defectsFound} rule breaches, ${shown(winner.tokens)} tokens).`;
   const opus = plans.find((record) => record.model === SWEEP_MODELS.opus && record.effort === 'high');
-  if (opus === undefined) return `${winnerText} The Opus 5.5 high cell did not run, so Fable 5.1 routing stays unsettled.`;
+  if (opus === undefined) return `${winnerText} The Opus 5.5 high cell wrote no plan, so Fable 5.1 routing stays unsettled.`;
   const fableEfforts = plans
     .filter((record) => record.model === SWEEP_MODELS.fable && comparePlans(record, opus) < 0)
     .map((record) => record.effort);

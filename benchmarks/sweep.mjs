@@ -144,7 +144,7 @@ async function measureCell(cell, repository, usage, cellDirectory) {
     return { defectsFound: check.pass ? 0 : 1, falseAlarms: null, detail: check.line };
   }
   const plan = newestPlan(repository);
-  if (plan === null) return { defectsFound: 1, falseAlarms: null, detail: 'no plan file' };
+  if (plan === null) return { defectsFound: null, falseAlarms: null, detail: 'no plan file' };
   fs.writeFileSync(path.join(cellDirectory, 'plan.md'), plan);
   const defects = lintPlan(plan);
   return { defectsFound: defects.length, falseAlarms: null, detail: defects.join('; ') || 'no rule breach' };
@@ -182,7 +182,9 @@ async function runCell(cell, runDirectory) {
       outputTokens: usage === null ? null : usage.counts.output,
       ...measured
     };
-    fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(repository, ['diff', 'HEAD']));
+    // Staged first, so a file the cell created lands in the patch too.
+    git(repository, ['add', '-A']);
+    fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(repository, ['diff', '--cached', 'HEAD']));
     fs.writeFileSync(path.join(cellDirectory, 'record.json'), `${JSON.stringify(record, null, 2)}\n`);
     return record;
   } finally {
