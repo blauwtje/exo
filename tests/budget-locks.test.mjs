@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK } from '../verify/budgets.mjs';
+import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK } from '../verify/budgets.mjs';
 import { checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
 import { checkRestatement } from '../verify/checks/restatement.mjs';
@@ -20,7 +20,6 @@ const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const USING_EXO = 'skills/using-exo/SKILL.md';
 // A counted description to shorten; growth goes to padding skills instead.
 const COUNTED_SKILL = 'skills/research/SKILL.md';
-const PER_SKILL_LIMIT = 400;
 
 // Every check here reads nothing outside skills/, so the fixture copies that alone.
 function skillsFixture(t) {
@@ -45,13 +44,13 @@ function verdict(root, check) {
   return { counts: report.counts(), detail: printed.join('\n') };
 }
 
-// Adds `growth` counted chars as padding skills of at most PER_SKILL_LIMIT each,
+// Adds `growth` counted chars as padding skills of at most DESCRIPTION_CHARS.ceiling each,
 // so the per-skill cap never fires before the total, however far the corpus
 // sits under its lock.
 function growTotal(root, growth) {
   let remaining = growth;
   for (let index = 0; remaining > 0; index += 1) {
-    const length = Math.min(remaining, PER_SKILL_LIMIT);
+    const length = Math.min(remaining, DESCRIPTION_CHARS.ceiling);
     const folder = path.join(root, 'skills', `padding-${index}`);
     fs.mkdirSync(folder);
     fs.writeFileSync(path.join(folder, 'SKILL.md'), `---\nname: padding-${index}\ndescription: ${'x'.repeat(length)}\n---\n\n# Padding\n`, 'utf8');

@@ -148,7 +148,29 @@ const SCENARIOS = [
   { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
     read(root, 'skills/implementing-batch/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
-    replaceText(root, 'skills/research/researcher-prompt.md', 'at most 25 lines', 'a short report') }
+    replaceText(root, 'skills/research/researcher-prompt.md', 'at most 25 lines', 'a short report') },
+  { name: 'body-over-token-ceiling', mutate: (root) =>
+    append(root, 'skills/settings/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
+  { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/research/SKILL.md',
+    read(root, 'skills/research/SKILL.md').replace('description: ', `description: ${'padding '.repeat(15)}`)) },
+  { name: 'reference-chain', mutate: (root) =>
+    append(root, 'skills/skills-tool/references/description.md', '\nRead `wording.md` next.\n') },
+  { name: 'long-reference-without-contents', mutate: (root) =>
+    append(root, 'skills/skills-tool/references/where-a-fix-lives.md', '- filler line\n'.repeat(90)) },
+  { name: 'empty-read-when', mutate: (root) => write(root, 'skills/skills-tool/SKILL.md',
+    read(root, 'skills/skills-tool/SKILL.md').replace(/^(\| `references\/plugging-holes\.md` \|)[^\n]*\|$/m, '$1  |')) },
+  { name: 'long-reference-with-contents', expect: 'accept', mutate: (root) => {
+    const relative = 'skills/skills-tool/references/where-a-fix-lives.md';
+    const contents = [
+      '## Contents', '',
+      '- [Take the first home that fits](#take-the-first-home-that-fits)',
+      '- [What each home costs](#what-each-home-costs)',
+      '- [A rule that has to be prose](#a-rule-that-has-to-be-prose)',
+      '- [Judgment](#judgment)', '', ''
+    ].join('\n');
+    const text = read(root, relative).replace('## Take the first home that fits', `${contents}## Take the first home that fits`);
+    write(root, relative, `${text}${'- filler line\n'.repeat(90)}`);
+  } }
 ];
 
 function copyVerificationFixture(repository, destination) {

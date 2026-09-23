@@ -128,7 +128,7 @@ const EXPECTED_CONTRACTS = {
 };
 
 // Get-ReferenceTableEntries: the `path` | `read it when` rows of a skill's table.
-function referenceTableEntries(content) {
+export function referenceTableEntries(content) {
   return [...content.matchAll(TABLE_ROW)]
     .map((match) => ({ path: match.groups.path, readWhen: match.groups.readWhen.trim() }));
 }

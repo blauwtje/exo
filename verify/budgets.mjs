@@ -33,8 +33,25 @@ export const RESTATEMENT_LOCK = { bytes: 3215, measured: '2026-09-22' };
 // line measurably lowers accuracy.
 export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 
-// A skill body is loaded whole when its skill fires and stays in the context
-// for the rest of the session. 15,000 bytes is about 3,750 tokens, under the
-// 500 lines first-party guidance sets for a body, and the smallest round number
-// the largest body, designing's, fits under once its phases live in references.
-export const SKILL_BODY_LIMIT = { bytes: 15000 };
+// Skill size. Tokens are the body's bytes after the frontmatter divided by
+// BYTES_PER_TOKEN, the sizing convention for skill text (the savings estimate
+// uses its own ratio). The ceiling fails; realistic is the aim skills-tool
+// states and the checks name in their PASS detail. using-exo has its own
+// ceiling because hooks/session-start.sh injects its body into every session.
+export const BYTES_PER_TOKEN = 4;
+export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
+export const INJECTED_BODY_TOKENS = { skill: 'using-exo', ceiling: 1000 };
+export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
+export const DESCRIPTION_TOTAL_WARN = { chars: 4650 };
+export const REFERENCE_CONTENTS_LINES = 100;
+
+// Skills over a ceiling above on 2026-09-23. A listed skill is held to the
+// older ceilings here and named in the PASS detail; its trim step deletes its
+// name, and a listed skill already within the new ceiling fails, so no entry
+// outlives its trim. The step that empties every list deletes this object.
+export const PENDING_TRIM = {
+  ceilings: { fileBytes: 15000, descriptionChars: 400 },
+  body: ['designing', 'implementing-batch', 'shaping', 'using-exo'],
+  description: ['designing', 'implementing-batch', 'planning', 'shaping'],
+  references: ['designing', 'planning'],
+};
