@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.34.0 - 2026-09-23
+
 ### Highlights
 
 - **Stop first.** The finish question after every stage now recommends stopping, with the command to run after a clear in that line, because the brief, plan and branch are on disk and a clear loses nothing the next stage reads.
