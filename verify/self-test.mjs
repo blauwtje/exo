@@ -16,7 +16,7 @@ import process from 'node:process';
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
-  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md'
+  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/savings.md'
 ];
 
 function read(root, relative) {
@@ -185,6 +185,8 @@ const SCENARIOS = [
     replaceText(root, 'README.md', '200 changed lines', '250 changed lines') },
   { name: 'drifted-wait-bound', mutate: (root) =>
     replaceText(root, 'skills/shipping/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
+  { name: 'drifted-retention-days', mutate: (root) =>
+    replaceText(root, 'README.md', 'last 30 days', 'last 60 days') },
 ];
 
 function copyVerificationFixture(repository, destination) {

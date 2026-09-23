@@ -9,6 +9,7 @@ import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/shaping/scripts/quest
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/implementing/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
+import { CHARACTERS_PER_TOKEN, DEFAULT_GUARD_LINES, SESSION_RETENTION_DAYS } from '../../skills/savings/scripts/record.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/shipping/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
@@ -116,12 +117,24 @@ const PINNED_SENTENCES = {
   'skills/skills-tool/references/description.md': [
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
-  'README.md': [...REVIEW_THRESHOLD, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
-  'CONTRIBUTING.md': [...REVIEW_THRESHOLD],
+  'README.md': [
+    ...REVIEW_THRESHOLD, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
+    `over ${DEFAULT_GUARD_LINES} lines`,
+    `last ${SESSION_RETENTION_DAYS} days`,
+    `${CHARACTERS_PER_TOKEN} characters per token`,
+  ],
+  'CONTRIBUTING.md': [
+    ...REVIEW_THRESHOLD,
+    `${CHARACTERS_PER_TOKEN} characters per token`,
+    `lines, ${DEFAULT_GUARD_LINES} unless set`,
+    `reads as ${DEFAULT_GUARD_LINES}`,
+  ],
   'agents/branch-reviewer.md': [...REVIEW_THRESHOLD],
   'agents/branch-reviewer-deep.md': [...REVIEW_THRESHOLD],
   'skills/shipping/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
   'skills/memory/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
+  'docs/skills/savings.md': [`last ${SESSION_RETENTION_DAYS} days`, `${CHARACTERS_PER_TOKEN} characters per token`],
+  'skills/settings/references/setup-map.md': [`\`${DEFAULT_GUARD_LINES}\` (the default)`],
 };
 
 // A doc list that restates a data asset: every name the asset lists appears

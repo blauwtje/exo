@@ -10,6 +10,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { OVERHEAD_VERSION } from '../skills/savings/scripts/overhead.mjs';
+import { CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS } from '../skills/savings/scripts/record.mjs';
 import { sumTokens } from '../skills/savings/scripts/transcript.mjs';
 import { fixture, run } from './harness.mjs';
 
@@ -182,13 +183,13 @@ test('the report is a fenced ledger: one estimated total, one line per read guar
   assert.deepEqual(lines, [
     '```text',
     'exo savings',
-    'Last 30 days · 1 session · local estimate',
+    `Last ${SESSION_RETENTION_DAYS} days · 1 session · local estimate`,
     '',
     'Tokens kept out of context   ≈ 449k',
     '  Big-file reads refused     ≈ 300k · 1 read',
     '  Repeated reads refused     ≈ 150k · 1 read',
     '',
-    'Estimated at 3.5 characters per token, the figure Anthropic documents; not measured or billed.',
+    `Estimated at ${CHARACTERS_PER_TOKEN} characters per token, the figure Anthropic documents; not measured or billed.`,
     '```',
     'Turn off with `/exo:settings counter off`.'
   ]);
@@ -204,7 +205,7 @@ test('a record with no refusals prints the title, the window and one sentence, n
   assert.deepEqual(result.stdout.trimEnd().split('\n'), [
     '```text',
     'exo savings',
-    'Last 30 days · 0 sessions · local estimate',
+    `Last ${SESSION_RETENTION_DAYS} days · 0 sessions · local estimate`,
     '',
     'Nothing refused yet: keep the read guard on and ask again after a session reads a file over 400 lines whole, or the same range twice.',
     '```',
