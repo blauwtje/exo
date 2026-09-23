@@ -20,7 +20,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { constants as fsConstants, realpathSync } from 'node:fs';
+import { constants as fsConstants, readFileSync, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 
@@ -31,6 +31,12 @@ export const NO_BROWSER_MESSAGE =
   'or set CHROME_PATH to a Chrome, Chromium, or Edge binary. This tool installs nothing.';
 
 export const COLOR_SCHEMES = ['light', 'dark', 'no-preference'];
+
+// The capture sizes the designing docs and agents name, mobile first; the last
+// is the single viewport check-ui and inspect-styles default to.
+export const DEFAULT_VIEWPORTS = Object.freeze(
+  JSON.parse(readFileSync(new URL('../assets/viewports.json', import.meta.url), 'utf8')).capture
+);
 
 /**
  * Capabilities a caller can need beyond rendering a page and taking a picture
@@ -707,7 +713,7 @@ async function main(argv) {
     out: 'value'
   });
   const url = requireUrl(flags.url);
-  const viewports = (flags.viewport ?? ['390x844', '1440x900']).map(parseViewport);
+  const viewports = (flags.viewport ?? DEFAULT_VIEWPORTS).map(parseViewport);
   const colorScheme = parseColorScheme(flags['color-scheme']);
   const label = flags.label ?? 'capture';
   if (!/^[A-Za-z0-9._-]+$/.test(label)) throw new UsageError('--label must be a plain file-name token');

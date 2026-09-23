@@ -109,6 +109,36 @@ const PINNED_SENTENCES = {
   ],
 };
 
+// A doc list that restates a data asset: every name the asset lists appears
+// backticked in the doc section that states the list. The asset is read from
+// the repository under check, so a self-test mutation of either side fails.
+const PINNED_LISTS = [
+  { file: 'skills/designing/references/visual-critique.md', section: '## Slop tropes',
+    asset: 'skills/designing/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
+  { file: 'skills/designing/references/sketch-tab.md', section: '## The labels',
+    asset: 'skills/designing/assets/sketch-tab-labels.json', names: (json) => Object.keys(json) },
+  { file: 'skills/designing/references/direction-preview.md', section: '## What the chooser reads',
+    asset: 'skills/designing/assets/pick-labels.json', names: (json) => Object.keys(json) },
+  { file: 'skills/designing/references/phase-build.md', section: '## Judgment',
+    asset: 'skills/designing/assets/check-ui-findings.json', names: (json) => json.alwaysBlocking },
+];
+
+function checkPinnedLists(errors, repository) {
+  for (const { file, section, asset, names } of PINNED_LISTS) {
+    const text = repository.text(path.resolve(repository.root, file));
+    const start = text.indexOf(`\n${section}\n`);
+    if (start === -1) {
+      errors.push(`${file}: no ${section} section to hold the list from ${asset}`);
+      continue;
+    }
+    const end = text.indexOf('\n## ', start + section.length + 2);
+    const body = text.slice(start, end === -1 ? undefined : end);
+    const missing = names(JSON.parse(repository.text(path.resolve(repository.root, asset))))
+      .filter((name) => !body.includes(`\`${name}\``));
+    if (missing.length > 0) errors.push(`${file}: ${section} lacks ${missing.join(', ')} from ${asset}`);
+  }
+}
+
 // question-page.mjs owns the interview map's enums. interview-page.md keeps
 // them in its prose, because the model reading it never reads the script, so
 // this holds the prose to the script.
@@ -148,6 +178,8 @@ export function checkSharedContracts(report, repository) {
       errors.push(`${relative}: missing pinned shared sentence '${label}'`);
     }
   }
+
+  checkPinnedLists(errors, repository);
 
   // The handshake sentence lives in two descriptions and must read the same in both.
   const handshakes = new Map();

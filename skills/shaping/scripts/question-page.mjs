@@ -21,7 +21,7 @@
 // conversation, never answered for the user.
 
 import { spawn } from 'node:child_process';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
@@ -43,8 +43,11 @@ export const OPTIONS_MAX = 4;
 const OWN_ANSWER_MAX = 500;
 // The buttons that send the page, each with the whole form.
 const SEND = { round: 'round', recommended: 'recommended', go: 'go', done: 'done', change: 'change' };
-// The words the sketch tab prints itself; its --labels file refuses any other key.
-const TAB_WORDS = ['waiting', 'fallbackQuestion', 'hint', 'steer', 'send', 'received', 'failed', 'lost'];
+// The words the sketch tab prints itself, the keys of its labels asset but the
+// language tag; its --labels file refuses any other key.
+const TAB_WORDS = Object.keys(
+  JSON.parse(readFileSync(new URL('../../designing/assets/sketch-tab-labels.json', import.meta.url), 'utf8'))
+).filter((key) => key !== 'lang');
 
 const DEFAULT_WORDS = {
   waiting: 'The first round is on its way.',
