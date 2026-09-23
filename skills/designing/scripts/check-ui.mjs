@@ -141,15 +141,14 @@ const LINE_TELLS = [
 // that is missing is often several lines below the tag that should carry it.
 const OPEN_TAG = (name) => new RegExp(`<${name}\\b[^>]*>`, 'gis');
 
-function tagFindings(text, relative, { tag, type, required, confidence, threshold, note }) {
+function tagFindings(text, relative, starts, { tag, type, required, confidence, threshold, note }) {
   const findings = [];
   for (const match of text.matchAll(OPEN_TAG(tag))) {
     if (required.test(match[0])) continue;
-    const line = text.slice(0, match.index).split(/\r?\n/).length;
     findings.push(finding({
       type,
       confidence,
-      selector: `${relative}:${line}`,
+      selector: `${relative}:${lineNumber(starts, match.index)}`,
       measured: match[0].replace(/\s+/g, ' ').slice(0, 80),
       threshold,
       note
@@ -158,19 +157,19 @@ function tagFindings(text, relative, { tag, type, required, confidence, threshol
   return findings;
 }
 
-function markupFindings(text, relative) {
+function markupFindings(text, relative, starts) {
   const findings = [
-    ...tagFindings(text, relative, {
+    ...tagFindings(text, relative, starts, {
       tag: 'svg', type: 'svg-without-viewbox', required: /\bviewBox\s*=/i, confidence: 'definite',
       threshold: 'every inline SVG carries a viewBox',
       note: 'without a viewBox the icon cannot scale to its container and may clip'
     }),
-    ...tagFindings(text, relative, {
+    ...tagFindings(text, relative, starts, {
       tag: 'img', type: 'image-without-alt', required: /\balt\s*=/i, confidence: 'definite',
       threshold: 'every img carries an alt attribute, empty for decorative images',
       note: 'a missing alt is not the same as alt="" and reads as an unnamed image'
     }),
-    ...tagFindings(text, relative, {
+    ...tagFindings(text, relative, starts, {
       tag: 'img', type: 'image-without-dimensions',
       required: /\b(width|height|aspect-ratio|style|class|className)\s*=/i, confidence: 'potential',
       threshold: 'intrinsic width and height, or an aspect-ratio, reserve the space',
@@ -180,18 +179,17 @@ function markupFindings(text, relative) {
   for (const match of text.matchAll(OPEN_TAG('img'))) {
     if (!/\bsrcset\s*=/i.test(match[0]) || /\bsizes\s*=/i.test(match[0])) continue;
     if (!/\d+w[\s"',]/.test(match[0])) continue;
-    const line = text.slice(0, match.index).split(/\r?\n/).length;
     findings.push(finding({
       type: 'srcset-without-sizes',
       confidence: 'definite',
-      selector: `${relative}:${line}`,
+      selector: `${relative}:${lineNumber(starts, match.index)}`,
       measured: match[0].replace(/\s+/g, ' ').slice(0, 80),
       threshold: 'a w-descriptor srcset is paired with a sizes attribute',
       note: 'without sizes the browser assumes 100vw and downloads a larger image than the slot needs'
     }));
   }
   if (/<html\b/i.test(text)) {
-    findings.push(...tagFindings(text, relative, {
+    findings.push(...tagFindings(text, relative, starts, {
       tag: 'html', type: 'missing-lang-attribute', required: /\blang\s*=/i, confidence: 'definite',
       threshold: 'the html element declares a language',
       note: 'language selects pronunciation, hyphenation, and quotation marks'
@@ -567,9 +565,9 @@ function groundColors(rules) {
 }
 
 /** File-level palette reads: a cream ground, a purple accent, and neon over a near-black ground. */
-function paletteFindings(text, relative, starts) {
+function paletteFindings(text, relative, starts, rules) {
   const findings = [];
-  const grounds = groundColors(cssRules(text, relative, starts));
+  const grounds = groundColors(rules);
   for (const ground of grounds) {
     if (!isCream(ground.token)) continue;
     findings.push(finding({
@@ -731,9 +729,9 @@ function monospaceLabelFindings(selector, body, where) {
   })];
 }
 
-function ruleFindings(text, relative, shadows, starts) {
+function ruleFindings(rules, shadows) {
   const findings = [];
-  for (const { selector, body, location } of cssRules(text, relative, starts)) {
+  for (const { selector, body, location } of rules) {
     const where = `${selector} (${location})`;
     const shadow = declaration(body, 'box-shadow');
     const lengths = shadow ? shadowLengths(shadow) : null;
@@ -805,7 +803,8 @@ export async function staticAudit(directory) {
     const isMarkup = MARKUP_EXTENSIONS.has(extension);
     const source = await fs.readFile(file, 'utf8');
     const text = stripComments(source, extension);
-    const starts = lineStarts(text);
+    // Only the whole-file reads below need offsets turned into line numbers.
+    const starts = isStylesheet || isMarkup ? lineStarts(text) : [];
     const lines = text.split(/\r?\n/);
     let insideTokenBlock = false;
     const reportedOnce = new Set();
@@ -835,10 +834,13 @@ export async function staticAudit(directory) {
       if (isStylesheet) findings.push(...rawValueFindings(line, location, insideTokenBlock));
       if (isMarkup) findings.push(...emojiFindings(line, location));
     });
-    if (isStylesheet) findings.push(...ruleFindings(text, relative, shadows, starts));
-    if (isStylesheet) findings.push(...paletteFindings(text, relative, starts));
+    if (isStylesheet) {
+      const rules = cssRules(text, relative, starts);
+      findings.push(...ruleFindings(rules, shadows));
+      findings.push(...paletteFindings(text, relative, starts, rules));
+    }
     if (isMarkup) findings.push(...kickerFindings(text, relative, starts));
-    if (isMarkup) findings.push(...markupFindings(text, relative));
+    if (isMarkup) findings.push(...markupFindings(text, relative, starts));
     if (isMarkup) findings.push(...pillMarkupFindings(text, relative, starts));
   }
   findings.push(...uniformShadowFindings(shadows));
