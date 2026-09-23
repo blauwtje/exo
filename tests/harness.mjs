@@ -87,3 +87,71 @@ export async function gitRepository(files) {
   await commitFiles(root, files, 'chore: seed the fixture');
   return root;
 }
+
+const FENCE = '```';
+
+/** One task in the grammar `planning` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
+export function taskSection({ number, title, dependsOn = 'none', design = false, files, code = '', subject, trailer = true, commit = true }) {
+  const commitLine = trailer
+    ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
+    : `git commit -m "${subject}"`;
+  return [
+    `### Task ${number}: ${title}`,
+    '',
+    `Depends on: ${dependsOn}`,
+    ...(design ? ['Design: designing'] : []),
+    '',
+    'Files:',
+    ...files,
+    '',
+    'Step 1: Write it',
+    `${FENCE}js`,
+    code,
+    FENCE,
+    'Run: `node --test`',
+    'Expected: `pass`',
+    '',
+    ...(commit ? ['Commit:', `${FENCE}bash`, 'git add .', commitLine, FENCE] : []),
+    ''
+  ].join('\n');
+}
+
+/** A whole plan around `tasks`, with a `Worktree setup:` line only when `worktreeSetup` is given. */
+export function planFixture({ worktreeSetup = null, tasks }) {
+  return [
+    '# Plan: fixture',
+    '',
+    '## Goal',
+    '',
+    'The fixture proves the plan reader.',
+    '',
+    '## Plan basis',
+    '',
+    'Repository: /tmp/fixture',
+    'Branch: feat/fixture',
+    ...(worktreeSetup === null ? [] : [`Worktree setup: ${worktreeSetup}`]),
+    '',
+    '## Non-goals',
+    '',
+    '- `src/other.js` stays as it is.',
+    '',
+    '## Context',
+    '',
+    '- `src/app.js` exports `greet`.',
+    '- `src/other.js` is untouched.',
+    '',
+    '## Visual direction',
+    '',
+    'Design skill: designing',
+    '',
+    'Quiet record.',
+    '',
+    '## Tasks',
+    '',
+    ...tasks,
+    '## Final verification',
+    '',
+    '- `node --test`: `pass`.',
+    ''
+  ].join('\n');
+}
