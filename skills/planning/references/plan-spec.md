@@ -57,6 +57,7 @@ git commit -m "<type>(<scope>): <title>" -m "Plan-task: <n>"
 8. **Design tasks.** A task with a `Design:` line fixes structure, class names and copy in its code and leaves the visual values to the named skill, which the executing session loads before that task's first edit.
 9. **Drift.** The executor compares each `Modify:` region with the tree before editing; a region that no longer matches stops that task before any edit with `PLAN DRIFT: Task <n>` and the mismatch, and the running `implementing` session repairs that task alone.
 10. **Acceptance coverage.** Every acceptance check in the brief reaches a step's `Expected:`, a `## Final verification` line, or `## Non-goals`, in the brief's own words; a check in none of the three is a plan failure, because the branch review is the next thing that would catch it.
+11. **Vertical slices.** A change that crosses layers, such as data, API and UI, plans each task as one path through every layer it needs, with a `Run:` that exercises that path, never one layer per task: a plan by layer proves itself only at its last task. The exception is a `Design:` task, which builds the UI of a path an earlier task already serves, because its build routes to the named design skill.
 
 ## Judgment
 
