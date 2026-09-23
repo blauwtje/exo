@@ -52,6 +52,6 @@ export const REFERENCE_CONTENTS_LINES = 100;
 export const PENDING_TRIM = {
   ceilings: { fileBytes: 15000, descriptionChars: 400 },
   body: [],
-  description: ['planning'],
-  references: ['planning'],
+  description: [],
+  references: [],
 };

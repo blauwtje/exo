@@ -53,6 +53,7 @@ Fill in whatever the code settles: the files, the refactor, the resulting interf
 | File | Read it when |
 |---|---|
 | `../planning/references/plan-spec.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
+| `../implementing-batch/references/test-design.md` | In plan mode, before writing the first task, to decide which tasks are risky and therefore write their test first. Do not load in report mode. |
 | `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
 | `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 

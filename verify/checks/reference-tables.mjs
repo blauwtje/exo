@@ -43,6 +43,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/deepen/SKILL.md': [
     '../planning/references/plan-spec.md',
+    '../implementing-batch/references/test-design.md',
     '../using-exo/references/next-stage.md',
     '../using-exo/references/question.md',
   ],

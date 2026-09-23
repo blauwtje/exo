@@ -2,7 +2,12 @@
 
 Show the plan grammar filled in in full, not simplified for readability. The enemy is a worked example that quietly drops a required field because it reads better than the real thing. The overcorrection is a second, looser grammar that examples get to use and deliverable plans do not.
 
-This is one complete plan against `plan-spec.md`: every header section, `## Visual direction` included because Task 3 carries a `Design:` line, and three tasks, each with complete code, a `Run:` and `Expected:` per changing step, and a `Commit:` block with the `Plan-task:` trailer.
+This is one complete plan against the plan specification: every header section, `## Visual direction` included because Task 3 carries a `Design:` line, and three tasks, each with complete code, a `Run:` and `Expected:` per changing step, and a `Commit:` block with the `Plan-task:` trailer.
+
+Contents of this example; a real plan carries no contents list:
+- [Goal](#goal), [Plan basis](#plan-basis), [Non-goals](#non-goals), [Context](#context), [Visual direction](#visual-direction)
+- [Tasks](#tasks): [Task 1: Add the nullable refund_reason column](#task-1-add-the-nullable-refund_reason-column), [Task 2: Serialize refundReason on the refund response](#task-2-serialize-refundreason-on-the-refund-response), [Task 3: Render the reason row on the detail page](#task-3-render-the-reason-row-on-the-detail-page)
+- [Final verification](#final-verification), [Judgment](#judgment)
 
 ## Goal
 
@@ -146,5 +151,5 @@ git commit -m "feat(refunds): show the refund reason on the detail page" -m "Pla
 
 ## Judgment
 
-- When this example and `plan-spec.md` disagree, the specification wins and this file is the one to fix.
+- When this example and the plan specification disagree, the specification wins and this file is the one to fix.
 - A field left out here for brevity would be a field left out of real plans; nothing is left out.

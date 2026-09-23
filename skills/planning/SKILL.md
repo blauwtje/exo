@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use when a read-only planning mode is active, the user asks for a plan, another session will run the work, or inspection finds two or more edit-order dependencies. Not for same-session work with at most one dependency edge; one-file, typo, rename, or version-bump edits; git-only operations; an unproven failure outside a planning turn; or an architecture audit, which deepen owns.
+description: Use when a read-only planning mode is active, a plan is requested, another session runs the work, or edits have two or more order dependencies. Not for same-session work with at most one dependency, one-file edits, git-only work, an unproven failure outside planning mode, or an architecture audit.
 argument-hint: <what to plan, a spec path, or an issue number>
 ---
 
@@ -10,11 +10,9 @@ Turn a request into a plan another mind can execute without interpretation. The 
 
 ## Activation gate
 
-Draw `A → B` when B cannot build, test, or preserve data before A lands. Run this skill when a read-only planning mode is active, the user asks for a plan, a different session or executor will run the work, or the graph contains at least two edges. Zero or one edge for this session belongs in `implementing-batch`. When this session executes, nobody asked for a plan, and an upstream `shaping` brief lists every edge and places A before B for each one, use that order without running this skill.
+Draw `A → B` when B cannot build, test, or preserve data before A lands. Zero or one edge for this session belongs in `implementing-batch`. When this session executes, nobody asked for a plan, and an upstream `shaping` brief lists every edge and places A before B for each one, use that order without running this skill.
 
 ## Intake
-
-Before any planning:
 
 - Restate the actual goal in one sentence; plan against that restatement, not the prompt's phrasing.
 - Resolve a vague referent from the first non-empty source: working-tree diff, most recent failing check, then last touched file.
@@ -27,17 +25,15 @@ An outcome with no chosen solution borrows `shaping` for its product and archite
 
 ## Investigate
 
-Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` before any dispatch. Read the file at the path it prints: a map of this repository built on demand, tracked paths with the exported names of their JavaScript and TypeScript files, and rebuilt only after a commit changed a mapped path. It writes under the git directory and leaves the working tree untouched, so a read-only planning mode runs it too. Outside a git repository it prints one `no map` line, and discovery starts at the dispatch below instead.
+Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` before any dispatch and read the file at the path it prints: tracked paths with the exported names of their JavaScript and TypeScript files. It writes only under the git directory, so a read-only planning mode runs it too; outside a git repository it prints one `no map` line and discovery starts at the dispatch.
 
-Delegate what the map leaves open, the files, symbols, and call sites the plan will name, to the `exo:explorer` agent, then confirm each here by reading only the range around it: a session that greps the tree or opens whole files carries that output into every later turn. The dispatch names only what the map left unresolved. A path the map already names is confirmed by reading its range here, never asked of the agent. A name not read this session may not appear in a step. For a deliverable plan, write each step's code in full while the file is open: the executor pastes it, so this session writes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
+Delegate only what the map leaves open, the files, symbols, and call sites the plan will name, to the `exo:explorer` agent; a path the map names is never asked of it. Confirm each here by reading only the range around it: a session that greps the tree or opens whole files carries that output into every later turn. A name not read this session may not appear in a step. For a deliverable plan, write each step's code in full while the file is open: the executor pastes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 
-An affected path that crosses a security boundary makes that reference's checks steps inside each task touching it, each with its own `Run:` and `Expected:`, never a warning in the plan's Context: the executor runs steps, and a note it can read past is a check nobody performs.
+A task whose path crosses a security boundary carries that reference's checks as its own steps, each with `Run:` and `Expected:`, never as a warning in `## Context`: the executor runs steps and reads past notes. A risky task gets its `Risk:` line and failing-test step (`references/plan-spec.md` rule 3) now, never left to the executor to notice.
 
-A risky task carries the `Risk:` line and the failing-test step that `references/plan-spec.md` rule 3 fixes, decided while writing the task and never left to the executor to notice.
-
-The plan's code is not pre-run: a context that copies the tree, applies every step and runs every `Run:` implements the whole change before the plan exists, and the executor then implements it a second time. Each task's `Run:` and `Expected:` prove that task where a failure is cheapest to fix, inside the context that just made the edit. `## Plan basis` instead names every command this session could not run here, so the executor knows which step it is the first to prove. It opens with `Repository:` and `Branch:` on their own lines, and a folder that is not a git repository yet still gets both: `Branch:` reads `main`, the branch that init creates, with one basis line handing `git init -b main` to the executor, never an init step for the owner.
+Do not pre-run the plan: a context that applies every step and runs every `Run:` implements the change before the plan exists, and the executor implements it again. Each task's `Run:` and `Expected:` prove it where a failure is cheapest to fix, and `## Plan basis` names every command this session could not run.
 
 ## Depth
 
@@ -52,18 +48,14 @@ Before ending the turn, read the plan once against the rules in `references/plan
 
 ## Handing it over
 
-A deliverable plan ends on the next-stage question in `using-exo`: the plan path and the task count, then that question's numbered lines, which carry the run command and stopping.
-
-The recommended line carries `/exo:implementing`: a plan of four or more tasks runs one task per fresh helper context, and a plan of three or fewer builds in that session, each task committed on its own.
-
-Take the model and effort for the session that runs it from the table under `## The next stage` in `using-exo`, because that table owns the rule and a second copy drifts from it.
+A deliverable plan ends the turn on the next-stage question: the reply names the plan path and the task count, never the plan text, then that question's numbered lines, with `/exo:implementing` on the recommended line.
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `references/plan-spec.md` | Before writing any plan deliverable: a planning-mode plan file or a requested plan. Do not load for the inline row. |
-| `references/example-plan.md` | Once, before composing the first task of a deliverable plan; do not load for the inline row. |
+| `references/plan-spec.md` | Before writing a deliverable plan; never for the inline row. |
+| `references/example-plan.md` | Once, before the first task of a deliverable plan. |
 | `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
 | `../implementing-batch/references/test-design.md` | Before composing the first task, to decide which tasks are risky and therefore write their test first. |
 | `../implementing-batch/references/security.md` | After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
@@ -77,5 +69,4 @@ Take the model and effort for the session that runs it from the table under `## 
 - An unproven failure inside a planning turn makes reproduction and proof the plan's first phase; plan no fix past the proof point. Outside a planning turn, `debug` outranks planning until the cause is proven.
 - The executor and edge count set depth; a requested depth outranks both, and a requested plan outranks the upstream-order skip.
 - Repository verification and documentation conventions outrank unspecified defaults.
-- A deliverable plan ends the turn: the reply names the plan path and the task count, never the plan text, and closes on the question `## Handing it over` names.
 - After a compaction notice, list the written tasks with `grep -n '^### Task [0-9]' <plan-file>` before adding another; the file, not memory, records what the plan already holds.
