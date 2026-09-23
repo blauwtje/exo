@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.29.1 - 2026-09-23
+
 ### Changed
 
 - `CLAUDE.md`: a skill, agent, rule, hook or `CLAUDE.md` edit in this repository also follows `~/.claude/rules/instruction-style.md` when that file exists, because its `paths` trigger never loads it on a create.
