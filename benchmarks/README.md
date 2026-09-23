@@ -38,3 +38,22 @@ Raw cells land in `benchmarks/runs/<date>-<mode>/`, which is git-ignored. Each c
 ## Safe tasks
 
 Each directory under `benchmarks/safe/` holds a seed, a reference solution and a check. `npm test` runs every check twice: it must fail against the seed and pass against the solution.
+
+## Model and effort sweep
+
+`node benchmarks/sweep.mjs` measures exo's routing on the models it names. Every cell is its own `claude -p --plugin-dir <this clone> --model <id> --effort <level>` process in a fresh repository:
+
+| Set | Cells | Model and effort |
+|---|---|---|
+| `review` | 30: each `safe/` fixture as a branch carrying its seed, and as a control branch carrying its solution | Opus 5.5 at `low`, `medium` and `high` |
+| `build` | 5: each `safe/` task built from its seed | Sonnet 5 at `high` |
+| `plan` | 3: one fixed request planned in a small text library | Opus 5.5 at `high`, Fable 5.1 at `high` and `xhigh` |
+| `flow` | 1: a fixed four-task plan run through `implementing` (C7) | Sonnet 5 at `high` |
+
+```bash
+node benchmarks/sweep.mjs --set all                    # prints the 39 calls it would make and starts none
+node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three hours at the default --concurrency 2
+node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
+```
+
+A review cell runs the body of the `branch-reviewer` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or hazard reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.

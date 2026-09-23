@@ -11,6 +11,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `benchmarks/sweep.mjs`: a local, opt-in sweep that runs every review, build, plan and whole-flow cell as its own `claude -p` process with a named model and effort, records defects found, false alarms, tokens and wall time per cell, and writes the reviewer's false-alarm rate and the winning plan cell to a dated results file; `skills-tool` now names the model and effort on every pressure-scenario run.
 - `designing`: `scripts/direction.mjs --check` rejects a direction as `template-kit` when a palette anchor is a purple, a cream, or a neon beside a near-black anchor, the kits `scripts/check-ui.mjs` flags after the build, unless that anchor's evidence is of kind `brief` or `repository`; an anchor may be written as `{ "color", "evidence" }` to carry that evidence, and a plain color string stays valid.
 - `designing`: `scripts/check-ui.mjs` reports `invented-content` at `potential` confidence for a stock person name, a sample company name, a round placeholder price, and an unsourced user count, rating or testimonial attribution.
 
