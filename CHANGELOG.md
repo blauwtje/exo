@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.30.0 - 2026-09-23
+
 ### Added
 
 - `designing`: `scripts/direction.mjs --check` rejects a direction as `template-kit` when a palette anchor is a purple, a cream, or a neon beside a near-black anchor, the kits `scripts/check-ui.mjs` flags after the build, unless that anchor's evidence is of kind `brief` or `repository`; an anchor may be written as `{ "color", "evidence" }` to carry that evidence, and a plain color string stays valid.
