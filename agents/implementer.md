@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: Builds one decided plan task in the checkout its dispatch names, from the frame and task section the dispatch carries, and reports GREEN or what stopped it. Dispatched by implementing for every build, on opus for a task with a Design: line. Not for a plan repair, a failed Run: with no causal line, a review, or a change with no plan task.
+description: "Builds one decided plan task in the checkout its dispatch names, from the frame and task section the dispatch carries, and reports GREEN or what stopped it. Dispatched by implementing for every build, on opus for a task with a Design: line. Not for a plan repair, a failed Run: with no causal line, a review, or a change with no plan task."
 model: sonnet
 effort: high
 ---
