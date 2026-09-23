@@ -48,7 +48,7 @@ Before ending the turn, read the plan once against the rules in `references/plan
 
 ## Handing it over
 
-A deliverable plan ends the turn on the next-stage question: the reply names the plan path and the task count, never the plan text, then that question's numbered lines, with `/exo:implementing` on the recommended line.
+A deliverable plan ends the turn on the next-stage question: the reply names the plan path and the task count, never the plan text, then that question's numbered lines, with `/exo:implementing <plan path>` in the Stop line's text as the command to run after a clear.
 
 ## References
 

@@ -26,10 +26,11 @@ test('the using-exo body keeps the core of the question shape', () => {
   assert.ok(USING_EXO.includes('a reply of `1` carries out option 1 at once'));
 });
 
-test('the next stage keeps its fixed order and moves a recommended stop to number 1', () => {
-  assert.ok(NEXT_STAGE.includes('After `shaping`: 1. Planning, 2. Stop.'));
-  assert.ok(NEXT_STAGE.includes('After `planning`: 1. Implementing, 2. Stop.'));
-  assert.ok(NEXT_STAGE.includes('it moves to number 1 with `(Recommended)`'));
+test('the next stage keeps its fixed order and recommends the stop after every stage', () => {
+  assert.ok(NEXT_STAGE.includes('After `shaping`: 1. Stop, 2. Planning.'));
+  assert.ok(NEXT_STAGE.includes('After `planning`: 1. Stop, 2. Implementing.'));
+  assert.ok(NEXT_STAGE.includes('**Stopping is recommended**'));
+  assert.ok(NEXT_STAGE.includes('a clear loses nothing the next stage reads'));
   assert.ok(NEXT_STAGE.includes('**One model line.**'));
   assert.ok(!NEXT_STAGE.includes('names its command, model and effort'));
 });

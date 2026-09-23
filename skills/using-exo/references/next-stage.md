@@ -6,9 +6,9 @@ A stage skill reads this file at its final message when its work leaves a next s
 
 A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
 
-1. **Fixed order.** The options follow the question shape. After `shaping`: 1. Planning, 2. Stop. After `planning`: 1. Implementing, 2. Stop. Another stage skill lists the stages it opens in that order, stopping last; picking an option runs its command, such as `/exo:planning <spec>`, in this session.
-2. **This session is recommended**, because it already holds the facts. When a compaction notice has appeared in this session or this stage is the second to finish in it, stopping is recommended instead: it moves to number 1 with `(Recommended)`, the stages keep their order below it, and its text names the command to run after a context clear.
-3. **One model line.** When the recommended stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.
+1. **Fixed order.** The options follow the question shape. After `shaping`: 1. Stop, 2. Planning. After `planning`: 1. Stop, 2. Implementing. Another stage skill lists Stop first, then the stages it opens in the order they run; picking a stage runs its command, such as `/exo:planning <spec>`, in this session.
+2. **Stopping is recommended**, as `1. **Stop (Recommended)**` whose text names the command to run after a context clear, such as `/exo:implementing <plan path>`, because the brief, plan and branch are on disk by the skills' own rules, so a clear loses nothing the next stage reads and drops every turn that produced them. This session is number 2: it holds the facts, and pays for them on every turn that follows.
+3. **One model line.** When the next stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.
 4. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
 
 | Next stage | Model and effort | Because |
@@ -20,5 +20,5 @@ A stage skill (`shaping`, `planning`, `deepen`, `debug`) whose work leaves a nex
 
 ## Judgment
 
-- A compaction notice or a second finished stage outranks the session's held facts: stopping becomes the recommended option.
+- The artifact on disk outranks the session's held facts: stopping leads after every stage, and a compaction notice changes nothing about the order.
 - The caller that borrowed a stage outranks the question: control returns to it.
