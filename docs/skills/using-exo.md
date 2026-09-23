@@ -15,4 +15,4 @@ At every session start, resume, clear and compaction. A long session hears the r
 
 ## Where its rules live
 
-`skills/using-exo/SKILL.md`. `hooks/session-start.sh` injects its body, and `verify/checks/injected-context.mjs` locks the size of what it injects, because that text is the most expensive thing exo owns.
+`skills/using-exo/SKILL.md`. `hooks/session-start.sh` injects its body, and `verify/checks/injected-context.mjs` locks the size of what it injects, because that text is the most expensive thing exo owns. The full question format lives in `skills/using-exo/references/question.md` and the next-stage order and model table in `skills/using-exo/references/next-stage.md`; the skills that ask a question or end a stage read them from their reference tables. The `replies` rule rides on the settings line, from `skills/settings/schema.json`.

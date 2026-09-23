@@ -46,6 +46,7 @@ An agent uses the same shape with two changes: its frontmatter sets `model`, `to
 - A war story about one fix, such as "last sprint the build broke because…"; write the rule the story taught, since a reader cannot generalize an anecdote.
 - One example repeated in several languages, or a blank template dressed up as an example; give a single complete example in the language that matters most.
 - Placeholder names such as `step3`, `helper` or `data` where a word from the domain exists.
+- A second shape for the final message; a skill's report step names what the ending under `# Closing` in using-exo carries.
 
 ## Judgment
 

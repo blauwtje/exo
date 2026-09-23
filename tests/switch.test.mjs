@@ -60,7 +60,7 @@ test('the session hook carries the right-sizing ladder whether exo savings are o
     const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
     assert.ok(context.includes('# Using exo'), context);
     for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
-    assert.ok(context.includes('hand control back when a stage called them; alone, they own the turn, and `designing` sizes its own work in its `## Size the request`.'), context);
+    assert.ok(context.includes('`research`, `designing` and `skills-tool` hand control back to a stage that borrowed them and own the turn alone.'), context);
     // The frontmatter is dropped, so the description never reaches the context twice.
     assert.ok(!context.includes('name: using-exo'), context);
   }

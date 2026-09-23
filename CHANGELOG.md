@@ -16,6 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Skill budgets are stricter: a skill body fails over 2,500 tokens (`using-exo` over 1,000), a description over 375 characters, and a reference that names another reference or runs past 100 lines without a contents list; skills not yet trimmed are listed in `PENDING_TRIM`.
 - `skills-tool` states the new size aims and ceilings once, pinned to `verify/budgets.mjs`, and moves the one-topic reference rule from its new-skill template into the body every edit reads.
 - The `exo settings:` line now carries the active `replies` rule from `skills/settings/schema.json`, so `using-exo` no longer states it.
+- `using-exo` injects about 1,000 tokens instead of 2,300: the question format and the next-stage table move to `references/question.md` and `references/next-stage.md`, which the skills that ask or end a stage list in their tables, and the restatement repeats `# Closing` in place of the next-stage table.
 
 ## 0.31.0 - 2026-09-23
 

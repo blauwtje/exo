@@ -19,6 +19,8 @@ const EXPECTED_OWNER_ROWS = {
     '../implementing-batch/references/security.md',
     '../implementing-batch/references/data-migration.md',
     '../implementing-batch/references/test-design.md',
+    '../using-exo/references/next-stage.md',
+    '../using-exo/references/question.md',
   ],
   'skills/implementing-batch/SKILL.md': [
     '../implementing/references/workspace.md',
@@ -28,6 +30,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/test-design.md',
     'references/test-first.md',
     'references/performance.md',
+    '../using-exo/references/question.md',
   ],
   'skills/planning/SKILL.md': [
     'references/plan-spec.md',
@@ -35,9 +38,13 @@ const EXPECTED_OWNER_ROWS = {
     '../implementing-batch/references/data-migration.md',
     '../implementing-batch/references/test-design.md',
     '../implementing-batch/references/security.md',
+    '../using-exo/references/next-stage.md',
+    '../using-exo/references/question.md',
   ],
   'skills/deepen/SKILL.md': [
     '../planning/references/plan-spec.md',
+    '../using-exo/references/next-stage.md',
+    '../using-exo/references/question.md',
   ],
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
@@ -51,15 +58,19 @@ const EXPECTED_OWNER_ROWS = {
   'skills/savings/SKILL.md': [],
   'skills/settings/SKILL.md': [
     'references/setup-map.md',
+    '../using-exo/references/question.md',
   ],
   'skills/shipping/SKILL.md': [
     '../issuing/references/fields.md',
+    '../using-exo/references/question.md',
   ],
-  'skills/memory/SKILL.md': [],
+  'skills/memory/SKILL.md': ['../using-exo/references/question.md'],
   'skills/prototyping/SKILL.md': [],
   'skills/shaping/SKILL.md': [
     '../issuing/references/fields.md',
     'references/interview-page.md',
+    '../using-exo/references/next-stage.md',
+    '../using-exo/references/question.md',
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',

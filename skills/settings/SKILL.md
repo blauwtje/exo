@@ -34,7 +34,7 @@ Take the first step whose answer the request and the digits so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a digit.
-3. **Ask the value** once the setting is known but no value: for `specs`, `replies` or `interview` run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `counter` or `guard` ask `on` or `off`, and for `guard-lines` or `context` a whole number of at least 1, in the shape `## A question` in `using-exo` gives.
+3. **Ask the value** once the setting is known but no value: for `specs`, `replies` or `interview` run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `counter` or `guard` ask `on` or `off`, and for `guard-lines` or `context` a whole number of at least 1, in the question shape.
 4. **Ask the layer** for `specs`, `replies`, `interview` or `context` once setting and value are known but no layer; the savings switches hold for this machine and take none:
    ```text
    1. **Project (Recommended)**: everyone, via .claude/exo.json
@@ -53,7 +53,7 @@ A project value adds one line under the fence: collaborators receive it once `.c
 3. **Serve the page once** under the Bash tool's `run_in_background`: `node "${CLAUDE_SKILL_DIR}/../shaping/scripts/question-page.mjs" --serve "$RUN/questions" --map "$RUN/map.json" 2> "$RUN/page.log"`.
 4. **Ask in rounds** with `node "${CLAUDE_SKILL_DIR}/../shaping/scripts/question-page.mjs" --ask "$RUN/questions" --map "$RUN/map.json" > "$RUN/answer.json"`. A round asks every open setting. After each answer, close each answered setting as `you` with its `round`, open the settings that waited on one just closed, raise `round`, rewrite the map and ask again. A `go` answer closes every open setting on its keep answer.
 5. **Close what the counter decides.** A counter answered `off` closes the guard and its line limit as `exo`, because the counter's off switch stops the guard as well.
-6. **Fall back to the chat** on exit 3, and at once when a step before it cannot run, such as a denied map write or no browser to open: ask each remaining setting in its own message, in the shape `## A question` in `using-exo` gives, and never pick an answer for the user. Exit 2 names the map field to repair.
+6. **Fall back to the chat** on exit 3, and at once when a step before it cannot run, such as a denied map write or no browser to open: ask each remaining setting in its own message, in the question shape, and never pick an answer for the user. Exit 2 names the map field to repair.
 7. **Review before writing.** With every setting closed, write the map with no open setting and ask once more: `done` confirms, and `reopen` or typed words return the settings they name as the next round. In the chat, list the changes and wait for a yes.
 8. **Write only the changes, then report.** Use the commands below, and on a rejection relay it as printed and write nothing after it, because the user confirmed the set as a whole. Report one line per changed value and where it now lives.
 
@@ -72,6 +72,7 @@ A project value adds one line under the fence: collaborators receive it once `.c
 | File | Read it when |
 |---|---|
 | `references/setup-map.md` | The walk's step 2, to write the map with each setting's question and answers. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
 

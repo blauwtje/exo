@@ -72,7 +72,7 @@ Why 1: <one clause>
 Answer like `4.1 5.2`, `ok` for every recommended answer, or `go` for the recommended answer to everything still open.
 ```
 
-- The options follow `## A question` in `using-exo`, and the question names the decision.
+- The options follow the question shape, and the question names the decision.
 - A path or an identifier appears only beside what it means, because the reader answers from the product, never from the code.
 - Any answer counts: `ok` takes every recommended answer of the round, a round of one question takes a bare digit, and a reply in words is read as the decisions it names. A question the reply skips stays open for the next round, and one that fits two options is asked again.
 - "I don't know" gets the difference in two sentences with one example from the user's own product, and that question returns in the next round. A second one takes the recommended answer, listed as exo's.
@@ -80,7 +80,7 @@ Answer like `4.1 5.2`, `ok` for every recommended answer, or `go` for the recomm
 
 ## Checkpoint
 
-With the map empty, list every decision on one line, `Q<n> · <decision>: <answer> (<you | code: path | exo>)`, the code's decisions without a number. Then ask one question in the shape `## A question` gives:
+With the map empty, list every decision on one line, `Q<n> · <decision>: <answer> (<you | code: path | exo>)`, the code's decisions without a number. Then ask one question in the question shape:
 
 1. **Write the spec (Recommended)**: exo writes the brief from these decisions.
 2. **Change something**: the questions you name return as the next round.
@@ -117,6 +117,8 @@ New wishes for work that already has a brief reopen that brief, because a second
 |---|---|
 | `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
 | `references/interview-page.md` | Before the first question, only when `interview=page` stands in the `exo settings:` line and the map holds two or more open decisions. |
+| `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
 

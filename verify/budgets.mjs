@@ -20,12 +20,12 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // next addition to using-exo buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 4490, measured: '2026-09-22' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 9335, measured: '2026-09-22' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 3999, measured: '2026-09-23' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
 // several times over.
-export const RESTATEMENT_LOCK = { bytes: 3215, measured: '2026-09-22' };
+export const RESTATEMENT_LOCK = { bytes: 1943, measured: '2026-09-23' };
 
 // The rendered project-memory file, which a session opens by path. It is a
 // ceiling the writer enforces before it writes, not a lock the verifier reads:
@@ -51,7 +51,7 @@ export const REFERENCE_CONTENTS_LINES = 100;
 // outlives its trim. The step that empties every list deletes this object.
 export const PENDING_TRIM = {
   ceilings: { fileBytes: 15000, descriptionChars: 400 },
-  body: ['designing', 'implementing-batch', 'shaping', 'using-exo'],
+  body: ['designing', 'implementing-batch', 'shaping'],
   description: ['designing', 'implementing-batch', 'planning', 'shaping'],
   references: ['designing', 'planning'],
 };

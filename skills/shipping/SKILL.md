@@ -37,7 +37,7 @@ Branch
 
 ## The question
 
-In the shape `## A question` in `using-exo` gives, offering only routes that can run, and nothing leaves the machine before the digit arrives. Without a remote named `origin` nothing can, and the overview ends the turn with no question.
+In the question shape, offering only routes that can run, and nothing leaves the machine before the digit arrives. Without a remote named `origin` nothing can, and the overview ends the turn with no question.
 
 On any branch but the default, or in a worktree:
 
@@ -84,6 +84,7 @@ One line per pull request: its URL, then merged or the stop and its reason; for 
 | File | Read it when |
 |---|---|
 | `../issuing/references/fields.md` | Route step 2, before creating the pull request, for its body and fields. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
 

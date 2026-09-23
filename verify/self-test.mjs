@@ -170,7 +170,9 @@ const SCENARIOS = [
     ].join('\n');
     const text = read(root, relative).replace('## Take the first home that fits', `${contents}## Take the first home that fits`);
     write(root, relative, `${text}${'- filler line\n'.repeat(90)}`);
-  } }
+  } },
+  { name: 'injected-body-over-ceiling', mutate: (root) =>
+    append(root, 'skills/using-exo/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
 ];
 
 function copyVerificationFixture(repository, destination) {

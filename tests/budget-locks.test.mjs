@@ -183,12 +183,11 @@ test('a sentence added outside the restated sections leaves the restatement lock
 
 test('a renamed restated heading fails and names the heading', (t) => {
   const root = skillsFixture(t);
-  // The skill body also names this heading in prose, so only the line that is
-  // the heading is renamed here.
-  editUsingExo(root, (text) => text.replace('\n## The next stage\n', '\n## Next stage\n'));
+  // Only the heading line is renamed, so the check has to name the heading it lost.
+  editUsingExo(root, (text) => text.replace('\n## When several fire\n', '\n## Several fire\n'));
 
   const run = verdict(root, checkRestatement);
 
   assert.equal(run.counts.FAIL, 1, run.detail);
-  assert.match(run.detail, /has no "## The next stage" heading/);
+  assert.match(run.detail, /has no "## When several fire" heading/);
 });

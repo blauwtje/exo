@@ -38,6 +38,8 @@ A speed-only symptom requires measurement before a hypothesis or edit. Read `../
 | `../implementing-batch/references/security.md` | After Step 4 identifies the predicted change and before its first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
 | `../implementing-batch/references/data-migration.md` | After Step 4 identifies the predicted change and before editing, only when the fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
 | `../implementing-batch/references/test-design.md` | After reproduction and before the first affected test or production edit, only when the symptom changes logic or public behavior and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify. |
+| `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
 
