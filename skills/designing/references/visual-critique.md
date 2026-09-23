@@ -50,7 +50,17 @@ These defaults make a page look generated. One stays only when a contract field 
 
 ## The fault contract
 
-A redesign returns three or four faults, a new piece one, and each fault is five lines in this order: `Region:` the name a reader of the render would use; `Defect:` what is wrong, in one sentence; `Evidence:` the render file, a check-ui finding type, or an inspect-render figure; `Target:` the file plus the selector, declaration or element the repair edits; `Repair:` the edit, naming the property and the direction of the change. A fault with no `Target:` line is dropped, because a fault the repairer has to locate costs more to apply than it saves. The set covers at least one content or relationship fault, missing content, a broken relationship, or a missing subject mapping, and at least one craft fault, absent atmosphere, an unbuilt signature moment, untransitioned states, or an unthemed browser finish. "Looks polished or premium" is not a finding.
+A redesign returns three or four faults, a new piece one, each five lines in the order this invented fault shows:
+
+```text
+Region: tide-table footnotes
+Defect: the footnote column runs flush to the viewport edge at 390px, so its first letters clip.
+Evidence: the post-build render at 390px; check-ui content-clipped
+Target: src/styles/tide-table.css, .tide-footnotes { padding-inline }
+Repair: raise padding-inline from 0 to the page gutter token.
+```
+
+A fault with no `Target:` line is dropped, because a fault the repairer has to locate costs more to apply than it saves. The set covers at least one content or relationship fault, missing content, a broken relationship, or a missing subject mapping, and at least one craft fault, absent atmosphere, an unbuilt signature moment, untransitioned states, or an unthemed browser finish. "Looks polished or premium" is not a finding.
 
 Fix them and render again. A redesign also removes one accessory with no content job and strengthens one relationship held in only one region, reverting either change if it hides an action, state, claim, or its evidence.
 
