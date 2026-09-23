@@ -2,11 +2,11 @@
 
 Show the plan grammar filled in in full, not simplified for readability. The enemy is a worked example that quietly drops a required field because it reads better than the real thing. The overcorrection is a second, looser grammar that examples get to use and deliverable plans do not.
 
-This is one complete plan against the plan specification: every header section, `## Visual direction` included because Task 3 carries a `Design:` line, and three tasks, each with complete code, a `Run:` and `Expected:` per changing step, and a `Commit:` block with the `Plan-task:` trailer.
+This is one complete plan against the plan specification: every header section, `## Visual direction` included because Task 2 carries a `Design:` line, and two tasks, each with complete code, a `Run:` and `Expected:` per changing step, and a `Commit:` block with the `Plan-task:` trailer. Task 1 is one path from the new column to the response, never a task per layer.
 
 Contents of this example; a real plan carries no contents list:
 - [Goal](#goal), [Plan basis](#plan-basis), [Non-goals](#non-goals), [Context](#context), [Visual direction](#visual-direction)
-- [Tasks](#tasks): [Task 1: Add the nullable refund_reason column](#task-1-add-the-nullable-refund_reason-column), [Task 2: Serialize refundReason on the refund response](#task-2-serialize-refundreason-on-the-refund-response), [Task 3: Render the reason row on the detail page](#task-3-render-the-reason-row-on-the-detail-page)
+- [Tasks](#tasks): [Task 1: Store and serve the refund reason](#task-1-store-and-serve-the-refund-reason), [Task 2: Render the reason row on the detail page](#task-2-render-the-reason-row-on-the-detail-page)
 - [Final verification](#final-verification), [Judgment](#judgment)
 
 ## Goal
@@ -31,7 +31,7 @@ Planned against `a1b2c3d` on a clean worktree. Node 20.11, `psql` 16 and `npm te
 - `src/routes/refunds.js` exports `serializeRefund(order)` returning `{ id, amount, status }` for `GET /refunds/:id` and `GET /refunds`; its test is `src/routes/refunds.test.js`.
 - `web/RefundDetail.tsx` renders `Row` label/value pairs from that response and imports `web/refund-detail.css`.
 - Migrations are numbered SQL files under `db/migrations/`; route tests sit beside their module and run under `npm test`.
-- Shared interface: after Task 2, `serializeRefund` returns `{ id, amount, status, refundReason: string | null }`.
+- Shared interface: after Task 1, `serializeRefund` returns `{ id, amount, status, refundReason: string | null }`.
 
 ## Visual direction
 
@@ -41,32 +41,13 @@ Quiet administrative record: the reason joins the existing label/value rows on t
 
 ## Tasks
 
-### Task 1: Add the nullable refund_reason column
+### Task 1: Store and serve the refund reason
 
 Depends on: none
-
-Files:
-- Create: `db/migrations/0042_add_refund_reason.sql`
-
-Step 1: Write the migration
-```sql
-ALTER TABLE orders ADD COLUMN refund_reason text NULL;
-```
-Run: `psql "$SCRATCH_DATABASE_URL" -f db/migrations/0042_add_refund_reason.sql && psql "$SCRATCH_DATABASE_URL" -c '\d orders' | grep refund_reason`
-Expected: `refund_reason | text | | |`
-
-Commit:
-```bash
-git add db/migrations/0042_add_refund_reason.sql
-git commit -m "feat(orders): add nullable refund_reason column" -m "Plan-task: 1"
-```
-
-### Task 2: Serialize refundReason on the refund response
-
-Depends on: Task 1
 Risk: the public response shape of `serializeRefund`
 
 Files:
+- Create: `db/migrations/0042_add_refund_reason.sql`
 - Modify: `src/routes/refunds.js` (`serializeRefund`)
 - Test: `src/routes/refunds.test.js`
 
@@ -80,7 +61,14 @@ test('serializeRefund exposes refundReason, null when unset', () => {
 Run: `npm test -- src/routes/refunds.test.js`
 Expected: `1 failed` naming `refundReason`
 
-Step 2: Return the field
+Step 2: Write the migration
+```sql
+ALTER TABLE orders ADD COLUMN refund_reason text NULL;
+```
+Run: `psql "$SCRATCH_DATABASE_URL" -f db/migrations/0042_add_refund_reason.sql && psql "$SCRATCH_DATABASE_URL" -c '\d orders' | grep refund_reason`
+Expected: `refund_reason | text | | |`
+
+Step 3: Return the field
 ```js
 export function serializeRefund(order) {
   return {
@@ -91,18 +79,18 @@ export function serializeRefund(order) {
   };
 }
 ```
-Run: `npm test -- src/routes/refunds.test.js`
-Expected: all tests in the file pass, `0 failed`
+Run: `npm test -- src/routes/refunds.test.js && curl -s http://localhost:3000/refunds/7 | jq .refundReason`
+Expected: all tests in the file pass, `0 failed`, then `"duplicate charge"` from the column through the response
 
 Commit:
 ```bash
-git add src/routes/refunds.js src/routes/refunds.test.js
-git commit -m "feat(refunds): expose refundReason on refund responses" -m "Plan-task: 2"
+git add db/migrations/0042_add_refund_reason.sql src/routes/refunds.js src/routes/refunds.test.js
+git commit -m "feat(refunds): store and serve the refund reason" -m "Plan-task: 1"
 ```
 
-### Task 3: Render the reason row on the detail page
+### Task 2: Render the reason row on the detail page
 
-Depends on: Task 2
+Depends on: Task 1
 Design: designing
 
 Files:
@@ -140,7 +128,7 @@ Expected: the Reason row reads `No reason recorded` in the muted text color, on 
 Commit:
 ```bash
 git add web/RefundDetail.tsx web/refund-detail.css
-git commit -m "feat(refunds): show the refund reason on the detail page" -m "Plan-task: 3"
+git commit -m "feat(refunds): show the refund reason on the detail page" -m "Plan-task: 2"
 ```
 
 ## Final verification
