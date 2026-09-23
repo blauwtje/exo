@@ -16,6 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `designing`: when no stage called it, a build runs the repository's own type-check, lint and test commands for the touched files before `scripts/check-ui.mjs`, and the QA checks line reports their result; a failure in an untouched file is reported, not chased.
 - `designing`: the piece path's load list and post-build pair move from `SKILL.md` into `## The piece path` of `references/phase-build.md`, and a piece with a settled identity reads `references/implementation.md` without `## Tokens and palette derivation` unless it adds a role token the repository lacks.
+- `designing`: the rule that a run starts Build in the turn the direction is picked moves into `references/phase-direction.md`, the copy of a handed direction to `$RUN/contract-selected.json` into rung 2 of `## Route`, and a plan's `Contract:` record into the planning bullet of `references/intake.md`.
 
 ## 0.29.1 - 2026-09-23
 

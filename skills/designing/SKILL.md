@@ -27,7 +27,7 @@ A full or bounded redesign fails when the rendered result stays materially inter
 The route decides how the direction is reached; `## Size the request` decides how much is built. Resolve the surface first from the markup and style files in the working-tree diff, then from the last touched one; with neither, ask which surface and nothing else, listing the surfaces its markup and style files name with the most recently changed first, because a request without a surface has nothing to route. Then stop at the first rung that matches, because comps earn their cost only where a chooser recognises a direction they cannot name:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` resumes at Build (Phase 3).
+2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice.
 3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as the one who chooses between rendered directions: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** docs/design/DESIGN.md with a `scripts/context.mjs` status other than `absent`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it, while neither the user nor the brief lets that identity be replaced: one direction in text and no offer. A component library in the manifest is not that evidence on its own, because its defaults are the template this skill exists to replace.
@@ -46,7 +46,7 @@ Read `references/intake.md` before Phase 1: the rule for when a question is aske
 
 ## References
 
-Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
 
 | File | Read it when |
 |---|---|
@@ -103,5 +103,4 @@ Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-over
 - Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
 - Accessibility and complete content/state coverage outrank visual novelty.
 - A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become defaults to exceed deliberately; contrast, reduced-motion, and state coverage still hold.
-- A planning turn or a `shaping` brief records the selected direction under `## Visual direction`, a plan as `Contract: docs/design/direction.json`; a plan or brief carrying one copies that contract to `$RUN/contract-selected.json`, resumes at Build (Phase 3), and repeats neither Phase 1-2 nor the variant choice.
 - This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
