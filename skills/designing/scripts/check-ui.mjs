@@ -523,27 +523,27 @@ function isGroundProperty(property) {
   return namesGround && words.every((word) => GROUND_NOUNS.has(word) || GROUND_SCOPES.has(word));
 }
 
-function isPurple(token) {
+export function isPurple(token) {
   const color = oklchOf(token);
   if (!color || color.chroma < SATURATED_CHROMA) return false;
   return color.hue >= PURPLE_HUES[0] && color.hue <= PURPLE_HUES[1];
 }
 
 /** A bright, strongly saturated color outside the warm band: fluorescent green, cyan, magenta or yellow. */
-function isNeon(token) {
+export function isNeon(token) {
   const color = oklchOf(token);
   if (!color || color.lightness < 0.7 || color.chroma < 0.13) return false;
   return color.hue < WARM_HUES[0] || color.hue > WARM_HUES[1];
 }
 
 /** A near-black color opaque enough to be the ground; a translucent overlay sets no ground. */
-function isNearBlack(token) {
+export function isNearBlack(token) {
   const rgb = parseColor(token);
   return rgb !== null && Math.max(...rgb) <= 48 && alphaOf(token) >= 0.9;
 }
 
 /** A warm off-white: light, low in chroma, hue between orange and yellow. */
-function isCream(token) {
+export function isCream(token) {
   const rgb = parseColor(token);
   if (!rgb || Math.min(...rgb) < 200 || Math.max(...rgb) < 235) return false;
   const hue = hueOf(rgb);
