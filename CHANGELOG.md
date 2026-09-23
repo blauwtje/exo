@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - Skill budgets are stricter: a skill body fails over 2,500 tokens (`using-exo` over 1,000), a description over 375 characters, and a reference that names another reference or runs past 100 lines without a contents list; skills not yet trimmed are listed in `PENDING_TRIM`.
+- `skills-tool` states the new size aims and ceilings once, pinned to `verify/budgets.mjs`, and moves the one-topic reference rule from its new-skill template into the body every edit reads.
 
 ## 0.31.0 - 2026-09-23
 

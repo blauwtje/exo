@@ -6,19 +6,18 @@ argument-hint: <skill or agent to create, edit or size>
 
 # Skills tool
 
-A skill earns its place only by stopping a mistake the model makes when the skill is absent, in as few words as that takes. The enemy is the skill that describes behavior the model already has and hides the one rule that changes anything. The overcorrection is an order stripped of its reason, which the model obeys to the letter without knowing where it ends.
+A skill earns its place only by stopping a mistake the model makes without it, in as few words as that takes. The enemy is the skill that restates behavior the model already has and hides the one rule that changes anything. The overcorrection is an order stripped of its reason, which the model obeys to the letter past where it ends.
 
 ## When to use
 
 - Creating a skill or an agent, changing one, or judging whether one has grown too long.
 - Not for a fix that happens once, a habit of one project, or a limit a regex can check: a commit, `CLAUDE.md` or the verifier holds those, because a skill exists for a call that needs judgment.
-- Not for `CLAUDE.md`, a rule or an output style.
 
 ## The shape
 
 | Part | Contract |
 |---|---|
-| `description` | At most 400 characters of trigger: the moments it fires and the ones it does not. Workflow written into the description replaces the body, because the model acts on the summary it already read; `references/description.md` lists what goes in and in which order. |
+| `description` | Trigger only: the moments it fires, then what it leaves alone. A workflow written into it replaces the body, because the model acts on the summary it already read. |
 | Opening | A single paragraph naming the principle, the enemy and the overcorrection. |
 | `## When to use` | Bullets naming the symptoms first, then each "not for" case. |
 | Process | Numbered steps, at most eight, taken in order until one matches; every step is a rule with its reason. |
@@ -30,7 +29,9 @@ A skill earns its place only by stopping a mistake the model makes when the skil
 
 - A line holds one sentence of fewer than 25 words; a bullet runs two lines at most.
 - Bulk material, such as a template, a worked example or a checklist longer than 20 lines, lives in `references/`, and the body names the moment to open it.
-- Text handed to a delegate lives beside `SKILL.md` as `<role>-prompt.md` and appears in the References table with the step that dispatches it; `references/` is only for what the skill reads during its own run.
+- Aim the body at 2,000 tokens (bytes after the frontmatter / 4) and the description at 300 characters; the verifier fails 2,500 tokens, 1,000 for the injected `using-exo`, and 375 characters.
+- A reference holds one topic and names no other reference; over 100 lines it opens with a contents list linking each section.
+- Text handed to a delegate lives beside `SKILL.md` as `<role>-prompt.md`, with a References row naming the step that dispatches it; `references/` holds only what the skill reads itself.
 
 ## The loop
 
@@ -55,12 +56,12 @@ A skill earns its place only by stopping a mistake the model makes when the skil
 
 | File | Read it when |
 |---|---|
-| `references/pressure-scenarios.md` | Writing the prompt in step 1, and whenever the run without the skill passes a prompt that only asks for the rule. |
-| `references/where-a-fix-lives.md` | In step 3, before writing the first rule, to find the cheapest place that stops the observed mistake. |
-| `references/wording.md` | In step 3, when two phrasings compete or the tone of a rule is unclear. |
-| `references/description.md` | In step 3 for the frontmatter, and in step 5 when a symptom is added to the description. |
-| `references/skill-shape.md` | In step 3 when the skill starts from nothing; never for a change to an existing skill. |
-| `references/plugging-holes.md` | In step 5, once a run with the skill loaded still produced a justification. |
+| `references/pressure-scenarios.md` | Step 1, and whenever the run without the skill passes a prompt that only asks for the rule. |
+| `references/where-a-fix-lives.md` | Step 3, before the first rule is written. |
+| `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |
+| `references/description.md` | Step 3 for the frontmatter; step 5 when a symptom joins the description. |
+| `references/skill-shape.md` | Step 3 for a skill started from nothing; never for a change to an existing skill. |
+| `references/plugging-holes.md` | Step 5, once a run with the skill loaded still produced a justification. |
 
 ## Judgment
 

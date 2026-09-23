@@ -5,7 +5,7 @@ A new skill starts from this template and removes every section it has nothing r
 ```markdown
 ---
 name: <kebab-case>
-description: <The moments it fires, then "Not for ..." naming the cases it leaves alone. 400 characters at most.>
+description: <The moments it fires, then "Not for ..." naming the cases it leaves alone.>
 ---
 
 # <Title>
@@ -46,7 +46,6 @@ An agent uses the same shape with two changes: its frontmatter sets `model`, `to
 - A war story about one fix, such as "last sprint the build broke because…"; write the rule the story taught, since a reader cannot generalize an anecdote.
 - One example repeated in several languages, or a blank template dressed up as an example; give a single complete example in the language that matters most.
 - Placeholder names such as `step3`, `helper` or `data` where a word from the domain exists.
-- A reference that sends the reader on to another reference; every reference sits one level under the skill file, and one longer than 100 lines starts with a table of contents.
 
 ## Judgment
 

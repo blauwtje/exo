@@ -5,6 +5,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
+import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
+
+const thousands = (value) => value.toLocaleString('en-US');
 
 const LABEL_LIMIT = 70;
 const HANDSHAKE = /When a new visual surface does not name [^.]+; designing follows for presentation\./;
@@ -95,6 +98,13 @@ const PINNED_SENTENCES = {
     '- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;',
     '- targets at least 24×24 CSS px — the WCAG 2.2 AA minimum, exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation — with 44×44 as the enhanced target and the default under a coarse pointer;',
     'The underdesign floor: the ground is a designed surface, not an untouched flat neutral',
+  ],
+  'skills/skills-tool/SKILL.md': [
+    `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens, ${thousands(INJECTED_BODY_TOKENS.ceiling)} for the injected \`${INJECTED_BODY_TOKENS.skill}\`, and ${DESCRIPTION_CHARS.ceiling} characters.`,
+    `A reference holds one topic and names no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
+  ],
+  'skills/skills-tool/references/description.md': [
+    `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
 };
 
