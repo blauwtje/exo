@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { ATTESTATIONS_REQUIRED } from '#memory-store';
 import { fixture, run } from './harness.mjs';
 
 const MEMORY = fileURLToPath(new URL('../skills/memory/scripts/memory.mjs', import.meta.url));
@@ -41,7 +42,7 @@ test('an empty memory renders both sections and writes no file', async () => {
   const root = await repository();
   const result = await memory(root, 'render');
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /## Current understanding\n\nNothing is attested twice yet\./);
+  assert.ok(result.stdout.includes(`## Current understanding\n\nNothing is attested in ${ATTESTATIONS_REQUIRED} sessions yet.`), result.stdout);
   assert.match(result.stdout, /## Decisions\n\nNothing has been written yet\./);
   assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
 });
@@ -52,7 +53,7 @@ test('a claim booked in one session is not proposed', async () => {
   assert.equal(booked.code, 0, booked.stderr);
   const proposed = await memory(root, 'propose');
   assert.equal(proposed.code, 0, proposed.stderr);
-  assert.match(proposed.stdout, /no claim is attested twice yet/);
+  assert.ok(proposed.stdout.includes(`no claim is attested in ${ATTESTATIONS_REQUIRED} sessions yet`), proposed.stdout);
   assert.doesNotMatch(proposed.stdout, /the suite runs under node --test/);
 });
 
@@ -61,7 +62,7 @@ test('a second booking from the same session does not make a second attestation'
   await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'no, it is node --test', '--session', 'one');
   await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'again, node --test', '--session', 'one');
   const proposed = await memory(root, 'propose');
-  assert.match(proposed.stdout, /no claim is attested twice yet/);
+  assert.ok(proposed.stdout.includes(`no claim is attested in ${ATTESTATIONS_REQUIRED} sessions yet`), proposed.stdout);
 });
 
 test('a claim booked in two sessions is proposed with both dated quotes', async () => {

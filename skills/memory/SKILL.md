@@ -1,6 +1,6 @@
 ---
 name: memory
-description: "Record what this repository taught exo: book a correction the user just made, propose a claim two separate sessions have booked, write it once the user approves, and drop a line whose files are gone. Use when the user invokes it. Not for a plan another session runs, and not for a build or test command, which debug appends to AGENTS.md or CLAUDE.md."
+description: "Use when the user wants a correction about this repository kept, or asks what exo remembers here, what still holds, or to forget a line. Not for a plan another session runs, which planning owns, or a build or test command, which debug writes to AGENTS.md or CLAUDE.md."
 argument-hint: "[the correction this session must not lose]"
 allowed-tools: Bash(node *memory.mjs*)
 disable-model-invocation: true

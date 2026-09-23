@@ -15,7 +15,7 @@ import process from 'node:process';
 import { Buffer } from 'node:buffer';
 import { parseArgs } from 'node:util';
 import { MEMORY_BUDGET } from '#budgets';
-import { appendNudgeLog, memoryDirectory } from '#memory-store';
+import { ATTESTATIONS_REQUIRED, appendNudgeLog, memoryDirectory } from '#memory-store';
 
 function stateFile(cwd) {
   return path.join(memoryDirectory(cwd), 'memory.json');
@@ -59,7 +59,7 @@ function decisionLine(line) {
 function render(state) {
   const live = state.lines.filter((line) => line.superseded === null && line.dropped === null);
   const understanding = live.length === 0
-    ? 'Nothing is attested twice yet.'
+    ? `Nothing is attested in ${ATTESTATIONS_REQUIRED} sessions yet.`
     : live.map((line) => `- ${line.claim} (refs: ${line.refs.join(', ')})`).join('\n');
   const history = state.lines.length === 0
     ? 'Nothing has been written yet.'
@@ -83,10 +83,6 @@ function writeState(cwd, state) {
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
-
-// A claim is proposed only once two distinct sessions have booked it, so one
-// session cannot teach exo something it misheard.
-const ATTESTATIONS_REQUIRED = 2;
 
 // A second booking from the same session replaces that session's quote rather
 // than counting twice: a session that repeats itself has still seen the claim once.
@@ -231,7 +227,7 @@ if (command === 'paths') {
   try {
     const candidates = proposable(readState(cwd));
     if (candidates.length === 0) {
-      console.log('no claim is attested twice yet');
+      console.log(`no claim is attested in ${ATTESTATIONS_REQUIRED} sessions yet`);
     }
     for (const { claim, attestations } of candidates) {
       console.log(claim);

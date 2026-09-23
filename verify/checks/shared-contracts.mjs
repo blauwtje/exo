@@ -8,6 +8,7 @@ import { readFrontmatter } from '../frontmatter.mjs';
 import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/shaping/scripts/question-page.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/implementing/scripts/pick-reviewer.mjs';
+import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/shipping/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
@@ -115,11 +116,12 @@ const PINNED_SENTENCES = {
   'skills/skills-tool/references/description.md': [
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
-  'README.md': [...REVIEW_THRESHOLD],
+  'README.md': [...REVIEW_THRESHOLD, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
   'CONTRIBUTING.md': [...REVIEW_THRESHOLD],
   'agents/branch-reviewer.md': [...REVIEW_THRESHOLD],
   'agents/branch-reviewer-deep.md': [...REVIEW_THRESHOLD],
   'skills/shipping/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
+  'skills/memory/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
 };
 
 // A doc list that restates a data asset: every name the asset lists appears

@@ -27,6 +27,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `debug` loads about 250 fewer tokens: its description is 310 characters, the performance branch rides on the performance row, and the loop keeps its seven steps in fewer words.
 - `deepen` says its scope, terms, audit and modes in fewer words, reads the next-stage table and the question shape from the `using-exo` references, and its description drops from 371 to 285 characters.
 - `shipping` states its routes in fewer words, reads the question shape from the `using-exo` reference, and the verifier pins the 20-minute wait and exit 124 it states to the constants `wait-checks.mjs` exports.
+- `memory` reads its attestation count from one `ATTESTATIONS_REQUIRED` constant that the verifier pins its docs to, and says "attested in 2 sessions" where it said "attested twice"; the `prototyping` and `memory` descriptions drop to 299 and 268 characters.
 
 ### Fixed
 
