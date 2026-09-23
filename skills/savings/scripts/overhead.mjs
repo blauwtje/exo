@@ -18,8 +18,8 @@ export const OVERHEAD_VERSION = 4;
 
 // What an exo call was for: loading a skill, or reading a file again after the
 // guard refused it whole (capped) or refused a repeat (duplicate).
-export const WORK_KINDS = ['skill', 'capped', 'duplicate'];
 export const GUARD_KINDS = ['capped', 'duplicate'];
+export const WORK_KINDS = ['skill', ...GUARD_KINDS];
 
 const PLUGIN_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const SKILL_PREFIX = 'exo:';

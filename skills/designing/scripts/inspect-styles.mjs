@@ -7,7 +7,7 @@
 import process from 'node:process';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { BROWSER_CAPABILITIES, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
+import { BROWSER_CAPABILITIES, DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
 
 // SURVEY runs inside page.evaluate, where no CDP exists. It therefore reports
 // only the DOM-side font channels; inspect() grades them in Node afterwards.
@@ -231,7 +231,7 @@ export async function inspect({ url, viewport, cwd }) {
 async function main(argv) {
   const flags = parseFlags(argv, { url: 'value', viewport: 'value' });
   const url = requireUrl(flags.url);
-  const viewport = flags.viewport ? parseViewport(flags.viewport) : { width: 1440, height: 900 };
+  const viewport = flags.viewport ? parseViewport(flags.viewport) : parseViewport(DEFAULT_VIEWPORTS.at(-1));
   const report = await inspect({ url, viewport, cwd: process.cwd() });
   process.stdout.write(`${JSON.stringify(report)}\n`);
 }

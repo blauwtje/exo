@@ -7,6 +7,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
+import { DEFAULT_MINUTES } from '../skills/shipping/scripts/wait-checks.mjs';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const SKILL = read('implementing/SKILL.md');
@@ -62,7 +63,7 @@ test('shipping merges only after the bounded wait and the API gate, and deletes 
   const confirm = SHIPPING.indexOf('`state` `MERGED`');
   assert.ok(wait !== -1 && wait < gate && gate < merge && merge < confirm, 'wait, gate, merge, confirm in order');
   assert.ok(SHIPPING.includes('never with `--delete-branch`, `--admin` or `--auto`'));
-  assert.ok(SHIPPING.includes('stops after 20 minutes'));
+  assert.ok(SHIPPING.includes(`stops after ${DEFAULT_MINUTES} minutes`));
 });
 
 test('the authorization line grants no push before the finish answer and no merge', () => {

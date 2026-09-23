@@ -6,7 +6,7 @@ import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { parseShortstat, pickReviewer, resolveReviewer } from '../skills/implementing/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT, parseShortstat, pickReviewer, resolveReviewer } from '../skills/implementing/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/implementing/scripts/pick-reviewer.mjs', import.meta.url));
@@ -18,13 +18,13 @@ test('parses files, insertions and deletions out of a shortstat line', () => {
 });
 
 test('picks the plain reviewer at or under both limits', () => {
-  assert.equal(pickReviewer({ files: 5, changedLines: 200 }), 'exo:branch-reviewer');
+  assert.equal(pickReviewer({ files: FILE_LIMIT, changedLines: LINE_LIMIT }), 'exo:branch-reviewer');
   assert.equal(pickReviewer({ files: 1, changedLines: 1 }), 'exo:branch-reviewer');
 });
 
 test('picks the deep reviewer above either limit', () => {
-  assert.equal(pickReviewer({ files: 6, changedLines: 1 }), 'exo:branch-reviewer-deep');
-  assert.equal(pickReviewer({ files: 1, changedLines: 201 }), 'exo:branch-reviewer-deep');
+  assert.equal(pickReviewer({ files: FILE_LIMIT + 1, changedLines: 1 }), 'exo:branch-reviewer-deep');
+  assert.equal(pickReviewer({ files: 1, changedLines: LINE_LIMIT + 1 }), 'exo:branch-reviewer-deep');
 });
 
 test('a named override wins over the diff reading', () => {

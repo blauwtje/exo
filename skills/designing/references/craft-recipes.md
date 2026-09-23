@@ -70,7 +70,7 @@ background:
 
 ## Motion
 
-**Staged focal entrance** — the signature sequence `motion.md` allows: focal first, supporting groups after, content visible at rest so a failed animation hides nothing.
+**Staged focal entrance** — the signature sequence the `motion` reference allows: focal first, supporting groups after, content visible at rest so a failed animation hides nothing.
 
 ~~~css
 .hero > * { animation: rise var(--dur-focal) var(--ease-out) both; }
@@ -91,7 +91,7 @@ background:
 
 ## Judgment
 
-- The contract and the job gate in `motion.md` outrank every shape here; a shape with no contract field behind it is decoration.
+- The contract and the job gate in the `motion` reference outrank every shape here; a shape with no contract field behind it is decoration.
 - Body-text contrast on top of a ground shape outranks the shape.
 - One shape per job: two atmosphere layers doing the same job is one too many.
 - Existing repository tokens, mixins, and motion primitives outrank these shapes; port the shape onto them.

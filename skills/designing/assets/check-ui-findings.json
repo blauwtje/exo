@@ -1,0 +1,9 @@
+{
+  "decorativeTells": [
+    "overused-font", "uniform-card-shadow", "radial-halo", "thin-border-wide-shadow", "edge-accent-card",
+    "gradient-text", "transition-all", "emoji-in-markup", "aggressive-gradient-ground", "kicker-above-heading",
+    "purple-palette", "neon-on-dark", "cream-ground", "tinted-glow", "pill-button", "bounce-easing",
+    "card-entrance", "monospace-label", "invented-content"
+  ],
+  "alwaysBlocking": ["content-clipped", "element-overlap"]
+}

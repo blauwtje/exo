@@ -2,7 +2,7 @@
 
 Answer one visual question in the time it takes to ask it: a rough sketch in a tab that is already open, and one click. The enemy is the sketch polished into a comp, which spends minutes on a question that needed seconds. The overcorrection is a sketch so bare it hides the choice: grey boxes cannot answer a color question.
 
-`direction-preview.md` owns full comps. This file owns every other visual question.
+the `direction-preview` reference owns full comps. This file owns every other visual question.
 
 ## The commands
 

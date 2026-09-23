@@ -29,7 +29,7 @@ One pressure gives a usable case; stack three for a strong one, because a skill 
 ## Running it
 
 1. Run the case without the skill on each model and effort that runs the skill, naming both on every run, because a rule one model or effort needs is noise to another.
-2. Take the model and effort from the `## The next stage` table in `using-exo` for a stage skill, from the frontmatter for an agent with the session's effort where it names none, `sonnet` at `high` for a build delegate's prompt, and the session's own for any other skill.
+2. Take the model and effort from the next-stage model table of `using-exo` for a stage skill, from the frontmatter for an agent with the session's effort where it names none, `sonnet` at `high` for a build delegate's prompt, and the session's own for any other skill.
 3. Copy the chosen action and the justification word for word; that wording is what the skill has to answer.
 4. Run the case again with the skill loaded, on the same model and effort; it counts as a pass only when the run without the skill failed.
 5. Keep the prompt and both justifications in the edit's report and save no case in the repository, because a case on disk invites a paid rerun on every later edit; each run writes its output to a temporary file named for its model and effort.

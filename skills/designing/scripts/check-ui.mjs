@@ -12,9 +12,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
+import { DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
 import { isOverusedFamily, loadOverusedFonts } from './overused-fonts.mjs';
 
 const SOURCE_EXTENSIONS = new Set([
@@ -1316,7 +1316,12 @@ export async function renderedAudit({ url, viewport, cwd }) {
   }
 }
 
-const ALWAYS_BLOCKING = new Set(['content-clipped', 'element-overlap']);
+// The finding names the designing docs restate live in one asset; verify pins
+// each doc list to it.
+const FINDING_LISTS = JSON.parse(readFileSync(new URL('../assets/check-ui-findings.json', import.meta.url), 'utf8'));
+// The slop tropes visual-critique.md names that this script detects.
+export const DECORATIVE_TELLS = Object.freeze(FINDING_LISTS.decorativeTells);
+export const ALWAYS_BLOCKING = new Set(FINDING_LISTS.alwaysBlocking);
 
 // A selector ends in `file:line` for a line-level finding and in `rule (file:line)` for a rule-level one.
 const RULE_LOCATION = /\(([^()]*):\d+\)$/;
@@ -1400,15 +1405,13 @@ const IGNORE_FILE = path.join('docs', 'design', 'check-ui-ignore.json');
 const IGNORE_FIELDS = ['type', 'file', 'reason'];
 // Every type this script reports; an ignore entry naming another type, such as a renamed one, matches nothing.
 const FINDING_TYPES = new Set([
-  'transition-all', 'inline-event-handler', 'important-override', 'placeholder-copy', 'invented-content', 'float-layout',
-  'gradient-text', 'radial-halo', 'physical-direction-property', 'purple-palette', 'monospace-label',
+  ...DECORATIVE_TELLS,
+  'inline-event-handler', 'important-override', 'placeholder-copy', 'float-layout', 'physical-direction-property',
   'svg-without-viewbox', 'image-without-alt', 'image-without-dimensions', 'srcset-without-sizes',
-  'missing-lang-attribute', 'inline-style-attribute', 'raw-value-in-component-rule', 'overused-font',
-  'emoji-in-markup', 'kicker-above-heading', 'cream-ground', 'neon-on-dark', 'tinted-glow', 'pill-button',
-  'bounce-easing', 'card-entrance', 'thin-border-wide-shadow', 'edge-accent-card', 'aggressive-gradient-ground',
-  'uniform-card-shadow', 'contrast-large-text', 'contrast-normal-text', 'target-size-minimum',
-  'target-size-enhanced', 'contrast-non-text-ui', 'repeated-surface-anatomy', 'content-clipped',
-  'element-overlap', 'crowded-controls', 'focus-indicator-missing', 'horizontal-overflow', 'reflow-two-dimensional'
+  'missing-lang-attribute', 'inline-style-attribute', 'raw-value-in-component-rule', 'contrast-large-text',
+  'contrast-normal-text', 'target-size-minimum', 'target-size-enhanced', 'contrast-non-text-ui',
+  'repeated-surface-anatomy', 'content-clipped', 'element-overlap', 'crowded-controls', 'focus-indicator-missing',
+  'horizontal-overflow', 'reflow-two-dimensional'
 ]);
 
 async function readIgnoreEntries(directory) {
@@ -1447,7 +1450,7 @@ async function readIgnoreEntries(directory) {
 async function main(argv) {
   const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value', baseline: 'value' });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
-  const viewport = flags.viewport ? parseViewport(flags.viewport) : { width: 1440, height: 900 };
+  const viewport = flags.viewport ? parseViewport(flags.viewport) : parseViewport(DEFAULT_VIEWPORTS.at(-1));
   const baselineFindings = flags.baseline ? await readBaseline(flags.baseline) : null;
 
   const report = {

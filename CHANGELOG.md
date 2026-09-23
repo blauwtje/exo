@@ -7,6 +7,37 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.32.0 - 2026-09-23
+
+### Added
+
+- `node verify/skill-graph.mjs` answers where a skill section starts and ends, what points at a file and which strings a check pins to a doc, so an edit reads a line range instead of a whole file.
+
+### Changed
+
+- Skill budgets are stricter: a skill body fails over 2,500 tokens (`using-exo` over 1,000), a description over 375 characters, and a reference that names another reference or runs past 100 lines without a contents list; skills not yet trimmed are listed in `PENDING_TRIM`.
+- `skills-tool` states the new size aims and ceilings once, pinned to `verify/budgets.mjs`, and moves the one-topic reference rule from its new-skill template into the body every edit reads.
+- The `exo settings:` line now carries the active `replies` rule from `skills/settings/schema.json`, so `using-exo` no longer states it.
+- `using-exo` injects about 1,000 tokens instead of 2,300: the question format and the next-stage table move to `references/question.md` and `references/next-stage.md`, which the skills that ask or end a stage list in their tables, and the restatement repeats `# Closing` in place of the next-stage table.
+- `shaping` loads about 2,450 tokens instead of 3,460: reopening a stored brief, the brief's sections and the issue path move to `references/stored-brief.md`, `references/brief.md` and `references/brief-in-an-issue.md`, its description drops the two-file and named-change exclusions, and the verifier holds the interview page's states, closers and option count to `question-page.mjs`.
+- `designing`: the body drops to about 2,470 tokens and the description to 363 characters; the sketch recipe, the settled-identity evidence and the discovery dispatch inputs move into the `phase-build`, `intake` and `phase-detail` references, every reference names a sibling by its topic instead of its file, and `motion.md` and `visual-critique.md` open with a linked contents list.
+- `designing`: the check-ui tell and always-blocking lists, the capture viewports and the sketch-tab and picker labels live in `skills/designing/assets/`, its scripts and `shaping`'s question page read them there, and the verifier fails when a doc list drops a name its asset holds.
+- `implementing-batch` loads about 2,200 tokens instead of 3,100: the test-first cycle moves to `references/test-first.md`, the steps drop repeats of the right-sizing ladder and the command-output rule that `using-exo` injects, the task list's states stay in the skill, and the table gains the `using-exo` question reference.
+- `implementing` loads about 2,000 tokens instead of 2,500: the `Design:` routing moves to `references/design-tasks.md`, which step 5 opens only for a task with a `Design:` line, and the steps drop what `references/workspace.md` and the prompt files already say. `pick-reviewer.mjs` exports its five-file and 200-line limits, and the verifier pins every doc copy of that threshold to them.
+- `settings` loads about 440 fewer tokens: the setup walk's rounds move into `references/setup-map.md`, now titled "Setup walk" with a contents list, the body names "a key `show` lists" instead of repeating the schema keys, and its table lists using-exo's question reference.
+- `planning` loads about 350 fewer tokens: its body drops sentences plan-spec, implementing and using-exo's next-stage reference already own, its description is 298 characters, plan-spec names no other skill's file, the example plan opens with a contents list, and `deepen` lists implementing-batch's test-design reference for its plan mode.
+- `debug` loads about 250 fewer tokens: its description is 310 characters, the performance branch rides on the performance row, and the loop keeps its seven steps in fewer words.
+- `deepen` says its scope, terms, audit and modes in fewer words, reads the next-stage table and the question shape from the `using-exo` references, and its description drops from 371 to 285 characters.
+- `shipping` states its routes in fewer words, reads the question shape from the `using-exo` reference, and the verifier pins the 20-minute wait and exit 124 it states to the constants `wait-checks.mjs` exports.
+- `memory` reads its attestation count from one `ATTESTATIONS_REQUIRED` constant that the verifier pins its docs to, and says "attested in 2 sessions" where it said "attested twice"; the `prototyping` and `memory` descriptions drop to 299 and 268 characters.
+- `savings`: the skill relays the retention window and the token ratio from the report instead of restating them; `CHARACTERS_PER_TOKEN` joins `SESSION_RETENTION_DAYS` and `DEFAULT_GUARD_LINES` as an export of `scripts/record.mjs`, the shared-contracts check pins README.md, CONTRIBUTING.md, `docs/skills/savings.md` and the settings setup map to those three constants, and the usage-count keys and guard kinds each have one owner.
+- `handoff` and `research`: shorter descriptions in the "Use when… Not for…" form (220 and 279 characters), and `handoff` and `issuing` join the skills the full verifier checks, so their structure, links and reference tables are checked like every other skill's.
+
+### Fixed
+
+- The check-ui test covers all 19 decorative tells `visual-critique.md` lists, `invented-content` included (#86), and README and CONTRIBUTING give `exo:design-critic` the `medium` effort and 12-turn limit its agent file sets.
+- The README settings table lists the `context` setting.
+
 ## 0.31.0 - 2026-09-23
 
 ### Added

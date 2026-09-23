@@ -13,7 +13,7 @@ import {
   resolveBrowser
 } from '../skills/designing/scripts/capture.mjs';
 import { fontConfidence } from '../skills/designing/scripts/inspect-styles.mjs';
-import { compareFindings } from '../skills/designing/scripts/check-ui.mjs';
+import { ALWAYS_BLOCKING, compareFindings, DECORATIVE_TELLS } from '../skills/designing/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
 
 function git(root, args) {
@@ -253,19 +253,12 @@ describe('check-ui.mjs static subset', () => {
     assert.deepEqual(JSON.parse(result.stdout).static.findings, []);
   });
 
-  const TELLS = [
-    'overused-font', 'uniform-card-shadow', 'radial-halo', 'thin-border-wide-shadow', 'edge-accent-card',
-    'gradient-text', 'transition-all', 'emoji-in-markup', 'aggressive-gradient-ground', 'kicker-above-heading',
-    'purple-palette', 'neon-on-dark', 'cream-ground', 'tinted-glow', 'pill-button', 'bounce-easing', 'card-entrance',
-    'monospace-label'
-  ];
-
   async function tellsFor(stylesheet) {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'styles.css'), stylesheet);
     const result = await run(script('check-ui.mjs'), ['--source', root]);
     assert.equal(result.code, 0, result.stderr);
-    return JSON.parse(result.stdout).static.findings.filter((entry) => TELLS.includes(entry.type));
+    return JSON.parse(result.stdout).static.findings.filter((entry) => DECORATIVE_TELLS.includes(entry.type));
   }
 
   it('reports a font-family naming an overused family or its superfamily once', async () => {
@@ -292,7 +285,7 @@ describe('check-ui.mjs static subset', () => {
     await fs.writeFile(path.join(root, 'page.html'), markup);
     const result = await run(script('check-ui.mjs'), ['--source', root]);
     assert.equal(result.code, 0, result.stderr);
-    return JSON.parse(result.stdout).static.findings.filter((entry) => TELLS.includes(entry.type));
+    return JSON.parse(result.stdout).static.findings.filter((entry) => DECORATIVE_TELLS.includes(entry.type));
   }
 
   it('reports the default drop shadow repeated across cards once, with the count', async () => {
@@ -726,6 +719,12 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const overlap = entry('element-overlap', 'h1 over p', 'definite', '40×12px of shared area');
     const comparison = compareFindings([clipped], [clipped, overlap]);
     assert.deepEqual(comparison.counts, { before: 1, after: 2, predating: 1, new: 1, ignored: 0, blocking: 2 });
+  });
+
+  it('blocks a predating finding of every always-blocking type', () => {
+    const predating = [...ALWAYS_BLOCKING].map((type) => entry(type, `${type} target`, 'potential'));
+    const comparison = compareFindings(predating, predating);
+    assert.equal(comparison.counts.blocking, ALWAYS_BLOCKING.size);
   });
 
   it('moves an ignored finding out of the new and blocking lists with its reason', () => {

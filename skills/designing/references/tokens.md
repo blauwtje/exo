@@ -2,7 +2,7 @@
 
 Store the decision, not the value. The enemy is the token file that is a paint chart: `--blue-600` used for a border in one place and a button in another, so the rebrand becomes a search and replace no one finishes. The overcorrection is a three-tier pipeline with a build step for a page with eleven colors.
 
-`visual-direction.md` decides the palette, the topology, and the commitment level. `implementation.md` writes the CSS. This file owns the shape of the layer between them: what a token is named, what it references, and how a ramp is derived rather than picked. Every structure below is portable; **no value below is**. A ladder is architecture, a hue is a look, and importing the second is how a design starts wearing another product's identity.
+the `visual-direction` reference decides the palette, the topology, and the commitment level. the `implementation` reference writes the CSS. This file owns the shape of the layer between them: what a token is named, what it references, and how a ramp is derived rather than picked. Every structure below is portable; **no value below is**. A ladder is architecture, a hue is a look, and importing the second is how a design starts wearing another product's identity.
 
 ## Tiers
 
@@ -29,7 +29,7 @@ The Design Tokens Community Group format is a **live, unstable draft**: the Thir
 - `$value` is the only required property; `$type`, `$description`, and `$extensions` are optional. Design intent belongs in `$description`, not in a comment the build discards.
 - `$type` is **inherited from the nearest ancestor group**, so a group declares its type once.
 - Aliases are `{group.token}` references to another token's whole value.
-- **Composite types exist: use them.** `border`, `shadow`, `gradient`, `transition`, `typography`, and `strokeStyle`, alongside `color`, `dimension`, `fontFamily`, `fontWeight`, `duration`, `cubicBezier`, and `number`. Verify: hand-rolled `-shadow-x` / `-shadow-y` / `-shadow-blur` siblings mean a composite was exploded, and the elevation grammar in `component-system.md` then lives in three places.
+- **Composite types exist: use them.** `border`, `shadow`, `gradient`, `transition`, `typography`, and `strokeStyle`, alongside `color`, `dimension`, `fontFamily`, `fontWeight`, `duration`, `cubicBezier`, and `number`. Verify: hand-rolled `-shadow-x` / `-shadow-y` / `-shadow-blur` siblings mean a composite was exploded, and the elevation grammar in the `component-system` reference then lives in three places.
 
 Outside a token pipeline — a single-file deliverable, a small repository — the same architecture holds in plain custom properties: primitives in one `:root` block, semantic roles aliasing them, and nothing in a component rule that is not a `var()`.
 
@@ -37,7 +37,7 @@ Outside a token pipeline — a single-file deliverable, a small repository — t
 
 A palette is a ladder of **roles**, and the ladder is what transfers. Radix Colors publishes the clearest published version of it, twelve steps deep ([radix-ui.com/colors, palette composition, read 2026-09-07](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale); 1,658★): app background, subtle background, UI element background, hovered, active or selected, subtle border, element border and focus ring, hovered border, solid background, hovered solid, low-contrast text, high-contrast text.
 
-Twelve steps is not a quota — the interface's real roles decide the count, and `implementation.md` already says to build the roles the interface has. What the ladder gives is the discipline: a border color and a hover surface are **different roles**, so they are different tokens even when they start life the same value, and no component rule ever reaches past its role to a primitive. Verify in the render: the page background, a default control's border, and secondary text resolve to three distinct computed values, none equal to another.
+Twelve steps is not a quota — the interface's real roles decide the count, and the `implementation` reference already says to build the roles the interface has. What the ladder gives is the discipline: a border color and a hover surface are **different roles**, so they are different tokens even when they start life the same value, and no component rule ever reaches past its role to a primitive. Verify in the render: the page background, a default control's border, and secondary text resolve to three distinct computed values, none equal to another.
 
 The hues are Radix's look. Taking the roles is architecture; taking the values is a clone.
 
@@ -45,7 +45,7 @@ The hues are Radix's look. Taking the roles is architecture; taking the values i
 
 Pick the anchors and the target ratios, then generate; do not hand-pick swatches and audit them afterwards. Leonardo's whole premise is "using contrast ratio as the starting point, rather than a post-color-selection auditing process" ([github.com/adobe/leonardo, read 2026-09-07](https://github.com/adobe/leonardo)). Its parameters name the procedure: `colorKeys` are the colors to interpolate between, `ratios` are the targets each generated step must hit, `colorspace` selects the interpolation space, and a theme's `lightness`, `contrast`, and `saturation` regenerate the whole set against a chosen background ([contrast-colors README, `main`, read 2026-09-07](https://github.com/adobe/leonardo/blob/main/packages/contrast-colors/README.md)).
 
-This is the mechanism behind "contrast by construction" in `visual-direction.md`: the ratio is an input, so the dark scheme is a regeneration against a different background rather than an inversion. Verify: sample a computed foreground and its ancestor background, compute the ratio, and check it lands on the declared target rather than somewhere nearby.
+This is the mechanism behind "contrast by construction" in the `visual-direction` reference: the ratio is an input, so the dark scheme is a regeneration against a different background rather than an inversion. Verify: sample a computed foreground and its ancestor background, compute the ratio, and check it lands on the declared target rather than somewhere nearby.
 
 ## Contrast math and gamut
 
@@ -59,5 +59,5 @@ This is the mechanism behind "contrast by construction" in `visual-direction.md`
 - Existing repository tokens, tiers, naming, and build configuration outrank every default here; extend them by role.
 - Architecture transfers, values do not: adopting another system's ladder is craft, adopting its hues is the transferable default this skill exists to prevent.
 - A verified contrast ratio outranks a generated ramp's promise, and a sampled pixel outranks a computed value.
-- A role that the interface does not have needs no token; the inventory in `composition.md` decides the roles, not this ladder.
+- A role that the interface does not have needs no token; the inventory in the `composition` reference decides the roles, not this ladder.
 - WCAG 2.x is what a pass claim is stated in until a successor ships.

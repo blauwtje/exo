@@ -15,8 +15,8 @@ import process from 'node:process';
 // javascript syntax check has the same modules to parse that the real run does,
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
-  'skills', 'verify', 'verify.mjs', 'README.md',
-  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md'
+  'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
+  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/savings.md'
 ];
 
 function read(root, relative) {
@@ -79,6 +79,8 @@ const SCENARIOS = [
     'from the working tree diff before the next edit', 'from memory before the next edit') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
+  { name: 'drifted-closer-list', mutate: (root) => replaceText(root, 'skills/shaping/references/interview-page.md',
+    '`closedBy` (`you`, `code` or `exo`)', '`closedBy` (`you` or `code`)') },
   { name: 'shaping-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
     'Count the product decisions the request leaves open', 'Count the files the request changes') },
   { name: 'shaping-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
@@ -99,6 +101,12 @@ const SCENARIOS = [
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.', '') },
   { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
+  { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/designing/references/visual-critique.md',
+    '`monospace-label`, and `invented-content`', 'and `monospace-label`') },
+  { name: 'drifted-sketch-labels', mutate: (root) => replaceText(root, 'skills/designing/references/sketch-tab.md',
+    '`lost`, ', '') },
+  { name: 'drifted-blocking-list', mutate: (root) => replaceText(root, 'skills/designing/references/phase-build.md',
+    'or any `content-clipped` or `element-overlap` finding', 'or any `content-clipped` finding') },
   { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/designing/references/intake.md',
     'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call', 'A read-only planning mode runs the same calls') },
   { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
@@ -148,7 +156,37 @@ const SCENARIOS = [
   { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
     read(root, 'skills/implementing-batch/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
-    replaceText(root, 'skills/research/researcher-prompt.md', 'at most 25 lines', 'a short report') }
+    replaceText(root, 'skills/research/researcher-prompt.md', 'at most 25 lines', 'a short report') },
+  { name: 'body-over-token-ceiling', mutate: (root) =>
+    append(root, 'skills/settings/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
+  { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/research/SKILL.md',
+    read(root, 'skills/research/SKILL.md').replace('description: ', `description: ${'padding '.repeat(15)}`)) },
+  { name: 'reference-chain', mutate: (root) =>
+    append(root, 'skills/skills-tool/references/description.md', '\nRead `wording.md` next.\n') },
+  { name: 'long-reference-without-contents', mutate: (root) =>
+    append(root, 'skills/skills-tool/references/where-a-fix-lives.md', '- filler line\n'.repeat(90)) },
+  { name: 'empty-read-when', mutate: (root) => write(root, 'skills/skills-tool/SKILL.md',
+    read(root, 'skills/skills-tool/SKILL.md').replace(/^(\| `references\/plugging-holes\.md` \|)[^\n]*\|$/m, '$1  |')) },
+  { name: 'long-reference-with-contents', expect: 'accept', mutate: (root) => {
+    const relative = 'skills/skills-tool/references/where-a-fix-lives.md';
+    const contents = [
+      '## Contents', '',
+      '- [Take the first home that fits](#take-the-first-home-that-fits)',
+      '- [What each home costs](#what-each-home-costs)',
+      '- [A rule that has to be prose](#a-rule-that-has-to-be-prose)',
+      '- [Judgment](#judgment)', '', ''
+    ].join('\n');
+    const text = read(root, relative).replace('## Take the first home that fits', `${contents}## Take the first home that fits`);
+    write(root, relative, `${text}${'- filler line\n'.repeat(90)}`);
+  } },
+  { name: 'injected-body-over-ceiling', mutate: (root) =>
+    append(root, 'skills/using-exo/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
+  { name: 'drifted-review-threshold', mutate: (root) =>
+    replaceText(root, 'README.md', '200 changed lines', '250 changed lines') },
+  { name: 'drifted-wait-bound', mutate: (root) =>
+    replaceText(root, 'skills/shipping/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
+  { name: 'drifted-retention-days', mutate: (root) =>
+    replaceText(root, 'README.md', 'last 30 days', 'last 60 days') },
 ];
 
 function copyVerificationFixture(repository, destination) {

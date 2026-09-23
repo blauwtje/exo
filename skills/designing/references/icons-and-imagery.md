@@ -2,7 +2,7 @@
 
 Draw the subject, do not decorate around it. The enemy is the transferable asset: the 24×24 round-cap icon set every product now wears, the blob-people illustration, the stock photograph that fits any competitor unchanged. The overcorrection is a bespoke mark nobody recognises, or an image so ambitious it arrives after the reader left.
 
-`visual-direction.md` decides whether a region gets an image and what job it does. This file decides how the mark or the picture is built and what the render must prove.
+the `visual-direction` reference decides whether a region gets an image and what job it does. This file decides how the mark or the picture is built and what the render must prove.
 
 ## The icon system is derived, not adopted
 
@@ -20,25 +20,25 @@ Lucide's design guide is the clearest published statement of that geometry, and 
 
 **Never strip the `viewBox`.** SVGO's `removeViewBox` is off by default precisely because "this plugin prevents SVGs from scaling, so they will not fill their parent container, or may clip if the container is too small" ([svgo.dev/docs/plugins/removeViewBox](https://svgo.dev/docs/plugins/removeViewBox/), read 2026-09-07; 22,664★).
 
-Generic affordances — close, search, chevron — may come from one consistent set. A mark carrying the subject or the brand is drawn against the subject's own grid; that is where a set stops being a reference and starts being someone else's identity. A decorative icon beside a text label is `aria-hidden`; an icon-only control still owes the accessible name and the optical mass of its labelled sibling (`controls.md`).
+Generic affordances — close, search, chevron — may come from one consistent set. A mark carrying the subject or the brand is drawn against the subject's own grid; that is where a set stops being a reference and starts being someone else's identity. A decorative icon beside a text label is `aria-hidden`; an icon-only control still owes the accessible name and the optical mass of its labelled sibling (the `controls` reference).
 
 ## Responsive images
 
 - **Resolution switching is `srcset` with `w` descriptors plus `sizes`**; the browser picks, choosing the first candidate larger than the slot and scaling down ([MDN Responsive images](https://developer.mozilla.org/en-US/docs/Web/HTML/Guides/Responsive_images), read 2026-09-07).
 - **`sizes` is measured from this layout, never copied from an example.** Each clause equals the element's real column width at that breakpoint. A missing `sizes` makes the browser assume `100vw` and overfetch ([Next.js Image, v16.3.4, updated 2026-08-25](https://nextjs.org/docs/app/api-reference/components/image)). Verify: compare the intrinsic width of `img.currentSrc` against `getBoundingClientRect().width × devicePixelRatio`; above roughly 1.5 the `sizes` string is wrong.
 - **`<picture media>` is for art direction only** — a changed crop or a changed subject. Do not offer media conditions inside `sizes` when using `media`, and always give a real `<img>` with `src` and `alt` before `</picture>` or nothing renders (MDN, same page). Verify: `img.currentSrc` differs across two widths, and the difference is a different crop rather than a different scale.
-- **Intrinsic dimensions reserve space.** `width` and `height`, or `aspect-ratio`, infer the ratio the browser holds while loading; they do not set the rendered size (Next.js Image, same page). The CLS mechanics live in `performance-budget.md`.
+- **Intrinsic dimensions reserve space.** `width` and `height`, or `aspect-ratio`, infer the ratio the browser holds while loading; they do not set the rendered size (Next.js Image, same page). The CLS mechanics live in the `performance-budget` reference.
 
 ## Cropping, placeholders, and alt
 
 - **Focal point is evidence, not a default.** `object-fit` with a `object-position` chosen from the subject's own composition. Verify: a wall of `50% 50%` across portrait crops means no one looked at the images.
 - **Choose the placeholder from measured latency**, not from habit: none, a dominant-colour fill, a blur, or a skeleton that matches the final geometry. A blur payload stays small — Next.js warns plainly that "a large `blurDataURL` may hurt performance" (same page). Universal grey blur-up is itself a template.
-- **The LCP image is eager; everything else is lazy** (`performance-budget.md` holds the failure condition).
+- **The LCP image is eager; everything else is lazy** (the `performance-budget` reference holds the failure condition).
 - **Alt text branches by role**, down the W3C decision tree ([w3.org/WAI/tutorials/images/decision-tree](https://www.w3.org/WAI/tutorials/images/decision-tree/), read 2026-09-07): informative images describe the information, functional images inside a link or button yield the action's accessible name, and decorative images take an **empty `alt=""`** rather than a missing attribute. Verify: every `img` has the attribute present, and the accessibility tree gives functional images a non-empty name.
 
 ## Illustration and photography
 
-Imagery depicts the subject's actual artifacts, environment, or output. The test is the substitution test from `visual-critique.md` applied to the asset alone: if the same picture would fit a competitor unchanged, it fails, and the ladder in `implementation.md` replaces it rather than deleting the region. Generated illustration filling a region and stock isometric scenes are transferable by construction; a labelled placeholder plus a request for the real material beats both.
+Imagery depicts the subject's actual artifacts, environment, or output. The test is the substitution test from the `visual-critique` reference applied to the asset alone: if the same picture would fit a competitor unchanged, it fails, and the ladder in the `implementation` reference replaces it rather than deleting the region. Generated illustration filling a region and stock isometric scenes are transferable by construction; a labelled placeholder plus a request for the real material beats both.
 
 ## Charts as visual material
 

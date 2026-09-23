@@ -10,14 +10,14 @@ Name the primary task, its decision points, and the path from arrival to done. T
 
 - Interactive elements read as interactive before they are touched: cursor, hover, and pressed states distinguish them from static text.
 - Every action acknowledges within one transition — a state change, a result, or a progress indicator.
-- Continuity: an element that appears or moves shows where it came from (the continuity job in `motion.md`).
+- Continuity: an element that appears or moves shows where it came from (the continuity job in the `motion` reference).
 - Recovery is deterministic: undo for safely reversible actions, confirmation for irreversible or high-impact ones, never both on one action.
 - Every error surface carries its own recovery action, in the wording below.
-- State transitions run 120–200ms on hover, focus, and active, and 200–400ms on open and close, from the easing tokens (`motion.md`).
+- State transitions run 120–200ms on hover, focus, and active, and 200–400ms on open and close, from the easing tokens (the `motion` reference).
 
 ## Progressive disclosure
 
-Defaults stay visible; secondary controls sit behind labeled disclosure. Build disclosure on native `details`, `dialog`, and `popover` states (`implementation.md`) so open and closed are real states, not reconstructed ones.
+Defaults stay visible; secondary controls sit behind labeled disclosure. Build disclosure on native `details`, `dialog`, and `popover` states (the `implementation` reference) so open and closed are real states, not reconstructed ones.
 
 Where controls filter a result field, what is currently on is visible without opening anything:
 
@@ -42,7 +42,7 @@ Hover and active belong to every pointer control, and visible focus to every int
 ## Input modality
 
 - **Keyboard:** every control reachable in DOM order, focus visible (the quality floor), what opens closes with Escape, arrow keys inside composite widgets.
-- **Coarse pointer:** the target floor is `## The build floor` of `phase-detail.md` (WCAG 2.2 AA 2.5.8 at 24×24 CSS px, AAA 2.5.5 at 44×44, the default for a touch-first surface). No hover-only affordance: any hover-revealed action has a visible-on-touch equivalent.
+- **Coarse pointer:** the target floor is `## The build floor` of the `phase-detail` reference (WCAG 2.2 AA 2.5.8 at 24×24 CSS px, AAA 2.5.5 at 44×44, the default for a touch-first surface). No hover-only affordance: any hover-revealed action has a visible-on-touch equivalent.
 - At 390px, re-verify the disclosure patterns and the primary action's reachability.
 
 ## Pre-ship interaction sweep
