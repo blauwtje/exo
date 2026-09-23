@@ -17,9 +17,9 @@ A full or bounded redesign fails when the rendered result stays materially inter
 
 **Which entry.** This skill owns the turn for a visual change at any file count, because Build dispatches its own builders. Two facts move the entry and size is not one: a surface whose displayed data, settings or behavior is not yet decided goes to `shaping` first, and this skill follows for presentation; a change that also adds non-visual behavior, meaning state, persistence, a new dependency or a network call, is owned by `implementing-batch`, which borrows this skill for the look.
 
-- **Sketch:** a demo, prototype, or mock the request names as one: state the three Phase 1 facts and one direction in one line each, build in this session, take the piece path's post-build pair and `scripts/check-ui.mjs` run, repair what they show, and stop; no variants, agents, or reviewer, and the floor holds.
+- **Sketch:** a demo, prototype, or mock the request names as one. State the three Phase 1 facts and one direction in one line each, build in this session, take one post-build pair with `scripts/capture.mjs` and one `scripts/check-ui.mjs` run, and repair what they show. No variants, agents, or critic; the floor holds.
 - **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. Run all five phases, bounded to the named surface; the existing direction is evidence, not a veto.
-- **New piece:** a section, component, or view inheriting the existing direction. With the settled identity rung 5 of `## Route` names, take the piece path: read that evidence and the Phase 1 `scripts/context.mjs` call, load `references/implementation.md` whole and, as sections, `## Adopt before authoring` and `## The state row` from `references/component-system.md` and `## Tactile hierarchy` and `## Labels` from `references/controls.md`, with `## Anatomy of the composite controls` for a composite control, build in this session, take one post-build pair with `scripts/capture.mjs` and one `scripts/check-ui.mjs` run, repair what they show, and stop; no baseline, inventory, comps, reviewer, or `scripts/inspect-render.mjs`. Without it, extract existing tokens and patterns, run every phase without variants against what the piece carries, and record one local motion decision before Build. A piece that changes the page's hierarchy is a bounded redesign, not a piece.
+- **New piece:** a section, component, or view inheriting the existing direction, built on the piece path in `## The piece path` of `references/phase-build.md`. A piece that changes the page's hierarchy is a bounded redesign, not a piece.
 - **Tweak:** one element or named visual property changes and no region is added. Change it, audit the touched surface, verify the floor, and stop; never expand a tweak into a redesign.
 
 ## Route
@@ -27,7 +27,7 @@ A full or bounded redesign fails when the rendered result stays materially inter
 The route decides how the direction is reached; `## Size the request` decides how much is built. Resolve the surface first from the markup and style files in the working-tree diff, then from the last touched one; with neither, ask which surface and nothing else, listing the surfaces its markup and style files name with the most recently changed first, because a request without a surface has nothing to route. Then stop at the first rung that matches, because comps earn their cost only where a chooser recognises a direction they cannot name:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` resumes at Build (Phase 3).
+2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice.
 3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as the one who chooses between rendered directions: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** docs/design/DESIGN.md with a `scripts/context.mjs` status other than `absent`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it, while neither the user nor the brief lets that identity be replaced: one direction in text and no offer. A component library in the manifest is not that evidence on its own, because its defaults are the template this skill exists to replace.
@@ -38,20 +38,22 @@ A surface neither list names takes rung 6 and the report names rung 7 as the riv
 
 ## The loop
 
-Context; direction; build; critique the render; check.
+The references call these steps Phase 1 to Phase 5, in this order.
 
-## Intake
-
-Read `references/intake.md` before Phase 1: the rule for when a question is asked at all, the run directory every render and log is written under as `$RUN`, and the table from a complaint's own words to the reference that owns the fault.
+1. **Context.** A full or bounded redesign takes the baseline pair under `## The critique dispatch` of `references/phase-detail.md` when the surface renders. It then dispatches the `exo:design-discovery` agent with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. This session reads the discovery report of at most 20 lines and asks its `## Open` questions, never the repository ranges. Every other path follows `## Context` of `references/phase-detail.md`.
+2. **Direction.** Decide the direction in this session, before any production code changes, under `references/phase-direction.md`.
+3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch, with `## The build floor` of `references/phase-detail.md`, which binds every build.
+4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`. Read it before the baseline capture, which comes before the first edit.
+5. **Check.** Run the sweep in `## QA` of `references/phase-detail.md` here. Once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs it instead, handed `RUN`, `SKILL`, `REPO` and that section, and returns at most 20 lines.
 
 ## References
 
-Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate; never the set up front. A row whose condition the surface does not meet stays unread. Phase 5 rows load in the QA pass as sections, `grep -n '^## '` finding the heading and `sed -n` reading to the next one, so the build turn carries only what its edits need. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
 
 | File | Read it when |
 |---|---|
 | `references/intake.md` | Before Phase 1, for the asking rule, the run directory, and the symptom-to-reference table. |
-| `references/phase-detail.md` | At Phase 1 for the context rules, before the first Build edit for the floor, before the first edit of a full or bounded redesign for the baseline pair and at Phase 4 before the post-build dispatch, both from its `## The critique dispatch`, and at Phase 5 for the sweep. |
+| `references/phase-detail.md` | At each loop step, only the section that step names: context, build floor, critique dispatch or QA. |
 | `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
@@ -65,7 +67,7 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | `references/motion.md` | Phase 3 for the recorded motion decision, and before any animation at every size. |
 | `references/interaction-qa.md` | Phase 3 when the surface has controls, flows, disclosure, or reachable states; Phase 5 its `## Pre-ship interaction sweep` section alone. |
 | `references/feedback-and-status.md` | Phase 3 only when the surface waits on the network, applies a change before its response arrives, or reports status outside the region that changed; Phase 5 its `## Sweep` section alone. |
-| `references/visual-critique.md` | Phase 4, read by the `exo:design-critic` agent; this session reads its faults.md. |
+| `references/visual-critique.md` | Phase 4, read by the critic, `exo:design-critic`; this session reads its faults.md. |
 | `references/craft-recipes.md` | Phase 3 after `contract-selected.json` exists, before the first CSS of a ground, surface, motion, or type treatment. |
 | `references/component-system.md` | Phase 1 only when the repository ships a component layer, its `## Adopt before authoring` section alone; Phase 3 before building a control, field, or surface the design repeats. |
 | `references/tokens.md` | Phase 2 only past the role tokens `references/implementation.md` lists: a token pipeline or DTCG file in the repository, a second theme or brand, or a ramp generated against target contrast. |
@@ -73,26 +75,6 @@ Load a reference only at its row's phase and predicate; never the set up front. 
 | `references/accessibility.md` | Phase 3 only before a composite widget from `references/component-system.md`; Phase 5 its `## Sweep` section alone. |
 | `references/performance-budget.md` | Phase 3 only when the build adds a hero raster, a font the repository does not load, or a persistent effect; Phase 5 its `## Outcome thresholds` and `## Hard failures` sections alone. |
 | `references/internationalization.md` | Phase 1 when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script. |
-
-## Phase 1 — Context
-
-A full or bounded redesign takes the baseline pair under `references/phase-detail.md`, its `## The critique dispatch`, when the surface renders, then dispatches the `exo:design-discovery` agent on `sonnet` at `high` with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`. It writes `$RUN/inventory.md` and the `FILES` list in `$RUN/files.md` and returns at most 20 lines; this session reads that report and asks its `## Open` questions, never the repository ranges. Every other path reads `references/phase-detail.md`, its `## Context`.
-
-## Phase 2 — Direction
-
-Decide the direction in this session, before any production code changes, under `references/phase-direction.md`: the contract, variants, offer, sketch tab and freeze for an open identity, and the single direction every other case produces.
-
-## Phase 3 — Build
-
-Read `references/phase-build.md` before the first edit or builder dispatch: where the surface builds, how builders are briefed, and what binds them. Read `references/phase-detail.md`, its `## The build floor`, in the same breath: the accessibility, reflow, motion and performance floor no build goes under, and the underdesign floor checked before the critique.
-
-## Phase 4 — Visual critique
-
-A full or bounded redesign renders at three checkpoints under `references/phase-detail.md`, its `## The critique dispatch`: read it before the baseline capture, which comes before the first edit. That section holds the render budget, the four calls this session makes, the agent it dispatches, the fault contract the critic meets and the call cap after its report.
-
-## Phase 5 — QA
-
-Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-overlap repairs, the interaction and accessibility passes, the render checkpoints a redesign is complete only with, and what to report when there is no render path. Once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs the sweep, handed `RUN`, `SKILL`, `REPO` and that section, and returns at most 20 lines; before that line, the sweep runs here.
 
 ## Judgment
 
@@ -103,5 +85,4 @@ Run the sweep in `references/phase-detail.md`, its `## QA`: the clipped-and-over
 - Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
 - Accessibility and complete content/state coverage outrank visual novelty.
 - A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become defaults to exceed deliberately; contrast, reduced-motion, and state coverage still hold.
-- A planning turn or a `shaping` brief records the selected direction under `## Visual direction`, a plan as `Contract: docs/design/direction.json`; a plan or brief carrying one copies that contract to `$RUN/contract-selected.json`, resumes at Build (Phase 3), and repeats neither Phase 1-2 nor the variant choice.
 - This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.

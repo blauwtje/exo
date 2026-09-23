@@ -297,6 +297,35 @@ describe('direction.mjs --check', () => {
     }
   });
 
+  it('rejects a template-kit anchor unless brief or repository evidence backs it', () => {
+    const check = (anchors) => {
+      const container = filledContainer();
+      container.contracts[0].palette.anchors = anchors;
+      return checkContracts(container, space(), { candidates: candidateManifest() });
+    };
+    const kits = [
+      ['cream-ground', ['#0d2a33', '#f5efe0']],
+      ['purple-palette', ['#0d2a33', 'oklch(55% 0.2 290)']],
+      ['neon-on-dark', ['#0b0b0f', '#39ff14']]
+    ];
+    for (const [kit, [base, kitColor]] of kits) {
+      const bare = check([base, kitColor]);
+      assert.equal(bare.status, 'invalid', `${kit}: ${JSON.stringify(bare.findings)}`);
+      assert.deepEqual(bare.findings.map((entry) => entry.code), ['template-kit']);
+      assert.ok(bare.findings[0].detail.startsWith(`palette.anchors[1] '${kitColor}' falls in the ${kit} kit`),
+        bare.findings[0].detail);
+      const observed = check([base, { color: kitColor, evidence: 'E1' }]);
+      assert.deepEqual(observed.findings.map((entry) => entry.code), ['template-kit'],
+        `${kit}: observation evidence exempts nothing`);
+      for (const evidence of ['E2', 'E3']) {
+        assert.deepEqual(check([base, { color: kitColor, evidence }]), { status: 'ok', findings: [] },
+          `${kit} backed by ${evidence}`);
+      }
+    }
+    assert.deepEqual(check(['#ffffff', '#39ff14']), { status: 'ok', findings: [] },
+      'a neon anchor without a near-black anchor is no kit');
+  });
+
   // The planner's own skeleton carries every required key already, so a `--check`
   // that only tests presence would pass an entirely undesigned variant.
   it('rejects the unfilled skeleton the planner emits', () => {

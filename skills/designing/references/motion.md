@@ -2,6 +2,18 @@
 
 Choreograph motion as a concept decision, not a garnish. The enemy is unowned motion — scattered default effects and the uniform fade-up nobody chose. The overcorrection is mandated choreography, motion added to satisfy a rule rather than a job. Chosen stillness is a decision; unconsidered stillness is a default.
 
+Contents:
+
+- `## Motion thesis`
+- `## Job gate`
+- `## Materials`
+- `## Timing`
+- `## Continuity contract`
+- `## Scroll and view transitions`
+- `## Reduced motion`
+- `## Libraries`
+- `## Judgment`
+
 ## Motion thesis
 
 For a full or bounded redesign, write the thesis as one sentence before the first animation: the thing that moves, the trigger that moves it, and what that movement says about the subject. Stock moves such as content drifting upward into place, cards rising under the pointer, or sections appearing as they scroll in say nothing about any subject and are not a thesis; take the thesis from Phase 1. Record exactly one motion decision; a new piece records one for itself:

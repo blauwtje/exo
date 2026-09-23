@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `designing`: `scripts/direction.mjs --check` rejects a direction as `template-kit` when a palette anchor is a purple, a cream, or a neon beside a near-black anchor, the kits `scripts/check-ui.mjs` flags after the build, unless that anchor's evidence is of kind `brief` or `repository`; an anchor may be written as `{ "color", "evidence" }` to carry that evidence, and a plain color string stays valid.
+- `designing`: `scripts/check-ui.mjs` reports `invented-content` at `potential` confidence for a stock person name, a sample company name, a round placeholder price, and an unsourced user count, rating or testimonial attribution.
+
+### Changed
+
+- `designing`: when no stage called it, a build runs the repository's own type-check, lint and test commands for the touched files before `scripts/check-ui.mjs`, and the QA checks line reports their result; a failure in an untouched file is reported, not chased.
+- `designing`: the piece path's load list and post-build pair move from `SKILL.md` into `## The piece path` of `references/phase-build.md`, and a piece with a settled identity reads `references/implementation.md` without `## Tokens and palette derivation` unless it adds a role token the repository lacks.
+- `designing`: the rule that a run starts Build in the turn the direction is picked moves into `references/phase-direction.md`, the copy of a handed direction to `$RUN/contract-selected.json` into rung 2 of `## Route`, and a plan's `Contract:` record into the planning bullet of `references/intake.md`.
+- `designing`: `SKILL.md` holds one numbered `## The loop` of five steps in place of `## Intake` and the five phase sections and calls the `exo:design-critic` agent the critic throughout, so every run loads about 1890 words of it instead of 2274.
+- `designing`: `## The fault contract` in `references/visual-critique.md` shows one complete five-line fault in place of the label definitions.
+- `designing`: `references/motion.md` opens with a list of its sections.
+
 ## 0.29.1 - 2026-09-23
 
 ### Changed
