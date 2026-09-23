@@ -20,6 +20,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `shaping` loads about 2,450 tokens instead of 3,460: reopening a stored brief, the brief's sections and the issue path move to `references/stored-brief.md`, `references/brief.md` and `references/brief-in-an-issue.md`, its description drops the two-file and named-change exclusions, and the verifier holds the interview page's states, closers and option count to `question-page.mjs`.
 - `designing`: the body drops to about 2,470 tokens and the description to 363 characters; the sketch recipe, the settled-identity evidence and the discovery dispatch inputs move into the `phase-build`, `intake` and `phase-detail` references, every reference names a sibling by its topic instead of its file, and `motion.md` and `visual-critique.md` open with a linked contents list.
 - `designing`: the check-ui tell and always-blocking lists, the capture viewports and the sketch-tab and picker labels live in `skills/designing/assets/`, its scripts and `shaping`'s question page read them there, and the verifier fails when a doc list drops a name its asset holds.
+- `implementing-batch` loads about 2,200 tokens instead of 3,100: the test-first cycle moves to `references/test-first.md`, the steps drop repeats of the right-sizing ladder and the command-output rule that `using-exo` injects, the task list's states stay in the skill, and the table gains the `using-exo` question reference.
 
 ### Fixed
 
