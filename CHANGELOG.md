@@ -24,6 +24,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `implementing` loads about 2,000 tokens instead of 2,500: the `Design:` routing moves to `references/design-tasks.md`, which step 5 opens only for a task with a `Design:` line, and the steps drop what `references/workspace.md` and the prompt files already say. `pick-reviewer.mjs` exports its five-file and 200-line limits, and the verifier pins every doc copy of that threshold to them.
 - `settings` loads about 440 fewer tokens: the setup walk's rounds move into `references/setup-map.md`, now titled "Setup walk" with a contents list, the body names "a key `show` lists" instead of repeating the schema keys, and its table lists using-exo's question reference.
 - `planning` loads about 350 fewer tokens: its body drops sentences plan-spec, implementing and using-exo's next-stage reference already own, its description is 298 characters, plan-spec names no other skill's file, the example plan opens with a contents list, and `deepen` lists implementing-batch's test-design reference for its plan mode.
+- `debug` loads about 250 fewer tokens: its description is 310 characters, the performance branch rides on the performance row, and the loop keeps its seven steps in fewer words.
 
 ### Fixed
 

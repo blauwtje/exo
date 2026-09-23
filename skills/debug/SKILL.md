@@ -1,39 +1,34 @@
 ---
 name: debug
-description: Use when existing behavior is reported wrong as a bug, error, crash, regression, broken output, or slowdown, and evidence does not yet identify one causal line or boundary plus a mechanism that predicts the symptom. Not when a diagnostic names the exact file, line, and symbol and matches the source; when the user-stated cause checks out; or for a feature complaint.
+description: Use when existing behavior is reported wrong (bug, error, crash, regression, broken output, slowdown) and no evidence yet shows one causal line plus a mechanism predicting the symptom. Not when a diagnostic's file, line and symbol match the source, when the stated cause checks out, or for a feature complaint.
 argument-hint: <symptom, failing command or error>
 ---
-
 # Debug
 
-Prove the mechanism before fixing it. The enemy is the nearby plausible patch that hides today's symptom without explaining it. The overcorrection is investigating after the evidence already identifies one causal line and predicts the failure. Stop investigating at proof, then implement the smallest predicted change.
+Prove the mechanism before fixing it. The enemy is the plausible patch that hides the symptom without explaining it. The overcorrection is investigating after the evidence already names one causal line that predicts the failure.
 
-**No production edit before a reproduction.** If the symptom cannot be triggered, the current deliverable is reproduction evidence, not a fix.
+**No production edit before a reproduction.** If the symptom cannot be triggered, the deliverable is reproduction evidence, not a fix.
 
 ## Activation gate
 
-Treat the cause as proven only when observed evidence identifies one causal line or boundary and one mechanism that predicts the symptom. A diagnostic naming a file and line is sufficient only when the named source contains the invalid symbol, type, or operation described. Proven cause means skip investigation and fix directly; otherwise run the loop.
+The cause is proven only when observed evidence names one causal line or boundary and a mechanism that predicts the symptom; a diagnostic's file and line count only when that source holds the invalid symbol, type or operation it describes. A proven cause skips to Step 4; anything less runs the loop.
 
 ## The loop
 
-1. **Reproduce.** Capture a failing test, repeatable command, or specific input. Run it as one bare command and, when its output would exceed the cap, redirect it to `.git/debug-repro.log` and read `tail -n 40` of that log; the same rule holds for every later run in this loop, because a pasted log is carried into every turn after it. When unavailable infrastructure blocks the original symptom, name the missing dependency and reproduce at the first repository-owned boundary that supplies input to it, without claiming equivalence. After reproduction, apply the test-design row in References before the first affected test or production edit.
-2. **Instrument.** Keep two hypotheses not contradicted by the reproduction. Add one observation that produces different outputs for them at their first divergent boundary. Delegate locating that boundary's file and its callers to the `exo:explorer` agent and read here only the ranges it names; a search run here stays in context for every later step.
-3. **Isolate.** Remove inputs or branches until removing one more makes the symptom disappear. Use an ephemeral copy when isolation would disturb a shared file. Two instrument-and-isolate rounds that leave both hypotheses standing end the loop: report the reproduction, both hypotheses, and every observation, and stop, because a third round without a discriminating observation is guessing.
-4. **Predict, then fix.** Before editing production code, state the causal line, the output that will change, and why, then settle where the fix commits as `../implementing/references/workspace.md` says. Apply the security and data-migration rows in References to that predicted change, then make only the change required by the prediction.
-5. **Prove.** Re-run the original reproduction and isolated case. Run the repository's required suite under the Step 1 output rule, then grep the log for failures instead of printing it. Close under the closing rule in `using-exo`: the mechanism first, then the output lines that prove it, at most ten, with the log path for the rest.
-6. **Retain project knowledge.** Select root `AGENTS.md` when it exists, otherwise root `CLAUDE.md`. If reproduction or proof reveals a build, test, or run command, or a failure-causing repository gotcha, absent from that selected file, append one line there. If neither file exists, create nothing. Do not record session history.
-7. **Fresh eyes.** Skip this step when the caller states that a pull-request review follows: that review is the one fresh look. Otherwise, when one or more size facts are true—more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection—run the `code-review` skill on the session's model on its default target at `low` effort up to five changed files or 200 changed lines and `medium` above, and fix each confirmed correctness finding under Step 5's proof; when that skill is absent, follow `implementing-batch`'s Fresh eyes step: read `../implementing-batch/references/critique.md` now and not earlier, run its checks, and report that no separate context was available.
-
-## Performance branch
-
-A speed-only symptom requires measurement before a hypothesis or edit. Read `../implementing-batch/references/performance.md` after identifying a speed-only complaint and before measuring. Do not load it for correctness failures.
+1. **Reproduce.** Capture a failing test, repeatable command or specific input, run as one bare command. Output over the cap goes to `.git/debug-repro.log`, read with `tail -n 40`, on every run in this loop, because a pasted log rides in every later turn. When missing infrastructure blocks the symptom, name it and reproduce at the first repository-owned boundary that feeds it, claiming no equivalence. Then apply the test-design row.
+2. **Instrument.** Keep two hypotheses the reproduction leaves standing and add one observation that tells them apart at their first divergent boundary. The `exo:explorer` agent locates that boundary and its callers; read only the ranges it names, because a search run here stays in context.
+3. **Isolate.** Remove inputs or branches until one more removal makes the symptom vanish, in an ephemeral copy when a shared file would change. Two rounds that leave both hypotheses standing end the loop: report the reproduction, both hypotheses and every observation, and stop, because a third round is guessing.
+4. **Predict, then fix.** Before any production edit, state the causal line, the output that will change, and why; settle where the fix commits as `../implementing/references/workspace.md` says; apply the security and data-migration rows; then make only the change the prediction requires.
+5. **Prove.** Re-run the reproduction and the isolated case, then the required suite under Step 1's output rule, grepping its log for failures. Close under the closing rule in `using-exo`: the mechanism, then at most ten output lines that prove it, and the log path.
+6. **Retain project knowledge.** When proof reveals a build, test or run command, or a failure-causing gotcha, missing from root `AGENTS.md` (root `CLAUDE.md` when that is absent), append one line there; with neither file create nothing, and never record session history.
+7. **Fresh eyes.** Skip it when the caller says a pull-request review follows, because that is the fresh look. Otherwise, when any size fact is true—more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection—run the `code-review` skill on the session's model and its default target, at `low` effort up to five changed files or 200 changed lines and `medium` above, and fix each confirmed correctness finding under Step 5's proof. Without that skill, run the critique row's checks and report that no separate context was available.
 
 ## References
 
 | File | Read it when |
 |---|---|
 | `../implementing/references/workspace.md` | Step 4, before the first production edit. |
-| `../implementing-batch/references/performance.md` | Speed is the only symptom. Load before measurement; do not load for wrong-output failures. |
+| `../implementing-batch/references/performance.md` | Speed is the only symptom: load it before measuring, and measure before any hypothesis or edit. Never for wrong-output failures. |
 | `../implementing-batch/references/critique.md` | Step 7 after proof, only when at least one listed size fact is true and `code-review` is absent. Do not load earlier. |
 | `../implementing-batch/references/security.md` | After Step 4 identifies the predicted change and before its first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
 | `../implementing-batch/references/data-migration.md` | After Step 4 identifies the predicted change and before editing, only when the fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
@@ -45,6 +40,6 @@ A speed-only symptom requires measurement before a hypothesis or edit. Read `../
 
 - Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and offers `implementing-batch` on the next-stage question for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.
 - A user-stated cause outranks investigation only after it matches the source and predicts the reproduction.
-- Reproduction and instrumentation outrank intuition, including the first hypothesis.
-- Go back to Step 1 instead of adding another patch when any of these shows: the repair reaches into a second owner; an old route and its replacement both still run; supporting code keeps growing while the behavior stays the same; or the path from input to symptom cannot be followed in a single reading. Each one means the proven cause was not the real cause.
-- After Step 7 the predicted fix commits in Conventional Commits where Step 4 placed it. Edits the proof leaves beyond it end the turn on the next-stage question in `using-exo`, offering `implementing-batch` for them; with none left, the turn ends on `shipping`. After a compaction notice, re-run the Step 1 reproduction before the next edit, because the command, not memory, says whether the symptom still exists.
+- Return to Step 1 instead of patching again when the repair reaches a second owner, an old route and its replacement both run, supporting code grows while behavior stays the same, or the path from input to symptom cannot be followed in one reading: each means the proven cause was not the real one.
+- After Step 7 the predicted fix commits in Conventional Commits where Step 4 placed it. Edits the proof leaves beyond it end the turn on the next-stage question, offering `implementing-batch`; with none left, the turn ends on `shipping`.
+- After a compaction notice, re-run the Step 1 reproduction before the next edit, because the command, not memory, says whether the symptom still exists.
