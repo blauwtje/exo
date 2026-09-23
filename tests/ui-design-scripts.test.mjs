@@ -236,7 +236,9 @@ describe('check-ui.mjs static subset', () => {
 
   const TELLS = [
     'overused-font', 'uniform-card-shadow', 'radial-halo', 'thin-border-wide-shadow', 'edge-accent-card',
-    'gradient-text', 'transition-all', 'emoji-in-markup', 'aggressive-gradient-ground', 'kicker-above-heading'
+    'gradient-text', 'transition-all', 'emoji-in-markup', 'aggressive-gradient-ground', 'kicker-above-heading',
+    'purple-palette', 'neon-on-dark', 'cream-ground', 'tinted-glow', 'pill-button', 'bounce-easing', 'card-entrance',
+    'monospace-label'
   ];
 
   async function tellsFor(stylesheet) {
@@ -297,13 +299,13 @@ describe('check-ui.mjs static subset', () => {
 
   it('reports the canonical two-hue gradient ground the 60 degree gate missed', async () => {
     const tells = await tellsFor('body {\n  background: linear-gradient(to bottom right, #667eea 0%, #764ba2 100%);\n}\n');
-    assert.deepEqual(tells.map((entry) => entry.type), ['aggressive-gradient-ground']);
+    assert.deepEqual(tells.map((entry) => entry.type), ['aggressive-gradient-ground', 'purple-palette']);
     assert.equal(tells[0].measured, '41 degrees between the first two stops');
   });
 
   it('reports a two-hue gradient ground written in oklch', async () => {
     const tells = await tellsFor('body {\n  background: linear-gradient(135deg, oklch(60% 0.2 280), oklch(55% 0.18 20));\n}\n');
-    assert.deepEqual(tells.map((entry) => entry.type), ['aggressive-gradient-ground']);
+    assert.deepEqual(tells.map((entry) => entry.type), ['aggressive-gradient-ground', 'purple-palette']);
     assert.equal(tells[0].measured, '100 degrees between the first two stops');
   });
 
@@ -333,7 +335,7 @@ describe('check-ui.mjs static subset', () => {
 
   it('reports a centered translucent radial halo', async () => {
     const tells = await tellsFor('.halo {\n  background: radial-gradient(circle at center, rgba(96,70,240,0.3), transparent 65%);\n}\n');
-    assert.deepEqual(tells.map((entry) => entry.type), ['radial-halo']);
+    assert.deepEqual(tells.map((entry) => entry.type), ['radial-halo', 'purple-palette']);
     assert.equal(tells[0].confidence, 'potential');
   });
 
@@ -356,7 +358,7 @@ describe('check-ui.mjs static subset', () => {
       '}',
       'body {',
       '  font-family: "Tidal Serif", Georgia, serif;',
-      '  background: linear-gradient(180deg, #f4f1ea, #ece6d8);',
+      '  background: linear-gradient(180deg, #f4f4f5, #e4e4e7);',
       '}',
       '.card {',
       '  border-left: 4px solid var(--accent);',
@@ -455,6 +457,19 @@ describe('check-ui.mjs named anti-patterns', () => {
     assert.equal(stripes[0].measured, 'border-top 4px, border-radius 12px');
   });
 
+  it('reads every corner radius of a stripe card and skips a transparent edge', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.callout {\n  border-left: 4px solid #0f766e;\n  border-radius: 0 12px 12px 0;\n}',
+        '.aside {\n  border-right: 4px solid #0f766e;\n  border-radius: 12px 0 0 12px;\n}',
+        '.tab {\n  border-bottom: 3px solid transparent;\n  border-radius: 8px 8px 0 0;\n}'
+      ].join('\n')
+    });
+    const stripes = ofType(findings, 'edge-accent-card');
+    assert.deepEqual(stripes.map((entry) => entry.selector), ['.callout (styles.css:1)', '.aside (styles.css:5)']);
+    assert.equal(stripes[0].measured, 'border-left 4px, border-radius 12px');
+  });
+
   it('reports a zero-offset colored glow and a wide accent-tinted shadow, not a neutral one', async () => {
     const findings = await findingsFor({
       'styles.css': [
@@ -478,13 +493,89 @@ describe('check-ui.mjs named anti-patterns', () => {
     assert.deepEqual(ofType(findings, 'tinted-glow'), []);
   });
 
-  it('reports a zero-offset halo even at low blur, in a clearly saturated color', async () => {
+  it('reports a zero-offset halo at low blur and any saturation, not a 1px hairline', async () => {
     const findings = await findingsFor({
-      'styles.css': '.pulse {\n  box-shadow: 0 0 24px rgba(124, 58, 237, 0.6);\n}\n'
+      'styles.css': [
+        '.pulse {\n  box-shadow: 0 0 24px rgba(124, 58, 237, 0.6);\n}',
+        '.ring {\n  box-shadow: 0 0 1px rgba(15, 23, 42, 0.2);\n}',
+        '.soft {\n  box-shadow: 0 0 4px rgba(71, 85, 105, 0.5);\n}'
+      ].join('\n')
     });
     const glows = ofType(findings, 'tinted-glow');
-    assert.equal(glows.length, 1);
-    assert.equal(glows[0].selector, '.pulse (styles.css:1)');
+    assert.deepEqual(glows.map((entry) => entry.selector), ['.pulse (styles.css:1)', '.soft (styles.css:7)']);
+  });
+
+  it('judges a shadow tint the same in hsl as in rgb', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.card {\n  box-shadow: 0 8px 24px hsl(222 47% 11% / 0.12);\n}',
+        '.cta {\n  box-shadow: 0 10px 30px hsl(239 84% 67% / 0.35);\n}'
+      ].join('\n')
+    });
+    assert.deepEqual(ofType(findings, 'tinted-glow').map((entry) => entry.selector), ['.cta (styles.css:4)']);
+  });
+
+  it('reads an oklch chroma percentage with 100% as 0.4', async () => {
+    const findings = await findingsFor({
+      'a.css': '.card {\n  box-shadow: 0 8px 24px oklch(25% 8% 260 / 0.12);\n}\n.page {\n  color: oklch(98% 2% 290);\n}\n',
+      'b.css': '.button {\n  background: oklch(55% 60% 295);\n}\n'
+    });
+    assert.deepEqual(ofType(findings, 'tinted-glow'), []);
+    assert.deepEqual(ofType(findings, 'purple-palette').map((entry) => entry.selector), ['b.css:2']);
+  });
+
+  it('reports indigo in hex and hsl as it does in oklch', async () => {
+    const findings = await findingsFor({
+      'a.css': '.button {\n  background: #6366f1;\n}\n',
+      'b.css': '.button {\n  background: #4f46e5;\n}\n',
+      'c.css': '.button {\n  background: hsl(239 84% 67%);\n}\n',
+      'd.css': '.button {\n  background: oklch(58.5% 0.233 277.1);\n}\n'
+    });
+    const selectors = ofType(findings, 'purple-palette').map((entry) => entry.selector).sort();
+    assert.deepEqual(selectors, ['a.css:2', 'b.css:2', 'c.css:2', 'd.css:2']);
+  });
+
+  it('reports no purple for a near-white lavender tint', async () => {
+    const findings = await findingsFor({ 'styles.css': 'body {\n  background: #f8f7ff;\n}\n' });
+    assert.deepEqual(ofType(findings, 'purple-palette'), []);
+  });
+
+  it('reports purple once per stylesheet, at the first purple a utility or a literal sets', async () => {
+    const findings = await findingsFor({
+      'a.css': '.x {\n  @apply bg-violet-600;\n}\n.y {\n  color: #7c3aed;\n}\n',
+      'b.css': '.y {\n  color: #7c3aed;\n}\n.x {\n  @apply bg-violet-600;\n}\n'
+    });
+    const selectors = ofType(findings, 'purple-palette').map((entry) => entry.selector).sort();
+    assert.deepEqual(selectors, ['a.css:2', 'b.css:2']);
+  });
+
+  it('reports no neon over a translucent black overlay on a white ground', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        ':root {\n  --bg-overlay: rgba(0,0,0,0.5);\n  --bg: rgb(0 0 0 / 50%);\n}',
+        'body {\n  background: #fff;\n}',
+        '.x {\n  color: #fbbf24;\n}\n.y {\n  color: #39ff14;\n}\n'
+      ].join('\n')
+    });
+    assert.deepEqual(ofType(findings, 'neon-on-dark'), []);
+  });
+
+  it('reads a ground only from a page-level rule and a ground-named property', async () => {
+    const findings = await findingsFor({
+      'a.css': ':root {\n  --code-bg: #111;\n}\nbody {\n  background: #fff;\n}\n.x {\n  color: #f59e0b;\n}\n.y {\n  color: #39ff14;\n}\n',
+      'b.css': ':root {\n  --card-bg: #fffbeb;\n}\nbody {\n  background: #fff;\n}\nmain .card {\n  background: #fffbeb;\n}\n'
+    });
+    assert.deepEqual(ofType(findings, 'neon-on-dark'), []);
+    assert.deepEqual(ofType(findings, 'cream-ground'), []);
+  });
+
+  it('reports no neon for amber, orange, yellow or red on a dark ground, and still for magenta', async () => {
+    const warm = ['#f59e0b', '#fbbf24', '#f97316', '#facc15', '#ff0000'];
+    const findings = await findingsFor({
+      'a.css': ['body {\n  background: #0a0a0a;\n}', ...warm.map((color, index) => `.c${index} {\n  color: ${color};\n}`)].join('\n'),
+      'b.css': 'body {\n  background: #0a0a0a;\n}\n.x {\n  color: #ff00ff;\n}\n'
+    });
+    assert.deepEqual(ofType(findings, 'neon-on-dark').map((entry) => entry.selector), ['b.css:5']);
   });
 
   it('reports a pill-shaped button rule and three rounded-full controls in one file', async () => {
@@ -498,6 +589,18 @@ describe('check-ui.mjs named anti-patterns', () => {
     });
     const selectors = ofType(findings, 'pill-button').map((entry) => entry.selector).sort();
     assert.deepEqual(selectors, ['.btn-primary (styles.css:1)', 'page.html:1']);
+  });
+
+  it('reports no pill button for a button group, a CTA section or three round icon links', async () => {
+    const icon = '<a class="rounded-full p-2" href="https://example.com"><svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg></a>';
+    const findings = await findingsFor({
+      'styles.css': '.btn-group {\n  border-radius: 9999px;\n}\n.cta-section {\n  border-radius: 9999px;\n}\n',
+      'page.html': [icon, icon, icon].join('\n')
+    });
+    assert.deepEqual(ofType(findings, 'pill-button'), []);
+    const handler = '<button className="rounded-full p-2" onClick={() => setOpen(true)}><XIcon /></button>';
+    const jsx = await findingsFor({ 'toolbar.jsx': [handler, handler, handler].join('\n') });
+    assert.deepEqual(ofType(jsx, 'pill-button'), []);
   });
 
   it('reports an overshooting curve, a bounce animation and a spring bounce, not a settling curve', async () => {
@@ -520,6 +623,18 @@ describe('check-ui.mjs named anti-patterns', () => {
     const entrances = ofType(findings, 'card-entrance');
     assert.deepEqual(entrances.map((entry) => entry.selector), ['.feature-card (styles.css:1)']);
     assert.equal(entrances[0].measured, 'animation fade-up 600ms ease both');
+  });
+
+  it('reports no card entrance for a looping animation or a class that only contains card', async () => {
+    const findings = await findingsFor({
+      'styles.css': [
+        '.skeleton-card {\n  animation: pulse 2s infinite;\n}',
+        '.card-loader {\n  animation: spin 1s linear;\n  animation-iteration-count: infinite;\n}',
+        '.scorecard {\n  animation: spin 1s linear infinite;\n}',
+        '.scorecard-row {\n  animation: fade-up 600ms ease both;\n}'
+      ].join('\n')
+    });
+    assert.deepEqual(ofType(findings, 'card-entrance'), []);
   });
 
   it('reports a small uppercase monospace label and a font-mono utility label, not code', async () => {
@@ -601,6 +716,17 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     assert.equal(comparison.ignored[0].reason, 'vendor stylesheet');
   });
 
+  it('matches a rule-level finding by file for an ignore entry and by selector for the baseline, whatever its line', () => {
+    const ignores = [{ type: 'cream-ground', file: 'styles.css', reason: 'brand ground' }];
+    const ignored = compareFindings([], [entry('cream-ground', 'body (styles.css:4)', 'potential')], ignores);
+    assert.equal(ignored.counts.ignored, 1);
+    const baseline = [entry('tinted-glow', '.cta (styles.css:4)', 'potential')];
+    const current = [entry('tinted-glow', '.cta (styles.css:5)', 'potential'), entry('tinted-glow', '.hero (styles.css:9)', 'potential')];
+    const shifted = compareFindings(baseline, current);
+    assert.deepEqual(shifted.counts, { before: 1, after: 2, predating: 1, new: 1, ignored: 0, blocking: 0 });
+    assert.deepEqual(shifted.new.map((item) => item.selector), ['.hero (styles.css:9)']);
+  });
+
   it('adds a comparison against a --baseline report and still exits 0', async () => {
     const root = await fixture();
     const stylesheet = path.join(root, 'styles.css');
@@ -668,6 +794,24 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
     assert.equal(result.code, 2);
     assert.match(result.stderr, /entry 0: reason/);
+  });
+
+  it('warns about an ignore entry whose type no check reports, naming the type', async () => {
+    const root = await ignoreFixture([
+      { type: 'important-override', file: 'styles.css', reason: 'vendor override the user confirmed' },
+      { type: 'left-accent-card', file: 'styles.css', reason: 'brand stripe' }
+    ]);
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stderr, /entry 1: unknown type left-accent-card/);
+    assert.doesNotMatch(result.stderr, /important-override/);
+  });
+
+  it('warns about an ignore entry whose file still carries a rule and its line', async () => {
+    const root = await ignoreFixture([{ type: 'cream-ground', file: 'body (styles.css:4)', reason: 'brand ground' }]);
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stderr, /entry 0: file body \(styles\.css:4\) names a rule and its line; write styles\.css/);
   });
 });
 

@@ -7,7 +7,7 @@
 //
 // A --baseline run also reads confirmed false positives from docs/design/check-ui-ignore.json
 // under the working directory: a JSON array of { "type", "file", "reason" } strings, where
-// file is the finding's selector without its :line.
+// file is the path in the finding's selector, without its :line.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -54,6 +54,8 @@ async function* sourceFiles(directory) {
     }
   }
 }
+
+const PURPLE_UTILITY = /\b(?:bg|text|from|via|to|border|ring|fill|stroke|shadow)-(?:indigo|violet|purple)-(?:50|[1-9]00|950)\b/;
 
 const LINE_TELLS = [
   {
@@ -119,7 +121,9 @@ const LINE_TELLS = [
     type: 'purple-palette',
     confidence: 'potential',
     oncePerFile: true,
-    pattern: /\b(?:bg|text|from|via|to|border|ring|fill|stroke|shadow)-(?:indigo|violet|purple)-(?:50|[1-9]00|950)\b/,
+    // paletteFindings reports a stylesheet, where a utility and a color literal compete for the first purple.
+    skipsStylesheets: true,
+    pattern: PURPLE_UTILITY,
     threshold: 'an accent hue the subject justifies',
     note: 'indigo, violet or purple utility class, the default generated palette'
   },
@@ -250,7 +254,7 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
 // only a heading directly after that tag matches, never one further down the section.
 const KICKER_BEFORE_HEADING =
   /<(\w+)[^>]*\bclass(?:Name)?\s*=\s*["'][^"']*(?:eyebrow|kicker|overline)[^"']*["'][^>]*>(?:(?!<\/\1>)[\s\S])*?<\/\1>\s*<h[12]\b/gi;
-const GROUND_SELECTOR = /(?:^|[\s,>+~])(?:body|html|main)(?![\w-])|hero/i;
+const GROUND_SUBJECT = /^(?:body|html|main)(?![\w-])|hero/i;
 const NEUTRAL_ALPHA = /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*([\d.]+)\s*\)|rgb\(\s*0\s+0\s+0\s*\/\s*([\d.]+)(%?)\s*\)/i;
 
 function fontFindings(line, location, overused) {
@@ -325,6 +329,19 @@ function cssRules(text, relative, starts) {
   return rules;
 }
 
+/** The rightmost compound of each selector in a list: the element the rule styles. */
+function selectorSubjects(selector) {
+  return selector.split(',').map((part) => {
+    const compounds = part.trim().split(/\s*[\s>+~]\s*/);
+    return compounds[compounds.length - 1];
+  });
+}
+
+/** A rule that styles the page ground itself: body, html, main or a hero, not an element inside one. */
+function isGroundSelector(selector) {
+  return selectorSubjects(selector).some((subject) => GROUND_SUBJECT.test(subject));
+}
+
 function declaration(body, property) {
   const match = new RegExp(`(?:^|[;\\s])${property}\\s*:\\s*([^;]+)`, 'i').exec(body);
   return match ? match[1].trim() : null;
@@ -335,6 +352,18 @@ function lengthPx(token) {
   const match = /^(-?\d*\.?\d+)(px|rem|em)?$/.exec(token ?? '');
   if (!match) return null;
   return Number(match[1]) * (match[2] && match[2] !== 'px' ? 16 : 1);
+}
+
+/** The first length of a space-separated value in px, such as a border shorthand's width or a radius's first corner. */
+function firstLengthPx(value) {
+  const [first] = (value ?? '').trim().split(/\s+/);
+  return lengthPx(first);
+}
+
+/** The largest corner of a border-radius value in px, or null when no corner is a known length. */
+function largestRadiusPx(value) {
+  const corners = (value ?? '').trim().split(/[\s/]+/).map(lengthPx).filter((corner) => corner !== null);
+  return corners.length > 0 ? Math.max(...corners) : null;
 }
 
 /** [x, y, blur, spread?] of a single-layer shadow, or null for layered or unparsable values. */
@@ -352,16 +381,59 @@ function untintedShadow(value, lengths) {
   return opacity <= 0.2;
 }
 
-function parseColor(token) {
+/** Eight hex digits with alpha, or null for a token that is no 3, 4, 6 or 8 digit hex color. */
+function hexDigits(token) {
   const hex = /^#([0-9a-f]{3,8})$/i.exec(token);
-  if (hex) {
-    const digits = hex[1].length <= 4 ? hex[1].replace(/./g, '$&$&') : hex[1];
-    if (digits.length !== 6 && digits.length !== 8) return null;
-    return [0, 2, 4].map((start) => Number.parseInt(digits.slice(start, start + 2), 16));
+  if (!hex) return null;
+  const digits = hex[1].length <= 4 ? hex[1].replace(/./g, '$&$&') : hex[1];
+  if (digits.length === 6) return `${digits}ff`;
+  return digits.length === 8 ? digits : null;
+}
+
+/** The arguments of a functional color, comma or space separated, with the alpha after a slash as the fourth. */
+function colorArguments(token) {
+  const inner = /^[a-z]+\(([^)]*)\)$/i.exec(token);
+  return inner ? inner[1].trim().split(/[\s,/]+/) : [];
+}
+
+/** A number, or a percentage scaled so that 100% is `full`. */
+function colorNumber(argument, full) {
+  const value = Number.parseFloat(argument);
+  return argument.endsWith('%') ? (value / 100) * full : value;
+}
+
+/** sRGB channels from hsl(), after css-color-4's hslToRgb. */
+function hslChannels(hue, saturation, lightness) {
+  const amount = saturation * Math.min(lightness, 1 - lightness);
+  return [0, 8, 4].map((offset) => {
+    const position = (offset + hue / 30) % 12;
+    return 255 * (lightness - amount * Math.max(-1, Math.min(position - 3, 9 - position, 1)));
+  });
+}
+
+/** sRGB channels 0-255 of a hex, rgb() or hsl() token; oklch() and var() are not converted. */
+function parseColor(token) {
+  const digits = hexDigits(token);
+  if (digits) return [0, 2, 4].map((start) => Number.parseInt(digits.slice(start, start + 2), 16));
+  const args = colorArguments(token);
+  if (args.length < 3) return null;
+  let channels = null;
+  if (/^rgba?\(/i.test(token)) channels = args.slice(0, 3).map((argument) => colorNumber(argument, 255));
+  if (/^hsla?\(/i.test(token)) {
+    const hue = ((Number.parseFloat(args[0]) % 360) + 360) % 360;
+    const saturation = colorNumber(args[1], 100) / 100;
+    const lightness = colorNumber(args[2], 100) / 100;
+    channels = hslChannels(hue, saturation, lightness);
   }
-  const rgb = /^rgba?\(\s*([\d.]+)(%?)[\s,]+([\d.]+)(%?)[\s,]+([\d.]+)(%?)/i.exec(token);
-  if (!rgb) return null;
-  return [1, 3, 5].map((index) => Number(rgb[index]) * (rgb[index + 1] ? 2.55 : 1));
+  return channels?.every(Number.isFinite) ? channels : null;
+}
+
+/** Opacity from 0 to 1; a token without alpha is opaque. */
+function alphaOf(token) {
+  const digits = hexDigits(token);
+  if (digits) return Number.parseInt(digits.slice(6), 16) / 255;
+  const alpha = colorArguments(token)[3];
+  return alpha === undefined ? 1 : colorNumber(alpha, 1);
 }
 
 /** Hue in degrees, or null for a near-grey color whose hue means nothing. */
@@ -380,38 +452,48 @@ function linearChannel(channel) {
   return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
 }
 
-/** OKLab chroma of an sRGB color, via the Ottosson OKLab conversion; used only for literal hex/rgb tokens. */
-function oklchChroma([r, g, b]) {
-  const [lr, lg, lb] = [r, g, b].map(linearChannel);
+function degrees(angle) {
+  return ((angle % 360) + 360) % 360;
+}
+
+/** OKLCH lightness (0 to 1), chroma and hue of an oklch() token or of any token parseColor reads,
+ *  via the Ottosson OKLab conversion; null otherwise. An oklch chroma of 100% is 0.4. */
+function oklchOf(token) {
+  if (/^oklch\(/i.test(token)) {
+    const args = colorArguments(token);
+    if (args.length < 3) return null;
+    const color = { lightness: colorNumber(args[0], 1), chroma: colorNumber(args[1], 0.4), hue: degrees(Number.parseFloat(args[2])) };
+    return Object.values(color).every(Number.isFinite) ? color : null;
+  }
+  const rgb = parseColor(token);
+  if (!rgb) return null;
+  const [lr, lg, lb] = rgb.map(linearChannel);
   const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
   const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
   const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
-  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
-  const b2 = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
-  return Math.sqrt(a * a + b2 * b2);
+  const lightness = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+  const greenRed = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const blueYellow = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  const hue = degrees((Math.atan2(blueYellow, greenRed) * 180) / Math.PI);
+  return { lightness, chroma: Math.hypot(greenRed, blueYellow), hue };
 }
 
-/** Hue in degrees, the model it was written in, and whether the color is clearly saturated
- *  (HSL saturation 40% or more, or oklch chroma 0.08 or more) rather than an ink-derived tint;
- *  null for a near-grey stop. */
+// OKLCH chroma from which a color reads as clearly saturated rather than an ink-derived tint, in any notation.
+const SATURATED_CHROMA = 0.08;
+
+/** Hue in degrees and the model it was written in, for comparing two gradient stops, and whether the color is
+ *  clearly saturated; null for a near-grey stop. */
 function stopHue(token) {
-  const hsl = /^hsla?\(\s*(-?[\d.]+)(?:deg)?[\s,]+(-?[\d.]+)%/i.exec(token);
-  if (hsl) {
-    const saturation = Number(hsl[2]);
-    return saturation < 10
-      ? null
-      : { model: 'hsl', hue: (Number(hsl[1]) % 360 + 360) % 360, saturated: saturation >= 40 };
+  const color = oklchOf(token);
+  if (!color) return null;
+  const saturated = color.chroma >= SATURATED_CHROMA;
+  if (/^hsla?\(/i.test(token)) {
+    const [hue, saturation] = colorArguments(token);
+    return colorNumber(saturation, 100) < 10 ? null : { model: 'hsl', hue: degrees(Number.parseFloat(hue)), saturated };
   }
-  const oklch = /^oklch\(\s*[\d.]+%?[\s,]+([\d.]+)%?[\s,]+(-?[\d.]+)/i.exec(token);
-  if (oklch) {
-    const chroma = Number(oklch[1]);
-    return chroma < 0.03
-      ? null
-      : { model: 'oklch', hue: (Number(oklch[2]) % 360 + 360) % 360, saturated: chroma >= 0.08 };
-  }
-  const rgb = parseColor(token);
-  const hue = rgb ? hueOf(rgb) : null;
-  return hue === null ? null : { model: 'srgb', hue, saturated: oklchChroma(rgb) >= 0.08 };
+  if (/^oklch\(/i.test(token)) return color.chroma < 0.03 ? null : { model: 'oklch', hue: color.hue, saturated };
+  const hue = hueOf(parseColor(token));
+  return hue === null ? null : { model: 'srgb', hue, saturated };
 }
 
 /** Circular hue distance between the first two stops, or null when they use different models. */
@@ -425,30 +507,41 @@ function gradientHueGap(value) {
 }
 
 const COLOR_TOKEN = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\)/gi;
-// Indigo through purple; oklch has its own band because an oklch hue is not an HSL hue.
-const PURPLE_HUES = { srgb: [245, 290], hsl: [245, 290], oklch: [275, 310] };
-// A custom property named for a foreground holds a text color, never a ground.
-const GROUND_PROPERTY =
-  /(?:^|[;\s])(?:background(?:-color)?|--(?![\w-]*foreground)[\w-]*(?:bg|background|ground|canvas|page|paper)[\w-]*)\s*:\s*([^;]+)/gi;
+// Indigo through purple as an oklch hue, whichever notation the token is written in.
+const PURPLE_HUES = [275, 310];
+// Red through amber and gold reads as a signal color, not neon, however bright it is.
+const WARM_HUES = [20, 100];
+const GROUND_DECLARATION = /(?:^|[;\s])(background(?:-color)?|--[\w-]+)\s*:\s*([^;]+)/gi;
+// A ground custom property is named from these words only, such as --bg, --page-bg or --color-background;
+// --card-bg, --bg-overlay and --foreground name something else. A design-system prefix such as --bs- is not
+// read; add it to GROUND_SCOPES to read it.
+const GROUND_NOUNS = new Set(['bg', 'background', 'ground', 'canvas', 'page', 'paper']);
+const GROUND_SCOPES = new Set(['color', 'colour', 'body', 'app', 'site', 'main', 'root', 'base', 'default', 'global']);
+
+function isGroundProperty(property) {
+  if (!property.startsWith('--')) return true;
+  const words = property.slice(2).toLowerCase().split('-').filter(Boolean);
+  const namesGround = words.some((word) => GROUND_NOUNS.has(word));
+  return namesGround && words.every((word) => GROUND_NOUNS.has(word) || GROUND_SCOPES.has(word));
+}
 
 function isPurple(token) {
-  const stop = stopHue(token);
-  if (!stop) return false;
-  const [low, high] = PURPLE_HUES[stop.model];
-  return stop.hue >= low && stop.hue <= high;
+  const color = oklchOf(token);
+  if (!color || color.chroma < SATURATED_CHROMA) return false;
+  return color.hue >= PURPLE_HUES[0] && color.hue <= PURPLE_HUES[1];
 }
 
-/** A bright, near-fully saturated color; only hex and rgb literals are measured, because parseColor reads no other model. */
+/** A bright, strongly saturated color outside the warm band: fluorescent green, cyan, magenta or yellow. */
 function isNeon(token) {
-  const rgb = parseColor(token);
-  if (!rgb) return false;
-  const brightest = Math.max(...rgb);
-  return brightest >= 230 && brightest - Math.min(...rgb) >= 200;
+  const color = oklchOf(token);
+  if (!color || color.lightness < 0.7 || color.chroma < 0.13) return false;
+  return color.hue < WARM_HUES[0] || color.hue > WARM_HUES[1];
 }
 
+/** A near-black color opaque enough to be the ground; a translucent overlay sets no ground. */
 function isNearBlack(token) {
   const rgb = parseColor(token);
-  return rgb !== null && Math.max(...rgb) <= 48;
+  return rgb !== null && Math.max(...rgb) <= 48 && alphaOf(token) >= 0.9;
 }
 
 /** A warm off-white: light, low in chroma, hue between orange and yellow. */
@@ -463,9 +556,10 @@ function isCream(token) {
 function groundColors(rules) {
   const colors = [];
   for (const { selector, body, location } of rules) {
-    if (!GROUND_SELECTOR.test(selector) && !/:root\b/.test(selector)) continue;
-    for (const declared of body.matchAll(GROUND_PROPERTY)) {
-      const tokens = declared[1].match(COLOR_TOKEN) ?? [];
+    if (!isGroundSelector(selector) && !/:root\b/.test(selector)) continue;
+    for (const [, property, value] of body.matchAll(GROUND_DECLARATION)) {
+      if (!isGroundProperty(property)) continue;
+      const tokens = value.match(COLOR_TOKEN) ?? [];
       for (const token of tokens) colors.push({ token, where: `${selector} (${location})` });
     }
   }
@@ -488,7 +582,10 @@ function paletteFindings(text, relative, starts) {
   for (const match of text.matchAll(COLOR_TOKEN)) {
     colors.push({ token: match[0], location: `${relative}:${lineNumber(starts, match.index)}` });
   }
-  const purple = colors.find((color) => isPurple(color.token));
+  const purpleLiteral = [...text.matchAll(COLOR_TOKEN)].find((match) => isPurple(match[0]));
+  const purpleUtility = [...text.matchAll(new RegExp(PURPLE_UTILITY.source, 'g'))][0];
+  const [firstPurple] = [purpleLiteral, purpleUtility].filter(Boolean).sort((first, second) => first.index - second.index);
+  const purple = firstPurple && { token: firstPurple[0], location: `${relative}:${lineNumber(starts, firstPurple.index)}` };
   if (purple) {
     findings.push(finding({
       type: 'purple-palette', confidence: 'potential', selector: purple.location,
@@ -509,22 +606,30 @@ function paletteFindings(text, relative, starts) {
 }
 
 const BORDER_SIDES = ['left', 'right', 'top', 'bottom', 'inline-start', 'inline-end', 'block-start', 'block-end'];
-const BUTTON_SELECTOR = /(?:^|[\s,>+~.])(?:button|btn|cta)(?![\w])/i;
-const PILL_CONTROL = /<(?:button|a)\b[^>]*\bclass(?:Name)?\s*=\s*["'][^"']*\brounded-full\b/gi;
+// A btn-, button- or cta- class names a button unless the rest of it names the container around buttons.
+const BUTTON_SUBJECT =
+  /(?:^|\.)(?:button|btn|cta)(?:-(?!(?:group|section|bar|toolbar|row|list|wrapper|container|area|block|box|banner|panel|grid|stack)(?![\w-]))[\w-]+)?(?![\w-])/i;
+// A JSX expression in the open tag may hold `=>`; the tempered content stops at the control's own close tag.
+const PILL_CONTROL =
+  /<(button|a)\b(?:[^>{]|\{[^}]*\})*?\bclass(?:Name)?\s*=\s*["'][^"']*\brounded-full\b(?:[^>{]|\{[^}]*\})*>((?:(?!<\/\1>)[\s\S])*)<\/\1>/gi;
 
-/** The one border side at least 3px wide, or null when no side or several sides are. */
+/** The one visible border side at least 3px wide, or null when no side or several sides are. */
 function accentEdge(body) {
   const wide = [];
   for (const side of BORDER_SIDES) {
     const value = declaration(body, `border-${side}(?:-width)?`) ?? '';
-    const [first] = value.split(/\s+/);
-    const width = lengthPx(first);
+    if (/\b(?:transparent|none|hidden)\b/i.test(value)) continue;
+    const width = firstLengthPx(value);
     if (width !== null && width >= 3) wide.push({ side, width });
   }
   return wide.length === 1 ? wide[0] : null;
 }
 
-/** A hued shadow centered on its element or blurred 12px or more; a var() color is not resolved and a layered shadow is not read. */
+// Below this blur a zero-offset shadow is a hairline edge, not a halo.
+const HALO_MIN_BLUR = 4;
+
+/** A hued shadow centered on its element and blurred 4px or more, at any saturation, or offset, blurred 12px or more
+ *  and clearly saturated; a var() color is not resolved and a layered shadow is not read. */
 function tintedGlowFindings(body, where) {
   const findings = [];
   for (const property of ['box-shadow', 'text-shadow']) {
@@ -534,12 +639,12 @@ function tintedGlowFindings(body, where) {
     const [token] = value.match(COLOR_TOKEN) ?? [];
     const hue = token ? stopHue(token) : null;
     if (!lengths || !hue) continue;
-    const [x, y, blur] = lengths;
-    const centered = x === 0 && y === 0 && blur > 0;
+    const [offsetX, offsetY, blur] = lengths;
+    const centered = offsetX === 0 && offsetY === 0 && blur >= HALO_MIN_BLUR;
     if (!centered && !(blur >= 12 && hue.saturated)) continue;
     findings.push(finding({
       type: 'tinted-glow', confidence: 'potential', selector: where,
-      measured: `${property} ${x}px ${y}px ${blur}px ${token}`,
+      measured: `${property} ${offsetX}px ${offsetY}px ${blur}px ${token}`,
       threshold: 'shadows that model light, in a neutral or ground-derived tone',
       note: 'colored glow: a zero-offset halo or an accent-tinted shadow'
     }));
@@ -550,9 +655,9 @@ function tintedGlowFindings(body, where) {
 /** A button rule whose radius makes a pill: 100px or more, or Tailwind v4's infinite radius. */
 function pillButtonFindings(selector, body, where) {
   const radius = declaration(body, 'border-radius');
-  if (!radius || !BUTTON_SELECTOR.test(selector)) return [];
-  const [first] = radius.split(/\s+/);
-  const width = lengthPx(first);
+  const isButton = selectorSubjects(selector).some((subject) => BUTTON_SUBJECT.test(subject));
+  if (!radius || !isButton) return [];
+  const width = firstLengthPx(radius);
   const isPill = /infinity/i.test(radius) || (width !== null && width >= 100);
   if (!isPill) return [];
   return [finding({
@@ -562,9 +667,12 @@ function pillButtonFindings(selector, body, where) {
   })];
 }
 
-/** Three or more buttons or links in one markup file carrying Tailwind's rounded-full. */
+/** Three or more labelled buttons or links in one markup file carrying Tailwind's rounded-full; an icon-only
+ *  control, with no text between its tags, is a round icon button rather than a pill. A label passed only as a
+ *  JSX expression, such as {label}, reads as no text and is missed. */
 function pillMarkupFindings(text, relative, starts) {
-  const pills = [...text.matchAll(PILL_CONTROL)];
+  const labelled = (match) => match[2].replace(/<[^>]*>|\{[^}]*\}/g, '').trim() !== '';
+  const pills = [...text.matchAll(PILL_CONTROL)].filter(labelled);
   if (pills.length < 3) return [];
   return [finding({
     type: 'pill-button', confidence: 'potential', selector: `${relative}:${lineNumber(starts, pills[0].index)}`,
@@ -576,7 +684,8 @@ function pillMarkupFindings(text, relative, starts) {
 const CUBIC_BEZIER = /cubic-bezier\(\s*[\d.]+\s*,\s*(-?[\d.]+)\s*,\s*[\d.]+\s*,\s*(-?[\d.]+)\s*\)/gi;
 const BOUNCE_NAME =
   /\banimate-bounce\b|@keyframes\s+[\w-]*bounce|animation(?:-name)?\s*:[^;]*\bbounce|\bbounce\s*:\s*(?:0?\.\d*[1-9]|1\b)/i;
-const CARD_SELECTOR = /card|tile/i;
+// card or tile as a word of a class name, so .feature-card and .productCard match and .scorecard does not.
+const CARD_SELECTOR = /(?:^|[^a-zA-Z])(?:[cC]ard|[tT]ile)s?(?![a-z])|[a-z](?:Card|Tile)s?(?![a-z])/;
 const MONOSPACE = /\bmono(?:space)?\b|courier|menlo|consolas|monaco|fira code/i;
 const CODE_SELECTOR = /(?:^|[\s,>+~.])(?:code|pre|kbd|samp)(?![\w])/i;
 
@@ -592,10 +701,13 @@ function bounceFindings(line, location) {
   })];
 }
 
-/** An animation on a card or tile rule: the same entrance stamped on every card. */
+/** A one-shot animation on a card or tile rule: the same entrance stamped on every card. A looping
+ *  animation is a loading or status state, not an entrance. */
 function cardEntranceFindings(selector, body, where) {
   const animation = declaration(body, 'animation(?:-name)?');
   if (!animation || /^none\b/i.test(animation) || !CARD_SELECTOR.test(selector)) return [];
+  const iterations = declaration(body, 'animation-iteration-count') ?? '';
+  if (/\binfinite\b/i.test(`${animation} ${iterations}`)) return [];
   return [finding({
     type: 'card-entrance', confidence: 'potential', selector: where,
     measured: `animation ${animation}`, threshold: 'motion that marks a state change, not every card arriving',
@@ -638,7 +750,7 @@ function ruleFindings(text, relative, shadows, starts) {
       }));
     }
     const edge = accentEdge(body);
-    const radius = lengthPx((declaration(body, 'border-radius') ?? '').split(/\s+/)[0]);
+    const radius = largestRadiusPx(declaration(body, 'border-radius'));
     if (edge && radius !== null && radius >= 8) {
       findings.push(finding({
         type: 'edge-accent-card', confidence: 'potential', selector: where,
@@ -651,7 +763,7 @@ function ruleFindings(text, relative, shadows, starts) {
     findings.push(...cardEntranceFindings(selector, body, where));
     findings.push(...monospaceLabelFindings(selector, body, where));
     const background = declaration(body, 'background(?:-image)?');
-    const gap = background && /linear-gradient\(/i.test(background) && GROUND_SELECTOR.test(selector)
+    const gap = background && /linear-gradient\(/i.test(background) && isGroundSelector(selector)
       ? gradientHueGap(background)
       : null;
     if (gap !== null && gap >= 30) {
@@ -704,6 +816,7 @@ export async function staticAudit(directory) {
         else if (/^\s*}/.test(line)) insideTokenBlock = false;
       }
       for (const tell of LINE_TELLS) {
+        if (tell.skipsStylesheets && isStylesheet) continue;
         if (!tell.pattern.test(line)) continue;
         if (tell.oncePerFile && reportedOnce.has(tell.type)) continue;
         if (tell.oncePerFile) reportedOnce.add(tell.type);
@@ -1161,12 +1274,18 @@ export async function renderedAudit({ url, viewport, cwd }) {
 
 const ALWAYS_BLOCKING = new Set(['content-clipped', 'element-overlap']);
 
+// A selector ends in `file:line` for a line-level finding and in `rule (file:line)` for a rule-level one.
+const RULE_LOCATION = /\(([^()]*):\d+\)$/;
+
 function findingFile(entry) {
-  return entry.selector.replace(/:\d+$/, '');
+  const ruleLocation = RULE_LOCATION.exec(entry.selector);
+  return ruleLocation ? ruleLocation[1] : entry.selector.replace(/:\d+$/, '');
 }
 
+/** The selector without its line number, so a finding keeps its key when lines above it shift. */
 function comparisonKey(entry) {
-  return `${entry.type}|${findingFile(entry)}|${entry.measured}`;
+  const selector = entry.selector.replace(/:\d+(\)?)$/, '$1');
+  return `${entry.type}|${selector}|${entry.measured}`;
 }
 
 function reportFindings(report) {
@@ -1235,6 +1354,18 @@ export function compareFindings(baselineFindings, currentFindings, ignoreEntries
 
 const IGNORE_FILE = path.join('docs', 'design', 'check-ui-ignore.json');
 const IGNORE_FIELDS = ['type', 'file', 'reason'];
+// Every type this script reports; an ignore entry naming another type, such as a renamed one, matches nothing.
+const FINDING_TYPES = new Set([
+  'transition-all', 'inline-event-handler', 'important-override', 'placeholder-copy', 'float-layout',
+  'gradient-text', 'radial-halo', 'physical-direction-property', 'purple-palette', 'monospace-label',
+  'svg-without-viewbox', 'image-without-alt', 'image-without-dimensions', 'srcset-without-sizes',
+  'missing-lang-attribute', 'inline-style-attribute', 'raw-value-in-component-rule', 'overused-font',
+  'emoji-in-markup', 'kicker-above-heading', 'cream-ground', 'neon-on-dark', 'tinted-glow', 'pill-button',
+  'bounce-easing', 'card-entrance', 'thin-border-wide-shadow', 'edge-accent-card', 'aggressive-gradient-ground',
+  'uniform-card-shadow', 'contrast-large-text', 'contrast-normal-text', 'target-size-minimum',
+  'target-size-enhanced', 'contrast-non-text-ui', 'repeated-surface-anatomy', 'content-clipped',
+  'element-overlap', 'crowded-controls', 'focus-indicator-missing', 'horizontal-overflow', 'reflow-two-dimensional'
+]);
 
 async function readIgnoreEntries(directory) {
   const file = path.join(directory, IGNORE_FILE);
@@ -1256,6 +1387,14 @@ async function readIgnoreEntries(directory) {
       if (typeof value !== 'string' || value.trim() === '') {
         throw new UsageError(`${IGNORE_FILE} entry ${index}: ${field} must be a non-empty string`);
       }
+    }
+    if (!FINDING_TYPES.has(entry.type)) {
+      process.stderr.write(`ui-design: ${IGNORE_FILE} entry ${index}: unknown type ${entry.type}, so it ignores nothing\n`);
+    }
+    const ruleLocation = RULE_LOCATION.exec(entry.file);
+    if (ruleLocation) {
+      const warning = `entry ${index}: file ${entry.file} names a rule and its line; write ${ruleLocation[1]}`;
+      process.stderr.write(`ui-design: ${IGNORE_FILE} ${warning}\n`);
     }
   });
   return entries;

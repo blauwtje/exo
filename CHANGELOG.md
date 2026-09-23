@@ -9,11 +9,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- `designing`: `scripts/check-ui.mjs` reports ten more named template defaults as `potential` findings with file and line: `edge-accent-card` (a stripe on any one card edge, replacing `left-accent-card`), `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow` (zero-offset and accent-tinted glows), `pill-button`, `bounce-easing`, `card-entrance` and `monospace-label`.
+- `designing`: `scripts/check-ui.mjs` reports eight more named template defaults as `potential` findings with file and line: `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow` (a zero-offset halo blurred 4px or more at any saturation, or an offset shadow blurred 12px or more in a clearly saturated color, oklch chroma 0.08 or more in any notation, so an ink-tinted shadow such as `rgba(15, 23, 42, 0.12)` stays quiet), `pill-button`, `bounce-easing`, `card-entrance` and `monospace-label`.
+
+### Changed
+
+- `designing`: `scripts/check-ui.mjs` reports `left-accent-card` as `edge-accent-card`, a stripe on any one card edge; rename `left-accent-card` to `edge-accent-card` in `docs/design/check-ui-ignore.json`, where a `--baseline` run now warns about each entry whose type the script does not report.
 
 ### Fixed
 
-- `designing`: `scripts/check-ui.mjs` `tinted-glow` no longer flags a wide shadow tinted from the ink hue, such as `rgba(15, 23, 42, 0.12)`; a non-halo shadow now needs a clearly saturated color (HSL saturation 40% or more, or oklch chroma 0.08 or more) to report, while a zero-offset halo still reports at any saturation.
+- `designing`: `scripts/check-ui.mjs` matches a `docs/design/check-ui-ignore.json` entry against a rule-level finding such as `body (styles.css:4)` by its file, warns about an entry whose `file` still names the rule and its line, and a `--baseline` comparison keeps that finding as predating when lines above it shift.
 
 ## 0.28.0 - 2026-09-22
 
