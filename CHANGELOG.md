@@ -29,6 +29,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `shipping` states its routes in fewer words, reads the question shape from the `using-exo` reference, and the verifier pins the 20-minute wait and exit 124 it states to the constants `wait-checks.mjs` exports.
 - `memory` reads its attestation count from one `ATTESTATIONS_REQUIRED` constant that the verifier pins its docs to, and says "attested in 2 sessions" where it said "attested twice"; the `prototyping` and `memory` descriptions drop to 299 and 268 characters.
 - `savings`: the skill relays the retention window and the token ratio from the report instead of restating them; `CHARACTERS_PER_TOKEN` joins `SESSION_RETENTION_DAYS` and `DEFAULT_GUARD_LINES` as an export of `scripts/record.mjs`, the shared-contracts check pins README.md, CONTRIBUTING.md, `docs/skills/savings.md` and the settings setup map to those three constants, and the usage-count keys and guard kinds each have one owner.
+- `handoff` and `research`: shorter descriptions in the "Use when… Not for…" form (220 and 279 characters), and `handoff` and `issuing` join the skills the full verifier checks, so their structure, links and reference tables are checked like every other skill's.
 
 ### Fixed
 

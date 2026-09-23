@@ -69,6 +69,10 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/memory/SKILL.md': ['../using-exo/references/question.md'],
   'skills/prototyping/SKILL.md': [],
+  'skills/handoff/SKILL.md': [],
+  'skills/issuing/SKILL.md': [
+    'references/fields.md',
+  ],
   'skills/shaping/SKILL.md': [
     'references/stored-brief.md',
     'references/brief.md',
