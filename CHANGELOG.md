@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `skills-tool`'s pressure-scenarios reference starts every case as the ordinary task and adds pressure only when the run without the skill passes it; it no longer tells a case to cut the model off, fix its tool budget or insist the situation is real, a framing the live API refused as `reasoning_extraction`.
+
 ## 0.34.0 - 2026-09-23
 
 ### Highlights

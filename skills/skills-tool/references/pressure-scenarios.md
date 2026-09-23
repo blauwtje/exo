@@ -8,6 +8,12 @@ A skill is proven by the prompt that most tempts the model to ignore it. The ene
 - A skill teaching a technique or pattern: a case that applies it, a case that varies it, a case missing one detail, and a case where the pattern must not be used.
 - A reference: one case that looks something up, one that applies it, and one whose answer the reference does not hold; no pressure.
 
+## When a case needs pressure
+
+- Start every case as the ordinary task, because a mistake a real run already showed unprompted reappears without any push.
+- Add pressure only when the run without the skill passes the ordinary task; pressure then supplies the temptation the task lacks.
+- A default tendency, one seen in a real run and not induced by its prompt, never gets pressure: it adds no proof and risks a live refusal.
+
 ## Sources of pressure
 
 Pressure comes from the situation, from the model's own investment, and from the people involved:
@@ -21,10 +27,10 @@ One pressure gives a usable case; stack three for a strong one, because a skill 
 ## Building the prompt
 
 - Offer concrete choices that each look reasonable, with real paths, figures and names.
-- Make the right choice costly: a cut-off time, an approver waiting, a green pipeline, hours already spent.
+- When the case needs pressure, make the right choice costly inside the task's own story: a cut-off time, an approver waiting, a green pipeline, hours already spent.
 - Ask what the model does next, never what it ought to do; advice costs nothing, and only an action tests the skill.
-- Close the escape routes: nobody can be reached, the tool budget is fixed, and the choice cannot wait.
-- Open by saying the situation is real and the model has to choose and act.
+- Never cut the model off from people, fix its tool budget, or insist the situation is real, because the live API rejects that framing before the first tool call.
+<!-- 2026-09-23, #75: `claude -p` on claude-opus-5 and claude-fable-5-1 refused the escape-route framing as `reasoning_extraction`. Stale once that framing passes live on every model skills-tool runs. -->
 
 ## Running it
 
@@ -33,9 +39,11 @@ One pressure gives a usable case; stack three for a strong one, because a skill 
 3. Copy the chosen action and the justification word for word; that wording is what the skill has to answer.
 4. Run the case again with the skill loaded, on the same model and effort; it counts as a pass only when the run without the skill failed.
 5. Keep the prompt and both justifications in the edit's report and save no case in the repository, because a case on disk invites a paid rerun on every later edit; each run writes its output to a temporary file named for its model and effort.
+6. A run the API refuses before any tool call is neither a pass nor a fail: remove the framing that added the most pressure and rerun, never the same prompt unchanged.
 
 ## Judgment
 
 - A case the run without the skill fails outranks a case that reads well.
+- The ordinary task outranks a pressured one when both make the run without the skill fail.
 - Stacked pressures outrank a single one when the skill guards a habit.
 - Action outranks advice: a prompt the model answers with "one should" is rewritten until it has to act.
