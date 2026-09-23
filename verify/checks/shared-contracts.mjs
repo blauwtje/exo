@@ -171,7 +171,6 @@ function checkPinnedLists(errors, repository) {
 // them in its prose, because the model reading it never reads the script, so
 // this holds the prose to the script.
 const INTERVIEW_PAGE = 'skills/shaping/references/interview-page.md';
-const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'];
 
 function interviewPageDrift(repository) {
   const file = path.resolve(repository.root, INTERVIEW_PAGE);
@@ -186,7 +185,7 @@ function interviewPageDrift(repository) {
   if (closers.join(', ') !== CLOSERS.join(', ')) {
     errors.push(`${INTERVIEW_PAGE}: closedBy lists ${closers.join(', ') || 'nothing'}, the script accepts ${CLOSERS.join(', ')}`);
   }
-  const optionsRange = `two to ${COUNT_WORDS[OPTIONS_MAX]} \`options\``;
+  const optionsRange = `two to ${NUMBER_WORDS[OPTIONS_MAX]} \`options\``;
   if (!text.includes(optionsRange)) errors.push(`${INTERVIEW_PAGE}: lacks "${optionsRange}", the script's OPTIONS_MAX`);
   return errors;
 }

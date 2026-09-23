@@ -145,7 +145,7 @@ function contextLine(root) {
     return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${repliesRule}`;
   } catch (error) {
     const defaults = Object.entries(SCHEMA).map(([key, entry]) => `${key}=${entry.default} (default)`);
-    return `exo settings: ${defaults.join(', ')}; ${error.message}`;
+    return `exo settings: ${defaults.join(', ')}; ${error.message}. ${SCHEMA.replies.rules[SCHEMA.replies.default]}`;
   }
 }
 

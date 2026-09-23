@@ -18,6 +18,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BYTES_PER_TOKEN } from './budgets.mjs';
+import { markdownBody } from './markdown.mjs';
 
 // ---------------------------------------------------------------------------
 // Repository discovery
@@ -125,13 +127,6 @@ function readDescription(text) {
   return '';
 }
 
-// Strips a SKILL.md frontmatter block the way verify/markdown.mjs's
-// markdownBody does, so body-bytes counts what the session pays for.
-function stripFrontmatter(fileName, text) {
-  if (path.basename(fileName) !== 'SKILL.md') return text;
-  return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
-}
-
 function parseSections(relativePath, text) {
   const lines = text.split('\n');
   const headingLine = /^(#{1,6})\s+(.*)$/;
@@ -157,7 +152,7 @@ function parseSections(relativePath, text) {
       startLine: current.lineIndex + 1,
       endLine: endIndex + 1,
       bytes,
-      tokens: Math.floor(bytes / 4)
+      tokens: Math.floor(bytes / BYTES_PER_TOKEN)
     });
   });
   return sections;
@@ -381,9 +376,10 @@ function cmdSize(graph, skillName) {
     return;
   }
   const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
-  const body = stripFrontmatter(file, text);
+  const body = markdownBody(path.basename(file), text);
   const bodyBytes = Buffer.byteLength(body, 'utf8');
-  const bodyTokens = Math.floor(bodyBytes / 4);
+  // Rounded up, so a body the skill body budgets check fails never reads as at its ceiling here.
+  const bodyTokens = Math.ceil(bodyBytes / BYTES_PER_TOKEN);
   const description = readDescription(text);
   console.log(`${file} body-bytes=${bodyBytes} body-tokens=${bodyTokens} description-chars=${description.length}`);
   const sections = graph.sections.filter((s) => s.path === file);

@@ -101,6 +101,14 @@ test('a project file that is not JSON is named in the context line, and defaults
   assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), interview=chat \(default\), context=80 \(default\); .*exo\.json is not valid JSON/);
 });
 
+test('a value the schema does not allow is named in the context line, and the default replies rule still applies', async () => {
+  const space = await workspace({ project: { replies: 'verbose' } });
+  const result = await settings(space, ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /replies=tight \(default\).*replies=verbose is not one of tight, standard/);
+  assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
+});
+
 test('an unreadable user settings file still shows the other layers and names the file', async () => {
   const space = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
   const userSettings = path.join(space.env.CLAUDE_CONFIG_DIR, 'settings.json');
