@@ -11,6 +11,7 @@ Existing behavior is reported wrong as a bug, error, crash, regression, broken o
 - A reproduction that fails on demand.
 - One named cause with the mechanism that explains the symptom, and the predicted fix applied.
 - The output lines that prove it, at most ten, with a log path for the rest.
+- A handoff file under `<git-dir>/exo/debug/` recording the reproduction, the cause and the proof.
 
 ## Where its rules live
 

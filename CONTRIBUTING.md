@@ -51,7 +51,7 @@ A new setting is one entry in `skills/settings/schema.json` plus the matching `u
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251.
 - Effort does not travel with a dispatch: a delegate runs at the effort of the turn that dispatched it. `designing`, `research` and `issuing` pin `effort: high` and `implementing` pins `effort: medium` in their frontmatter, which sets the turn and its delegates only when the skill starts from its slash command. A skill the model starts mid-turn keeps the session's effort, which is why the next-stage question names the effort to set.
 - The stage skills pin no model. The next-stage question names one per stage, and a pinned model would override that pick and rebuild the prompt cache mid-session. `model` and `effort` are set only where a skill's work always needs that tier.
-- A delegate never sees the session hook, so the four delegate prompts and agents that write code carry the right-sizing ladder in their own text: `agents/implementer.md`, `skills/implementing/bug-fixer-prompt.md`, `skills/implementing/review-fixer-prompt.md` and `skills/designing/builder-prompt.md`.
+- A delegate never sees the session hook, so the five delegate prompts and agents that write code carry the right-sizing ladder in their own text: `agents/implementer.md`, `skills/implementing/bug-fixer-prompt.md`, `skills/implementing/review-fixer-prompt.md`, `skills/designing/builder-prompt.md` and `skills/debug/fixer-prompt.md`.
 
 ## Hooks
 

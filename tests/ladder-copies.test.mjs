@@ -14,6 +14,7 @@ const PROMPTS = [
   'skills/implementing/bug-fixer-prompt.md',
   'skills/implementing/review-fixer-prompt.md',
   'skills/designing/builder-prompt.md',
+  'skills/debug/fixer-prompt.md',
 ];
 
 function withoutReason(clause) {

@@ -14,6 +14,8 @@ const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data
 const EXPECTED_OWNER_ROWS = {
   'skills/debug/SKILL.md': [
     '../implementing/references/workspace.md',
+    'investigator-prompt.md',
+    'fixer-prompt.md',
     '../implementing-batch/references/performance.md',
     '../implementing-batch/references/critique.md',
     '../implementing-batch/references/security.md',
