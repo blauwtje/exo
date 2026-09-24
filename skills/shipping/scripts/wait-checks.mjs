@@ -27,6 +27,7 @@ export const DEFAULT_MINUTES = 20;
 const DEFAULT_GRACE_SECONDS = 120;
 const RETRY_MS = 15_000;
 export const TIMEOUT_EXIT = 124;
+export const GH_ERROR_EXIT = 3;
 const NO_CHECKS = /no checks reported/i;
 const FAIL_STATUS = /^fail(ing|ed)?$/i;
 
@@ -132,8 +133,16 @@ async function main() {
     return;
   }
   const failed = failingChecks(outcome.outText);
-  if (failed.length > 0) console.log(`checks: fail ${failed.join(', ')}`);
-  process.exitCode = outcome.code;
+  if (failed.length > 0) {
+    console.log(`checks: fail ${failed.join(', ')}`);
+    process.exitCode = outcome.code;
+    return;
+  }
+  // gh exited nonzero without a failed-checks table to show for it: an auth,
+  // network or not-found error, not a red check, so it gets its own exit code.
+  const firstErrorLine = outcome.errorText.split('\n').find((line) => line.trim() !== '') ?? '';
+  console.log(`checks: error ${firstErrorLine.trim()}`);
+  process.exitCode = GH_ERROR_EXIT;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {

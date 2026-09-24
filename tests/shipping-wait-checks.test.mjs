@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
-import { TIMEOUT_EXIT } from '../skills/shipping/scripts/wait-checks.mjs';
+import { GH_ERROR_EXIT, TIMEOUT_EXIT } from '../skills/shipping/scripts/wait-checks.mjs';
 
 const WAIT_CHECKS = fileURLToPath(new URL('../skills/shipping/scripts/wait-checks.mjs', import.meta.url));
 
@@ -22,6 +22,7 @@ const STAND_IN = [
   "if (mode === 'pass') { console.log('All checks were successful'); process.exit(0); }",
   "if (mode === 'fail') { console.log('test (ubuntu-latest)  fail'); process.exit(1); }",
   "if (mode === 'none') { console.error(\"no checks reported on the 'feat/x' branch\"); process.exit(1); }",
+  "if (mode === 'auth-error') { console.error('gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.'); console.error('run: gh auth login'); process.exit(1); }",
   'setTimeout(() => process.exit(0), 30000);',
   ''
 ].join('\n');
@@ -52,6 +53,12 @@ test('a green run passes through and watches the named pull request', async () =
 test('a red check exits 1', async () => {
   const outcome = await waitChecks('fail', ['--pr', '12']);
   assert.equal(outcome.code, 1, outcome.stderr);
+});
+
+test('a gh failure, such as an auth error, gets its own exit code instead of reading as a red check', async () => {
+  const outcome = await waitChecks('auth-error', ['--pr', '12']);
+  assert.equal(outcome.code, GH_ERROR_EXIT, outcome.stderr);
+  assert.equal(outcome.stdout, 'checks: error gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.\n');
 });
 
 test('a watch past the limit stops with 124 and says the pull request stays open', async () => {
