@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fixture, jsonFixture, run, script, SCRIPTS } from './harness.mjs';
-import { optionName } from '../skills/designing/scripts/sketch-tab.mjs';
+import { optionName, tabPage } from '../skills/designing/scripts/sketch-tab.mjs';
 
 const SKETCH_TAB = script('sketch-tab.mjs');
 const PALETTE = `<title>Welke kleuren passen bij de haven?</title>
@@ -41,6 +41,47 @@ function optionElement({ ariaLabel = null, heading = null, text }) {
     querySelector: () => (heading === null ? null : { textContent: heading }),
     textContent: text
   };
+}
+
+const TAB_WORDS = {
+  lang: 'en', waiting: 'waiting', fallbackQuestion: 'fallback', hint: 'hint',
+  steer: 'steer', send: 'send', received: 'received', failed: 'failed', lost: 'lost'
+};
+
+/** A stand-in DOM element: a plain object whose only behaviour is the
+ *  addEventListener a fake element needs, captured by event type. */
+function fakeElement(extra = {}) {
+  const handlers = {};
+  return { addEventListener: (type, handler) => { handlers[type] = handler; }, handlers, ...extra };
+}
+
+/** Runs the tab chrome's own <script>, the code a real browser executes for
+ *  the tab page, against fake elements and no network: proof of what the
+ *  footer's note actually sends, without opening a browser. */
+function runTabScript() {
+  const html = tabPage('k', TAB_WORDS);
+  const body = /<script>([\s\S]*)<\/script>\s*<\/body>/.exec(html)[1];
+  const frame = fakeElement({ contentWindow: { postMessage: () => {} } });
+  const question = fakeElement({ set textContent(_v) {} });
+  const status = fakeElement({ set textContent(_v) {} });
+  const steer = fakeElement({ value: '' });
+  const send = fakeElement({ disabled: false });
+  const elements = { sketch: frame, question, status, steer, send };
+  const document = { getElementById: (id) => elements[id], addEventListener: () => {}, hidden: false, set title(_v) {} };
+  const messageHandlers = [];
+  const globalAddEventListener = (type, handler) => { if (type === 'message') messageHandlers.push(handler); };
+  const fetchCalls = [];
+  const fetchImpl = (url, options) => {
+    fetchCalls.push(JSON.parse(options.body));
+    return Promise.resolve({ ok: true });
+  };
+  let source;
+  class FakeEventSource { constructor() { source = this; } }
+  // eslint-disable-next-line no-new-func
+  const run = new Function('document', 'EventSource', 'fetch', 'addEventListener', body);
+  run(document, FakeEventSource, fetchImpl, globalAddEventListener);
+  source.onmessage({ data: JSON.stringify({ sketch: 'x.html', version: 1, question: 'Q' }) });
+  return { steer, send, frame, messageHandlers, fetchCalls };
 }
 
 /** The tab's event stream, read the way the page's EventSource reads it. */
@@ -276,6 +317,18 @@ describe('sketch-tab.mjs', () => {
       tab.stop();
       await tab.exit;
     }
+  });
+
+  it('carries the frame\'s current picks when a note is sent from the footer', () => {
+    const tab = runTabScript();
+    // The sketch frame reports its form's live state, the way the shim does
+    // on every change, well before any send button is clicked.
+    tab.messageHandlers[0]({ source: tab.frame.contentWindow, data: { sketchFieldsLive: { 'choice-format': 'csv' } } });
+    tab.steer.value = 'nog even wachten';
+    tab.send.handlers.click();
+    assert.equal(tab.fetchCalls.length, 1);
+    assert.equal(tab.fetchCalls[0].choice, null);
+    assert.deepEqual(tab.fetchCalls[0].fields, { 'choice-format': 'csv' });
   });
 
   it('records the fields a form sends with its click, and refuses fields it cannot trust', async () => {

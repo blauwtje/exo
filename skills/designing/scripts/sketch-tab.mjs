@@ -17,7 +17,8 @@
 //
 // --wait blocks until the tab records an answer for that one sketch and prints
 // it on stdout as one line, {"sketch","choice","label","steer"}, plus "fields"
-// when the click came from inside a form. choice is null
+// whenever the page's form holds any, from a click on a data-choice element or
+// a note sent from the footer. choice is null
 // when the chooser sent a note without picking. Exit 2 is a usage error; exit 3
 // means no tab server runs for the folder or no answer arrived in time, and the
 // recommended option is then the selection.
@@ -134,6 +135,17 @@ const SKETCH_SHIM = `<style>
       choice.setAttribute('aria-pressed', String(choice.dataset.choice === event.data.sketchChosen));
     }
   });
+  // A pick inside a form is only sent when a data-choice element is clicked,
+  // but a note from the footer has no click of its own: the tab keeps the
+  // form's newest state so a note still carries whatever the chooser already
+  // picked.
+  const reportFields = () => {
+    const form = document.querySelector('form');
+    parent.postMessage({ sketchFieldsLive: form ? Object.fromEntries(new FormData(form)) : null }, '*');
+  };
+  addEventListener('input', reportFields, true);
+  addEventListener('change', reportFields, true);
+  reportFields();
 })();
 </script>`;
 
@@ -185,7 +197,7 @@ async function readSketch(directory, name) {
   return { question, markup: written.replace(SKETCH_TITLE, ''), choices };
 }
 
-function tabPage(key, words) {
+export function tabPage(key, words) {
   const copy = JSON.stringify(words).replaceAll('<', '\\u003c');
   return `<!doctype html>
 <html lang="${escapeHtml(words.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(words.waiting)}</title>
@@ -237,6 +249,10 @@ ${CHROME_TOKENS}
   const sendNote = document.getElementById('send');
   let shown = null;
   let answered = false;
+  // The sketch frame's own form, as it stands right now: kept fresh from
+  // every field it reports, so a note sent without a click still carries
+  // whatever is already picked.
+  let liveFields = null;
 
   const updates = new EventSource('/events?key=' + encodeURIComponent(key));
   updates.onmessage = (event) => {
@@ -244,6 +260,7 @@ ${CHROME_TOKENS}
     if (!next.sketch || next.version === shown?.version) return;
     shown = next;
     answered = false;
+    liveFields = null;
     const asked = next.question || words.fallbackQuestion;
     question.textContent = asked;
     frame.title = asked;
@@ -284,12 +301,18 @@ ${CHROME_TOKENS}
   }
 
   addEventListener('message', (event) => {
-    if (event.source !== frame.contentWindow || typeof event.data?.sketchChoice !== 'string') return;
-    deliver(event.data.sketchChoice, String(event.data.sketchLabel ?? ''), event.data.sketchFields ?? null);
+    if (event.source !== frame.contentWindow) return;
+    if (typeof event.data?.sketchChoice === 'string') {
+      deliver(event.data.sketchChoice, String(event.data.sketchLabel ?? ''), event.data.sketchFields ?? null);
+      return;
+    }
+    if (event.data && typeof event.data === 'object' && 'sketchFieldsLive' in event.data) {
+      liveFields = event.data.sketchFieldsLive;
+    }
   });
-  sendNote.addEventListener('click', () => { if (steer.value.trim() !== '') deliver(null, '', null); });
+  sendNote.addEventListener('click', () => { if (steer.value.trim() !== '') deliver(null, '', liveFields); });
   steer.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !event.isComposing && steer.value.trim() !== '') deliver(null, '', null);
+    if (event.key === 'Enter' && !event.isComposing && steer.value.trim() !== '') deliver(null, '', liveFields);
   });
 </script></body></html>`;
 }
