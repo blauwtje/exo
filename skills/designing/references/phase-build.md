@@ -14,7 +14,7 @@ A surface whose direction was decided before this run — a plan's `Contract:`, 
 
 ## The sketch path
 
-A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, take one post-build pair with `scripts/capture.mjs` and one `scripts/check-ui.mjs` run, and repair what they show.
+A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, take one post-build pair with `scripts/capture.mjs --label post-build` and one `scripts/check-ui.mjs` run, and repair what they show.
 
 ## The piece path
 
@@ -24,7 +24,7 @@ A new piece on the settled identity that rung 5 of the skill's `## Route` names 
 2. Load the `implementation` reference without `## Tokens and palette derivation`; read that section only when the piece adds a role token the repository lacks.
 3. Load `## Adopt before authoring` and `## The state row` from the `component-system` reference, `## Tactile hierarchy` and `## Labels` from the `controls` reference, and `## Anatomy of the composite controls` for a composite control.
 4. Build, then run the repository checks `## The mechanics` names.
-5. Take one post-build pair with `scripts/capture.mjs` and one `scripts/check-ui.mjs` run, repair what they show, and stop.
+5. Take one post-build pair with `scripts/capture.mjs --label post-build` and one `scripts/check-ui.mjs` run, repair what they show, and stop.
 
 Without that identity, a new piece extracts the existing tokens and patterns, runs every phase without variants against what the piece carries, and records one local motion decision before Build.
 
