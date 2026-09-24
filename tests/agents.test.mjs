@@ -185,3 +185,21 @@ test('the implementer pins sonnet at high effort whatever the session runs at', 
   assert.equal(implementer.frontmatter.effort, 'high');
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
+
+test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
+  const builder = agents.find((agent) => agent.frontmatter.name === 'design-builder');
+  assert.ok(builder, 'agents/design-builder.md exists');
+  assert.equal(builder.frontmatter.model, 'sonnet');
+  assert.equal(Number(builder.frontmatter.maxTurns), 35);
+  assert.deepEqual(builder.frontmatter.tools.split(', ').filter((tool) => tool === 'Agent'), []);
+  assert.match(builder.body, /`foundation`/);
+  assert.match(builder.body, /repair:<surface>/);
+  assert.doesNotMatch(builder.body, /`all`/);
+
+  const skillFiles = fs.readdirSync(skillsRoot, { recursive: true })
+    .filter((relativePath) => typeof relativePath === 'string');
+  assert.deepEqual(skillFiles.filter((relativePath) => relativePath.endsWith('builder-prompt.md')), []);
+
+  const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'skills/savings/assets/delegate-budgets.json'), 'utf8'));
+  assert.equal(budgets.agents['design-builder'].calls, 35);
+});

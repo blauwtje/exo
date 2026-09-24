@@ -54,7 +54,6 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 |---|---|
 | `references/intake.md` | Before Phase 1: asking, the run directory, symptoms; its `## Settled identity` when Route rungs 1-4 miss. |
 | `references/phase-detail.md` | Whole, once, at Phase 1; later steps name its sections by heading. |
-| `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
 | `references/visual-direction.md` | Phase 2, every direction decision; Phase 1 when the repository or docs/design/DESIGN.md holds a design system to extract. |
