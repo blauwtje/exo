@@ -68,3 +68,16 @@ test("SKILL.md's Handoff section states the 25-line cap and every D1 field", () 
     assert.ok(body.includes(`\`${field}\``), `Handoff section names ${field}`);
   }
 });
+
+test('Step 7 runs pick-reviewer.mjs --effort and drops the hardcoded thresholds', () => {
+  const source = fs.readFileSync(SKILL, 'utf8');
+  assert.ok(
+    source.includes('node "${CLAUDE_SKILL_DIR}/../implementing/scripts/pick-reviewer.mjs" --effort'),
+    'Step 7 runs pick-reviewer.mjs --effort',
+  );
+  assert.ok(source.includes('`skip`'), 'Step 7 names skip');
+  assert.ok(source.includes('`low`'), 'Step 7 names low');
+  assert.ok(source.includes('`medium`'), 'Step 7 names medium');
+  assert.ok(!source.includes('five changed files'), 'Step 7 no longer hardcodes five changed files');
+  assert.ok(!source.includes('200 changed lines'), 'Step 7 no longer hardcodes 200 changed lines');
+});
