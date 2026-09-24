@@ -58,7 +58,7 @@ test('the tail pushes only through the finish question', () => {
 
 test('shipping merges only after the bounded wait and the API gate, and deletes no branch', () => {
   const wait = SHIPPING.indexOf('scripts/wait-checks.mjs');
-  const gate = SHIPPING.indexOf('mergeStateStatus');
+  const gate = SHIPPING.indexOf('scripts/ship-gate.mjs" --pr');
   const merge = SHIPPING.indexOf('gh pr merge <n>');
   const confirm = SHIPPING.indexOf('`state` `MERGED`');
   assert.ok(wait !== -1 && wait < gate && gate < merge && merge < confirm, 'wait, gate, merge, confirm in order');
