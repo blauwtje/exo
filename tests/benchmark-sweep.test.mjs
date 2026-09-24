@@ -37,6 +37,13 @@ test('a named set counts only its cells', async () => {
   await assert.rejects(fs.access(marker));
 });
 
+test('a fixer cell exits non-zero for the missing branch-review.md fixture', async () => {
+  const { env } = await fakeClaude();
+  const result = await run(SWEEP, ['--set', 'fixer', '--confirm', '--concurrency', '1'], { env });
+  assert.notEqual(result.code, 0);
+  assert.match(result.stderr, /no branch-review\.md fixture exists/);
+});
+
 test('an unknown flag stops before any call', async () => {
   const { env, marker } = await fakeClaude();
   const result = await run(SWEEP, ['--sets', 'all'], { env });
