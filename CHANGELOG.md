@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.39.0 - 2026-09-24
+
 ### Highlights
 
 **`shipping` now runs a fresh `sonnet` verifier on every pull request before it merges one, and a `FAIL` verdict stops that merge even when all checks are green.**
