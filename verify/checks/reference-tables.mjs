@@ -79,6 +79,15 @@ const EXPECTED_OWNER_ROWS = {
   'skills/issuing/SKILL.md': [
     'references/fields.md',
   ],
+  'skills/investigation/SKILL.md': [
+    'references/history.md',
+    'references/confidence.md',
+    'references/answer-shapes.md',
+  ],
+  'skills/refactoring/SKILL.md': [
+    'references/behavior-pin.md',
+    'references/legacy-api.md',
+  ],
   'skills/shaping/SKILL.md': [
     'references/stored-brief.md',
     'references/brief.md',

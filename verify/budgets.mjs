@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'debug', 'deepen', 'designing', 'handoff', 'implementing', 'implementing-batch', 'issuing', 'memory', 'planning', 'prototyping', 'research', 'savings', 'settings', 'shaping', 'shipping', 'skills-tool'
+  'debug', 'deepen', 'designing', 'handoff', 'implementing', 'implementing-batch', 'investigation', 'issuing', 'memory', 'planning', 'prototyping', 'refactoring', 'research', 'savings', 'settings', 'shaping', 'shipping', 'skills-tool'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -19,7 +19,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // using-exo body and cuts the tail of that body before it passes the cap, so the
 // next addition to using-exo buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 4490, measured: '2026-09-22' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 4608, measured: '2026-09-24' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 4212, measured: '2026-09-24' };
 
 // The periodic restatement, locked the same way. It is sent again every
