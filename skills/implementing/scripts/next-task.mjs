@@ -15,7 +15,7 @@ import { parseFlags, UsageError } from '#script-flags';
 import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
 
 // The savings skill owns the delegate's default budget; reading it here keeps
-// one source for the cap instead of a second copy of 40/70.
+// one source for the cap instead of a second copy of 40/100.
 const DEFAULT_BUDGET = JSON.parse(
   fs.readFileSync(new URL('../../savings/assets/delegate-budgets.json', import.meta.url), 'utf8')
 ).default;
