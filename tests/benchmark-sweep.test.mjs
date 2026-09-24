@@ -22,7 +22,7 @@ test('without --confirm the sweep prints its call count and starts no claude pro
   const { env, marker } = await fakeClaude();
   const result = await run(SWEEP, ['--set', 'all'], { env });
   assert.equal(result.code, 2, result.stderr);
-  assert.match(result.stdout, /^39 claude -p calls planned, one per cell:/);
+  assert.match(result.stdout, /^44 claude -p calls planned, one per cell:/);
   assert.match(result.stdout, /review-safe-path-seeded-low: --model claude-opus-5-5 --effort low/);
   assert.match(result.stdout, /plan-fable-xhigh: --model claude-fable-5-1 --effort xhigh/);
   assert.match(result.stdout, /Re-run with --confirm/);

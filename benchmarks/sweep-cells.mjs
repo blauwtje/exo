@@ -16,7 +16,7 @@ export const SWEEP_MODELS = {
 
 export const REVIEW_EFFORTS = ['low', 'medium', 'high'];
 
-export const CELL_SETS = ['review', 'build', 'plan', 'flow'];
+export const CELL_SETS = ['review', 'build', 'fixer', 'plan', 'flow'];
 
 // A seeded branch carries the fixture's defect; a control branch carries its
 // reference solution, so a defect or hazard reported there is a false alarm.
@@ -93,6 +93,46 @@ function buildCells() {
   }));
 }
 
+// review-fixer-prompt.md's fenced block is the whole dispatch a sonnet
+// general-purpose delegate gets, placeholders filled the way implementing
+// fills them, because that role carries no agent frontmatter of its own.
+function fixerTemplate() {
+  const text = fs.readFileSync(path.join(ROOT, 'skills', 'implementing', 'review-fixer-prompt.md'), 'utf8');
+  return text.match(/```text\r?\n([\s\S]*?)\r?\n```/)[1];
+}
+
+function fixerDispatch(template, task) {
+  const planPath = `docs/plans/${task.id}.md`;
+  return template.replace(/<plan path>|<report path>|<root>|<base>|<plan>/g, (token) => ({
+    '<plan path>': planPath,
+    '<plan>': planPath,
+    '<root>': 'the repository in the current directory',
+    '<base>': 'main',
+    '<report path>': '.git/branch-review.md'
+  })[token]);
+}
+
+// A fixer cell pairs with each safe task the way a build cell does, on the
+// sonnet the review-fixer role is pinned to; implementing names no effort for
+// it, so it runs at the same high effort the build and flow cells run at.
+function fixerCells() {
+  const template = fixerTemplate();
+  return SAFE_TASKS.map((task) => ({
+    id: `fixer-${task.id}`,
+    kind: 'fixer',
+    task,
+    variant: null,
+    source: null,
+    model: SWEEP_MODELS.sonnet,
+    effort: 'high',
+    prompt: fixerDispatch(template, task),
+    appendSystemPrompt: null,
+    disallowedTools: [],
+    budgetUsd: '3',
+    timeoutMs: 20 * MINUTE_MS
+  }));
+}
+
 function planCells() {
   return PLAN_RUNS.map((run) => ({
     id: `plan-${run.model}-${run.effort}`,
@@ -128,7 +168,7 @@ function flowCell() {
 }
 
 export function sweepCells() {
-  return [...reviewCells(reviewerPrompt()), ...buildCells(), ...planCells(), flowCell()];
+  return [...reviewCells(reviewerPrompt()), ...buildCells(), ...fixerCells(), ...planCells(), flowCell()];
 }
 
 export function selectCells(cells, setNames) {

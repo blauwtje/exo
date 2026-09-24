@@ -14,10 +14,11 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 39 calls: 30 review, 5 build, 3 plan and 1 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 39);
+test('the full set makes 44 calls: 30 review, 5 build, 5 fixer, 3 plan and 1 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 44);
   assert.equal(selectCells(cells, ['review']).length, 30);
   assert.equal(selectCells(cells, ['build']).length, 5);
+  assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
   assert.equal(selectCells(cells, ['flow']).length, 1);
   assert.equal(selectCells(cells, ['plan', 'flow']).length, 4);
@@ -40,6 +41,7 @@ test('the cells follow the routing under test', () => {
   const pairs = (kind) => selectCells(cells, [kind]).map((cell) => `${cell.model} ${cell.effort}`);
   assert.deepEqual([...new Set(pairs('review'))], [`${SWEEP_MODELS.opus} low`, `${SWEEP_MODELS.opus} medium`, `${SWEEP_MODELS.opus} high`]);
   assert.deepEqual([...new Set(pairs('build'))], [`${SWEEP_MODELS.sonnet} high`]);
+  assert.deepEqual([...new Set(pairs('fixer'))], [`${SWEEP_MODELS.sonnet} high`]);
   assert.deepEqual(pairs('plan'), [`${SWEEP_MODELS.opus} high`, `${SWEEP_MODELS.fable} high`, `${SWEEP_MODELS.fable} xhigh`]);
   assert.deepEqual(pairs('flow'), [`${SWEEP_MODELS.sonnet} high`]);
 });
@@ -58,6 +60,13 @@ test('a review cell runs the branch reviewer body as its system prompt, without 
   assert.match(prompt, /You review one branch against the plan/);
   assert.doesNotMatch(prompt, /^---/);
   assert.doesNotMatch(prompt, /effort: medium/);
+});
+
+test('a fixer cell dispatches the review-fixer prompt naming the plan, base and report, without the file heading', () => {
+  const fixer = selectCells(cells, ['fixer'])[0];
+  assert.match(fixer.prompt, /You fix the findings a branch review wrote to the report above/);
+  assert.match(fixer.prompt, /Review fix for docs\/plans\/safe-path\.md, repository/);
+  assert.doesNotMatch(fixer.prompt, /^# Review fixer prompt/);
 });
 
 test('plan cells plan the change the flow cell runs from its fixed plan', () => {
