@@ -12,7 +12,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
 
 // The savings skill owns the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/70.
@@ -66,7 +66,22 @@ function visualDirectionLines(task, frame) {
   return ['Visual direction:', frame.visualDirection];
 }
 
-function taskBrief(task, frame) {
+// The `path:start-end` of each Modify: region's one definition, so the brief
+// points the implementer at that range instead of the whole file. A region
+// driftOf already flags missing or duplicated stays out: no single range
+// exists to give.
+function modifyRanges(task, root) {
+  return task.files
+    .filter((file) => file.kind === 'Modify' && file.region !== null)
+    .flatMap((file) => {
+      const target = path.join(root, file.path);
+      if (!fs.existsSync(target)) return [];
+      const range = regionRange(fs.readFileSync(target, 'utf8'), file.region);
+      return range === null ? [] : [`${file.path}:${range.start}-${range.end}`];
+    });
+}
+
+function taskBrief(task, frame, root) {
   return [
     `Goal: ${frame.goal}`,
     'Non-goals touching these paths:',
@@ -74,6 +89,8 @@ function taskBrief(task, frame) {
     'Context for these paths and symbols:',
     ...bulletLines(bulletsFor(task, frame.context)),
     ...visualDirectionLines(task, frame),
+    'Modify ranges:',
+    ...bulletLines(modifyRanges(task, root)),
     '',
     'The task section:',
     task.section,
@@ -83,9 +100,9 @@ function taskBrief(task, frame) {
 
 // The brief sits under the run checkout's git directory, which a wave's
 // worktrees do not share, so a worktree never sees or commits it.
-function writeBrief(task, frame, briefDirectory) {
+function writeBrief(task, frame, root, briefDirectory) {
   const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
-  fs.writeFileSync(briefPath, taskBrief(task, frame));
+  fs.writeFileSync(briefPath, taskBrief(task, frame, root));
   return briefPath;
 }
 
@@ -97,7 +114,7 @@ function taskLines(task, frame, root, briefDirectory) {
     task.section.match(/^Design: .+$/m)?.[0] ?? 'Design: none',
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
     ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
-    `Brief: ${writeBrief(task, frame, briefDirectory)}`
+    `Brief: ${writeBrief(task, frame, root, briefDirectory)}`
   ];
 }
 

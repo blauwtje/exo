@@ -54,6 +54,7 @@ test('the brief file holds the frame and the task section, and the report holds 
   assert.match(brief, /^Goal: The fixture proves the plan reader\.$/m);
   assert.match(brief, /^- `src\/app\.js` exports `greet`\.$/m);
   assert.match(brief, /^Visual direction: none$/m);
+  assert.match(brief, /^Modify ranges:\n- `src\/app\.js:1-3`$/m);
   assert.match(brief, /^### Task 1: Greet$/m);
   assert.ok(brief.includes('export function greet() {\n  return "hello";\n}'), brief);
   assert.doesNotMatch(brief, /^### Task 3: Wave$/m);

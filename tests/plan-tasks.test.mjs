@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange } from '#plan-tasks';
 import { fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
@@ -172,4 +172,10 @@ test('driftOf finds a region declared as a method, getter, type or in another la
     taskSection({ number: 1, title: 'Edit', files: ['- Modify: `f.ts` (`handle`)'], subject: 'feat: edit' })
   ] })).tasks[0];
   assert.deepEqual(driftOf(called, root), ['region `handle` is missing from `f.ts`']);
+});
+
+test('regionRange gives the 1-based start and end of a region\'s definition block', () => {
+  const content = 'const a = 1;\nexport function greet() {\n  return "hi";\n}\nconst b = 2;\n';
+  assert.deepEqual(regionRange(content, 'greet'), { start: 2, end: 4 });
+  assert.equal(regionRange(content, 'missing'), null);
 });
