@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.38.0 - 2026-09-24
+
 ### Added
 
 - `designing` gains `scripts/checkpoint.mjs --stage baseline|post-build|final`: one call captures both viewports, runs `check-ui`, `inspect-render` against the matching baseline and `inspect-styles`, and writes the critic's evidence file; `check-ui.mjs` takes several `--viewport` values in one run, prints `threshold` and `note` once in a notes table, and adds `--summary`.
