@@ -7,6 +7,33 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `designing` gains `scripts/checkpoint.mjs --stage baseline|post-build|final`: one call captures both viewports, runs `check-ui`, `inspect-render` against the matching baseline and `inspect-styles`, and writes the critic's evidence file; `check-ui.mjs` takes several `--viewport` values in one run, prints `threshold` and `note` once in a notes table, and adds `--summary`.
+- `agents/design-builder.md` carries the designing builder as a sonnet agent with one scope per dispatch, `foundation`, `<surface>` or `repair:<surface>`, and a `maxTurns`; `builder-prompt.md` and the `all` scope are removed, repair runs as that agent without the counted 12-call cap, and QA always runs in a delegate.
+- `shipping` gains `scripts/ship.mjs`: one call pushes, opens or reuses the pull request, waits, gates, merges and confirms, copies labels and milestone from `--issue`, runs a stacked `--merge` list bases first, and prints one `<url> merged|open|stopped <step> <reason>` line per pull request.
+- `debug` runs in phases around one handoff file under `<git-dir>/exo/debug/`: an opus investigate delegate proves the cause, a sonnet fix delegate reads only the handoff and its ranges, `bug-fixer-prompt.md` uses the same file, and step 7 takes its review effort from `pick-reviewer.mjs`.
+- `deepen` gains `scripts/hotspots.mjs`, printing the most-changed paths over six months, and its audit runs in a delegate from `auditor-prompt.md` that writes at most five cards to `<git-dir>/exo/deepen/<topic>.md`, from which the session ranks.
+- `shaping` gains `scripts/map-transition.mjs` and `round-text.mjs`: `question-page.mjs --add`, `--apply` and `--text` add decisions, apply an answer and render a round in the chat layout, so the session never rewrites `map.json`, and chat mode keeps the map file too.
+- `issuing` gains `scripts/repo-fields.mjs`, printing the repository's labels, milestones, projects and owner as one JSON cached for a day, with `--size` computing Size, Estimate and Priority; `shipping` reuses it for a pull request without an issue.
+- `skills-tool` gains `scripts/pressure.mjs`, running both arms of every `--cells` model and effort in parallel and printing three lines per cell.
+- `using-exo` gains `scripts/next-stage.mjs --after <stage> --artifact <path>`, printing the next-stage options and model line, so a stage no longer reads two references at its end.
+- `handoff.mjs path` prints the handoff location the session-start hook computes, and `handoff` uses it.
+- `benchmarks` gains the `branch-review.md` fixture, so `sweep.mjs --confirm` runs the fixer cells.
+
+### Changed
+
+- `implementing-batch` step 7 runs the review in a delegate that writes a findings file, and the fix step reads only that file.
+- The savings hooks keep per-session hot state in its own file with its own lock and touch the 30-day `sessions.json` only from the Stop hook and the report, so a hook no longer rewrites the whole record.
+- A named-direction `Design:` plan task runs `designing` in the implementing session instead of in `exo:implementer`.
+- `## Wave worktrees` moves from `implementing/references/workspace.md` into its own `wave-worktrees.md`, which only `implementing` reads.
+- The delegate budget hook's token limit rises from 70k to 100k; the 60 tool-call limit is unchanged.
+- `CLAUDE.md` splits a run that spans exploring, building and reviewing into phases, each a fresh subagent handing over through a file.
+
+### Fixed
+
+- `settings.mjs` falls through to the next layer on an invalid value in a higher one instead of the default, and the context line names the bad file.
+
 ## 0.37.1 - 2026-09-24
 
 ### Changed
