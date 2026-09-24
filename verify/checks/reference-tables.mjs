@@ -73,7 +73,10 @@ const EXPECTED_OWNER_ROWS = {
     'references/pr-comments.md',
     'references/babysit.md',
   ],
-  'skills/memory/SKILL.md': ['../using-exo/references/question.md'],
+  'skills/memory/SKILL.md': [
+    '../using-exo/references/question.md',
+    '../skills-tool/references/where-a-fix-lives.md',
+  ],
   'skills/prototyping/SKILL.md': [
     'references/exhaust-the-design-space.md',
   ],
