@@ -14,7 +14,9 @@ import {
 } from '../skills/designing/scripts/capture.mjs';
 import { parseFrontmatter } from '../skills/designing/scripts/context.mjs';
 import { fontConfidence } from '../skills/designing/scripts/inspect-styles.mjs';
-import { ALWAYS_BLOCKING, compareFindings, DECORATIVE_TELLS } from '../skills/designing/scripts/check-ui.mjs';
+import {
+  ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable
+} from '../skills/designing/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
 
 function git(root, args) {
@@ -696,6 +698,70 @@ describe('check-ui.mjs named anti-patterns', () => {
     });
     const selectors = ofType(findings, 'monospace-label').map((entry) => entry.selector).sort();
     assert.deepEqual(selectors, ['.stat-label (styles.css:1)', 'page.html:2']);
+  });
+});
+
+describe('check-ui.mjs notes table', () => {
+  it('collapses two findings of one type into one notes entry with no threshold/note on the findings', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), '.a { transition: all 200ms ease; }\n');
+    await fs.writeFile(path.join(root, 'b.css'), '.b { transition: all 100ms linear; }\n');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const transitions = report.static.findings.filter((entry) => entry.type === 'transition-all');
+    assert.equal(transitions.length, 2);
+    assert.ok(transitions.every((entry) => !('threshold' in entry) && !('note' in entry)));
+    assert.ok(report.notes['transition-all'].threshold);
+    assert.ok(report.notes['transition-all'].note);
+  });
+
+  it('keeps a dynamic note on the finding it differs from in the table', () => {
+    const definiteNote = 'text below the AA contrast minimum';
+    const potentialNote = 'effective background is composited, so the ratio is indeterminate';
+    const definite = {
+      type: 'contrast-large-text', confidence: 'definite', selector: 'a', measured: '2:1',
+      threshold: '3:1', note: definiteNote
+    };
+    const potential = {
+      type: 'contrast-large-text', confidence: 'potential', selector: 'b', measured: '2:1',
+      threshold: '3:1', note: potentialNote
+    };
+    const findings = [definite, potential];
+    const table = applyNotesTable(findings);
+    assert.deepEqual(table['contrast-large-text'], { threshold: '3:1', note: definiteNote });
+    assert.equal(definite.threshold, undefined);
+    assert.equal(definite.note, undefined);
+    assert.equal(potential.threshold, undefined);
+    assert.equal(potential.note, potentialNote);
+  });
+
+  it('reconstructs a finding from the table lossless', () => {
+    const entries = [
+      { type: 't', confidence: 'definite', selector: 'a', measured: '1', threshold: 'T', note: 'N' },
+      { type: 't', confidence: 'definite', selector: 'b', measured: '2', threshold: 'T', note: 'other' }
+    ];
+    const table = notesTable(entries.map((entry) => ({ ...entry })));
+    const stripped = entries.map((entry) => ({ ...entry }));
+    applyNotesTable(stripped);
+    const reconstructed = stripped.map((entry) => ({
+      ...entry,
+      threshold: entry.threshold ?? table[entry.type].threshold,
+      note: entry.note ?? table[entry.type].note
+    }));
+    assert.deepEqual(reconstructed, entries);
+  });
+
+  it('--summary prints at most 10 lines starting with static= on a --source-only run', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), '.a { transition: all 200ms ease; }\n');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--summary']);
+    assert.equal(result.code, 0, result.stderr);
+    const lines = result.stdout.trimEnd().split('\n');
+    assert.ok(lines.length <= 10, lines.join('\n'));
+    assert.match(lines[0], /^static=/);
   });
 });
 

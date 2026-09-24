@@ -1379,6 +1379,65 @@ function reportFindings(report) {
   return wellFormed ? findings : null;
 }
 
+/** {type: {threshold, note}} from the first finding seen per type, in report order. */
+export function notesTable(findings) {
+  const table = {};
+  for (const entry of findings) {
+    if (!Object.hasOwn(table, entry.type)) table[entry.type] = { threshold: entry.threshold, note: entry.note };
+  }
+  return table;
+}
+
+/**
+ * Drops threshold/note from each finding, in place, when it equals its type's table entry.
+ * Lossless: a finding plus the table's entry for its type reconstructs the dropped fields.
+ */
+export function applyNotesTable(findings) {
+  const table = notesTable(findings);
+  for (const entry of findings) {
+    const noted = table[entry.type];
+    if (entry.threshold === noted.threshold) delete entry.threshold;
+    if (entry.note === noted.note) delete entry.note;
+  }
+  return table;
+}
+
+const SUMMARY_LINE_LIMIT = 10;
+const SUMMARY_BLOCK_LIMIT = 8;
+
+function summaryLabel(report, entry) {
+  if (entry.viewport) return entry.viewport;
+  return (report.rendered?.fixed?.findings ?? []).includes(entry) ? 'fixed' : 'static';
+}
+
+/** At most 10 lines in place of the JSON report: counts, then up to 8 blocking findings. */
+function summaryLines(report, findings, comparison) {
+  const viewportCounts = Object.entries(report.rendered?.viewports ?? {})
+    .map(([viewport, value]) => `${viewport}=${value.findings?.length ?? 0}`);
+  const header = [
+    `static=${report.static?.findings?.length ?? 0}`,
+    `fixed=${report.rendered?.fixed?.findings?.length ?? 0}`,
+    ...viewportCounts
+  ];
+  if (report.comparison) {
+    const counts = report.comparison.counts;
+    header.push(
+      `before=${counts.before}`, `after=${counts.after}`, `new=${counts.new}`,
+      `predating=${counts.predating}`, `ignored=${counts.ignored}`, `blocking=${counts.blocking}`
+    );
+  }
+  const lines = [header.join(' ')];
+  const blockingSet = new Set(comparison.blocking);
+  const blocking = findings.filter((entry) => blockingSet.has(entry));
+  const shown = blocking.slice(0, Math.min(SUMMARY_BLOCK_LIMIT, SUMMARY_LINE_LIMIT - lines.length));
+  for (const entry of shown) {
+    lines.push(`BLOCK ${summaryLabel(report, entry)} ${entry.type} ${entry.selector} ${entry.measured}`);
+  }
+  const remaining = blocking.length - shown.length;
+  if (remaining > 0 && lines.length < SUMMARY_LINE_LIMIT) lines.push(`... ${remaining} more`);
+  return lines;
+}
+
 async function readBaseline(file) {
   const text = await fs.readFile(file, 'utf8').catch(() => null);
   if (text === null) throw new UsageError(`--baseline cannot be read: ${file}`);
@@ -1480,7 +1539,8 @@ async function readIgnoreEntries(directory) {
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'list', baseline: 'value' });
+  const flags = parseFlags(argv,
+    { url: 'value', source: 'value', viewport: 'list', baseline: 'value', summary: 'boolean' });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
   const viewports = flags.viewport ? flags.viewport.map(parseViewport) : [parseViewport(DEFAULT_VIEWPORTS.at(-1))];
   const baselineFindings = flags.baseline ? await readBaseline(flags.baseline) : null;
@@ -1493,12 +1553,22 @@ async function main(argv) {
       ? await renderedAudit({ url: requireUrl(flags.url), viewports, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
+  const findings = reportFindings(report) ?? [];
+  let comparison = null;
   if (baselineFindings) {
-    const currentFindings = reportFindings(report);
     const ignoreEntries = await readIgnoreEntries(process.cwd());
-    report.comparison = compareFindings(baselineFindings, currentFindings, ignoreEntries);
+    comparison = compareFindings(baselineFindings, findings, ignoreEntries);
+    report.comparison = comparison;
   }
-  process.stdout.write(`${JSON.stringify(report)}\n`);
+  report.notes = applyNotesTable(findings);
+
+  if (flags.summary) {
+    for (const line of summaryLines(report, findings, comparison ?? compareFindings([], findings, []))) {
+      process.stdout.write(`${line}\n`);
+    }
+  } else {
+    process.stdout.write(`${JSON.stringify(report)}\n`);
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
