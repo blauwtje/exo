@@ -6,7 +6,7 @@ commands and internals; this file only names what a session here gets wrong with
 ## Workflow
 
 - exo loads in place from this checkout, so the main checkout stays on `main` and no change lands there directly: every edit runs in a worktree.
-- A run opens with `git pull --ff-only` on `main`, then removes every worktree and branch, local and remote, already merged into `main`, so it never orchestrates atop stale state.
+- A run opens with `git pull --ff-only` on `main`, then removes every worktree and branch, local and remote, already merged into `main`, so it never orchestrates atop stale state. `git branch --merged` misses a squash-merged branch, so the tidy also runs `git fetch --prune` and deletes every local branch whose upstream is gone (`git branch -vv` shows `: gone]`).
 - The lead session only orchestrates, to keep its context small: every edit, fix and instruction-text change runs in a subagent under worktree isolation, independent parts in parallel, and a check that fails after integration goes to a fixer subagent too. Only the lead writes `CHANGELOG.md`, so two subagent branches never conflict on it.
 - Landing merges the subagent branches in one integration worktree under `.worktrees/` (already gitignored), adds the `CHANGELOG.md` lines, runs `npm run check` once with its output sent to a log and reads back only the `SUMMARY` line and any failing lines, fast-forwards `main`, pushes `main` directly with no pull request, then removes every worktree and branch the run created, local and remote.
 - This rule outranks the workspace question in `skills/implementing/references/workspace.md` and the pull-request route in `shipping` for this repository: nothing is asked about where to commit.
@@ -28,10 +28,10 @@ commands and internals; this file only names what a session here gets wrong with
 
 ## Changelog and release
 
-- A change to this plugin adds one line under `## Unreleased` in `CHANGELOG.md`, in its `### Added`, `### Changed`, `### Fixed` or `### Removed` section. It bumps no version and pushes nothing, because users receive a change only through a release.
+- A change to this plugin adds one line under `## Unreleased` in `CHANGELOG.md`, in its `### Added`, `### Changed`, `### Fixed` or `### Removed` section. It bumps no version itself, because users receive a change only through the release its push to `main` cuts.
 - The verifier's `plugin version` check fails while the tree differs from `origin/main` and `## Unreleased` is empty, and when a raised version has no dated changelog section: record the change, or raise the version with `npm run bump`, never by hand.
-- A merge to `main` cuts the release: `.github/workflows/release.yml` runs `npm run check`, `npm run bump`, commits `chore(release): <version>`, tags `v<version>` and publishes the GitHub Release, and a merge whose `## Unreleased` is empty cuts nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand: a hand-cut version collides with the next merge.
-- A change the user should read about first carries at most three bold lead sentences under `### Highlights` in `## Unreleased`, written in the pull request that records the change, never in a release commit.
+- A push to `main` cuts the release: it triggers `.github/workflows/release.yml`, which runs `npm run check`, `npm run bump`, commits `chore(release): <version>`, tags `v<version>` and publishes the GitHub Release, and a push whose `## Unreleased` is empty cuts nothing. Never run `npm run bump`, `git tag v<version>` or `gh release create` by hand: a hand-cut version collides with the next push.
+- A change the user should read about first carries at most three bold lead sentences under `### Highlights` in `## Unreleased`, written in the commit that records the change, never in a release commit.
 
 ## Environment
 
