@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.35.2 - 2026-09-24
+
 ### Changed
 
 - `CLAUDE.md` gives each subagent one bug or one concern and splits a brief with two unrelated parts, because two bugs plus a skill load drove a subagent into the budget hook before it committed.
