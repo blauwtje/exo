@@ -290,6 +290,20 @@ function seedHotSession(sessionId) {
 // the whole cold record. mutate returns true when it changed the session;
 // the file is written then, or the first time a session is seeded, so the
 // seed itself is not lost to the next read.
+// Every session id with a hot file, so the report can find one with no cold
+// row yet (a session the Stop hook has not folded back).
+export function hotSessionIds() {
+  let entries;
+  try {
+    entries = fs.readdirSync(hotSessionsDirectory(), { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => entry.name.slice(0, -'.json'.length));
+}
+
 export function updateHotSession(sessionId, mutate) {
   const file = hotFile(sessionId);
   return withLock(file, () => {

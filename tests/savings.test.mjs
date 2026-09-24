@@ -197,6 +197,20 @@ test('the report is a fenced ledger: one estimated total, one line per read guar
   assert.doesNotMatch(result.stdout, /│|┌|\$|\bcalls?\b|\bcost\b|\d+m\b|\bK?B\b|\bMB\b|Saved|Skills|withheld|record/);
 });
 
+test('a refusal booked only in the hot store shows up in the report', async () => {
+  const directory = await fixture();
+  await writeConfig(directory, { readGuardLines: 800 });
+  const hotFile = path.join(directory, 'exo', 'savings', 'sessions', 's1.json');
+  await fs.mkdir(path.dirname(hotFile), { recursive: true });
+  await fs.writeFile(hotFile, JSON.stringify({
+    reads: {}, calls: {}, restate: { baseline: null },
+    guard: { hookMs: 0, refusals: { toolu_1: { kind: 'capped', bytesWithheld: 1048576, reader: 'main', filePath: '/repo/big.ts', open: true } } }
+  }));
+  const result = await runWithStdin(['report'], '', { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: '', EXO_SAVINGS: '' });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Big-file reads refused     ≈ 300k · 1 read/);
+});
+
 test('a record with no refusals prints the title, the window and one sentence, never a zero row', async () => {
   const directory = await fixture();
   await writeConfig(directory);
