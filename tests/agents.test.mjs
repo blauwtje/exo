@@ -203,3 +203,22 @@ test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and
   const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'skills/savings/assets/delegate-budgets.json'), 'utf8'));
   assert.equal(budgets.agents['design-builder'].calls, 35);
 });
+
+test('the designing repair loop drops the 12-call cap for a repair scope with its own report, and QA always dispatches', () => {
+  const builder = agents.find((agent) => agent.frontmatter.name === 'design-builder');
+  assert.ok(builder, 'agents/design-builder.md exists');
+  const repairSection = builder.body.slice(builder.body.indexOf('repair:<surface>'));
+  assert.match(repairSection, /faults\.md/);
+  assert.match(repairSection, /critic-evidence\.json/);
+  assert.match(repairSection, /repair-<surface>\.md/);
+  assert.match(repairSection, /renders nothing/);
+
+  const phaseDetail = fs.readFileSync(path.join(skillsRoot, 'designing', 'references', 'phase-detail.md'), 'utf8');
+  assert.doesNotMatch(phaseDetail, /12 tool calls/);
+  assert.match(phaseDetail, /repair:<surface>/);
+  assert.match(phaseDetail, /repair-<surface>\.md/);
+  assert.match(phaseDetail, /qa\.md/);
+
+  const skill = fs.readFileSync(path.join(skillsRoot, 'designing', 'SKILL.md'), 'utf8');
+  assert.doesNotMatch(skill, /exo: context/);
+});

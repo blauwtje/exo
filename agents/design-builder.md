@@ -22,6 +22,10 @@ Write the tokens file, the base layer, and every primitive the inventory repeats
 
 Build the surface from its inventory slice on top of the foundation: every content obligation, every reachable state of every repeated component, the technique the subject's world names built as itself. Never edit the foundation files; a missing primitive is reported, not added locally. Write `$RUN/build-<SCOPE>.md`: the paths written, the inventory items covered and any missing, the floor checks you could confirm from source, and the primitives you needed but the foundation lacks. At most 20 lines.
 
+**Repair scope (`repair:<surface>`).**
+
+Read `$RUN/faults.md` and `$RUN/critic-evidence.json` and the `FILES` ranges the faults name; edit only this surface, fixing every fault the brief lists. This scope renders nothing; the session takes the final capture. Write `$RUN/repair-<surface>.md`, at most 10 lines: one line per fault, `<fault title>: fixed|open <reason>`, then the paths written.
+
 **The floor.**
 
 Every scope meets the floor; its state, timing, and reachability mechanics live in `$SKILL/references/interaction-qa.md`:

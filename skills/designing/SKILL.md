@@ -44,7 +44,7 @@ The references call these steps Phase 1 to 5.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
 4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, already read at Phase 1, before the baseline capture, which precedes the first edit.
-5. **Check.** Run `## QA` of `references/phase-detail.md`, already read at Phase 1; once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs it with `RUN`, `SKILL`, `REPO` and that section, returning at most 20 lines.
+5. **Check.** A `general-purpose` delegate on `sonnet` runs `## QA` of `references/phase-detail.md`, already read at Phase 1, with `RUN`, `SKILL` and `REPO`, and writes `$RUN/qa.md`; this session's close quotes qa.md.
 
 ## References
 
