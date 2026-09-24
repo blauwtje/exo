@@ -21,11 +21,10 @@ const EXPECTED_OWNER_ROWS = {
     '../implementing-batch/references/security.md',
     '../implementing-batch/references/data-migration.md',
     '../implementing-batch/references/test-design.md',
-    '../using-exo/references/next-stage.md',
-    '../using-exo/references/question.md',
   ],
   'skills/implementing-batch/SKILL.md': [
     '../implementing/references/workspace.md',
+    'reviewer-prompt.md',
     'references/critique.md',
     'references/security.md',
     'references/data-migration.md',
@@ -40,14 +39,12 @@ const EXPECTED_OWNER_ROWS = {
     '../implementing-batch/references/data-migration.md',
     '../implementing-batch/references/test-design.md',
     '../implementing-batch/references/security.md',
-    '../using-exo/references/next-stage.md',
     '../using-exo/references/question.md',
   ],
   'skills/deepen/SKILL.md': [
     'auditor-prompt.md',
     '../planning/references/plan-spec.md',
     '../implementing-batch/references/test-design.md',
-    '../using-exo/references/next-stage.md',
     '../using-exo/references/question.md',
   ],
   'skills/implementing/SKILL.md': [
