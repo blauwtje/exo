@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.34.4 - 2026-09-24
+
 ### Changed
 
 - `implementing`'s `next-task.mjs` writes each wave task's frame and section to a brief file under the run checkout's git directory and prints only its `Design:`, `Run:`, drift and `Brief:` lines, so the dispatch to `exo:implementer` names that path instead of pasting the task twice into the session, except a dispatch with worktree isolation, which still carries the brief's content because that delegate reads nothing outside its worktree; the brief drops `Conventions:` and the implementer no longer rereads the root `CLAUDE.md` it already loaded.
