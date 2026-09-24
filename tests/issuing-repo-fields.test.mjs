@@ -247,3 +247,14 @@ test('only default labels and no types or project fields gives vocabulary "defau
   assert.deepEqual(data.projects, []);
   assert.equal(data.vocabulary, 'default');
 });
+
+test('the issuing skill names the script instead of the six-command read', async () => {
+  const skill = await fs.readFile(fileURLToPath(new URL('../skills/issuing/SKILL.md', import.meta.url)), 'utf8');
+  const frontmatter = skill.split('---')[1];
+  assert.match(frontmatter, /Bash\(node \*repo-fields\.mjs\*\)/);
+
+  const fieldsDoc = await fs.readFile(fileURLToPath(new URL('../skills/issuing/references/fields.md', import.meta.url)), 'utf8');
+  assert.match(fieldsDoc, /scripts\/repo-fields\.mjs/);
+  assert.doesNotMatch(fieldsDoc, /gh label list/);
+  assert.doesNotMatch(fieldsDoc, /ls \.github\/ISSUE_TEMPLATE/);
+});
