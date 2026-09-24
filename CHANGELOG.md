@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.39.1 - 2026-09-24
+
 ### Fixed
 
 - `shipping` reruns the verifier and the same `--route pr-merge` command after a check fix, never `--merge`, which skips the wait for checks and met them still pending.
