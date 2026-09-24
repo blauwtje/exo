@@ -98,7 +98,7 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), interview=chat \(default\), context=80 \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), interview=chat \(default\), context=100 \(default\); .*exo\.json is not valid JSON/);
 });
 
 test('a value the schema does not allow is named in the context line, and the default replies rule still applies', async () => {
@@ -173,7 +173,7 @@ test('a stored context that is not a whole number of at least 1 reads as the def
     const space = await workspace({ project: { context: stored } });
     const result = await settings(space, ['get', 'context']);
     assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stdout.trim(), '80', String(stored));
+    assert.equal(result.stdout.trim(), '100', String(stored));
   }
 });
 
