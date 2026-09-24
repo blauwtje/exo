@@ -32,6 +32,20 @@ export function recordFile() {
   return path.join(recordDirectory(), 'sessions.json');
 }
 
+function hotSessionsDirectory() {
+  return path.join(recordDirectory(), 'sessions');
+}
+
+// A session id becomes a file name, so only the shape transcript.mjs already
+// accepts for the same purpose is allowed; every hook already catches a
+// throw here and exits 0.
+const SESSION_ID = /^[\w-]+$/;
+
+export function hotFile(sessionId) {
+  if (!SESSION_ID.test(sessionId)) throw new Error(`invalid session id: ${sessionId}`);
+  return path.join(hotSessionsDirectory(), `${sessionId}.json`);
+}
+
 export function configFile() {
   return path.join(recordDirectory(), 'config.json');
 }
@@ -107,6 +121,20 @@ export function emptySession() {
   };
 }
 
+// The fields a hook touches on every call: split into their own file so a
+// hook never reads or rewrites the whole (potentially multi-megabyte) cold
+// record. Kept in sync with the matching keys in emptySession().
+export function emptyHotSession() {
+  return {
+    reads: {},
+    calls: {},
+    guard: { hookMs: 0, refusals: {} },
+    restate: { baseline: null }
+  };
+}
+
+const HOT_FIELDS = Object.keys(emptyHotSession());
+
 function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
@@ -124,8 +152,11 @@ function removeStaleLock(lock, staleMtimeMs) {
 
 // A directory is the lock because mkdir is atomic on every platform Node
 // runs on; a lock older than LOCK_STALE_MS belongs to a hook that died.
-function withRecordLock(work) {
-  const lock = `${recordFile()}.lock`;
+// Shared by the cold record and every per-session hot file, each locked by
+// its own `<file>.lock` so one hook's hot write never waits on another
+// session's.
+function withLock(file, work) {
+  const lock = `${file}.lock`;
   fs.mkdirSync(path.dirname(lock), { recursive: true });
   const deadline = Date.now() + LOCK_WAIT_MS;
   for (;;) {
@@ -155,6 +186,38 @@ function withRecordLock(work) {
   }
 }
 
+// A session id that never became a valid file name (written before the id
+// was validated, or by hand) has no hot file to remove.
+function removeHotFile(sessionId) {
+  try {
+    fs.rmSync(hotFile(sessionId), { force: true });
+  } catch {
+    // not a file-name-shaped id; nothing was ever written under it
+  }
+}
+
+// Catches a hot file whose cold row is already gone, such as one seeded but
+// never folded back by a Stop hook.
+function pruneHotFiles(now) {
+  let entries;
+  try {
+    entries = fs.readdirSync(hotSessionsDirectory(), { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    const file = path.join(hotSessionsDirectory(), entry.name);
+    let mtimeMs;
+    try {
+      mtimeMs = fs.statSync(file).mtimeMs;
+    } catch {
+      continue;
+    }
+    if (now - mtimeMs > SESSION_RETENTION_MS) fs.rmSync(file, { force: true });
+  }
+}
+
 // A row without any date was written before pruning existed; its age is
 // unknown, so it stays.
 function pruneSessions(sessions, now) {
@@ -164,23 +227,27 @@ function pruneSessions(sessions, now) {
     if (Number.isNaN(touched)) continue;
     if (now - touched > SESSION_RETENTION_MS) {
       delete sessions[sessionId];
+      removeHotFile(sessionId);
       pruned = true;
     }
   }
+  pruneHotFiles(now);
   return pruned;
 }
 
 // mutate returns true when the session changed; the record is written only
-// then, or when a stale session was pruned. A row written by an older
-// version gains the fields it lacks.
+// then, or when a stale session was pruned, or the hot store held fields the
+// row lacked. A row written by an older version gains the fields it lacks.
 export function updateSession(sessionId, mutate) {
-  return withRecordLock(() => {
+  return withLock(recordFile(), () => {
     const sessions = readRecord();
     const session = { ...emptySession(), ...(sessions[sessionId] ?? {}) };
     const changed = mutate(session);
+    const hot = readHotSession(sessionId);
+    if (hot) for (const field of HOT_FIELDS) session[field] = hot[field];
     const now = Date.now();
     const pruned = pruneSessions(sessions, now);
-    if (changed || pruned || sessions[sessionId] === undefined) {
+    if (changed || hot || pruned || sessions[sessionId] === undefined) {
       session.touched = new Date(now).toISOString();
       sessions[sessionId] = session;
       writeJson(recordFile(), sessions);
@@ -193,11 +260,43 @@ export function updateSession(sessionId, mutate) {
 // rows are pruned first, so mutate never brings one back, and no row's
 // touched moves. mutate returns true when it changed a row.
 export function updateSessions(mutate) {
-  return withRecordLock(() => {
+  return withLock(recordFile(), () => {
     const sessions = readRecord();
     const pruned = pruneSessions(sessions, Date.now());
     const changed = mutate(sessions);
     if (changed || pruned) writeJson(recordFile(), sessions);
     return sessions;
+  });
+}
+
+// The hot fields for one session, read with no lock: a torn read is
+// impossible because writeJson always renames a complete file in. Missing
+// file (never hit, or already folded and pruned) returns null.
+export function readHotSession(sessionId) {
+  return readJson(hotFile(sessionId), null);
+}
+
+function seedHotSession(sessionId) {
+  const row = readRecord()[sessionId];
+  const seeded = emptyHotSession();
+  if (!row) return seeded;
+  for (const field of HOT_FIELDS) {
+    if (row[field] !== undefined) seeded[field] = row[field];
+  }
+  return seeded;
+}
+
+// The hook hot path: reads and rewrites one session's small file instead of
+// the whole cold record. mutate returns true when it changed the session;
+// the file is written then, or the first time a session is seeded, so the
+// seed itself is not lost to the next read.
+export function updateHotSession(sessionId, mutate) {
+  const file = hotFile(sessionId);
+  return withLock(file, () => {
+    const existing = readJson(file, null);
+    const session = existing ? { ...emptyHotSession(), ...existing } : seedHotSession(sessionId);
+    const changed = mutate(session);
+    if (changed || !existing) writeJson(file, session);
+    return session;
   });
 }

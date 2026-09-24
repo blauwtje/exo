@@ -27,6 +27,7 @@ function runModule(source, env) {
 }
 
 const IMPORT = `import { recordFile, savingsEnabled, updateSession } from ${JSON.stringify(RECORD)};`;
+const HOT_IMPORT = `import { hotFile, updateHotSession, updateSession } from ${JSON.stringify(RECORD)};`;
 
 test('EXO_SAVINGS_DIR relocates the record away from the config directory', async () => {
   const configDirectory = await fixture();
@@ -101,4 +102,55 @@ test('a live lock makes the waiter give up without writing', async () => {
   assert.notEqual(result.code, 0);
   assert.match(result.stderr, /savings counter locked by another hook for over 8000 ms/);
   assert.equal(await fs.access(path.join(directory, 'sessions.json')).catch(() => 'absent'), 'absent');
+});
+
+test('updateHotSession writes only the hot file, twice leaves no lock', async () => {
+  const directory = await fixture();
+  const increment = `${HOT_IMPORT} updateHotSession('s1', (session) => { session.calls.n = (session.calls.n ?? 0) + 1; return true; });`;
+  await runModule(increment, { EXO_SAVINGS_DIR: directory });
+  const result = await runModule(increment, { EXO_SAVINGS_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  const hot = JSON.parse(await fs.readFile(path.join(directory, 'sessions', 's1.json'), 'utf8'));
+  assert.equal(hot.calls.n, 2);
+  assert.equal(await fs.access(path.join(directory, 'sessions.json')).catch(() => 'absent'), 'absent');
+  assert.equal(await fs.access(path.join(directory, 'sessions', 's1.json.lock')).catch(() => 'absent'), 'absent');
+});
+
+test('updateHotSession rejects a session id that escapes the sessions directory', async () => {
+  const directory = await fixture();
+  const result = await runModule(`${HOT_IMPORT} updateHotSession('../x', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.notEqual(result.code, 0);
+});
+
+test('a seeded hot session keeps a refusal already recorded in sessions.json', async () => {
+  const directory = await fixture();
+  await fs.writeFile(path.join(directory, 'sessions.json'), JSON.stringify({
+    s1: { guard: { hookMs: 0, refusals: { 'file.md': 1 } } }
+  }));
+  const result = await runModule(`${HOT_IMPORT} updateHotSession('s1', () => false);`, { EXO_SAVINGS_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  const hot = JSON.parse(await fs.readFile(path.join(directory, 'sessions', 's1.json'), 'utf8'));
+  assert.deepEqual(hot.guard.refusals, { 'file.md': 1 });
+});
+
+test('a Stop updateSession folds the hot guard.refusals into the cold row', async () => {
+  const directory = await fixture();
+  await runModule(`${HOT_IMPORT} updateHotSession('s1', (session) => { session.guard.refusals['file.md'] = 1; return true; });`, { EXO_SAVINGS_DIR: directory });
+  const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  const sessions = JSON.parse(await fs.readFile(path.join(directory, 'sessions.json'), 'utf8'));
+  assert.deepEqual(sessions.s1.guard.refusals, { 'file.md': 1 });
+});
+
+test('a pruned cold row loses its hot file too', async () => {
+  const directory = await fixture();
+  const old = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+  await fs.writeFile(path.join(directory, 'sessions.json'), JSON.stringify({
+    stale: { touched: old, guard: { hookMs: 1, refusals: {} } }
+  }));
+  await fs.mkdir(path.join(directory, 'sessions'), { recursive: true });
+  await fs.writeFile(path.join(directory, 'sessions', 'stale.json'), JSON.stringify({ guard: { hookMs: 1, refusals: {} } }));
+  const result = await runModule(`${IMPORT} updateSession('fresh', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(await fs.access(path.join(directory, 'sessions', 'stale.json')).catch(() => 'absent'), 'absent');
 });
