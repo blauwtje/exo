@@ -187,17 +187,24 @@ function withLock(file, work) {
 }
 
 // A session id that never became a valid file name (written before the id
-// was validated, or by hand) has no hot file to remove.
+// was validated, or by hand) has no hot file to remove. The lock directory
+// goes with it: the session that held it has ended, so no later withLock on
+// this id will come along to take the lock over as stale.
 function removeHotFile(sessionId) {
   try {
     fs.rmSync(hotFile(sessionId), { force: true });
+    fs.rmSync(`${hotFile(sessionId)}.lock`, { recursive: true, force: true });
   } catch {
     // not a file-name-shaped id; nothing was ever written under it
   }
 }
 
 // Catches a hot file whose cold row is already gone, such as one seeded but
-// never folded back by a Stop hook.
+// never folded back by a Stop hook. Also catches a `<id>.json.lock`
+// directory left by a hook killed mid-write: withLock only takes a stale
+// lock over on the next call for that same id, which never comes once the
+// session has ended, so the directory is removed here once it outlives
+// LOCK_STALE_MS instead of piling up in sessions/ forever.
 function pruneHotFiles(now) {
   let entries;
   try {
@@ -206,15 +213,25 @@ function pruneHotFiles(now) {
     return;
   }
   for (const entry of entries) {
+    const full = path.join(hotSessionsDirectory(), entry.name);
+    if (entry.isDirectory() && entry.name.endsWith('.json.lock')) {
+      let mtimeMs;
+      try {
+        mtimeMs = fs.statSync(full).mtimeMs;
+      } catch {
+        continue;
+      }
+      if (now - mtimeMs > LOCK_STALE_MS) fs.rmSync(full, { recursive: true, force: true });
+      continue;
+    }
     if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
-    const file = path.join(hotSessionsDirectory(), entry.name);
     let mtimeMs;
     try {
-      mtimeMs = fs.statSync(file).mtimeMs;
+      mtimeMs = fs.statSync(full).mtimeMs;
     } catch {
       continue;
     }
-    if (now - mtimeMs > SESSION_RETENTION_MS) fs.rmSync(file, { force: true });
+    if (now - mtimeMs > SESSION_RETENTION_MS) fs.rmSync(full, { force: true });
   }
 }
 

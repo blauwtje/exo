@@ -154,3 +154,14 @@ test('a pruned cold row loses its hot file too', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.equal(await fs.access(path.join(directory, 'sessions', 'stale.json')).catch(() => 'absent'), 'absent');
 });
+
+test('a stale lock directory of an ended session is removed', async () => {
+  const directory = await fixture();
+  const lock = path.join(directory, 'sessions', 'ended.json.lock');
+  await fs.mkdir(lock, { recursive: true });
+  const expired = new Date(Date.now() - 20000);
+  await fs.utimes(lock, expired, expired);
+  const result = await runModule(`${IMPORT} updateSession('fresh', () => true);`, { EXO_SAVINGS_DIR: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(await fs.access(lock).catch(() => 'absent'), 'absent');
+});
