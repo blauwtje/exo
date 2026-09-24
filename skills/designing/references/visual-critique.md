@@ -38,7 +38,7 @@ Answer all ten from the renders, in your own reasoning and not in faults.md: tha
 
 ## Diagnostics
 
-Read `$RUN/inspect-render.json`, the baseline-to-post-build delta the session already computed, as evidence of the gap between the intended direction and what was emitted: background and border-radius spread, image area, quiet-region candidates. These numbers are diagnostics, never scores; more gradients, radii, or images is not intrinsically better. Metrics describe the delta, never define beauty: when the brief names flat, monotone, empty, or boring and every relevant measured dimension is unchanged or moves toward uniformity, the redesign failed and returns to Direction; never add hue, texture, or decoration only to move a number. A quiet-region candidate becomes a fault only through contradiction with `contract-selected.json`, a baseline-to-post-build regression without a newly named job, or this critique's own compositional judgment — never through the detector's thresholds alone.
+Read `$RUN/critic-evidence.json`'s `renderDelta`, the baseline-to-post-build delta the session already computed, as evidence of the gap between the intended direction and what was emitted: background and border-radius spread, image area, quiet-region candidates. These numbers are diagnostics, never scores; more gradients, radii, or images is not intrinsically better. Metrics describe the delta, never define beauty: when the brief names flat, monotone, empty, or boring and every relevant measured dimension is unchanged or moves toward uniformity, the redesign failed and returns to Direction; never add hue, texture, or decoration only to move a number. A quiet-region candidate becomes a fault only through contradiction with `contract-selected.json`, a baseline-to-post-build regression without a newly named job, or this critique's own compositional judgment — never through the detector's thresholds alone.
 
 ## Unsupported-pattern test
 
@@ -109,7 +109,7 @@ Unlike the tells these are defects, not styles. If a brief demands one, flag the
 - [ ] Body line-height below **1.5**.
 - [ ] Justified text without hyphenation enabled.
 
-Read `$RUN/check-ui-390.json` and `$RUN/check-ui-1440.json`, the session's `scripts/check-ui.mjs` output, for the code tells and the computed contrast, target-size, overflow, and focus checks; read each finding's `confidence` field before reporting it as definite.
+Read `$RUN/critic-evidence.json`'s `blocking`, `clipped` and `overlap` findings, the session's `scripts/check-ui.mjs` output for this stage, for the code tells and the computed contrast, target-size, overflow, and focus checks; read each finding's `confidence` field before reporting it as definite.
 
 ## Judgment
 

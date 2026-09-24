@@ -10,11 +10,11 @@ A surface whose direction was decided before this run — a plan's `Contract:`, 
 - When the subject's world names a technique, such as a canvas, an instrument or generative motion, that technique is built working and live, never faked by an image, a frozen SVG or a mock that does not move.
 - A component the design repeats stays unbuilt while any reachable entry of its state row has no styling.
 - A surface with no existing product stays unfinished while a content obligation from the inventory is missing or any region still holds placeholder material.
-- check-ui runs before the first edit, `scripts/check-ui.mjs` with `--source` on the surface's source root and `--url` when the surface already renders, at `--viewport 390x844` and `--viewport 1440x900`, into `$RUN/check-ui-baseline-390.json` and `$RUN/check-ui-baseline-1440.json`; every later check-ui run of the surface passes the matching file as `--baseline`, so its `comparison` holds the counts the report quotes.
+- check-ui runs before the first edit as the baseline stage of `scripts/checkpoint.mjs --run "$RUN" --stage baseline --url <u> [--source <s>]`, which writes `$RUN/check-ui-baseline.json` covering both viewports; every later stage's checkpoint call finds that file itself and passes it to check-ui as `--baseline`, so its `comparison` holds the counts the report quotes.
 
 ## The sketch path
 
-A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, take one post-build pair with `scripts/capture.mjs --label post-build` and one `scripts/check-ui.mjs` run, and repair what they show.
+A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, run `scripts/checkpoint.mjs --run "$RUN" --stage post-build --url <u> [--source <s>]`, and repair what it shows.
 
 ## The piece path
 
@@ -24,7 +24,7 @@ A new piece on the settled identity that rung 5 of the skill's `## Route` names 
 2. Load the `implementation` reference without `## Tokens and palette derivation`; read that section only when the piece adds a role token the repository lacks.
 3. Load `## Adopt before authoring` and `## The state row` from the `component-system` reference, `## Tactile hierarchy` and `## Labels` from the `controls` reference, and `## Anatomy of the composite controls` for a composite control.
 4. Build, then run the repository checks `## The mechanics` names.
-5. Take one post-build pair with `scripts/capture.mjs --label post-build` and one `scripts/check-ui.mjs` run, repair what they show, and stop.
+5. Run `scripts/checkpoint.mjs --run "$RUN" --stage post-build --url <u> [--source <s>]`, repair what it shows, and stop.
 
 Without that identity, a new piece extracts the existing tokens and patterns, runs every phase without variants against what the piece carries, and records one local motion decision before Build.
 
