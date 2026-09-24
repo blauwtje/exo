@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The `skills-tool` pressure runner's without arm disables the installed copy of the clone's plugin through `--settings` `enabledPlugins`, read from the clone's manifests, so a globally installed exo no longer loads in that arm.
+- `npm run check` no longer leaves a `benchmarks/results/<date>-sweep.md` in the working tree: `benchmarks/sweep.mjs` takes `--results <dir>`, and its test writes there.
+
 ## 0.39.1 - 2026-09-24
 
 ### Fixed
