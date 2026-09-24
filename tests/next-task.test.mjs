@@ -142,7 +142,7 @@ test('the report prints one Budget: line per task of the wave, scaled below the 
   const matches = [...report.matchAll(new RegExp(BUDGET_LINE, 'gm'))];
   assert.equal(matches.length, 2, report);
   for (const match of matches) {
-    assert.ok(Number(match[1]) < 40 && Number(match[2]) < 70, report);
+    assert.ok(Number(match[1]) < 40 && Number(match[2]) < 100, report);
   }
 });
 
@@ -152,7 +152,7 @@ test('a task at or past the plan-check split threshold gets the shared default, 
   const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [big] }) });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
-  assert.match(report, /^Budget: 40k\/70k$/m);
+  assert.match(report, /^Budget: 40k\/100k$/m);
 });
 
 test('a Budget: line stands alone and matches the delegate-budget hook\'s regex', async () => {
@@ -160,15 +160,15 @@ test('a Budget: line stands alone and matches the delegate-budget hook\'s regex'
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   const match = report.match(BUDGET_LINE);
   assert.ok(match, report);
-  assert.equal(match[0], 'Budget: 25k/44k');
+  assert.equal(match[0], 'Budget: 25k/63k');
 });
 
-test('a one-file task of a few lines still gets a hard limit of at least 35k, half the shared default as a floor', async () => {
+test('a one-file task of a few lines still gets a hard limit of at least 50k, half the shared default as a floor', async () => {
   const small = taskSection({ number: 1, title: 'Small', files: ['- Create: `src/small.js`'], code: 'const a = 1;', subject: 'feat(app): small' });
   const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [small] }) });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
   const match = report.match(BUDGET_LINE);
   assert.ok(match, report);
-  assert.ok(Number(match[2]) >= 35, report);
+  assert.ok(Number(match[2]) >= 50, report);
 });

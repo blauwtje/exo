@@ -74,23 +74,23 @@ test('past the soft limit a delegate gets one line with the tokens used', async 
   const decision = decisionOf(await runBudget(BUDGET, hookInput, env));
   assert.equal(decision.hookEventName, 'PreToolUse');
   assert.equal(decision.permissionDecision, undefined);
-  assert.equal(decision.additionalContext, 'exo budget: 45k of 70k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
+  assert.equal(decision.additionalContext, 'exo budget: 45k of 100k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
 });
 
 test('past the hard limit a delegate is denied a Read and told to write its report', async () => {
-  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const decision = decisionOf(await runBudget(BUDGET, hookInput, env));
   assert.equal(decision.permissionDecision, 'deny');
-  assert.match(decision.permissionDecisionReason, /^exo budget: 72k tokens after 1 tool calls, past the limit of 70k tokens or 60 tool calls\./);
+  assert.match(decision.permissionDecisionReason, /^exo budget: 102k tokens after 1 tool calls, past the limit of 100k tokens or 60 tool calls\./);
   assert.match(decision.permissionDecisionReason, /Write your report now and list what is still open under Unresolved\./);
 });
 
 test('past the hard limit an Edit, a Write and a task update still run', async () => {
-  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   for (const toolName of ['Edit', 'Write', 'TaskUpdate', 'TodoWrite']) {
     const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: toolName }, env));
     assert.equal(decision.permissionDecision, undefined, toolName);
-    assert.match(decision.additionalContext, /^exo budget: 72k of 70k tokens used\./, toolName);
+    assert.match(decision.additionalContext, /^exo budget: 102k of 100k tokens used\./, toolName);
   }
   for (const toolName of ['Bash', 'Grep', 'Glob', 'Agent']) {
     const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: toolName }, env));
@@ -99,7 +99,7 @@ test('past the hard limit an Edit, a Write and a task update still run', async (
 });
 
 test('past the hard limit a lone git add, commit, status or diff --stat still runs', async () => {
-  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const commands = [
     'git add skills/savings/scripts/delegate-budget.mjs tests/delegate-budget.test.mjs',
     'git add -A',
@@ -112,12 +112,12 @@ test('past the hard limit a lone git add, commit, status or diff --stat still ru
   for (const command of commands) {
     const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: 'Bash', tool_input: { command } }, env));
     assert.equal(decision.permissionDecision, undefined, command);
-    assert.match(decision.additionalContext, /^exo budget: 72k of 70k tokens used\./, command);
+    assert.match(decision.additionalContext, /^exo budget: 102k of 100k tokens used\./, command);
   }
 });
 
 test('past the hard limit any other Bash command, or a git command that chains, is denied', async () => {
-  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const commands = [
     'git push',
     'git push origin HEAD',
@@ -173,10 +173,10 @@ test('an agent id that is not a plain name is never joined into a path', async (
 test('a torn last line is skipped for the last complete usage line, past a large tool result', async () => {
   const toolResult = JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', content: 'y'.repeat(900_000) }] } });
   const torn = '{"type":"assistant","message":{"usage":{"input_tokens":1,"cache_read_input_tokens":99';
-  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(10_000), toolResult, assistantLine(72_000), toolResult, torn]);
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(10_000), toolResult, assistantLine(102_000), toolResult, torn]);
   const decision = decisionOf(await runBudget(BUDGET, hookInput, env));
   assert.equal(decision.permissionDecision, 'deny');
-  assert.match(decision.permissionDecisionReason, /^exo budget: 72k tokens/);
+  assert.match(decision.permissionDecisionReason, /^exo budget: 102k tokens/);
 });
 
 test('a transcript with no complete usage line gets nothing', async () => {
