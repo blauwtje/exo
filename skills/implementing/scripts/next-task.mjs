@@ -1,10 +1,14 @@
 // Prints what the next build needs, read from the plan and the checkout's
 // history instead of the session's memory: the landed set, the next task or
-// wave, and for each of its tasks the frame fields the implementer brief
-// takes, the drift of its Modify: regions and its section verbatim.
+// wave, and for each of its tasks its Design: and Run: lines, the drift of its
+// Modify: regions and the path of its brief. The brief, the frame fields and
+// the section verbatim, goes to a file under the checkout's git directory, so
+// the section reaches only the implementer and stays out of the session.
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from './plan-tasks.mjs';
@@ -33,21 +37,42 @@ function visualDirectionLines(task, frame) {
   return ['Visual direction:', frame.visualDirection];
 }
 
-function taskBrief(task, frame, drift) {
+function taskBrief(task, frame) {
   return [
-    `### Brief for Task ${task.number}`,
     `Goal: ${frame.goal}`,
     'Non-goals touching these paths:',
     ...bulletLines(bulletsFor(task, frame.nonGoals)),
     'Context for these paths and symbols:',
     ...bulletLines(bulletsFor(task, frame.context)),
     ...visualDirectionLines(task, frame),
-    ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
+    '',
     'The task section:',
-    task.section
+    task.section,
+    ''
+  ].join('\n');
+}
+
+// The brief sits under the run checkout's git directory, which a wave's
+// worktrees do not share, so a worktree never sees or commits it.
+function writeBrief(task, frame, briefDirectory) {
+  const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
+  fs.writeFileSync(briefPath, taskBrief(task, frame));
+  return briefPath;
+}
+
+function taskLines(task, frame, root, briefDirectory) {
+  const drift = driftOf(task, root);
+  return [
+    `Task ${task.number}: ${task.title}`,
+    task.section.match(/^Design: .+$/m)?.[0] ?? 'Design: none',
+    ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
+    ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
+    `Brief: ${writeBrief(task, frame, briefDirectory)}`
   ];
 }
 
+// Writes a brief file for each task of the next wave and returns the report
+// that names them.
 export function nextTaskReport({ planPath, planText, root }) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
@@ -61,7 +86,10 @@ export function nextTaskReport({ planPath, planText, root }) {
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
     waveLine(wave)
   ];
-  for (const task of wave) lines.push('', ...taskBrief(task, frame, driftOf(task, root)));
+  const gitDirectory = execFileSync('git', ['-C', root, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).trim();
+  const briefDirectory = path.join(gitDirectory, 'exo', 'briefs');
+  if (wave.length > 0) fs.mkdirSync(briefDirectory, { recursive: true });
+  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
   return `${lines.join('\n')}\n`;
 }
 
