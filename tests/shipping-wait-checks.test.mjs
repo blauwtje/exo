@@ -23,6 +23,7 @@ const STAND_IN = [
   "if (mode === 'fail') { console.log('test (ubuntu-latest)  fail'); process.exit(1); }",
   "if (mode === 'none') { console.error(\"no checks reported on the 'feat/x' branch\"); process.exit(1); }",
   "if (mode === 'auth-error') { console.error('gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.'); console.error('run: gh auth login'); process.exit(1); }",
+  "if (mode === 'api-error') { console.error('error connecting to api.github.com'); console.error('HTTP 401: Bad credentials (https://api.github.com/graphql)'); process.exit(1); }",
   'setTimeout(() => process.exit(0), 30000);',
   ''
 ].join('\n');
@@ -59,6 +60,12 @@ test('a gh failure, such as an auth error, gets its own exit code instead of rea
   const outcome = await waitChecks('auth-error', ['--pr', '12']);
   assert.equal(outcome.code, GH_ERROR_EXIT, outcome.stderr);
   assert.equal(outcome.stdout, 'checks: error gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.\n');
+});
+
+test('an unreachable or unauthorized GitHub API exits 3, not 1, and names the first error line', async () => {
+  const outcome = await waitChecks('api-error', ['--pr', '12']);
+  assert.equal(outcome.code, 3, outcome.stderr);
+  assert.equal(outcome.stdout, 'checks: error error connecting to api.github.com\n');
 });
 
 test('a watch past the limit stops with 124 and says the pull request stays open', async () => {
