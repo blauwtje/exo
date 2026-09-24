@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.34.2 - 2026-09-24
+
 ### Fixed
 
 - `implementing`'s scripts stop with exit 1 and the reason on a plan with a dependency cycle, a dependency on a missing task, a duplicate task number or a task heading that does not parse, instead of reporting every task landed; they read `Task 1, 2` and `Tasks 1 and 2` as both tasks, count only commits since the default branch as landed, refuse a commit whose subject bash changed, and find methods, getters, TypeScript types, Go methods and `pub(crate)` Rust functions as `Modify:` regions.
