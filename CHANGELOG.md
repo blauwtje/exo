@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `CLAUDE.md` keeps the checkout exo loads from on `main`: every change runs in worktree-isolated subagents, lands through one integration worktree under `.worktrees/` and a direct push to `main` with no pull request, and ends with `/reload-plugins` instead of a cache update.
+- `CLAUDE.md` says one thing about landing: a change lands by a direct push to `main`, its Highlights go in the commit that records it, the push cuts the release, and the opening tidy also deletes local branches whose upstream is gone, so squash-merged branches no longer linger.
 
 ### Fixed
 
@@ -18,6 +19,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `debug` writes its repro log to `$(git rev-parse --git-dir)/debug-repro.log`, so it works in a linked worktree where `.git` is a file.
 - `shipping`'s `wait-checks.mjs` writes gh's output to `<git-dir>/exo/wait-checks.log` and prints one line, `checks: pass`, `checks: fail <names>`, `checks: timeout` or `checks: none`, instead of the table gh reprints every 10 seconds.
 - `wait-checks.mjs` exits 3 on a gh failure such as auth, network or a missing pull request, which `shipping` no longer reads as a red check; 0, 1 and 124 keep their meaning.
+- The delegate budget hook tells a delegate past the soft limit to commit what is green, and past the hard limit still lets a lone `git add`, `git commit`, `git status` or `git diff --stat` run, so a delegate no longer strands finished work it cannot commit.
+- A behavioral test pins `wait-checks.mjs` exiting 3 on a GitHub API auth or connection error; the earlier test imported `GH_ERROR_EXIT` and could not fail on the exit code alone.
 
 ## 0.35.0 - 2026-09-24
 
