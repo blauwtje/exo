@@ -6,7 +6,7 @@
 //
 //   node scripts/direction.mjs --plan --seed <token> --space <file> [--variants <2..6>]
 //   node scripts/direction.mjs --check --contracts <file> --space <file> [--candidates <file>]
-//   node scripts/direction.mjs --select --contracts <file> --index <n>
+//   node scripts/direction.mjs --select --contracts <file> --index <n> --space <file> [--candidates <file>]
 //   node scripts/direction.mjs --shape
 //
 // --space is JSON, written from this header rather than from the validators
@@ -24,6 +24,11 @@
 // "evidence":<key>} when the color needs a reason: --check rejects a purple,
 // a cream, or a neon beside a near-black anchor as template-kit unless that
 // anchor's evidence is of kind brief or repository.
+// A contract's seed is <container seed>:<n>, n being the index --plan dealt it
+// at, so a container may hold any subset of the dealt contracts in any order;
+// --check re-deals index n and rejects axes that differ from that deal.
+// --select freezes a contract only after the same check passes. Every report
+// whose status is not ok exits 1, with the report still on stdout.
 // --check names the shape and the allowed vocabulary of anything it rejects.
 
 import process from 'node:process';
@@ -42,6 +47,8 @@ const SAMPLE_ATTEMPTS = 4096;
 // Planning and checking read the same floor: a lower one here would emit containers
 // `--check` then rejects, a higher one would reject containers `--plan` just wrote.
 const MIN_AXIS_DIVERGENCE = 3;
+const MAX_VARIANTS = 6;
+const DEALT_INDEX = /^(0|[1-9][0-9]*)$/;
 
 const isToken = (value) => typeof value === 'string' && TOKEN.test(value);
 const isUnitNumber = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
@@ -490,14 +497,43 @@ function substanceFindings(contract, variant) {
   return findings;
 }
 
+/** The index --plan dealt a contract at, read from its '<seed>:<n>' seed, or null. */
+function dealtIndexOf(contractSeed, seed) {
+  if (typeof contractSeed !== 'string' || typeof seed !== 'string') return null;
+  const prefix = `${seed}:`;
+  if (!contractSeed.startsWith(prefix)) return null;
+  const suffix = contractSeed.slice(prefix.length);
+  if (!DEALT_INDEX.test(suffix)) return null;
+  const dealtIndex = Number(suffix);
+  return dealtIndex < MAX_VARIANTS ? dealtIndex : null;
+}
+
+/** Re-deals index n from the container seed: the plan is deterministic, so the
+ *  seed proves the axes only when they equal that deal. */
+function dealtAxisFindings(contract, space, seed, dealtIndex, variant) {
+  const plan = planDirections({ seed, variants: dealtIndex + 1, space });
+  const dealt = plan.status === 'ok' ? plan.contracts[dealtIndex].axes : null;
+  const differing = AXIS_NAMES.filter((axisName) => {
+    const assigned = contract.axes?.[axisName];
+    const expected = dealt?.[axisName];
+    return !expected || assigned?.id !== expected.id
+      || JSON.stringify(assigned?.value) !== JSON.stringify(expected.value);
+  });
+  if (differing.length === 0) return [];
+  return [finding('axes-not-dealt', variant,
+    `axes ${differing.join(', ')} differ from what seed '${seed}' dealt at index ${dealtIndex}`)];
+}
+
 function contractFindings(contract, index, { space, seed, manifest }) {
   const findings = [];
   if (contract?.schemaVersion !== 1) {
     return [finding('unsupported-schema-version', index,
       `contract schemaVersion must be 1, received ${JSON.stringify(contract?.schemaVersion)}`)];
   }
-  if (contract.seed !== `${seed}:${index}`) {
-    findings.push(finding('seed-mismatch', index, `contract seed '${contract.seed}' is not '${seed}:${index}'`));
+  const dealtIndex = dealtIndexOf(contract.seed, seed);
+  if (dealtIndex === null) {
+    findings.push(finding('seed-mismatch', index,
+      `contract seed '${contract.seed}' is not '${seed}:<n>' for a dealt index n below ${MAX_VARIANTS}`));
   }
   const missing = REQUIRED_CONTRACT_FIELDS.filter((field) => contract[field] === undefined);
   if (missing.length > 0) {
@@ -506,6 +542,7 @@ function contractFindings(contract, index, { space, seed, manifest }) {
   }
   findings.push(...substanceFindings(contract, index));
   findings.push(...axisFindings(contract, space, index));
+  if (dealtIndex !== null) findings.push(...dealtAxisFindings(contract, space, seed, dealtIndex, index));
   findings.push(...evidenceReferenceFindings(contract, space, index));
   findings.push(...quietRegionFindings(contract, index));
   findings.push(...templateKitFindings(contract, space, index));
@@ -548,11 +585,14 @@ export function checkContracts(container, space, { candidates = null } = {}) {
   return { status: findings.length === 0 ? 'ok' : 'invalid', findings };
 }
 
-export function selectContract(container, index) {
+export function selectContract(container, index, { space, candidates = null }) {
   if (!Array.isArray(container?.contracts)) throw new UsageError('--contracts file carries no contracts array');
   if (!Number.isInteger(index) || index < 0 || index >= container.contracts.length) {
     throw new UsageError(`--index must name one of the ${container.contracts.length} contracts`);
   }
+  const chosen = { schemaVersion: container.schemaVersion, seed: container.seed, contracts: [container.contracts[index]] };
+  const report = checkContracts(chosen, space, { candidates });
+  if (report.status !== 'ok') return report;
   return {
     schemaVersion: 1,
     seed: container.seed,
@@ -566,8 +606,8 @@ export function selectContract(container, index) {
 function requireVariants(text) {
   if (text === undefined) return 2;
   const count = Number(text);
-  if (!Number.isInteger(count) || count < 2 || count > 6) {
-    throw new UsageError(`--variants must be an integer from 2 to 6, received '${text}'`);
+  if (!Number.isInteger(count) || count < 2 || count > MAX_VARIANTS) {
+    throw new UsageError(`--variants must be an integer from 2 to ${MAX_VARIANTS}, received '${text}'`);
   }
   return count;
 }
@@ -610,21 +650,19 @@ async function main(argv) {
     return planDirections({ seed: flags.seed, variants, space });
   }
 
-  if (modes[0] === 'check') {
-    const container = await readJsonFlag(flags.contracts, '--contracts');
-    const space = await readJsonFlag(flags.space, '--space');
-    const candidates = flags.candidates ? await readJsonFlag(flags.candidates, '--candidates') : null;
-    return checkContracts(container, space, { candidates });
-  }
-
   const container = await readJsonFlag(flags.contracts, '--contracts');
-  return selectContract(container, requireIndex(flags.index));
+  const index = modes[0] === 'select' ? requireIndex(flags.index) : null;
+  const space = await readJsonFlag(flags.space, '--space');
+  const candidates = flags.candidates ? await readJsonFlag(flags.candidates, '--candidates') : null;
+  if (modes[0] === 'check') return checkContracts(container, space, { candidates });
+  return selectContract(container, index, { space, candidates });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main(process.argv.slice(2)).then((report) => {
     const output = typeof report === 'string' ? report : `${JSON.stringify(report)}\n`;
     process.stdout.write(output);
+    if (typeof report === 'object' && report.status !== undefined && report.status !== 'ok') process.exitCode = 1;
   }).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);
