@@ -75,6 +75,7 @@ It never settles a conflict with `--strategy` or `-X`, because those pick a side
 A resolve follows `references/merge-conflicts.md`, then reruns step 2 and the same command on the new head.
 
 A failing check on `pr-merge` follows `references/fix-ci.md`; `open-pr` and a merge request fix nothing.
+The fix then reruns step 2 and the same `--route pr-merge` command on the new head, never `--merge`, which skips the wait for checks.
 The round limit is at most three fix, push, recheck rounds per pull request, counted across fix-ci and babysit.
 Past it the route stops and hands back.
 
