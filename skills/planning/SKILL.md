@@ -44,7 +44,7 @@ Do not pre-run the plan: a context that applies every step and runs every `Run:`
 
 A deliverable plan is never message-only: a fresh session with zero context must be able to open the artifact and execute it. Update an existing plan for the same topic rather than creating a sibling, and extend it with edits rather than rewriting the file, because a rewrite re-enters every task into the context.
 
-Before ending the turn, read the plan once against the rules in `references/plan-spec.md` and against the brief's acceptance list: a step without code, a step without `Run:` and `Expected:`, a task without its `Commit:` block, a placeholder, or an acceptance check that reaches no step, no `## Final verification` line and no non-goal is repaired now, because the executor cannot.
+Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <plan path>` and repair each line it prints, because a missing `Commit:` trailer, a `git add` mismatch, a step without `Run:` and `Expected:`, a placeholder, or an oversized task reads from the file, not from memory. Then grep the plan for `Expected:`, `## Final verification` and `## Non-goals` lines against the brief's acceptance list: an item that reaches none of the three is repaired now, because the executor cannot.
 
 ## Handing it over
 
