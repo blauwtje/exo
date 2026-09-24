@@ -26,13 +26,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { usageCounts } from './token-weights.mjs';
+import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
 
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../assets/delegate-budgets.json', import.meta.url), 'utf8'));
 const PLAIN_ID = /^[\w-]+$/;
-// One assistant line is small unless it carries a large tool input, so the tail
-// read widens only when it holds no complete usage line.
-const TAIL_BYTES = 256 * 1024;
 const DISPATCH_BYTES = 64 * 1024;
 const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;
 const REPORT_TOOLS = new Set(['Edit', 'Write', 'TaskUpdate', 'TodoWrite']);
@@ -46,40 +43,6 @@ function delegateTranscript(hookInput) {
   if (typeof transcriptPath !== 'string' || typeof agentId !== 'string') return null;
   if (!PLAIN_ID.test(agentId)) return null;
   return path.join(transcriptPath.replace(/\.jsonl$/, ''), 'subagents', `agent-${agentId}.jsonl`);
-}
-
-function readText(descriptor, start, length) {
-  const buffer = Buffer.alloc(length);
-  const bytesRead = fs.readSync(descriptor, buffer, 0, length, start);
-  return buffer.toString('utf8', 0, bytesRead);
-}
-
-// The line being written when the hook runs may be cut off mid-JSON.
-function parsedEntry(line) {
-  try {
-    return JSON.parse(line);
-  } catch {
-    return null;
-  }
-}
-
-// Null when no complete assistant usage line exists, such as before the first turn.
-function contextTokens(descriptor, size) {
-  for (let want = TAIL_BYTES; ; want *= 4) {
-    const start = Math.max(size - want, 0);
-    const lines = readText(descriptor, start, size - start).split('\n');
-    // A tail that starts inside the file opens on a partial line.
-    const firstWhole = start === 0 ? 0 : 1;
-    for (let index = lines.length - 1; index >= firstWhole; index -= 1) {
-      if (!lines[index].includes('"usage"')) continue;
-      const entry = parsedEntry(lines[index]);
-      const usage = entry?.type === 'assistant' ? entry.message?.usage : null;
-      if (!usage) continue;
-      const counts = usageCounts(usage);
-      return counts.input + counts.cacheRead + counts.cache5m + counts.cache1h;
-    }
-    if (start === 0) return null;
-  }
 }
 
 function promptText(content) {

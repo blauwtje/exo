@@ -34,9 +34,9 @@
     "context": {
       "type": "number",
       "title": "Context before a fresh phase",
-      "description": "Thousands of tokens the session's context may reach; past it, the next phase of a skill runs in a helper or hands off. Not sure? Keep 80. A project overrides this in .claude/exo.json.",
+      "description": "Thousands of tokens the session's context may reach; past it, the next phase of a skill runs in a helper or hands off. Not sure? Keep 100. A project overrides this in .claude/exo.json.",
       "min": 1,
-      "default": 80
+      "default": 100
     }
   }
 }

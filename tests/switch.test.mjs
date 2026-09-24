@@ -108,7 +108,7 @@ test('the session hook leads with the settings line resolved for the project', {
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_CONTEXT: '' });
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=80 (default). Replies are tight:'), context.slice(0, 200));
+  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), interview=chat (default), context=100 (default). Replies are tight:'), context.slice(0, 200));
 });
 
 test('on a 60-character branch both pointers go first, named from the repository root', { skip: withoutJq }, async () => {

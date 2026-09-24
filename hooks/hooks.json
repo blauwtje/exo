@@ -93,7 +93,7 @@
         ]
       },
       {
-        "matcher": "TaskUpdate",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",

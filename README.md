@@ -118,7 +118,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `shaping` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
 | `interview` | `chat`, `page` | `chat` | Where `shaping` asks its questions. `chat` asks in the conversation, answered with a digit; `page` opens one browser tab that shows every decision, open and closed, and takes each answer as a click. A single question, and a machine that cannot open a browser, stay in the conversation. |
-| `context` | a whole number of at least 1 | `80` | Thousands of tokens the main session's context may reach. Past it, completing a task adds a note that the next phase runs in a helper, or hands off when it asks the user. A stored value that is not a whole number of at least 1 reads as the default. |
+| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note to finish the current step and hand off with `/exo:handoff` and `/clear`, once per further 25k, shown to you as well from 150k. A stored value that is not a whole number of at least 1 reads as the default. |
 
 ## Develop
 

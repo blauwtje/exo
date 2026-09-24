@@ -23,7 +23,7 @@
   },
   "context": {
     "type": "number",
-    "default": 80,
+    "default": 100,
     "description": "thousands of tokens a session's context may reach before the next phase of a skill moves to a fresh context"
   }
 }

@@ -191,7 +191,7 @@ async function pluginCopy(root, budgets) {
   const assets = path.join(root, 'plugin', 'skills', 'savings', 'assets');
   await fs.mkdir(scripts, { recursive: true });
   await fs.mkdir(assets, { recursive: true });
-  for (const name of ['delegate-budget.mjs', 'token-weights.mjs']) {
+  for (const name of ['delegate-budget.mjs', 'transcript-tail.mjs', 'token-weights.mjs']) {
     await fs.copyFile(path.join(SCRIPTS, name), path.join(scripts, name));
   }
   await fs.writeFile(path.join(assets, 'delegate-budgets.json'), JSON.stringify(budgets));
