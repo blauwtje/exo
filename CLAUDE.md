@@ -10,6 +10,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 - The lead only orchestrates: every edit, fix and failed-check repair runs in a worktree subagent, independent parts in parallel.
 - Only the lead writes `CHANGELOG.md`, so subagent branches never conflict on it.
 - Give a subagent one concern; split a brief with two unrelated parts in two.
+- A skill or run that spans exploring, building and reviewing splits them into phases, each a fresh subagent, handing over through a file, so no context carries the whole process.
 - Land in one integration worktree under `.worktrees/`: merge the subagent branches, add the `CHANGELOG.md` lines, then fetch and rebase onto `origin/main`, keeping every line of this run under `## Unreleased`, because the release workflow pushes a `chore(release)` commit after every push.
 - Then run `npm run check` once with output to a log, read back only the `SUMMARY` and failing lines, fast-forward `main`, push `main` directly with no pull request, and remove every worktree and branch the run created, local and remote.
 - Delete each run branch in its own `git branch -D <name>` with the literal name, because git-guard checks that name against `main` and refuses one built through `$( )`.
