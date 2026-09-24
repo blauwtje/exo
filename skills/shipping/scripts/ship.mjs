@@ -6,15 +6,24 @@
 //
 //   node ship.mjs --route push|open-pr|pr-merge [--title <subject>]
 //                 [--body <file>] [--issue <n>] [--method squash|merge|rebase]
+//   node ship.mjs --merge <number> <number> ...
 //
 // open-pr and pr-merge need --title and --body, and refuse to run on the
-// default branch. Each step prints `ship: <step> [#<n>]` on stderr as it
-// starts; stdout carries only the one result line a route ends on.
+// default branch. --merge does not combine with --route or its flags. Each
+// step prints `ship: <step> [#<n>]` on stderr as it starts; stdout carries
+// only the one result line a route ends on, or, for --merge, one line per
+// pull request.
 //
 // Steps run in order, stopping at the first that fails: body check, push,
 // create, wait, gate, merge, confirm. Once a pull request is known, a stop
 // names it instead of the branch. A stop exits 1, except a gate verdict of
 // DIRTY, which exits 4; a usage error exits 2.
+//
+// --merge orders the given pull requests with ship-gate.mjs --order (a
+// CYCLE stops the whole run, exit 1), then gates, merges and confirms each
+// in that order, skipping the wait step since a requested merge is already
+// checked; a stop for one pull request is printed and the next goes on, and
+// the run exits 4 if any was DIRTY, else 1 if any stopped.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -28,6 +37,7 @@ export const DIRTY_EXIT = 4;
 const ROUTES = new Set(['push', 'open-pr', 'pr-merge']);
 const METHODS = new Set(['squash', 'merge', 'rebase']);
 const MAX_BEHIND_UPDATES = 2;
+const PR_NUMBER = /^[1-9][0-9]*$/;
 const WAIT_CHECKS = fileURLToPath(new URL('./wait-checks.mjs', import.meta.url));
 const SHIP_GATE = fileURLToPath(new URL('./ship-gate.mjs', import.meta.url));
 
@@ -46,7 +56,18 @@ function announce(step, number) {
   process.stderr.write(`ship: ${step}${number === undefined ? '' : ` #${number}`}\n`);
 }
 
+// --merge takes every number after it, which the shared grammar has no kind
+// for, so those tokens are taken off before the rest is parsed; anything
+// else on the line means it was combined with a route flag, which is usage.
 function readFlags(argv) {
+  const mergeAt = argv.indexOf('--merge');
+  if (mergeAt !== -1) {
+    const numbers = argv.slice(mergeAt + 1);
+    if (argv.slice(0, mergeAt).length > 0 || numbers.length === 0 || !numbers.every((number) => PR_NUMBER.test(number))) {
+      throw new UsageError('--merge needs one or more pull request numbers, and does not combine with other flags');
+    }
+    return { merge: numbers };
+  }
   const flags = parseFlags(argv, { route: 'value', title: 'value', body: 'value', issue: 'value', method: 'value' });
   if (!flags.route) throw new UsageError('needs --route <push|open-pr|pr-merge>');
   if (!ROUTES.has(flags.route)) throw new UsageError(`unknown route '${flags.route}'`);
@@ -130,6 +151,13 @@ function createPullRequest(branch, base, flags) {
   return { number, url };
 }
 
+/** Number, url and state of a pull request read directly by its number. */
+function pullRequestView(number) {
+  const result = runGh(['pr', 'view', String(number), '--json', 'number,url,state']);
+  if (!result.ok) throw new StepError('gate', `gh=${result.error}`);
+  return JSON.parse(result.stdout);
+}
+
 /** Runs a sibling script as a child process and reads its one stdout line and exit code. */
 function runSibling(scriptPath, args) {
   const result = spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' });
@@ -182,6 +210,32 @@ function confirmMerge(number, url) {
   return `${data.url} merged`;
 }
 
+/** Gates, merges and confirms `numbers` in ship-gate's stacking order, a stop for one printed and the rest going on. */
+function runMergeList(numbers) {
+  process.stderr.write(`ship: order ${numbers.join(' ')}\n`);
+  const order = runSibling(SHIP_GATE, ['--order', ...numbers]);
+  if (order.code !== 0) {
+    console.log(`stopped order ${order.line}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let exitCode = 0;
+  for (const number of order.line.split(' ')) {
+    try {
+      const pullRequest = pullRequestView(number);
+      runGate(number, pullRequest.url);
+      mergePullRequest(number, 'squash', pullRequest.url);
+      console.log(confirmMerge(number, pullRequest.url));
+    } catch (error) {
+      if (!(error instanceof StepError)) throw error;
+      console.log(`${error.subject ?? `#${number}`} stopped ${error.step} ${error.message}`);
+      exitCode = Math.max(exitCode, error.code === DIRTY_EXIT ? DIRTY_EXIT : 1);
+    }
+  }
+  process.exitCode = exitCode;
+}
+
 function run(flags, branch, base) {
   if (flags.issue !== undefined) {
     announce('create', flags.issue);
@@ -212,8 +266,13 @@ function main() {
     flags = readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>]: ${error.message}`);
+    console.error(`usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...>: ${error.message}`);
     process.exitCode = USAGE_EXIT;
+    return;
+  }
+
+  if (flags.merge) {
+    runMergeList(flags.merge);
     return;
   }
 
