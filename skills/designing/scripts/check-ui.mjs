@@ -1310,21 +1310,27 @@ async function reflowFindings(page, url) {
   })];
 }
 
-export async function renderedAudit({ url, viewport, cwd }) {
-  const session = await openDrivenPage({ cwd, url, viewport });
+export async function renderedAudit({ url, viewports, cwd }) {
+  const session = await openDrivenPage({ cwd, url, viewport: viewports[0] });
   if (!session.page) {
     return { status: 'unavailable', reason: session.capability.attempts.join('; ') };
   }
   try {
     const { page } = session;
-    const findings = await overflowFindings(page, url);
-    findings.push(...(await reflowFindings(page, url)));
-    await page.setViewportSize(viewport);
-    await page.goto(url, { waitUntil: 'load' });
-    const audit = await page.evaluate(PAGE_AUDIT, FOCUS_SIGNATURE_PROPERTIES);
-    findings.push(...audit.findings);
-    findings.push(...(await focusIndicatorFindings(page, audit.focusables)));
-    return { status: 'ok', viewport: `${viewport.width}x${viewport.height}`, findings };
+    const fixedFindings = await overflowFindings(page, url);
+    fixedFindings.push(...(await reflowFindings(page, url)));
+
+    const perViewport = {};
+    for (const viewport of viewports) {
+      const key = `${viewport.width}x${viewport.height}`;
+      await page.setViewportSize(viewport);
+      await page.goto(url, { waitUntil: 'load' });
+      const audit = await page.evaluate(PAGE_AUDIT, FOCUS_SIGNATURE_PROPERTIES);
+      const focusFindings = await focusIndicatorFindings(page, audit.focusables);
+      const findings = [...audit.findings, ...focusFindings].map((entry) => ({ ...entry, viewport: key }));
+      perViewport[key] = { status: 'ok', findings };
+    }
+    return { status: 'ok', viewports: perViewport, fixed: { findings: fixedFindings } };
   } finally {
     await session.close();
   }
@@ -1348,14 +1354,26 @@ function findingFile(entry) {
 /** The selector without its line number, so a finding keeps its key when lines above it shift. */
 function comparisonKey(entry) {
   const selector = entry.selector.replace(/:\d+(\)?)$/, '$1');
-  return `${entry.type}|${selector}|${entry.measured}`;
+  return `${entry.type}|${selector}|${entry.measured}|${entry.viewport ?? ''}`;
 }
 
+/** Every finding the report carries: static, the fixed-width checks, and each viewport's own. */
 function reportFindings(report) {
   if (typeof report?.static?.status !== 'string') return null;
   const staticFindings = report?.static?.findings ?? [];
-  const renderedFindings = report?.rendered?.findings ?? [];
-  if (!Array.isArray(staticFindings) || !Array.isArray(renderedFindings)) return null;
+  if (!Array.isArray(staticFindings)) return null;
+  const rendered = report?.rendered;
+  const renderedFindings = [];
+  if (rendered && typeof rendered === 'object') {
+    if (!Array.isArray(rendered.fixed?.findings ?? [])) return null;
+    renderedFindings.push(...(rendered.fixed?.findings ?? []));
+    const viewports = rendered.viewports ?? {};
+    if (typeof viewports !== 'object') return null;
+    for (const entry of Object.values(viewports)) {
+      if (!Array.isArray(entry?.findings)) return null;
+      renderedFindings.push(...entry.findings);
+    }
+  }
   const findings = [...staticFindings, ...renderedFindings];
   const wellFormed = findings.every((entry) => typeof entry?.type === 'string' && typeof entry.selector === 'string');
   return wellFormed ? findings : null;
@@ -1462,9 +1480,9 @@ async function readIgnoreEntries(directory) {
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'value', baseline: 'value' });
+  const flags = parseFlags(argv, { url: 'value', source: 'value', viewport: 'list', baseline: 'value' });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
-  const viewport = flags.viewport ? parseViewport(flags.viewport) : parseViewport(DEFAULT_VIEWPORTS.at(-1));
+  const viewports = flags.viewport ? flags.viewport.map(parseViewport) : [parseViewport(DEFAULT_VIEWPORTS.at(-1))];
   const baselineFindings = flags.baseline ? await readBaseline(flags.baseline) : null;
 
   const report = {
@@ -1472,7 +1490,7 @@ async function main(argv) {
       ? { status: 'ok', findings: await staticAudit(flags.source) }
       : { status: 'unavailable', reason: '--source was not given' },
     rendered: flags.url
-      ? await renderedAudit({ url: requireUrl(flags.url), viewport, cwd: process.cwd() })
+      ? await renderedAudit({ url: requireUrl(flags.url), viewports, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
   if (baselineFindings) {

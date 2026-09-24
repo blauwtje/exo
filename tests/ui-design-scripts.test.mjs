@@ -782,6 +782,17 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     assert.deepEqual(shifted.new.map((item) => item.selector), ['.hero (styles.css:9)']);
   });
 
+  it('counts identical findings at different viewports as distinct, and matches a baseline only at its own viewport', () => {
+    const at390 = { ...entry('horizontal-overflow', 'document'), viewport: '390x844' };
+    const at1440 = { ...entry('horizontal-overflow', 'document'), viewport: '1440x900' };
+    const same = compareFindings([at390, at1440], [at390, at1440]);
+    assert.deepEqual(same.counts, { before: 2, after: 2, predating: 2, new: 0, ignored: 0, blocking: 0 });
+
+    const mismatched = compareFindings([at390], [at1440]);
+    assert.deepEqual(mismatched.new.map((item) => item.viewport), ['1440x900']);
+    assert.equal(mismatched.counts.predating, 0);
+  });
+
   it('adds a comparison against a --baseline report and still exits 0', async () => {
     const root = await fixture();
     const stylesheet = path.join(root, 'styles.css');
@@ -1082,6 +1093,19 @@ describe('rendered capability', () => {
     const viewportRecord = JSON.parse(viewportRun.stdout.trim().split('\n')[0]);
     const viewportGeometry = pngGeometry(await fs.readFile(viewportRecord.path));
     assert.deepEqual(viewportGeometry, { width: 390, height: 844 });
+  });
+
+  it('runs two --viewport values and reports both keys under rendered.viewports', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.engine || !capability.driven) return t.skip(`no driven browser capability: ${capability.reason}`);
+    const { url } = await pageFixture();
+
+    const result = await run(script('check-ui.mjs'),
+      ['--url', url, '--viewport', '390x844', '--viewport', '1440x900']);
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.rendered.status, 'ok');
+    assert.deepEqual(Object.keys(report.rendered.viewports).sort(), ['1440x900', '390x844']);
   });
 
   it('grows the image beyond the viewport under --full-page', async (t) => {
