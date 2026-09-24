@@ -1061,6 +1061,25 @@ describe('rendered capability', () => {
     assert.ok(fullPageGeometry.height >= 844, `full-page height ${fullPageGeometry.height}`);
   });
 
+  it('keeps a full-page capture of a horizontally overflowing page and records its scroll width', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.driven) return t.skip(`full-page capture needs a driven browser: ${capability.reason}`);
+    const root = await fixture();
+    const file = path.join(root, 'overflow.html');
+    await fs.writeFile(file, '<!doctype html><html><head><style>body { margin: 0; }</style></head>'
+      + '<body><div style="width: 900px; height: 40px; background: #c00;">Too wide</div></body></html>');
+
+    const overflowRun = await run(script('capture.mjs'),
+      ['--url', `file://${file}`, '--viewport', '390x844', '--full-page', '--label', 'overflow', '--out', root],
+      { cwd: root });
+    assert.equal(overflowRun.code, 0, overflowRun.stderr);
+    const overflowRecord = JSON.parse(overflowRun.stdout.trim().split('\n')[0]);
+    const overflowGeometry = pngGeometry(await fs.readFile(overflowRecord.path));
+    assert.equal(overflowRecord.width, 390);
+    assert.equal(overflowRecord.scrollWidth, overflowGeometry.width);
+    assert.ok(overflowGeometry.width > 390, `full-page width ${overflowGeometry.width}`);
+  });
+
   it('renders light and dark differently and defaults to no-preference', async (t) => {
     const capability = await resolveBrowser({ cwd: SCRIPTS });
     if (!capability.driven) return t.skip(`no driven browser: ${capability.reason}`);

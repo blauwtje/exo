@@ -682,8 +682,11 @@ export async function capture(options) {
     const bytes = await fs.readFile(target);
     const geometry = readPngGeometry(bytes);
     if (!geometry) throw new Error(`capture at ${target} is not a PNG`);
-    if (geometry.width !== width) {
-      throw new Error(`capture at ${target} decoded width ${geometry.width}, expected ${width}`);
+    // A full-page capture grows to the document's scroll size, so a width above
+    // the viewport is horizontal overflow on the page: it is recorded as
+    // scrollWidth and judged by check-ui, never rejected here.
+    if (fullPage ? geometry.width < width : geometry.width !== width) {
+      throw new Error(`capture at ${target} decoded width ${geometry.width}, expected ${fullPage ? 'at least ' : ''}${width}`);
     }
     if (!fullPage && geometry.height !== height) {
       throw new Error(`capture at ${target} decoded height ${geometry.height}, expected ${height}`);
@@ -692,6 +695,7 @@ export async function capture(options) {
       label,
       width,
       height: geometry.height,
+      scrollWidth: fullPage ? geometry.width : null,
       fullPage,
       colorScheme,
       path: target,
