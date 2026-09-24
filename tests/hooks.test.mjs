@@ -47,7 +47,7 @@ test('the repeat guard counts Bash and Edit before the call and starts over afte
   const wiring = guards.map((entry) => [entry.event, entry.matcher.split('|').sort().join('|'), entry.hook.command.split(' ').pop()]).sort();
   assert.deepEqual(wiring, [
     ['PostToolUse', 'Edit|Write', 'edited'],
-    ['PreToolUse', 'Bash|Edit', '"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/repeat-guard.mjs"']
+    ['PreToolUse', 'Bash|Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/repeat-guard.mjs"']
   ]);
 });
 

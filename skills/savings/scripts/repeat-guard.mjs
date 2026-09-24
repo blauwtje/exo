@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Guard on Bash and Edit: in PreToolUse it denies the third identical call in
+// Guard on Bash, Edit, WebFetch and WebSearch: in PreToolUse it denies the
+// second identical fetch URL or search query, and otherwise the third identical call in
 // one context window, so a session that re-runs a failing command or applies
 // the same edit again changes an input or stops. Identical is the normalised
 // command string, or the file path with a hash of the text the edit replaces;
@@ -13,7 +14,7 @@
 // entry. `repeatGuard: false` in the savings config.json switches this guard
 // alone off, and EXO_SAVINGS=off or `enabled: false` switches everything off.
 //
-//   node repeat-guard.mjs         PreToolUse hook on Bash and Edit: stdin is the hook JSON
+//   node repeat-guard.mjs         PreToolUse hook on Bash, Edit, WebFetch and WebSearch: stdin is the hook JSON
 //   node repeat-guard.mjs edited  PostToolUse hook on Edit and Write: forgets the reader's commands
 //   node repeat-guard.mjs reset   SessionStart hook on clear or compact: forgets the calls
 //
@@ -31,6 +32,7 @@ import { configFile, readJson, savingsEnabled, updateSession } from './record.mj
 
 // The first repeat passes; the attempt after it is denied.
 const DENY_AT = 3;
+const WEB_DENY_AT = 2;
 
 function guardEnabled() {
   if (!savingsEnabled()) return false;
@@ -77,7 +79,22 @@ function callTarget(hookInput) {
   if (hookInput.tool_name === 'Edit' && typeof input.file_path === 'string' && typeof input.old_string === 'string') {
     return { tool: 'Edit', reader, filePath: input.file_path, key: `${reader}:Edit:${input.file_path}:${digest(input.old_string)}` };
   }
+  if (hookInput.tool_name === 'WebFetch' && typeof input.url === 'string' && input.url.trim() !== '') {
+    return { tool: 'WebFetch', reader, filePath: null, key: `${reader}:WebFetch:${digest(input.url.trim())}` };
+  }
+  if (hookInput.tool_name === 'WebSearch' && typeof input.query === 'string') {
+    const query = input.query.replace(/\s+/g, ' ').trim();
+    if (query === '') return null;
+    return { tool: 'WebSearch', reader, filePath: null, key: `${reader}:WebSearch:${digest(query)}` };
+  }
   return null;
+}
+
+// A page or a result list does not change between two calls in one window, so
+// a web call is denied at its first repeat; the fetch prompt is not compared,
+// because a second question about a page is answered from the first fetch.
+function denyAt(tool) {
+  return tool === 'WebFetch' || tool === 'WebSearch' ? WEB_DENY_AT : DENY_AT;
 }
 
 // The reason names the count and what to change: a denial the model cannot
@@ -85,6 +102,12 @@ function callTarget(hookInput) {
 function reasonFor(target, attempts) {
   if (target.tool === 'Bash') {
     return `exo repeat guard: this command has already run ${attempts - 1} times unchanged in this context window; change an input, read the output you already have, or stop.`;
+  }
+  if (target.tool === 'WebFetch') {
+    return 'exo repeat guard: you already fetched this URL once in this context window, and a failed fetch counts; answer from that fetch, fetch another page, or record the gap under Uncertainties.';
+  }
+  if (target.tool === 'WebSearch') {
+    return 'exo repeat guard: you already searched this query once in this context window; use those results, change the query, or record the gap under Uncertainties.';
   }
   return `exo repeat guard: this edit has already replaced the same text in ${target.filePath} ${attempts - 1} times in this context window; read the file as it stands before editing it again, or stop.`;
 }
@@ -103,7 +126,7 @@ function guardCall(hookInput) {
   updateSession(hookInput.session_id, (session) => {
     const attempts = (session.calls[target.key] ?? 0) + 1;
     session.calls[target.key] = attempts;
-    if (attempts >= DENY_AT) {
+    if (attempts >= denyAt(target.tool)) {
       reason = reasonFor(target, attempts);
       if (typeof hookInput.tool_use_id === 'string') {
         session.guard.denials ??= {};

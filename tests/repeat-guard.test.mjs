@@ -167,6 +167,25 @@ test('EXO_SAVINGS=off denies nothing', async () => {
   assert.equal(decision(third), null);
 });
 
+function webInput(toolName, toolInput, toolUseId) {
+  return { session_id: 's1', agent_id: 'research1', tool_name: toolName, tool_use_id: toolUseId, tool_input: toolInput };
+}
+
+test('a second fetch of the same URL or search for the same query by one agent is denied', async () => {
+  const { env, configDirectory } = await guardFixture();
+  const url = 'https://nodejs.org/docs/v22.0.0/api/test.html';
+  assert.equal(decision(await runGuard([], webInput('WebFetch', { url, prompt: 'mocks' }, 'toolu_1'), env)), null);
+  const refetch = await runGuard([], webInput('WebFetch', { url, prompt: 'timers' }, 'toolu_2'), env);
+  assert.match(decision(refetch)?.permissionDecisionReason ?? '', /already fetched this URL once/);
+  assert.equal(decision(await runGuard([], webInput('WebSearch', { query: 'node test mock timers' }, 'toolu_3'), env)), null);
+  const research = await runGuard([], webInput('WebSearch', { query: 'node  test mock timers ' }, 'toolu_4'), env);
+  assert.match(decision(research)?.permissionDecisionReason ?? '', /already searched this query once/);
+  const other = await runGuard([], { ...webInput('WebFetch', { url, prompt: 'mocks' }, 'toolu_5'), agent_id: 'research2' }, env);
+  assert.equal(decision(other), null);
+  const session = (await record(configDirectory)).s1;
+  assert.deepEqual(session.guard.denials.toolu_2, { tool: 'WebFetch', reader: 'research1', attempts: 2 });
+});
+
 test('a malformed payload exits 0 with no output and does not block the call', async () => {
   const { env } = await guardFixture();
   const result = await runGuard([], 'not json', env);
