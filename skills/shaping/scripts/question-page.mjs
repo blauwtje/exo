@@ -8,6 +8,8 @@
 //   node scripts/question-page.mjs --serve <dir> --map <map.json> [--no-open]
 //   node scripts/question-page.mjs --ask <dir> --map <map.json>
 //                                  [--timeout <seconds, default 600>]
+//   node scripts/question-page.mjs --map <map.json>
+//                                  [--add <decisions.json>] [--apply <answer.json>] [--text]
 //
 // --serve runs once per interview, in the background: it writes the tab's
 // words from the map and starts the sketch tab on the folder. --ask draws the
@@ -16,9 +18,18 @@
 // {"decision","choice","label","words"} per question of the round. choice is
 // null when the user wrote an answer of their own or left the question open.
 // A map with no open decision draws the checkpoint, whose done confirms it.
-// Exit 2 is a usage error and names the field to fix. Exit 3 means no browser
-// can open here or no answer arrived: the round is then asked in the
-// conversation, never answered for the user.
+//
+// --add and --apply own every transition: the map file is never written by
+// hand. --add folds a {goal?,lang?,words?,decisions:[...]} file onto the map
+// (creating it, round 1, when none exists yet); --apply folds one round's
+// answer onto it. Either may appear alone or together in one call, --apply
+// running first; both end by moving the map to what the next round asks and
+// printing one line per change, then `round=<r> asked=<ids>`,
+// `round=<r> checkpoint`, or `round=<r> draft`. --text then prints the
+// chat layout for whatever the map now asks, or alone just reads and prints
+// it. Exit 2 is a usage error and names the field to fix. Exit 3 (--ask only)
+// means no browser can open here or no answer arrived: the round is then
+// asked in the conversation, never answered for the user.
 
 import { spawn } from 'node:child_process';
 import { readFileSync, realpathSync } from 'node:fs';
@@ -28,6 +39,8 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
 import { parseFlags, UsageError } from '#script-flags';
+import { addDecisions, applyAnswer, nextRound } from './map-transition.mjs';
+import { TEXT_WORDS, renderText } from './round-text.mjs';
 
 const SKETCH_TAB = fileURLToPath(new URL('../../designing/scripts/sketch-tab.mjs', import.meta.url));
 const LABELS_FILE = 'labels.json';
@@ -87,7 +100,8 @@ const DEFAULT_WORDS = {
   waits: 'Waits on',
   review: 'Is this what we mean?',
   done: 'Write the spec',
-  changeMarked: 'Change what I marked'
+  changeMarked: 'Change what I marked',
+  ...TEXT_WORDS
 };
 
 function requireText(value, field) {
@@ -172,7 +186,9 @@ function checkedDecision(decision, index) {
 }
 
 const hasNumber = (decision) => decision.number !== undefined;
-const isAsked = (decision) => decision.state === 'open' && hasNumber(decision);
+// Asked this round: open, numbered, and either carrying no round yet (a map
+// the model wrote itself) or carrying the round now current.
+const isAsked = (decision, round) => decision.state === 'open' && hasNumber(decision) && (decision.round === undefined || decision.round === round);
 const byNumber = (left, right) => (left.number ?? 0) - (right.number ?? 0);
 
 /** Refuse a waitsOn that names no decision or leads back to where it started,
@@ -196,7 +212,7 @@ function checkTree(decisions) {
 
 /** The map as the page needs it, or a UsageError naming the first field that
  *  is wrong, so the session repairs the file instead of guessing. */
-export function checkedMap(map) {
+export function checkedMap(map, { draft = false } = {}) {
   if (map === null || typeof map !== 'object') throw new UsageError('--map must hold a JSON object');
   if (!Array.isArray(map.decisions) || map.decisions.length === 0) {
     throw new UsageError('--map: decisions must be a non-empty array');
@@ -217,7 +233,7 @@ export function checkedMap(map) {
   for (const decision of decisions) {
     if (decision.state === 'waits' && byId.get(decision.waitsOn).state === 'closed') decision.state = 'open';
   }
-  const asked = decisions.filter(isAsked);
+  const asked = decisions.filter((decision) => isAsked(decision, round));
   if (asked.length > ROUND_MAX) {
     throw new UsageError(`--map: a round asks at most ${ROUND_MAX} decisions, received ${asked.length}`);
   }
@@ -229,7 +245,7 @@ export function checkedMap(map) {
     }
   }
   const stillOpen = decisions.some((decision) => decision.state !== 'closed');
-  if (stillOpen && !decisions.some(isAsked)) {
+  if (!draft && stillOpen && !decisions.some((decision) => isAsked(decision, round))) {
     throw new UsageError('--map: decisions are still open, and no open decision carries a number to ask');
   }
   const words = { ...DEFAULT_WORDS };
@@ -348,14 +364,14 @@ function treeState(decision, map) {
     const waitedOn = map.decisions.find((other) => other.id === decision.waitsOn);
     return `${words.waits}: ${waitedOn.name}`;
   }
-  if (isAsked(decision)) return `${words.asking}: ${fill(words.question, { n: decision.number })}`;
+  if (isAsked(decision, map.round)) return `${words.asking}: ${fill(words.question, { n: decision.number })}`;
   return words.next;
 }
 
 function decisionTree(map) {
   const items = treeOrder(map.decisions).map(({ decision, depth }) => {
-    const kind = isAsked(decision) ? 'asking' : decision.state;
-    const current = isAsked(decision) ? ' aria-current="step"' : '';
+    const kind = isAsked(decision, map.round) ? 'asking' : decision.state;
+    const current = isAsked(decision, map.round) ? ' aria-current="step"' : '';
     return `<li class="node node-${kind}" style="--depth: ${depth}"${current}><span class="node-name">${escapeHtml(decision.name)}</span><span class="node-state">${escapeHtml(treeState(decision, map))}</span></li>`;
   });
   return `<nav class="tree" aria-labelledby="tree-title"><h2 id="tree-title">${escapeHtml(map.words.mapTitle)}</h2><ol>${items.join('')}</ol></nav>`;
@@ -441,7 +457,7 @@ export function roundAnswer(checked, recorded) {
   const fields = recorded.fields ?? {};
   const sent = recorded.choice;
   const takesRecommended = sent === SEND.recommended || sent === SEND.go;
-  const asked = checked.decisions.filter(isAsked).sort(byNumber);
+  const asked = checked.decisions.filter((decision) => isAsked(decision, checked.round)).sort(byNumber);
   const answers = asked.map((decision) => {
     const typed = fields[`words-${decision.id}`];
     const own = typeof typed === 'string' ? typed.trim() : '';
@@ -462,20 +478,49 @@ export function roundAnswer(checked, recorded) {
   };
 }
 
-async function readMap(file) {
+/** The map file's raw JSON object, or null when it is missing and the caller
+ *  allows that (--add creates the file). Any other read or parse failure is a
+ *  usage error naming the file. */
+async function readRawMap(file, { allowMissing = false } = {}) {
   if (!file) throw new UsageError('--map <map.json> is required');
   let written;
   try {
     written = await fs.readFile(file, 'utf8');
-  } catch {
+  } catch (error) {
+    if (allowMissing && error.code === 'ENOENT') return null;
     throw new UsageError(`--map file '${file}' cannot be read`);
   }
   try {
-    return checkedMap(JSON.parse(written));
+    return JSON.parse(written);
   } catch (error) {
-    if (error instanceof UsageError) throw error;
     throw new UsageError(`--map file '${file}' is not valid JSON: ${error.message}`);
   }
+}
+
+async function readMap(file, options) {
+  return checkedMap(await readRawMap(file), options);
+}
+
+async function readJsonFile(file, flag) {
+  let written;
+  try {
+    written = await fs.readFile(file, 'utf8');
+  } catch {
+    throw new UsageError(`${flag} file '${file}' cannot be read`);
+  }
+  try {
+    return JSON.parse(written);
+  } catch (error) {
+    throw new UsageError(`${flag}: '${file}' is not valid JSON: ${error.message}`);
+  }
+}
+
+/** The map written atomically: a temp file beside it, then a rename, so a
+ *  process that dies mid-write never leaves a half-written map.json. */
+async function writeMap(file, map) {
+  const temp = `${file}.${process.pid}.tmp`;
+  await fs.writeFile(temp, `${JSON.stringify(map, null, 2)}\n`);
+  await fs.rename(temp, file);
 }
 
 async function requireFolder(directory, flag) {
@@ -537,13 +582,68 @@ async function ask(flags) {
   process.stdout.write(`${JSON.stringify(roundAnswer(map, recorded))}\n`);
 }
 
+/** --add and --apply own every map transition; --apply runs first when both
+ *  are given, then --add, then the map moves to what the next round asks.
+ *  --text, alone or trailing either, prints the chat layout for what the
+ *  written (or unchanged) map now asks. */
+async function addApplyText(flags) {
+  if (flags.add === undefined && flags.apply === undefined && !flags.text) {
+    throw new UsageError('give at least one of --add, --apply and --text');
+  }
+  let map = await readRawMap(flags.map, { allowMissing: flags.add !== undefined });
+  if (map !== null) checkedMap(map, { draft: true });
+  const lines = [];
+  let changed = false;
+
+  if (flags.apply !== undefined) {
+    if (map === null) throw new UsageError(`--apply: no map exists yet at '${flags.map}'`);
+    const answer = await readJsonFile(flags.apply, '--apply');
+    const result = applyAnswer(map, answer);
+    map = result.map;
+    lines.push(...result.lines);
+    changed = true;
+  }
+  if (flags.add !== undefined) {
+    const additions = await readJsonFile(flags.add, '--add');
+    const result = addDecisions(map, additions);
+    map = result.map;
+    lines.push(...result.lines);
+    changed = true;
+  }
+  if (changed) {
+    const result = nextRound(map);
+    map = result.map;
+    lines.push(...result.lines);
+    checkedMap(map, { draft: true });
+    await writeMap(flags.map, map);
+  }
+  for (const line of lines) process.stdout.write(`${line}\n`);
+  if (flags.text) {
+    const checked = changed ? checkedMap(map) : await readMap(flags.map);
+    process.stdout.write(`${renderText(checked)}\n`);
+  }
+}
+
 async function main(argv) {
-  const flags = parseFlags(argv, { serve: 'value', ask: 'value', map: 'value', timeout: 'value', 'no-open': 'boolean' });
-  if ((flags.serve === undefined) === (flags.ask === undefined)) {
-    throw new UsageError('give exactly one of --serve <dir> and --ask <dir>');
+  const flags = parseFlags(argv, {
+    serve: 'value',
+    ask: 'value',
+    map: 'value',
+    timeout: 'value',
+    'no-open': 'boolean',
+    add: 'value',
+    apply: 'value',
+    text: 'boolean'
+  });
+  const groupGiven = flags.add !== undefined || flags.apply !== undefined || flags.text === true;
+  const modes = [flags.serve !== undefined, flags.ask !== undefined, groupGiven].filter(Boolean).length;
+  if (modes !== 1) {
+    throw new UsageError('give exactly one of --serve <dir>, --ask <dir>, and --add/--apply/--text');
   }
   if (flags.serve !== undefined) return serve(flags);
-  return ask(flags);
+  if (flags.ask !== undefined) return ask(flags);
+  if (!flags.map) throw new UsageError('--map <map.json> is required');
+  return addApplyText(flags);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {

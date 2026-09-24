@@ -213,7 +213,7 @@ describe('question-page.mjs', () => {
     const folder = await fixture();
     const neither = await run(QUESTION_PAGE, []);
     assert.equal(neither.code, 2);
-    assert.match(neither.stderr, /exactly one of --serve <dir> and --ask <dir>/);
+    assert.match(neither.stderr, /exactly one of --serve <dir>, --ask <dir>, and --add\/--apply\/--text/);
     const mapless = await run(QUESTION_PAGE, ['--ask', folder]);
     assert.equal(mapless.code, 2);
     assert.match(mapless.stderr, /--map <map\.json> is required/);
