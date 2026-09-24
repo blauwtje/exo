@@ -274,6 +274,22 @@ describe('check-ui.mjs static subset', () => {
     assert.deepEqual(JSON.parse(result.stdout).static.findings, []);
   });
 
+  it('reports a raw value in the rule right after a one-line :root token block', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'styles.css'), [
+      ':root { --gap: 8px; }',
+      '.card {',
+      '  color: #ff0055;',
+      '}'
+    ].join('\n'));
+
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const findings = JSON.parse(result.stdout).static.findings
+      .filter((entry) => entry.type === 'raw-value-in-component-rule');
+    assert.deepEqual(findings.map((entry) => entry.selector), ['styles.css:3']);
+  });
+
   async function tellsFor(stylesheet) {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'styles.css'), stylesheet);

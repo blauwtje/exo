@@ -848,13 +848,27 @@ export async function staticAudit(directory) {
     // Only the whole-file reads below need offsets turned into line numbers.
     const starts = isStylesheet || isMarkup ? lineStarts(text) : [];
     const lines = text.split(/\r?\n/);
-    let insideTokenBlock = false;
+    // The depth at whose contents raw values are exempt (a :root/@theme block, or a
+    // rule that declares a custom property), or null outside any such block. Set from
+    // brace counts rather than "line starts with }" so a one-line block such as
+    // `:root { --gap: 8px; }` closes before the next rule's declarations are read.
+    let braceDepth = 0;
+    let tokenBlockDepth = null;
     const reportedOnce = new Set();
     lines.forEach((line, index) => {
       const location = `${relative}:${index + 1}`;
+      let insideTokenBlock = false;
       if (isStylesheet) {
-        if (/:root|@theme|^\s*--/.test(line)) insideTokenBlock = true;
-        else if (/^\s*}/.test(line)) insideTokenBlock = false;
+        const opens = (line.match(/\{/g) || []).length;
+        const closes = (line.match(/\}/g) || []).length;
+        if (tokenBlockDepth === null && opens > 0 && /:root\b|@theme\b/.test(line)) {
+          tokenBlockDepth = braceDepth + 1;
+        } else if (tokenBlockDepth === null && /^\s*--/.test(line)) {
+          tokenBlockDepth = braceDepth;
+        }
+        insideTokenBlock = tokenBlockDepth !== null;
+        braceDepth += opens - closes;
+        if (tokenBlockDepth !== null && braceDepth < tokenBlockDepth) tokenBlockDepth = null;
       }
       for (const tell of LINE_TELLS) {
         if (tell.skipsStylesheets && isStylesheet) continue;
