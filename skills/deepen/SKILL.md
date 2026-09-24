@@ -56,6 +56,6 @@ A card an id cannot settle stays as the delegate wrote it; ask at most one quest
 
 - While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `planning` defines; every other planning turn belongs to `planning`.
 - Failing existing behavior outranks this skill: an unproven failure routes to `debug`, and a finding that explains a live symptom is a `debug` hypothesis, not an audit card.
-- A single named refactor or rename is a decided change for `implementing-batch`.
+- A single named refactor or rename is a decided change for `refactoring`.
 - Every card states its migration cost, including a deepening that invalidates the whole test suite.
 - The cards file at `<git dir>/exo/deepen/<topic>.md` is the compaction anchor: after a compaction, reread it rather than rerunning the audit or the explorer.
