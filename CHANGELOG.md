@@ -7,6 +7,25 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `shipping` gains `scripts/ship-gate.mjs`: `--pr <n>` prints one verdict, `MERGE`, `BEHIND`, `DIRTY` or `STOP <field>=<value> [check]`, passing SKIPPED and NEUTRAL checks and stopping on CANCELLED, and `--order <n...>` prints stacked pull requests bases first and exits non-zero on a cycle; `SKILL.md` runs both instead of reading JSON.
+- `agents/researcher.md` carries the researcher as a sonnet agent with web and read tools only, a `maxTurns` and its own no-delete rule; `research` dispatches it with only the question, and `researcher-prompt.md` is removed.
+- The implementer's brief lists `path:start-end` for each `Modify:` region, from its definition to where the region ends, and `implementer` reads those ranges instead of whole files.
+- `benchmarks/sweep-cells.mjs` models the review-fixer step as a `fixer` cell set; `sweep.mjs --confirm` refuses a fixer cell until a `branch-review.md` fixture exists.
+
+### Changed
+
+- The repeat guard also denies a second identical WebFetch URL or WebSearch query from the same agent.
+- `design-critic`'s reference only reads the `$RUN` files the session already wrote rather than running scripts, and the builder brief names the `## Slop tropes` section of `visual-critique.md` so the builder may read it.
+
+### Fixed
+
+- A note sent from the browser interview tab's footer now carries the current picks, instead of dropping them and asking the whole round again.
+- `question-page.mjs` prints its own line on exit 3 telling the session to ask the round in the conversation, exits 2 on a round asking more than four decisions or a decision asked with the open parent it waits on, and opens a decision waiting on an already closed parent.
+- `check-ui.mjs` tracks its token-block state by brace depth, so a one-line `:root { ... }` no longer hides raw values in the next rule.
+- `inspect-render.mjs --baseline` takes one baseline per image, paired by position, and its `pairs` only compare images of the same size.
+
 ## 0.36.0 - 2026-09-24
 
 ### Added
