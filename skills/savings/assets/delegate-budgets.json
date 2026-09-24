@@ -1,7 +1,7 @@
 {
   "default": { "soft": 40, "hard": 100, "calls": 60 },
   "agents": {
-    "design-builder": { "calls": 35 },
+    "exo:design-builder": { "calls": 35 },
     "exo:explorer": { "soft": 70 },
     "exo:researcher": { "soft": 70 },
     "exo:design-discovery": { "soft": 70 },

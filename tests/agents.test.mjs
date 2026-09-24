@@ -217,7 +217,7 @@ test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and
   assert.deepEqual(skillFiles.filter((relativePath) => relativePath.endsWith('builder-prompt.md')), []);
 
   const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'skills/savings/assets/delegate-budgets.json'), 'utf8'));
-  assert.equal(budgets.agents['design-builder'].calls, 35);
+  assert.equal(budgets.agents['exo:design-builder'].calls, 35);
 });
 
 test('the designing repair loop drops the 12-call cap for a repair scope with its own report, and QA always dispatches', () => {

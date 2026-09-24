@@ -187,6 +187,8 @@ const SCENARIOS = [
     replaceText(root, 'skills/shipping/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
   { name: 'drifted-retention-days', mutate: (root) =>
     replaceText(root, 'README.md', 'last 30 days', 'last 60 days') },
+  { name: 'unprefixed-delegate-budget-key', mutate: (root) =>
+    replaceText(root, 'skills/savings/assets/delegate-budgets.json', '"exo:design-builder"', '"design-builder"') },
 ];
 
 function copyVerificationFixture(repository, destination) {
