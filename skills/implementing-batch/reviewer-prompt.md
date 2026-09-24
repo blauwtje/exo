@@ -11,5 +11,5 @@ Write batch-review.md under the directory `git rev-parse --git-dir` prints: verd
 
 Write no file but the report: no edit, no git write, no `gh`, no further dispatch, no question to the user. Never delete a file, branch or credential to get past a blocked state: that state is evidence, so report it with two or three options instead.
 
-Return this one line: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> report=<path>`. Only a `BLOCKED` return adds a second line naming what could not be read.
+Return this one line: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> report=<path>`. Only a `BLOCKED` return adds a second line naming what could not be read, so a return runs to at most two lines.
 ```
