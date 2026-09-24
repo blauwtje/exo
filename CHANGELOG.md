@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The read guard refuses a Read of a large file with only an `offset` or a `limit` above the cap as it refuses one without bounds, and the repeat guard lets the same command run again after a successful `Edit` or `Write` by the same reader, booked in a `PostToolUse` hook so a failed edit resets nothing, so a red, green and final run of one test is no longer denied.
+
 ## 0.34.2 - 2026-09-24
 
 ### Fixed

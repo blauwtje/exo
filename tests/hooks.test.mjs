@@ -42,10 +42,13 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
 
-test('the repeat guard runs on Bash and Edit before the tool call', () => {
-  const guards = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.hook.command.includes('repeat-guard.mjs'));
-  assert.equal(guards.length, 1);
-  assert.deepEqual(guards[0].matcher.split('|').sort(), ['Bash', 'Edit']);
+test('the repeat guard counts Bash and Edit before the call and starts over after an Edit or Write', () => {
+  const guards = hookEntries().filter((entry) => entry.hook.command.includes('repeat-guard.mjs'));
+  const wiring = guards.map((entry) => [entry.event, entry.matcher.split('|').sort().join('|'), entry.hook.command.split(' ').pop()]).sort();
+  assert.deepEqual(wiring, [
+    ['PostToolUse', 'Edit|Write', 'edited'],
+    ['PreToolUse', 'Bash|Edit', '"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/repeat-guard.mjs"']
+  ]);
 });
 
 test('the Stop hook books the turn into the savings counter and nothing else', () => {

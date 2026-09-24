@@ -1,7 +1,8 @@
 // The repeat guard denies the third identical Bash command and the third edit
 // replacing the same text in one file, lets the first repeat through, books
-// each denial under its tool call, forgets its calls on a reset, and stands
-// down when config.json says repeatGuard: false.
+// each denial under its tool call, forgets a reader's commands after that
+// reader's successful edit, forgets its calls on a reset, and stands down when
+// config.json says repeatGuard: false.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -88,6 +89,51 @@ test('the third edit replacing the same text in one file is denied, other text i
   assert.equal(decision(other), null);
   const third = await runGuard([], editInput(target, 'alpha', 'toolu_4'), env);
   assert.match(decision(third).permissionDecisionReason, /already replaced the same text in \/repo\/app\.ts 2 times/);
+});
+
+// A successful edit runs the PreToolUse guard and then the PostToolUse
+// booking; a failed one runs the guard alone.
+async function succeededEdit(hookInput, env) {
+  await runGuard([], hookInput, env);
+  return runGuard(['edited'], hookInput, env);
+}
+
+test('an edit between runs of the same test lets the third run through', async () => {
+  const { env } = await guardFixture();
+  const reader = { agent_id: 'impl1' };
+  assert.equal(decision(await runGuard([], { ...bashInput('npm test -- tests/a.test.mjs > .git/run-1.log', 'toolu_1'), ...reader }, env)), null);
+  await succeededEdit({ ...editInput('/repo/a.mjs', 'return 1', 'toolu_2'), ...reader }, env);
+  assert.equal(decision(await runGuard([], { ...bashInput('npm test -- tests/a.test.mjs > .git/run-2.log', 'toolu_3'), ...reader }, env)), null);
+  await succeededEdit({ ...editInput('/repo/a.mjs', 'const y', 'toolu_4'), ...reader }, env);
+  const third = await runGuard([], { ...bashInput('npm test -- tests/a.test.mjs > .git/run-3.log', 'toolu_5'), ...reader }, env);
+  assert.equal(decision(third), null);
+});
+
+test('a write between runs of the same command lets the third run through', async () => {
+  const { env } = await guardFixture();
+  await runGuard([], bashInput('npm test', 'toolu_1'), env);
+  await runGuard([], bashInput('npm test', 'toolu_2'), env);
+  const written = await runGuard(['edited'], { session_id: 's1', tool_name: 'Write', tool_use_id: 'toolu_3', tool_input: { file_path: '/repo/a.mjs', content: 'x' } }, env);
+  assert.equal(written.stdout, '');
+  assert.equal(decision(await runGuard([], bashInput('npm test', 'toolu_4'), env)), null);
+});
+
+test('a failed edit, which reaches only the guard before the call, leaves the counts standing', async () => {
+  const { env } = await guardFixture();
+  await runGuard([], bashInput('npm test', 'toolu_1'), env);
+  await runGuard([], bashInput('npm test', 'toolu_2'), env);
+  await runGuard([], editInput('/repo/a.mjs', 'text that is not there', 'toolu_3'), env);
+  const third = await runGuard([], bashInput('npm test', 'toolu_4'), env);
+  assert.match(decision(third)?.permissionDecisionReason ?? '', /has already run 2 times unchanged/);
+});
+
+test('an edit by another reader leaves the counts of this reader standing', async () => {
+  const { env } = await guardFixture();
+  await runGuard([], bashInput('npm test', 'toolu_1'), env);
+  await runGuard([], bashInput('npm test', 'toolu_2'), env);
+  await succeededEdit({ ...editInput('/repo/a.mjs', 'alpha', 'toolu_3'), agent_id: 'impl1' }, env);
+  const third = await runGuard([], bashInput('npm test', 'toolu_4'), env);
+  assert.match(decision(third)?.permissionDecisionReason ?? '', /has already run 2 times unchanged/);
 });
 
 test('a reset forgets the calls of the context window that ended', async () => {
