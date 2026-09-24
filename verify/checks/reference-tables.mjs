@@ -66,6 +66,12 @@ const EXPECTED_OWNER_ROWS = {
   'skills/shipping/SKILL.md': [
     '../issuing/references/fields.md',
     '../using-exo/references/question.md',
+    'references/pr-prep.md',
+    'verifier-prompt.md',
+    'references/fix-ci.md',
+    'references/merge-conflicts.md',
+    'references/pr-comments.md',
+    'references/babysit.md',
   ],
   'skills/memory/SKILL.md': ['../using-exo/references/question.md'],
   'skills/prototyping/SKILL.md': [],

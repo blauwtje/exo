@@ -25,3 +25,8 @@ Resolve a DIRTY pull request with the smallest edit that keeps both sides' inten
 ## Report
 
 - Name the files resolved, the notable resolution choices and the build and test outcome.
+
+## Judgment
+
+- A failing check after the resolve outranks the push: fix or report it, never push past it.
+- Correctness outranks keeping both sides: keep the variant that compiles and preserves public behavior.

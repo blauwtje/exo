@@ -28,3 +28,8 @@ Turn review and bot comments into an action list grounded in the code, not in th
 ## Report
 
 - Name the grouped feedback summary, the priority-ordered action list and the open questions still needing clarification.
+
+## Judgment
+
+- The code outranks the comment's own words: triage against what the code does.
+- A security, data or high-severity finding outranks the dismiss lean of later bot passes: ask before acting.

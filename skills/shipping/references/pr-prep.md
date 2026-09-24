@@ -64,3 +64,8 @@ The PR body is the squash commit body; cut it before it passes about 40 lines.
 
 Run `gh pr view <number>` before stating a PR's status, rather than relying on a remembered state.
 Confirm a new PR opened non-draft; if it opened as a draft anyway, run `gh pr ready <number>`.
+
+## Judgment
+
+- The user's instruction outranks a cleaner commit story: pushed history is rewritten only when the user names it.
+- A split outranks a polished description when notes alone cannot make the pull request reviewable.

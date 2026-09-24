@@ -7,7 +7,7 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 - Fetch the pull request's full state before triaging: `gh pr view <number> --json number,title,state,mergeable,reviewDecision,statusCheckRollup,mergeStateStatus,comments,reviews`.
 - Confirm the pull request read matches the one the request meant.
 - Run one babysitter per pull request at a time; check nothing else is already working it.
-- A subagent that opened the pull request does not babysit it; hand back to the parent.
+- A delegate that opened the pull request does not babysit it; hand back to the session that dispatched it.
 - Batch every known fix into one push wave per round; do not fix a check just to look busy when a conflict is the real blocker.
 - Pace the recheck: poll `gh pr checks --watch` while a check runs; a 20 to 30 minute heartbeat while awaiting a reviewer; hourly if idle but watching for new comments.
 
@@ -34,3 +34,8 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 ## Report
 
 - Name the fixes applied, the comments addressed and deferred with reason, the current status, each commit by its SHA, what is pending and what needs the human.
+
+## Judgment
+
+- The triage order outranks the easiest fix: clear the real blocker first.
+- The no-merge rule outranks a merge-ready state: only the user's explicit request merges.

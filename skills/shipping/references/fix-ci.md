@@ -27,3 +27,8 @@ Chase the first actionable error to a green check with the smallest fix that clo
 ## Report
 
 - Name the primary failing job and its root error, the fixes applied in order, and the current CI status and next action.
+
+## Judgment
+
+- The three-round limit outranks one more likely fix: hand back rather than grind.
+- A stale base outranks a flake verdict: check ancestry before any fresh build.
