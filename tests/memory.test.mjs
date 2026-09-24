@@ -130,7 +130,56 @@ test('a replacing fact leaves exactly one live answer and marks the old one', as
   const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
   const understanding = rendered.split('## Decisions')[0];
   assert.doesNotMatch(understanding, /raised by hand/);
-  assert.match(rendered, /superseded by "the release workflow cuts the version": the version is raised by hand/);
+  // The supersede stays in memory.json, not in the rendered file: memory.md
+  // renders live lines only, so the budget never counts a retired answer.
+  assert.doesNotMatch(rendered, /superseded by/);
+  const state = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+  const superseded = state.lines.find((line) => line.claim === 'the version is raised by hand');
+  assert.equal(superseded.superseded.by, 'the release workflow cuts the version');
+});
+
+test('superseding one claim repeatedly does not exhaust the render budget', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  let claim = 'the version is raised by hand, tracked across every release this repository has cut so far';
+  await attested(root, claim);
+  await memory(root, 'write', '--claim', claim, '--refs', 'release.yml');
+  for (let index = 0; index < 7; index += 1) {
+    const next = `${claim} (revision ${index})`;
+    await attested(root, next);
+    const written = await memory(root, 'write', '--claim', next, '--refs', 'release.yml', '--replaces', claim);
+    assert.equal(written.code, 0, written.stderr);
+    claim = next;
+  }
+});
+
+test('memory.md renders live lines only; superseded history stays in memory.json off budget', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the version is raised by hand');
+  await memory(root, 'write', '--claim', 'the version is raised by hand', '--refs', 'release.yml');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml', '--replaces', 'the version is raised by hand');
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.doesNotMatch(rendered, /superseded by/);
+  assert.doesNotMatch(rendered, /raised by hand/);
+  const state = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+  const superseded = state.lines.find((line) => line.claim === 'the version is raised by hand');
+  assert.notEqual(superseded.superseded, null);
+});
+
+test('retire drops a live line from memory.md and keeps it in memory.json', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'the release workflow cuts the version');
+  await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  const retired = await memory(root, 'retire', '--claim', 'the release workflow cuts the version');
+  assert.equal(retired.code, 0, retired.stderr);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.doesNotMatch(rendered, /the release workflow cuts the version/);
+  const state = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+  assert.equal(state.lines[0].claim, 'the release workflow cuts the version');
+  assert.notEqual(state.lines[0].retired, null);
 });
 
 test('a write past the budget is refused and names what to retire first', async () => {
@@ -171,9 +220,10 @@ test('verify drops a line whose file is gone and names it', async () => {
   assert.match(verified.stdout, /dropped "the release workflow cuts the version": release\.yml/);
   assert.match(verified.stdout, /0 lines verified, 1 dropped/);
   const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
-  const [understanding, history] = rendered.split('## Decisions');
-  assert.doesNotMatch(understanding, /the release workflow cuts the version/);
-  assert.match(history, /dropped, release\.yml no longer exist: the release workflow cuts the version/);
+  assert.doesNotMatch(rendered, /the release workflow cuts the version/);
+  const state = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+  assert.equal(state.lines[0].claim, 'the release workflow cuts the version');
+  assert.deepEqual(state.lines[0].dropped.missing, ['release.yml']);
 });
 
 test('a second verify does not re-report a line already dropped', async () => {

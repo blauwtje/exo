@@ -5,6 +5,7 @@
 //
 //   node memory.mjs paths
 //   node memory.mjs render
+//   node memory.mjs retire --claim "<the claim>"
 //
 // Every command takes --cwd naming the repository, defaulting to the process
 // working directory.
@@ -46,25 +47,26 @@ function readState(cwd) {
 
 const HEADER = '# Project memory\n\nexo writes this file. Do not edit it by hand: run `/exo:memory` instead.';
 
-// A line that left the understanding says so and stays: what exo once believed,
-// and the day it stopped, exists nowhere else once this file is rewritten.
-function decisionLine(line) {
-  if (line.superseded !== null) return `- ${line.superseded.date} superseded by "${line.superseded.by}": ${line.claim}`;
-  if (line.dropped !== null) return `- ${line.dropped.date} dropped, ${line.dropped.missing.join(', ')} no longer exist: ${line.claim}`;
-  return `- ${line.written} ${line.claim}`;
+// Live means still the answer: never superseded, dropped by verify, or retired
+// by hand. Every filter that decides what a session reads or what counts
+// against the budget shares this one rule.
+function isLive(line) {
+  return line.superseded === null && line.dropped === null && line.retired === null;
 }
 
-// What a session reads and what the budget measures: the claims still live, then
-// every decision with its date.
+// What a session reads and what the budget measures: the claims still live,
+// each once. A line that left the understanding says so in memory.json, which
+// keeps every claim it ever held, dated; rendering that history here would
+// charge the budget for an answer no session reads anymore.
 function render(state) {
-  const live = state.lines.filter((line) => line.superseded === null && line.dropped === null);
+  const live = state.lines.filter(isLive);
   const understanding = live.length === 0
     ? `Nothing is attested in ${ATTESTATIONS_REQUIRED} sessions yet.`
     : live.map((line) => `- ${line.claim} (refs: ${line.refs.join(', ')})`).join('\n');
-  const history = state.lines.length === 0
+  const decisions = live.length === 0
     ? 'Nothing has been written yet.'
-    : state.lines.map(decisionLine).join('\n');
-  return `${[HEADER, '## Current understanding', understanding, '## Decisions', history].join('\n\n')}\n`;
+    : live.map((line) => `- ${line.written} ${line.claim}`).join('\n');
+  return `${[HEADER, '## Current understanding', understanding, '## Decisions', decisions].join('\n\n')}\n`;
 }
 
 function fail(message) {
@@ -120,7 +122,7 @@ function parseRefs(cwd, refs) {
 // The refusal names what has to go, oldest live line first, because a writer
 // told only that it is over budget has to open the file to act on it.
 function budgetRefusal(state, bytes) {
-  const live = state.lines.filter((line) => line.superseded === null && line.dropped === null);
+  const live = state.lines.filter(isLive);
   const oldest = [...live].sort((left, right) => (left.written < right.written ? -1 : 1));
   const named = oldest.slice(0, 3).map((line) => `${line.written} ${line.claim}`);
   return `refused: memory.md would be ${bytes} bytes, over the ${MEMORY_BUDGET.bytes} byte budget. Retire one of these lines, oldest first, or archive the decision history: ${named.join('; ')}`;
@@ -135,7 +137,7 @@ function writeClaim(cwd, state, claim, refs, replaces) {
   }
   // One live line per claim: a claim two later sessions attest again is already
   // in the file, and a second copy of it costs every session the budget twice.
-  const live = state.lines.find((line) => line.claim === claim && line.superseded === null && line.dropped === null);
+  const live = state.lines.find((line) => line.claim === claim && isLive(line));
   if (live !== undefined) {
     throw new Error(`refused: "${claim}" is already live, written ${live.written}. Supersede it with --replaces or retire it rather than writing it twice`);
   }
@@ -143,7 +145,7 @@ function writeClaim(cwd, state, claim, refs, replaces) {
   const next = { candidates: { ...state.candidates }, lines: state.lines.map((line) => ({ ...line })) };
   delete next.candidates[claim];
   if (replaces !== undefined) {
-    const predecessor = next.lines.find((line) => line.claim === replaces && line.superseded === null && line.dropped === null);
+    const predecessor = next.lines.find((line) => line.claim === replaces && isLive(line));
     if (predecessor === undefined) throw new Error(`refused: no live line reads "${replaces}"`);
     predecessor.superseded = { date: written, by: claim };
   }
@@ -153,7 +155,8 @@ function writeClaim(cwd, state, claim, refs, replaces) {
     written,
     quotes: attestations.map((entry) => ({ date: entry.date, quote: entry.quote })),
     superseded: null,
-    dropped: null
+    dropped: null,
+    retired: null
   });
   const bytes = Buffer.byteLength(render(next), 'utf8');
   if (bytes > MEMORY_BUDGET.bytes) throw new Error(budgetRefusal(next, bytes));
@@ -170,7 +173,7 @@ function verifyLines(cwd, state) {
   let checked = 0;
   const dropped = [];
   const lines = state.lines.map((line) => {
-    if (line.superseded !== null || line.dropped !== null) return line;
+    if (!isLive(line)) return line;
     checked += 1;
     const missing = line.refs.filter((ref) => {
       const { symbol, target } = resolveRef(cwd, ref);
@@ -258,6 +261,18 @@ if (command === 'paths') {
   } catch (error) {
     fail(error.message);
   }
+} else if (command === 'retire') {
+  if (values.claim === undefined) fail('retire needs --claim');
+  try {
+    const state = readState(cwd);
+    const target = state.lines.find((line) => line.claim === values.claim && isLive(line));
+    if (target === undefined) throw new Error(`refused: no live line reads "${values.claim}"`);
+    const lines = state.lines.map((line) => (line === target ? { ...line, retired: { date: today() } } : line));
+    writeState(cwd, { candidates: state.candidates, lines });
+    console.log(`retired "${values.claim}"`);
+  } catch (error) {
+    fail(error.message);
+  }
 } else {
-  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write or verify`);
+  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write, verify or retire`);
 }
