@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The context watch and the delegate budget run as one PreToolUse hook on every tool that branches on `agent_id`, and the watch reads the `context` setting in-process through `lib/settings-store.mjs` instead of spawning `settings.mjs`, so a tool call starts one node process instead of two or three.
+
 ## 0.38.1 - 2026-09-24
 
 ### Highlights
