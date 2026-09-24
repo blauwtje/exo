@@ -1,18 +1,20 @@
 #!/usr/bin/env node
-// Guard on Bash, Edit and Write: in PreToolUse it denies the third identical
-// call in one context window, so a session that re-runs a failing command or
-// applies the same edit again changes an input or stops. Identical is the
-// normalised command string, or the file path with a hash of the text the edit
-// replaces; nothing else is compared, because a smarter match would deny a
-// legitimate retry. An Edit or Write the guard lets through starts that
-// reader's command counts over, because a test run after a change is a new
-// run. Each denial is booked under its tool call, apart from the read
+// Guard on Bash and Edit: in PreToolUse it denies the third identical call in
+// one context window, so a session that re-runs a failing command or applies
+// the same edit again changes an input or stops. Identical is the normalised
+// command string, or the file path with a hash of the text the edit replaces;
+// nothing else is compared, because a smarter match would deny a legitimate
+// retry. In PostToolUse, which runs only after the tool succeeded, an Edit or
+// Write starts that reader's command counts over, because a test run after a
+// change is a new run while a failed edit changed nothing. Each denial is
+// booked under its tool call, apart from the read
 // guard's refusals so the report's read counts keep their meaning, and each
 // run books its own time, because a hook run on Bash leaves no transcript
 // entry. `repeatGuard: false` in the savings config.json switches this guard
 // alone off, and EXO_SAVINGS=off or `enabled: false` switches everything off.
 //
-//   node repeat-guard.mjs         PreToolUse hook on Bash, Edit and Write: stdin is the hook JSON
+//   node repeat-guard.mjs         PreToolUse hook on Bash and Edit: stdin is the hook JSON
+//   node repeat-guard.mjs edited  PostToolUse hook on Edit and Write: forgets the reader's commands
 //   node repeat-guard.mjs reset   SessionStart hook on clear or compact: forgets the calls
 //
 // The limit it accepts: a command a session legitimately runs three times in
@@ -54,15 +56,19 @@ function digest(text) {
   return crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
 }
 
+// A delegate shares the session id but not the context window, so each
+// agent's calls are counted apart from the main thread's.
+function readerOf(hookInput) {
+  return typeof hookInput.agent_id === 'string' ? hookInput.agent_id : 'main';
+}
+
 // The call this hook run is about, or null when the guard has nothing to say
 // about it.
 function callTarget(hookInput) {
   if (!guardEnabled()) return null;
   if (typeof hookInput.session_id !== 'string') return null;
   const input = hookInput.tool_input ?? {};
-  // A delegate shares the session id but not the context window, so each
-  // agent's calls are counted apart from the main thread's.
-  const reader = typeof hookInput.agent_id === 'string' ? hookInput.agent_id : 'main';
+  const reader = readerOf(hookInput);
   if (hookInput.tool_name === 'Bash' && typeof input.command === 'string') {
     const command = normalizeCommand(input.command);
     if (command === '') return null;
@@ -71,18 +77,7 @@ function callTarget(hookInput) {
   if (hookInput.tool_name === 'Edit' && typeof input.file_path === 'string' && typeof input.old_string === 'string') {
     return { tool: 'Edit', reader, filePath: input.file_path, key: `${reader}:Edit:${input.file_path}:${digest(input.old_string)}` };
   }
-  // A Write is never counted as a repeat; it only starts the command counts over.
-  if (hookInput.tool_name === 'Write' && typeof input.file_path === 'string') {
-    return { tool: 'Write', reader, filePath: input.file_path, key: null };
-  }
   return null;
-}
-
-function forgetCommands(calls, reader) {
-  const prefix = `${reader}:Bash:`;
-  for (const key of Object.keys(calls)) {
-    if (key.startsWith(prefix)) delete calls[key];
-  }
 }
 
 // The reason names the count and what to change: a denial the model cannot
@@ -106,9 +101,8 @@ function guardCall(hookInput) {
   if (target === null) return;
   let reason = null;
   updateSession(hookInput.session_id, (session) => {
-    const attempts = target.key === null ? 0 : (session.calls[target.key] ?? 0) + 1;
-    if (target.key !== null) session.calls[target.key] = attempts;
-    if (target.tool !== 'Bash' && attempts < DENY_AT) forgetCommands(session.calls, target.reader);
+    const attempts = (session.calls[target.key] ?? 0) + 1;
+    session.calls[target.key] = attempts;
     if (attempts >= DENY_AT) {
       reason = reasonFor(target, attempts);
       if (typeof hookInput.tool_use_id === 'string') {
@@ -120,6 +114,21 @@ function guardCall(hookInput) {
     return true;
   });
   if (reason !== null) deny(reason);
+}
+
+// Only the reader that changed a file forgets its commands: another agent's
+// runs saw none of that change.
+function edited(hookInput) {
+  if (!guardEnabled()) return;
+  if (typeof hookInput.session_id !== 'string') return;
+  const prefix = `${readerOf(hookInput)}:Bash:`;
+  updateSession(hookInput.session_id, (session) => {
+    for (const key of Object.keys(session.calls)) {
+      if (key.startsWith(prefix)) delete session.calls[key];
+    }
+    bookRunTime(session.guard);
+    return true;
+  });
 }
 
 // A clear or a compaction ends the context window the counts were about.
@@ -135,6 +144,7 @@ function reset(hookInput) {
 try {
   const hookInput = JSON.parse(fs.readFileSync(0, 'utf8'));
   if (process.argv[2] === 'reset') reset(hookInput);
+  else if (process.argv[2] === 'edited') edited(hookInput);
   else guardCall(hookInput);
 } catch (error) {
   console.error(`repeat-guard: ${error.message}`);
