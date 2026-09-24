@@ -7,6 +7,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `planning` runs the new `scripts/plan-check.mjs` instead of reading the whole plan back: it checks each task's `Commit:` block and `Plan-task:` trailer, that `git add` paths equal `Files:`, `Run:` and `Expected:` on every step with code, placeholders, and asks to split a task above 250 code lines or 4 files.
+- `next-task.mjs` prints a `Budget: <soft>k/<hard>k` line per task, scaled by the task's size between half the delegate defaults and the defaults, and `implementing` carries it verbatim into the implementer dispatch so the delegate-budget hook applies it.
+
+### Changed
+
+- `branch-reviewer` and `branch-reviewer-deep` only review and write their report, returning one `verdict=` line; on FINDINGS `implementing` dispatches a sonnet fixer from `review-fixer-prompt.md`, then runs the Final verification once more.
+- The plan parser moves from `skills/implementing/scripts/plan-tasks.mjs` to `lib/plan-tasks.mjs` behind the `#plan-tasks` alias and exports `taskSize`, so `planning` and `implementing` share it.
+- `designing`'s intake and visual direction read `approval_status` from `context.mjs` rather than opening `DESIGN.md` to learn whether its identity is approved.
+
 ## 0.35.3 - 2026-09-24
 
 ### Changed
