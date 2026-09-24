@@ -85,3 +85,21 @@ test('the command line reads the plan and the checkout, and refuses a missing pl
   assert.equal(missing.stdout, '');
   assert.match(missing.stderr, /no plan at/);
 });
+
+test('a plan whose open tasks cannot be ordered stops with exit 1 and names the tasks, never "every task landed"', async () => {
+  const bare = (number, dependsOn) => taskSection({ number, title: `T${number}`, dependsOn, files: [`- Create: \`a${number}.js\``], subject: `feat: t${number}` });
+  const plans = {
+    'Task 2 -> Task 3 -> Task 2': [bare(1, 'none'), bare(2, 'Task 3'), bare(3, 'Task 2')],
+    'Task 2 depends on Task 9': [bare(1, 'none'), bare(2, 'Task 9')],
+    'two tasks are numbered 1': [bare(1, 'none'), bare(1, 'none'), bare(2, 'Task 1')],
+    "'### Task 2 - T2'": [bare(1, 'none'), bare(2, 'none').replace('### Task 2: T2', '### Task 2 - T2'), bare(3, 'none')]
+  };
+  for (const [reason, tasks] of Object.entries(plans)) {
+    const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks }) });
+    land(root, 1, 'feat: t1');
+    const result = await run(SCRIPT, ['--plan', path.join(root, 'docs/plans/fixture.md'), '--root', root], { cwd: root });
+    assert.equal(result.code, 1, reason);
+    assert.equal(result.stdout, '', reason);
+    assert.ok(result.stderr.startsWith('next-task: ') && result.stderr.includes(reason), result.stderr);
+  }
+});

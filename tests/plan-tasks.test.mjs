@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan } from '../skills/implementing/scripts/plan-tasks.mjs';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from '../skills/implementing/scripts/plan-tasks.mjs';
 import { fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
@@ -89,4 +89,87 @@ test('driftOf reports a Modify: region that is missing, duplicated or already ch
   assert.deepEqual(driftOf(task('greet'), root), ['region `greet` is duplicated in `app.js`']);
   await fs.writeFile(target, `${code}\n`);
   assert.deepEqual(driftOf(task('greet'), root), ['region `greet` is already changed in `app.js`']);
+});
+
+const bare = (number, dependsOn) => taskSection({ number, title: `T${number}`, dependsOn, files: [`- Create: \`a${number}.js\``], subject: `feat: t${number}` });
+
+test('Depends on: reads every number of a list, in each form planning writes', () => {
+  const dependsOf = (dependsOn) => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'none'), bare(3, dependsOn)] })).tasks[2].dependsOn;
+  assert.deepEqual(dependsOf('Task 1, Task 2'), [1, 2]);
+  assert.deepEqual(dependsOf('Task 1, 2'), [1, 2]);
+  assert.deepEqual(dependsOf('Tasks 1 and 2'), [1, 2]);
+  assert.deepEqual(dependsOf('Task 2 (only for the sizes quoted in `Expected:`)'), [2]);
+});
+
+test('a wave never pairs a task with a task it depends on', () => {
+  const plan = parsePlan(planFixture({ worktreeSetup: 'npm ci', tasks: [bare(1, 'none'), bare(2, 'none'), bare(3, 'Task 1, 2'), bare(4, 'Task 3')] }));
+  assert.deepEqual(nextWave(plan.tasks, [1], 'npm ci').map((task) => task.number), [2]);
+});
+
+test('a plan whose tasks cannot all be ordered is refused with the tasks and the reason', () => {
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'Task 3'), bare(3, 'Task 2')] })), { name: 'PlanError', message: /cycle: Task 2 -> Task 3 -> Task 2/ });
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'Task 9')] })), { name: 'PlanError', message: /Task 2 depends on Task 9, which the plan does not hold/ });
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(1, 'none'), bare(2, 'Task 1')] })), { name: 'PlanError', message: /two tasks are numbered 1/ });
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'none').replace('### Task 2: T2', '### Task 2 - T2'), bare(3, 'none')] })), { name: 'PlanError', message: /'### Task 2 - T2' does not read '### Task <n>: <title>'/ });
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'after Task 1')] })), { name: 'PlanError', message: /Task 2: 'Depends on: after Task 1'/ });
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'none'), bare(3, 'Task 1 (schema), Task 2 (api)')] })), { name: 'PlanError', message: /Task 3: 'Depends on: Task 1 \(schema\), Task 2 \(api\)'/ });
+  assert.throws(() => parsePlan(planFixture({ tasks: [bare(1, 'Task 1')] })), PlanError);
+});
+
+test('landed counts only commits on this branch since it left the default branch', async () => {
+  const { tasks } = parsePlan(planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Create: `a.js`'], subject: 'feat(app): greet' }),
+    taskSection({ number: 2, title: 'Bare', files: ['- Create: `b.js`'], subject: 'feat(app): bare', commit: false })
+  ] }));
+  for (const remote of [true, false]) {
+    const root = await gitRepository({ 'a.txt': 'a\n' });
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'chore: older plan', '-m', 'Plan-task: 2');
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
+    if (remote) {
+      git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+      git(root, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+    }
+    git(root, 'switch', '-q', '-c', 'feat/fixture');
+    assert.deepEqual(landedTasks(tasks, root), [], `remote: ${remote}`);
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): bare', '-m', 'Plan-task: 2');
+    assert.deepEqual(landedTasks(tasks, root), [2], `remote: ${remote}`);
+  }
+});
+
+test('a run on the default branch itself keeps the tasks it already pushed', async () => {
+  const { tasks } = parsePlan(planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Create: `a.js`'], subject: 'feat(app): greet' })
+  ] }));
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
+  git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  git(root, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+  assert.deepEqual(landedTasks(tasks, root), [1]);
+});
+
+test('driftOf finds a region declared as a method, getter, type or in another language', async () => {
+  const root = await fixture();
+  const declarations = {
+    'class method': ['class A {\n  handle(req) {\n    return 1;\n  }\n}\n', 'handle'],
+    'typed method': ['class A {\n  handle(req: Request): Promise<void> {\n  }\n}\n', 'handle'],
+    'TS interface': ['export interface Props {\n  a: string;\n}\n', 'Props'],
+    'TS type': ['export type Props = { a: string };\n', 'Props'],
+    'TS enum': ['export enum Color { Red }\n', 'Color'],
+    'Go method': ['func (s *Server) Handle(w http.ResponseWriter) {\n}\n', 'Handle'],
+    'Rust pub(crate)': ['pub(crate) fn parse() {}\n', 'parse'],
+    getter: ['class A {\n  get total() { return 1; }\n}\n', 'total'],
+    'plain function': ['export function load() {}\nload();\n', 'load']
+  };
+  for (const [name, [source, region]] of Object.entries(declarations)) {
+    await fs.writeFile(path.join(root, 'f.ts'), source);
+    const task = parsePlan(planFixture({ tasks: [
+      taskSection({ number: 1, title: 'Edit', files: [`- Modify: \`f.ts\` (\`${region}\`)`], subject: 'feat: edit' })
+    ] })).tasks[0];
+    assert.deepEqual(driftOf(task, root), [], name);
+  }
+  await fs.writeFile(path.join(root, 'f.ts'), 'handle(req, () => {\n});\n');
+  const called = parsePlan(planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Edit', files: ['- Modify: `f.ts` (`handle`)'], subject: 'feat: edit' })
+  ] })).tasks[0];
+  assert.deepEqual(driftOf(called, root), ['region `handle` is missing from `f.ts`']);
 });

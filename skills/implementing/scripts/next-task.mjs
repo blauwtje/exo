@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan } from './plan-tasks.mjs';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from './plan-tasks.mjs';
 
 function waveLine(wave) {
   if (wave.length === 0) return 'Next: none, every task landed';
@@ -80,6 +80,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     if (error instanceof UsageError) {
       process.stderr.write(`next-task: ${error.message}\n`);
       process.exitCode = 2;
+    } else if (error instanceof PlanError) {
+      process.stderr.write(`next-task: ${error.message}\n`);
+      process.exitCode = 1;
     } else {
       throw error;
     }

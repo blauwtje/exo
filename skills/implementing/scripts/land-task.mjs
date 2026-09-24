@@ -1,13 +1,14 @@
 // Lands one green task: runs the task's `Commit:` block as the plan wrote it,
-// checks that the new commit carries the `Plan-task: <n>` trailer, and prints
-// the landed set, so the session neither pastes the block nor reads the log.
+// checks that the new commit carries the `Plan-task: <n>` trailer and that the
+// landed set now holds the task, and prints that set, so the session neither
+// pastes the block nor reads the log.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { landedTasks, parsePlan } from './plan-tasks.mjs';
+import { landedTasks, parsePlan, PlanError } from './plan-tasks.mjs';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
@@ -32,12 +33,19 @@ export function landTask({ planText, number, root }) {
     const output = `${commit.stdout ?? ''}${commit.stderr ?? ''}${commit.error?.message ?? ''}`.trim();
     throw new LandingError(`the Commit: block of Task ${number} failed:\n${output}`);
   }
-  const head = execFileSync('git', ['-C', root, 'log', '-1', '--format=%h%n%B'], { encoding: 'utf8' });
-  const [sha, ...body] = head.split('\n');
+  const head = execFileSync('git', ['-C', root, 'log', '-1', '--format=%h%n%s%n%B'], { encoding: 'utf8' });
+  const [sha, subject, ...body] = head.split('\n');
   if (!new RegExp(`^Plan-task: ${number}$`, 'm').test(body.join('\n'))) {
     throw new LandingError(`HEAD ${sha} carries no "Plan-task: ${number}" trailer`);
   }
-  return `Committed: ${sha} Task ${number}\nLanded: ${landedTasks(plan.tasks, root).join(', ')}\n`;
+  // bash expands the block, so a `$` or backquote in its subject can commit a
+  // subject the plan does not give, and next-task would build the task again.
+  const landed = landedTasks(plan.tasks, root);
+  if (!landed.includes(number)) {
+    const task = plan.tasks.find((entry) => entry.number === number);
+    throw new LandingError(`HEAD ${sha} carries "Plan-task: ${number}", yet next-task does not count Task ${number} as landed: the commit's subject reads "${subject}" and the Commit: block gives "${task.commitSubject}"`);
+  }
+  return `Committed: ${sha} Task ${number}\nLanded: ${landed.join(', ')}\n`;
 }
 
 function main(argv) {
@@ -56,7 +64,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     if (error instanceof UsageError) {
       process.stderr.write(`land-task: ${error.message}\n`);
       process.exitCode = 2;
-    } else if (error instanceof LandingError) {
+    } else if (error instanceof LandingError || error instanceof PlanError) {
       process.stderr.write(`land-task: ${error.message}\n`);
       process.exitCode = 1;
     } else {

@@ -72,3 +72,16 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.equal(noTrailer.stdout, '');
   assert.match(noTrailer.stderr, /Plan-task: 2/);
 });
+
+test('a commit the landed set does not count stops with exit 1', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Price', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat: price in $USD' })
+  ] });
+  const { root } = await landingCheckout();
+  await fs.writeFile(path.join(root, 'docs/plans/price.md'), plan);
+  await editApp(root);
+  const result = await run(SCRIPT, ['--plan', path.join(root, 'docs/plans/price.md'), '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, /Task 1 as landed: the commit's subject reads "feat: price in" and the Commit: block gives "feat: price in \$USD"/);
+});
