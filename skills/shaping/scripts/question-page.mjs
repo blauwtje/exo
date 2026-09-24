@@ -39,6 +39,9 @@ const PLAIN_ID = /^[A-Za-z0-9][\w-]*$/;
 // Four answers fill one card; a fifth answer is a decision that was not split
 // far enough to ask.
 export const OPTIONS_MAX = 4;
+// A round asks at most four ready decisions (SKILL.md, "Ask in rounds"); a
+// fifth waits for the next round instead.
+export const ROUND_MAX = 4;
 // A typed answer is a sentence or two; the tab itself cuts a field at 2,000.
 const OWN_ANSWER_MAX = 500;
 // The buttons that send the page, each with the whole form.
@@ -207,6 +210,24 @@ export function checkedMap(map) {
   const repeatedNumber = numbers.find((number, index) => numbers.indexOf(number) !== index);
   if (repeatedNumber !== undefined) throw new UsageError(`--map: question number ${repeatedNumber} appears twice`);
   checkTree(decisions);
+  const byId = new Map(decisions.map((decision) => [decision.id, decision]));
+  // A parent that closed while its child still waited is ready now: the
+  // session that wrote the map has not caught up, so the page opens it
+  // itself rather than leaving it stuck behind a decision already answered.
+  for (const decision of decisions) {
+    if (decision.state === 'waits' && byId.get(decision.waitsOn).state === 'closed') decision.state = 'open';
+  }
+  const asked = decisions.filter(isAsked);
+  if (asked.length > ROUND_MAX) {
+    throw new UsageError(`--map: a round asks at most ${ROUND_MAX} decisions, received ${asked.length}`);
+  }
+  for (const decision of asked) {
+    if (decision.waitsOn === undefined) continue;
+    const parent = byId.get(decision.waitsOn);
+    if (parent.state !== 'closed') {
+      throw new UsageError(`--map: '${decision.id}' is asked while '${decision.waitsOn}' it waits on is still ${parent.state}`);
+    }
+  }
   const stillOpen = decisions.some((decision) => decision.state !== 'closed');
   if (stillOpen && !decisions.some(isAsked)) {
     throw new UsageError('--map: decisions are still open, and no open decision carries a number to ask');
@@ -503,6 +524,11 @@ async function ask(flags) {
   const args = ['--wait', directory, '--sketch', sketch];
   if (flags.timeout !== undefined) args.push('--timeout', flags.timeout);
   const { code, stdout } = await runSketchTab(args);
+  if (code === 3) {
+    // The child's own stderr line ends "the recommended option stands", read
+    // on its own as license to pick it; this line overrides that reading.
+    process.stderr.write('question page: no answer to draw from; ask this round in the conversation, never pick for the user\n');
+  }
   if (code !== 0) {
     process.exitCode = code;
     return;

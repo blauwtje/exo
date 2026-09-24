@@ -106,6 +106,27 @@ describe('question-page.mjs', () => {
     assert.throws(() => checkedMap(nothingAsked), /no open decision carries a number to ask/);
   });
 
+  it('refuses a round of more than four asked decisions, and a decision asked before the open parent it waits on closes', () => {
+    const askedLike = (id, number) => ({
+      id, name: id, state: 'open', number, waitsOn: 'format', question: `${id}?`, changes: 'c', why: 'w',
+      options: [{ id: 'a', label: 'A', gives: 'a', recommended: true }, { id: 'b', label: 'B', gives: 'b' }]
+    });
+    const crowded = roundMap();
+    crowded.decisions.push(askedLike('extra1', 4), askedLike('extra2', 5), askedLike('extra3', 6), askedLike('extra4', 7));
+    assert.throws(() => checkedMap(crowded), /a round asks at most 4 decisions, received 5/);
+
+    const tooSoon = roundMap();
+    tooSoon.decisions[4] = { ...askedLike('layout', 4), waitsOn: 'range' };
+    assert.throws(() => checkedMap(tooSoon), /'layout' is asked while 'range' it waits on is still open/);
+  });
+
+  it('opens a decision by itself once the parent it waits on has closed', () => {
+    const map = roundMap();
+    map.decisions[4].waitsOn = 'format';
+    const checked = checkedMap(map);
+    assert.equal(checked.decisions.find((decision) => decision.id === 'layout').state, 'open');
+  });
+
   it('draws each question of the round with its text, numbered options and the recommended one first', () => {
     const page = renderRound(checkedMap(roundMap()));
     assert.match(page, /^<title>Round 2 · 2 still open<\/title>/);
@@ -196,6 +217,15 @@ describe('question-page.mjs', () => {
     const mapless = await run(QUESTION_PAGE, ['--ask', folder]);
     assert.equal(mapless.code, 2);
     assert.match(mapless.stderr, /--map <map\.json> is required/);
+  });
+
+  it('prints its own line on exit 3, so the recommended option is never taken for the user', async () => {
+    const folder = await fixture();
+    const mapFile = await jsonFixture('map.json', roundMap());
+    const alone = await run(QUESTION_PAGE, ['--ask', path.join(folder, 'questions'), '--map', mapFile, '--timeout', '6']);
+    assert.equal(alone.code, 3);
+    assert.match(alone.stderr, /no tab server runs for this folder/, 'the child still prints its own line');
+    assert.match(alone.stderr, /question page: no answer to draw from; ask this round in the conversation, never pick for the user/);
   });
 
   it('prints the sent round as one line', async () => {
