@@ -3,12 +3,13 @@
 // checks never registered is left to the gate instead of read as red.
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
-import { TIMEOUT_EXIT } from '../skills/shipping/scripts/wait-checks.mjs';
+import { GH_ERROR_EXIT, TIMEOUT_EXIT } from '../skills/shipping/scripts/wait-checks.mjs';
 
 const WAIT_CHECKS = fileURLToPath(new URL('../skills/shipping/scripts/wait-checks.mjs', import.meta.url));
 
@@ -21,6 +22,7 @@ const STAND_IN = [
   "if (mode === 'pass') { console.log('All checks were successful'); process.exit(0); }",
   "if (mode === 'fail') { console.log('test (ubuntu-latest)  fail'); process.exit(1); }",
   "if (mode === 'none') { console.error(\"no checks reported on the 'feat/x' branch\"); process.exit(1); }",
+  "if (mode === 'auth-error') { console.error('gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.'); console.error('run: gh auth login'); process.exit(1); }",
   'setTimeout(() => process.exit(0), 30000);',
   ''
 ].join('\n');
@@ -30,6 +32,7 @@ async function waitChecks(mode, args) {
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'gh'), STAND_IN, { mode: 0o755 });
+  execFileSync('git', ['init', '-q'], { cwd: directory });
   const log = path.join(directory, 'calls.log');
   const outcome = await run(WAIT_CHECKS, args, {
     cwd: directory,
@@ -37,7 +40,8 @@ async function waitChecks(mode, args) {
   });
   const logged = await fs.readFile(log, 'utf8').catch(() => '');
   const calls = logged.split('\n').filter((line) => line !== '');
-  return { ...outcome, calls };
+  const gitDirectory = execFileSync('git', ['-C', directory, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).trim();
+  return { ...outcome, calls, gitDirectory };
 }
 
 test('a green run passes through and watches the named pull request', async () => {
@@ -51,16 +55,29 @@ test('a red check exits 1', async () => {
   assert.equal(outcome.code, 1, outcome.stderr);
 });
 
+test('a gh failure, such as an auth error, gets its own exit code instead of reading as a red check', async () => {
+  const outcome = await waitChecks('auth-error', ['--pr', '12']);
+  assert.equal(outcome.code, GH_ERROR_EXIT, outcome.stderr);
+  assert.equal(outcome.stdout, 'checks: error gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.\n');
+});
+
 test('a watch past the limit stops with 124 and says the pull request stays open', async () => {
   const outcome = await waitChecks('hang', ['--pr', '12', '--minutes', '0.005']);
   assert.equal(outcome.code, TIMEOUT_EXIT, outcome.stderr);
-  assert.match(outcome.stdout, /no verdict after 0\.005 minutes; the pull request stays open/);
+  assert.equal(outcome.stdout, 'checks: timeout\n');
 });
 
 test('no checks after the grace period exits 0 and leaves the verdict to the gate', async () => {
   const outcome = await waitChecks('none', ['--pr', '12', '--grace-seconds', '0']);
   assert.equal(outcome.code, 0, outcome.stderr);
-  assert.match(outcome.stdout, /no checks reported; the merge gate reads the API/);
+  assert.equal(outcome.stdout, 'checks: none\n');
+});
+
+test('a green run logs gh\'s table under the git directory and prints one line', async () => {
+  const outcome = await waitChecks('pass', ['--pr', '12']);
+  assert.equal(outcome.stdout, 'checks: pass\n', outcome.stdout);
+  const logged = await fs.readFile(path.join(outcome.gitDirectory, 'exo', 'wait-checks.log'), 'utf8');
+  assert.match(logged, /All checks were successful/);
 });
 
 test('a missing or malformed argument is a usage error that runs no gh', async () => {
