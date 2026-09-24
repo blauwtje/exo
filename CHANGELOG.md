@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.35.3 - 2026-09-24
+
 ### Changed
 
 - `CLAUDE.md` keeps only rules a session would get wrong without them, and landing now fetches and rebases the integration branch onto `origin/main` before fast-forwarding `main`, so the release workflow's `chore(release)` commit no longer gets the push rejected.
