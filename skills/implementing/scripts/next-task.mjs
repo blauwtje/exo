@@ -77,7 +77,7 @@ function modifyRanges(task, root) {
       const target = path.join(root, file.path);
       if (!fs.existsSync(target)) return [];
       const range = regionRange(fs.readFileSync(target, 'utf8'), file.region);
-      return range === null ? [] : [`${file.path}:${range.start}-${range.end}`];
+      return range === null ? [] : [`\`${file.path}:${range.start}-${range.end}\``];
     });
 }
 
