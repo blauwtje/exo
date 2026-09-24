@@ -11,9 +11,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `CLAUDE.md` keeps the checkout exo loads from on `main`: every change runs in worktree-isolated subagents, lands through one integration worktree under `.worktrees/` and a direct push to `main` with no pull request, and ends with `/reload-plugins` instead of a cache update.
 - `CLAUDE.md` says one thing about landing: a change lands by a direct push to `main`, its Highlights go in the commit that records it, the push cuts the release, and the opening tidy also deletes local branches whose upstream is gone, so squash-merged branches no longer linger.
+- `CLAUDE.md` gives each subagent one bug or one concern and splits a brief with two unrelated parts, because two bugs plus a skill load drove a subagent into the budget hook before it committed.
 
 ### Fixed
 
+- `designing`'s `capture.mjs` keeps a full-page capture wider than the viewport and records its `scrollWidth`, so a page with horizontal overflow reaches the critic instead of blocking visual verification.
+- `designing` passes `--label baseline`, `post-build` or `final` to every capture, so the three checkpoints no longer overwrite each other, and `design-discovery` and `design-critic` read the `<label>-<w>x<h>-fullpage.png` files `capture.mjs` writes.
+- `designing`'s `direction.mjs --check` accepts a contract at any position whose seed `<seed>:<n>` and axes match dealing index `n`, so `recommended.json`, `chosen.json` and a finalist set that skips an index no longer fail on seed-mismatch.
+- `direction.mjs` exits 1 on any report that is not `ok`, and `--select` takes `--space` (and `--candidates`) and refuses a contract `--check` rejects instead of freezing it.
+- `designing`'s `context.mjs` parses a flow list such as `source_anchors: [a, b]`, reports `unknown` when no anchor names a file to compare, and carries the front matter's `status` as `approval_status`.
 - The `memory` nudge hook fires on Dutch corrections such as "nee, …", "dat klopt niet" and "eigenlijk …", and still stays quiet on an ordinary Dutch sentence.
 - `memory` renders only live lines into `memory.md`, keeps superseded and dropped history in `memory.json` outside the 2,000-byte budget, and adds `retire --claim <n>`, so repeated supersedes no longer refuse every write.
 - `debug` writes its repro log to `$(git rev-parse --git-dir)/debug-repro.log`, so it works in a linked worktree where `.git` is a file.
