@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**The context watch now measures the main session on every tool call and, from 150k tokens, shows you the handoff notice too.**
+
+### Changed
+
+- The context watch runs after every tool call instead of only a completed `TaskUpdate`, reads the transcript through the tail reader it now shares with the delegate budget in `transcript-tail.mjs`, tells the main session from the `context` setting, and again after each further 25k, to finish its step and have the user run `/exo:handoff` then `/clear`, adds the notice as a `systemMessage` from 150k, and never denies a tool; the `context` default rises from 80 to 100.
+
 ## 0.38.0 - 2026-09-24
 
 ### Added
