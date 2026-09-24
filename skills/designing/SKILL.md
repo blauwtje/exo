@@ -27,7 +27,7 @@ This skill owns a visual change at any file count, because Build dispatches its 
 Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface, naming the candidates newest first. Then stop at the first matching rung, because comps earn their cost only where a chooser recognises a direction they cannot name:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice.
+2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice. When `$RUN/inventory.md` is missing and the size is a full or bounded redesign, dispatch `exo:design-discovery` for Phase 1 only before Build, never Phase 2.
 3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, read when rungs 1-4 miss, while neither the user nor the brief lets it be replaced: one direction in text, no offer. A component library in the manifest is not that evidence on its own, because its defaults are the template this skill exists to replace.
@@ -44,7 +44,7 @@ The references call these steps Phase 1 to 5.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
 4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, already read at Phase 1, before the baseline capture, which precedes the first edit.
-5. **Check.** Run `## QA` of `references/phase-detail.md`, already read at Phase 1; once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs it with `RUN`, `SKILL`, `REPO` and that section, returning at most 20 lines.
+5. **Check.** A `general-purpose` delegate on `sonnet` runs `## QA` of `references/phase-detail.md`, already read at Phase 1, with `RUN`, `SKILL` and `REPO`, and writes `$RUN/qa.md`; this session's close quotes qa.md.
 
 ## References
 
@@ -54,7 +54,6 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 |---|---|
 | `references/intake.md` | Before Phase 1: asking, the run directory, symptoms; its `## Settled identity` when Route rungs 1-4 miss. |
 | `references/phase-detail.md` | Whole, once, at Phase 1; later steps name its sections by heading. |
-| `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
 | `references/visual-direction.md` | Phase 2, every direction decision; Phase 1 when the repository or docs/design/DESIGN.md holds a design system to extract. |

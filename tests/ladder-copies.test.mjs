@@ -13,7 +13,7 @@ const PROMPTS = [
   'agents/implementer.md',
   'skills/implementing/bug-fixer-prompt.md',
   'skills/implementing/review-fixer-prompt.md',
-  'skills/designing/builder-prompt.md',
+  'agents/design-builder.md',
   'skills/debug/fixer-prompt.md',
 ];
 

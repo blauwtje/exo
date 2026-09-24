@@ -96,7 +96,6 @@ const EXPECTED_OWNER_ROWS = {
   'skills/designing/SKILL.md': [
     'references/intake.md',
     'references/phase-detail.md',
-    'builder-prompt.md',
     'references/phase-direction.md',
     'references/phase-build.md',
     'references/visual-direction.md',

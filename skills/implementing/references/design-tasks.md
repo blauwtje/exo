@@ -6,7 +6,7 @@ Route a plan task that carries a `Design:` line by how settled its direction is.
 
 The plan's `## Visual direction` picks the route:
 
-- **It names the chosen direction.** The task goes to the `exo:implementer` agent with the dispatch's model set to `opus`, with a brief from [the implementer prompt](../implementer-prompt.md); the agent enters `designing` at its Build phase and takes that direction as given.
+- **It names the chosen direction.** This session loads `designing` itself: write the plan's `Contract:` to `$RUN/contract-selected.json` and the task's `Files:` lines to `$RUN/files.md` as `<path>:<first>-<last>`, then enter `designing` at Route rung 2. Once `designing` reports, run the task's `Run:` and commit as step 5 does for an in-session build.
 - **It reads `Direction: pending at rung <n>`.** The task builds in this session under `designing`, from its Direction phase.
 - **It records no direction.** The task builds in this session under `designing`, from its `## Route`.
 

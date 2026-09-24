@@ -1,4 +1,6 @@
 {
   "default": { "soft": 40, "hard": 100, "calls": 60 },
-  "agents": {}
+  "agents": {
+    "design-builder": { "calls": 35 }
+  }
 }

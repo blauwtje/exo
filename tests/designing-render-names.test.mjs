@@ -93,13 +93,13 @@ test('every render file a designing doc reads is one checkpoint.mjs writes', () 
 // another script, such as phase-direction's space.json, is out of scope.
 const CHECKPOINT_EVIDENCE = /^\$RUN\/(?:check-ui|inspect-render|inspect-styles|critic-evidence|contract-selected)/;
 
-test('SKILL.md reads phase-detail.md whole at Phase 1 and phase-build.md dispatches builder-prompt.md by path', () => {
+test('SKILL.md reads phase-detail.md whole at Phase 1 and phase-build.md dispatches the design-builder agent', () => {
   const skill = DOCS.find(({ file }) => file.endsWith('skills/designing/SKILL.md')).text;
   const build = DOCS.find(({ file }) => file.endsWith('skills/designing/references/phase-build.md')).text;
   const phaseDetailRow = skill.match(/^\|\s*`references\/phase-detail\.md`\s*\|(.*)\|$/m);
   assert.ok(phaseDetailRow, 'SKILL.md still lists a references/phase-detail.md row');
   assert.doesNotMatch(phaseDetailRow[1], /grep -n|sed -n|each loop step/, 'phase-detail.md is read whole at Phase 1, not by section per step');
-  assert.match(build, /Read \$SKILL\/builder-prompt\.md and follow it/, 'phase-build.md dispatch names builder-prompt.md by path');
+  assert.match(build, /`exo:design-builder` agent/, 'phase-build.md dispatch names the exo:design-builder agent');
 });
 
 test('every evidence file a designing doc or agent reads is one checkpoint.mjs writes', () => {
