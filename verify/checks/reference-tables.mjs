@@ -17,6 +17,7 @@ const EXPECTED_OWNER_ROWS = {
     'investigator-prompt.md',
     'fixer-prompt.md',
     '../implementing-batch/references/performance.md',
+    'references/profiling.md',
     '../implementing-batch/references/critique.md',
     '../implementing-batch/references/security.md',
     '../implementing-batch/references/data-migration.md',
