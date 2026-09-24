@@ -17,7 +17,7 @@ Read the decision-map reference first: it owns the run folder, the full map form
 { "id": "layout", "state": "waits", "waitsOn": "range" }
 ```
 
-- `closedBy` (`you`, `code`, `exo`) names who answered it; `code` carries `evidence`.
+- `closedBy` (`you`, `code` or `exo`) names who answered it; `code` carries `evidence`.
 - An asked decision carries two to four `options`, exactly one of them `recommended`.
 
 ## The commands
