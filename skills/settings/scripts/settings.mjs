@@ -118,17 +118,23 @@ function layers(root) {
 }
 
 // A number is a threshold a hook reads on every call, so a stored one that is
-// not a whole number of at least 1 reads as the default instead of stopping it.
+// not a whole number of at least 1 falls through to the next layer instead of
+// stopping the hook; the note it leaves names the file so the bad value is not
+// mistaken for a deliberate default.
 function resolve(key, stack) {
+  const notes = [];
   for (const layer of stack) {
     if (layer.values[key] === undefined) continue;
     const value = typedValue(key, layer.values[key]);
     const problem = invalidReason(key, value);
-    if (problem && SCHEMA[key].type === 'number') break;
+    if (problem && SCHEMA[key].type === 'number') {
+      notes.push(`${layer.source}: ${problem}`);
+      continue;
+    }
     if (problem) throw new Error(`${layer.source}: ${problem}`);
-    return { value, layer: layer.name };
+    return { value, layer: layer.name, notes };
   }
-  return { value: SCHEMA[key].default, layer: 'default' };
+  return { value: SCHEMA[key].default, layer: 'default', notes };
 }
 
 // The session hook prints this line into every session, so a broken layer
@@ -136,12 +142,11 @@ function resolve(key, stack) {
 function contextLine(root) {
   try {
     const stack = layers(root);
-    const parts = Object.keys(SCHEMA).map((key) => {
-      const { value, layer } = resolve(key, stack);
-      return `${key}=${value} (${layer})`;
-    });
     const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
-    const repliesRule = SCHEMA.replies.rules[resolve('replies', stack).value];
+    const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
+    for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
+    const parts = Object.keys(SCHEMA).map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
+    const repliesRule = SCHEMA.replies.rules[resolved.replies.value];
     return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${repliesRule}`;
   } catch (error) {
     const defaults = Object.entries(SCHEMA).map(([key, entry]) => `${key}=${entry.default} (default)`);

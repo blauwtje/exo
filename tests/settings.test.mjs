@@ -177,6 +177,17 @@ test('a stored context that is not a whole number of at least 1 reads as the def
   }
 });
 
+test('an invalid number in a higher layer falls through to a valid lower layer, and the context line names the bad file', async () => {
+  const space = await workspace({ project: { context: 40 }, local: { context: '40k' } });
+  const got = await settings(space, ['get', 'context']);
+  assert.equal(got.code, 0, got.stderr);
+  assert.equal(got.stdout.trim(), '40');
+  const result = await settings(space, ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /context=40 \(project\)/);
+  assert.match(result.stdout, /exo\.local\.json: context=40k is not a number/);
+});
+
 test('set writes context as a number and rejects anything but a whole number of at least 1', async () => {
   const space = await workspace();
   const written = await settings(space, ['set', 'context', '120', '--scope', 'project']);
