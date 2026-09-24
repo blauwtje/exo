@@ -81,9 +81,9 @@ const EXPECTED_OWNER_ROWS = {
     'references/brief.md',
     'references/brief-in-an-issue.md',
     '../issuing/references/fields.md',
+    'references/decision-map.md',
     'references/interview-page.md',
     '../using-exo/references/question.md',
-    '../using-exo/references/next-stage.md',
   ],
   'skills/skills-tool/SKILL.md': [
     'references/pressure-scenarios.md',
