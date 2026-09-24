@@ -4,7 +4,7 @@
 
 Clone the repository anywhere you keep projects and run `npm install` once. The verifier and the tests run on the Node standard library. You need Node 22 or newer, plus `bash` and `jq` on `PATH`.
 
-An installed plugin runs from Claude Code's cache copy, so an edit is live only after a release. To run the working tree instead, start Claude Code with `claude --plugin-dir <your clone>`.
+A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an edit there is live only after a release; `claude --plugin-dir <your clone>` runs the working tree instead. A marketplace added from a local directory whose `marketplace.json` sets `"source": "./"` — this checkout is one — loads the plugin in place, with no cache copy: an edit is live after `/reload-plugins`.
 
 ## Checks
 
