@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.35.1 - 2026-09-24
+
 ### Changed
 
 - `CLAUDE.md` keeps the checkout exo loads from on `main`: every change runs in worktree-isolated subagents, lands through one integration worktree under `.worktrees/` and a direct push to `main` with no pull request, and ends with `/reload-plugins` instead of a cache update.
