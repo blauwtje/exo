@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.38.1 - 2026-09-24
+
 ### Highlights
 
 **The context watch now measures the main session on every tool call and, from 150k tokens, shows you the handoff notice too.**
