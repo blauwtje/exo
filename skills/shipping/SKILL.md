@@ -53,21 +53,20 @@ When `gh auth status` fails, both pull-request routes are left out and `1. **Pus
 
 ## The routes
 
-The picked route runs its steps in order with no question between them, and stops at the first that fails.
+The picked route runs to its end with no question between its steps; only Keep local runs no script and just names the branch.
 
-1. **Push.** `git push -u origin <branch>` on a branch, `git push --follow-tags` on the default branch. Push ends here; Keep local runs nothing and names the branch.
-2. **Open the pull request** as `## The pull request` in `../issuing/references/fields.md` says: the body carries the goal, the proof line and `Closes #<n>` when the work came from issue `<n>`. Open PR ends here with its URL.
-3. **Wait for the checks, bounded.** Run `node "${CLAUDE_SKILL_DIR}/scripts/wait-checks.mjs" --pr <n>` under the shell tool's `run_in_background` and continue when it exits; it stops after 20 minutes, so a stuck CI never holds the session. Exit 0 goes on; exit 1, a red check, and exit 124, a timeout, stop here. Exit 3 is a gh failure, not a red check, and stops here with the printed `checks: error` line read before a retry.
-4. **Gate from the API.** Right before the merge, run `node "${CLAUDE_SKILL_DIR}/scripts/ship-gate.mjs" --pr <n>` and quote its one line. `MERGE` goes on; a `SKIPPED` or `NEUTRAL` check passes, because it ran by its own rules. `STOP <field>=<value> [check]` stops here, and so does exit 3, a gh failure. `BEHIND` runs `gh pr update-branch <n>`, then step 3 and this gate again, because the checks ran on the old base. `DIRTY` asks one question, `1. **Resolve conflicts (Recommended)**: merge the base branch, resolve, push, gate again` or `2. **Stop**: leave the pull request open`, and never settles a conflict with `--strategy` or `-X`, because those pick a side without reading it.
-5. **Merge bases first.** With two or more pull requests, run `node "${CLAUDE_SKILL_DIR}/scripts/ship-gate.mjs" --order <n...>` and merge in the printed order, saying so, because GitHub closes a stacked pull request whose base branch disappears. `CYCLE` stops here and names the pull requests.
-6. **Merge one.** `gh pr merge <n> --squash`, or the method the repository documents, never with `--delete-branch`, `--admin` or `--auto`.
-7. **Confirm.** `gh pr view <n> --json state,mergedAt` must show `state` `MERGED` before the report says merged; otherwise report it not merged with that JSON. A stacked pull request then needs a fresh gate, because its base just moved.
+1. **Write the pull request body**, for `open-pr` and `pr-merge`, as `## The pull request` in `../issuing/references/fields.md` says: the goal, the proof line and `Closes #<n>` when the work came from issue `<n>`.
+2. **Run the route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <conventional subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under the shell tool's `run_in_background`; quote its stdout lines as the report, unchanged.
 
-A stop leaves the pull request open and reports its URL, the step, and the check name or JSON field that stopped it.
+The script carries the steps in order, stopping at the first that fails: the `--issue` body check, push, create the pull request, wait for checks (stops after 20 minutes, exit 124, a `stopped wait timeout` line), gate from the API, merge, confirm. `BEHIND` from the gate updates the branch, then waits and gates again, twice at most, before stopping. A stop names the branch, or once a pull request exists its URL, then the step and the reason; exit 1 for any stop, exit 4 for `DIRTY`.
+
+`DIRTY` asks the existing question, `1. **Resolve conflicts (Recommended)**: merge the base branch, resolve, push, gate again` or `2. **Stop**: leave the pull request open`, and never settles a conflict with `--strategy` or `-X`, because those pick a side without reading it; a resolve pushes and reruns the same command.
+
+A stop leaves the pull request open and reports its URL, the step, and the reason that stopped it.
 
 ## Merging on request
 
-A request to merge open pull requests lists them with `gh pr list --json number,title,baseRefName,headRefName`, keeps the user's order or else the list's, and prints that table before touching anything. Each then runs route steps 4 to 7, one at a time; a stop for one is reported and the next goes on.
+A request to merge open pull requests lists them with `gh pr list --json number,title,baseRefName,headRefName`, keeps the user's order or else the list's, and prints that table before touching anything. Then `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under the shell tool's `run_in_background` orders, gates, merges and confirms each in that order, a stop for one printed and the next going on; quote its stdout lines, one per pull request, as the report.
 
 ## The report
 
@@ -77,7 +76,7 @@ One line per pull request: its URL, then merged or the stop and its reason; for 
 
 | File | Read it when |
 |---|---|
-| `../issuing/references/fields.md` | Route step 2, before creating the pull request, for its body and fields. |
+| `../issuing/references/fields.md` | Route step 1, before writing the pull request body, for its fields. |
 | `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
