@@ -7,9 +7,14 @@
 // made against the selected direction contract, not here.
 //
 //   node scripts/inspect-render.mjs --image <png> [--image <png> …]
-//                                   [--baseline <png>]
+//                                   [--baseline <png> [--baseline <png> …]]
 //                                   [--tile <8..128>] [--accent <#rrggbb>]
 //                                   [--max-quiet-regions <n>]
+//
+// Pass one --baseline per --image, in the same order: each image is deltaed
+// against the baseline at its own position. pairs only compares images of
+// matching source dimensions, since a tile-position match across differing
+// viewports is not a pixel correspondence.
 
 import fs from 'node:fs/promises';
 import process from 'node:process';
@@ -762,13 +767,19 @@ function baselineDelta(image, baseline) {
 async function main(argv) {
   const flags = parseFlags(argv, {
     image: 'list',
-    baseline: 'value',
+    baseline: 'list',
     tile: 'value',
     accent: 'value',
     'max-quiet-regions': 'value'
   });
   const paths = flags.image ?? [];
   if (paths.length === 0) throw new UsageError('--image is required at least once');
+  const baselinePaths = flags.baseline ?? [];
+  if (baselinePaths.length > 0 && baselinePaths.length !== paths.length) {
+    throw new UsageError(
+      `--baseline must be passed once per --image (${paths.length} image(s), ${baselinePaths.length} baseline(s))`
+    );
+  }
   const tile = parseTile(flags.tile);
   const accent = parseAccent(flags.accent);
   const maxQuietRegions = parseMaxQuietRegions(flags['max-quiet-regions']);
@@ -783,14 +794,19 @@ async function main(argv) {
   const pairs = [];
   for (let left = 0; left < rasters.length; left += 1) {
     for (let right = left + 1; right < rasters.length; right += 1) {
+      if (images[left].width !== images[right].width || images[left].height !== images[right].height) continue;
       pairs.push({ a: paths[left], b: paths[right], ...compareImages(rasters[left], rasters[right], { tile }) });
     }
   }
 
   let delta = null;
-  if (flags.baseline !== undefined) {
-    const baseline = renderMetrics(await loadRaster(flags.baseline), { tile, accent, maxQuietRegions });
-    delta = baselineDelta(images[0], baseline);
+  if (baselinePaths.length > 0) {
+    const baselineRasters = [];
+    for (const file of baselinePaths) baselineRasters.push(await loadRaster(file));
+    delta = images.map((image, index) => ({
+      path: image.path,
+      ...baselineDelta(image, renderMetrics(baselineRasters[index], { tile, accent, maxQuietRegions }))
+    }));
   }
 
   process.stderr.write(`ui-design: analysed ${images.length} image(s) at tile ${tile}\n`);

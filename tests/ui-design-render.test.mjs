@@ -330,18 +330,45 @@ test('command line', async (t) => {
     assert.deepEqual(scored, []);
   });
 
-  await t.test('pairs every image and deltas the first against the baseline', async () => {
+  await t.test('pairs every same-size image and deltas each against its own positional baseline', async () => {
     const flat = await pngFixture('flat.png', { width: 64, height: 64, pixels: solidPixels(64, 64, [245, 245, 245]) });
     const rich = await pngFixture('rich.png', { width: 64, height: 64, pixels: bandedPixels(64, [[32, [10, 20, 200]], [32, 'noise']]).pixels });
-    const result = await run(SCRIPT, ['--image', rich, '--image', flat, '--baseline', flat, '--tile', '32']);
+    const result = await run(SCRIPT, [
+      '--image', rich, '--image', flat,
+      '--baseline', flat, '--baseline', flat,
+      '--tile', '32'
+    ]);
     assert.equal(result.code, 0, result.stderr);
     const report = parse(result.stdout);
     assert.equal(report.pairs.length, 1);
     assert.deepEqual([report.pairs[0].a, report.pairs[0].b], [rich, flat]);
     assert.ok(report.pairs[0].meanTileDeltaE > 0);
-    assert.deepEqual(Object.keys(report.baselineDelta).sort(), ['chromaStd', 'effectiveHueCount', 'lightnessSpread', 'quietAreaShare', 'tileChromaVariance']);
-    assert.ok(report.baselineDelta.chromaStd > 0, 'the richer render should gain chroma spread over the flat baseline');
-    assert.ok(report.baselineDelta.quietAreaShare < 0, 'the richer render should lose quiet area');
+    assert.equal(report.baselineDelta.length, 2, 'every image gets its own baseline delta, not only the first');
+    assert.equal(report.baselineDelta[0].path, rich);
+    assert.equal(report.baselineDelta[1].path, flat);
+    assert.deepEqual(Object.keys(report.baselineDelta[0]).sort(), ['chromaStd', 'effectiveHueCount', 'lightnessSpread', 'path', 'quietAreaShare', 'tileChromaVariance']);
+    assert.ok(report.baselineDelta[0].chromaStd > 0, 'the richer render should gain chroma spread over the flat baseline');
+    assert.ok(report.baselineDelta[0].quietAreaShare < 0, 'the richer render should lose quiet area');
+    assert.equal(report.baselineDelta[1].chromaStd, 0, 'the flat render deltaed against its own flat baseline is unchanged');
+  });
+
+  await t.test('rejects a baseline count that does not match the image count', async () => {
+    const flat = await pngFixture('flat2.png', { width: 64, height: 64, pixels: solidPixels(64, 64, [245, 245, 245]) });
+    const rich = await pngFixture('rich2.png', { width: 64, height: 64, pixels: bandedPixels(64, [[32, [10, 20, 200]], [32, 'noise']]).pixels });
+    const result = await run(SCRIPT, ['--image', rich, '--image', flat, '--baseline', flat]);
+    assert.equal(result.code, 2, result.stderr);
+    assert.match(result.stderr, /--baseline must be passed once per --image/);
+  });
+
+  await t.test('excludes cross-size pairs, since tile positions do not correspond across viewports', async () => {
+    const mobile = await pngFixture('mobile.png', { width: 64, height: 64, pixels: solidPixels(64, 64, [30, 90, 180]) });
+    const desktop = await pngFixture('desktop.png', { width: 128, height: 64, pixels: solidPixels(128, 64, [30, 90, 180]) });
+    const other = await pngFixture('mobile-other.png', { width: 64, height: 64, pixels: solidPixels(64, 64, [230, 190, 40]) });
+    const result = await run(SCRIPT, ['--image', mobile, '--image', desktop, '--image', other, '--tile', '32']);
+    assert.equal(result.code, 0, result.stderr);
+    const report = parse(result.stdout);
+    assert.equal(report.pairs.length, 1, 'the desktop image at a different size pairs with neither mobile image');
+    assert.deepEqual([report.pairs[0].a, report.pairs[0].b], [mobile, other]);
   });
 
   await t.test('is byte-identical across runs on the same input', async () => {
