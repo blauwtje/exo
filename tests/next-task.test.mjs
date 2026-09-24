@@ -1,6 +1,7 @@
 // next-task.mjs prints the landed set, the next task or wave, and for each of
-// its tasks the frame fields, the drift of its Modify: regions and its section,
-// read from the plan and the checkout rather than the session's memory.
+// its tasks the drift of its Modify: regions and the path of the brief it
+// writes with the frame fields and the section, read from the plan and the
+// checkout rather than the session's memory.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -31,19 +32,42 @@ function land(root, number, subject) {
   git(root, 'commit', '-q', '--allow-empty', '-m', subject, '-m', `Plan-task: ${number}`);
 }
 
-test('with nothing landed, the report names the first wave with its frame, sections and no drift', async () => {
+function briefPath(root, number) {
+  return path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'briefs', `task-${number}.md`);
+}
+
+test('with nothing landed, the report names the first wave with no drift and a brief per task', async () => {
   const { root, planPath } = await checkout();
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   assert.match(report, /^Branch: feat\/fixture$/m);
   assert.match(report, /^Landed: none$/m);
   assert.match(report, /^Wave: Task 1, Task 3$/m);
-  assert.match(report, /^Goal: The fixture proves the plan reader\.$/m);
-  assert.match(report, /^- `src\/app\.js` exports `greet`\.$/m);
-  assert.match(report, /^Visual direction: none$/m);
   assert.match(report, /^Drift: none$/m);
-  assert.match(report, /^### Task 1: Greet$/m);
-  assert.match(report, /^### Task 3: Wave$/m);
-  assert.doesNotMatch(report, /^### Task 2: Style$/m);
+  assert.ok(report.includes(`\nBrief: ${briefPath(root, 1)}\n`), report);
+  assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
+});
+
+test('the brief file holds the frame and the task section, and the report holds neither', async () => {
+  const { root, planPath } = await checkout();
+  const report = nextTaskReport({ planPath, planText: PLAN, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, /^Goal: The fixture proves the plan reader\.$/m);
+  assert.match(brief, /^- `src\/app\.js` exports `greet`\.$/m);
+  assert.match(brief, /^Visual direction: none$/m);
+  assert.match(brief, /^### Task 1: Greet$/m);
+  assert.ok(brief.includes('export function greet() {\n  return "hello";\n}'), brief);
+  assert.doesNotMatch(brief, /^### Task 3: Wave$/m);
+  assert.doesNotMatch(report, /^### Task \d+:/m);
+  assert.doesNotMatch(report, /^Goal:/m);
+  assert.ok(!report.includes('return "hello"'), report);
+});
+
+test('a wave of two writes two briefs, and a task outside the wave gets none', async () => {
+  const { root, planPath } = await checkout();
+  nextTaskReport({ planPath, planText: PLAN, root });
+  assert.match(await fs.readFile(briefPath(root, 1), 'utf8'), /^### Task 1: Greet$/m);
+  assert.match(await fs.readFile(briefPath(root, 3), 'utf8'), /^### Task 3: Wave$/m);
+  await assert.rejects(fs.access(briefPath(root, 2)), { code: 'ENOENT' });
 });
 
 test('a landed task leaves the report, and a Design: task builds alone with the visual direction', async () => {
@@ -53,8 +77,9 @@ test('a landed task leaves the report, and a Design: task builds alone with the 
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   assert.match(report, /^Landed: 1, 3$/m);
   assert.match(report, /^Next: Task 2$/m);
-  assert.match(report, /^Visual direction:\nDesign skill: designing$/m);
-  assert.doesNotMatch(report, /^### Task 4: Tail$/m);
+  assert.match(report, /^Design: designing$/m);
+  assert.match(await fs.readFile(briefPath(root, 2), 'utf8'), /^Visual direction:\nDesign skill: designing$/m);
+  await assert.rejects(fs.access(briefPath(root, 4)), { code: 'ENOENT' });
 });
 
 test('drift in a Modify: region is a PLAN DRIFT line for that task', async () => {
@@ -80,6 +105,8 @@ test('the command line reads the plan and the checkout, and refuses a missing pl
   const good = await run(SCRIPT, ['--plan', planPath, '--root', root], { cwd: root });
   assert.equal(good.code, 0, good.stderr);
   assert.match(good.stdout, /^Wave: Task 1, Task 3$/m);
+  assert.doesNotMatch(good.stdout, /^### Task \d+:/m);
+  assert.ok(good.stdout.includes(`\nBrief: ${briefPath(root, 1)}\n`), good.stdout);
   const missing = await run(SCRIPT, ['--plan', path.join(root, 'nope.md')], { cwd: root });
   assert.equal(missing.code, 2);
   assert.equal(missing.stdout, '');
