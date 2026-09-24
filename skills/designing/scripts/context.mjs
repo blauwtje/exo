@@ -91,10 +91,20 @@ export function parseFrontmatter(text) {
       values[listKey] = [];
     } else {
       listKey = null;
-      values[pair[1]] = pair[2].trim();
+      values[pair[1]] = parseScalarOrFlowList(pair[2].trim());
     }
   }
   return { values, body: text.slice(match[0].length) };
+}
+
+// A flow-style list (`[a, "b"]`) becomes an array; any other value stays a string.
+function parseScalarOrFlowList(value) {
+  const flow = /^\[(.*)\]$/.exec(value);
+  if (!flow) return value;
+  return flow[1]
+    .split(',')
+    .map((entry) => entry.trim().replace(/^(['"])(.*)\1$/, '$2'))
+    .filter(Boolean);
 }
 
 export function selectSections(body, needs) {
@@ -161,6 +171,9 @@ export async function designStatus({ root, masterPath, frontmatter }) {
   }
 
   const anchors = Array.isArray(frontmatter.values.source_anchors) ? frontmatter.values.source_anchors : [];
+  if (anchors.length === 0) {
+    return { design_context_status: 'unknown', reason: 'front matter lists no source_anchors to compare' };
+  }
   const changed = [];
   for (const anchor of anchors) {
     if (!anchorInsideRoot(root, anchor)) {
@@ -187,6 +200,7 @@ export async function readContext({ root, surface, needs }) {
 
   const report = {
     ...status,
+    approval_status: frontmatter?.values.status ?? null,
     root: resolvedRoot,
     sources: { master: masterPath, surface: null },
     sections: [],

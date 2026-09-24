@@ -12,6 +12,7 @@ import {
   obscuraServerArguments,
   resolveBrowser
 } from '../skills/designing/scripts/capture.mjs';
+import { parseFrontmatter } from '../skills/designing/scripts/context.mjs';
 import { fontConfidence } from '../skills/designing/scripts/inspect-styles.mjs';
 import { ALWAYS_BLOCKING, compareFindings, DECORATIVE_TELLS } from '../skills/designing/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
@@ -177,6 +178,26 @@ describe('context.mjs', () => {
     const report = await readStatus(root);
     assert.equal(report.design_context_status, 'unknown');
     assert.match(report.reason, /escapes the project root/);
+  });
+
+  it('parses a flow-style source_anchors list into its entries', () => {
+    const { values } = parseFrontmatter('---\nsource_anchors: [src/a.css, "src/b.css"]\n---\n');
+    assert.deepEqual(values.source_anchors, ['src/a.css', 'src/b.css']);
+  });
+
+  it('reports unknown when source_anchors names no file to compare', async () => {
+    const { root } = await designRepository({ anchors: [] });
+    const report = await readStatus(root);
+    assert.equal(report.design_context_status, 'unknown');
+    assert.match(report.reason, /source_anchors/);
+  });
+
+  it('carries the approval status from the front matter into the report', async () => {
+    const { root } = await designRepository();
+    assert.equal((await readStatus(root)).approval_status, 'approved');
+    const text = await fs.readFile(path.join(root, 'docs', 'design', 'DESIGN.md'), 'utf8');
+    await fs.writeFile(path.join(root, 'docs', 'design', 'DESIGN.md'), text.replace('status: approved', 'status: draft'));
+    assert.equal((await readStatus(root)).approval_status, 'draft');
   });
 
   it('rejects a surface name that is not a plain file-name token', async () => {
