@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The delegate budget gives the read-only agents (`exo:explorer`, `exo:researcher`, `exo:design-discovery`, `exo:design-critic`, both branch reviewers and `Explore`) a soft limit of 70k instead of 40k, and using-exo tells the lead to put a `Budget: 70k/100k` line in a read-only `general-purpose` dispatch, so a reader is no longer told to read nothing new after a few files.
+
 ## 0.38.2 - 2026-09-24
 
 ### Changed
