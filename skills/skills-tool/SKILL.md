@@ -41,6 +41,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` line; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
 5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
 6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
+7. **Judge blind.** When step 4's read is a close call, rerun `pressure.mjs` once on the pre-edit clone and once on the edited clone. Score the two `with` lines with a fresh sonnet judge that does not know which is which, per `references/blind-eval.md`.
 
 ## Red flags
 
@@ -62,6 +63,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `references/description.md` | Step 3 for the frontmatter; step 5 when a symptom joins the description. |
 | `references/skill-shape.md` | Step 3 for a skill started from nothing; never for a change to an existing skill. |
 | `references/plugging-holes.md` | Step 5, once a run with the skill loaded still produced a justification. |
+| `references/blind-eval.md` | Step 7, when step 4's `with`/`without` read is a close call. |
 
 ## Judgment
 

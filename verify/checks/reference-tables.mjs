@@ -106,6 +106,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/description.md',
     'references/skill-shape.md',
     'references/plugging-holes.md',
+    'references/blind-eval.md',
   ],
   'skills/designing/SKILL.md': [
     'references/intake.md',
