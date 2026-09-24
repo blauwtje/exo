@@ -2,12 +2,15 @@
 // and only a named --reviewer override moves the pick off that reading.
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { FILE_LIMIT, LINE_LIMIT, parseShortstat, pickReviewer, resolveReviewer } from '../skills/implementing/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT, parseNumstat, parseShortstat, pickEffort, pickReviewer, resolveReviewer } from '../skills/implementing/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
+import { gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/implementing/scripts/pick-reviewer.mjs', import.meta.url));
 
@@ -46,4 +49,43 @@ test('an empty base is rejected, not read as a change of no size', () => {
 test('with no override, the diff reading decides', () => {
   assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 3 files changed, 9 insertions(+), 1 deletion(-)' }), 'exo:branch-reviewer');
   assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 16 files changed, 384 insertions(+)' }), 'exo:branch-reviewer-deep');
+});
+
+test('parseNumstat sums numstat lines and treats a binary marker as zero', () => {
+  assert.deepEqual(parseNumstat('5\t2\tfoo.js\n1\t0\tbar.js\n'), { files: 2, changedLines: 8 });
+  assert.deepEqual(parseNumstat('-\t-\timage.png\n'), { files: 1, changedLines: 0 });
+  assert.deepEqual(parseNumstat(''), { files: 0, changedLines: 0 });
+});
+
+test('pickEffort follows the D5 edges', () => {
+  assert.equal(pickEffort({ files: 2, changedLines: 0, manifestChanged: false }), 'skip');
+  assert.equal(pickEffort({ files: 2, changedLines: 0, manifestChanged: true }), 'low');
+  assert.equal(pickEffort({ files: FILE_LIMIT, changedLines: LINE_LIMIT, manifestChanged: false }), 'low');
+  assert.equal(pickEffort({ files: FILE_LIMIT + 1, changedLines: 0, manifestChanged: false }), 'medium');
+  assert.equal(pickEffort({ files: FILE_LIMIT, changedLines: LINE_LIMIT + 1, manifestChanged: false }), 'medium');
+});
+
+test('--effort prints skip for one small edited tracked file', async () => {
+  const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
+  await fs.writeFile(path.join(root, 'app.js'), 'export function greet() { return 1; }\n');
+  const result = await run(SCRIPT, ['--effort'], { cwd: root });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, 'skip\n');
+});
+
+test('--effort prints low for three new untracked files', async () => {
+  const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
+  await fs.writeFile(path.join(root, 'a.js'), 'const a = 1;\n');
+  await fs.writeFile(path.join(root, 'b.js'), 'const b = 1;\n');
+  await fs.writeFile(path.join(root, 'c.js'), 'const c = 1;\n');
+  const result = await run(SCRIPT, ['--effort'], { cwd: root });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, 'low\n');
+});
+
+test('--effort with --base is rejected', async () => {
+  const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
+  const result = await run(SCRIPT, ['--effort', '--base', 'x'], { cwd: root });
+  assert.equal(result.code, 2);
+  assert.equal(result.stdout, '');
 });
