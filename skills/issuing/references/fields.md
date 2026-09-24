@@ -5,28 +5,34 @@ Fill every field an issue or a pull request can carry in the vocabulary the repo
 ## Read the repository
 
 ```
-gh label list --limit 100 --json name --jq '[.[].name]'
-gh api graphql -f query='{repository(owner:"<o>",name:"<r>"){issueTypes(first:20){nodes{name}}}}' --jq '[.data.repository.issueTypes.nodes[].name]'
-gh api repos/{owner}/{repo}/milestones --jq '[.[]|{number,title}]'
-gh project list --owner <o> --format json --jq '[.projects[]|{number,title}]'
-gh project field-list <nr> --owner <o> --format json --jq '[.fields[]|{id,name,options:[.options[]?|{id,name}]}]'
-ls .github/ISSUE_TEMPLATE
+node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs"
 ```
+
+It prints one JSON line: `repo` (owner, name, defaultBranch), `labels`,
+`types`, `milestones` (number, title), `projects` (number, title, id, and each
+field's id, name and options), `issueTemplates`, `prTemplate`, `titles` (the
+last five issue titles), `vocabulary` (`own` or `default`), `unread` (a line
+per field a `gh` failure left unread) and `fetchedAt`. It caches its answer
+for a day at `<git-common-dir>/exo/fields.json`; run it with `--refresh` when
+the user names a label or field the JSON lacks, to rule out a stale cache.
+Name every `unread` entry in the report, because it marks a field the read
+skipped rather than one the repository has none of.
 
 One reading serves both: a pull request draws its labels, its milestone and its project item from the same vocabulary as an issue.
 
 ## Pick the vocabulary
 
 1. **The repository has its own.** A label outside GitHub's defaults (`bug`, `documentation`, `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`), an issue type, or a project with its own fields means the repository has a vocabulary. Use those names and options only; a field it lacks stays off and is named in the report, never approximated and never created. An issue template's headings order the body.
-2. **It has none.** Use the default set, creating each missing label with `gh label create "<name>" --color <hex>`: `type: feature`, `type: bug` or `type: chore` in `1d76db`; `size: XS` to `size: XL` in `c5def5`; `priority: P0`, `priority: P1` or `priority: P2` in `fbca04`. No project, field or milestone is created, and an estimate has no label form, so it stays unset.
+2. **It has none.** Use the default set, creating each missing label with `gh label create "<name>" --color <hex> --force`, which stays idempotent when a cached read misses a label the run just created: `type: feature`, `type: bug` or `type: chore` in `1d76db`; `size: XS` to `size: XL` in `c5def5`; `priority: P0`, `priority: P1` or `priority: P2` in `fbca04`. No project, field or milestone is created, and an estimate has no label form, so it stays unset.
 
 ## Derive the three values
 
-Read each value off what the item itself says, so two sessions reading one body set the same one.
+Read each value off what the item itself says, so two sessions reading one body set the same one, with
+`node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs" --size --paths <n> --criteria <n> --shape spec|report [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]`,
+which prints `{"size","estimate","priority"}`.
 
-- **Size** follows the paths and acceptance criteria the body names: `XS` one path, `S` two or three, `M` four to six, `L` seven to twelve, `XL` more.
-- **Estimate** reads off Size: `XS` 1, `S` 2, `M` 3, `L` 8, `XL` 13. A repository whose own items already map Size to Estimate differently overrides that ladder with its own.
-- **Priority** follows the body shape and how far the symptom reaches. A Report whose symptom appears in a released version or on the default branch takes the field's highest option; any other Report the middle one; a Spec the lowest, or the middle one when another issue is blocked on it. In a field of more than three options the ends are the highest and the lowest, and everything between them is the middle.
+- **Size and Estimate.** Pass the body's path and acceptance-criteria counts; the script sizes on max(paths, criteria) and reads the estimate off that size. A repository whose own items already map Size to Estimate differently overrides the script's ladder with its own.
+- **Priority.** Pass `--shape report --shipped` when the symptom appears in a released version or on the default branch, `--shape report` for any other Report, `--shape spec --blocking` when another issue is blocked on the Spec, and `--shape spec` otherwise. Pass the project field's own options as `--options "<highest>,...,<lowest>"` when it has more than the default `P0`/`P1`/`P2`; the script takes the first as highest, the last as lowest, and the one between them as the middle.
 
 A milestone is set only when the repository has an open one whose title the outcome falls under, and is created in no case. A status column is left alone: the board's own workflows own it. A field the repository does not define stays unset and is named in the report.
 
@@ -66,11 +72,11 @@ gh issue create --title <title> --body-file <f> --label <l> --type <type> \
   --parent <n> --blocked-by <n> --milestone <m> --project <title>
 ```
 
-Pass only the flags whose values the reading above confirmed or the default set supplies. Project fields are set after creation, one command per field: read the item id with `gh project item-list <nr> --owner <o> --format json --jq '.items[]|select(.content.number==<n>)|.id'`, then `gh project item-edit --id <item> --project-id <proj> --field-id <field>` with `--single-select-option-id <opt>` for a single select and `--number <n>` for a number field. Read each created issue back with `gh issue view <n> --json number,title,labels,milestone,url`.
+Pass only the flags whose values the reading above confirmed or the default set supplies. Project fields are set after creation, one command per field, with the project's `id` and each field's `id` taken from the script's JSON: read the item id with `gh project item-list <nr> --owner <o> --format json --jq '.items[]|select(.content.number==<n>)|.id'`, then `gh project item-edit --id <item> --project-id <proj> --field-id <field>` with `--single-select-option-id <opt>` for a single select and `--number <n>` for a number field. Read each created issue back with `gh issue view <n> --json number,title,labels,milestone,url`.
 
 ## The pull request
 
-Its body follows the repository's own pull-request template when it has one, filling that template's own `Closes #<n>` line rather than adding a second one; without a template the body ends on that line. Its labels, milestone and project field values are the closed issue's, copied rather than derived a second time, so the two never disagree; with no issue behind it they are derived here from what the pull request changes.
+Its body follows the repository's own pull-request template when it has one, filling that template's own `Closes #<n>` line rather than adding a second one; without a template the body ends on that line. Its labels, milestone and project field values are the closed issue's, copied rather than derived a second time, so the two never disagree; with no issue behind it they are derived here from what the pull request changes, with the same `repo-fields.mjs` default and `--size` calls the issue would have used.
 
 ```
 gh pr create --base <default> --title <conventional subject> --body-file <f> \

@@ -2,7 +2,7 @@
 name: issuing
 description: Use when the user asks in plain words to file, open, write or split GitHub issues. Not for a brief shaping stores, closing or editing an existing issue, a plan, or a repository the working directory does not point at.
 argument-hint: <what the issue or issues should cover>
-allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh api graphql *), Bash(gh api repos/*), Bash(gh pr list *), Bash(git log *)
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh pr list *), Bash(git log *), Bash(node *repo-fields.mjs*)
 model: opus
 effort: high
 ---
@@ -33,10 +33,10 @@ named.
    That is the only question this skill asks, because the request approved
    the rest. Never invent an issue the request does not ask for.
 
-2. **Read the repository, invent nothing.** Read its labels, issue types,
-   milestones, project fields and issue templates, and pick the vocabulary,
-   as `references/fields.md` says. Read the language of the last five issues
-   with `gh issue list --limit 5 --json title,body --jq '[.[].title]'`.
+2. **Read the repository, invent nothing.** Run
+   `node "${CLAUDE_SKILL_DIR}/scripts/repo-fields.mjs"` and pick the vocabulary
+   from its JSON, as `references/fields.md` says. Its `titles` carries the
+   language of the last five issues; report each `unread` entry it names.
 
 3. **Ground the references.** Send the `exo:explorer` agent the paths and symbols the
    goal sentences name, so `References` carries real paths. Skip this step for

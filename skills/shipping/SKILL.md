@@ -2,6 +2,7 @@
 name: shipping
 description: Use when a code-changing run ends with commits that may leave the machine, or the user asks to push, open a pull request, or merge open or listed PRs. Not for reviewing code, a PR the user did not name or list, deleting a branch, or cutting a release.
 argument-hint: "[pull request numbers]"
+allowed-tools: Bash(node *repo-fields.mjs*)
 ---
 
 # Shipping
@@ -56,7 +57,7 @@ When `gh auth status` fails, both pull-request routes are left out and `1. **Pus
 The picked route runs its steps in order with no question between them, and stops at the first that fails.
 
 1. **Push.** `git push -u origin <branch>` on a branch, `git push --follow-tags` on the default branch. Push ends here; Keep local runs nothing and names the branch.
-2. **Open the pull request** as `## The pull request` in `../issuing/references/fields.md` says: the body carries the goal, the proof line and `Closes #<n>` when the work came from issue `<n>`. Open PR ends here with its URL.
+2. **Open the pull request** as `## The pull request` in `../issuing/references/fields.md` says: the body carries the goal, the proof line and `Closes #<n>` when the work came from issue `<n>`; with no issue behind it, run `node "${CLAUDE_SKILL_DIR}/../issuing/scripts/repo-fields.mjs"` and its `--size` form for the fields. Open PR ends here with its URL.
 3. **Wait for the checks, bounded.** Run `node "${CLAUDE_SKILL_DIR}/scripts/wait-checks.mjs" --pr <n>` under the shell tool's `run_in_background` and continue when it exits; it stops after 20 minutes, so a stuck CI never holds the session. Exit 0 goes on; exit 1, a red check, and exit 124, a timeout, stop here. Exit 3 is a gh failure, not a red check, and stops here with the printed `checks: error` line read before a retry.
 4. **Gate from the API.** Right before the merge, run `node "${CLAUDE_SKILL_DIR}/scripts/ship-gate.mjs" --pr <n>` and quote its one line. `MERGE` goes on; a `SKIPPED` or `NEUTRAL` check passes, because it ran by its own rules. `STOP <field>=<value> [check]` stops here, and so does exit 3, a gh failure. `BEHIND` runs `gh pr update-branch <n>`, then step 3 and this gate again, because the checks ran on the old base. `DIRTY` asks one question, `1. **Resolve conflicts (Recommended)**: merge the base branch, resolve, push, gate again` or `2. **Stop**: leave the pull request open`, and never settles a conflict with `--strategy` or `-X`, because those pick a side without reading it.
 5. **Merge bases first.** With two or more pull requests, run `node "${CLAUDE_SKILL_DIR}/scripts/ship-gate.mjs" --order <n...>` and merge in the printed order, saying so, because GitHub closes a stacked pull request whose base branch disappears. `CYCLE` stops here and names the pull requests.
