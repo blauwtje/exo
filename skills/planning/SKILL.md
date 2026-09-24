@@ -48,7 +48,7 @@ Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" -
 
 ## Handing it over
 
-A deliverable plan ends the turn on the next-stage question: the reply names the plan path and the task count, never the plan text, then that question's numbered lines, with `/exo:implementing <plan path>` in the Stop line's text as the command to run after a clear.
+A deliverable plan ends the turn on `node "${CLAUDE_SKILL_DIR}/../using-exo/scripts/next-stage.mjs" --after planning --artifact <plan path>`'s output: the reply names the plan path and the task count, never the plan text, then that output.
 
 ## References
 
@@ -59,8 +59,7 @@ A deliverable plan ends the turn on the next-stage question: the reply names the
 | `../implementing-batch/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
 | `../implementing-batch/references/test-design.md` | Before composing the first task, to decide which tasks are risky and therefore write their test first. |
 | `../implementing-batch/references/security.md` | After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
-| `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
-| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options, other than the next-stage question the script prints. |
 
 ## Judgment
 

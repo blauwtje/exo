@@ -52,13 +52,11 @@ The fix delegate appends a `## Fix` section: `Edits`, each path with one line on
 | `../implementing-batch/references/security.md` | After Step 4 identifies the predicted change and before its first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
 | `../implementing-batch/references/data-migration.md` | After Step 4 identifies the predicted change and before editing, only when the fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
 | `../implementing-batch/references/test-design.md` | After reproduction and before the first affected test or production edit, only when the symptom changes logic or public behavior and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify. |
-| `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
-| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
 
 - Outside a read-only planning turn, `debug` outranks `shaping`, `planning`, and `implementing-batch` until the cause is proven; at proof `debug` applies the predicted fix itself through Steps 4 to 7 and offers `implementing-batch` on the next-stage question for edits beyond the predicted change. Inside one, `planning` owns the turn and schedules reproduction as its first phase.
 - A user-stated cause outranks investigation only after it matches the source and predicts the reproduction.
 - Return to Step 1 instead of patching again when the repair reaches a second owner, an old route and its replacement both run, supporting code grows while behavior stays the same, or the path from input to symptom cannot be followed in one reading: each means the proven cause was not the real one.
-- After Step 7 the predicted fix commits in Conventional Commits where Step 4 placed it. Edits the proof leaves beyond it end the turn on the next-stage question, offering `implementing-batch`; with none left, the turn ends on `shipping`.
+- After Step 7 the predicted fix commits in Conventional Commits where Step 4 placed it. Edits the proof leaves beyond it end the turn on `node "${CLAUDE_SKILL_DIR}/../using-exo/scripts/next-stage.mjs" --after debug --artifact none`'s output; with none left, the turn ends on `shipping`.
 - After a compaction, read the newest handoff's `Status` and `Repro` lines and re-run `Repro` before the next dispatch, because the command, not memory, says whether the symptom still exists.

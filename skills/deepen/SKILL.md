@@ -45,8 +45,8 @@ Fill every field the code settles; what it cannot settle becomes a stated assump
 
 | Mode | Output |
 |---|---|
-| A read-only planning mode is active, or the user asks for the plan | In this one invocation, audit, then write the plan for the top findings per the References row into the harness's plan file, else `docs/plans/<topic>.md`. Write the ranked cards into its `## Context` before loading that row, so a compaction loses no finding. End on the next-stage question with the command that runs the plan. |
-| Otherwise | The ranked cards in this message, each with what implementing it takes; no production edits and no file unless asked. End on the next-stage question offering `planning` for the top card, never the reasoning behind a rank. |
+| A read-only planning mode is active, or the user asks for the plan | In this one invocation, audit, then write the plan for the top findings per the References row into the harness's plan file, else `docs/plans/<topic>.md`. Write the ranked cards into its `## Context` before loading that row, so a compaction loses no finding. End on `node "${CLAUDE_SKILL_DIR}/../using-exo/scripts/next-stage.mjs" --after deepen --artifact <plan path>`'s output. |
+| Otherwise | The ranked cards in this message, each with what implementing it takes; no production edits and no file unless asked. End on `node "${CLAUDE_SKILL_DIR}/../using-exo/scripts/next-stage.mjs" --after deepen --artifact <top card's id>`'s output. |
 
 ## References
 
@@ -54,8 +54,7 @@ Fill every field the code settles; what it cannot settle becomes a stated assump
 |---|---|
 | `../planning/references/plan-spec.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
 | `../implementing-batch/references/test-design.md` | In plan mode, before writing the first task, to decide which tasks are risky and therefore write their test first. Do not load in report mode. |
-| `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
-| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options, other than the next-stage question the script prints. |
 
 ## Judgment
 

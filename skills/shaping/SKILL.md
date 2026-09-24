@@ -91,7 +91,7 @@ Nothing is written before the answer, because a brief written earlier is rewritt
 
 Write the brief in the sections `references/brief.md` gives and ask nothing more: a decision that surfaces while it is written takes its recommended answer, listed as exo's.
 
-Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message, even when the next stage runs in this session, because a brief living only in a message dies at the next context clear. `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`. When a planning turn borrowed this skill, fold the brief into the plan artifact instead. The message carries the goal and the location, leaves each decision's reasoning in the brief, and ends on the next-stage question with `/exo:planning` on the brief's path, or on `#<n>` when an issue holds it.
+Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message, even when the next stage runs in this session, because a brief living only in a message dies at the next context clear. `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`. When a planning turn borrowed this skill, fold the brief into the plan artifact instead. The message carries the goal and the location, leaves each decision's reasoning in the brief, and ends on `node "${CLAUDE_SKILL_DIR}/../using-exo/scripts/next-stage.mjs" --after shaping --artifact <brief path, or #<n> when an issue holds it>`'s output.
 
 ## References
 
@@ -102,8 +102,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 | `references/brief-in-an-issue.md` | Before storing, when `specs` is `issues` or `both`. |
 | `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
 | `references/interview-page.md` | Before the first question, only when `interview=page` stands in the `exo settings:` line and the map holds two or more open decisions. |
-| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
-| `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
+| `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options, other than the next-stage question the script prints. |
 
 ## Judgment
 
