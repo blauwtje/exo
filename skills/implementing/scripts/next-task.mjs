@@ -11,7 +11,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from './plan-tasks.mjs';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from '#plan-tasks';
 
 function waveLine(wave) {
   if (wave.length === 0) return 'Next: none, every task landed';

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from '../skills/implementing/scripts/plan-tasks.mjs';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from '#plan-tasks';
 import { fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {

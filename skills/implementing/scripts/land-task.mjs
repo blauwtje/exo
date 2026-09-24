@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { landedTasks, parsePlan, PlanError } from './plan-tasks.mjs';
+import { landedTasks, parsePlan, PlanError } from '#plan-tasks';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
