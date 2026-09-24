@@ -18,7 +18,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is the
 ## Where it goes
 
 1. Read the location, never guess it: `node skills/handoff/scripts/handoff.mjs path` prints it, the same file `hooks/session-start.sh` points a resuming session at. Nothing under that path is committed, and a linked worktree has one of its own, so a handoff cannot follow the wrong branch.
-2. A branch name holding `/` makes a nested path: create the parent directories first. A detached HEAD prints a path ending `HEAD.md`.
+2. A branch name holding `/` makes a nested path: create the parent directories first. A detached HEAD prints a path ending HEAD.md.
 3. Outside a git repository the path falls back to the config directory, keyed by the working directory's own name.
 4. Write the file whole, replacing any handoff already at that path: the state it held is what this clear discards.
 
