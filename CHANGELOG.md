@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.40.2 - 2026-09-24
+
 ### Changed
 
 - The right-sizing ladder's Need rung first deletes the branch, duplicate or path the change makes obsolete.
