@@ -44,6 +44,7 @@ Trust-boundary checks, failure handling that keeps data from being lost, anythin
 - **Command output.** Log output that may pass forty lines under `git rev-parse --git-dir` or a temp directory outside git; read back only failing lines.
 - **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer.
 - **Scope.** Write only the artifacts a skill names, at the length needed.
+- **Reader budget.** A read-only dispatch to an agent type without its own limit, such as `general-purpose`, carries a standalone `Budget: 70k/100k` line, because the 40k default stops a reader after a few files.
 
 # Closing
 

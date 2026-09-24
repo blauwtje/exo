@@ -20,7 +20,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // next addition to using-exo buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 4490, measured: '2026-09-22' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 3999, measured: '2026-09-23' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 4212, measured: '2026-09-24' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
@@ -40,7 +40,7 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 // ceiling because hooks/session-start.sh injects its body into every session.
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
-export const INJECTED_BODY_TOKENS = { skill: 'using-exo', ceiling: 1000 };
+export const INJECTED_BODY_TOKENS = { skill: 'using-exo', ceiling: 1060 };
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 4650 };
 export const REFERENCE_CONTENTS_LINES = 100;

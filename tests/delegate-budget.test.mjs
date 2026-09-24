@@ -229,3 +229,16 @@ test('a Budget line in the dispatch outranks the agent type limits', async () =>
   assert.equal(decision.permissionDecision, undefined);
   assert.equal(decision.additionalContext, 'exo budget: 80k of 90k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
 });
+
+test('the shipped budgets file gives every read-only agent type a soft limit of 70k and the default hard and call limits', async () => {
+  const budgets = JSON.parse(await fs.readFile(new URL('../skills/savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
+  const readers = ['exo:explorer', 'exo:researcher', 'exo:design-discovery', 'exo:design-critic', 'exo:branch-reviewer', 'exo:branch-reviewer-deep', 'Explore'];
+  for (const agentType of readers) {
+    assert.deepEqual(budgets.agents[agentType], { soft: 70 }, agentType);
+  }
+});
+
+test('using-exo tells the lead to give a read-only dispatch without its own limit a standalone 70k Budget line', async () => {
+  const usingExo = await fs.readFile(new URL('../skills/using-exo/SKILL.md', import.meta.url), 'utf8');
+  assert.match(usingExo, /^- \*\*Reader budget\.\*\* .*`general-purpose`.*standalone `Budget: 70k\/100k` line/m);
+});
