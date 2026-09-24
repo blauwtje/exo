@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.40.1 - 2026-09-24
+
 ### Fixed
 
 - `investigation` now loads when a code reason is wanted for an ADR or doc, so an asker's or lead's theory no longer lands there as fact.
