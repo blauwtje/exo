@@ -22,7 +22,8 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import {
-  CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS, configFile, guardLines, readJson, readRecord, savingsEnabled, updateSession, writeJson
+  CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS, configFile, emptySession, guardLines, hotSessionIds, readHotSession, readJson, readRecord,
+  savingsEnabled, updateSession, writeJson
 } from './record.mjs';
 import { GUARD_KINDS, measuredTotals } from './overhead.mjs';
 import { ingestTranscript, refreshStaleSessions } from './transcript.mjs';
@@ -161,8 +162,21 @@ function setGuard(argument) {
 // Every session the counter holds, whatever project it ran in, in a fence so
 // the figures line up. Only the read guard is counted: the repeat guard's
 // denials carry no text to estimate from.
+// The hook hot path no longer touches sessions.json, so a session's live
+// reads, calls, guard and restate state sit only in its hot file until the
+// Stop hook folds them back; the report overlays them here so it stays exact
+// even for a session that has not stopped yet.
+function withHotState(sessions) {
+  for (const sessionId of hotSessionIds()) {
+    const hot = readHotSession(sessionId);
+    if (!hot) continue;
+    sessions[sessionId] = { ...emptySession(), ...(sessions[sessionId] ?? {}), ...hot };
+  }
+  return sessions;
+}
+
 function report() {
-  const sessions = refreshStaleSessions(readRecord());
+  const sessions = withHotState(refreshStaleSessions(readRecord()));
   const withheld = withheldRecord(sessions);
   const enabled = savingsEnabled();
   const sessionCount = Object.keys(sessions).length;
