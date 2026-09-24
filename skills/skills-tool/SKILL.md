@@ -36,9 +36,9 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 ## The loop
 
 1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; it lives in the edit, by hand or in a delegate, and is saved nowhere.
-2. **Watch it happen.** Give that prompt alone to `claude -p --model <id> --effort <level>` in a scratch repository without `--plugin-dir`, once per model and effort that runs the skill, and copy down the exact justification each run gives; a delegate takes a model but no effort, so it cannot stand in for these runs.
+2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`; it runs the without-skill and with-skill arm of every cell in parallel and prints 3 lines each, and step 2 reads only the `without` line. A delegate takes a model but no effort, so it cannot stand in for these runs.
 3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape above and in the register `references/wording.md` sets.
-4. **Watch it stop.** Rerun the prompt with the skill as `claude -p --plugin-dir <clone>` on the same model and effort; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
+4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` line; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
 5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
 6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
 
