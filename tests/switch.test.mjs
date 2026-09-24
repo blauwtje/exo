@@ -69,16 +69,18 @@ test('the session hook carries the right-sizing ladder whether exo savings are o
 test('a resumed session rewrites the plugin-root pointer and only a compaction resets the guards', { skip: withoutJq }, async () => {
   const configDirectory = await fixture();
   const record = path.join(configDirectory, 'exo', 'savings', 'sessions.json');
+  const hotRecord = path.join(configDirectory, 'exo', 'savings', 'sessions', 's1.json');
   const resumed = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'resume');
   assert.equal(resumed.code, 0, resumed.stderr);
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
   assert.equal(await fs.access(record).catch(() => 'absent'), 'absent');
-  await fs.mkdir(path.dirname(record), { recursive: true });
-  await fs.writeFile(record, JSON.stringify({ s1: { reads: { 'main:/repo/a.ts:0:0': { bytes: 10 } }, calls: { 'main:Bash:abc': 2 } } }));
+  assert.equal(await fs.access(hotRecord).catch(() => 'absent'), 'absent');
+  await fs.mkdir(path.dirname(hotRecord), { recursive: true });
+  await fs.writeFile(hotRecord, JSON.stringify({ reads: { 'main:/repo/a.ts:0:0': { bytes: 10 } }, calls: { 'main:Bash:abc': 2 } }));
   const compacted = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'compact');
   assert.equal(compacted.code, 0, compacted.stderr);
-  const session = JSON.parse(await fs.readFile(record, 'utf8')).s1;
+  const session = JSON.parse(await fs.readFile(hotRecord, 'utf8'));
   assert.deepEqual(session.reads, {});
   assert.deepEqual(session.calls, {});
 });
