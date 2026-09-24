@@ -130,3 +130,34 @@ test('a plan whose open tasks cannot be ordered stops with exit 1 and names the 
     assert.ok(result.stderr.startsWith('next-task: ') && result.stderr.includes(reason), result.stderr);
   }
 });
+
+// The hook delegate-budget.mjs reads from the dispatch: a standalone
+// `Budget: <soft>k/<hard>k` line, `soft`/`hard` in thousands of tokens.
+const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;
+
+test('the report prints one Budget: line per task of the wave, scaled below the shared default', async () => {
+  const { root, planPath } = await checkout();
+  const report = nextTaskReport({ planPath, planText: PLAN, root });
+  const matches = [...report.matchAll(new RegExp(BUDGET_LINE, 'gm'))];
+  assert.equal(matches.length, 2, report);
+  for (const match of matches) {
+    assert.ok(Number(match[1]) < 40 && Number(match[2]) < 70, report);
+  }
+});
+
+test('a task at or past the plan-check split threshold gets the shared default, never more', async () => {
+  const bigCode = Array.from({ length: 260 }, (_, index) => `const line${index} = ${index};`).join('\n');
+  const big = taskSection({ number: 1, title: 'Big', files: ['- Create: `src/big.js`'], code: bigCode, subject: 'feat(app): big' });
+  const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [big] }) });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
+  assert.match(report, /^Budget: 40k\/70k$/m);
+});
+
+test('a Budget: line stands alone and matches the delegate-budget hook\'s regex', async () => {
+  const { root, planPath } = await checkout();
+  const report = nextTaskReport({ planPath, planText: PLAN, root });
+  const match = report.match(BUDGET_LINE);
+  assert.ok(match, report);
+  assert.equal(match[0], 'Budget: 10k/18k');
+});

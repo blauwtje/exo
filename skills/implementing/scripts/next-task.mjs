@@ -1,9 +1,10 @@
 // Prints what the next build needs, read from the plan and the checkout's
 // history instead of the session's memory: the landed set, the next task or
-// wave, and for each of its tasks its Design: and Run: lines, the drift of its
-// Modify: regions and the path of its brief. The brief, the frame fields and
-// the section verbatim, goes to a file under the checkout's git directory, so
-// the section reaches only the implementer and stays out of the session.
+// wave, and for each of its tasks its Budget:, Design: and Run: lines, the
+// drift of its Modify: regions and the path of its brief. The brief, the
+// frame fields and the section verbatim, goes to a file under the checkout's
+// git directory, so the section reaches only the implementer and stays out
+// of the session.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -11,7 +12,29 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, taskSize } from '#plan-tasks';
+
+// The savings skill owns the delegate's default budget; reading it here keeps
+// one source for the cap instead of a second copy of 40/70.
+const DEFAULT_BUDGET = JSON.parse(
+  fs.readFileSync(new URL('../../savings/assets/delegate-budgets.json', import.meta.url), 'utf8')
+).default;
+// plan-check.mjs requires a split past 250 code lines or 4 files, so a task at
+// that threshold is as large as a task ever gets: its share of the threshold,
+// capped at 1, scales the default budget down for a smaller task.
+const SPLIT_LINES = 250;
+const SPLIT_FILES = 4;
+
+// `delegate-budget.mjs`'s hook reads a standalone `Budget: <soft>k/<hard>k`
+// line from the dispatch; the wave build carries it verbatim, so a small task
+// never holds a large one's context open on a stalled delegate.
+function budgetLine(task) {
+  const size = taskSize(task);
+  const share = Math.min(1, Math.max(size.lines / SPLIT_LINES, size.files / SPLIT_FILES));
+  const soft = Math.round(DEFAULT_BUDGET.soft * share);
+  const hard = Math.round(DEFAULT_BUDGET.hard * share);
+  return `Budget: ${soft}k/${hard}k`;
+}
 
 function waveLine(wave) {
   if (wave.length === 0) return 'Next: none, every task landed';
@@ -64,6 +87,7 @@ function taskLines(task, frame, root, briefDirectory) {
   const drift = driftOf(task, root);
   return [
     `Task ${task.number}: ${task.title}`,
+    budgetLine(task),
     task.section.match(/^Design: .+$/m)?.[0] ?? 'Design: none',
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
     ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
