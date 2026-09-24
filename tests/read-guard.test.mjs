@@ -122,9 +122,26 @@ test('a read that never succeeded is not a duplicate', async () => {
   assert.equal(decision(await runGuard([], ranged, env)), null);
 });
 
-test('an explicit limit above the cap passes', async () => {
+test('an offset without a limit is refused like an unbounded read, and the reason offers no limit above the cap', async () => {
   const { env, file } = await guardFixture();
-  assert.equal(decision(await runGuard([], readInput(file, { limit: 600 }), env)), null);
+  const verdict = decision(await runGuard([], readInput(file, { offset: 1 }), env));
+  assert.equal(verdict?.permissionDecision, 'deny');
+  assert.match(verdict.permissionDecisionReason, /has 600 lines and an unbounded read is capped at 400/);
+  assert.doesNotMatch(verdict.permissionDecisionReason, /pass limit explicitly/);
+});
+
+test('a limit above the cap is refused like an unbounded read, a limit at the cap passes', async () => {
+  const { env, file } = await guardFixture();
+  const verdict = decision(await runGuard([], readInput(file, { limit: 600 }), env));
+  assert.equal(verdict?.permissionDecision, 'deny');
+  assert.equal(decision(await runGuard([], readInput(file, { limit: 400 }, 'toolu_2'), env)), null);
+});
+
+test('a limit above a lowered readGuardLines is refused', async () => {
+  const { env, file } = await guardFixture({ readGuardLines: 100 });
+  const verdict = decision(await runGuard([], readInput(file, { offset: 1, limit: 200 }), env));
+  assert.equal(verdict?.permissionDecision, 'deny');
+  assert.equal(decision(await runGuard([], readInput(file, { offset: 1, limit: 100 }, 'toolu_2'), env)), null);
 });
 
 test('readGuard false never refuses, and a missing or binary file passes', async () => {

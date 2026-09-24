@@ -90,6 +90,34 @@ test('the third edit replacing the same text in one file is denied, other text i
   assert.match(decision(third).permissionDecisionReason, /already replaced the same text in \/repo\/app\.ts 2 times/);
 });
 
+test('an edit between runs of the same test lets the third run through', async () => {
+  const { env } = await guardFixture();
+  const reader = { agent_id: 'impl1' };
+  assert.equal(decision(await runGuard([], { ...bashInput('npm test -- tests/a.test.mjs > .git/run-1.log', 'toolu_1'), ...reader }, env)), null);
+  await runGuard([], { ...editInput('/repo/a.mjs', 'return 1', 'toolu_2'), ...reader }, env);
+  assert.equal(decision(await runGuard([], { ...bashInput('npm test -- tests/a.test.mjs > .git/run-2.log', 'toolu_3'), ...reader }, env)), null);
+  await runGuard([], { ...editInput('/repo/a.mjs', 'const y', 'toolu_4'), ...reader }, env);
+  const third = await runGuard([], { ...bashInput('npm test -- tests/a.test.mjs > .git/run-3.log', 'toolu_5'), ...reader }, env);
+  assert.equal(decision(third), null);
+});
+
+test('a write between runs of the same command lets the third run through', async () => {
+  const { env } = await guardFixture();
+  await runGuard([], bashInput('npm test', 'toolu_1'), env);
+  await runGuard([], bashInput('npm test', 'toolu_2'), env);
+  await runGuard([], { session_id: 's1', tool_name: 'Write', tool_use_id: 'toolu_3', tool_input: { file_path: '/repo/a.mjs', content: 'x' } }, env);
+  assert.equal(decision(await runGuard([], bashInput('npm test', 'toolu_4'), env)), null);
+});
+
+test('an edit by another reader leaves the counts of this reader standing', async () => {
+  const { env } = await guardFixture();
+  await runGuard([], bashInput('npm test', 'toolu_1'), env);
+  await runGuard([], bashInput('npm test', 'toolu_2'), env);
+  await runGuard([], { ...editInput('/repo/a.mjs', 'alpha', 'toolu_3'), agent_id: 'impl1' }, env);
+  const third = await runGuard([], bashInput('npm test', 'toolu_4'), env);
+  assert.match(decision(third)?.permissionDecisionReason ?? '', /has already run 2 times unchanged/);
+});
+
 test('a reset forgets the calls of the context window that ended', async () => {
   const { env, configDirectory } = await guardFixture();
   await runGuard([], bashInput('git status', 'toolu_1'), env);

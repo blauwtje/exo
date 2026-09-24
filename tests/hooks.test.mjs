@@ -42,10 +42,10 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
 
-test('the repeat guard runs on Bash and Edit before the tool call', () => {
+test('the repeat guard runs on Bash, Edit and Write before the tool call', () => {
   const guards = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.hook.command.includes('repeat-guard.mjs'));
   assert.equal(guards.length, 1);
-  assert.deepEqual(guards[0].matcher.split('|').sort(), ['Bash', 'Edit']);
+  assert.deepEqual(guards[0].matcher.split('|').sort(), ['Bash', 'Edit', 'Write']);
 });
 
 test('the Stop hook books the turn into the savings counter and nothing else', () => {

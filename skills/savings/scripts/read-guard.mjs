@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Guard on Read: in PreToolUse it refuses an unbounded read of a large file so
-// the model reads a located range instead, except the repository map, which is
+// Guard on Read: in PreToolUse it refuses an unbounded read of a large file, one
+// without a limit at or under the cap, so the model reads a located range
+// instead, except the repository map, which is
 // generated and capped where it is written, and refuses a second read of a
 // range unchanged since the first in this context window; in PostToolUse it
 // books the read that succeeded. Each refusal is booked under its tool call
@@ -119,16 +120,18 @@ function refusalOf(session, target) {
       reason: `exo read guard: ${filePath} (${describe(input)}) is unchanged since your read at ${previous.at} in this context window; use that copy, or pass a different offset and limit to read it again.`
     };
   }
-  const unbounded = input.offset === undefined && input.limit === undefined;
-  if (!unbounded) return null;
+  // An offset alone or a limit above the cap bounds nothing the cap protects,
+  // so only a limit at or under the cap makes a read bounded.
+  const lineLimit = guardLines();
+  const bounded = input.limit !== undefined && input.limit <= lineLimit;
+  if (bounded) return null;
   if (isRepositoryMap(filePath, cwd)) return null;
   const lines = fileLines(filePath);
-  const lineLimit = guardLines();
   if (lines.length <= lineLimit) return null;
   return {
     kind: 'capped',
     bytesWithheld: Buffer.byteLength(lines.join('\n')),
-    reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${lineLimit}; locate the range first, then read it with offset and limit, or pass limit explicitly to read more.`
+    reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${lineLimit}; locate the range first, then read it with offset and a limit of at most ${lineLimit}.`
   };
 }
 
