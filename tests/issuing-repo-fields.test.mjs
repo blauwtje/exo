@@ -258,3 +258,10 @@ test('the issuing skill names the script instead of the six-command read', async
   assert.doesNotMatch(fieldsDoc, /gh label list/);
   assert.doesNotMatch(fieldsDoc, /ls \.github\/ISSUE_TEMPLATE/);
 });
+
+test('the shipping skill names the sibling script for a pull request with no issue', async () => {
+  const skill = await fs.readFile(fileURLToPath(new URL('../skills/shipping/SKILL.md', import.meta.url)), 'utf8');
+  const frontmatter = skill.split('---')[1];
+  assert.match(frontmatter, /Bash\(node \*repo-fields\.mjs\*\)/);
+  assert.match(skill, /\.\.\/issuing\/scripts\/repo-fields\.mjs/);
+});
