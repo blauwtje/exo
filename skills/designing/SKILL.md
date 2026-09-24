@@ -40,20 +40,20 @@ A surface neither list names takes rung 6, and the report names rung 7 as the ri
 
 The references call these steps Phase 1 to 5.
 
-1. **Context.** Read `## Context` of `references/phase-detail.md`. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:design-discovery` agent; this session reads its report of at most 20 lines and asks its `## Open` questions, never the repository ranges.
+1. **Context.** Read `references/phase-detail.md` whole, once; its `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:design-discovery` agent; this session reads its report of at most 20 lines and asks its `## Open` questions, never the repository ranges.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
-3. **Build.** Read `references/phase-build.md` and `## The build floor` of `references/phase-detail.md` before the first edit or builder dispatch.
-4. **Critique the render.** A full or bounded redesign reads `## The critique dispatch` of `references/phase-detail.md` before the baseline capture, which precedes the first edit.
-5. **Check.** Run `## QA` of `references/phase-detail.md`; once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs it with `RUN`, `SKILL`, `REPO` and that section, returning at most 20 lines.
+3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
+4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, already read at Phase 1, before the baseline capture, which precedes the first edit.
+5. **Check.** Run `## QA` of `references/phase-detail.md`, already read at Phase 1; once an `exo: context` line has appeared in this session, a `general-purpose` delegate on `sonnet` runs it with `RUN`, `SKILL`, `REPO` and that section, returning at most 20 lines.
 
 ## References
 
-Load a reference only at its row's phase and predicate, never the set up front. Phase 5 rows load by section: `grep -n '^## '`, then `sed -n` to the next heading. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other Phase 5 row loads by section: `grep -n '^## '`, then `sed -n` to the next heading. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
 
 | File | Read it when |
 |---|---|
 | `references/intake.md` | Before Phase 1: asking, the run directory, symptoms; its `## Settled identity` when Route rungs 1-4 miss. |
-| `references/phase-detail.md` | At each loop step, only the section that step names. |
+| `references/phase-detail.md` | Whole, once, at Phase 1; later steps name its sections by heading. |
 | `builder-prompt.md` | Phase 3, before every build dispatch. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
