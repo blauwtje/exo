@@ -28,7 +28,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import process from 'node:process';
-import { configFile, readJson, savingsEnabled, updateSession } from './record.mjs';
+import { configFile, readJson, savingsEnabled, updateHotSession } from './record.mjs';
 
 // The first repeat passes; the attempt after it is denied.
 const DENY_AT = 3;
@@ -123,7 +123,7 @@ function guardCall(hookInput) {
   const target = callTarget(hookInput);
   if (target === null) return;
   let reason = null;
-  updateSession(hookInput.session_id, (session) => {
+  updateHotSession(hookInput.session_id, (session) => {
     const attempts = (session.calls[target.key] ?? 0) + 1;
     session.calls[target.key] = attempts;
     if (attempts >= denyAt(target.tool)) {
@@ -145,7 +145,7 @@ function edited(hookInput) {
   if (!guardEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
   const prefix = `${readerOf(hookInput)}:Bash:`;
-  updateSession(hookInput.session_id, (session) => {
+  updateHotSession(hookInput.session_id, (session) => {
     for (const key of Object.keys(session.calls)) {
       if (key.startsWith(prefix)) delete session.calls[key];
     }
@@ -158,7 +158,7 @@ function edited(hookInput) {
 function reset(hookInput) {
   if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
-  updateSession(hookInput.session_id, (session) => {
+  updateHotSession(hookInput.session_id, (session) => {
     session.calls = {};
     return true;
   });

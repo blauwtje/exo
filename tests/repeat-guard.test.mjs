@@ -49,7 +49,7 @@ function editInput(filePath, oldString, toolUseId) {
 }
 
 async function record(configDirectory) {
-  return JSON.parse(await fs.readFile(path.join(configDirectory, 'exo', 'savings', 'sessions.json'), 'utf8'));
+  return JSON.parse(await fs.readFile(path.join(configDirectory, 'exo', 'savings', 'sessions', 's1.json'), 'utf8'));
 }
 
 function decision(result) {
@@ -68,7 +68,7 @@ test('the first repeat passes and the third identical command is denied with its
   assert.equal(verdict.hookEventName, 'PreToolUse');
   assert.equal(verdict.permissionDecision, 'deny');
   assert.match(verdict.permissionDecisionReason, /has already run 2 times unchanged/);
-  const session = (await record(configDirectory)).s1;
+  const session = (await record(configDirectory));
   assert.deepEqual(session.guard.denials, { toolu_3: { tool: 'Bash', reader: 'main', attempts: 3 } });
 });
 
@@ -141,7 +141,7 @@ test('a reset forgets the calls of the context window that ended', async () => {
   await runGuard([], bashInput('git status', 'toolu_1'), env);
   await runGuard([], bashInput('git status', 'toolu_2'), env);
   await runGuard(['reset'], { session_id: 's1', source: 'compact' }, env);
-  assert.deepEqual((await record(configDirectory)).s1.calls, {});
+  assert.deepEqual((await record(configDirectory)).calls, {});
   const afterReset = await runGuard([], bashInput('git status', 'toolu_3'), env);
   assert.equal(decision(afterReset), null);
 });
@@ -182,7 +182,7 @@ test('a second fetch of the same URL or search for the same query by one agent i
   assert.match(decision(research)?.permissionDecisionReason ?? '', /already searched this query once/);
   const other = await runGuard([], { ...webInput('WebFetch', { url, prompt: 'mocks' }, 'toolu_5'), agent_id: 'research2' }, env);
   assert.equal(decision(other), null);
-  const session = (await record(configDirectory)).s1;
+  const session = (await record(configDirectory));
   assert.deepEqual(session.guard.denials.toolu_2, { tool: 'WebFetch', reader: 'research1', attempts: 2 });
 });
 
