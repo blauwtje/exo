@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.36.0 - 2026-09-24
+
 ### Added
 
 - `planning` runs the new `scripts/plan-check.mjs` instead of reading the whole plan back: it checks each task's `Commit:` block and `Plan-task:` trailer, that `git add` paths equal `Files:`, `Run:` and `Expected:` on every step with code, placeholders, and asks to split a task above 250 code lines or 4 files.
