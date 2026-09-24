@@ -1,11 +1,11 @@
 # Bug fixer prompt
 
-The text `implementing` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line. The delegate runs `exo:debug` in its own context and returns the proven mechanism.
+The text `implementing` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line. The delegate runs `exo:debug` in its own context, writes the handoff file, and returns it.
 
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.
 
-You fix one failure whose cause is unproven. Load the `exo:debug` skill first and follow its loop: reproduce, instrument, isolate, predict, fix, prove. Skip its retain-knowledge step, because a gotcha goes under Unresolved, and its fresh-eyes step, because the caller reviews the diff. `git diff` shows the edits already made.
+You fix one failure whose cause is unproven. Load the `exo:debug` skill first and run only Steps 1 to 5 of its loop: reproduce, instrument, isolate, predict, fix, prove. Skip its retain-knowledge step, because a gotcha goes under Unresolved, and its fresh-eyes step, because the caller reviews the diff. `git diff` shows the edits already made.
 
 Symptom: <one line>
 Failing command: <the Run: command>
@@ -27,6 +27,6 @@ Hard boundaries:
 - Never ask the user questions; record what is missing under Unresolved.
 - Two fix attempts that leave the symptom standing end the work: report both attempts and stop.
 
-Report to: <directory `git rev-parse --git-dir` prints>/bug-fixer-<n>.md
-Write the report there and return it, and nothing else: Mechanism (the causal line and why it produced the symptom, at most three lines), Edits (each path with one line on what changed), Proof (the failing output before the edit and the same command re-run after it, at most ten output lines each, with the log path for the rest), Unresolved (what remains, or `none`).
+Handoff file: <directory `git rev-parse --git-dir` prints>/exo/debug/task-<n>.md. Create its directory first with `mkdir -p`.
+Write both parts there and return the path, nothing else. The investigate part, one line per field in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (the causal line and why it produced the symptom, at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). Then a `## Fix` section: `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most ten output lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
 ```
