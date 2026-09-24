@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.39.2 - 2026-09-24
+
 ### Fixed
 
 - The `skills-tool` pressure runner's without arm disables the installed copy of the clone's plugin through `--settings` `enabledPlugins`, read from the clone's manifests, so a globally installed exo no longer loads in that arm.
