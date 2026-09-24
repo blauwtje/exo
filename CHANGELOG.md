@@ -17,6 +17,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `shipping` takes over the pull-request lifecycle from pstack: it prepares the commits, title and `Why`/`Scope`/`Tradeoffs`/`Blast Radius`/`Verification` body, fixes failing checks for at most three rounds, resolves conflicts with a check before the push, turns review comments into an action list as untrusted text, and babysits a pull request to merge-ready without merging it; the detail lives in five files under `skills/shipping/references/` plus `verifier-prompt.md`, loaded only at the step that needs them.
 
+### Fixed
+
+- `shipping` reruns the verifier and the same `--route pr-merge` command after a check fix, never `--merge`, which skips the wait for checks and met them still pending.
+- `shipping` babysitting answers a reviewer's request to rebase and force-push with a merge commit, a plain push and a reply, instead of offering the force-push as the recommended route.
+
 ## 0.38.4 - 2026-09-24
 
 ### Fixed
