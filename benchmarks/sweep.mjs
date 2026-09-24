@@ -20,7 +20,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
 import { claudeArguments, selectCells, sweepCells } from './sweep-cells.mjs';
-import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFlowRepository, prepareReviewBranch } from './sweep-fixtures.mjs';
+import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -153,10 +153,7 @@ async function measureCell(cell, repository, usage, cellDirectory) {
 function prepareRepository(cell, repository, origin) {
   if (cell.kind === 'review') prepareReviewBranch(repository, cell.task, cell.source);
   else if (cell.kind === 'build') prepareBuildRepository(repository, cell.task);
-  // A fixer cell needs a branch carrying a real branch-review.md; the review
-  // fixture builds only a branch and a plan, never a report, so nothing here
-  // can prepare one without first running a reviewer.
-  else if (cell.kind === 'fixer') throw new Error(`fixer cell ${cell.id}: no branch-review.md fixture exists yet; prepareReviewBranch builds a branch and a plan, never a report`);
+  else if (cell.kind === 'fixer') prepareFixerBranch(repository, cell.task);
   else prepareFlowRepository(repository, origin, cell.kind === 'flow');
 }
 
