@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 // Runs one pressure-scenario prompt on every model:effort cell, both without
 // the skill and with it, so skills-tool's step 2 and step 4 stop reading N
-// manual `claude -p` transcripts by hand. Each cell's two arms run in
+// manual `claude -p` transcripts by hand. The with arm loads the clone
+// through --plugin-dir; the without arm gets no --plugin-dir and disables
+// the installed copy of the clone's plugin (`<plugin>@<marketplace>`, read
+// from the clone's manifests) through --settings, since an installed and
+// enabled plugin otherwise loads anyway. Each cell's two arms run in
 // parallel in their own scratch directory outside the repository, matching
 // pressure-scenarios.md:41; nothing here writes a case to disk beyond that
 // temporary directory.
@@ -32,10 +36,31 @@ function readFlags(argv) {
     if (!match) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort, got '${cell}'`);
     return { model: match[1], effort: match[2] };
   });
-  return { promptFile: flags.prompt, cells, pluginDir: flags['plugin-dir'] };
+  const pluginDir = flags['plugin-dir'];
+  return { promptFile: flags.prompt, cells, pluginDir, pluginId: installedPluginId(pluginDir) };
 }
 
-function claudeArguments({ model, effort, promptText, pluginDir }) {
+function manifestName(pluginDir, file) {
+  const manifestPath = path.join(pluginDir, '.claude-plugin', file);
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch (error) {
+    throw new UsageError(`--plugin-dir needs a readable '${manifestPath}': ${error.message}`);
+  }
+  if (typeof manifest?.name !== 'string' || manifest.name === '') {
+    throw new UsageError(`--plugin-dir needs a 'name' in '${manifestPath}'`);
+  }
+  return manifest.name;
+}
+
+// The id under which an installed copy of the clone's plugin sits in
+// `enabledPlugins`, such as `exo@blauwtje`.
+function installedPluginId(pluginDir) {
+  return `${manifestName(pluginDir, 'plugin.json')}@${manifestName(pluginDir, 'marketplace.json')}`;
+}
+
+function claudeArguments({ model, effort, promptText, armFlags }) {
   const args = [
     '-p', promptText,
     '--model', model,
@@ -44,7 +69,7 @@ function claudeArguments({ model, effort, promptText, pluginDir }) {
     '--verbose',
     '--permission-mode', 'bypassPermissions'
   ];
-  if (pluginDir !== null) args.push('--plugin-dir', pluginDir);
+  args.push(...armFlags);
   return args;
 }
 
@@ -105,12 +130,13 @@ function summarize(outcome) {
   return `${text} [first edit/write: ${action}]`;
 }
 
-async function runCell({ model, effort }, promptText, pluginDir) {
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId }) {
   const scratchWithout = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-without-'));
   const scratchWith = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-with-'));
+  const disableInstalled = JSON.stringify({ enabledPlugins: { [pluginId]: false } });
   const [without, withSkill] = await Promise.all([
-    runArm(claudeArguments({ model, effort, promptText, pluginDir: null }), scratchWithout),
-    runArm(claudeArguments({ model, effort, promptText, pluginDir }), scratchWith)
+    runArm(claudeArguments({ model, effort, promptText, armFlags: ['--settings', disableInstalled] }), scratchWithout),
+    runArm(claudeArguments({ model, effort, promptText, armFlags: ['--plugin-dir', pluginDir] }), scratchWith)
   ]);
   console.log(`${model}:${effort}`);
   console.log(`  without: ${summarize(without)}`);
@@ -136,7 +162,7 @@ async function main() {
     return;
   }
   for (const cell of flags.cells) {
-    await runCell(cell, promptText, flags.pluginDir);
+    await runCell(cell, promptText, flags);
   }
 }
 
