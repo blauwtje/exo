@@ -4,17 +4,18 @@ Resolve a DIRTY pull request with the smallest edit that keeps both sides' inten
 
 ## Find every conflict
 
-- List every conflicting file from `git status` plus its in-file conflict markers before resolving anything.
+- List every conflicting file from `git status` plus its in-file conflict markers before resolving anything, because a missed file ships a marker.
 
 ## Resolve
 
-- Resolve each conflict with a minimal, correctness-first edit.
+- Resolve each conflict with a minimal, correctness-first edit, because a wider edit hides what the resolve changed.
 - Keep both sides when safe; otherwise keep the variant that compiles and preserves public behavior.
 - Leave no conflict markers in any file, and make no broad refactor while resolving.
+- Create no tag while resolving, because a tag can cut a release, which nothing here authorizes.
 
 ## Lockfiles
 
-- Regenerate a conflicted lockfile with the package manager's own tooling; never hand-edit it.
+- Regenerate a conflicted lockfile with the package manager's own tooling, because a hand-edited lockfile drifts from what the tool resolves.
 
 ## Validate before the push
 

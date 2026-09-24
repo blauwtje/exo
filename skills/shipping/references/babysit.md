@@ -5,15 +5,15 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 ## The round
 
 - Fetch the pull request's full state before triaging: `gh pr view <number> --json number,title,state,mergeable,reviewDecision,statusCheckRollup,mergeStateStatus,comments,reviews`.
-- Confirm the pull request read matches the one the request meant.
-- Run one babysitter per pull request at a time; check nothing else is already working it.
+- Confirm the pull request read is the one the request meant, because a fix on the wrong branch is an unasked remote write.
+- Run one babysitter per pull request at a time, because two rounds on one branch push over each other.
 - A delegate that opened the pull request does not babysit it; hand back to the session that dispatched it.
 - Batch every known fix into one push wave per round; do not fix a check just to look busy when a conflict is the real blocker.
-- Pace the recheck: poll `gh pr checks --watch` while a check runs; a 20 to 30 minute heartbeat while awaiting a reviewer; hourly if idle but watching for new comments.
+- Pace the recheck with `gh pr checks --watch` while a check runs; with nothing left to wait on, hand back rather than poll.
 
 ## The triage order
 
-- Merge conflicts first: resolve them; force-push only when the branch is yours and unshared.
+- Merge conflicts first: resolve them and push a merge commit; never force-push, because a babysit request authorizes no force.
 - Failing checks second: root-cause the failure, fix the code or the test, commit, push.
 - Review comments third: act on feedback you agree with, leave a reply on a judgement call.
 - Bot and automation comments fourth: classify fix, dismiss or ask before acting.
@@ -21,21 +21,23 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 ## The stop conditions
 
 - The build is green, every comment is resolved and the branch merges cleanly: call it ready.
-- Three rounds of fix, push, recheck still leave it short of green: stop, summarize what remains, hand back.
+- A draft stays a draft until then, because marking it ready earlier misrepresents its state.
+- The round limit is reached short of green: stop, summarize what remains, hand back.
 - The next fix would force a design choice: pause and put it to the user.
 - Answer a user question mid-round and continue; only an explicit stop ends the round early.
 
-## The no-merge rule
+## Merge-ready is the end
 
 - The round never merges the pull request; it stops at merge-ready.
-- Only an explicit user request to merge, land, ship or merge when ready authorizes a merge.
 - Never rewrite history or retarget a base on a branch others may have pulled without the user naming it first.
 
 ## Report
 
-- Name the fixes applied, the comments addressed and deferred with reason, the current status, each commit by its SHA, what is pending and what needs the human.
+- Name the fixes applied, each commit by its SHA, and the comments addressed or deferred with a reason.
+- Name the current status, what is pending, and what needs the human.
+- Offer any team-useful dismissal pattern from the round's triage as a candidate rubric entry, because a precedent kept private helps nobody else.
 
 ## Judgment
 
 - The triage order outranks the easiest fix: clear the real blocker first.
-- The no-merge rule outranks a merge-ready state: only the user's explicit request merges.
+- Merge-ready outranks one more polish round: stop there and hand back.
