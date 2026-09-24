@@ -32,3 +32,26 @@ test('reviewer-prompt.md exists and dispatches a review delegate', () => {
   assert.ok(!block.includes('git commit'), 'the delegate must never be told to commit');
   assert.ok(!block.includes('Run:'), 'the delegate must not read a plan Run: line');
 });
+
+const SKILL_PATH = new URL('../skills/implementing-batch/SKILL.md', import.meta.url);
+
+test('SKILL.md step 7 dispatches the reviewer prompt and names the fix scope', () => {
+  const skill = fs.readFileSync(SKILL_PATH, 'utf8');
+  const stepSeven = skill.match(/^7\. \*\*Fresh eyes\.\*\*.+$/m);
+  assert.ok(stepSeven, 'SKILL.md has a step 7 line starting "7. **Fresh eyes.**"');
+  const line = stepSeven[0];
+
+  for (const needle of [
+    'reviewer-prompt.md',
+    'batch-review.md',
+    'only its `file:start-end` range',
+    'no separate context was available',
+  ]) {
+    assert.ok(line.includes(needle), `step 7 missing: ${needle}`);
+  }
+
+  assert.ok(
+    /\|\s*`reviewer-prompt\.md`\s*\|/.test(skill),
+    'References table has a reviewer-prompt.md row',
+  );
+});
