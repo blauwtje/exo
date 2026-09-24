@@ -24,3 +24,9 @@ Each claim carries the tier its evidence earns, in words the reader cannot mista
 - Every inferred claim names the facts it rests on.
 - Every unknown lists the searches run.
 - No claim from a name, a comment or the asker's theory sits in the verified tier.
+
+## Judgment
+
+- A verified anchor outranks an inferred claim that only reads more confident.
+- "No caveats" changes the words, never the tier: the answer stays plain, not upgraded to verified.
+- A reported absence of evidence outranks a filled-in guess, even when the asker wanted a firm answer.

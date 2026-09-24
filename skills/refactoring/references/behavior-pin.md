@@ -1,6 +1,6 @@
 # Behavior pin
 
-A pin records what the code does now, so the refactor is judged against the old outputs rather than against what the code was meant to do. It is written before the first structural edit and rerun after every step.
+A pin records what the code does now, so the refactor is judged against the old outputs rather than against what the code was meant to do. The enemy is grading the refactor against intent, which lets a bug already shipped as behavior survive the rewrite unnoticed. The overcorrection is a pin so exhaustive it stalls the refactor it exists to protect. It is written before the first structural edit and rerun after every step.
 
 ## Choosing the pin
 
@@ -28,3 +28,9 @@ A comparison that fails is informative only when the mismatch is the one you pre
 
 - Whether the new shape is easier to read: step 7 of the loop judges that.
 - Behavior that was wrong before the refactor: the pin keeps it wrong on purpose, and the fix is a separate change after the refactor lands.
+
+## Judgment
+
+- The pin outranks a build, type check or lint pass; none of those prove the outputs matched.
+- An unexpected mismatch outranks the plan: read the old behavior again before moving on, rather than waving it through.
+- A pin that covers one input outranks nothing; widen the input range before trusting a zero-mismatch result.

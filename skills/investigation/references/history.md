@@ -24,3 +24,9 @@ The reason code has its shape lives in the commit that set it, the pull request 
 ## Record the search
 
 Keep one line per source: the command or query, and what it found or that it found nothing. The answer's sources line comes from these, and a null result is a finding, because the next reader otherwise searches again.
+
+## Judgment
+
+- A pull request or issue reachable from a commit outranks the commit message alone.
+- The newest commit on a line outranks nothing; treat it as a lead to trace back, not the origin.
+- An empty trail is reported with what was searched; it is never filled with a guess from the code's shape.

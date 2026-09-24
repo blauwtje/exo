@@ -1,6 +1,6 @@
 # Legacy API
 
-When a refactor reshapes an internal API, its callers move to the new form and the old form is deleted in the same change. Keeping both creates a dual path that slows every later change and makes the codebase append-only.
+When a refactor reshapes an internal API, its callers move to the new form and the old form is deleted in the same change. The enemy is a shim kept beside the new form, which lets every later change treat the codebase as append-only. The overcorrection is deleting a caller nobody inventoried, which breaks a consumer the search never found. Keeping both creates a dual path that slows every later change.
 
 ## Scope
 
@@ -27,3 +27,9 @@ When a refactor reshapes an internal API, its callers move to the new form and t
 ## The one exception
 
 An adapter kept on purpose needs all three: a named reason no in-repository change can remove, an owner, and a removal date written beside it. The user asking for it explicitly is such a reason. Without all three, it is a shim and goes.
+
+## Judgment
+
+- A zero-hit search outranks a caller list believed complete from memory; run it again after the delete.
+- The one-exception's three conditions outrank a deadline or a line cap alone; missing any one of them makes it a shim.
+- Scope decides first: a caller outside this repository keeps compatibility on purpose, never this file's delete-in-place rule.

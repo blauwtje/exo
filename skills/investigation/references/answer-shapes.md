@@ -28,3 +28,8 @@ Prose, not pseudocode; a snippet only when one line carries the point. A diagram
 - Keep the `why` tiers intact: a junior asker gets simpler words, never a firmer claim.
 - A diagram for three or more moving parts grows one part per step, not one picture at the end.
 - Name the concrete mechanism rather than a metaphor for it.
+
+## Judgment
+
+- The question's own shape picks the mode; a stated preference for a different shape overrides it.
+- A section with nothing real to report is dropped; the fixed template never wins over an honest gap.

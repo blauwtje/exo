@@ -14,7 +14,7 @@ Change structure while behavior stays pinned, and leave less code than you found
 - The pull to keep the old signature, accept both shapes, or leave a re-export "for compatibility".
 - Not for choosing what to refactor: `deepen` finds and ranks the candidates.
 - Not for a change that alters behavior: `implementing-batch` builds it; a mixed request runs the refactor first, then the change.
-- Not for persisted data, a stored format or a consumer outside this repository: `implementing-batch` keeps those compatible on purpose through its `references/data-migration.md`.
+- Not for persisted data, a stored format or a consumer outside this repository: `implementing-batch` keeps those compatible on purpose through its `../implementing-batch/references/data-migration.md`.
 - Not for a failure whose cause is unproven: `debug` owns it.
 
 ## The loop
@@ -48,6 +48,6 @@ Change structure while behavior stays pinned, and leave less code than you found
 ## Judgment
 
 - The pin outranks the target shape: a step that breaks it is reverted, never the pin loosened.
-- The delete-old-API rule covers only APIs whose every caller is in this repository; anything outside follows `data-migration.md`.
+- The delete-old-API rule covers only APIs whose every caller is in this repository; anything outside follows `../implementing-batch/references/data-migration.md`.
 - A deletion outranks an addition when both reach the target shape.
 - An explicit request from the user to keep the old API outranks step 4; state its cost once, then keep it with a removal date.
