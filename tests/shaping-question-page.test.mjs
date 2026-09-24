@@ -5,6 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -257,5 +258,59 @@ describe('question-page.mjs', () => {
     } finally {
       child.kill('SIGTERM');
     }
+  });
+
+  it('writes map.json across --add, --apply and --text spawned in turn, and --text prints the next round', async () => {
+    const folder = await fixture();
+    const mapFile = path.join(folder, 'map.json');
+    const additionsFile = path.join(folder, 'additions.json');
+    await fs.writeFile(additionsFile, JSON.stringify({
+      goal: 'Harbour masters get their tide alerts out of the app.',
+      lang: 'en',
+      decisions: [
+        {
+          id: 'format', name: 'What they receive',
+          question: 'What should a harbour master get when they export?',
+          changes: 'What file type comes out.',
+          why: 'Port reports run per quarter.',
+          options: [
+            { id: 'pdf', label: 'PDF report', gives: 'A formatted document.' },
+            { id: 'csv', label: 'CSV file', gives: 'Raw rows.', recommended: true }
+          ]
+        },
+        {
+          id: 'range', name: 'Which alerts it covers', waitsOn: 'format',
+          question: 'Which alerts should one export hold?',
+          changes: 'How long the report is.',
+          why: 'Port reports run per quarter.',
+          options: [
+            { id: 'quarter', label: 'One quarter', gives: 'Only the last three months.', recommended: true },
+            { id: 'all', label: 'Every alert', gives: 'The whole history in one file.' }
+          ]
+        }
+      ]
+    }));
+
+    const added = await run(QUESTION_PAGE, ['--add', additionsFile, '--map', mapFile]);
+    assert.equal(added.code, 0, added.stderr);
+    assert.match(added.stdout, /round=1 asked=format/);
+    const afterAdd = JSON.parse(await fs.readFile(mapFile, 'utf8'));
+    assert.equal(afterAdd.round, 1);
+
+    const answerFile = path.join(folder, 'answer.json');
+    await fs.writeFile(answerFile, JSON.stringify({ round: 1, answers: [{ decision: 'format', choice: 'csv' }] }));
+    const applied = await run(QUESTION_PAGE, ['--apply', answerFile, '--map', mapFile]);
+    assert.equal(applied.code, 0, applied.stderr);
+    assert.match(applied.stdout, /closed format Q1: CSV file \(you\)/);
+    assert.match(applied.stdout, /round=2 asked=range/);
+
+    const texted = await run(QUESTION_PAGE, ['--text', '--map', mapFile]);
+    assert.equal(texted.code, 0, texted.stderr);
+    assert.match(texted.stdout, /Which alerts should one export hold\?/);
+
+    const final = JSON.parse(await fs.readFile(mapFile, 'utf8'));
+    assert.equal(final.round, 2);
+    assert.equal(final.decisions.find((decision) => decision.id === 'format').state, 'closed');
+    assert.equal(final.decisions.find((decision) => decision.id === 'range').state, 'open');
   });
 });
