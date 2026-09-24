@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `CLAUDE.md` keeps the checkout exo loads from on `main`: every change runs in worktree-isolated subagents, lands through one integration worktree under `.worktrees/` and a direct push to `main` with no pull request, and ends with `/reload-plugins` instead of a cache update.
+
+### Fixed
+
+- The `memory` nudge hook fires on Dutch corrections such as "nee, …", "dat klopt niet" and "eigenlijk …", and still stays quiet on an ordinary Dutch sentence.
+- `memory` renders only live lines into `memory.md`, keeps superseded and dropped history in `memory.json` outside the 2,000-byte budget, and adds `retire --claim <n>`, so repeated supersedes no longer refuse every write.
+- `debug` writes its repro log to `$(git rev-parse --git-dir)/debug-repro.log`, so it works in a linked worktree where `.git` is a file.
+- `shipping`'s `wait-checks.mjs` writes gh's output to `<git-dir>/exo/wait-checks.log` and prints one line, `checks: pass`, `checks: fail <names>`, `checks: timeout` or `checks: none`, instead of the table gh reprints every 10 seconds.
+- `wait-checks.mjs` exits 3 on a gh failure such as auth, network or a missing pull request, which `shipping` no longer reads as a red check; 0, 1 and 124 keep their meaning.
+
 ## 0.35.0 - 2026-09-24
 
 ### Added
