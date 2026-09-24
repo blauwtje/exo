@@ -47,8 +47,8 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(tailStep.includes('Then end on `shipping`'));
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('## The question');
-  const firstPush = SHIPPING.indexOf('git push');
-  assert.ok(question !== -1 && firstPush > question, 'no push is named before the question');
+  const firstShipScript = SHIPPING.indexOf('scripts/ship.mjs');
+  assert.ok(question !== -1 && firstShipScript > question, 'the script that pushes is named only after the question');
   const merge = SHIPPING.indexOf('1. **PR + merge (Recommended)**:');
   const openPr = SHIPPING.indexOf('2. **Open PR**:');
   const push = SHIPPING.indexOf('3. **Push**:');
@@ -57,12 +57,12 @@ test('the tail pushes only through the finish question', () => {
 });
 
 test('shipping merges only after the bounded wait and the API gate, and deletes no branch', () => {
-  const wait = SHIPPING.indexOf('scripts/wait-checks.mjs');
-  const gate = SHIPPING.indexOf('scripts/ship-gate.mjs" --pr');
-  const merge = SHIPPING.indexOf('gh pr merge <n>');
-  const confirm = SHIPPING.indexOf('`state` `MERGED`');
-  assert.ok(wait !== -1 && wait < gate && gate < merge && merge < confirm, 'wait, gate, merge, confirm in order');
-  assert.ok(SHIPPING.includes('never with `--delete-branch`, `--admin` or `--auto`'));
+  const wait = SHIPPING.indexOf('wait for checks');
+  const gate = SHIPPING.indexOf('gate from the API');
+  const merge = SHIPPING.indexOf('merge, confirm');
+  assert.ok(wait !== -1 && wait < gate && gate < merge, 'wait, gate, merge, confirm in order');
+  const SHIP_SCRIPT = read('shipping/scripts/ship.mjs');
+  assert.ok(!SHIP_SCRIPT.includes('--delete-branch') && !SHIP_SCRIPT.includes('--admin') && !SHIP_SCRIPT.includes('--auto'), 'ship.mjs never deletes, admin-merges or auto-merges a branch');
   assert.ok(SHIPPING.includes(`stops after ${DEFAULT_MINUTES} minutes`));
 });
 

@@ -15,4 +15,4 @@ When `implementing`, `implementing-batch` or `debug` has committed a change, and
 
 ## Where its rules live
 
-`skills/shipping/SKILL.md`, with the bounded wait in `skills/shipping/scripts/wait-checks.mjs` and the pull-request fields in `skills/issuing/references/fields.md`.
+`skills/shipping/SKILL.md`, with the route steps and the bounded wait in `skills/shipping/scripts/ship.mjs` and the pull-request fields in `skills/issuing/references/fields.md`.
