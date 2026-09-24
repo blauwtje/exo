@@ -67,7 +67,7 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 | `references/motion.md` | Phase 3 for the recorded motion decision, and before any animation at every size. |
 | `references/interaction-qa.md` | Phase 3 when the surface has controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
 | `references/feedback-and-status.md` | Phase 3 only when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
-| `references/visual-critique.md` | Phase 4, by `exo:design-critic` only; this session reads its faults.md. |
+| `references/visual-critique.md` | Phase 3, the `## Slop tropes` section, before finishing a treatment; Phase 4 whole, by `exo:design-critic` only; this session reads its faults.md. |
 | `references/craft-recipes.md` | Phase 3 once `contract-selected.json` exists, before the first CSS of a ground, surface, motion, or type treatment. |
 | `references/component-system.md` | Phase 1 `## Adopt before authoring` alone, when the repository ships a component layer; Phase 3 before building a control, field, or surface the design repeats. |
 | `references/tokens.md` | Phase 2 only for a token pipeline or DTCG file, a second theme or brand, or a ramp generated against target contrast. |
