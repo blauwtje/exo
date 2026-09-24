@@ -15,7 +15,7 @@ A full or bounded redesign fails when the rendered result stays materially inter
 
 ## Size the request
 
-This skill owns a visual change at any file count, because Build dispatches its own builders. A surface whose displayed data, settings or behavior is undecided goes to `shaping` first; a change that also adds state, persistence, a dependency or a network call belongs to `implementing-batch`, which borrows this skill for the look.
+This skill owns a visual change at any file count, since Build dispatches its own builders. An undecided surface (its displayed data, settings or behavior) goes to `shaping` first; a change that also adds state, persistence, a dependency or a network call belongs to `implementing-batch`, which borrows this skill for the look.
 
 - **Sketch:** a demo, prototype, or mock the request names as one, built on `## The sketch path` of `references/phase-build.md`: no variants, agents, or critic; the floor holds.
 - **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. Run all five phases, bounded to the named surface; the existing direction is evidence, not a veto.
@@ -34,7 +34,7 @@ Resolve the surface from the markup and style files in the working-tree diff, th
 6. **Tool surface:** an open identity on an app view, dashboard, admin or settings page, form, documentation page, internal tool, or component: one direction in text from Phase 1 evidence and the nearest sibling surface, no offer, because scanability and existing expectations outrank expression there.
 7. **Expression surface:** an open identity on a landing, marketing, pricing, portfolio, or launch page, whose job is a first impression on someone who has not adopted the product: the offer, as in rung 3.
 
-A surface neither list names takes rung 6, and the report names rung 7 as the rival reading, because the user can still ask for directions while a picker's spent minutes stay spent. A vague complaint sizes the request and the evidence picks the rung. A user who leaves the look to this skill has not asked for text: rung 7 still offers.
+A surface neither list names takes rung 6, and the report names rung 7 as the rival reading, because a picker's spent minutes do not bar a later request for directions. A user who leaves the look to this skill has not asked for text: rung 7 still offers.
 
 ## The loop
 
@@ -48,7 +48,7 @@ The references call these steps Phase 1 to 5.
 
 ## References
 
-Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other Phase 5 row loads by section: `grep -n '^## '`, then `sed -n` to the next heading. Phase 3 rows are read by the surface builder, never by this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other Phase 5 row loads by section (`grep -n '^## '`, then `sed -n` to the next heading). Phase 3 rows are read by the surface builder, never this session, except `references/phase-build.md`, which decides who builds.
 
 | File | Read it when |
 |---|---|
@@ -59,15 +59,15 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 | `references/visual-direction.md` | Phase 2, every direction decision; Phase 1 when the repository or docs/design/DESIGN.md holds a design system to extract. |
 | `references/sketch-tab.md` | Phase 2 on rungs 3 and 7, after `--check` reports ok and before the offer; elsewhere, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Phase 2, only when the user asks to see directions whole, before building the picker's comps. |
-| `references/composition.md` | Phase 1 content inventory; Phase 2 structure; Phase 3 layout. |
-| `references/typography.md` | Phases 2–3, only when choosing or changing type. |
-| `references/controls.md` | Phase 3, before styling a button, field, menu, toggle, tab, or filter. |
+| `references/composition.md` | Phase 1 inventory; Phase 2 structure; Phase 3 layout. |
+| `references/typography.md` | Phases 2–3, when choosing or changing type. |
+| `references/controls.md` | Phase 3, before styling a control. |
 | `references/implementation.md` | Phase 3, before writing CSS or component code. |
 | `references/motion.md` | Phase 3 for the recorded motion decision, and before any animation at every size. |
-| `references/interaction-qa.md` | Phase 3 when the surface has controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
-| `references/feedback-and-status.md` | Phase 3 only when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
+| `references/interaction-qa.md` | Phase 3 for controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
+| `references/feedback-and-status.md` | Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Phase 3, the `## Slop tropes` section, before finishing a treatment; Phase 4 whole, by `exo:design-critic` only; this session reads its faults.md. |
-| `references/craft-recipes.md` | Phase 3 once `contract-selected.json` exists, before the first CSS of a ground, surface, motion, or type treatment. |
+| `references/craft-recipes.md` | Phase 3, before the first CSS of a ground, surface, motion, or type treatment. |
 | `references/component-system.md` | Phase 1 `## Adopt before authoring` alone, when the repository ships a component layer; Phase 3 before building a control, field, or surface the design repeats. |
 | `references/tokens.md` | Phase 2 only for a token pipeline or DTCG file, a second theme or brand, or a ramp generated against target contrast. |
 | `references/icons-and-imagery.md` | Phase 3 only when the build draws or extends an icon set, places a raster or chart, or the inventory names imagery. |
@@ -82,5 +82,5 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 - Repository framework, naming, file-layout, and component conventions outrank this skill's code defaults; they do not preserve the visual anatomy the user asked to replace.
 - Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
 - Accessibility and complete content/state coverage outrank visual novelty.
-- A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become defaults to exceed deliberately; contrast, reduced-motion, and state coverage still hold.
+- A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become minimums to exceed; contrast, reduced-motion, and state coverage still hold.
 - This skill owns visual decisions only. When a `shaping`, `planning`, `implementing-batch`, or `debug` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
