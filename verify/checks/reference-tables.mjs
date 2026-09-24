@@ -102,6 +102,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/brief-in-an-issue.md',
     '../issuing/references/fields.md',
     'references/decision-map.md',
+    'references/architecture-sketch.md',
     'references/interview-page.md',
     '../using-exo/references/question.md',
   ],

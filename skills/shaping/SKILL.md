@@ -22,7 +22,7 @@ New wishes for work that already has a brief, issue or plan reopen that brief, b
 
 Both modes add three decisions:
 
-- **Owning layer.** Name the existing layer and dependency boundary that own the behavior, citing one caller, data owner or repository convention that places it there.
+- **Owning layer.** Name the existing layer and dependency boundary that own the behavior, citing one caller, data owner or convention that places it there; decide it as if it had been there from day one, carried through every place it touches, not bolted on. For two or more structural shapes, sketch each on types, signatures and boundaries and pick by interface depth, per `references/architecture-sketch.md`; the pick is the contract the build implements, not a prototype to discard.
 - **Smaller alternative.** Name an alternative that drops the requested feature while changing fewer files and adding no dependency; say nothing when none exists.
 - **Settled words.** When the repository keeps a file of its domain words, write with them and correct a replaced one in the reply; a word this turn settles is recorded as a decision beside the word it replaces.
 
@@ -102,6 +102,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 | `references/brief-in-an-issue.md` | Before storing, when `specs` is `issues` or `both`. |
 | `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
 | `references/decision-map.md` | Before the first round, in every mode: the run folder, map format and the `--add`/`--apply`/`--text` commands. |
+| `references/architecture-sketch.md` | When an open architecture decision names two or more structurally different shapes to weigh. |
 | `references/interview-page.md` | Before the first question, only when `interview=page` stands in the `exo settings:` line and the map holds two or more open decisions. |
 | `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options, other than the next-stage question the script prints. |
 
