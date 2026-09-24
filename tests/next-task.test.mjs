@@ -159,5 +159,15 @@ test('a Budget: line stands alone and matches the delegate-budget hook\'s regex'
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   const match = report.match(BUDGET_LINE);
   assert.ok(match, report);
-  assert.equal(match[0], 'Budget: 10k/18k');
+  assert.equal(match[0], 'Budget: 25k/44k');
+});
+
+test('a one-file task of a few lines still gets a hard limit of at least 35k, half the shared default as a floor', async () => {
+  const small = taskSection({ number: 1, title: 'Small', files: ['- Create: `src/small.js`'], code: 'const a = 1;', subject: 'feat(app): small' });
+  const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [small] }) });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
+  const match = report.match(BUDGET_LINE);
+  assert.ok(match, report);
+  assert.ok(Number(match[2]) >= 35, report);
 });

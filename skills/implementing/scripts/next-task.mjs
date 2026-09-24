@@ -24,6 +24,11 @@ const DEFAULT_BUDGET = JSON.parse(
 // capped at 1, scales the default budget down for a smaller task.
 const SPLIT_LINES = 250;
 const SPLIT_FILES = 4;
+// A fresh delegate's context holds this much of the default budget before its
+// first read: the dispatch prompt, its tools and its agent definition. Scaling
+// a small task's share below this floor denies its first tool call, so no
+// task's budget drops past half the default.
+const MIN_BUDGET_SHARE = 0.5;
 
 // `delegate-budget.mjs`'s hook reads a standalone `Budget: <soft>k/<hard>k`
 // line from the dispatch; the wave build carries it verbatim, so a small task
@@ -31,8 +36,9 @@ const SPLIT_FILES = 4;
 function budgetLine(task) {
   const size = taskSize(task);
   const share = Math.min(1, Math.max(size.lines / SPLIT_LINES, size.files / SPLIT_FILES));
-  const soft = Math.round(DEFAULT_BUDGET.soft * share);
-  const hard = Math.round(DEFAULT_BUDGET.hard * share);
+  const scale = MIN_BUDGET_SHARE + (1 - MIN_BUDGET_SHARE) * share;
+  const soft = Math.round(DEFAULT_BUDGET.soft * scale);
+  const hard = Math.round(DEFAULT_BUDGET.hard * scale);
   return `Budget: ${soft}k/${hard}k`;
 }
 
