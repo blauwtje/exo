@@ -9,7 +9,9 @@
 // report, plus a Bash call of `git add`, `git commit`, `git status` or
 // `git diff --stat`, so green work still lands. That command may hold no
 // chaining, substitution, redirection or second line, so nothing rides along.
-// The main session carries no `agent_id` and is never measured.
+// The main session carries no `agent_id` and is never measured here: its call
+// goes to the context watch in context-watch.mjs instead, imported only then, so
+// a delegate's call never loads the watch's session store or settings code.
 //
 //   node delegate-budget.mjs   PreToolUse hook on every tool: stdin is the hook JSON
 //
@@ -112,7 +114,13 @@ function guard(hookInput) {
 }
 
 try {
-  guard(JSON.parse(fs.readFileSync(0, 'utf8')));
+  const hookInput = JSON.parse(fs.readFileSync(0, 'utf8'));
+  if (typeof hookInput.agent_id === 'string') {
+    guard(hookInput);
+  } else {
+    const { watch } = await import('./context-watch.mjs');
+    watch(hookInput);
+  }
 } catch (error) {
   console.error(`delegate-budget: ${error.message}`);
 }

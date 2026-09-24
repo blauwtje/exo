@@ -12,7 +12,8 @@
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#restatement": "./lib/restatement.mjs",
-    "#script-flags": "./lib/script-flags.mjs"
+    "#script-flags": "./lib/script-flags.mjs",
+    "#settings-store": "./lib/settings-store.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {

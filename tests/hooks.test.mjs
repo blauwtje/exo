@@ -86,9 +86,12 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
 });
 
-test('the context watch runs after every tool and nowhere else', () => {
+test('the context watch runs before every tool inside the delegate budget hook and has no hook of its own', () => {
   const watch = hookEntries().filter((entry) => entry.hook.command.includes('context-watch.mjs'));
-  assert.equal(watch.length, 1);
-  assert.equal(watch[0].event, 'PostToolUse');
-  assert.equal(watch[0].matcher, '*');
+  assert.deepEqual(watch, []);
+  const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '*');
+  assert.equal(everyTool.length, 1);
+  assert.ok(everyTool[0].hook.command.endsWith('delegate-budget.mjs"'), everyTool[0].hook.command);
+  const budget = fs.readFileSync(path.join(REPOSITORY, 'skills', 'savings', 'scripts', 'delegate-budget.mjs'), 'utf8');
+  assert.match(budget, /import\('\.\/context-watch\.mjs'\)/);
 });

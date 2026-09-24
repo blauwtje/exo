@@ -160,6 +160,20 @@ test('the main session is never measured or denied', async () => {
   assert.equal(decisionOf(await runBudget(BUDGET, mainThread, env)), null);
 });
 
+test('a main-session call runs the context watch, which sends its notice', async () => {
+  const { root, hookInput } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const usage = { input_tokens: 1000, cache_read_input_tokens: 115_000, cache_creation_input_tokens: 4000, output_tokens: 700 };
+  await fs.writeFile(hookInput.transcript_path, `${JSON.stringify({ type: 'assistant', message: { id: 'msg-main', usage } })}\n`);
+  const mainThread = { ...hookInput };
+  delete mainThread.agent_id;
+  delete mainThread.agent_type;
+  const env = { TMPDIR: root, CLAUDE_PROJECT_DIR: root, CLAUDE_CONFIG_DIR: root, CLAUDE_PLUGIN_OPTION_CONTEXT: '', EXO_SAVINGS_DIR: path.join(root, 'savings') };
+  const decision = decisionOf(await runBudget(BUDGET, mainThread, env));
+  assert.equal(decision.hookEventName, 'PreToolUse');
+  assert.equal(decision.permissionDecision, undefined);
+  assert.match(decision.additionalContext, /^exo: context 120k tokens, past 100k: /);
+});
+
 test('a delegate whose transcript is missing gets nothing', async () => {
   const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
   assert.equal(decisionOf(await runBudget(BUDGET, { ...hookInput, agent_id: 'a2' }, env)), null);

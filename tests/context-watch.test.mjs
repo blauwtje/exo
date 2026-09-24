@@ -58,7 +58,7 @@ async function notice(hookInput, env) {
   assert.equal(result.code, 0, result.stderr);
   if (result.stdout === '') return null;
   const output = JSON.parse(result.stdout);
-  assert.equal(output.hookSpecificOutput.hookEventName, 'PostToolUse');
+  assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(output.hookSpecificOutput.permissionDecision, undefined);
   assert.equal(output.decision, undefined);
   return output;
