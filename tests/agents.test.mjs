@@ -186,6 +186,22 @@ test('the implementer pins sonnet at high effort whatever the session runs at', 
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
+test('a Design: task with a named direction stays in the implementing session, not the implementer', () => {
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'implementer');
+  assert.ok(implementer, 'agents/implementer.md exists');
+  assert.doesNotMatch(implementer.body, /enter it at its Build phase/);
+  assert.doesNotMatch(implementer.frontmatter.description, /opus/);
+
+  const designTasksPath = path.join(skillsRoot, 'implementing', 'references', 'design-tasks.md');
+  const designTasks = fs.readFileSync(designTasksPath, 'utf8');
+  assert.doesNotMatch(designTasks, /exo:implementer/);
+  assert.match(designTasks, /\$RUN\/files\.md/);
+  assert.match(designTasks, /contract-selected\.json/);
+
+  const designingSkill = fs.readFileSync(path.join(skillsRoot, 'designing', 'SKILL.md'), 'utf8');
+  assert.match(designingSkill, /inventory\.md[^\n]*`exo:design-discovery`|`exo:design-discovery`[^\n]*inventory\.md/);
+});
+
 test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
   const builder = agents.find((agent) => agent.frontmatter.name === 'design-builder');
   assert.ok(builder, 'agents/design-builder.md exists');

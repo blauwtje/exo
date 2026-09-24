@@ -27,7 +27,7 @@ This skill owns a visual change at any file count, because Build dispatches its 
 Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface, naming the candidates newest first. Then stop at the first matching rung, because comps earn their cost only where a chooser recognises a direction they cannot name:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice.
+2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice. When `$RUN/inventory.md` is missing and the size is a full or bounded redesign, dispatch `exo:design-discovery` for Phase 1 only before Build, never Phase 2.
 3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, read when rungs 1-4 miss, while neither the user nor the brief lets it be replaced: one direction in text, no offer. A component library in the manifest is not that evidence on its own, because its defaults are the template this skill exists to replace.
