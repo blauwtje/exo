@@ -1,6 +1,6 @@
 ---
 name: investigation
-description: "Use when the user asks how part of this repository works, why code is built this way or whether its stated reason holds, or to be taught it. Not for locations only (exo:explorer), external libraries (research), an unproven failure (debug), or restructuring (deepen)."
+description: "Use when asked how code in this repo works, why it is built so, if a stated reason holds, for that reason in an ADR or doc, or to be taught it. Not for locations (exo:explorer), external libraries (research), unproven failures (debug) or restructuring (deepen)."
 argument-hint: <how, why or teach, and the code in question>
 ---
 
