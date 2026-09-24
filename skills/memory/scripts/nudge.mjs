@@ -50,7 +50,12 @@ const MARKERS = [
   /\bis not\b/i,
   /\bdoesn'?t\b/i,
   /\bdoes not\b/i,
-  /\bmistaken\b/i
+  /\bmistaken\b/i,
+  /\bnee,/i,
+  /\bdat klopt niet\b/i,
+  /\bniet waar\b/i,
+  /\bfout:/i,
+  /\beigenlijk\b/i
 ];
 
 // How much of the prompt the log keeps: enough to judge a false fire while

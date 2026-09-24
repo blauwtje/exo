@@ -51,6 +51,30 @@ test('a prompt carrying a marker gets the book command and one log line', async 
   assert.equal(entries[0].prompt, 'no, the verifier reports 17 checks');
 });
 
+test('a Dutch correction fires the same as an English one', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const dutchCorrections = [
+    'nee, de verifier meldt 17 checks',
+    'dat klopt niet, het zijn er 17',
+    'niet waar, het zijn er 17',
+    'fout: het zijn er 17',
+    'eigenlijk zijn het er 17'
+  ];
+  for (const prompt of dutchCorrections) {
+    const result = await runNudge([], { session_id: 's1', cwd: directory, prompt }, environment);
+    assert.equal(result.code, 0, prompt);
+    assert.notEqual(result.stdout, '', prompt);
+  }
+});
+
+test('an ordinary Dutch sentence is silent and writes nothing', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'voeg een test toe voor de budgetcontrole' }, environment);
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, '');
+  await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
+});
+
 test('a prompt carrying no marker is silent and writes nothing', async () => {
   const { directory, environment } = await nudgeFixture();
   const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'add a test for the budget check' }, environment);
