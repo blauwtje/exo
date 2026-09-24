@@ -56,9 +56,7 @@ const EXPECTED_OWNER_ROWS = {
     '../using-exo/references/question.md',
     'references/design-tasks.md',
   ],
-  'skills/research/SKILL.md': [
-    'researcher-prompt.md',
-  ],
+  'skills/research/SKILL.md': [],
   'skills/savings/SKILL.md': [],
   'skills/settings/SKILL.md': [
     'references/setup-map.md',

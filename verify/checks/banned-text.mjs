@@ -42,9 +42,13 @@ export function checkBannedText(report, repository) {
   // Process files and prompts come from the listed skills; every SKILL.md is
   // read too, listed or not.
   const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.agentFiles(), ...repository.everySkillFile()]);
+  // An agent's `tools:` frontmatter line is read by the harness, which takes
+  // only the vendor tool names, so that one line is exempt; its body is not.
+  const agentFiles = new Set(repository.agentFiles());
   for (const file of files) {
     const relative = repository.relative(file);
-    const content = repository.text(file);
+    const text = repository.text(file);
+    const content = agentFiles.has(file) ? text.replace(/^tools: .*$/m, '') : text;
     for (const pattern of CASE_INSENSITIVE) {
       if (new RegExp(pattern, 'i').test(content)) {
         errors.push(`${relative}: banned text /${pattern}/i`);

@@ -156,7 +156,7 @@ const SCENARIOS = [
   { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
     read(root, 'skills/implementing-batch/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
-    replaceText(root, 'skills/research/researcher-prompt.md', 'at most 25 lines', 'a short report') },
+    replaceText(root, 'agents/researcher.md', 'at most 25 lines', 'a short report') },
   { name: 'body-over-token-ceiling', mutate: (root) =>
     append(root, 'skills/settings/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
   { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/research/SKILL.md',

@@ -26,7 +26,8 @@ The overcorrection is researching a call the repository already makes elsewhere:
 
 ## Where this runs
 
-- Delegate the read to a `general-purpose` delegate on `sonnet` from `researcher-prompt.md` with the pinned version, the exact question and a stop condition; the same prompt owns a document on disk, and the `exo:explorer` agent owns the repository.
+- Dispatch the `exo:researcher` agent with the question alone: the library, its pinned version and what to confirm, or the document paths.
+- The agent holds the budget, the stop rule and the report shape, so the dispatch repeats none of them; the `exo:explorer` agent owns the repository.
 - Read here only when no separate context exists, one page at a time.
 - Hand back the confirmed facts, their citations and the unconfirmed remainder, never the pages.
 
@@ -42,12 +43,6 @@ Write `docs/research/<library>.md` only when the user asks for a file, or a name
 | "I know this API." | Knowing the concept is not knowing this version; read the lockfile. |
 | "The latest docs will do." | The install is older; the answer diverges across minor versions. |
 | "I'll paste the page for context." | Ten quoted lines and a URL; the page costs every later turn. |
-
-## References
-
-| File | Read it when |
-|---|---|
-| `researcher-prompt.md` | Before every documentation or document dispatch. |
 
 ## Judgment
 
