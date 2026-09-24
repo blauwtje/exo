@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.37.0 - 2026-09-24
+
 ### Added
 
 - `shipping` gains `scripts/ship-gate.mjs`: `--pr <n>` prints one verdict, `MERGE`, `BEHIND`, `DIRTY` or `STOP <field>=<value> [check]`, passing SKIPPED and NEUTRAL checks and stopping on CANCELLED, and `--order <n...>` prints stacked pull requests bases first and exits non-zero on a cycle; `SKILL.md` runs both instead of reading JSON.
