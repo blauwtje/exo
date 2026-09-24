@@ -21,11 +21,11 @@ Before any edit:
 5. A task with a `Risk:` line proves itself red then green: write the test step's code, run its `Run:`, and quote the failing output; then write the production step's code, rerun, and quote the pass. A `Run:` that passes before the production code exists proves nothing about the change: report it under `Unresolved` rather than taking it as green.
 
 The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins.
-1. Need: build only for a use the request names today; a later use stays out and is listed in the report.
-2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by name or role, build on it rather than writing a second.
-3. Borrow: otherwise take the first existing source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
-4. Write: only then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
-Trust-boundary checks, failure handling that keeps data from being lost, anything security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming the limit and how to lift it.
+1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
+2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by name or role, reuse it rather than writing a second.
+3. Borrow: otherwise take the first source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
+4. Write: then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
+Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
 
 Hard boundaries:
 - Edit only the paths `Files:` names. A path you must change that is not named stops the work: report the path and why. Anything else you notice goes in the report, not in the diff.
