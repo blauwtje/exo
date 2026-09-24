@@ -81,7 +81,9 @@ const EXPECTED_OWNER_ROWS = {
   'skills/prototyping/SKILL.md': [
     'references/exhaust-the-design-space.md',
   ],
-  'skills/handoff/SKILL.md': [],
+  'skills/handoff/SKILL.md': [
+    'references/reconstructing-without-a-note.md',
+  ],
   'skills/issuing/SKILL.md': [
     'references/fields.md',
   ],

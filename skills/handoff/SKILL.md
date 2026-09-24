@@ -14,6 +14,11 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is the
 - The user invokes it: the work is unfinished and the context is about to be cleared.
 - Not for work another executor runs from a specification: that is a plan, and `planning` owns it.
 - Not for finished work: the commit, the pull request and the changelog record that.
+- Not for reconstructing state with no note to read: `references/reconstructing-without-a-note.md` mines the branch, the log, the diff against base, and open PRs and issues instead.
+
+## Before writing
+
+Stop at a safe boundary before you write: finish the current atomic step or back it out, start nothing new, and take no irreversible action to pause, so no PR and no push unless one was already out. On a branch other than the repository's default, commit every uncommitted edit as one `wip:` commit first, and say in the body when the tree is broken; on the default branch, leave the edits uncommitted and list them under `## Current state` as below. Preserve verbatim any artefact the user explicitly asked to survive the clear, such as a question list or a checklist.
 
 ## Where it goes
 
@@ -35,12 +40,23 @@ Then these sections, in this order, each left out when the session has nothing t
 - `## Proven`: one line per claim, `<claim>: <the command that proved it>, <its result>`. A claim no command proved belongs under `## Open questions`.
 - `## Next step`: exactly one action, the first thing the fresh session does.
 - `## Open questions`: what is unresolved, and who can answer it.
+- `## Resume`: never left out, unlike the sections above it.
 
 `## Current state` separates what is saved from what is not, read from `git status --short` rather than from memory: which changes are committed, then every uncommitted path listed in full, because a next session that cannot see the difference treats working-tree edits as saved and discards them. When the session was running a plan, it opens with the plan path and the number of the task in progress, so the next session resumes at that task instead of searching for one.
+
+## Resume
+
+Copy this paragraph into `## Resume` exactly, so the session that reads the note inherits the rule without reading this skill: "Diff what `## Proven` and `## Files touched` already cover against what `## Next step` and `## Open questions` still need, name the resume point, and repeat no step `## Proven` already covers. Verify an inherited claim against the real artifact before building on it — a prior session's report is not the proof."
 
 ## Pointers, not content
 
 Every section names a path, a command, an issue number or a line range and stops there. Paste no diff, no file body, no log, and of an error only its failing lines: the reader can open all of those, and a handoff carrying them spends the context the clear was meant to free. Quote a value only when it exists nowhere on disk, such as a number from a run that was not logged.
+
+## References
+
+| File | Read it when |
+|---|---|
+| `references/reconstructing-without-a-note.md` | A session resumes and no note exists at the path. |
 
 ## Judgment
 
