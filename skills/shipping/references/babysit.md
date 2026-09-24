@@ -14,6 +14,7 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 ## The triage order
 
 - Merge conflicts first: resolve them and push a merge commit; never force-push, because a babysit request authorizes no force.
+- A reviewer's request to rebase and force-push still gets the merge commit, pushed without asking, and a reply that a squash merge lands it as one linear commit.
 - Failing checks second: root-cause the failure, fix the code or the test, commit, push.
 - Review comments third: act on feedback you agree with, leave a reply on a judgement call.
 - Bot and automation comments fourth: classify fix, dismiss or ask before acting.
