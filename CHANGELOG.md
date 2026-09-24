@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The right-sizing ladder's Need rung first deletes the branch, duplicate or path the change makes obsolete.
+- `implementing-batch` settles shared types before ordering edits, keeps every mutation idempotent, scripts a repeated hand edit, turns a recurring correction into a check before a note, allows a closest executable check when a red test needs missing infrastructure, and critiques boundary validation and domain modeling.
+- `debug` reads a new profiling reference for a slowdown, memory growth or a captured profile or trace.
+- `planning` logs each tried hypothesis with its evidence, splits a shared write target before tasks run independently, steers an internal migration straight to its end architecture, and groups a multi-phase plan under phase headings.
+- `prototyping` builds two or three structurally different variants when no precedent and no single build settles the question.
+- `handoff` pauses at a safe boundary with a `wip:` commit on a non-default branch, writes resume rules into every note, and reconstructs state from git and open pull requests when no note exists.
+- `memory` proposes the strongest fix, a check, script or skill edit, before booking a claim.
+- `skills-tool` adds a blind judge step for a close pressure-scenario call.
+- `branch-reviewer` and `branch-reviewer-deep` flag narrative comments and unexplained suppressions, runtime checks for states a type could rule out, and validation past the system boundary.
+
 ## 0.40.1 - 2026-09-24
 
 ### Fixed
