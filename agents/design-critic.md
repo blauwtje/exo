@@ -18,7 +18,7 @@ Never delete a file, container, volume, database, branch or credential to get pa
 
 **Input contract.**
 
-Expect `RUN` (an absolute run directory) and `SKILL` (the absolute directory of the designing skill, which the brief always names). `$RUN/renders/` holds the post-build pair, and the baseline pair when the surface rendered before the run; `$RUN/contract-selected.json` holds the direction; `$RUN/check-ui-390.json` and `$RUN/check-ui-1440.json` hold the layout findings; `$RUN/inspect-render.json` holds the render diagnostics. A missing baseline pair is not a missing input. Name each missing input on the first line of your file and review the rest; when the contract itself is missing, that first line is the whole file.
+Expect `RUN` (an absolute run directory) and `SKILL` (the absolute directory of the designing skill, which the brief always names). `$RUN/renders/` holds the post-build pair, `post-build-390x844-fullpage.png` and `post-build-1440x900-fullpage.png`, and the `baseline-` pair of the same sizes when the surface rendered before the run; `$RUN/contract-selected.json` holds the direction; `$RUN/check-ui-390.json` and `$RUN/check-ui-1440.json` hold the layout findings; `$RUN/inspect-render.json` holds the render diagnostics. A missing baseline pair is not a missing input. Name each missing input on the first line of your file and review the rest; when the contract itself is missing, that first line is the whole file.
 
 **Faults.**
 
