@@ -3,10 +3,13 @@
 // context size. Before each tool call inside a delegate it reads the input,
 // cache read and cache creation tokens of the last assistant turn in that
 // delegate's own transcript, the sum context-watch takes, and counts the call.
-// Past the soft limit it adds one line before each call saying to read nothing new; past the
-// hard limit, in tokens or tool calls, it denies every tool but the ones that
-// finish a half-made edit and write the report. The main session carries no
-// `agent_id` and is never measured.
+// Past the soft limit it adds one line before each call saying to read nothing
+// new and commit what is green; past the hard limit, in tokens or tool calls, it
+// denies every tool but the ones that finish a half-made edit and write the
+// report, plus a Bash call of `git add`, `git commit`, `git status` or
+// `git diff --stat`, so green work still lands. That command may hold no
+// chaining, substitution, redirection or second line, so nothing rides along.
+// The main session carries no `agent_id` and is never measured.
 //
 //   node delegate-budget.mjs   PreToolUse hook on every tool: stdin is the hook JSON
 //
@@ -33,6 +36,9 @@ const TAIL_BYTES = 256 * 1024;
 const DISPATCH_BYTES = 64 * 1024;
 const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;
 const REPORT_TOOLS = new Set(['Edit', 'Write', 'TaskUpdate', 'TodoWrite']);
+const COMMIT_COMMAND = /^git (?:add|commit|status|diff --stat)(?:\s.*)?$/s;
+// Chaining, a pipe, substitution, redirection or a second line could run anything.
+const SHELL_METACHARACTERS = /[;&|`<>\n]|\$\(/;
 
 function delegateTranscript(hookInput) {
   const transcriptPath = hookInput.transcript_path;
@@ -105,15 +111,21 @@ function countCall(agentId) {
   return fs.statSync(counter).size;
 }
 
-function decision(toolName, tokens, calls, limits) {
+function isCommitCommand(toolName, toolInput) {
+  if (toolName !== 'Bash' || typeof toolInput?.command !== 'string') return false;
+  const command = toolInput.command.trim();
+  return COMMIT_COMMAND.test(command) && !SHELL_METACHARACTERS.test(command);
+}
+
+function decision(toolName, toolInput, tokens, calls, limits) {
   const used = `${Math.round(tokens / 1000)}k`;
   const pastHard = tokens > limits.hard * 1000 || calls > limits.calls;
-  if (pastHard && !REPORT_TOOLS.has(toolName)) {
-    const permissionDecisionReason = `exo budget: ${used} tokens after ${calls} tool calls, past the limit of ${limits.hard}k tokens or ${limits.calls} tool calls. Write your report now and list what is still open under Unresolved. Only Edit to finish a half-made edit, Write and task updates still run.`;
+  if (pastHard && !REPORT_TOOLS.has(toolName) && !isCommitCommand(toolName, toolInput)) {
+    const permissionDecisionReason = `exo budget: ${used} tokens after ${calls} tool calls, past the limit of ${limits.hard}k tokens or ${limits.calls} tool calls. Write your report now and list what is still open under Unresolved. Only Edit to finish a half-made edit, Write, task updates and a lone git add, git commit, git status or git diff --stat still run; give a commit message as -m "..." holding no ; & | \` $( < > or newline.`;
     return { permissionDecision: 'deny', permissionDecisionReason };
   }
   if (tokens <= limits.soft * 1000) return null;
-  return { additionalContext: `exo budget: ${used} of ${limits.hard}k tokens used. Read nothing new; finish the current step and write your report.` };
+  return { additionalContext: `exo budget: ${used} of ${limits.hard}k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.` };
 }
 
 function guard(hookInput) {
@@ -127,7 +139,7 @@ function guard(hookInput) {
     const calls = countCall(hookInput.agent_id);
     const agentBudget = BUDGETS.agents[hookInput.agent_type] ?? {};
     const limits = { ...BUDGETS.default, ...agentBudget, ...dispatchBudget(descriptor, size) };
-    const verdict = decision(hookInput.tool_name, tokens, calls, limits);
+    const verdict = decision(hookInput.tool_name, hookInput.tool_input, tokens, calls, limits);
     if (verdict === null) return;
     const hookSpecificOutput = { hookEventName: 'PreToolUse', ...verdict };
     process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);

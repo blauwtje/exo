@@ -1,6 +1,7 @@
 // The delegate budget measures only a delegate: past the soft limit it adds
 // one line before each call, past the hard limit it denies every tool but the
-// ones that finish an edit and write the report, and in the main session, on a
+// ones that finish an edit, write the report and commit green work through a
+// lone git add, commit, status or diff --stat, and in the main session, on a
 // missing transcript or on a fault it prints nothing.
 
 import assert from 'node:assert/strict';
@@ -73,7 +74,7 @@ test('past the soft limit a delegate gets one line with the tokens used', async 
   const decision = decisionOf(await runBudget(BUDGET, hookInput, env));
   assert.equal(decision.hookEventName, 'PreToolUse');
   assert.equal(decision.permissionDecision, undefined);
-  assert.equal(decision.additionalContext, 'exo budget: 45k of 70k tokens used. Read nothing new; finish the current step and write your report.');
+  assert.equal(decision.additionalContext, 'exo budget: 45k of 70k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
 });
 
 test('past the hard limit a delegate is denied a Read and told to write its report', async () => {
@@ -94,6 +95,50 @@ test('past the hard limit an Edit, a Write and a task update still run', async (
   for (const toolName of ['Bash', 'Grep', 'Glob', 'Agent']) {
     const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: toolName }, env));
     assert.equal(decision.permissionDecision, 'deny', toolName);
+  }
+});
+
+test('past the hard limit a lone git add, commit, status or diff --stat still runs', async () => {
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const commands = [
+    'git add skills/savings/scripts/delegate-budget.mjs tests/delegate-budget.test.mjs',
+    'git add -A',
+    '  git commit -m "fix(savings): let a delegate commit past the hard limit"  ',
+    'git status',
+    'git status --short',
+    'git diff --stat',
+    'git diff --stat HEAD~1\n'
+  ];
+  for (const command of commands) {
+    const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: 'Bash', tool_input: { command } }, env));
+    assert.equal(decision.permissionDecision, undefined, command);
+    assert.match(decision.additionalContext, /^exo budget: 72k of 70k tokens used\./, command);
+  }
+});
+
+test('past the hard limit any other Bash command, or a git command that chains, is denied', async () => {
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(72_000), '']);
+  const commands = [
+    'git push',
+    'git push origin HEAD',
+    'rm -rf x',
+    'git diff',
+    'git addx .',
+    'git add . && rm x',
+    'git add .; rm x',
+    'git status | sh',
+    'git commit -m "$(rm x)"',
+    'git commit -m "`rm x`"',
+    'git status > out.txt',
+    'git add < list.txt',
+    'git add .\nrm x',
+    'git add . & rm x'
+  ];
+  for (const command of commands) {
+    const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: 'Bash', tool_input: { command } }, env));
+    assert.equal(decision.permissionDecision, 'deny', command);
+    assert.match(decision.permissionDecisionReason, /git add, git commit, git status or git diff --stat/, command);
+    assert.match(decision.permissionDecisionReason, /-m "\.\.\."/, command);
   }
 });
 
@@ -159,7 +204,7 @@ test('an agent type listed in the budgets file gets its own limits', async () =>
   const { root, hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(25_000), '']);
   const script = await pluginCopy(root, TYPED_BUDGETS);
   const decision = decisionOf(await runBudget(script, hookInput, env));
-  assert.equal(decision.additionalContext, 'exo budget: 25k of 30k tokens used. Read nothing new; finish the current step and write your report.');
+  assert.equal(decision.additionalContext, 'exo budget: 25k of 30k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
   assert.equal(decisionOf(await runBudget(script, { ...hookInput, agent_type: 'exo:explorer' }, env)), null);
 });
 
@@ -168,5 +213,5 @@ test('a Budget line in the dispatch outranks the agent type limits', async () =>
   const script = await pluginCopy(root, TYPED_BUDGETS);
   const decision = decisionOf(await runBudget(script, hookInput, env));
   assert.equal(decision.permissionDecision, undefined);
-  assert.equal(decision.additionalContext, 'exo budget: 80k of 90k tokens used. Read nothing new; finish the current step and write your report.');
+  assert.equal(decision.additionalContext, 'exo budget: 80k of 90k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
 });
