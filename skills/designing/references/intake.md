@@ -41,7 +41,7 @@ A complaint names a fault in the words of the person who saw it, and those words
 
 ## Settled identity
 
-Rung 5 of the skill's `## Route` reads any one of these as a settled identity: docs/design/DESIGN.md with a `scripts/context.mjs` status other than `absent`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it.
+Rung 5 of the skill's `## Route` reads any one of these as a settled identity: docs/design/DESIGN.md where `scripts/context.mjs --status` reports `design_context_status` other than `absent` and `approval_status` of `approved`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it. A `draft` `approval_status` is not settled; route past rung 5 without opening DESIGN.md's body.
 
 ## Judgment
 

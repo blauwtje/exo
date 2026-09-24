@@ -4,7 +4,7 @@ Decide the direction from references, render it, and select it before production
 
 ## Design context first
 
-- Read docs/design/DESIGN.md whenever it exists and the task affects visual decisions; load only the sections the task needs, through `scripts/context.mjs`.
+- Read the `approval_status` field `scripts/context.mjs --status` reports before asking whether a DESIGN.md decision is approved; open the body, through `--surface` and `--needs`, only for the sections the task needs.
 - Extract an existing design system from code before proposing a replacement.
 - Create or update DESIGN.md only after explicit user approval of a durable visual identity or an approved redesign. Completing an implementation is not approval.
 - Keep unapproved directions and experiments ephemeral.
@@ -84,4 +84,4 @@ When a tell from the `visual-critique` reference removes a default: every remove
 - Verified contrast outranks visual similarity to the seed palette.
 - Existing project tokens, assets, and conventions outrank a parallel system; extend them by role.
 - Content coverage and the contrast floor outrank every atmospheric ambition.
-- An approved durable decision in DESIGN.md outranks a new direction; changing one requires asking first.
+- A DESIGN.md decision whose `approval_status` reads `approved` outranks a new direction; changing one requires asking first.
