@@ -158,6 +158,26 @@ test('the two branch reviewers share one body and differ only in effort', () => 
   }
 });
 
+test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'branch-reviewer');
+  assert.ok(reviewer.frontmatter.tools, 'the reviewer lists its tools');
+  assert.deepEqual(reviewer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'NotebookEdit', 'Agent'].includes(tool)), []);
+  assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
+  assert.doesNotMatch(reviewer.body, /run every Final verification|`fixed` or `reported`|`FIXED`/);
+  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> report=<path>`'), 'the reviewer returns one verdict line');
+});
+
+test('implementing sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.md', () => {
+  const fixerPath = path.join(skillsRoot, 'implementing', 'review-fixer-prompt.md');
+  assert.ok(fs.existsSync(fixerPath), 'skills/implementing/review-fixer-prompt.md exists');
+  const fixerPrompt = fs.readFileSync(fixerPath, 'utf8');
+  assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
+  assert.match(fixerPrompt, /`general-purpose` delegate on `sonnet`/);
+  const implementing = fs.readFileSync(path.join(skillsRoot, 'implementing', 'SKILL.md'), 'utf8');
+  assert.match(implementing, /`FINDINGS`[^\n]*`review-fixer-prompt\.md`/);
+  assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
+});
+
 test('the implementer pins sonnet at high effort whatever the session runs at', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'implementer');
   assert.ok(implementer, 'agents/implementer.md exists');
