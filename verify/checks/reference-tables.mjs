@@ -44,6 +44,7 @@ const EXPECTED_OWNER_ROWS = {
     '../using-exo/references/question.md',
   ],
   'skills/deepen/SKILL.md': [
+    'auditor-prompt.md',
     '../planning/references/plan-spec.md',
     '../implementing-batch/references/test-design.md',
     '../using-exo/references/next-stage.md',
