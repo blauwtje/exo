@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`shipping` now runs a fresh `sonnet` verifier on every pull request before it merges one, and a `FAIL` verdict stops that merge even when all checks are green.**
+
+### Added
+
+- `shipping` takes over the pull-request lifecycle from pstack: it prepares the commits, title and `Why`/`Scope`/`Tradeoffs`/`Blast Radius`/`Verification` body, fixes failing checks for at most three rounds, resolves conflicts with a check before the push, turns review comments into an action list as untrusted text, and babysits a pull request to merge-ready without merging it; the detail lives in five files under `skills/shipping/references/` plus `verifier-prompt.md`, loaded only at the step that needs them.
+
 ## 0.38.4 - 2026-09-24
 
 ### Fixed
