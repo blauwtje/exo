@@ -14,7 +14,9 @@ import {
 } from '../skills/designing/scripts/capture.mjs';
 import { parseFrontmatter } from '../skills/designing/scripts/context.mjs';
 import { fontConfidence } from '../skills/designing/scripts/inspect-styles.mjs';
-import { ALWAYS_BLOCKING, compareFindings, DECORATIVE_TELLS } from '../skills/designing/scripts/check-ui.mjs';
+import {
+  ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable
+} from '../skills/designing/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
 
 function git(root, args) {
@@ -699,6 +701,70 @@ describe('check-ui.mjs named anti-patterns', () => {
   });
 });
 
+describe('check-ui.mjs notes table', () => {
+  it('collapses two findings of one type into one notes entry with no threshold/note on the findings', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), '.a { transition: all 200ms ease; }\n');
+    await fs.writeFile(path.join(root, 'b.css'), '.b { transition: all 100ms linear; }\n');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const transitions = report.static.findings.filter((entry) => entry.type === 'transition-all');
+    assert.equal(transitions.length, 2);
+    assert.ok(transitions.every((entry) => !('threshold' in entry) && !('note' in entry)));
+    assert.ok(report.notes['transition-all'].threshold);
+    assert.ok(report.notes['transition-all'].note);
+  });
+
+  it('keeps a dynamic note on the finding it differs from in the table', () => {
+    const definiteNote = 'text below the AA contrast minimum';
+    const potentialNote = 'effective background is composited, so the ratio is indeterminate';
+    const definite = {
+      type: 'contrast-large-text', confidence: 'definite', selector: 'a', measured: '2:1',
+      threshold: '3:1', note: definiteNote
+    };
+    const potential = {
+      type: 'contrast-large-text', confidence: 'potential', selector: 'b', measured: '2:1',
+      threshold: '3:1', note: potentialNote
+    };
+    const findings = [definite, potential];
+    const table = applyNotesTable(findings);
+    assert.deepEqual(table['contrast-large-text'], { threshold: '3:1', note: definiteNote });
+    assert.equal(definite.threshold, undefined);
+    assert.equal(definite.note, undefined);
+    assert.equal(potential.threshold, undefined);
+    assert.equal(potential.note, potentialNote);
+  });
+
+  it('reconstructs a finding from the table lossless', () => {
+    const entries = [
+      { type: 't', confidence: 'definite', selector: 'a', measured: '1', threshold: 'T', note: 'N' },
+      { type: 't', confidence: 'definite', selector: 'b', measured: '2', threshold: 'T', note: 'other' }
+    ];
+    const table = notesTable(entries.map((entry) => ({ ...entry })));
+    const stripped = entries.map((entry) => ({ ...entry }));
+    applyNotesTable(stripped);
+    const reconstructed = stripped.map((entry) => ({
+      ...entry,
+      threshold: entry.threshold ?? table[entry.type].threshold,
+      note: entry.note ?? table[entry.type].note
+    }));
+    assert.deepEqual(reconstructed, entries);
+  });
+
+  it('--summary prints at most 10 lines starting with static= on a --source-only run', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), '.a { transition: all 200ms ease; }\n');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--summary']);
+    assert.equal(result.code, 0, result.stderr);
+    const lines = result.stdout.trimEnd().split('\n');
+    assert.ok(lines.length <= 10, lines.join('\n'));
+    assert.match(lines[0], /^static=/);
+  });
+});
+
 describe('check-ui.mjs comments, baseline and ignore file', () => {
   it('skips tells inside code comments and keeps line numbers', async () => {
     const root = await fixture();
@@ -780,6 +846,17 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const shifted = compareFindings(baseline, current);
     assert.deepEqual(shifted.counts, { before: 1, after: 2, predating: 1, new: 1, ignored: 0, blocking: 0 });
     assert.deepEqual(shifted.new.map((item) => item.selector), ['.hero (styles.css:9)']);
+  });
+
+  it('counts identical findings at different viewports as distinct, and matches a baseline only at its own viewport', () => {
+    const at390 = { ...entry('horizontal-overflow', 'document'), viewport: '390x844' };
+    const at1440 = { ...entry('horizontal-overflow', 'document'), viewport: '1440x900' };
+    const same = compareFindings([at390, at1440], [at390, at1440]);
+    assert.deepEqual(same.counts, { before: 2, after: 2, predating: 2, new: 0, ignored: 0, blocking: 0 });
+
+    const mismatched = compareFindings([at390], [at1440]);
+    assert.deepEqual(mismatched.new.map((item) => item.viewport), ['1440x900']);
+    assert.equal(mismatched.counts.predating, 0);
   });
 
   it('adds a comparison against a --baseline report and still exits 0', async () => {
@@ -1082,6 +1159,19 @@ describe('rendered capability', () => {
     const viewportRecord = JSON.parse(viewportRun.stdout.trim().split('\n')[0]);
     const viewportGeometry = pngGeometry(await fs.readFile(viewportRecord.path));
     assert.deepEqual(viewportGeometry, { width: 390, height: 844 });
+  });
+
+  it('runs two --viewport values and reports both keys under rendered.viewports', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.engine || !capability.driven) return t.skip(`no driven browser capability: ${capability.reason}`);
+    const { url } = await pageFixture();
+
+    const result = await run(script('check-ui.mjs'),
+      ['--url', url, '--viewport', '390x844', '--viewport', '1440x900']);
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.rendered.status, 'ok');
+    assert.deepEqual(Object.keys(report.rendered.viewports).sort(), ['1440x900', '390x844']);
   });
 
   it('grows the image beyond the viewport under --full-page', async (t) => {

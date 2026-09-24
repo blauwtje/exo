@@ -39,18 +39,20 @@ function sentences(text) {
   return text.split('\n').flatMap((line) => line.split(/(?<=[.;:])\s+(?=[A-Z`-])/));
 }
 
-test('every capture.mjs invocation in the designing docs names its checkpoint label', () => {
+test('every capture.mjs or checkpoint.mjs invocation in the designing docs names its checkpoint label', () => {
   const labels = new Set();
   for (const { file, text } of DOCS) {
     for (const sentence of sentences(text)) {
-      if (!sentence.includes('capture.mjs')) continue;
+      const invokesCapture = sentence.includes('capture.mjs');
+      const invokesCheckpoint = sentence.includes('checkpoint.mjs');
+      if (!invokesCapture && !invokesCheckpoint) continue;
       const exempt = NON_INVOCATIONS.some((entry) => entry.file === file && entry.sentence.test(sentence.trim().replace(/[.;]$/, '')));
       if (exempt) continue;
-      const spans = sentence.match(/`[^`]*capture\.mjs[^`]*`/g) ?? [];
-      assert.ok(spans.length > 0, `${file}: a capture.mjs mention outside a code span: ${sentence}`);
+      const spans = sentence.match(/`[^`]*(?:capture|checkpoint)\.mjs[^`]*`/g) ?? [];
+      assert.ok(spans.length > 0, `${file}: a capture.mjs/checkpoint.mjs mention outside a code span: ${sentence}`);
       for (const span of spans) {
-        const label = span.match(/--label (\S+?)`?(?:\s|$)/)?.[1]?.replace(/`$/, '');
-        assert.ok(LABEL_VALUES.includes(label), `${file}: ${span} passes no checkpoint --label`);
+        const label = span.match(/--(?:label|stage) (\S+?)`?(?:\s|$)/)?.[1]?.replace(/`$/, '');
+        assert.ok(LABEL_VALUES.includes(label), `${file}: ${span} passes no checkpoint label or stage`);
         labels.add(label);
       }
     }
@@ -58,13 +60,22 @@ test('every capture.mjs invocation in the designing docs names its checkpoint la
   assert.ok(labels.has('<checkpoint>') || CHECKPOINTS.every((name) => labels.has(name)), 'the docs label all three checkpoints');
 });
 
-test('the three-checkpoint capture command names every checkpoint label', () => {
+test('the three-checkpoint checkpoint command names every checkpoint stage', () => {
   const detail = DOCS.find(({ file }) => file.endsWith('references/phase-detail.md')).text;
-  assert.ok(detail.includes('`scripts/capture.mjs --full-page --label <checkpoint> --out "$RUN/renders"`'));
-  for (const name of CHECKPOINTS) assert.ok(detail.includes(`\`${name}\``), `phase-detail names the ${name} label`);
+  assert.ok(detail.includes('`scripts/checkpoint.mjs --run "$RUN" --stage <checkpoint> --url <u> [--source <s>]`'));
+  for (const name of CHECKPOINTS) assert.ok(detail.includes(`\`${name}\``), `phase-detail names the ${name} stage`);
 });
 
-test('every render file a designing doc reads is one capture.mjs writes', () => {
+const WIDTHS = VIEWPORTS.map((viewport) => viewport.split('x')[0]);
+
+// check-ui-<stage>.json and inspect-styles-<stage>.json cover both viewports in
+// one file; inspect-render-<stage>-<width>.json is one file per viewport;
+// critic-evidence.json and contract-selected.json are stage-independent.
+const EVIDENCE_PATTERN = new RegExp(
+  `^\\$RUN\\/(?:check-ui-(?:${CHECKPOINTS.join('|')})|inspect-styles-(?:${CHECKPOINTS.join('|')})|inspect-render-(?:${CHECKPOINTS.join('|')})-(?:${WIDTHS.join('|')})|critic-evidence|contract-selected)\\.json$`
+);
+
+test('every render file a designing doc reads is one checkpoint.mjs writes', () => {
   const pattern = new RegExp(
     `^(?:\\$RUN/renders/)?(?:${LABEL_VALUES.join('|')})-(?:${VIEWPORTS.join('|')})-fullpage\\.png$`
   );
@@ -72,8 +83,33 @@ test('every render file a designing doc reads is one capture.mjs writes', () => 
   for (const { file, text } of DOCS) {
     for (const [, name] of text.matchAll(/`([^`\s]*\.png)`/g)) {
       named += 1;
-      assert.match(name, pattern, `${file} reads ${name}, which capture.mjs never writes`);
+      assert.match(name, pattern, `${file} reads ${name}, which checkpoint.mjs never writes`);
     }
   }
   assert.ok(named > 0, 'the agents name the render files they read');
+});
+
+// Only the evidence families checkpoint.mjs itself produces; a $RUN file from
+// another script, such as phase-direction's space.json, is out of scope.
+const CHECKPOINT_EVIDENCE = /^\$RUN\/(?:check-ui|inspect-render|inspect-styles|critic-evidence|contract-selected)/;
+
+test('SKILL.md reads phase-detail.md whole at Phase 1 and phase-build.md dispatches builder-prompt.md by path', () => {
+  const skill = DOCS.find(({ file }) => file.endsWith('skills/designing/SKILL.md')).text;
+  const build = DOCS.find(({ file }) => file.endsWith('skills/designing/references/phase-build.md')).text;
+  const phaseDetailRow = skill.match(/^\|\s*`references\/phase-detail\.md`\s*\|(.*)\|$/m);
+  assert.ok(phaseDetailRow, 'SKILL.md still lists a references/phase-detail.md row');
+  assert.doesNotMatch(phaseDetailRow[1], /grep -n|sed -n|each loop step/, 'phase-detail.md is read whole at Phase 1, not by section per step');
+  assert.match(build, /Read \$SKILL\/builder-prompt\.md and follow it/, 'phase-build.md dispatch names builder-prompt.md by path');
+});
+
+test('every evidence file a designing doc or agent reads is one checkpoint.mjs writes', () => {
+  let named = 0;
+  for (const { file, text } of DOCS) {
+    for (const [, name] of text.matchAll(/`(\$RUN\/[^`\s]*\.json)`/g)) {
+      if (!CHECKPOINT_EVIDENCE.test(name)) continue;
+      named += 1;
+      assert.match(name, EVIDENCE_PATTERN, `${file} reads ${name}, which checkpoint.mjs never writes`);
+    }
+  }
+  assert.ok(named > 0, 'the docs and agents name the evidence files they read');
 });

@@ -1,6 +1,6 @@
 # Builder prompt
 
-The text `designing` hands a `general-purpose` delegate on `sonnet` for one build scope: the foundation, one surface, or `all`. The session fills `RUN`, `SCOPE`, `FILES`, `REFERENCES`, `REPO` and `SKILL` before sending it.
+A `general-purpose` delegate on `sonnet` opens this file directly, by path, for one build scope: the foundation, one surface, or `all`. The dispatch names `RUN`, `SCOPE`, `FILES`, `REFERENCES`, `REPO` and `SKILL`; the delegate reads them from the dispatch line, not from text pasted into it.
 
 ```text
 The run has a fixed turn limit and ends mid-step, without notice, when it is reached. Read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batching the reads, then write; stop reading by turn forty and finish the report, and with `SCOPE` `all` by turn forty of each scope.
