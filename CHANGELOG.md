@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The delegate budget keys the design-builder override as `exo:design-builder`, the `agent_type` the hook receives, so its 35-call limit applies; before, the unprefixed key never matched. A new verify check fails on any budget key that is not `exo:<agent>` or a built-in agent type.
+
 ## 0.38.3 - 2026-09-24
 
 ### Fixed
