@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `investigation` answers how, why and teach questions about the repository read-only, from code read this session and its git history, with every claim marked verified, inferred or unknown.
+- `refactoring` runs a named refactor whose behavior must not change: behavior pinned before the first move and proven equal after, every internal caller migrated and the old API deleted in the same change, no forwarding shim.
+
+### Changed
+
+- `deepen` hands a single named refactor to `refactoring` instead of `implementing-batch`.
+
 ## 0.39.2 - 2026-09-24
 
 ### Fixed
