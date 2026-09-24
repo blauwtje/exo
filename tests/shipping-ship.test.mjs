@@ -153,15 +153,131 @@ test('an existing open pull request is reused with no pr create', async () => {
   assert.deepEqual(outcome.calls, ['pr view feat/x --json number,url,state']);
 });
 
-test('pr-merge pushes and creates but exits 2 as not built yet', async () => {
-  const { workDir } = await shipRepository();
+// The pull request read by "create" and reused through wait, gate, merge and
+// confirm, so a pr-merge test never needs to name a number by hand.
+const OPEN_PR = { number: 42, url: 'https://github.com/acme/widgets/pull/42', state: 'OPEN' };
+const REUSE = { 'pr view feat/x --json number,url,state': { stdout: `${JSON.stringify(OPEN_PR)}\n` } };
+const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup';
+const CLEAN_GATE = { stdout: `${JSON.stringify({ number: 42, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', reviewDecision: null, statusCheckRollup: [] })}\n` };
+const CHECKS_PASS = { stdout: 'All checks were successful\n' };
+
+async function prMergeRepository() {
+  const { workDir, origin } = await shipRepository();
   git(workDir, 'checkout', '-q', '-b', 'feat/x');
   await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
   await fs.writeFile(path.join(workDir, 'body.md'), 'Adds the feature.\n');
-  const scenario = { 'pr view feat/x --json number,url,state': { stdout: `${JSON.stringify({ number: 42, url: 'https://github.com/acme/widgets/pull/42', state: 'OPEN' })}\n` } };
+  return { workDir, origin };
+}
+
+test('pr-merge waits, gates, merges and confirms in order', async () => {
+  const { workDir } = await prMergeRepository();
+  const scenario = {
+    ...REUSE,
+    'pr checks 42 --watch --fail-fast': CHECKS_PASS,
+    [`pr view 42 --json ${GATE_FIELDS}`]: CLEAN_GATE,
+    'pr merge 42 --squash': { stdout: '' },
+    'pr view 42 --json state,mergedAt,url': { stdout: `${JSON.stringify({ state: 'MERGED', mergedAt: '2026-01-01T00:00:00Z', url: OPEN_PR.url })}\n` }
+  };
   const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
-  assert.equal(outcome.code, 2, outcome.stderr);
-  assert.equal(outcome.stdout, '');
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} merged\n`);
+  assert.deepEqual(outcome.calls, [
+    'pr view feat/x --json number,url,state',
+    'pr checks 42 --watch --fail-fast',
+    `pr view 42 --json ${GATE_FIELDS}`,
+    'pr merge 42 --squash',
+    'pr view 42 --json state,mergedAt,url'
+  ]);
+});
+
+test('a red check stops wait and never merges', async () => {
+  const { workDir } = await prMergeRepository();
+  const scenario = { ...REUSE, 'pr checks 42 --watch --fail-fast': { stdout: 'test (ubuntu-latest)  fail\n', exit: 1 } };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} stopped wait fail test (ubuntu-latest)\n`);
+  assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr merge')), []);
+});
+
+test('a failing check on the gate stops before any merge', async () => {
+  const { workDir } = await prMergeRepository();
+  const failingGate = { stdout: `${JSON.stringify({ number: 42, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'BLOCKED', reviewDecision: null, statusCheckRollup: [{ name: 'build', status: 'COMPLETED', conclusion: 'FAILURE' }] })}\n` };
+  const scenario = { ...REUSE, 'pr checks 42 --watch --fail-fast': CHECKS_PASS, [`pr view 42 --json ${GATE_FIELDS}`]: failingGate };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} stopped gate conclusion=FAILURE build\n`);
+  assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr merge')), []);
+});
+
+test('BEHIND updates the branch and gates again before merging', async () => {
+  const { workDir } = await prMergeRepository();
+  const behindGate = { stdout: `${JSON.stringify({ number: 42, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'BEHIND', reviewDecision: null, statusCheckRollup: [] })}\n` };
+  const scenario = {
+    ...REUSE,
+    'pr checks 42 --watch --fail-fast': CHECKS_PASS,
+    [`pr view 42 --json ${GATE_FIELDS}`]: [behindGate, CLEAN_GATE],
+    'pr update-branch 42': { stdout: '' },
+    'pr merge 42 --squash': { stdout: '' },
+    'pr view 42 --json state,mergedAt,url': { stdout: `${JSON.stringify({ state: 'MERGED', mergedAt: '2026-01-01T00:00:00Z', url: OPEN_PR.url })}\n` }
+  };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} merged\n`);
+  assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr update-branch')), ['pr update-branch 42']);
+});
+
+test('BEHIND three times stops after two updates, and never merges', async () => {
+  const { workDir } = await prMergeRepository();
+  const behindGate = { stdout: `${JSON.stringify({ number: 42, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'BEHIND', reviewDecision: null, statusCheckRollup: [] })}\n` };
+  const scenario = {
+    ...REUSE,
+    'pr checks 42 --watch --fail-fast': CHECKS_PASS,
+    [`pr view 42 --json ${GATE_FIELDS}`]: [behindGate, behindGate, behindGate],
+    'pr update-branch 42': { stdout: '' }
+  };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} stopped gate BEHIND\n`);
+  assert.deepEqual(outcome.calls.filter((call) => call === 'pr update-branch 42').length, 2);
+  assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr merge')), []);
+});
+
+test('DIRTY exits 4 and never merges', async () => {
+  const { workDir } = await prMergeRepository();
+  const dirtyGate = { stdout: `${JSON.stringify({ number: 42, state: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY', reviewDecision: null, statusCheckRollup: [] })}\n` };
+  const scenario = { ...REUSE, 'pr checks 42 --watch --fail-fast': CHECKS_PASS, [`pr view 42 --json ${GATE_FIELDS}`]: dirtyGate };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
+  assert.equal(outcome.code, 4, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} stopped gate DIRTY\n`);
+  assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr merge')), []);
+});
+
+test('a merged-but-not-confirmed pull request stops confirm', async () => {
+  const { workDir } = await prMergeRepository();
+  const scenario = {
+    ...REUSE,
+    'pr checks 42 --watch --fail-fast': CHECKS_PASS,
+    [`pr view 42 --json ${GATE_FIELDS}`]: CLEAN_GATE,
+    'pr merge 42 --squash': { stdout: '' },
+    'pr view 42 --json state,mergedAt,url': { stdout: `${JSON.stringify({ state: 'OPEN', mergedAt: null, url: OPEN_PR.url })}\n` }
+  };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} stopped confirm state=OPEN\n`);
+});
+
+test('--method rebase merges with --rebase', async () => {
+  const { workDir } = await prMergeRepository();
+  const scenario = {
+    ...REUSE,
+    'pr checks 42 --watch --fail-fast': CHECKS_PASS,
+    [`pr view 42 --json ${GATE_FIELDS}`]: CLEAN_GATE,
+    'pr merge 42 --rebase': { stdout: '' },
+    'pr view 42 --json state,mergedAt,url': { stdout: `${JSON.stringify({ state: 'MERGED', mergedAt: '2026-01-01T00:00:00Z', url: OPEN_PR.url })}\n` }
+  };
+  const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md', '--method', 'rebase'], scenario);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr merge')), ['pr merge 42 --rebase']);
 });
 
 test('a bad route, mode or missing flag is a usage error that runs no gh', async () => {

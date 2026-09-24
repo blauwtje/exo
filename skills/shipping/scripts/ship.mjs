@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The shipping route as one script, so the picked route runs push, open a
-// pull request or (once a later unit builds it) wait, gate and merge without
-// a separate model call per step. It calls its sibling scripts as child
-// processes rather than reimplement their contracts.
+// pull request, or wait, gate and merge one, without a separate model call
+// per step. It calls its sibling scripts as child processes rather than
+// reimplement their contracts.
 //
 //   node ship.mjs --route push|open-pr|pr-merge [--title <subject>]
 //                 [--body <file>] [--issue <n>] [--method squash|merge|rebase]
@@ -12,28 +12,35 @@
 // starts; stdout carries only the one result line a route ends on.
 //
 // Steps run in order, stopping at the first that fails: body check, push,
-// create, wait, gate, merge, confirm. A stop prints `<branch> stopped <step>
-// <reason>` and exits 1; a usage error exits 2.
+// create, wait, gate, merge, confirm. Once a pull request is known, a stop
+// names it instead of the branch. A stop exits 1, except a gate verdict of
+// DIRTY, which exits 4; a usage error exits 2.
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { UsageError, parseFlags } from '#script-flags';
 
 export const USAGE_EXIT = 2;
+export const DIRTY_EXIT = 4;
 const ROUTES = new Set(['push', 'open-pr', 'pr-merge']);
+const METHODS = new Set(['squash', 'merge', 'rebase']);
+const MAX_BEHIND_UPDATES = 2;
+const WAIT_CHECKS = fileURLToPath(new URL('./wait-checks.mjs', import.meta.url));
+const SHIP_GATE = fileURLToPath(new URL('./ship-gate.mjs', import.meta.url));
 
 class StepError extends Error {
-  constructor(step, reason) {
+  // `subject` overrides the branch name a stop line opens with, once a step
+  // has a pull request of its own to name instead; DIRTY outranks a plain stop.
+  constructor(step, reason, { subject, code = 1 } = {}) {
     super(reason);
     this.step = step;
+    this.subject = subject;
+    this.code = code;
   }
 }
-
-// pr-merge stops here until the unit that builds wait, gate and merge lands.
-class NotBuiltError extends Error {}
 
 function announce(step, number) {
   process.stderr.write(`ship: ${step}${number === undefined ? '' : ` #${number}`}\n`);
@@ -47,6 +54,7 @@ function readFlags(argv) {
     throw new UsageError(`route '${flags.route}' needs --title and --body`);
   }
   if (flags.issue !== undefined && !flags.body) throw new UsageError('--issue needs --body');
+  if (flags.method !== undefined && !METHODS.has(flags.method)) throw new UsageError(`unknown method '${flags.method}'`);
   return flags;
 }
 
@@ -122,6 +130,58 @@ function createPullRequest(branch, base, flags) {
   return { number, url };
 }
 
+/** Runs a sibling script as a child process and reads its one stdout line and exit code. */
+function runSibling(scriptPath, args) {
+  const result = spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' });
+  return { code: result.status ?? 1, line: firstLine(result.stdout ?? '') };
+}
+
+function waitForChecks(number, url) {
+  announce('wait', number);
+  const result = runSibling(WAIT_CHECKS, ['--pr', String(number)]);
+  if (result.code === 0) return; // "checks: pass" or "checks: none"
+  throw new StepError('wait', result.line.replace(/^checks:\s*/, ''), { subject: url });
+}
+
+/** One gate read, MERGE, BEHIND, DIRTY or STOP <x>, exactly as ship-gate.mjs prints it. */
+function gateOnce(number) {
+  return runSibling(SHIP_GATE, ['--pr', String(number)]).line;
+}
+
+/** Gates `number`, updating a BEHIND branch and gating again, at most twice, then stopping. */
+function runGate(number, url) {
+  announce('gate', number);
+  let verdict = gateOnce(number);
+  let updates = 0;
+  while (verdict === 'BEHIND' && updates < MAX_BEHIND_UPDATES) {
+    const update = runGh(['pr', 'update-branch', String(number)]);
+    if (!update.ok) throw new StepError('gate', `gh=${update.error}`, { subject: url });
+    updates += 1;
+    waitForChecks(number, url);
+    announce('gate', number);
+    verdict = gateOnce(number);
+  }
+  if (verdict === 'MERGE') return;
+  if (verdict === 'DIRTY') throw new StepError('gate', 'DIRTY', { subject: url, code: DIRTY_EXIT });
+  const reason = verdict.startsWith('STOP ') ? verdict.slice('STOP '.length) : verdict;
+  throw new StepError('gate', reason, { subject: url });
+}
+
+function mergePullRequest(number, method, url) {
+  announce('merge', number);
+  const result = runGh(['pr', 'merge', String(number), `--${method}`]);
+  if (!result.ok) throw new StepError('merge', result.error, { subject: url });
+}
+
+function confirmMerge(number, url) {
+  announce('confirm', number);
+  const result = runGh(['pr', 'view', String(number), '--json', 'state,mergedAt,url']);
+  if (!result.ok) throw new StepError('confirm', `gh=${result.error}`, { subject: url });
+  const data = JSON.parse(result.stdout);
+  if (data.state !== 'MERGED') throw new StepError('confirm', `state=${data.state}`, { subject: url });
+  return `${data.url} merged`;
+}
+
 function run(flags, branch, base) {
   if (flags.issue !== undefined) {
     announce('create', flags.issue);
@@ -139,7 +199,11 @@ function run(flags, branch, base) {
   const pullRequest = existingPullRequest(branch) ?? createPullRequest(branch, base, flags);
   if (flags.route === 'open-pr') return `${pullRequest.url} open`;
 
-  throw new NotBuiltError(`route 'pr-merge' is not built yet (pull request #${pullRequest.number} is open)`);
+  const method = flags.method ?? 'squash';
+  waitForChecks(pullRequest.number, pullRequest.url);
+  runGate(pullRequest.number, pullRequest.url);
+  mergePullRequest(pullRequest.number, method, pullRequest.url);
+  return confirmMerge(pullRequest.number, pullRequest.url);
 }
 
 function main() {
@@ -165,14 +229,9 @@ function main() {
     console.log(run(flags, branch, base));
     process.exitCode = 0;
   } catch (error) {
-    if (error instanceof NotBuiltError) {
-      console.error(`ship.mjs: ${error.message}`);
-      process.exitCode = USAGE_EXIT;
-      return;
-    }
     if (!(error instanceof StepError)) throw error;
-    console.log(`${branch} stopped ${error.step} ${error.message}`);
-    process.exitCode = 1;
+    console.log(`${error.subject ?? branch} stopped ${error.step} ${error.message}`);
+    process.exitCode = error.code;
   }
 }
 
