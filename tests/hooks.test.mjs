@@ -51,6 +51,11 @@ test('the repeat guard counts Bash and Edit before the call and starts over afte
   ]);
 });
 
+test('the delegate budget runs before every tool call and after no call', () => {
+  const budgets = hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget.mjs'));
+  assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '*']]);
+});
+
 test('the Stop hook books the turn into the savings counter and nothing else', () => {
   const stop = hookEntries().filter((entry) => entry.event === 'Stop');
   assert.equal(stop.length, 1, JSON.stringify(stop.map((entry) => entry.hook.command)));

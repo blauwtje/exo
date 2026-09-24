@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A `PreToolUse` hook holds every delegate to a context budget measured from its own transcript: past 40k tokens it says to read nothing new and write the report, and past 70k tokens or 60 tool calls it denies every tool but `Edit`, `Write` and task updates, with limits per agent type in `skills/savings/assets/delegate-budgets.json` and a `Budget:` line in the dispatch outranking them; `exo:implementer` stops on that hook instead of its own estimate of 100 tool calls or 120k context.
+
 ## 0.34.4 - 2026-09-24
 
 ### Changed

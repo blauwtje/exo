@@ -38,7 +38,7 @@ This route runs inside steps 3 to 8, one behavior per cycle through every layer 
 
 Three conditions stop the loop and force an evidence report:
 
-- A hook reports the context budget crossed. Finish the edit in progress at a green state, write the task list with its states and the remaining edits to a file named implement-next.md under the directory `git rev-parse --git-dir` prints, report, and say a context clear comes next.
+- A hook reports the context budget crossed. Finish the edit in progress at a green state, write the task list with its states and the remaining edits to a file named implement-next.md under the directory `git rev-parse --git-dir` prints, report, and say a context clear comes next. In a delegate the `exo budget:` hook does the reporting; once it denies tools, no check runs, so the unproven edit is reported as open.
 - The same symptom survives two fix attempts. Report both attempts and observations; do not try a third variation of the same mechanism.
 - A required edit lies outside the paths named during orientation or by the brief or plan. Report the path and dependency before touching it; work that belongs on its own branch is reported, never started.
 
