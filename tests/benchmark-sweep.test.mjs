@@ -37,11 +37,14 @@ test('a named set counts only its cells', async () => {
   await assert.rejects(fs.access(marker));
 });
 
-test('a fixer cell exits non-zero for the missing branch-review.md fixture', async () => {
+test('a fixer cell prepares a branch carrying a real branch-review.md fixture', async () => {
   const { env } = await fakeClaude();
-  const result = await run(SWEEP, ['--set', 'fixer', '--confirm', '--concurrency', '1'], { env });
-  assert.notEqual(result.code, 0);
-  assert.match(result.stderr, /no branch-review\.md fixture exists/);
+  const out = await fixture();
+  const result = await run(SWEEP, ['--set', 'fixer', '--confirm', '--concurrency', '1', '--out', out], { env });
+  assert.equal(result.code, 0, result.stderr);
+  const report = await fs.readFile(path.join(out, 'fixer-safe-path', 'branch-review.md'), 'utf8');
+  assert.match(report, /^FINDINGS/);
+  assert.match(report, /uploads\.js:\d+-\d+ .*fix\s*$/m);
 });
 
 test('an unknown flag stops before any call', async () => {

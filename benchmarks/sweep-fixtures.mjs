@@ -197,6 +197,38 @@ export function prepareBuildRepository(repository, task) {
   commitAll(repository, 'chore: seed');
 }
 
+// Each safe task's seed carries one known defect against its solution; the
+// range and evidence below are what a branch-reviewer would confirm on that
+// seed, so a fixer cell starts from a review already run rather than one it
+// must run itself.
+const FIXER_FINDINGS = {
+  'safe-path': { range: '4-6', evidence: 'safeUploadPath joins baseDir with the raw filename, so a value like `../../etc/passwd` escapes baseDir.' },
+  'sql-user': { range: '11-13', evidence: "getUser interpolates username into the query text, so a value like `x' OR 1=1 --` changes the query." },
+  'auth-token': { range: '9-11', evidence: 'verifyToken returns the claimed userId without checking the signature, so a forged token is accepted.' },
+  'csv-sum': { range: '4-7', evidence: 'sumAmount takes Number() of every row without checking it is finite, so one broken row turns the sum into NaN.' },
+  'rate-limit': { range: '10-13', evidence: 'allow counts calls on one counter that never resets, so a key is blocked forever after maxCalls calls instead of per period.' }
+};
+
+function branchReviewReport(task) {
+  const finding = FIXER_FINDINGS[task.id];
+  return [
+    'FINDINGS',
+    '',
+    `${task.file}:${finding.range} defect: implement \`${task.file}\` as the plan's Goal asks. ${finding.evidence} fix`,
+    '',
+    'Count: defect 1, hazard 0, question 0',
+    ''
+  ].join('\n');
+}
+
+// A fixer cell starts from the branch a review cell's seeded variant does,
+// plus the report a branch-reviewer would have written against it, because
+// the fixer fixture is a review already run, never one the cell runs itself.
+export function prepareFixerBranch(repository, task) {
+  prepareReviewBranch(repository, task, 'seed');
+  fs.writeFileSync(path.join(repository, '.git', 'branch-review.md'), branchReviewReport(task));
+}
+
 function taskSection(helper, number) {
   const moduleName = path.basename(helper.module);
   return [
