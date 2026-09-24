@@ -10,7 +10,7 @@ Turn an outcome into a recommendation or a buildable brief before implementation
 
 ## Decision gate
 
-Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision is open only while the request, the repository's own conventions, and the ranges read this turn all fail to settle it. Zero open decisions means leave this skill and write no brief: a clear goal goes to `planning` when another session or executor runs it, and to `implementing-batch` when it builds here. A request for a spec or a brief with nothing open gets no brief either: the reply says nothing is open, names that stage by its skill name and ends on no question, and a menu of Plan, Build and Stop is a question. Size is not the gate, because a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. Establish the facts through the `exo:explorer` agent when the request names no path, and read only the ranges it returns, because search output kept here outlives the brief.
+Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision stays open only while the request, the repository's conventions, and this turn's ranges all fail to settle it. Zero open decisions means leave this skill and write no brief: a clear goal goes to `planning` when another session or executor runs it, and to `implementing-batch` when it builds here. A request for a spec or a brief with nothing open gets no brief either: the reply says nothing is open, names that stage by its skill name and ends on no question, and a menu of Plan, Build and Stop is a question. Size is not the gate, because a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. Establish facts via the `exo:explorer` agent when the request names no path, reading only the ranges it returns, since kept search output outlives the brief.
 
 New wishes for work that already has a brief, issue or plan reopen that brief, because a second brief for one outcome disagrees with the first by the next edit.
 
@@ -40,12 +40,12 @@ Sort each open decision by one test: would the user notice the other answer in t
 
 The map sets how long the interview runs: no budget ends it and no guess closes a decision.
 
-1. **Map what is asked.** Put every noticeable or costly decision on the map, one line each, in the user's words. Beside it goes the decision it waits on, because its options change with that answer; a decision is ready once every decision above it is closed.
-2. **Close what the repository answers.** Inspect the code before asking: a decision it settles is closed by the code, with the path as evidence, and never asked. A decision the user names as undecided stays open whatever the code suggests, because the code shows one earlier choice, not their answer. A fact is exo's to look up, never the user's; hold back only the question that needs it.
-3. **Ask in rounds.** A round asks every ready decision, at most four, in the layout `## A round` gives; with more ready, the four that unblock the most others. A decision waiting on one in the same round moves to the next, because its options are unknown until that answer.
-4. **Report each round.** After the answers, one line per question names what it closed and opened, and the next round follows in the same message, because a user who cannot see the end stops answering with care.
-5. **End on an empty map, or on Go.** `go` takes the recommended answer for every decision still open, asked or not, and moves to `## Checkpoint`.
-6. **Name who closed it.** Every closed decision records you, the code with its path, or exo for a routine one or a Go.
+1. **Map what is asked.** Send every noticeable or costly decision to `--add`, one line each in the user's words (`references/decision-map.md`). Beside it goes the decision it waits on, since its options change with that answer; a decision is ready once every decision above it closes.
+2. **Close what the repository answers.** Inspect the code before asking: a decision it settles is sent to `--add` already closed, with the path as evidence, and never asked. A decision the user names as undecided stays open whatever the code suggests, since code shows one earlier choice, not their answer. A fact is exo's to look up, never the user's; hold back only the question that needs it.
+3. **Ask in rounds.** A round asks every ready decision, at most four; with more ready, the four that unblock the most others. A decision waiting on one in the same round moves to the next, since its options are unknown until then. `--text` gives the layout `## A round` shows.
+4. **Report each round.** Relay the `closed`/`opened` lines `--apply` and `--add` print, and the next round follows in the same message, because a user who cannot see the end stops answering with care.
+5. **End on an empty map, or on Go.** `go` (via `--apply`) takes the recommended answer for every decision still open, asked or not, and moves to `## Checkpoint`.
+6. **Name who closed it.** Every closed decision records you, the code with its path, or exo for a routine one or a Go; `--add`/`--apply` set `closedBy`, never the session by hand.
 
 ## A round
 
@@ -75,23 +75,23 @@ Answer like `4.1 5.2`, `ok` for every recommended answer, or `go` for the recomm
 
 - The options follow the question shape, and the question names the decision. Question numbers run on across rounds, so the user can point back at Q2 from round 3.
 - A path or an identifier appears only beside what it means, because the reader answers from the product, never from the code.
-- Any answer counts: `ok` takes every recommended answer of the round, a round of one question takes a bare digit, and a reply in words is read as the decisions it names. A skipped question stays open for the next round, and one whose answer fits two options is asked again.
+- Any answer counts: `ok` takes every recommended answer of the round, a round of one question takes a bare digit, and a reply in words is read as the decisions it names. A skipped question stays open for the next round, and one whose answer fits two options is asked again. Fold it onto the map with `--apply`.
 - "I don't know" gets the difference in two sentences with one example from the user's own product, and the question returns next round; a second one takes the recommended answer, listed as exo's.
 
 ## Checkpoint
 
-With the map empty, list every decision on one line, `Q<n> · <decision>: <answer> (<you | code: path | exo>)`, the code's decisions without a number. Then ask one question in the question shape:
+`--text` lists every decision on one line once the map is empty, `Q<n> · <decision>: <answer> (<you | code: path | exo>)`, the code's decisions without a number. Then ask one question in the question shape:
 
 1. **Write the spec (Recommended)**: exo writes the brief from these decisions.
 2. **Change something**: the questions you name return as the next round.
 
-Nothing is written before the answer, because a brief written earlier is rewritten by the next one. A reply that names a question reopens it.
+Nothing is written before the answer: an earlier brief is rewritten by the next one, and a reply naming a question reopens it.
 
 ## Spec
 
 Write the brief in the sections `references/brief.md` gives and ask nothing more: a decision that surfaces while it is written takes its recommended answer, listed as exo's.
 
-Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message, even when the next stage runs in this session, because a brief living only in a message dies at the next context clear. `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`. When a planning turn borrowed this skill, fold the brief into the plan artifact instead. The message carries the goal and the location, leaves each decision's reasoning in the brief, and ends on the next-stage question with `/exo:planning` on the brief's path, or on `#<n>` when an issue holds it.
+Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message, even when the next stage runs here, because a brief living only in a message dies at the next context clear. `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`. When a planning turn borrowed this skill, fold the brief into the plan artifact instead. The message carries the goal and the location, leaves each decision's reasoning in the brief, and ends on the next-stage question with `/exo:planning` on the brief's path, or on `#<n>` when an issue holds it.
 
 ## References
 
@@ -101,6 +101,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 | `references/brief.md` | At `## Spec`, before the brief is written. |
 | `references/brief-in-an-issue.md` | Before storing, when `specs` is `issues` or `both`. |
 | `../issuing/references/fields.md` | Before creating the issue, when `specs` is `issues` or `both` and the fallback does not apply. |
+| `references/decision-map.md` | Before the first round, in every mode: the run folder, map format and the `--add`/`--apply`/`--text` commands. |
 | `references/interview-page.md` | Before the first question, only when `interview=page` stands in the `exo settings:` line and the map holds two or more open decisions. |
 | `../using-exo/references/question.md` | Before a message that asks the user to pick among numbered options. |
 | `../using-exo/references/next-stage.md` | At the final message, when the work leaves a next stage open. |
@@ -108,7 +109,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 ## Judgment
 
 - `debug` outranks this skill when existing behavior fails and the cause is unproven.
-- The frontend-design skill the executing session has loaded owns visual decisions, then hands control back; this skill retains product, data, and architecture decisions.
+- The loaded frontend-design skill owns visual decisions, then hands control back; this skill retains product, data, and architecture decisions.
 - Explicit user wording outranks mode selection and artifact defaults.
 - A stored brief outranks a new one while both name the same outcome.
 - A brief hands over through its stored copy: after a compaction notice, re-read `docs/specs/<topic>.md` or `gh issue view <n> --json body` and continue from it, never from the conversation; planning starts only on the user's pick.
