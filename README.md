@@ -49,8 +49,10 @@ Every skill is invoked as `/exo:<name>`. The first group Claude may also start o
 | `debug <symptom>` | Existing behavior fails and the cause is not yet proven. Outranks every other stage until it is. |
 | `deepen [path]` | You want to know where the architecture should improve without naming the change. |
 | `designing <surface>` | A page, component or visual axis changes: typography, color, spacing, motion, copy. |
+| `investigation <how, why or teach, and the code in question>` | You ask how part of this repository works, why it's built that way, or to be taught it, each claim marked verified, inferred or unknown. |
 | `issuing <scope>` | You ask in plain words to file GitHub issues: they are created as specs, with the labels, type, relations, milestone and project fields the repository defines. |
 | `prototyping <question>` | A decision about logic, state or data flow needs running code first: a throwaway that answers it, parked on its own branch while only the decision reaches real code. |
+| `refactoring <the refactor to run>` | A named refactor, rename, move or internal API reshape must keep behavior unchanged, with no shim or compatibility re-export left behind. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
 | `savings` | You ask what exo saved or what the read guard kept out of context. |
