@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `CLAUDE.md` deletes each run branch in its own `git branch -D <name>` with the literal name, forbids `git stash` in a subagent, and drops a run's stash once its content is on `main`.
+
 ## 0.37.0 - 2026-09-24
 
 ### Added
