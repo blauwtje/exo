@@ -45,9 +45,13 @@ function recordFile(configDirectory) {
   return path.join(configDirectory, 'exo', 'savings', 'sessions.json');
 }
 
+function hotFile(configDirectory) {
+  return path.join(configDirectory, 'exo', 'savings', 'sessions', 's1.json');
+}
+
 async function baseline(configDirectory) {
-  const sessions = JSON.parse(await fs.readFile(recordFile(configDirectory), 'utf8'));
-  return sessions.s1.restate.baseline;
+  const session = JSON.parse(await fs.readFile(hotFile(configDirectory), 'utf8'));
+  return session.restate.baseline;
 }
 
 test('the first prompt starts measuring and sends nothing', async () => {
@@ -110,6 +114,7 @@ test('a delegate prompt is not measured', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, '');
   await assert.rejects(fs.access(recordFile(configDirectory)));
+  await assert.rejects(fs.access(hotFile(configDirectory)));
 });
 
 test('with savings off nothing is measured and nothing is sent', async () => {
@@ -118,6 +123,7 @@ test('with savings off nothing is measured and nothing is sent', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, '');
   await assert.rejects(fs.access(recordFile(configDirectory)));
+  await assert.rejects(fs.access(hotFile(configDirectory)));
 });
 
 test('a fault exits 0 with nothing on stdout', async () => {

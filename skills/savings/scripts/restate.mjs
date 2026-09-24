@@ -20,7 +20,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { RESTATED_SKILL, RESTATE_INTERVAL_BYTES, restatementText } from '#restatement';
-import { savingsEnabled, updateSession } from './record.mjs';
+import { savingsEnabled, updateHotSession } from './record.mjs';
 
 const PLUGIN_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
@@ -47,7 +47,7 @@ function reset(hookInput) {
   const sessionId = measuredSession(hookInput);
   if (sessionId === null) return;
   const bytes = transcriptBytes(hookInput.transcript_path);
-  updateSession(sessionId, (session) => {
+  updateHotSession(sessionId, (session) => {
     session.restate.baseline = bytes;
     return true;
   });
@@ -58,7 +58,7 @@ function restate(hookInput) {
   if (sessionId === null) return;
   const bytes = transcriptBytes(hookInput.transcript_path);
   let due = false;
-  updateSession(sessionId, (session) => {
+  updateHotSession(sessionId, (session) => {
     const baseline = session.restate.baseline;
     // A row with no measuring point yet, or a transcript that restarted
     // smaller, starts measuring here.

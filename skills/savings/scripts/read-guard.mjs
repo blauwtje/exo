@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { memoryDirectory } from '#memory-store';
-import { configFile, guardLines, readJson, savingsEnabled, updateSession } from './record.mjs';
+import { configFile, guardLines, readJson, savingsEnabled, updateHotSession } from './record.mjs';
 
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.ipynb']);
 
@@ -141,7 +141,7 @@ function guardRead(hookInput) {
   const target = readTarget(hookInput);
   if (target === null) return;
   let reason = null;
-  updateSession(hookInput.session_id, (session) => {
+  updateHotSession(hookInput.session_id, (session) => {
     const refusal = refusalOf(session, target);
     if (refusal !== null) {
       reason = refusal.reason;
@@ -167,7 +167,7 @@ function book(hookInput) {
   const lines = fileLines(filePath);
   const { start, end } = rangeOf(input, lines.length);
   const bytes = Buffer.byteLength(lines.slice(start, end).join('\n'));
-  updateSession(hookInput.session_id, (session) => {
+  updateHotSession(hookInput.session_id, (session) => {
     session.reads[key] = { mtimeMs: stat.mtimeMs, size: stat.size, bytes, at: new Date().toISOString() };
     // The same reader reading a capped file again, in the same context window,
     // takes back part of what the refusal kept out, never more than all of it:
@@ -185,7 +185,7 @@ function book(hookInput) {
 function reset(hookInput) {
   if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
-  updateSession(hookInput.session_id, (session) => {
+  updateHotSession(hookInput.session_id, (session) => {
     session.reads = {};
     for (const refusal of Object.values(session.guard.refusals ?? {})) refusal.open = false;
     return true;
