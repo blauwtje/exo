@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.40.0 - 2026-09-24
+
 ### Added
 
 - `investigation` answers how, why and teach questions about the repository read-only, from code read this session and its git history, with every claim marked verified, inferred or unknown.
