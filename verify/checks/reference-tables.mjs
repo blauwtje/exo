@@ -49,6 +49,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/implementing/SKILL.md': [
     'references/workspace.md',
+    'references/wave-worktrees.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'review-fixer-prompt.md',

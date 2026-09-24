@@ -8,14 +8,13 @@ import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('implementing/references/workspace.md');
+const WAVE_WORKTREES = read('implementing/references/wave-worktrees.md');
 const IMPLEMENTER_BRIEF = read('implementing/implementer-prompt.md');
 const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/implementer.md', import.meta.url), 'utf8');
 
 test('the run creates, lands and removes every wave worktree itself', () => {
-  const start = WORKSPACE.indexOf('## Wave worktrees');
-  const end = WORKSPACE.indexOf('## Judgment');
-  assert.ok(start !== -1 && start < end, 'the wave section sits before the judgment ladder');
-  const section = WORKSPACE.slice(start, end);
+  assert.ok(!WORKSPACE.includes('## Wave worktrees'), 'the wave section moved out of workspace.md');
+  const section = WAVE_WORKTREES;
   assert.ok(section.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(section.includes('`Worktree setup:`'));
   assert.ok(section.includes('git cherry-pick <sha>'));
