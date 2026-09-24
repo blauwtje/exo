@@ -180,7 +180,7 @@ describe('direction.mjs --plan', () => {
     assert.equal(container.schemaVersion, 1);
     assert.equal(container.seed, 'atlas');
     assert.equal(container.contracts[1].seed, 'atlas:1');
-    const selected = selectContract(filledContainer(), 1);
+    const selected = selectContract(filledContainer(), 1, { space: space(), candidates: candidateManifest() });
     assert.deepEqual(selected.contract, filledContainer().contracts[1]);
   });
 
@@ -246,12 +246,12 @@ describe('direction.mjs --plan', () => {
     }
   });
 
-  it('exits 0 with an invalid report rather than failing the process', async () => {
+  it('exits 1 with the invalid report on stdout', async () => {
     const broken = space();
     broken.axes.artifact.values[0].evidence = 'E9';
     const spaceFile = await jsonFixture('space.json', broken);
     const result = await run(DIRECTION, ['--plan', '--seed', 'atlas', '--space', spaceFile]);
-    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.code, 1, result.stderr);
     assert.equal(JSON.parse(result.stdout).status, 'invalid');
   });
 });
@@ -345,6 +345,38 @@ describe('direction.mjs --check', () => {
     assert.ok(report.findings.some((entry) => entry.code === 'insufficient-divergence'));
   });
 
+  it('accepts a dealt contract at any position when its seed names its dealt index', () => {
+    const dealt = filledContainer('atlas', 3);
+    const subset = (indices) => ({ schemaVersion: 1, seed: 'atlas', contracts: indices.map((index) => dealt.contracts[index]) });
+    for (const indices of [[1], [2], [0, 2], [2, 1]]) {
+      const report = checkContracts(subset(indices), space(), { candidates: candidateManifest() });
+      assert.deepEqual(report, { status: 'ok', findings: [] }, `dealt indices ${indices.join(',')}`);
+    }
+  });
+
+  it('rejects a contract whose axes are not what its seed index deals', () => {
+    const dealt = filledContainer('atlas', 3);
+    for (const [seedIndex, axesIndex] of [[0, 1], [1, 2]]) {
+      const contract = clone(dealt.contracts[seedIndex]);
+      contract.axes = clone(dealt.contracts[axesIndex].axes);
+      const report = checkContracts({ schemaVersion: 1, seed: 'atlas', contracts: [contract] }, space(),
+        { candidates: candidateManifest() });
+      assert.equal(report.status, 'invalid', `seed index ${seedIndex}`);
+      assert.ok(report.findings.some((entry) => entry.code === 'axes-not-dealt'),
+        `no axes-not-dealt in ${report.findings.map((entry) => entry.code).join(', ')}`);
+    }
+  });
+
+  it('exits non-zero on an invalid report, still printing it', async () => {
+    const container = filledContainer();
+    container.contracts[0].expectations.length = 2;
+    const result = await run(DIRECTION, ['--check', '--contracts', await jsonFixture('contracts.json', container),
+      '--space', await jsonFixture('space.json', space()),
+      '--candidates', await jsonFixture('font-candidates.json', candidateManifest())]);
+    assert.equal(result.code, 1, result.stderr);
+    assert.equal(JSON.parse(result.stdout).status, 'invalid');
+  });
+
   it('rejects a container schemaVersion other than 1', () => {
     const container = filledContainer();
     container.schemaVersion = 2;
@@ -410,11 +442,15 @@ describe('direction.mjs --check', () => {
 });
 
 describe('direction.mjs --select', () => {
+  const selectSources = async () => ['--space', await jsonFixture('space.json', space()),
+    '--candidates', await jsonFixture('font-candidates.json', candidateManifest())];
+
   it('freezes exactly the container metadata plus the chosen contract', async () => {
     const container = filledContainer();
     const contractsFile = await jsonFixture('contracts.json', container);
-    const first = await run(DIRECTION, ['--select', '--contracts', contractsFile, '--index', '1']);
-    const second = await run(DIRECTION, ['--select', '--contracts', contractsFile, '--index', '1']);
+    const argv = ['--select', '--contracts', contractsFile, '--index', '1', ...await selectSources()];
+    const first = await run(DIRECTION, argv);
+    const second = await run(DIRECTION, argv);
     assert.equal(first.code, 0, first.stderr);
     assert.equal(first.stdout, second.stdout);
     const selected = JSON.parse(first.stdout);
@@ -427,10 +463,22 @@ describe('direction.mjs --select', () => {
   it('exits 2 for an out-of-range or non-integer index', async () => {
     const contractsFile = await jsonFixture('contracts.json', filledContainer());
     for (const index of ['9', '1.5', 'first']) {
-      const result = await run(DIRECTION, ['--select', '--contracts', contractsFile, '--index', index]);
+      const result = await run(DIRECTION, ['--select', '--contracts', contractsFile, '--index', index, ...await selectSources()]);
       assert.equal(result.code, 2, `--index ${index}`);
       assert.equal(result.stdout, '');
     }
+  });
+
+  it('refuses to freeze a contract --check rejects', async () => {
+    const container = filledContainer();
+    container.contracts[1] = { schemaVersion: 1, seed: 'atlas:1' };
+    const contractsFile = await jsonFixture('contracts.json', container);
+    const result = await run(DIRECTION, ['--select', '--contracts', contractsFile, '--index', '1', ...await selectSources()]);
+    assert.equal(result.code, 1, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, 'invalid');
+    assert.equal(report.contract, undefined);
+    assert.deepEqual(selectContract(container, 1, { space: space(), candidates: candidateManifest() }), report);
   });
 });
 
