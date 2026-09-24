@@ -25,7 +25,9 @@ function fill(template, values) {
 }
 
 const hasNumber = (decision) => decision.number !== undefined;
-const isAsked = (decision) => decision.state === 'open' && hasNumber(decision);
+// Mirrors question-page.mjs's own isAsked; round-text.mjs cannot import it
+// (question-page.mjs imports this module, so the reverse import would cycle).
+const isAsked = (decision, round) => decision.state === 'open' && hasNumber(decision) && (decision.round === undefined || decision.round === round);
 const byNumber = (left, right) => (left.number ?? 0) - (right.number ?? 0);
 
 function recommendedFirst(options) {
@@ -113,6 +115,6 @@ function checkpoint(checked) {
 /** The chat layout for one round: `## A round` of SKILL.md while a decision
  *  is still asked, `## Checkpoint` once the map holds none. */
 export function renderText(checked) {
-  const asked = checked.decisions.filter(isAsked).sort(byNumber);
+  const asked = checked.decisions.filter((decision) => isAsked(decision, checked.round)).sort(byNumber);
   return asked.length === 0 ? checkpoint(checked) : round(checked, asked);
 }

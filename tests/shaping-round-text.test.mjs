@@ -75,6 +75,39 @@ function firstRoundOverview() {
   };
 }
 
+/** Round 2 with a third decision numbered ahead of its turn: more than
+ *  ROUND_MAX decisions were ready, so map-transition gave it a number but
+ *  pushed its round to 3. It must not read as asked at round 2. */
+function roundWithDeferredPick() {
+  return {
+    lang: 'en',
+    goal: 'Harbour masters get their tide alerts out of the app.',
+    round: 2,
+    words: WORDS,
+    decisions: [
+      {
+        id: 'range', name: 'Which alerts it covers', state: 'open', number: 2, round: 2,
+        question: 'Which alerts should one export hold?',
+        changes: 'How long the report is.',
+        why: 'Port reports run per quarter.',
+        options: [
+          { id: 'all', label: 'Every alert', gives: 'The whole history in one file.' },
+          { id: 'quarter', label: 'One quarter', gives: 'Only the last three months.', recommended: true }
+        ]
+      },
+      {
+        id: 'layout', name: 'Page layout', state: 'open', number: 4, round: 3,
+        question: 'How should the export lay out?',
+        changes: 'The page layout.',
+        why: 'Layout matters.',
+        options: [
+          { id: 'grid', label: 'Grid', gives: 'A grid layout.', recommended: true }
+        ]
+      }
+    ]
+  };
+}
+
 function checkpointMap() {
   return {
     lang: 'en',
@@ -131,6 +164,19 @@ describe('renderText, the round-1 overview', () => {
       '- Which alerts it covers: waits on What they receive',
       '- Page layout: round 2'
     ].join('\n'));
+  });
+});
+
+describe('renderText, a decision numbered ahead of this round', () => {
+  const text = renderText(roundWithDeferredPick());
+
+  it('cards only the decision whose round matches map.round', () => {
+    assert.match(text, /\*\*Q2 · Which alerts it covers\*\*/);
+    assert.ok(!text.includes('Q4 · Page layout'));
+  });
+
+  it('does not separate cards with a rule when only one is asked', () => {
+    assert.ok(!text.includes('---'));
   });
 });
 
