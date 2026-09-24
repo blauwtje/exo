@@ -55,6 +55,7 @@ Each directory under `benchmarks/safe/` holds a seed, a reference solution and a
 node benchmarks/sweep.mjs --set all                    # prints the 44 calls it would make and starts none
 node benchmarks/sweep.mjs --set all --confirm          # runs them, two to three hours at the default --concurrency 2
 node benchmarks/sweep.mjs --set review --confirm --out benchmarks/runs/<dir>   # one set; a rerun on the same --out skips finished cells
+node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # writes the results file under <dir> instead of results/
 ```
 
 A review cell runs the body of the `branch-reviewer` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or hazard reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.

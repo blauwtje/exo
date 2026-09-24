@@ -4,11 +4,12 @@
 // with the plugin from this clone and the model and effort the cell names,
 // started in a fresh repository; it leaves stdout.json, usage.json, diff.patch
 // and record.json under benchmarks/runs/<date>-sweep/<cell>/, and the run ends
-// by writing benchmarks/results/<date>-sweep.md.
+// by writing <date>-sweep.md under --results, benchmarks/results/ by default.
 //
 //   node benchmarks/sweep.mjs --set all                    prints the calls, starts none
 //   node benchmarks/sweep.mjs --set all --confirm          runs every cell
 //   node benchmarks/sweep.mjs --set review,plan --confirm --concurrency 1 --out benchmarks/runs/<dir>
+//   node benchmarks/sweep.mjs --set fixer --confirm --results <dir>   writes the results file outside the tree
 //
 // Every call is billed, so no cell starts without --confirm. A cell whose
 // record.json exists is not run again, so a rerun on the same --out resumes.
@@ -30,13 +31,14 @@ const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
 
 function parseArguments(argv) {
-  const options = { sets: null, confirm: false, concurrency: 2, out: null };
+  const options = { sets: null, confirm: false, concurrency: 2, out: null, results: RESULTS };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
     else if (flag === '--confirm') options.confirm = true;
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else if (flag === '--out') options.out = argv[++index];
+    else if (flag === '--results') options.results = argv[++index];
     else throw new Error(`unknown flag ${flag}`);
   }
   if (options.sets === null) throw new Error('name --set all, or a comma list of review, build, plan, flow');
@@ -257,8 +259,9 @@ async function main() {
   } finally {
     clearInterval(heartbeat);
   }
-  const resultsFile = path.join(RESULTS, `${meta.date}-sweep.md`);
-  fs.mkdirSync(RESULTS, { recursive: true });
+  const resultsDirectory = path.resolve(options.results);
+  const resultsFile = path.join(resultsDirectory, `${meta.date}-sweep.md`);
+  fs.mkdirSync(resultsDirectory, { recursive: true });
   fs.writeFileSync(resultsFile, resultsMarkdown(meta, records));
   console.log(`published ${path.relative(ROOT, resultsFile)}`);
 }

@@ -40,11 +40,14 @@ test('a named set counts only its cells', async () => {
 test('a fixer cell prepares a branch carrying a real branch-review.md fixture', async () => {
   const { env } = await fakeClaude();
   const out = await fixture();
-  const result = await run(SWEEP, ['--set', 'fixer', '--confirm', '--concurrency', '1', '--out', out], { env });
+  const results = await fixture();
+  const result = await run(SWEEP, ['--set', 'fixer', '--confirm', '--concurrency', '1', '--out', out, '--results', results], { env });
   assert.equal(result.code, 0, result.stderr);
   const report = await fs.readFile(path.join(out, 'fixer-safe-path', 'branch-review.md'), 'utf8');
   assert.match(report, /^FINDINGS/);
   assert.match(report, /uploads\.js:\d+-\d+ .*fix\s*$/m);
+  const published = await fs.readdir(results);
+  assert.equal(published.filter((name) => name.endsWith('-sweep.md')).length, 1, published.join(', '));
 });
 
 test('an unknown flag stops before any call', async () => {
