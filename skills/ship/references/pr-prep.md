@@ -4,9 +4,8 @@ Prepare a pull request a reviewer can approve on the first pass: a clean worktre
 
 ## Worktree hygiene
 
-Before committing, merging, or deploying from a worktree, stop every live agent holding it, including grandchildren you never directly launched.
-A delegate's children do not inherit its brief, so a read-only instruction never reaches them.
-Confirm each stop, then run `git status` and read the tree about to ship.
+Halt every agent running in a worktree before a commit, merge or deploy from it, down to agents a delegate spawned: a brief stays with its agent, so no read-only order reaches them.
+Verify each halt, then read `git status` and the tree that will ship.
 When the branch mixes in unrelated work, patch the change out and apply it in a fresh worktree from the base.
 That keeps unrelated work from riding along in the pull request.
 
@@ -19,11 +18,11 @@ Regroup only commits not yet pushed, because a pushed commit changes only throug
 
 ## PR too large to review
 
-Inspect commits, diff size, changed paths, generated files, and the description.
-Look for noisy commits, a stale description, unrelated changes, mixed mechanical and logic changes, missing tests, or unclear reviewer entry points.
+Read the commits, line count, paths touched, which files are generated, and the description.
+Note what slows a reviewer: noise commits, a description the diff outgrew, off-goal changes, mechanical edits tangled with logic, absent tests, or no clear place to start.
 Improve the description rather than the history, because pushed history stays as it is.
-Give it a TL;DR that matches the actual diff, and separate core files from generated or mechanical ones.
-Call out risky changes, migration order, rollout plan and test coverage, and link the issues, dashboards, or design docs that explain intent.
+Open it with a TL;DR true to the current diff, and set core files apart from generated or mechanical ones.
+Flag risky edits, the order migrations run in, the rollout and what tests cover, and link any issue, dashboard or design doc giving the intent.
 Never hide a meaningful behavior change inside a "cleanup" commit or note.
 When notes alone cannot make it reviewable, put a split recommendation in the report, because several narrow PRs review faster than one large one.
 
@@ -32,22 +31,21 @@ When notes alone cannot make it reviewable, put a split recommendation in the re
 `type(scope): subject` in Conventional Commits form.
 Type is one of `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, so a reader knows the kind of change before the diff.
 Scope is the changed area, such as a directory or module name, so a reader finds the change by its place.
-Subject is short and imperative, and names a real symbol when one carries the change.
-For example `fix(ship): gate pr-merge on the verifier verdict`.
+Subject is a short imperative naming the symbol the change centers on, if one does, as in `fix(ship): gate pr-merge on the verifier verdict`.
 No trailing period.
 
 ## Body
 
 Use these sections in order, dropping one with nothing to say:
-- `## Why`: intent and approach in one or two short paragraphs; the goal goes here; no SHAs or rebase genealogy, no "based on main" preamble.
-- `## Scope`: bullets naming real symbols and paths; name both sides of a rename or retarget; state in or out of scope only when the boundary matters.
+- `## Why`: the goal and how the change reaches it, in at most two brief paragraphs; no SHAs or rebase genealogy, no "based on main" preamble.
+- `## Scope`: a bullet per real symbol or path; a rename or retarget gives old and new name; mark in or out only where that line matters.
 - `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about; skip when there was no real choice.
-- `## Blast Radius`: one to three sentences naming who or what the change touches and why it is safe or risky.
+- `## Blast Radius`: at most three sentences on whom or what the change reaches and what makes it safe or risky.
   Name the cost of staying red without the fix.
 - `## Verification`: each real run path and its outcome, exo's proof line included; for a performance change, one primary number with unit in `before → after` form; link fuller evidence rather than tabulating it.
 End on `Closes #<n>` when an issue is behind the change.
-Never use `## Summary` or `## Test plan`; a commit body does not restate its subject.
-Never paste full SHAs, swarm or arena recitals, lever-correction essays, file-by-file checklists, or "CLEAN" verdicts.
+Never use `## Summary` or `## Test plan`, and never repeat the subject line in a commit body.
+Leave out full SHAs, per-lane swarm or arena narration, essays on lever corrections, checklists walking every file, and verdicts reading "CLEAN".
 Attach video or screenshots only when they prove a claim.
 The PR body is the squash commit body; cut it before it passes about 40 lines.
 

@@ -8,7 +8,7 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 - Confirm the pull request read is the one the request meant, because a fix on the wrong branch is an unasked remote write.
 - Run one babysitter per pull request at a time, because two rounds on one branch push over each other.
 - A delegate that opened the pull request does not babysit it; hand back to the session that dispatched it.
-- Batch every known fix into one push wave per round; do not fix a check just to look busy when a conflict is the real blocker.
+- Push a round's known fixes together as one wave; when a conflict blocks, do not work a check to look busy.
 - Pace the recheck with `gh pr checks --watch` while a check runs; with nothing left to wait on, hand back rather than poll.
 
 ## The triage order
@@ -24,8 +24,8 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 - The build is green, every comment is resolved and the branch merges cleanly: call it ready.
 - A draft stays a draft until then, because marking it ready earlier misrepresents its state.
 - The round limit is reached short of green: stop, summarize what remains, hand back.
-- The next fix would force a design choice: pause and put it to the user.
-- Answer a user question mid-round and continue; only an explicit stop ends the round early.
+- The next fix needs a design choice: stop and ask the user to make it.
+- Answer a user's question mid-round, then carry on; only the user's explicit stop ends it early.
 
 ## Merge-ready is the end
 

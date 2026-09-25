@@ -20,7 +20,7 @@ Turn review and bot comments into an action list grounded in the code, not in th
 - Act only on feedback you agree with; a judgement call gets a reply saying what you would have done.
 - A mechanical fix gets an edit and a commit quoting the comment, through `git commit -F <file>`, never `-m`.
 - Classify each bot or automation comment fix, dismiss or ask before acting; ask by default on a security, data or high-severity finding.
-- From the third bot pass on, lean toward dismissing an already-documented pattern, but still escalate anything touching security, auth, billing, data or migrations.
+- By a bot's third pass, favor dismissing a pattern already documented; a finding in security, auth, billing, data or migrations is still escalated.
 - Never churn code just to quiet a bot.
 
 ## Replies
