@@ -1,6 +1,6 @@
 ---
 name: blast-radius
-description: "Use when asked to merge or ship a diff if safe, what a change could break, or to build on a claim existing code already handles X or nothing uses Y. Not for reported failures (debug), explaining code (investigation), plan conformance (branch-reviewer) or one-function edits."
+description: "Use when asked to merge or ship a diff if safe, what a change could break, or to build on a claim code handles X or nothing uses Y. Not for how or why code is so (investigation), failures (debug), plan conformance (branch-reviewer) or one-function edits."
 argument-hint: <the diff, branch or claim to check>
 ---
 
