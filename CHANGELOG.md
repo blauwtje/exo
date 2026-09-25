@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.44.0 - 2026-09-25
+
 ### Changed
 
 - `define-scope` calls its questioning step the interview instead of the grill.
