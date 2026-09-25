@@ -56,10 +56,11 @@ test('the delegate budget runs before every tool call and after no call', () => 
   assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '*']]);
 });
 
-test('the Stop hook books the turn into the savings counter and nothing else', () => {
+test('the Stop hooks book the turn into the savings counter and keep a running plan going, and nothing else', () => {
   const stop = hookEntries().filter((entry) => entry.event === 'Stop');
-  assert.equal(stop.length, 1, JSON.stringify(stop.map((entry) => entry.hook.command)));
+  assert.equal(stop.length, 2, JSON.stringify(stop.map((entry) => entry.hook.command)));
   assert.ok(stop[0].hook.command.endsWith('savings.mjs" record'), stop[0].hook.command);
+  assert.ok(stop[1].hook.command.endsWith('resume-plan.mjs" stop'), stop[1].hook.command);
 });
 
 test('the restatement runs on every prompt and takes no matcher', () => {
