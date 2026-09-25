@@ -1,10 +1,10 @@
-# shipping
+# ship
 
 Ends a code-changing run by carrying its commits as far as you pick: kept local, pushed, a pull request, or a pull request merged once its checks pass.
 
 ## When it fires
 
-When `implementing`, `implementing-batch` or `debug` has committed a change, and when you ask to push, open a pull request, or merge open pull requests.
+When `run-plan`, `build-change` or `find-cause` has committed a change, and when you ask to push, open a pull request, or merge open pull requests.
 
 ## What you get
 
@@ -15,4 +15,4 @@ When `implementing`, `implementing-batch` or `debug` has committed a change, and
 
 ## Where its rules live
 
-`skills/shipping/SKILL.md`, with the route steps and the bounded wait in `skills/shipping/scripts/ship.mjs` and the pull-request fields in `skills/issuing/references/fields.md`.
+`skills/ship/SKILL.md`, with the route steps and the bounded wait in `skills/ship/scripts/ship.mjs` and the pull-request fields in `skills/file-issues/references/fields.md`.

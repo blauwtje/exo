@@ -1,10 +1,10 @@
-# blast-radius
+# check-impact
 
 Finds what a change breaks outside its diff before it lands, and proves the fact its safety rests on by running the real code rather than writing it up.
 
 ## When it fires
 
-A diff is about to merge or ship and its effect can reach code, data or processes it does not touch, the user asks what a change could break, or a brief claims existing code already handles something or that nothing depends on something. A reported failure belongs to debug, explaining how code works to investigation, checking a plan branch against its plan to the branch-reviewer agents, and an edit contained in one function to no skill at all.
+A diff is about to merge or ship and its effect can reach code, data or processes it does not touch, the user asks what a change could break, or a brief claims existing code already handles something or that nothing depends on something. A reported failure belongs to find-cause, explaining how code works to explain-code, checking a plan branch against its plan to the review-branch agents, and an edit contained in one function to no skill at all.
 
 ## What you get
 
@@ -15,4 +15,4 @@ A diff is about to merge or ship and its effect can reach code, data or processe
 
 ## Where its rules live
 
-`skills/blast-radius/SKILL.md`, with `references/hand-back.md`.
+`skills/check-impact/SKILL.md`, with `references/hand-back.md`.

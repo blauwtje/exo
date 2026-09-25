@@ -1,4 +1,4 @@
-# handoff
+# save-session
 
 Saves an unfinished session's live state to a file the next session reads.
 
@@ -14,4 +14,4 @@ Only when you invoke it. Claude never starts it, because only you know the sessi
 
 ## Where its rules live
 
-`skills/handoff/SKILL.md`. Finished work needs no handoff: the commit and the pull request already record it.
+`skills/save-session/SKILL.md`. Finished work needs no handoff: the commit and the pull request already record it.

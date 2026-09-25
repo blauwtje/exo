@@ -1,4 +1,4 @@
-# skills-tool
+# edit-skills
 
 Decides whether a skill earns its words, and fixes its shape when it does not.
 
@@ -15,4 +15,4 @@ A skill or agent is created, changed, or judged too long. It is not for a one-of
 
 ## Where its rules live
 
-`skills/skills-tool/SKILL.md`, with its `references/` holding the description standard, the wording register, the shape template and the pressure scenarios.
+`skills/edit-skills/SKILL.md`, with its `references/` holding the description standard, the wording register, the shape template and the pressure scenarios.

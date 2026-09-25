@@ -1,10 +1,10 @@
-# visual-parity
+# compare-renders
 
 Proves that a refactor, migration or dependency bump changes nothing visible, by diffing each rendered surface pixel for pixel against a baseline captured before the first edit.
 
 ## When it fires
 
-Only when you invoke it; the model never loads it on its own. Use it when a styling or framework migration, a component refactor or a dependency bump must leave every rendered surface identical. A change meant to look different belongs to designing, and a behavior-preserving change with no rendered surface to refactoring.
+Only when you invoke it; the model never loads it on its own. Use it when a styling or framework migration, a component refactor or a dependency bump must leave every rendered surface identical. A change meant to look different belongs to design-ui, and a behavior-preserving change with no rendered surface to refactor.
 
 ## What you get
 
@@ -15,4 +15,4 @@ Only when you invoke it; the model never loads it on its own. Use it when a styl
 
 ## Where its rules live
 
-`skills/visual-parity/SKILL.md`, with `references/capture-harness.md` and `scripts/pixel-diff.mjs`; captures reuse `skills/designing/scripts/capture.mjs` and `checkpoint.mjs`.
+`skills/compare-renders/SKILL.md`, with `references/capture-harness.md` and `scripts/pixel-diff.mjs`; captures reuse `skills/design-ui/scripts/capture.mjs` and `checkpoint.mjs`.

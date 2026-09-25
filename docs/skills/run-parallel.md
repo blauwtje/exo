@@ -1,10 +1,10 @@
-# swarm
+# run-parallel
 
 Fans one job out to N parallel workers and returns one report, or in arena shape one artifact built from the best of N candidates, with every rule that judges them fixed before the first worker runs.
 
 ## When it fires
 
-Only when the user invokes it, naming a shape: coverage splits a scope into disjoint slices, race runs one brief N times, gauntlet runs N distinct checks against one artifact, and arena has N candidates build the same thing. A plan's tasks belong to implementing, which fans them out in waves, and a single read-only lookup to the explorer agent.
+Only when the user invokes it, naming a shape: coverage splits a scope into disjoint slices, race runs one brief N times, gauntlet runs N distinct checks against one artifact, and arena has N candidates build the same thing. A plan's tasks belong to run-plan, which fans them out in waves, and a single read-only lookup to the locate-code agent.
 
 ## What you get
 
@@ -16,4 +16,4 @@ Only when the user invokes it, naming a shape: coverage splits a scope into disj
 
 ## Where its rules live
 
-`skills/swarm/SKILL.md`, with `worker-prompt.md` and `judge-prompt.md` beside it.
+`skills/run-parallel/SKILL.md`, with `worker-prompt.md` and `judge-prompt.md` beside it.
