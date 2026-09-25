@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `shaping` names the owning layer with one caller, data owner or convention that places it, carries a change through every place it touches instead of bolting it on, and reads a new architecture-sketch reference when two or more structural shapes are open.
+
 ## 0.40.2 - 2026-09-24
 
 ### Changed
