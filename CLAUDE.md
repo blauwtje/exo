@@ -12,8 +12,9 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 - Give a subagent one concern; split a brief with two unrelated parts in two.
 - A skill or run that spans exploring, building and reviewing splits them into phases, each a fresh subagent, handing over through a file, so no context carries the whole process.
 - Land in one integration worktree under `.worktrees/`: merge the subagent branches, add the `CHANGELOG.md` lines, then fetch and rebase onto `origin/main`, keeping every line of this run under `## Unreleased`, because the release workflow pushes a `chore(release)` commit after every push.
-- Then run `npm run check` once with output to a log, read back only the `SUMMARY` and failing lines, fast-forward `main`, push `main` directly with no pull request, and remove every worktree and branch the run created, local and remote.
+- Then run `npm run check` once with output to a log, read back only the `SUMMARY` and failing lines, fast-forward `main`, push `main` directly with no pull request, and after the push remove every worktree and branch the run created, local and remote.
 - Delete each run branch in its own `git branch -D <name>` with the literal name, because git-guard checks that name against `main` and refuses one built through `$( )`.
+- Run those deletions in a separate command after a successful push, never in the same command as the fast-forward or push, because git-guard checks the whole command before any part runs and so finds the branch commits missing from `main`.
 - A subagent never runs `git stash`, because all worktrees share one stash list; the cleanup drops a stash made on a run branch once its content is on `main`, and leaves every other stash untouched.
 - Give every shell wait loop such as `until <condition>; do sleep N; done` a deadline, a counter inside the loop that exits with an error after a set number of rounds, not GNU `timeout`, which stock macOS lacks, because an unbounded loop leaves a subagent running forever.
 - This workflow outranks the workspace question in `skills/run-plan/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
