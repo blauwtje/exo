@@ -116,6 +116,40 @@ export function taskSection({ number, title, dependsOn = 'none', design = false,
   ].join('\n');
 }
 
+/** One compact task: its heading plus the single `Depends on: ... | Files: ... | Data: ...` field line. */
+export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', design = null }) {
+  const filesSegment = `Files: ${files.map((filePath) => `\`${filePath}\``).join(', ')}`;
+  const designSegment = design === null ? '' : ` | Design: ${design}`;
+  return [
+    `### Task ${number}: ${title}`,
+    `Depends on: ${dependsOn} | ${filesSegment} | Data: ${data}${designSegment}`
+  ].join('\n');
+}
+
+/** A whole compact plan around `tasks`: the `## Goal`/`## Success criterion`/`## Checkpoint` frame the grammar requires, then `## Tasks`. */
+export function compactPlanFixture({ tasks }) {
+  return [
+    '# Plan: compact fixture',
+    '',
+    '## Goal',
+    'The fixture proves the compact plan reader.',
+    '',
+    '## Success criterion',
+    '`node --test` passes.',
+    '',
+    '## Checkpoint',
+    '- Blocks first: none.',
+    '- Parallel: every task.',
+    '- Shared state: none.',
+    '- Smallest safe split: one task per file.',
+    '',
+    '## Tasks',
+    '',
+    ...tasks,
+    ''
+  ].join('\n');
+}
+
 /** A whole plan around `tasks`, with a `Worktree setup:` line only when `worktreeSetup` is given. */
 export function planFixture({ worktreeSetup = null, tasks }) {
   return [

@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange } from '#plan-tasks';
-import { fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
+import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
   const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks: [
@@ -172,6 +172,35 @@ test('driftOf finds a region declared as a method, getter, type or in another la
     taskSection({ number: 1, title: 'Edit', files: ['- Modify: `f.ts` (`handle`)'], subject: 'feat: edit' })
   ] })).tasks[0];
   assert.deepEqual(driftOf(called, root), ['region `handle` is missing from `f.ts`']);
+});
+
+test('a compact field line reads its dependencies, files, data and design', () => {
+  const plan = parsePlan(compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'src/app.test.js'] }),
+    compactTask({ number: 2, title: 'feat(app): style', dependsOn: '1', files: ['src/app.css'], data: 'a CSS module', design: 'design-ui' })
+  ] }));
+  assert.deepEqual(plan.tasks.map((task) => task.number), [1, 2]);
+  assert.deepEqual(plan.tasks[0].dependsOn, []);
+  assert.deepEqual(plan.tasks[0].files, [
+    { kind: null, path: 'src/app.js', region: null },
+    { kind: null, path: 'src/app.test.js', region: null }
+  ]);
+  assert.equal(plan.tasks[0].compact, true);
+  assert.equal(plan.tasks[0].commitBlock, null);
+  assert.equal(plan.tasks[1].dependsOn.length, 1);
+  assert.deepEqual(plan.tasks[1].dependsOn, [1]);
+  assert.equal(plan.tasks[1].design, true);
+  assert.equal(plan.tasks[0].design, false);
+});
+
+test('an old-format task still parses beside a compact one in the same plan', () => {
+  const plan = parsePlan(compactPlanFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),
+    compactTask({ number: 2, title: 'feat(app): style', dependsOn: '1', files: ['src/app.css'] })
+  ] }));
+  assert.equal(plan.tasks[0].compact, false);
+  assert.equal(plan.tasks[1].compact, true);
+  assert.deepEqual(plan.tasks[1].dependsOn, [1]);
 });
 
 test('regionRange gives the 1-based start and end of a region\'s definition block', () => {

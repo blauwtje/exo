@@ -13,14 +13,35 @@ import { landedTasks, parsePlan, PlanError } from '#plan-tasks';
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
 
+// Single-quoted, with an embedded quote escaped by closing, escaping, and
+// reopening the quote, so bash takes a path or title literally even with a
+// `$`, backtick or double quote in it.
+function shellQuote(value) {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+// A compact task carries no `Commit:` block by design: its heading title is
+// the commit subject and its `Files:` field is the `git add` list, so this
+// derives the same shape land-task would otherwise read from the plan text.
+function deriveCommit(task, number) {
+  if (task.files.length === 0) {
+    throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
+  }
+  const addArgs = task.files.map((file) => shellQuote(file.path)).join(' ');
+  return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m "Plan-task: ${number}"`;
+}
+
 export function commitBlockOf(plan, number) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  if (task.commitBlock === null) throw new LandingError(`Task ${number} has no Commit: block`);
-  if (!task.commitBlock.includes(`"Plan-task: ${number}"`)) {
-    throw new LandingError(`the Commit: block of Task ${number} carries no "Plan-task: ${number}" trailer`);
+  if (task.commitBlock !== null) {
+    if (!task.commitBlock.includes(`"Plan-task: ${number}"`)) {
+      throw new LandingError(`the Commit: block of Task ${number} carries no "Plan-task: ${number}" trailer`);
+    }
+    return task.commitBlock;
   }
-  return task.commitBlock;
+  if (task.compact) return deriveCommit(task, number);
+  throw new LandingError(`Task ${number} has no Commit: block`);
 }
 
 export function landTask({ planText, number, root }) {

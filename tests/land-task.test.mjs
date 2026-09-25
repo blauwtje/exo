@@ -7,7 +7,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { landTask, LandingError } from '../skills/run-plan/scripts/land-task.mjs';
-import { git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
+import { compactPlanFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/land-task.mjs', import.meta.url));
 
@@ -71,6 +71,23 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.equal(noTrailer.code, 1);
   assert.equal(noTrailer.stdout, '');
   assert.match(noTrailer.stderr, /Plan-task: 2/);
+});
+
+test('a compact task with no Commit: block lands on a derived commit and trailer', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'] })
+  ] });
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  await editApp(root);
+  const output = landTask({ planText: plan, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(output, /^Landed: 1$/m);
+  assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: 1$/m);
+  assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), ['src/app.js']);
 });
 
 test('a commit the landed set does not count stops with exit 1', async () => {

@@ -17,6 +17,8 @@ const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
+const MAX_COMPACT_LINES = 30;
+const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
 // A fence closes only on a run of backticks at least as long as the one that
 // opened it, mirroring plan-tasks.mjs's fence tracking, so a step boundary
@@ -88,17 +90,51 @@ function checkSize(task) {
   return [];
 }
 
+// A compact plan (every task in `Depends on: ... | Files: ...` form) trades
+// the old per-step rules for a line cap and the three frame headings the
+// compact grammar requires; a plan with even one old-format task keeps
+// today's rules for every task, so an in-flight or mixed plan never changes
+// behavior under this check.
+function checkCompactSize(planText) {
+  const lineCount = planText.replace(/\n$/, '').split('\n').length;
+  if (lineCount > MAX_COMPACT_LINES) return [`the plan is ${lineCount} lines, past the ${MAX_COMPACT_LINES}-line compact cap`];
+  return [];
+}
+
+function checkFrame(frame) {
+  const problems = [];
+  if ((frame.Goal ?? '').trim() === '') problems.push("the plan has no '## Goal'");
+  if ((frame['Success criterion'] ?? '').trim() === '') problems.push("the plan has no '## Success criterion'");
+  const checkpoint = frame.Checkpoint ?? '';
+  if (checkpoint.trim() === '') {
+    problems.push("the plan has no '## Checkpoint'");
+  } else {
+    for (const point of CHECKPOINT_POINTS) {
+      if (!checkpoint.includes(point)) problems.push(`the plan's '## Checkpoint' has no '${point}' point`);
+    }
+  }
+  return problems;
+}
+
+function checkCompactFields(task) {
+  if (task.filesField === null) return [`Task ${task.number}: field line lacks 'Files:'`];
+  return [];
+}
+
 /** Reads `planText` and returns `{ ok, lines }`: the problems found, or the one ok line. */
 export function planCheckReport(planText) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
-  const problems = plan.tasks.flatMap((task) => [
-    ...checkCommit(task),
-    ...checkGitAdd(task),
-    ...checkSteps(task),
-    ...checkPlaceholders(task),
-    ...checkSize(task)
-  ]);
+  const compactPlan = plan.tasks.every((task) => task.compact);
+  const problems = compactPlan
+    ? [...checkCompactSize(planText), ...checkFrame(plan.frame), ...plan.tasks.flatMap((task) => checkCompactFields(task))]
+    : plan.tasks.flatMap((task) => [
+        ...checkCommit(task),
+        ...checkGitAdd(task),
+        ...checkSteps(task),
+        ...checkPlaceholders(task),
+        ...checkSize(task)
+      ]);
   if (problems.length > 0) return { ok: false, lines: problems };
   const largest = plan.tasks.reduce((best, task) => {
     const size = taskSize(task);
