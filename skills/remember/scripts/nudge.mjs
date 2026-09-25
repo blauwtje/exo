@@ -66,11 +66,18 @@ function firedMarker(prompt) {
   return MARKERS.find((marker) => marker.test(prompt)) ?? null;
 }
 
+// A background-agent completion arrives as a prompt, not as user input: the
+// harness wraps it in this marker or a <task-notification> block, and its
+// result text can carry a correction word (wrong, actually, ...) that names
+// no fact this session stated, so the markers never run against it.
+const HARNESS_NOTIFICATION = /\[SYSTEM NOTIFICATION - NOT USER INPUT\]|<task-notification>/;
+
 function nudge(hookInput) {
   // A delegate shares the session id while holding a context of its own, so it
   // cannot book the session's correction; only the main thread is nudged.
   if (typeof hookInput.agent_id === 'string') return;
   if (typeof hookInput.prompt !== 'string') return;
+  if (HARNESS_NOTIFICATION.test(hookInput.prompt)) return;
   const session = typeof hookInput.session_id === 'string' ? hookInput.session_id : '';
   const cwd = typeof hookInput.cwd === 'string' && hookInput.cwd !== '' ? hookInput.cwd : process.cwd();
   const marker = firedMarker(hookInput.prompt);

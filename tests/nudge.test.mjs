@@ -90,6 +90,33 @@ test('a delegate is never nudged', async () => {
   await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
 });
 
+test('a background-agent completion notice is silent even when its result reads like a correction', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const prompt = [
+    '<system-reminder>',
+    '[SYSTEM NOTIFICATION - NOT USER INPUT]',
+    '<task-notification>',
+    '<task-id>a1</task-id>',
+    '<status>completed</status>',
+    '<summary>Renamed the config module</summary>',
+    '<result>Verdict: the old name was wrong, it is actually config-loader now.</result>',
+    '</task-notification>',
+    '</system-reminder>'
+  ].join('\n');
+  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt }, environment);
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, '');
+  await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
+});
+
+test('a real correction still nudges once the notification marker is gone', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'actually the old name was wrong, it is config-loader' }, environment);
+  assert.equal(result.code, 0);
+  const output = JSON.parse(result.stdout);
+  assert.match(output.hookSpecificOutput.additionalContext, /book --claim/);
+});
+
 test('a malformed hook payload never blocks the prompt', async () => {
   const { environment } = await nudgeFixture();
   const result = await runNudge([], 'not json', environment);
