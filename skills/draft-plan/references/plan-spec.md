@@ -4,8 +4,8 @@ A compact plan names the goal, the basis, the proof and one line per task,
 nothing more. The enemy is a task whose file or shape stays implicit, forcing
 the builder to guess it from prose. The overcorrection is spelling out every
 step's code, which the compact grammar leaves to each task's own builder.
-`node scripts/plan-check.mjs <path>` enforces every rule below; run it before
-ending the turn and repair each line it prints.
+`node scripts/plan-check.mjs --plan <path>` enforces every rule below; run it
+before ending the turn and repair each line it prints.
 
 Write for a reader with zero conversation context: no "as discussed", no
 reference back to the request. A fact the planning session could not settle
@@ -18,7 +18,7 @@ made in the plan, in a task's `Data:` field or its heading.
 2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>` on their own lines, so `run-plan` matches this plan to a checkout; for a folder that is not a git repository yet, `Repository:` still names it, `Branch:` reads `main`, and the executor runs `git init -b main` there before the first task, never an init step for the owner. Once two tasks share no `Depends on:` chain between them, directly or through another task, the basis adds a third line, `Worktree setup: <command>` or `Worktree setup: none`, naming the command a fresh worktree needs before it can build either task, such as a dependency install; without the line the run builds one task at a time.
 3. `## Success criterion`: the one command or observation that proves every
    task landed; a cheap model reruns it, so it names no interpretation step.
-4. `## Checkpoint`: four literal points read as one paragraph or list —
+4. `## Checkpoint`: four literal points read as one paragraph or list:
    `Blocks first:` the task every other task needs, or `none`; `Parallel:`
    which tasks need no earlier one; `Shared state:` the file, key or branch
    more than one task touches, or `none`; `Smallest safe split:` the
@@ -48,7 +48,8 @@ like; every other task omits the segment entirely.
    the executor's first run.
 2. **One field line, one task.** A task with a second field line, a `Run:`,
    an `Expected:` line or a shown code block is not compact, and `plan-check`
-   holds every one of today's step-and-commit rules against it instead.
+   checks it as a long-format task instead, which then needs a `Commit:`
+   block, `Run:` and `Expected:` lines.
 3. **Small tasks.** A task lands in one delegate context: one heading names
    one concern, split further only when `Files:` would otherwise span both a
    shared write target (rule 4) and an independent one.
