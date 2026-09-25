@@ -35,43 +35,50 @@ A session hook loads these rules at startup, resume, clear and compaction, so th
 
 ## Skills
 
-Every skill is invoked as `/exo:<name>`. The first group Claude may also start on its own when its trigger matches; the second runs only when you type it.
+Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start`, or `/exo:start <goal>`, and it shows this list in plain words or picks one for you. The first group below Claude may also start on its own when its trigger matches; the rest run only when you type them.
 
 ### Model-invoked
 
-| Skill | Use it when |
-|---|---|
-| `define-scope <outcome>` | A request names a result but leaves open what counts as done, what data it holds or which architecture carries it. |
-| `draft-plan <topic, spec or issue>` | A plan is asked for, a planning mode is active, or the work has two or more edit-order dependencies. A shaped issue plans without shaping again. |
-| `run-plan [plan]` | A plan runs or resumes: one delegated build and one commit per task, independent tasks built together in worktrees of their own, then one branch review. A plan of three tasks or fewer builds in the session. |
-| `build-change <change>` | A decided change builds in this session and touches more than two files, a dependency, a public signature, a persisted format or a security boundary, or you ask for it test-first, at any file count. |
-| `ship [numbers]` | A code-changing run ends, or you ask to push, open a pull request or merge open pull requests: one question, then the route you pick runs to its end behind gates read from the GitHub API. |
-| `find-cause <symptom>` | Existing behavior fails and the cause is not yet proven. Outranks every other stage until it is. |
-| `audit-architecture [path]` | You want to know where the architecture should improve without naming the change. |
-| `design-ui <surface>` | A page, component or visual axis changes: typography, color, spacing, motion, copy. |
-| `explain-code <how, why or teach, and the code in question>` | You ask how part of this repository works, why it's built that way, or to be taught it, each claim marked verified, inferred or unknown. |
-| `file-issues <scope>` | You ask in plain words to file GitHub issues: they are created as specs, with the labels, type, relations, milestone and project fields the repository defines. |
-| `try-idea <question>` | A decision about logic, state or data flow needs running code first: a throwaway that answers it, parked on its own branch while only the decision reaches real code. |
-| `refactor <the refactor to run>` | A named refactor, rename, move or internal API reshape must keep behavior unchanged, with no shim or compatibility re-export left behind. |
-| `check-docs <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
-| `edit-skills <skill>` | A skill or agent is created, edited or judged too long. |
-| `check-impact <the diff, branch or claim to check>` | You ask whether a diff is safe to merge or ship, what a change could break, or build on a claim that existing code already handles something or nothing uses it: the claim is proven by running the real code. |
-| `write-docs <the document or text to write or edit>` | Prose someone reads later is written or edited: a README or doc page, a pull request, issue or commit body, a changelog line, a brief or spec. |
-| `show-savings` | You ask what exo saved or what the read guard kept out of context. |
-| `configure [key value scope]` | You set up exo with no argument, or show or change one setting, the savings counter and the read guard included, for every project, one repository, or this machine only. |
-| `route-skills` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
+| Skill | What it does | Just say |
+|---|---|---|
+| `define-scope <outcome>` | Decides what "done" means, when that is still open: the result, the data, the architecture. | "I want something for X but I'm not sure what exactly" |
+| `draft-plan <topic, spec or issue>` | Writes a step-by-step plan for later or another session. | "make a plan for ..." |
+| `run-plan [plan]` | Runs a plan file, with helpers and review. | "run the plan at docs/...", or after `/clear`: "carry on" |
+| `build-change <change>` | Builds a decided change, test-first where it can. | "build X", "fix this bug, here's how to reproduce it" |
+| `ship [numbers]` | Pushes, opens or merges a pull request, fixes its checks or review comments. | "push this", "merge the PR", "fix the checks" |
+| `find-cause <symptom>` | Finds the real cause of a failure before fixing it. | "this doesn't work", "why does X crash?" |
+| `design-ui <surface>` | Designs or improves how a screen looks. | "make this page nicer", "new component" |
+| `explain-code <how, why or teach, and the code in question>` | Explains how or why code works the way it does. | "how does X work?", "why is this built this way?" |
+| `file-issues <scope>` | Files GitHub issues. | "turn this into issues" |
+| `refactor <the refactor to run>` | Restructures code without changing its behavior. | "rename X", "move Y", "split this module" |
+| `edit-skills <skill>` | Writes or improves a skill or agent. | "fix skill X", "make an agent that ..." |
+| `check-impact <the diff, branch or claim to check>` | Says what a change could break, with evidence. | "is this safe to merge?", "what does this break?" |
+| `write-docs <the document or text to write or edit>` | Writes a README, docs page, PR or commit text. | "write the README", "PR description" |
+| `show-savings` | Shows how many tokens exo saved. | "what did exo save?" |
+| `configure [key value scope]` | Shows or changes an exo setting. | "set context to 120" |
 
 ### User-invoked
 
-These carry `disable-model-invocation: true`, so Claude never starts one itself: each writes a record only you should approve or runs a long or costly job only you should start.
+These carry `disable-model-invocation: true`, so Claude never starts one itself: each opens the way in, saves a live state, or writes a record only you should approve.
 
-| Skill | Use it when |
-|---|---|
-| `save-session` | You save an unfinished session's live state to a file a fresh session reads after a clear. |
-| `remember` | You record what this repository taught exo, approve a claim two sessions have booked, or drop a line whose files are gone. |
-| `run-parallel <coverage, race, gauntlet or arena> <done predicate or artifact> [N]` | You fan one job out to parallel workers for split coverage, a race, a gauntlet of checks or an arena of candidates, with every rule that judges them fixed before the first one runs. |
-| `tune-metric <metric and direction> <target and attempt floor>` | You push one measured metric toward a target in an unattended loop that keeps or reverts each change against a frozen harness. |
-| `compare-renders <surfaces and the URL that renders them>` | You prove that a refactor, migration or dependency bump leaves every rendered surface pixel-identical to a baseline captured before the first edit. |
+| Skill | What it does | Just say |
+|---|---|---|
+| `start [goal]` | Shows this list, or picks the one skill for a stated goal. | Type `/exo:start` when no skill name comes to mind |
+| `save-session` | Saves where a session is, for a fresh one after `/clear`. | Type `/exo:save-session`, then `/clear` |
+| `remember` | Books a correction about this repository, or approves a claim two sessions have booked. | Type `/exo:remember` |
+
+### Rarely needed
+
+Skills for a case most sessions never hit; still worth knowing about.
+
+| Skill | What it does | Just say |
+|---|---|---|
+| `check-docs <library, version, question>` | Checks how a pinned library, API or service actually behaves. | "does this still hold for version X of Y?" |
+| `try-idea <question>` | Builds a throwaway prototype to find out. | "try whether ...", "proof of concept" |
+| `audit-architecture [path]` | Finds where the architecture should change. | "where's the tech debt?" |
+| `compare-renders <surfaces and the URL that renders them>` | Proves screens stayed pixel-identical after a refactor. | Type `/exo:compare-renders` |
+| `run-parallel <coverage, race, gauntlet or arena> <done predicate or artifact> [N]` | Hands one job to parallel helpers. | Type `/exo:run-parallel` |
+| `tune-metric <metric and direction> <target and attempt floor>` | Pushes one metric up in a loop that reverts itself. | Type `/exo:tune-metric` |
 
 Each skill also has a page under `docs/skills/`, written for a person: what the skill is for and what it leaves behind, without the instruction the model reads.
 
