@@ -141,4 +141,4 @@ A change lands under `## Unreleased` in `CHANGELOG.md` without a version change,
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE): use it, change it and share it for any noncommercial purpose.
+[MIT](LICENSE): use it, change it and share it for any purpose, commercial included.
