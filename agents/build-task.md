@@ -28,8 +28,8 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 ## Git
 
 - Outside a wave, run no writing git, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all.
-- Under a `Wave:` other than `none`, first run `git switch --detach <its base sha>` and its setup command.
-- Once green there, run a long task's `Commit:` block, or for a compact task `git add <Files: paths>` and `git commit -m "<heading subject>" -m "Plan-task: <n>"`, then return `Commit: <git rev-parse HEAD>`.
+- In a wave (`Wave:` other than `none`), first run `git switch --detach <its base sha>` and its setup command.
+- In a wave, once green, run a long task's `Commit:` block, or for a compact task `git add <Files: paths>` and `git commit -m "<heading subject>" -m "Plan-task: <n>"`, then return `Commit: <git rev-parse HEAD>`.
 
 ## Stop
 
@@ -41,7 +41,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 ## Report
 
 - Write at most 25 lines to `Report to:`: Landed, Proof (each test and its output), Unresolved (or `none`).
-- Return that report only when a test failed or work is unfinished.
+- Return it only on a failed test or unfinished work.
 - A green task returns only:
 
 Task <n>: GREEN
