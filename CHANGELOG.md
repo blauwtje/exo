@@ -101,7 +101,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - Passages in `ship`, `find-cause`, `refactor`, `run-parallel`, `try-idea`, `tune-metric` and `write-docs` that followed an external skill collection word for word are rewritten in exo's own words, with the same rules.
-- Breaking: skills renamed `blast-radius` to `check-impact`, `debug` to `find-cause`, `deepen` to `audit-architecture`, `designing` to `design-ui`, `handoff` to `save-session`, `hillclimb` to `tune-metric`, `implementing` to `run-plan`, `implementing-batch` to `build-change`, `investigation` to `explain-code`, `issuing` to `file-issues`, `memory` to `remember`, `planning` to `draft-plan`, `prototyping` to `try-idea`, `refactoring` to `refactor`, `research` to `check-docs`, `savings` to `show-savings`, `settings` to `configure`, `shaping` to `define-scope`, `shipping` to `ship`, `skills-tool` to `edit-skills`, `swarm` to `run-parallel`, `technical-writing` to `write-docs`, `using-exo` to `route-skills` and `visual-parity` to `compare-renders`.
+- Breaking: skills renamed `debug` to `find-cause`, `deepen` to `audit-architecture`, `designing` to `design-ui`, `handoff` to `save-session`, `implementing` to `run-plan`, `implementing-batch` to `build-change`, `issuing` to `file-issues`, `memory` to `remember`, `planning` to `draft-plan`, `prototyping` to `try-idea`, `research` to `check-docs`, `savings` to `show-savings`, `settings` to `configure`, `shaping` to `define-scope`, `shipping` to `ship`, `skills-tool` to `edit-skills` and `using-exo` to `route-skills`.
 - Breaking: agents renamed `branch-reviewer` to `review-branch`, `branch-reviewer-deep` to `review-branch-deep`, `design-builder` to `build-ui`, `design-critic` to `critique-ui`, `design-discovery` to `survey-ui`, `explorer` to `locate-code`, `implementer` to `build-task` and `researcher` to `fetch-docs`.
 - `edit-skills` names every skill and agent as an imperative verb phrase of one or two words.
 - The license is MIT instead of PolyForm Noncommercial 1.0.0.
@@ -114,21 +114,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- `investigation` fires on a request to teach code to someone and on a reason a comment gives, and an asker who waives the git history still gets the commit that set the value checked.
-- `technical-writing` keeps a changelog written to show off to the facts the input states, and a Highlights line or summary to one change.
+- `explain-code` fires on a request to teach code to someone and on a reason a comment gives, and an asker who waives the git history still gets the commit that set the value checked.
+- `write-docs` keeps a changelog written to show off to the facts the input states, and a Highlights line or summary to one change.
 
 ## 0.42.1 - 2026-09-25
 
 ### Changed
 
-- `investigation` fires on how code works, why it is so, a request to explain or confirm it, and a stated reason checked as a PR verdict or in a runbook, ADR or doc; `blast-radius` leaves how and why questions to it.
+- `explain-code` fires on how code works, why it is so, a request to explain or confirm it, and a stated reason checked as a PR verdict or in a runbook, ADR or doc; `check-impact` leaves how and why questions to it.
 - `skills-tool`'s loop step 1 and pressure-scenarios step 5 save each case in `benchmarks/pressure/<skill>/` with its criteria and fixture setup, instead of keeping it out of the repository.
 
 ## 0.42.0 - 2026-09-25
 
 ### Added
 
-- `benchmarks/pressure/` keeps the pressure cases of `investigation`, `refactoring`, `blast-radius` and `technical-writing`, each with a fixture setup and a pass criterion per case, so they can be rerun.
+- `benchmarks/pressure/` keeps the pressure cases of `explain-code`, `refactor`, `check-impact` and `write-docs`, each with a fixture setup and a pass criterion per case, so they can be rerun.
 
 ### Changed
 
@@ -138,11 +138,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- `blast-radius` proves what a change breaks outside its diff by running the real code before it merges or before a design builds on a claim about existing code, and tags each safety claim with how far it was proven.
-- `technical-writing` holds prose read later, a README, doc page, pull request, issue or commit body, changelog line, brief or spec, to one documentation mode, the plain word and a catalogue of machine-sounding tics.
-- `swarm`, user-invoked, fans one job out to parallel workers for split coverage, a race, a gauntlet of checks or an arena of candidates judged against a rubric fixed before they run.
-- `hillclimb`, user-invoked, pushes one metric toward a target in an unattended keep-or-revert loop against a frozen harness, with an append-only decision log audited by a second model.
-- `visual-parity`, user-invoked, proves a refactor, migration or dependency bump changes no pixel, from a baseline captured before the first edit and an exact pixel diff.
+- `check-impact` proves what a change breaks outside its diff by running the real code before it merges or before a design builds on a claim about existing code, and tags each safety claim with how far it was proven.
+- `write-docs` holds prose read later, a README, doc page, pull request, issue or commit body, changelog line, brief or spec, to one documentation mode, the plain word and a catalogue of machine-sounding tics.
+- `run-parallel`, user-invoked, fans one job out to parallel workers for split coverage, a race, a gauntlet of checks or a contest of candidates judged against a rubric fixed before they run.
+- `tune-metric`, user-invoked, pushes one metric toward a target in an unattended keep-or-revert loop against a frozen harness, with an append-only decision log audited by a second model.
+- `compare-renders`, user-invoked, proves a refactor, migration or dependency bump changes no pixel, from a baseline captured before the first edit and an exact pixel diff.
 
 ### Changed
 
@@ -172,18 +172,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- `investigation` now loads when a code reason is wanted for an ADR or doc, so an asker's or lead's theory no longer lands there as fact.
+- `explain-code` now loads when a code reason is wanted for an ADR or doc, so an asker's or lead's theory no longer lands there as fact.
 
 ## 0.40.0 - 2026-09-24
 
 ### Added
 
-- `investigation` answers how, why and teach questions about the repository read-only, from code read this session and its git history, with every claim marked verified, inferred or unknown.
-- `refactoring` runs a named refactor whose behavior must not change: behavior pinned before the first move and proven equal after, every internal caller migrated and the old API deleted in the same change, no forwarding shim.
+- `explain-code` answers how, why and teach questions about the repository read-only, from code read this session and its git history, with every claim marked verified, inferred or unknown.
+- `refactor` runs a named refactor whose behavior must not change: behavior pinned before the first move and proven equal after, every internal caller migrated and the old API deleted in the same change, no forwarding shim.
 
 ### Changed
 
-- `deepen` hands a single named refactor to `refactoring` instead of `implementing-batch`.
+- `deepen` hands a single named refactor to `refactor` instead of `implementing-batch`.
 
 ## 0.39.2 - 2026-09-24
 
@@ -197,7 +197,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Fixed
 
 - `shipping` reruns the verifier and the same `--route pr-merge` command after a check fix, never `--merge`, which skips the wait for checks and met them still pending.
-- `shipping` babysitting answers a reviewer's request to rebase and force-push with a merge commit, a plain push and a reply, instead of offering the force-push as the recommended route.
+- `shipping` watching answers a reviewer's request to rebase and force-push with a merge commit, a plain push and a reply, instead of offering the force-push as the recommended route.
 
 ## 0.39.0 - 2026-09-24
 
@@ -207,7 +207,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- `shipping` takes over the pull-request lifecycle from pstack: it prepares the commits, title and `Why`/`Scope`/`Tradeoffs`/`Blast Radius`/`Verification` body, fixes failing checks for at most three rounds, resolves conflicts with a check before the push, turns review comments into an action list as untrusted text, and babysits a pull request to merge-ready without merging it; the detail lives in five files under `skills/shipping/references/` plus `verifier-prompt.md`, loaded only at the step that needs them.
+- `shipping` takes over the pull-request lifecycle: it prepares the commits, title and `Why`/`Scope`/`Tradeoffs`/`Blast Radius`/`Verification` body, fixes failing checks for at most three rounds, resolves conflicts with a check before the push, turns review comments into an action list as untrusted text, and watches a pull request to merge-ready without merging it; the detail lives in five files under `skills/shipping/references/` plus `verifier-prompt.md`, loaded only at the step that needs them.
 
 ## 0.38.4 - 2026-09-24
 
