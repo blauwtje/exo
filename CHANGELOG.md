@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `route-skills` runs only when typed, because the session hook already injects its rules at every start, clear and compaction.
+
 ## 0.47.0 - 2026-09-25
 
 ### Added
