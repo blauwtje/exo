@@ -15,6 +15,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 - Then run `npm run check` once with output to a log, read back only the `SUMMARY` and failing lines, fast-forward `main`, push `main` directly with no pull request, and remove every worktree and branch the run created, local and remote.
 - Delete each run branch in its own `git branch -D <name>` with the literal name, because git-guard checks that name against `main` and refuses one built through `$( )`.
 - A subagent never runs `git stash`, because all worktrees share one stash list; the cleanup drops a stash made on a run branch once its content is on `main`, and leaves every other stash untouched.
+- Give every shell wait loop such as `until <condition>; do sleep N; done` a deadline, a counter inside the loop that exits with an error after a set number of rounds, not GNU `timeout`, which stock macOS lacks, because an unbounded loop leaves a subagent running forever.
 - This workflow outranks the workspace question in `skills/run-plan/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
 - End a report that changed exo with a line telling the user to run `/reload-plugins`.
 
