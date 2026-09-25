@@ -1,6 +1,7 @@
 ---
 name: route-skills
-description: Use when a session starts, after a clear and after a compaction, before any other action, to know how the exo skills are named, found and ordered. Not for a turn that already holds its rules in context.
+description: Use when the user invokes it to see how the exo skills are named, found and ordered. Not for a turn already holding its rules, which the session hook injects at every start, clear and compaction.
+disable-model-invocation: true
 ---
 
 # Using exo
