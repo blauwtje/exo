@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`run-parallel`'s rubric-judged shape is now called `contest`, and `ship` now says it watches a pull request.**
+
+### Changed
+
+- Breaking: `run-parallel`'s rubric-judged shape is renamed `contest`, and its run directory moves to `<git dir>/exo/run-parallel/`.
+- `ship` calls following a pull request to merge-ready watching, from `references/watch.md`.
+- `/exo:start` lists each skill by its current name only, without an old name.
+- Skill headings, prompts, pressure fixtures and past changelog entries use exo's own skill names instead of names borrowed from other plugins.
+- The `derivation` check scans every tracked text file, not only shipped ones, and forbids 15 more borrowed names.
+
 ## 0.48.3 - 2026-09-25
 
 ### Changed
