@@ -1,11 +1,11 @@
 # Worker prompt
 
-The text `run-parallel` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<git dir>/exo/swarm/<slug>/frame.md`; an arena candidate gets the second block, which carries the task and never the rubric.
+The text `run-parallel` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<git dir>/exo/run-parallel/<slug>/frame.md`; a contest candidate gets the second block, which carries the task and never the rubric.
 
 ## Coverage, race or gauntlet worker
 
 ```text
-Swarm <slug>, worker <n> of <N>, shape <coverage|race|gauntlet>.
+Run <slug>, worker <n> of <N>, shape <coverage|race|gauntlet>.
 
 Goal: <the done predicate from frame.md>
 Your slice, arm or check: <exactly one, as frame.md names it>
@@ -20,10 +20,10 @@ Write your full detail to <output path>: the verdict, then every issue you can p
 Return one line and nothing before or after it, so the report caps at most 1 lines: verdict=<PASS|ISSUES|BLOCKED> issues=<count> file=<output path>
 ```
 
-## Arena candidate
+## Contest candidate
 
 ```text
-Swarm <slug>, arena candidate <n> of <N>.
+Run <slug>, contest candidate <n> of <N>.
 
 Build: <the artifact, as frame.md states it>
 Grounding: <the shared paths every candidate reads>

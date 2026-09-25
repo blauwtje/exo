@@ -45,7 +45,7 @@ Use these sections in order, dropping one with nothing to say:
 - `## Verification`: each real run path and its outcome, exo's proof line included; for a performance change, one primary number with unit in `before → after` form; link fuller evidence rather than tabulating it.
 End on `Closes #<n>` when an issue is behind the change.
 Never use `## Summary` or `## Test plan`, and never repeat the subject line in a commit body.
-Leave out full SHAs, narration of swarm or arena runs, essays on lever corrections, checklists walking every file, and verdicts reading "CLEAN".
+Leave out full SHAs, narration of parallel or contest runs, essays on lever corrections, checklists walking every file, and verdicts reading "CLEAN".
 Attach video or screenshots only when they prove a claim.
 The PR body is the squash commit body; cut it before it passes about 40 lines.
 

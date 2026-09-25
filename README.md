@@ -77,7 +77,7 @@ Skills for a case most sessions never hit; still worth knowing about.
 | `try-idea <question>` | Builds a throwaway prototype to find out. | "try whether ...", "proof of concept" |
 | `audit-architecture [path]` | Finds where the architecture should change. | "where's the tech debt?" |
 | `compare-renders <surfaces and the URL that renders them>` | Proves screens stayed pixel-identical after a refactor. | Type `/exo:compare-renders` |
-| `run-parallel <coverage, race, gauntlet or arena> <done predicate or artifact> [N]` | Hands one job to parallel helpers. | Type `/exo:run-parallel` |
+| `run-parallel <coverage, race, gauntlet or contest> <done predicate or artifact> [N]` | Hands one job to parallel helpers. | Type `/exo:run-parallel` |
 | `tune-metric <metric and direction> <target and attempt floor>` | Pushes one metric up in a loop that reverts itself. | Type `/exo:tune-metric` |
 
 `route-skills` holds the routing rules every other skill follows. The session hook injects it at every start, resume, clear and compaction, so it is never picked; type `/exo:route-skills` to read it.
