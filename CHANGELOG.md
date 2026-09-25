@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `investigation` fires on how code works, why it is so, a request to explain or confirm it, and a stated reason checked as a PR verdict or in a runbook, ADR or doc; `blast-radius` leaves how and why questions to it.
+- `skills-tool`'s pressure-scenarios step 5 saves each case in `benchmarks/pressure/<skill>/` with its criteria and fixture setup, instead of keeping it out of the repository.
+
 ## 0.42.0 - 2026-09-25
 
 ### Added
