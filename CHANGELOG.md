@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The `define-scope` pressure criteria credit a checkpoint decision to plain `code`, as the skill does, instead of `code: <path>`.
+
 ## 0.45.0 - 2026-09-25
 
 ### Added
