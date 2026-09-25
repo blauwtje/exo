@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.47.0 - 2026-09-25
+
 ### Added
 
 - `benchmarks/pressure/drive.mjs` runs a define-scope pressure case over several turns, and the pressure README says how to run it.
