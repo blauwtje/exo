@@ -35,7 +35,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 ## The loop
 
-1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; it lives in the edit, by hand or in a delegate, and is saved nowhere.
+1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; save the case in `benchmarks/pressure/<skill>/`, as step 5 there describes.
 2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`; it runs the without-skill and with-skill arm of every cell `--runs` times (default 3) in parallel, writes each full answer to its own file, prints one line per arm and run naming that file, the first edit and the skills called, and step 2 reads only the `without` answers. A delegate takes a model but no effort, so it cannot stand in for these runs.
 3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape above and in the register `references/wording.md` sets.
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
