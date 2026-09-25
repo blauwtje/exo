@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.0 - 2026-09-25
+
 ### Added
 
 - `start` (`/exo:start`) lists every skill in plain words with its old name, rare skills apart, and `/exo:start <goal>` picks and runs the skill for that goal.
