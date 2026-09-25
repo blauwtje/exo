@@ -17,11 +17,11 @@ Then set the auto-compact window in `~/.claude/settings.json`, so a long plan ru
 
 ```json
 {
-  "autoCompactWindow": 120000
+  "autoCompactWindow": "120k"
 }
 ```
 
-The key takes a plain number of tokens from 100000 to 1000000; `/autocompact 120k` writes the same value ([settings reference](https://code.claude.com/docs/en/settings-reference#autocompactwindow)).
+The key takes a window from 100K to 1M tokens, as a plain token count or with a `k` or `M` suffix; `/autocompact 120k` writes the same value ([model configuration](https://code.claude.com/docs/en/model-config#set-the-auto-compact-window), [settings reference](https://code.claude.com/docs/en/settings-reference#autocompactwindow)).
 
 ## Check that it works
 
