@@ -1,0 +1,1 @@
+I want to add a DeepSeek worker to this project that can take coding tasks off my hands. Help me figure out what it should do before we build it.
