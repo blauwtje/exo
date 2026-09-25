@@ -1,6 +1,6 @@
 // The context watch measures the main session after every tool call. From the
-// `context` setting it sends one handoff notice per 25k step, to the user as
-// well from 150k; inside a delegate and on any fault it stays silent, and it
+// `context` setting it sends one notice per 25k step, to the session and the
+// user, advising a handoff or, in a plan skill, to keep working; inside a delegate and on any fault it stays silent, and it
 // never decides a permission.
 
 import assert from 'node:assert/strict';
@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
 const WATCH = fileURLToPath(new URL('../skills/show-savings/scripts/context-watch.mjs', import.meta.url));
+const PLAN_ADVICE = 'keep working; the state lives in the plan file and the commits, and the harness compacts on its own';
 const ADVICE = 'finish the current step, then tell the user to run `/exo:save-session` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
 
 function runWatch(hookInput, env) {
@@ -69,11 +70,30 @@ test('any tool call under the threshold prints nothing', async () => {
   assert.equal(await notice(hookInput, env), null);
 });
 
-test('a tool call at the default 100k sends the handoff notice and no permission decision', async () => {
+test('a tool call at the default 100k sends the handoff notice to the session and the user, and no permission decision', async () => {
   const { env, hookInput } = await watchFixture([assistantLine(100_000)]);
   const output = await notice(hookInput, env);
   assert.equal(output.hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
-  assert.equal(output.systemMessage, undefined);
+  assert.equal(output.systemMessage, output.hookSpecificOutput.additionalContext);
+});
+
+const skillCall = (skill) => JSON.stringify({ type: 'assistant', message: { id: `msg-${skill}`, content: [{ type: 'tool_use', id: 'toolu_1', name: 'Skill', input: { skill } }] } });
+const slashCommand = (skill) =>
+  JSON.stringify({ type: 'user', message: { role: 'user', content: `<command-message>${skill}</command-message>\n<command-name>/${skill}</command-name>\n<command-args>docs/plans/x.md</command-args>` } });
+
+test('while a plan skill is the last exo skill loaded, the notice advises to keep working', async () => {
+  for (const loaded of [slashCommand('exo:run-plan'), skillCall('exo:draft-plan')]) {
+    const { env, hookInput } = await watchFixture([loaded, assistantLine(100_000)]);
+    assert.equal((await notice(hookInput, env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${PLAN_ADVICE}`);
+  }
+});
+
+test('another skill loaded after the plan skill, or one loaded in a delegate, keeps the handoff advice', async () => {
+  const later = await watchFixture([slashCommand('exo:run-plan'), skillCall('exo:build-change'), assistantLine(100_000)]);
+  assert.equal((await notice(later.hookInput, later.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
+  const sidechain = JSON.stringify({ ...JSON.parse(skillCall('exo:run-plan')), isSidechain: true });
+  const delegated = await watchFixture([sidechain, assistantLine(100_000)]);
+  assert.equal((await notice(delegated.hookInput, delegated.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
 });
 
 test('the notice repeats once per 25k step and again after the figure falls back', async () => {
@@ -91,12 +111,12 @@ test('the notice repeats once per 25k step and again after the figure falls back
   assert.equal(await fired(102_000), true, 'first step again after the reset');
 });
 
-test('from 150k the notice also goes to the user as a systemMessage', async () => {
-  const below = await watchFixture([assistantLine(149_000)]);
-  assert.equal((await notice(below.hookInput, below.env)).systemMessage, undefined);
-  const at = await watchFixture([assistantLine(150_000)]);
+test('the user notice follows the context setting', async () => {
+  const below = await watchFixture([assistantLine(59_000)], { context: 60 });
+  assert.equal(await notice(below.hookInput, below.env), null);
+  const at = await watchFixture([assistantLine(60_000)], { context: 60 });
   const output = await notice(at.hookInput, at.env);
-  assert.equal(output.systemMessage, `exo: context 150k tokens, past 100k: ${ADVICE}`);
+  assert.equal(output.systemMessage, `exo: context 60k tokens, past 60k: ${ADVICE}`);
   assert.equal(output.hookSpecificOutput.additionalContext, output.systemMessage);
 });
 

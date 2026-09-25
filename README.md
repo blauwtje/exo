@@ -13,6 +13,16 @@ exo is a Claude Code plugin that gives Claude one way of working: decide what to
 
 Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` on `PATH`.
 
+Then set the auto-compact window in `~/.claude/settings.json`, so a long plan run compacts at 120k tokens instead of near the end of a 1M window:
+
+```json
+{
+  "autoCompactWindow": 120000
+}
+```
+
+The key takes a plain number of tokens from 100000 to 1000000; `/autocompact 120k` writes the same value ([settings reference](https://code.claude.com/docs/en/settings-reference#autocompactwindow)).
+
 ## Check that it works
 
 Start a new session and run:
@@ -133,7 +143,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `define-scope` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
-| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note to finish the current step and hand off with `/exo:save-session` and `/clear`, once per further 25k, shown to you as well from 150k. A stored value that is not a whole number of at least 1 reads as the default. |
+| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:draft-plan` or `exo:run-plan` is the last exo skill loaded, to keep working because the harness compacts on its own. A stored value that is not a whole number of at least 1 reads as the default. |
 
 ## Develop
 
