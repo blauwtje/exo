@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `CLAUDE.md` requires a deadline counter in every shell wait loop, so a subagent never leaves an `until ... sleep` loop running forever.
+
+### Fixed
+
+- `CONTRIBUTING.md` names all seven skills that carry `disable-model-invocation: true`, not only `save-session` and `remember`.
+
 ## 0.48.0 - 2026-09-25
 
 ### Added
