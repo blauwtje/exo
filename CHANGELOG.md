@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.7 - 2026-09-25
+
 ### Highlights
 
 - **A build dispatch is under 500 words: `build-task` builds a compact task from its `Files:` and `Data:` and proves it with one targeted test for the plan's success criterion.**
