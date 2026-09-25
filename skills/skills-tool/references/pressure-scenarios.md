@@ -38,7 +38,8 @@ One pressure gives a usable case; stack three for a strong one, because a skill 
 2. Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`; it runs the without-skill and with-skill arm of every cell `--runs` times (default 3) in parallel, each in a scratch directory outside the repository. It writes every full final answer to its own file in the `--out` directory (default a fresh temporary directory, named on the first line), and prints per cell its label, then one line per arm and run: the answer file, the first Edit or Write action, and every skill the run called.
 3. Copy the chosen action and the justification word for word from the `without` answer files; that wording is what the skill has to answer.
 4. Read the `with` answer files for the same cell; they count as a pass only when the `without` answers failed.
-5. Keep the prompt and both justifications in the edit's report and save no case in the repository, because a case on disk invites a paid rerun on every later edit; the prompt file itself lives in the scratch directory `pressure.mjs` makes, not in the repository.
+5. Keep the prompt and both justifications in the edit's report, and save the case in `benchmarks/pressure/<skill>/`, because the next edit of the skill reruns it.
+   It holds the prompt files, `<skill>/criteria.md` with the `with` arm's pass criterion, and any fixture's `setup.sh`, rerun as the README in `benchmarks/pressure/` shows.
 6. A run the API refuses before any tool call is neither a pass nor a fail: remove the framing that added the most pressure and rerun, never the same prompt unchanged.
 
 ## Judgment
