@@ -29,7 +29,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { UsageError, parseFlags } from '#script-flags';
 
-const TIMEOUT_MS = 600_000;
+const TIMEOUT_MS = 1_800_000;
 const DEFAULT_RUNS = 3;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
