@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.43.0 - 2026-09-25
+
 ### Highlights
 
 **Breaking: every exo skill and agent has a new name, and the old names no longer resolve.** Replace each `exo:<old>` in your prompts, settings and CLAUDE.md with its new name from the Changed list below. **exo is now MIT licensed.**
