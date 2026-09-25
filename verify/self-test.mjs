@@ -16,7 +16,7 @@ import process from 'node:process';
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
-  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/savings.md'
+  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/show-savings.md'
 ];
 
 function read(root, relative) {
@@ -43,132 +43,132 @@ function dropLines(root, relative, prefix) {
 }
 
 const SCENARIOS = [
-  { name: 'invalid-yaml', mutate: (root) => write(root, 'skills/shaping/SKILL.md',
-    read(root, 'skills/shaping/SKILL.md').replace(/^name: shaping$/gm, 'name: [shaping')) },
+  { name: 'invalid-yaml', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
+    read(root, 'skills/define-scope/SKILL.md').replace(/^name: define-scope$/gm, 'name: [define-scope')) },
   { name: 'missing-judgment', mutate: (root) =>
-    replaceText(root, 'skills/research/SKILL.md', '## Judgment', '## Verdict') },
+    replaceText(root, 'skills/check-docs/SKILL.md', '## Judgment', '## Verdict') },
   { name: 'banned-phrase', mutate: (root) =>
-    append(root, 'skills/shaping/SKILL.md', "\nlet me know if you'd like me to continue\n") },
+    append(root, 'skills/define-scope/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>
-    append(root, 'skills/shaping/SKILL.md', '\nUse WebSearch when useful.\n') },
+    append(root, 'skills/define-scope/SKILL.md', '\nUse WebSearch when useful.\n') },
   { name: 'derived-name', mutate: (root) =>
-    append(root, 'skills/shaping/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
+    append(root, 'skills/define-scope/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
   { name: 'oversized-skill-body', mutate: (root) =>
-    append(root, 'skills/settings/SKILL.md', `\n${'- A line no body has room for.\n'.repeat(500)}`) },
+    append(root, 'skills/configure/SKILL.md', `\n${'- A line no body has room for.\n'.repeat(500)}`) },
   { name: 'broken-reference', mutate: (root) =>
-    replaceText(root, 'skills/implementing-batch/SKILL.md', 'references/critique.md', 'references/missing.md') },
+    replaceText(root, 'skills/build-change/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>
-    replaceText(root, 'skills/implementing/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
+    replaceText(root, 'skills/run-plan/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
   { name: 'removed-required-owner-row', mutate: (root) =>
-    dropLines(root, 'skills/debug/SKILL.md', '| `../implementing-batch/references/security.md` |') },
+    dropLines(root, 'skills/find-cause/SKILL.md', '| `../build-change/references/security.md` |') },
   { name: 'extra-ui-reference', mutate: (root) =>
-    write(root, 'skills/designing/references/extra.md',
+    write(root, 'skills/design-ui/references/extra.md',
       '# Extra\n\nReject it. The enemy is excess. The overcorrection is omission.\n\n## Judgment\n\n- Stop.\n') },
   { name: 'dangling-script-link', mutate: (root) =>
-    replaceText(root, 'skills/designing/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
+    replaceText(root, 'skills/design-ui/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
   { name: 'dangling-sibling-script-link', mutate: (root) =>
-    replaceText(root, 'skills/settings/SKILL.md', '../shaping/scripts/question-page.mjs', '../shaping/scripts/absent.mjs') },
+    replaceText(root, 'skills/configure/SKILL.md', '../define-scope/scripts/question-page.mjs', '../define-scope/scripts/absent.mjs') },
   { name: 'noncanonical-skill-replacement', mutate: (root) => {
-    const nested = path.join(root, 'skills/shaping/shaping');
+    const nested = path.join(root, 'skills/define-scope/define-scope');
     fs.mkdirSync(nested);
-    fs.renameSync(path.join(root, 'skills/shaping/SKILL.md'), path.join(nested, 'SKILL.md'));
+    fs.renameSync(path.join(root, 'skills/define-scope/SKILL.md'), path.join(nested, 'SKILL.md'));
   } },
-  { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
+  { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
     'more than two source/test/config files must change', 'more than one source/test/config file must change') },
-  { name: 'drifted-record-rule', mutate: (root) => replaceText(root, 'skills/implementing-batch/SKILL.md',
+  { name: 'drifted-record-rule', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
     'from the working tree diff before the next edit', 'from memory before the next edit') },
-  { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
+  { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
-  { name: 'drifted-closer-list', mutate: (root) => replaceText(root, 'skills/shaping/references/interview-page.md',
+  { name: 'drifted-closer-list', mutate: (root) => replaceText(root, 'skills/define-scope/references/interview-page.md',
     '`closedBy` (`you`, `code` or `exo`)', '`closedBy` (`you` or `code`)') },
-  { name: 'shaping-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
+  { name: 'define-scope-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
     'Count the product decisions the request leaves open', 'Count the files the request changes') },
-  { name: 'shaping-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
+  { name: 'define-scope-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
     'Zero open decisions means leave this skill and write no brief', 'Zero means carry on anyway') },
-  { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/shaping/SKILL.md',
-    'shaping decides those first; designing follows for presentation',
-    'shaping decides these first; designing follows for presentation') },
-  { name: 'oversized-description', mutate: (root) => replaceText(root, 'skills/research/SKILL.md',
+  { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
+    'define-scope decides those first; design-ui follows for presentation',
+    'define-scope decides these first; design-ui follows for presentation') },
+  { name: 'oversized-description', mutate: (root) => replaceText(root, 'skills/check-docs/SKILL.md',
     'description: Use when a code decision', `description: ${'overlong '.repeat(140)}Use when a code decision`) },
-  { name: 'model-invocable-description-without-use-when', mutate: (root) => replaceText(root, 'skills/research/SKILL.md',
+  { name: 'model-invocable-description-without-use-when', mutate: (root) => replaceText(root, 'skills/check-docs/SKILL.md',
     'description: Use when a code decision', 'description: Use for a code decision') },
-  { name: 'dropped-underdesign-contract', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-underdesign-contract', mutate: (root) => replaceText(root, 'skills/design-ui/SKILL.md',
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'A redesign should feel fresh') },
-  { name: 'dropped-bounded-redesign-trigger', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-bounded-redesign-trigger', mutate: (root) => replaceText(root, 'skills/design-ui/SKILL.md',
     '; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive', '') },
-  { name: 'dropped-expression-offer', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'dropped-expression-offer', mutate: (root) => replaceText(root, 'skills/design-ui/SKILL.md',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.', '') },
-  { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/designing/SKILL.md',
+  { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/design-ui/SKILL.md',
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
-  { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/designing/references/visual-critique.md',
+  { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-critique.md',
     '`monospace-label`, and `invented-content`', 'and `monospace-label`') },
-  { name: 'drifted-sketch-labels', mutate: (root) => replaceText(root, 'skills/designing/references/sketch-tab.md',
+  { name: 'drifted-sketch-labels', mutate: (root) => replaceText(root, 'skills/design-ui/references/sketch-tab.md',
     '`lost`, ', '') },
-  { name: 'drifted-blocking-list', mutate: (root) => replaceText(root, 'skills/designing/references/phase-build.md',
+  { name: 'drifted-blocking-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-build.md',
     'or any `content-clipped` or `element-overlap` finding', 'or any `content-clipped` finding') },
-  { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/designing/references/intake.md',
+  { name: 'dropped-plan-mode-run-guard', mutate: (root) => replaceText(root, 'skills/design-ui/references/intake.md',
     'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call', 'A read-only planning mode runs the same calls') },
-  { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
+  { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-detail.md',
     'its repair is a new direction, not another polish pass, so the cycle ends there', 'its repair is a return to Phase 2') },
-  { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/deepen/SKILL.md',
+  { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/audit-architecture/SKILL.md',
     'every other planning turn belongs to', 'planning turns belong to') },
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {
-    for (const skill of ['debug', 'deepen']) dropLines(root, `skills/${skill}/SKILL.md`, 'effort:');
+    for (const skill of ['find-cause', 'audit-architecture']) dropLines(root, `skills/${skill}/SKILL.md`, 'effort:');
   } },
   { name: 'effort-low', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\neffort: low') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low') },
   { name: 'effort-medium', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\neffort: medium') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: medium') },
   { name: 'effort-high', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\neffort: high') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high') },
   { name: 'effort-max', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\neffort: max') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max') },
   { name: 'effort-bogus', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\neffort: bogus') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: bogus') },
   { name: 'model-bogus', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\nmodel: bogus') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\nmodel: bogus') },
   { name: 'effort-duplicate', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\neffort: xhigh\neffort: high') },
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: xhigh\neffort: high') },
   { name: 'effort-without-name', mutate: (root) =>
-    dropLines(root, 'skills/debug/SKILL.md', 'name:') },
+    dropLines(root, 'skills/find-cause/SKILL.md', 'name:') },
   { name: 'effort-without-description', mutate: (root) =>
-    dropLines(root, 'skills/debug/SKILL.md', 'description:') },
+    dropLines(root, 'skills/find-cause/SKILL.md', 'description:') },
   { name: 'effort-unknown-key', mutate: (root) =>
-    replaceText(root, 'skills/debug/SKILL.md', 'name: debug', 'name: debug\nmodel-effort: high') },
-  { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\nmodel-effort: high') },
+  { name: 'dropped-render-evidence', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-detail.md',
     'baseline before the first edit, post-build before the critique fixes, and final after them',
     'capture the surface before and after building') },
-  { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/designing/references/phase-detail.md',
+  { name: 'dropped-evidence-sufficiency', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-detail.md',
     'never substitute a product-category aesthetic for missing evidence',
     'pick a fitting product-category aesthetic') },
-  { name: 'dropped-motion-evidence-contract', mutate: (root) => replaceText(root, 'skills/designing/references/motion.md',
+  { name: 'dropped-motion-evidence-contract', mutate: (root) => replaceText(root, 'skills/design-ui/references/motion.md',
     'only exercised is motion-verified', 'a careful read of the code is enough') },
-  { name: 'dropped-direction-contract-gate', mutate: (root) => replaceText(root, 'skills/designing/references/phase-direction.md',
+  { name: 'dropped-direction-contract-gate', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-direction.md',
     'validate the set with `--check` to status ok before building any variant',
     'render at least two variants and pick the better one') },
-  { name: 'dropped-font-provenance', mutate: (root) => replaceText(root, 'skills/designing/references/typography.md',
+  { name: 'dropped-font-provenance', mutate: (root) => replaceText(root, 'skills/design-ui/references/typography.md',
     'Do not name a new typeface from memory.', 'Choose a face you know works.') },
-  { name: 'dropped-quiet-region-jobs', mutate: (root) => replaceText(root, 'skills/designing/references/visual-direction.md',
+  { name: 'dropped-quiet-region-jobs', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
   { name: 'broken-skill-script', mutate: (root) =>
-    append(root, 'skills/designing/scripts/capture.mjs', '\nexport function broken( {\n') },
-  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/planning/references/data-migration.md',
-    read(root, 'skills/implementing-batch/references/data-migration.md')) },
+    append(root, 'skills/design-ui/scripts/capture.mjs', '\nexport function broken( {\n') },
+  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/draft-plan/references/data-migration.md',
+    read(root, 'skills/build-change/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
-    replaceText(root, 'agents/researcher.md', 'at most 25 lines', 'a short report') },
+    replaceText(root, 'agents/fetch-docs.md', 'at most 25 lines', 'a short report') },
   { name: 'body-over-token-ceiling', mutate: (root) =>
-    append(root, 'skills/settings/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
-  { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/research/SKILL.md',
-    read(root, 'skills/research/SKILL.md').replace('description: ', `description: ${'padding '.repeat(15)}`)) },
+    append(root, 'skills/configure/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
+  { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/check-docs/SKILL.md',
+    read(root, 'skills/check-docs/SKILL.md').replace('description: ', `description: ${'padding '.repeat(15)}`)) },
   { name: 'reference-chain', mutate: (root) =>
-    append(root, 'skills/skills-tool/references/description.md', '\nRead `wording.md` next.\n') },
+    append(root, 'skills/edit-skills/references/description.md', '\nRead `wording.md` next.\n') },
   { name: 'long-reference-without-contents', mutate: (root) =>
-    append(root, 'skills/skills-tool/references/where-a-fix-lives.md', '- filler line\n'.repeat(90)) },
-  { name: 'empty-read-when', mutate: (root) => write(root, 'skills/skills-tool/SKILL.md',
-    read(root, 'skills/skills-tool/SKILL.md').replace(/^(\| `references\/plugging-holes\.md` \|)[^\n]*\|$/m, '$1  |')) },
+    append(root, 'skills/edit-skills/references/where-a-fix-lives.md', '- filler line\n'.repeat(90)) },
+  { name: 'empty-read-when', mutate: (root) => write(root, 'skills/edit-skills/SKILL.md',
+    read(root, 'skills/edit-skills/SKILL.md').replace(/^(\| `references\/plugging-holes\.md` \|)[^\n]*\|$/m, '$1  |')) },
   { name: 'long-reference-with-contents', expect: 'accept', mutate: (root) => {
-    const relative = 'skills/skills-tool/references/where-a-fix-lives.md';
+    const relative = 'skills/edit-skills/references/where-a-fix-lives.md';
     const contents = [
       '## Contents', '',
       '- [Take the first home that fits](#take-the-first-home-that-fits)',
@@ -180,15 +180,15 @@ const SCENARIOS = [
     write(root, relative, `${text}${'- filler line\n'.repeat(90)}`);
   } },
   { name: 'injected-body-over-ceiling', mutate: (root) =>
-    append(root, 'skills/using-exo/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
+    append(root, 'skills/route-skills/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
   { name: 'drifted-review-threshold', mutate: (root) =>
     replaceText(root, 'README.md', '200 changed lines', '250 changed lines') },
   { name: 'drifted-wait-bound', mutate: (root) =>
-    replaceText(root, 'skills/shipping/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
+    replaceText(root, 'skills/ship/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
   { name: 'drifted-retention-days', mutate: (root) =>
     replaceText(root, 'README.md', 'last 30 days', 'last 60 days') },
   { name: 'unprefixed-delegate-budget-key', mutate: (root) =>
-    replaceText(root, 'skills/savings/assets/delegate-budgets.json', '"exo:design-builder"', '"design-builder"') },
+    replaceText(root, 'skills/show-savings/assets/delegate-budgets.json', '"exo:build-ui"', '"build-ui"') },
 ];
 
 function copyVerificationFixture(repository, destination) {

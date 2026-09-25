@@ -1,7 +1,7 @@
 // capture.mjs names each file `<label>-<width>x<height>[-fullpage].png` and
 // falls back to the label `capture`, so an unlabeled checkpoint overwrites the
 // one before it. The model runs the captures and reads the renders by what the
-// designing docs and agents say, so this test guards that text.
+// design-ui docs and agents say, so this test guards that text.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,14 +12,14 @@ const ROOT = new URL('../', import.meta.url);
 const CHECKPOINTS = ['baseline', 'post-build', 'final'];
 const LABEL_VALUES = [...CHECKPOINTS, '<checkpoint>'];
 const VIEWPORTS = JSON.parse(
-  fs.readFileSync(new URL('skills/designing/assets/viewports.json', ROOT), 'utf8')
+  fs.readFileSync(new URL('skills/design-ui/assets/viewports.json', ROOT), 'utf8')
 ).capture;
 
 // Mentions that name the script without running it: a prohibition and the
 // statement of which render path the skill uses.
 const NON_INVOCATIONS = [
-  { file: 'skills/designing/references/direction-preview.md', sentence: /^- No `capture\.mjs`/ },
-  { file: 'skills/designing/references/phase-detail.md', sentence: /the render path is `scripts\/capture\.mjs` and the critic$/ }
+  { file: 'skills/design-ui/references/direction-preview.md', sentence: /^- No `capture\.mjs`/ },
+  { file: 'skills/design-ui/references/phase-detail.md', sentence: /the render path is `scripts\/capture\.mjs` and the critic$/ }
 ];
 
 function markdownFiles(relativeDirectory) {
@@ -30,16 +30,16 @@ function markdownFiles(relativeDirectory) {
 }
 
 const DOCS = [
-  ...markdownFiles('skills/designing'),
-  'agents/design-critic.md',
-  'agents/design-discovery.md'
+  ...markdownFiles('skills/design-ui'),
+  'agents/critique-ui.md',
+  'agents/survey-ui.md'
 ].map((file) => ({ file, text: fs.readFileSync(new URL(file, ROOT), 'utf8') }));
 
 function sentences(text) {
   return text.split('\n').flatMap((line) => line.split(/(?<=[.;:])\s+(?=[A-Z`-])/));
 }
 
-test('every capture.mjs or checkpoint.mjs invocation in the designing docs names its checkpoint label', () => {
+test('every capture.mjs or checkpoint.mjs invocation in the design-ui docs names its checkpoint label', () => {
   const labels = new Set();
   for (const { file, text } of DOCS) {
     for (const sentence of sentences(text)) {
@@ -75,7 +75,7 @@ const EVIDENCE_PATTERN = new RegExp(
   `^\\$RUN\\/(?:check-ui-(?:${CHECKPOINTS.join('|')})|inspect-styles-(?:${CHECKPOINTS.join('|')})|inspect-render-(?:${CHECKPOINTS.join('|')})-(?:${WIDTHS.join('|')})|critic-evidence|contract-selected)\\.json$`
 );
 
-test('every render file a designing doc reads is one checkpoint.mjs writes', () => {
+test('every render file a design-ui doc reads is one checkpoint.mjs writes', () => {
   const pattern = new RegExp(
     `^(?:\\$RUN/renders/)?(?:${LABEL_VALUES.join('|')})-(?:${VIEWPORTS.join('|')})-fullpage\\.png$`
   );
@@ -93,16 +93,16 @@ test('every render file a designing doc reads is one checkpoint.mjs writes', () 
 // another script, such as phase-direction's space.json, is out of scope.
 const CHECKPOINT_EVIDENCE = /^\$RUN\/(?:check-ui|inspect-render|inspect-styles|critic-evidence|contract-selected)/;
 
-test('SKILL.md reads phase-detail.md whole at Phase 1 and phase-build.md dispatches the design-builder agent', () => {
-  const skill = DOCS.find(({ file }) => file.endsWith('skills/designing/SKILL.md')).text;
-  const build = DOCS.find(({ file }) => file.endsWith('skills/designing/references/phase-build.md')).text;
+test('SKILL.md reads phase-detail.md whole at Phase 1 and phase-build.md dispatches the build-ui agent', () => {
+  const skill = DOCS.find(({ file }) => file.endsWith('skills/design-ui/SKILL.md')).text;
+  const build = DOCS.find(({ file }) => file.endsWith('skills/design-ui/references/phase-build.md')).text;
   const phaseDetailRow = skill.match(/^\|\s*`references\/phase-detail\.md`\s*\|(.*)\|$/m);
   assert.ok(phaseDetailRow, 'SKILL.md still lists a references/phase-detail.md row');
   assert.doesNotMatch(phaseDetailRow[1], /grep -n|sed -n|each loop step/, 'phase-detail.md is read whole at Phase 1, not by section per step');
-  assert.match(build, /`exo:design-builder` agent/, 'phase-build.md dispatch names the exo:design-builder agent');
+  assert.match(build, /`exo:build-ui` agent/, 'phase-build.md dispatch names the exo:build-ui agent');
 });
 
-test('every evidence file a designing doc or agent reads is one checkpoint.mjs writes', () => {
+test('every evidence file a design-ui doc or agent reads is one checkpoint.mjs writes', () => {
   let named = 0;
   for (const { file, text } of DOCS) {
     for (const [, name] of text.matchAll(/`(\$RUN\/[^`\s]*\.json)`/g)) {

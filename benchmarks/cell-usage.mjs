@@ -6,9 +6,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { emptySession } from '../skills/savings/scripts/record.mjs';
-import { sumCounts } from '../skills/savings/scripts/token-weights.mjs';
-import { findTranscript, ingestTranscript, sumTokens } from '../skills/savings/scripts/transcript.mjs';
+import { emptySession } from '../skills/show-savings/scripts/record.mjs';
+import { sumCounts } from '../skills/show-savings/scripts/token-weights.mjs';
+import { findTranscript, ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 
 // The session hook's context carries this heading only while exo savings are on.
 const LADDER_HEADING = '## The ladder';

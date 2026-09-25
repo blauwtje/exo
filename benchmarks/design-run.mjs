@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // benchmarks/design-run.mjs
-// What one designing run spent, inside the window its run directory spans. The
+// What one design-ui run spent, inside the window its run directory spans. The
 // window opens at the directory's creation, or at its earliest file where the
 // filesystem records no creation time, and closes at its latest file. Tokens
 // count only the assistant responses timestamped inside that window, in the
@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { sumCounts, usageCounts } from '../skills/savings/scripts/token-weights.mjs';
+import { sumCounts, usageCounts } from '../skills/show-savings/scripts/token-weights.mjs';
 
 const USAGE = 'usage: design-run.mjs --transcript <session .jsonl> --run <run directory>';
 

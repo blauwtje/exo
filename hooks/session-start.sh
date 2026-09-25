@@ -1,6 +1,6 @@
 #!/bin/bash
 # SessionStart hook on startup, resume, clear and compact: hand the model the
-# body of the using-exo skill, because a skill body is read only when invoked
+# body of the route-skills skill, because a skill body is read only when invoked
 # and this one says when to invoke the others and carries the right-sizing
 # ladder. The frontmatter is dropped; the descriptions already sit in context.
 input=$(cat)
@@ -13,7 +13,7 @@ mkdir -p "$config_dir" && printf '%s\n' "$root" > "$config_dir/plugin-root"
 # Without jq the hook can neither read the source nor write the injection; the
 # pointer above is already written, so it stops here and says why.
 if ! command -v jq >/dev/null; then
-  echo "exo: jq not on PATH, using-exo not injected" >&2
+  echo "exo: jq not on PATH, route-skills not injected" >&2
   exit 0
 fi
 # A clear or a compaction empties the context, so the read guard forgets which
@@ -21,19 +21,19 @@ fi
 source=$(printf '%s' "$input" | jq -r '.source // ""')
 case "$source" in
   clear|compact)
-    printf '%s' "$input" | node "$root/skills/savings/scripts/read-guard.mjs" reset >/dev/null
-    printf '%s' "$input" | node "$root/skills/savings/scripts/repeat-guard.mjs" reset >/dev/null
+    printf '%s' "$input" | node "$root/skills/show-savings/scripts/read-guard.mjs" reset >/dev/null
+    printf '%s' "$input" | node "$root/skills/show-savings/scripts/repeat-guard.mjs" reset >/dev/null
     ;;
 esac
 # Every source ends with the whole body injected below, so the restatement
 # measures transcript growth from this point.
-printf '%s' "$input" | node "$root/skills/savings/scripts/restate.mjs" reset >/dev/null
-skill="$root/skills/using-exo/SKILL.md"
+printf '%s' "$input" | node "$root/skills/show-savings/scripts/restate.mjs" reset >/dev/null
+skill="$root/skills/route-skills/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
-# Skills read project and global choices, such as where shaping stores a spec,
+# Skills read project and global choices, such as where define-scope stores a spec,
 # from this one line instead of opening the settings files themselves.
-settings=$(node "$root/skills/settings/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
+settings=$(node "$root/skills/configure/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
 # A file inside the repository is named from its root, because a full path
 # grows with every folder above the checkout; one outside it keeps its full path.
 top=""
@@ -86,19 +86,19 @@ if [ -n "$cwd" ]; then
     memory_file="$config_dir/memory/$(basename "$cwd")/memory.md"
   fi
   if [ -f "$memory_file" ]; then
-    pointers="${pointers}A project memory for this repository sits at $(located "$memory_file"). Read it before changing code you have not read here, and run \`/exo:memory\` to change it."$'\n\n'
+    pointers="${pointers}A project memory for this repository sits at $(located "$memory_file"). Read it before changing code you have not read here, and run \`/exo:remember\` to change it."$'\n\n'
   fi
 fi
 # A hook output string over this many characters reaches the model as a file
 # path and a 2,000-character preview, which would cut the rules themselves. The
 # pointers and the settings line go first and always, so a cut falls on the
-# tail of the using-exo body and is named on stderr.
+# tail of the route-skills body and is named on stderr.
 # verify/budgets.mjs holds the same number as HOOK_OUTPUT_CAP.
 output_cap=10000
 head_text="$pointers$settings"$'\n\n'
 room=$((output_cap - ${#head_text}))
 if [ "${#body}" -gt "$room" ]; then
-  echo "exo: using-exo cut by $((${#body} - room)) characters, the session context would pass $output_cap" >&2
+  echo "exo: route-skills cut by $((${#body} - room)) characters, the session context would pass $output_cap" >&2
   body="${body:0:room}"
 fi
 jq -n --arg c "$head_text$body" '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$c}}'

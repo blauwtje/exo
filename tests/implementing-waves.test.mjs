@@ -7,10 +7,10 @@ import fs from 'node:fs';
 import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
-const WORKSPACE = read('implementing/references/workspace.md');
-const WAVE_WORKTREES = read('implementing/references/wave-worktrees.md');
-const IMPLEMENTER_BRIEF = read('implementing/implementer-prompt.md');
-const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/implementer.md', import.meta.url), 'utf8');
+const WORKSPACE = read('run-plan/references/workspace.md');
+const WAVE_WORKTREES = read('run-plan/references/wave-worktrees.md');
+const IMPLEMENTER_BRIEF = read('run-plan/implementer-prompt.md');
+const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/build-task.md', import.meta.url), 'utf8');
 
 test('the run creates, lands and removes every wave worktree itself', () => {
   assert.ok(!WORKSPACE.includes('## Wave worktrees'), 'the wave section moved out of workspace.md');
@@ -30,7 +30,7 @@ test('the run creates, lands and removes every wave worktree itself', () => {
 test('the implementer brief carries only the task fields, and the agent still writes nothing through git', () => {
   assert.ok(IMPLEMENTER_BRIEF.includes('Task <n> of <plan path>, branch <branch>, checkout <checkout>.'));
   assert.ok(IMPLEMENTER_BRIEF.includes('Report to: <report directory>/implementer-<n>.md'));
-  assert.ok(!IMPLEMENTER_BRIEF.includes('Hard boundaries:'), 'the rules live in agents/implementer.md');
+  assert.ok(!IMPLEMENTER_BRIEF.includes('Hard boundaries:'), 'the rules live in agents/build-task.md');
   assert.ok(IMPLEMENTER_AGENT.includes('start every command with `cd <checkout> &&`'));
   assert.ok(IMPLEMENTER_AGENT.includes('Never create a worktree, never switch, stash or reset.'));
   assert.ok(IMPLEMENTER_AGENT.includes('`push`, `worktree`, and no `gh` command at all'));
@@ -38,7 +38,7 @@ test('the implementer brief carries only the task fields, and the agent still wr
   assert.ok(IMPLEMENTER_AGENT.includes('first run `git switch --detach <its base sha>`'), 'an isolated delegate starts on the run branch commit');
 });
 
-const SKILL = read('implementing/SKILL.md');
+const SKILL = read('run-plan/SKILL.md');
 
 function loopStep(number) {
   const step = SKILL.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
@@ -61,12 +61,12 @@ test('a wave builds in worktrees and lands in plan order or not at all', () => {
   assert.ok(commitStep.includes('only when every report in it is green'));
   assert.ok(commitStep.includes('`git cherry-pick <sha>` brings the commits onto the branch in plan order'));
   assert.ok(commitStep.includes('no task of it commits'));
-  const authorization = SKILL.match(/^Invoking `\/exo:implementing` on a plan authorizes .+$/m);
+  const authorization = SKILL.match(/^Invoking `\/exo:run-plan` on a plan authorizes .+$/m);
   assert.ok(authorization[0].includes("a wave's temporary worktrees beside it"));
 });
 
 test('the plan basis is where a plan allows waves', () => {
-  const specification = read('planning/references/plan-spec.md');
+  const specification = read('draft-plan/references/plan-spec.md');
   assert.ok(specification.includes('`Worktree setup: <command>`'));
   assert.ok(specification.includes('`Worktree setup: none`'));
   assert.ok(specification.includes('without the line the run builds one task at a time'));

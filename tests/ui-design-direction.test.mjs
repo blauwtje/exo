@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { axisDistance, checkContracts, planDirections, selectContract, VOCABULARY }
-  from '../skills/designing/scripts/direction.mjs';
+  from '../skills/design-ui/scripts/direction.mjs';
 import { jsonFixture, run, script } from './harness.mjs';
 
 const DIRECTION = script('direction.mjs');

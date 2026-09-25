@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-const PROMPT = new URL('../skills/implementing/bug-fixer-prompt.md', import.meta.url);
+const PROMPT = new URL('../skills/run-plan/bug-fixer-prompt.md', import.meta.url);
 
 const HANDOFF_FIELDS = [
   'Symptom',

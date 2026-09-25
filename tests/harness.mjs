@@ -9,7 +9,7 @@ import path from 'node:path';
 import { after } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-export const SCRIPTS = fileURLToPath(new URL('../skills/designing/scripts/', import.meta.url));
+export const SCRIPTS = fileURLToPath(new URL('../skills/design-ui/scripts/', import.meta.url));
 
 export const script = (name) => path.join(SCRIPTS, name);
 
@@ -90,7 +90,7 @@ export async function gitRepository(files) {
 
 const FENCE = '```';
 
-/** One task in the grammar `planning` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
+/** One task in the grammar `draft-plan` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
 export function taskSection({ number, title, dependsOn = 'none', design = false, files, code = '', subject, trailer = true, commit = true }) {
   const commitLine = trailer
     ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
@@ -99,7 +99,7 @@ export function taskSection({ number, title, dependsOn = 'none', design = false,
     `### Task ${number}: ${title}`,
     '',
     `Depends on: ${dependsOn}`,
-    ...(design ? ['Design: designing'] : []),
+    ...(design ? ['Design: design-ui'] : []),
     '',
     'Files:',
     ...files,
@@ -142,7 +142,7 @@ export function planFixture({ worktreeSetup = null, tasks }) {
     '',
     '## Visual direction',
     '',
-    'Design skill: designing',
+    'Design skill: design-ui',
     '',
     'Quiet record.',
     '',

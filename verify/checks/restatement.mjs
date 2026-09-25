@@ -1,4 +1,4 @@
-// skills/savings/scripts/restate.mjs sends part of the using-exo body again as
+// skills/show-savings/scripts/restate.mjs sends part of the route-skills body again as
 // a session grows, and a long session receives it several times. The text is
 // locked to the bytes it last measured at: growth fails, shrinking passes, and
 // raising RESTATEMENT_LOCK is a hand edit in the commit that pays for the text.

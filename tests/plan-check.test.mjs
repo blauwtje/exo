@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { planCheckReport } from '../skills/planning/scripts/plan-check.mjs';
+import { planCheckReport } from '../skills/draft-plan/scripts/plan-check.mjs';
 import { planFixture, taskSection } from './harness.mjs';
 
 const GOOD_CODE = 'export function greet() {\n  return "hello";\n}';

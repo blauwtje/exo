@@ -4,7 +4,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { renderText, TEXT_WORDS } from '../skills/shaping/scripts/round-text.mjs';
+import { renderText, TEXT_WORDS } from '../skills/define-scope/scripts/round-text.mjs';
 
 const WORDS = {
   round: 'Round {r} · {k} still open',

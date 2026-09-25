@@ -16,7 +16,7 @@ const skillsRoot = path.join(repositoryRoot, 'skills');
 // The keys code.claude.com/docs/en/plugins-reference lists for a plugin agent.
 const SUPPORTED_KEYS = [
   'name', 'description', 'model', 'effort', 'maxTurns', 'tools',
-  'disallowedTools', 'skills', 'memory', 'background', 'omitClaudeMd', 'isolation',
+  'disallowedTools', 'skills', 'remember', 'background', 'omitClaudeMd', 'isolation',
 ];
 const KNOWN_TOOLS = [
   'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit',
@@ -88,8 +88,8 @@ test('every listed tool is a tool the harness has', () => {
 });
 
 test('an agent that only locates or reviews carries no tool that edits the repository', () => {
-  const explorer = agents.find((agent) => agent.frontmatter.name === 'explorer');
-  const critic = agents.find((agent) => agent.frontmatter.name === 'design-critic');
+  const explorer = agents.find((agent) => agent.frontmatter.name === 'locate-code');
+  const critic = agents.find((agent) => agent.frontmatter.name === 'critique-ui');
   assert.deepEqual(explorer.frontmatter.tools.split(', ').filter((tool) => ['Write', 'Edit', 'Agent'].includes(tool)), []);
   assert.deepEqual(critic.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'Agent'].includes(tool)), []);
 });
@@ -111,7 +111,7 @@ test('every script command in an agent names a script and flags that exist', () 
   const command = /node "\$SKILL\/scripts\/([a-z-]+\.mjs)"([^`]*)`/g;
   for (const agent of agents) {
     for (const [, scriptName, argumentText] of agent.body.matchAll(command)) {
-      const scriptPath = path.join(skillsRoot, 'designing', 'scripts', scriptName);
+      const scriptPath = path.join(skillsRoot, 'design-ui', 'scripts', scriptName);
       assert.ok(fs.existsSync(scriptPath), `${agent.fileName} runs a missing script ${scriptName}`);
       const scriptSource = fs.readFileSync(scriptPath, 'utf8');
       const missingFlags = (argumentText.match(/--[a-z-]+/g) ?? []).filter((flag) => !scriptSource.includes(flag));
@@ -123,7 +123,7 @@ test('every script command in an agent names a script and flags that exist', () 
 test('every reference file an agent reads exists', () => {
   for (const agent of agents) {
     for (const [, relativePath] of agent.body.matchAll(/\$SKILL\/(references\/[a-z-]+\.md)/g)) {
-      assert.ok(fs.existsSync(path.join(skillsRoot, 'designing', relativePath)), `${agent.fileName} reads a missing ${relativePath}`);
+      assert.ok(fs.existsSync(path.join(skillsRoot, 'design-ui', relativePath)), `${agent.fileName} reads a missing ${relativePath}`);
     }
   }
 });
@@ -135,9 +135,9 @@ test('every agent a skill dispatches has a file, and every agent file is dispatc
   assert.deepEqual([...defined].filter((name) => !dispatched.has(name)), [], 'an agent file no skill dispatches');
 });
 
-test('the inputs the design critic expects are the ones designing hands it', () => {
-  const critic = agents.find((agent) => agent.frontmatter.name === 'design-critic');
-  const dispatchText = fs.readFileSync(path.join(skillsRoot, 'designing', 'references', 'phase-detail.md'), 'utf8');
+test('the inputs the design critic expects are the ones design-ui hands it', () => {
+  const critic = agents.find((agent) => agent.frontmatter.name === 'critique-ui');
+  const dispatchText = fs.readFileSync(path.join(skillsRoot, 'design-ui', 'references', 'phase-detail.md'), 'utf8');
   for (const input of ['`RUN`', '`SKILL`']) {
     assert.ok(critic.body.includes(input), `the critic does not expect ${input}`);
     assert.ok(dispatchText.includes(input), `phase-detail.md does not hand over ${input}`);
@@ -145,9 +145,9 @@ test('the inputs the design critic expects are the ones designing hands it', () 
 });
 
 test('the two branch reviewers share one body and differ only in effort', () => {
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'branch-reviewer');
-  const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'branch-reviewer-deep');
-  assert.ok(deepReviewer, 'agents/branch-reviewer-deep.md exists');
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch-deep');
+  assert.ok(deepReviewer, 'agents/review-branch-deep.md exists');
   assert.equal(reviewer.frontmatter.effort, 'medium');
   assert.equal(deepReviewer.frontmatter.effort, 'high');
   assert.equal(deepReviewer.body, reviewer.body, 'the two bodies differ');
@@ -159,7 +159,7 @@ test('the two branch reviewers share one body and differ only in effort', () => 
 });
 
 test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'branch-reviewer');
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.ok(reviewer.frontmatter.tools, 'the reviewer lists its tools');
   assert.deepEqual(reviewer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'NotebookEdit', 'Agent'].includes(tool)), []);
   assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
@@ -167,44 +167,44 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> report=<path>`'), 'the reviewer returns one verdict line');
 });
 
-test('implementing sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.md', () => {
-  const fixerPath = path.join(skillsRoot, 'implementing', 'review-fixer-prompt.md');
-  assert.ok(fs.existsSync(fixerPath), 'skills/implementing/review-fixer-prompt.md exists');
+test('run-plan sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.md', () => {
+  const fixerPath = path.join(skillsRoot, 'run-plan', 'review-fixer-prompt.md');
+  assert.ok(fs.existsSync(fixerPath), 'skills/run-plan/review-fixer-prompt.md exists');
   const fixerPrompt = fs.readFileSync(fixerPath, 'utf8');
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
   assert.match(fixerPrompt, /`general-purpose` delegate on `sonnet`/);
-  const implementing = fs.readFileSync(path.join(skillsRoot, 'implementing', 'SKILL.md'), 'utf8');
+  const implementing = fs.readFileSync(path.join(skillsRoot, 'run-plan', 'SKILL.md'), 'utf8');
   assert.match(implementing, /`FINDINGS`[^\n]*`review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
 });
 
 test('the implementer pins sonnet at high effort whatever the session runs at', () => {
-  const implementer = agents.find((agent) => agent.frontmatter.name === 'implementer');
-  assert.ok(implementer, 'agents/implementer.md exists');
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
+  assert.ok(implementer, 'agents/build-task.md exists');
   assert.equal(implementer.frontmatter.model, 'sonnet');
   assert.equal(implementer.frontmatter.effort, 'high');
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
-test('a Design: task with a named direction stays in the implementing session, not the implementer', () => {
-  const implementer = agents.find((agent) => agent.frontmatter.name === 'implementer');
-  assert.ok(implementer, 'agents/implementer.md exists');
+test('a Design: task with a named direction stays in the run-plan session, not the implementer', () => {
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
+  assert.ok(implementer, 'agents/build-task.md exists');
   assert.doesNotMatch(implementer.body, /enter it at its Build phase/);
   assert.doesNotMatch(implementer.frontmatter.description, /opus/);
 
-  const designTasksPath = path.join(skillsRoot, 'implementing', 'references', 'design-tasks.md');
+  const designTasksPath = path.join(skillsRoot, 'run-plan', 'references', 'design-tasks.md');
   const designTasks = fs.readFileSync(designTasksPath, 'utf8');
-  assert.doesNotMatch(designTasks, /exo:implementer/);
+  assert.doesNotMatch(designTasks, /exo:build-task/);
   assert.match(designTasks, /\$RUN\/files\.md/);
   assert.match(designTasks, /contract-selected\.json/);
 
-  const designingSkill = fs.readFileSync(path.join(skillsRoot, 'designing', 'SKILL.md'), 'utf8');
-  assert.match(designingSkill, /inventory\.md[^\n]*`exo:design-discovery`|`exo:design-discovery`[^\n]*inventory\.md/);
+  const designingSkill = fs.readFileSync(path.join(skillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
+  assert.match(designingSkill, /inventory\.md[^\n]*`exo:survey-ui`|`exo:survey-ui`[^\n]*inventory\.md/);
 });
 
 test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
-  const builder = agents.find((agent) => agent.frontmatter.name === 'design-builder');
-  assert.ok(builder, 'agents/design-builder.md exists');
+  const builder = agents.find((agent) => agent.frontmatter.name === 'build-ui');
+  assert.ok(builder, 'agents/build-ui.md exists');
   assert.equal(builder.frontmatter.model, 'sonnet');
   assert.equal(Number(builder.frontmatter.maxTurns), 35);
   assert.deepEqual(builder.frontmatter.tools.split(', ').filter((tool) => tool === 'Agent'), []);
@@ -216,25 +216,25 @@ test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and
     .filter((relativePath) => typeof relativePath === 'string');
   assert.deepEqual(skillFiles.filter((relativePath) => relativePath.endsWith('builder-prompt.md')), []);
 
-  const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'skills/savings/assets/delegate-budgets.json'), 'utf8'));
-  assert.equal(budgets.agents['exo:design-builder'].calls, 35);
+  const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'skills/show-savings/assets/delegate-budgets.json'), 'utf8'));
+  assert.equal(budgets.agents['exo:build-ui'].calls, 35);
 });
 
-test('the designing repair loop drops the 12-call cap for a repair scope with its own report, and QA always dispatches', () => {
-  const builder = agents.find((agent) => agent.frontmatter.name === 'design-builder');
-  assert.ok(builder, 'agents/design-builder.md exists');
+test('the design-ui repair loop drops the 12-call cap for a repair scope with its own report, and QA always dispatches', () => {
+  const builder = agents.find((agent) => agent.frontmatter.name === 'build-ui');
+  assert.ok(builder, 'agents/build-ui.md exists');
   const repairSection = builder.body.slice(builder.body.indexOf('repair:<surface>'));
   assert.match(repairSection, /faults\.md/);
   assert.match(repairSection, /critic-evidence\.json/);
   assert.match(repairSection, /repair-<surface>\.md/);
   assert.match(repairSection, /renders nothing/);
 
-  const phaseDetail = fs.readFileSync(path.join(skillsRoot, 'designing', 'references', 'phase-detail.md'), 'utf8');
+  const phaseDetail = fs.readFileSync(path.join(skillsRoot, 'design-ui', 'references', 'phase-detail.md'), 'utf8');
   assert.doesNotMatch(phaseDetail, /12 tool calls/);
   assert.match(phaseDetail, /repair:<surface>/);
   assert.match(phaseDetail, /repair-<surface>\.md/);
   assert.match(phaseDetail, /qa\.md/);
 
-  const skill = fs.readFileSync(path.join(skillsRoot, 'designing', 'SKILL.md'), 'utf8');
+  const skill = fs.readFileSync(path.join(skillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
   assert.doesNotMatch(skill, /exo: context/);
 });

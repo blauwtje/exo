@@ -17,9 +17,9 @@ import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
 import { checkRestatement } from '../verify/checks/restatement.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
-const USING_EXO = 'skills/using-exo/SKILL.md';
+const USING_EXO = 'skills/route-skills/SKILL.md';
 // A counted description to shorten; growth goes to padding skills instead.
-const COUNTED_SKILL = 'skills/research/SKILL.md';
+const COUNTED_SKILL = 'skills/check-docs/SKILL.md';
 
 // Every check here reads nothing outside skills/, so the fixture copies that alone.
 function skillsFixture(t) {
@@ -119,7 +119,7 @@ test('50 fewer chars pass and the check re-locks nothing', (t) => {
   assert.match(run.detail, new RegExp(`${DESCRIPTION_TOTAL_LOCK.chars} locked`));
 });
 
-test('a paragraph below the using-exo frontmatter fails the injected lock', (t) => {
+test('a paragraph below the route-skills frontmatter fails the injected lock', (t) => {
   const root = skillsFixture(t);
   const baseline = injectedBytes(verdict(root, checkInjectedContext).detail);
   const padding = 'x'.repeat(INJECTED_CONTEXT_LOCK.bytes - baseline);

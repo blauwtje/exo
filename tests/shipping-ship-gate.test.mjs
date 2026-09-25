@@ -1,4 +1,4 @@
-// The merge gate `shipping` runs right before a merge: a skipped or neutral
+// The merge gate `ship` runs right before a merge: a skipped or neutral
 // check passes, a cancelled or pending one stops, BEHIND and DIRTY get their
 // own verdicts, and stacked pull requests come out bases first.
 
@@ -8,9 +8,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
-import { GH_ERROR_EXIT, gateVerdict, stackOrder } from '../skills/shipping/scripts/ship-gate.mjs';
+import { GH_ERROR_EXIT, gateVerdict, stackOrder } from '../skills/ship/scripts/ship-gate.mjs';
 
-const SHIP_GATE = fileURLToPath(new URL('../skills/shipping/scripts/ship-gate.mjs', import.meta.url));
+const SHIP_GATE = fileURLToPath(new URL('../skills/ship/scripts/ship-gate.mjs', import.meta.url));
 
 const passed = (name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS' });
 const concluded = (name, conclusion) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion });

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, it } from 'node:test';
-import { criticEvidence, summaryLines } from '../skills/designing/scripts/checkpoint.mjs';
+import { criticEvidence, summaryLines } from '../skills/design-ui/scripts/checkpoint.mjs';
 import { fixture, run, script } from './harness.mjs';
 
 function findingsFixture(count, { type = 'crowded-controls', confidence = 'definite' } = {}) {

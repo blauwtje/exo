@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-const SKILL = new URL('../skills/debug/SKILL.md', import.meta.url);
-const INVESTIGATOR = new URL('../skills/debug/investigator-prompt.md', import.meta.url);
-const FIXER = new URL('../skills/debug/fixer-prompt.md', import.meta.url);
+const SKILL = new URL('../skills/find-cause/SKILL.md', import.meta.url);
+const INVESTIGATOR = new URL('../skills/find-cause/investigator-prompt.md', import.meta.url);
+const FIXER = new URL('../skills/find-cause/fixer-prompt.md', import.meta.url);
 const REFERENCE_TABLES = new URL('../verify/checks/reference-tables.mjs', import.meta.url);
 
 const HANDOFF_FIELDS = [
@@ -37,10 +37,10 @@ test('SKILL.md reference table lists both prompt files', () => {
   assert.ok(source.includes('`fixer-prompt.md`'), 'table lists fixer-prompt.md');
 });
 
-test('reference-tables.mjs owner rows list both prompt files for debug', () => {
+test('reference-tables.mjs owner rows list both prompt files for find-cause', () => {
   const source = fs.readFileSync(REFERENCE_TABLES, 'utf8');
-  const debugRows = source.match(/'skills\/debug\/SKILL\.md': \[([\s\S]*?)\],/);
-  assert.ok(debugRows, 'reference-tables.mjs has a debug owner-rows entry');
+  const debugRows = source.match(/'skills\/find-cause\/SKILL\.md': \[([\s\S]*?)\],/);
+  assert.ok(debugRows, 'reference-tables.mjs has a find-cause owner-rows entry');
   assert.ok(debugRows[1].includes('investigator-prompt.md'));
   assert.ok(debugRows[1].includes('fixer-prompt.md'));
 });
@@ -72,7 +72,7 @@ test("SKILL.md's Handoff section states the 25-line cap and every D1 field", () 
 test('Step 7 runs pick-reviewer.mjs --effort and drops the hardcoded thresholds', () => {
   const source = fs.readFileSync(SKILL, 'utf8');
   assert.ok(
-    source.includes('node "${CLAUDE_SKILL_DIR}/../implementing/scripts/pick-reviewer.mjs" --effort'),
+    source.includes('node "${CLAUDE_SKILL_DIR}/../run-plan/scripts/pick-reviewer.mjs" --effort'),
     'Step 7 runs pick-reviewer.mjs --effort',
   );
   assert.ok(source.includes('`skip`'), 'Step 7 names skip');

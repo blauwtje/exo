@@ -34,7 +34,7 @@ const MINUTE_MS = 60 * 1000;
 // The reviewer runs as the cell's own session, not as a dispatched agent,
 // because the agent's frontmatter effort would override the effort under test.
 function reviewerPrompt() {
-  const text = fs.readFileSync(path.join(ROOT, 'agents', 'branch-reviewer.md'), 'utf8');
+  const text = fs.readFileSync(path.join(ROOT, 'agents', 'review-branch.md'), 'utf8');
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trim();
 }
 
@@ -94,10 +94,10 @@ function buildCells() {
 }
 
 // review-fixer-prompt.md's fenced block is the whole dispatch a sonnet
-// general-purpose delegate gets, placeholders filled the way implementing
+// general-purpose delegate gets, placeholders filled the way run-plan
 // fills them, because that role carries no agent frontmatter of its own.
 function fixerTemplate() {
-  const text = fs.readFileSync(path.join(ROOT, 'skills', 'implementing', 'review-fixer-prompt.md'), 'utf8');
+  const text = fs.readFileSync(path.join(ROOT, 'skills', 'run-plan', 'review-fixer-prompt.md'), 'utf8');
   return text.match(/```text\r?\n([\s\S]*?)\r?\n```/)[1];
 }
 
@@ -113,7 +113,7 @@ function fixerDispatch(template, task) {
 }
 
 // A fixer cell pairs with each safe task the way a build cell does, on the
-// sonnet the review-fixer role is pinned to; implementing names no effort for
+// sonnet the review-fixer role is pinned to; run-plan names no effort for
 // it, so it runs at the same high effort the build and flow cells run at.
 function fixerCells() {
   const template = fixerTemplate();
@@ -142,7 +142,7 @@ function planCells() {
     source: null,
     model: SWEEP_MODELS[run.model],
     effort: run.effort,
-    prompt: `Load the exo:planning skill and plan this request: ${FLOW_REQUEST}\n${NO_ANSWER}`,
+    prompt: `Load the exo:draft-plan skill and plan this request: ${FLOW_REQUEST}\n${NO_ANSWER}`,
     appendSystemPrompt: null,
     disallowedTools: [],
     budgetUsd: '10',
@@ -159,7 +159,7 @@ function flowCell() {
     source: null,
     model: SWEEP_MODELS.sonnet,
     effort: 'high',
-    prompt: `Load the exo:implementing skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`,
+    prompt: `Load the exo:run-plan skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`,
     appendSystemPrompt: null,
     disallowedTools: [],
     budgetUsd: '25',

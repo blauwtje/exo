@@ -1,4 +1,4 @@
-// Step 7 of implementing-batch dispatches its fresh-eyes review from this
+// Step 7 of build-change dispatches its fresh-eyes review from this
 // prompt, so the dispatch text must actually run code-review or its
 // fallback, write only the findings file, and never slip in a git write.
 
@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
-const PROMPT_PATH = new URL('../skills/implementing-batch/reviewer-prompt.md', import.meta.url);
+const PROMPT_PATH = new URL('../skills/build-change/reviewer-prompt.md', import.meta.url);
 
 function fencedBlock(source) {
   const match = source.match(/```text\n([\s\S]*?)\n```/);
@@ -15,7 +15,7 @@ function fencedBlock(source) {
 }
 
 test('reviewer-prompt.md exists and dispatches a review delegate', () => {
-  assert.ok(fs.existsSync(PROMPT_PATH), 'skills/implementing-batch/reviewer-prompt.md is missing');
+  assert.ok(fs.existsSync(PROMPT_PATH), 'skills/build-change/reviewer-prompt.md is missing');
   const source = fs.readFileSync(PROMPT_PATH, 'utf8');
   const block = fencedBlock(source);
 
@@ -33,7 +33,7 @@ test('reviewer-prompt.md exists and dispatches a review delegate', () => {
   assert.ok(!block.includes('Run:'), 'the delegate must not read a plan Run: line');
 });
 
-const SKILL_PATH = new URL('../skills/implementing-batch/SKILL.md', import.meta.url);
+const SKILL_PATH = new URL('../skills/build-change/SKILL.md', import.meta.url);
 
 test('SKILL.md step 7 dispatches the reviewer prompt and names the fix scope', () => {
   const skill = fs.readFileSync(SKILL_PATH, 'utf8');

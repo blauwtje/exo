@@ -11,12 +11,12 @@ import {
   BROWSER_CAPABILITIES,
   obscuraServerArguments,
   resolveBrowser
-} from '../skills/designing/scripts/capture.mjs';
-import { parseFrontmatter } from '../skills/designing/scripts/context.mjs';
-import { fontConfidence } from '../skills/designing/scripts/inspect-styles.mjs';
+} from '../skills/design-ui/scripts/capture.mjs';
+import { parseFrontmatter } from '../skills/design-ui/scripts/context.mjs';
+import { fontConfidence } from '../skills/design-ui/scripts/inspect-styles.mjs';
 import {
   ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable
-} from '../skills/designing/scripts/check-ui.mjs';
+} from '../skills/design-ui/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
 
 function git(root, args) {

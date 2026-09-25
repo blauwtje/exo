@@ -52,8 +52,8 @@ function publishedRoot(t, version, changelog = EMPTY_CHANGELOG) {
 }
 
 function addSkill(root) {
-  fs.mkdirSync(path.join(root, 'skills', 'shipping'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'skills', 'shipping', 'SKILL.md'), '# shipping\n');
+  fs.mkdirSync(path.join(root, 'skills', 'ship'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'skills', 'ship', 'SKILL.md'), '# ship\n');
 }
 
 function verdict(root) {
@@ -97,7 +97,7 @@ test('fails on a new file with nothing under Unreleased', (t) => {
 test('passes the same new file once Unreleased records it, without a raise', (t) => {
   const root = publishedRoot(t, '0.1.0');
   addSkill(root);
-  fs.writeFileSync(path.join(root, 'CHANGELOG.md'), EMPTY_CHANGELOG.replace('## Unreleased\n', '## Unreleased\n\n### Added\n\n- shipping\n'));
+  fs.writeFileSync(path.join(root, 'CHANGELOG.md'), EMPTY_CHANGELOG.replace('## Unreleased\n', '## Unreleased\n\n### Added\n\n- ship\n'));
 
   assert.equal(verdict(root).PASS, 1);
 });
@@ -106,7 +106,7 @@ test('passes a raised version that has its dated changelog section', (t) => {
   const root = publishedRoot(t, '0.1.0');
   addSkill(root);
   writeManifests(root, '0.2.0');
-  fs.writeFileSync(path.join(root, 'CHANGELOG.md'), EMPTY_CHANGELOG.replace('## Unreleased\n', '## Unreleased\n\n## 0.2.0 - 2026-09-20\n\n### Added\n\n- shipping\n'));
+  fs.writeFileSync(path.join(root, 'CHANGELOG.md'), EMPTY_CHANGELOG.replace('## Unreleased\n', '## Unreleased\n\n## 0.2.0 - 2026-09-20\n\n### Added\n\n- ship\n'));
 
   assert.equal(verdict(root).PASS, 1);
 });

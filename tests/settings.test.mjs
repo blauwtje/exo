@@ -11,10 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 import { readFileSync } from 'node:fs';
 
-const SCHEMA = JSON.parse(readFileSync(new URL('../skills/settings/schema.json', import.meta.url), 'utf8'));
+const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const TIGHT_RULE = `. ${SCHEMA.replies.rules.tight}`;
 
-const SETTINGS = fileURLToPath(new URL('../skills/settings/scripts/settings.mjs', import.meta.url));
+const SETTINGS = fileURLToPath(new URL('../skills/configure/scripts/settings.mjs', import.meta.url));
 
 async function writeJson(file, value) {
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -147,7 +147,7 @@ test('menu asks for the setting, and with a key for a value other than the curre
 });
 
 test('every schema key is a userConfig entry with the same type, options and default', async () => {
-  const schema = JSON.parse(await fs.readFile(new URL('../skills/settings/schema.json', import.meta.url), 'utf8'));
+  const schema = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
   const plugin = JSON.parse(await fs.readFile(new URL('../.claude-plugin/plugin.json', import.meta.url), 'utf8'));
   const userConfig = plugin.userConfig ?? {};
   assert.deepEqual(Object.keys(userConfig).sort(), Object.keys(schema).sort());

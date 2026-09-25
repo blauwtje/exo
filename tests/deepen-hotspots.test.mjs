@@ -1,5 +1,5 @@
 // hotspots.mjs prints the top paths by commit count over six months, so
-// `deepen` can scope an audit from churn without reading the tree itself.
+// `audit-architecture` can scope an audit from churn without reading the tree itself.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -9,9 +9,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { rankHotspots } from '../skills/deepen/scripts/hotspots.mjs';
+import { rankHotspots } from '../skills/audit-architecture/scripts/hotspots.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/deepen/scripts/hotspots.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/audit-architecture/scripts/hotspots.mjs', import.meta.url));
 const exists = () => true;
 
 test('rankHotspots counts a path once per commit and orders by count then path', () => {

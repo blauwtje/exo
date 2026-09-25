@@ -12,8 +12,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const GUARD = fileURLToPath(new URL('../skills/savings/scripts/repeat-guard.mjs', import.meta.url));
-const READ_GUARD = fileURLToPath(new URL('../skills/savings/scripts/read-guard.mjs', import.meta.url));
+const GUARD = fileURLToPath(new URL('../skills/show-savings/scripts/repeat-guard.mjs', import.meta.url));
+const READ_GUARD = fileURLToPath(new URL('../skills/show-savings/scripts/read-guard.mjs', import.meta.url));
 
 function runScript(script, args, hookInput, env) {
   return new Promise((resolve) => {

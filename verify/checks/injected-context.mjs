@@ -1,4 +1,4 @@
-// hooks/session-start.sh hands the using-exo body to every session, so it is the
+// hooks/session-start.sh hands the route-skills body to every session, so it is the
 // one text no skill has to be invoked for and the most expensive exo owns. It is
 // locked to the bytes it last measured at: growth fails, shrinking passes, and
 // raising INJECTED_CONTEXT_LOCK is a hand edit in the commit that pays for the
@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
 import { INJECTED_CONTEXT_LOCK } from '../budgets.mjs';
 
-const INJECTED_SKILL = 'skills/using-exo/SKILL.md';
+const INJECTED_SKILL = 'skills/route-skills/SKILL.md';
 
 // Mirrors the hook: its awk drops every --- line and keeps what follows the
 // second one, and its command substitution drops the trailing newlines. The

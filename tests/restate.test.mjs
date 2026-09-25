@@ -13,7 +13,7 @@ import { HOOK_OUTPUT_CAP } from '#budgets';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const RESTATE = path.join(REPOSITORY, 'skills', 'savings', 'scripts', 'restate.mjs');
+const RESTATE = path.join(REPOSITORY, 'skills', 'show-savings', 'scripts', 'restate.mjs');
 const START_BYTES = 1000;
 
 function runRestate(args, hookInput, env) {
@@ -190,7 +190,7 @@ test('a long working directory keeps both pointers and cuts only the tail of the
   assert.match(injected, /## Before acting/);
   assert.match(injected, /exo settings:/);
   assert.doesNotMatch(started.stderr, /pointer left out/);
-  assert.match(started.stderr, new RegExp(`^exo: using-exo cut by \\d+ characters, the session context would pass ${HOOK_OUTPUT_CAP.chars}$`, 'm'));
+  assert.match(started.stderr, new RegExp(`^exo: route-skills cut by \\d+ characters, the session context would pass ${HOOK_OUTPUT_CAP.chars}$`, 'm'));
   const hook = await fs.readFile(SESSION_HOOK, 'utf8');
   assert.match(hook, new RegExp(`^output_cap=${HOOK_OUTPUT_CAP.chars}$`, 'm'));
 });

@@ -1,5 +1,5 @@
 // A description over DESCRIPTION_CHARS.ceiling fails, because the description
-// standard in skills-tool caps it there; DESCRIPTION_CHARS.realistic is the aim
+// standard in edit-skills caps it there; DESCRIPTION_CHARS.realistic is the aim
 // that standard states. A skill named in PENDING_TRIM.description is held to
 // PENDING_TRIM.ceilings.descriptionChars until its trim, and fails once it
 // already meets the new ceiling. A total over DESCRIPTION_TOTAL_WARN warns,

@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fixture, jsonFixture, run, script, SCRIPTS } from './harness.mjs';
-import { optionName, tabPage } from '../skills/designing/scripts/sketch-tab.mjs';
+import { optionName, tabPage } from '../skills/design-ui/scripts/sketch-tab.mjs';
 
 const SKETCH_TAB = script('sketch-tab.mjs');
 const PALETTE = `<title>Welke kleuren passen bij de haven?</title>

@@ -8,10 +8,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
-import { DEFAULT_CAP, renderMap } from '../skills/planning/scripts/map-render.mjs';
-import { locateRepository, readTrackedFiles } from '../skills/planning/scripts/map-source.mjs';
+import { DEFAULT_CAP, renderMap } from '../skills/draft-plan/scripts/map-render.mjs';
+import { locateRepository, readTrackedFiles } from '../skills/draft-plan/scripts/map-source.mjs';
 
-const REPO_MAP = fileURLToPath(new URL('../skills/planning/scripts/repo-map.mjs', import.meta.url));
+const REPO_MAP = fileURLToPath(new URL('../skills/draft-plan/scripts/repo-map.mjs', import.meta.url));
 const REPOSITORY_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SENTINEL = 'left by the test\n';
 

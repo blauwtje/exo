@@ -11,8 +11,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const WATCH = fileURLToPath(new URL('../skills/savings/scripts/context-watch.mjs', import.meta.url));
-const ADVICE = 'finish the current step, then tell the user to run `/exo:handoff` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
+const WATCH = fileURLToPath(new URL('../skills/show-savings/scripts/context-watch.mjs', import.meta.url));
+const ADVICE = 'finish the current step, then tell the user to run `/exo:save-session` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
 
 function runWatch(hookInput, env) {
   return new Promise((resolve) => {

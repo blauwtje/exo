@@ -1,4 +1,4 @@
-// plan-tasks.mjs reads a plan as planning writes it and asks the checkout
+// plan-tasks.mjs reads a plan as draft-plan writes it and asks the checkout
 // which tasks landed, so next-task.mjs and land-task.mjs share one grammar.
 
 import assert from 'node:assert/strict';
@@ -93,7 +93,7 @@ test('driftOf reports a Modify: region that is missing, duplicated or already ch
 
 const bare = (number, dependsOn) => taskSection({ number, title: `T${number}`, dependsOn, files: [`- Create: \`a${number}.js\``], subject: `feat: t${number}` });
 
-test('Depends on: reads every number of a list, in each form planning writes', () => {
+test('Depends on: reads every number of a list, in each form draft-plan writes', () => {
   const dependsOf = (dependsOn) => parsePlan(planFixture({ tasks: [bare(1, 'none'), bare(2, 'none'), bare(3, dependsOn)] })).tasks[2].dependsOn;
   assert.deepEqual(dependsOf('Task 1, Task 2'), [1, 2]);
   assert.deepEqual(dependsOf('Task 1, 2'), [1, 2]);

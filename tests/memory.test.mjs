@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { ATTESTATIONS_REQUIRED } from '#memory-store';
 import { fixture, run } from './harness.mjs';
 
-const MEMORY = fileURLToPath(new URL('../skills/memory/scripts/memory.mjs', import.meta.url));
+const MEMORY = fileURLToPath(new URL('../skills/remember/scripts/memory.mjs', import.meta.url));
 
 // A real repository, so the store resolves to its git directory and no test ever
 // writes beside the caller's own savings record. The path is resolved through

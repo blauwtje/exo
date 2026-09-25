@@ -1,4 +1,4 @@
-// The bounded wait `shipping` runs before its merge gate: gh's verdict passes
+// The bounded wait `ship` runs before its merge gate: gh's verdict passes
 // through, a watch past the limit stops with 124, and a pull request whose
 // checks never registered is left to the gate instead of read as red.
 
@@ -9,9 +9,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
-import { GH_ERROR_EXIT, TIMEOUT_EXIT } from '../skills/shipping/scripts/wait-checks.mjs';
+import { GH_ERROR_EXIT, TIMEOUT_EXIT } from '../skills/ship/scripts/wait-checks.mjs';
 
-const WAIT_CHECKS = fileURLToPath(new URL('../skills/shipping/scripts/wait-checks.mjs', import.meta.url));
+const WAIT_CHECKS = fileURLToPath(new URL('../skills/ship/scripts/wait-checks.mjs', import.meta.url));
 
 // Stands in for gh: logs its arguments, then acts out the mode it is given.
 const STAND_IN = [

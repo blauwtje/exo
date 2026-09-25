@@ -17,7 +17,7 @@ import {
   rasterize,
   renderMetrics,
   srgbToOklab
-} from '../skills/designing/scripts/inspect-render.mjs';
+} from '../skills/design-ui/scripts/inspect-render.mjs';
 
 const SCRIPT = script('inspect-render.mjs');
 const SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);

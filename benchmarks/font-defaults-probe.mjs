@@ -4,7 +4,7 @@
 // body typeface for sixteen unrelated briefs, then counts the distinct briefs
 // each family was picked for. A family picked for two or more unrelated
 // subjects is a default rather than a choice, and belongs in
-// skills/designing/scripts/overused-fonts.mjs. Every call is billed, so the
+// skills/design-ui/scripts/overused-fonts.mjs. Every call is billed, so the
 // probe prints its call count and stops until --confirm is given. With
 // --avoid-overused the prompt forbids every family the list already bans, which
 // shows the faces a generated design falls back on next.
@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { OVERUSED_FONTS } from '../skills/designing/scripts/overused-fonts.mjs';
+import { OVERUSED_FONTS } from '../skills/design-ui/scripts/overused-fonts.mjs';
 import { MODELS } from './tasks.mjs';
 
 const USAGE = 'usage: font-defaults-probe.mjs --out <file.json> [--runs <n>] [--avoid-overused] [--confirm]';

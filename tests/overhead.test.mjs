@@ -8,18 +8,18 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { emptySession } from '../skills/savings/scripts/record.mjs';
-import { OVERHEAD_VERSION, WORK_KINDS, measuredTotals } from '../skills/savings/scripts/overhead.mjs';
-import { ingestTranscript } from '../skills/savings/scripts/transcript.mjs';
+import { emptySession } from '../skills/show-savings/scripts/record.mjs';
+import { OVERHEAD_VERSION, WORK_KINDS, measuredTotals } from '../skills/show-savings/scripts/overhead.mjs';
+import { ingestTranscript } from '../skills/show-savings/scripts/transcript.mjs';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
-const STOP_HOOK = 'node "${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/savings.mjs" record';
+const STOP_HOOK = 'node "${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/savings.mjs" record';
 const SESSION_HOOK = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"';
-const LISTING = '- exo:debug: Prove the cause.\n- dataviz: Charts.';
+const LISTING = '- exo:find-cause: Prove the cause.\n- dataviz: Charts.';
 const AGENT_LINES = ['- general-purpose: Multi-step tasks.', '- claude: Catch-all.'];
 const SESSION_CONTEXT = '\n# Using exo\n\nEvery exo skill is invoked as exo:<name>.';
-const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/debug\n\n# Debug\n\nProve the cause first.`;
+const SKILL_BODY = `Base directory for this skill: ${REPOSITORY_ROOT}skills/find-cause\n\n# Debug\n\nProve the cause first.`;
 const REFUSAL = 'exo read guard: /repo/big.ts has 600 lines and an unbounded read is capped at 400; locate the range first.';
 const DUPLICATE_REFUSAL = 'exo read guard: /repo/small.ts (offset 1, limit 20) is unchanged since your read at 2026-09-11T10:00:00.000Z in this context window; use that copy, or pass a different offset and limit to read it again.';
 const TEXT = [{ type: 'text', text: 'done' }];
@@ -82,9 +82,9 @@ function sessionLines(withInjections) {
     { type: 'attachment', timestamp: '2026-09-11T10:00:00.000Z', attachment: { type: 'hook_success', command: SESSION_HOOK, durationMs: 300 } },
     ...(withInjections ? injections() : []),
     { type: 'user', uuid: 'p1', timestamp: '2026-09-11T10:00:02.000Z', message: { role: 'user', content: 'go' } },
-    call('msg_skill', '2026-09-11T10:00:07.000Z', [skillUse('exo:debug')]),
+    call('msg_skill', '2026-09-11T10:00:07.000Z', [skillUse('exo:find-cause')]),
     call('msg_mixed', '2026-09-11T10:00:09.000Z', [{ type: 'tool_use', id: 'toolu_read', name: 'Read', input: { file_path: '/repo/a.ts' } }]),
-    call('msg_mixed', '2026-09-11T10:00:10.000Z', [skillUse('exo:planning')]),
+    call('msg_mixed', '2026-09-11T10:00:10.000Z', [skillUse('exo:draft-plan')]),
     call('msg_text', '2026-09-11T10:00:12.000Z', TEXT),
     { type: 'system', subtype: 'stop_hook_summary', timestamp: '2026-09-11T10:00:13.000Z',
       hookInfos: [{ command: STOP_HOOK, durationMs: 40 }, { command: 'node other.mjs', durationMs: 999 }] }
@@ -115,7 +115,7 @@ test('a call that only loads exo skills counts whole, at the usage and the wall 
 
 test('a model missing from prices.mjs makes the exo cost unknown', async () => {
   const session = await ingest([
-    call('msg_1', '2026-09-11T10:00:05.000Z', [{ type: 'tool_use', id: 'toolu_1', name: 'Skill', input: { skill: 'exo:debug' } }],
+    call('msg_1', '2026-09-11T10:00:05.000Z', [{ type: 'tool_use', id: 'toolu_1', name: 'Skill', input: { skill: 'exo:find-cause' } }],
       { model: 'claude-unlisted-9' })
   ]);
   const totals = measuredTotals(session);
@@ -167,7 +167,7 @@ test('each exo call books its kind, and the split by kind adds up to the totals'
   };
   const session = await ingest([
     { type: 'user', uuid: 'p1', timestamp: '2026-09-11T10:00:00.000Z', message: { role: 'user', content: 'go' } },
-    call('msg_skill', '2026-09-11T10:00:02.000Z', [skillUse('exo:debug')]),
+    call('msg_skill', '2026-09-11T10:00:02.000Z', [skillUse('exo:find-cause')]),
     call('msg_big', '2026-09-11T10:00:03.000Z', [readUse('toolu_big', '/repo/big.ts')]),
     toolResult('r1', '2026-09-11T10:00:04.000Z', { type: 'tool_result', tool_use_id: 'toolu_big', is_error: true, content: REFUSAL }),
     call('msg_capped', '2026-09-11T10:00:06.000Z', [readUse('toolu_big2', '/repo/big.ts', { offset: 1, limit: 50 })]),
@@ -179,7 +179,7 @@ test('each exo call books its kind, and the split by kind adds up to the totals'
     call('msg_again', '2026-09-11T10:00:14.000Z', [readUse('toolu_big3', '/repo/big.ts')]),
     toolResult('r5', '2026-09-11T10:00:16.000Z', { type: 'tool_result', tool_use_id: 'toolu_big3', is_error: true, content: REFUSAL }),
     call('msg_both', '2026-09-11T10:00:18.000Z', [readUse('toolu_big4', '/repo/big.ts', { offset: 51, limit: 50 })]),
-    call('msg_both', '2026-09-11T10:00:19.000Z', [skillUse('exo:planning')])
+    call('msg_both', '2026-09-11T10:00:19.000Z', [skillUse('exo:draft-plan')])
   ], { guard });
   const kinds = Object.fromEntries(Object.entries(session.overhead.calls).map(([id, booked]) => [id, booked.kind]));
   // A call that re-reads and loads a skill books as a skill load.

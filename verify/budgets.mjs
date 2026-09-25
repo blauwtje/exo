@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'blast-radius', 'debug', 'deepen', 'designing', 'handoff', 'hillclimb', 'implementing', 'implementing-batch', 'investigation', 'issuing', 'memory', 'planning', 'prototyping', 'refactoring', 'research', 'savings', 'settings', 'shaping', 'shipping', 'skills-tool', 'swarm', 'technical-writing', 'visual-parity'
+  'check-impact', 'find-cause', 'audit-architecture', 'design-ui', 'save-session', 'tune-metric', 'run-plan', 'build-change', 'explain-code', 'file-issues', 'remember', 'draft-plan', 'try-idea', 'refactor', 'check-docs', 'show-savings', 'configure', 'define-scope', 'ship', 'edit-skills', 'run-parallel', 'write-docs', 'compare-renders'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -16,16 +16,16 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // First-party documentation caps one hook output string at HOOK_OUTPUT_CAP
 // characters and hands the model a 2,000-character preview of a longer one.
 // hooks/session-start.sh puts the pointers and the settings line before the
-// using-exo body and cuts the tail of that body before it passes the cap, so the
-// next addition to using-exo buys its bytes out of that body.
+// route-skills body and cuts the tail of that body before it passes the cap, so the
+// next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 5128, measured: '2026-09-25' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 4212, measured: '2026-09-24' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 5170, measured: '2026-09-25' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 4230, measured: '2026-09-25' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
 // several times over.
-export const RESTATEMENT_LOCK = { bytes: 1943, measured: '2026-09-23' };
+export const RESTATEMENT_LOCK = { bytes: 1963, measured: '2026-09-25' };
 
 // The rendered project-memory file, which a session opens by path. It is a
 // ceiling the writer enforces before it writes, not a lock the verifier reads:
@@ -35,12 +35,12 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
 // BYTES_PER_TOKEN, the sizing convention for skill text (the savings estimate
-// uses its own ratio). The ceiling fails; realistic is the aim skills-tool
-// states and the checks name in their PASS detail. using-exo has its own
+// uses its own ratio). The ceiling fails; realistic is the aim edit-skills
+// states and the checks name in their PASS detail. route-skills has its own
 // ceiling because hooks/session-start.sh injects its body into every session.
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
-export const INJECTED_BODY_TOKENS = { skill: 'using-exo', ceiling: 1060 };
+export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 1060 };
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;

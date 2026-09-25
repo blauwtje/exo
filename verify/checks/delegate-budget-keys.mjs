@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const BUDGETS_FILE = 'skills/savings/assets/delegate-budgets.json';
+const BUDGETS_FILE = 'skills/show-savings/assets/delegate-budgets.json';
 const PLUGIN_PREFIX = 'exo:';
 const BUILT_IN_AGENT_TYPES = ['Explore', 'general-purpose', 'Plan'];
 const NAME_LINE = /^name: *(?<name>\S+) *$/;

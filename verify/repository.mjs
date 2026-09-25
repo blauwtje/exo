@@ -27,7 +27,7 @@ export function createRepository(root) {
 
   // At the skills root only the skills the corpus contract names are walked:
   // skills/ also holds the workflow and meta skills, whose shape the
-  // skills-tool skill governs until each is rewritten into this contract;
+  // edit-skills skill governs until each is rewritten into this contract;
   // everySkillFile reaches them for the checks every skill must pass.
   function walk(directory, predicate) {
     const found = [];

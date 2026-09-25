@@ -12,9 +12,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
-import { sizeFields } from '../skills/issuing/scripts/repo-fields.mjs';
+import { sizeFields } from '../skills/file-issues/scripts/repo-fields.mjs';
 
-const REPO_FIELDS = fileURLToPath(new URL('../skills/issuing/scripts/repo-fields.mjs', import.meta.url));
+const REPO_FIELDS = fileURLToPath(new URL('../skills/file-issues/scripts/repo-fields.mjs', import.meta.url));
 
 const spec = (paths, criteria) => sizeFields({ paths, criteria, shape: 'spec' });
 
@@ -248,20 +248,20 @@ test('only default labels and no types or project fields gives vocabulary "defau
   assert.equal(data.vocabulary, 'default');
 });
 
-test('the issuing skill names the script instead of the six-command read', async () => {
-  const skill = await fs.readFile(fileURLToPath(new URL('../skills/issuing/SKILL.md', import.meta.url)), 'utf8');
+test('the file-issues skill names the script instead of the six-command read', async () => {
+  const skill = await fs.readFile(fileURLToPath(new URL('../skills/file-issues/SKILL.md', import.meta.url)), 'utf8');
   const frontmatter = skill.split('---')[1];
   assert.match(frontmatter, /Bash\(node \*repo-fields\.mjs\*\)/);
 
-  const fieldsDoc = await fs.readFile(fileURLToPath(new URL('../skills/issuing/references/fields.md', import.meta.url)), 'utf8');
+  const fieldsDoc = await fs.readFile(fileURLToPath(new URL('../skills/file-issues/references/fields.md', import.meta.url)), 'utf8');
   assert.match(fieldsDoc, /scripts\/repo-fields\.mjs/);
   assert.doesNotMatch(fieldsDoc, /gh label list/);
   assert.doesNotMatch(fieldsDoc, /ls \.github\/ISSUE_TEMPLATE/);
 });
 
-test('the shipping skill names the sibling script for a pull request with no issue', async () => {
-  const skill = await fs.readFile(fileURLToPath(new URL('../skills/shipping/SKILL.md', import.meta.url)), 'utf8');
+test('the ship skill names the sibling script for a pull request with no issue', async () => {
+  const skill = await fs.readFile(fileURLToPath(new URL('../skills/ship/SKILL.md', import.meta.url)), 'utf8');
   const frontmatter = skill.split('---')[1];
   assert.match(frontmatter, /Bash\(node \*repo-fields\.mjs\*\)/);
-  assert.match(skill, /\.\.\/issuing\/scripts\/repo-fields\.mjs/);
+  assert.match(skill, /\.\.\/file-issues\/scripts\/repo-fields\.mjs/);
 });

@@ -9,12 +9,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { OVERHEAD_VERSION } from '../skills/savings/scripts/overhead.mjs';
-import { CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS } from '../skills/savings/scripts/record.mjs';
-import { sumTokens } from '../skills/savings/scripts/transcript.mjs';
+import { OVERHEAD_VERSION } from '../skills/show-savings/scripts/overhead.mjs';
+import { CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS } from '../skills/show-savings/scripts/record.mjs';
+import { sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 import { fixture, run } from './harness.mjs';
 
-const SAVINGS = fileURLToPath(new URL('../skills/savings/scripts/savings.mjs', import.meta.url));
+const SAVINGS = fileURLToPath(new URL('../skills/show-savings/scripts/savings.mjs', import.meta.url));
 
 function runWithStdin(args, input, env) {
   return run(SAVINGS, args, { env, input });
@@ -191,7 +191,7 @@ test('the report is a fenced ledger: one estimated total, one line per read guar
     '',
     `Estimated at ${CHARACTERS_PER_TOKEN} characters per token, the figure Anthropic documents; not measured or billed.`,
     '```',
-    'Turn off with `/exo:settings counter off`.'
+    'Turn off with `/exo:configure counter off`.'
   ]);
   // No box, no table, no cost, call, time or byte figure, no Saved or Skills line, no internal name.
   assert.doesNotMatch(result.stdout, /│|┌|\$|\bcalls?\b|\bcost\b|\d+m\b|\bK?B\b|\bMB\b|Saved|Skills|withheld|record/);
@@ -223,7 +223,7 @@ test('a record with no refusals prints the title, the window and one sentence, n
     '',
     'Nothing refused yet: keep the read guard on and ask again after a session reads a file over 400 lines whole, or the same range twice.',
     '```',
-    'Turn off with `/exo:settings counter off`.'
+    'Turn off with `/exo:configure counter off`.'
   ]);
   assert.doesNotMatch(result.stdout, /≈|\b0 reads?\b|Tokens kept/);
 });
@@ -281,7 +281,7 @@ test('off and on write enabled into config.json, never the ratios, and status re
   assert.equal(JSON.parse(await fs.readFile(configFile, 'utf8')).enabled, false);
   assert.equal((await runWithStdin(['status'], '', env)).stdout, 'off\n');
   const panel = (await runWithStdin(['report'], '', env)).stdout;
-  assert.match(panel, /^Turn on with `\/exo:settings counter on`\.$/m);
+  assert.match(panel, /^Turn on with `\/exo:configure counter on`\.$/m);
   assert.equal((await runWithStdin(['on'], '', env)).stdout, 'exo savings on; the counter, the status line segment and the read guard follow at once\n');
   const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
   assert.equal(config.enabled, true);

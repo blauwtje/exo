@@ -1,4 +1,4 @@
-// The shipping route as one script: push, open a pull request, merge one, or
+// The ship route as one script: push, open a pull request, merge one, or
 // merge a list of pull requests in their stacking order, run from a single
 // command instead of separate model calls. Push is exercised against a real
 // bare origin; gh is a stand-in that logs its argv and answers from a
@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
 
-const SHIP = fileURLToPath(new URL('../skills/shipping/scripts/ship.mjs', import.meta.url));
+const SHIP = fileURLToPath(new URL('../skills/ship/scripts/ship.mjs', import.meta.url));
 
 // A repository on `main`, cloned from a bare `origin` the way a real checkout
 // would be, so `refs/remotes/origin/HEAD` and upstream tracking are real.

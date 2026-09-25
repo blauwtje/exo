@@ -47,7 +47,7 @@ test('the repeat guard counts Bash and Edit before the call and starts over afte
   const wiring = guards.map((entry) => [entry.event, entry.matcher.split('|').sort().join('|'), entry.hook.command.split(' ').pop()]).sort();
   assert.deepEqual(wiring, [
     ['PostToolUse', 'Edit|Write', 'edited'],
-    ['PreToolUse', 'Bash|Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/repeat-guard.mjs"']
+    ['PreToolUse', 'Bash|Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/repeat-guard.mjs"']
   ]);
 });
 
@@ -75,7 +75,7 @@ test('the memory nudge runs on every prompt and approves its own booking before 
   const wiring = nudges.map((entry) => [entry.event, entry.matcher ?? null, entry.hook.command.split(' ').pop()]).sort();
   assert.deepEqual(wiring, [
     ['PreToolUse', 'Bash', 'approve'],
-    ['UserPromptSubmit', null, '"${CLAUDE_PLUGIN_ROOT}/skills/memory/scripts/nudge.mjs"']
+    ['UserPromptSubmit', null, '"${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/nudge.mjs"']
   ]);
 });
 
@@ -92,6 +92,6 @@ test('the context watch runs before every tool inside the delegate budget hook a
   const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '*');
   assert.equal(everyTool.length, 1);
   assert.ok(everyTool[0].hook.command.endsWith('delegate-budget.mjs"'), everyTool[0].hook.command);
-  const budget = fs.readFileSync(path.join(REPOSITORY, 'skills', 'savings', 'scripts', 'delegate-budget.mjs'), 'utf8');
+  const budget = fs.readFileSync(path.join(REPOSITORY, 'skills', 'show-savings', 'scripts', 'delegate-budget.mjs'), 'utf8');
   assert.match(budget, /import\('\.\/context-watch\.mjs'\)/);
 });

@@ -54,10 +54,10 @@ test('a measurement is numbers only', async () => {
   assert.ok(measured.uncappedBytes > 0 && measured.cappedBytes > 0);
 });
 
-test('only exo:explorer dispatches are priced, each call at the rate of its own model', async () => {
+test('only exo:locate-code dispatches are priced, each call at the rate of its own model', async () => {
   const projects = await fixture();
   const subagents = path.join(projects, 'some-project', 'session-1', 'subagents');
-  await writeDispatch(subagents, 'agent-a', 'exo:explorer', [
+  await writeDispatch(subagents, 'agent-a', 'exo:locate-code', [
     usageLine('msg_1', { input_tokens: 5, cache_read_input_tokens: 0, cache_creation_input_tokens: 200, output_tokens: 4 }),
     usageLine('msg_2', { input_tokens: 3, cache_read_input_tokens: 205, cache_creation_input_tokens: 10, output_tokens: 20 })
   ]);

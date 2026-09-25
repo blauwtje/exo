@@ -1,4 +1,4 @@
-// skills-tool's pressure runner: the first line names the answers
+// edit-skills's pressure runner: the first line names the answers
 // directory, each cell prints its label and one line per arm and run, every
 // full answer lands untruncated in its own file there, each cell runs
 // --runs times per arm, the without arm never sees --plugin-dir and disables
@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 
-const PRESSURE = fileURLToPath(new URL('../skills/skills-tool/scripts/pressure.mjs', import.meta.url));
+const PRESSURE = fileURLToPath(new URL('../skills/edit-skills/scripts/pressure.mjs', import.meta.url));
 
 // Stands in for `claude`: logs its arguments and prints a stream-json
 // transcript picked by STAND_IN_MODE, one line per event.
@@ -29,7 +29,7 @@ const STAND_IN = [
   "const resultLine = (text) => ({ type: 'result', result: text });",
   "if (mode === 'plain') { console.log(JSON.stringify(resultLine('one should ask first'))); process.exit(0); }",
   "if (mode === 'edits') { console.log(JSON.stringify(assistantWithEdit)); console.log(JSON.stringify(resultLine('done, edited the file'))); process.exit(0); }",
-  "if (mode === 'skills') { console.log(JSON.stringify(assistantWithSkill('exo:debug'))); console.log(JSON.stringify(assistantWithSkill('exo:skills-tool'))); console.log(JSON.stringify(resultLine('used two skills'))); process.exit(0); }",
+  "if (mode === 'skills') { console.log(JSON.stringify(assistantWithSkill('exo:find-cause'))); console.log(JSON.stringify(assistantWithSkill('exo:edit-skills'))); console.log(JSON.stringify(resultLine('used two skills'))); process.exit(0); }",
   "if (mode === 'long') { console.log(JSON.stringify(resultLine('a'.repeat(400) + ' middle ' + 'b'.repeat(400) + ' the end'))); process.exit(0); }",
   "if (mode === 'fails') { process.stderr.write('e'.repeat(400) + ' stderr tail'); process.exit(1); }",
   'process.exit(0);'
@@ -200,7 +200,7 @@ test('every Skill tool call in the stream is listed in each arm line', async () 
   const outcome = await runPressure('skills', ['--cells', 'opus:max', '--plugin-dir', clone, '--out', out, '--runs', '1']);
   const lines = armLines(outcome.stdout);
   assert.equal(lines.length, 2, outcome.stdout);
-  for (const line of lines) assert.equal(line.skills, 'exo:debug, exo:skills-tool');
+  for (const line of lines) assert.equal(line.skills, 'exo:find-cause, exo:edit-skills');
 });
 
 test('a malformed --cells entry is a usage error that runs no claude', async () => {

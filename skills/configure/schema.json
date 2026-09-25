@@ -1,0 +1,29 @@
+{
+  "specs": {
+    "type": "string",
+    "options": ["docs", "issues", "both"],
+    "default": "docs",
+    "description": "where define-scope stores a spec: docs/specs files, GitHub issues, or both"
+  },
+  "replies": {
+    "type": "string",
+    "options": ["tight", "standard"],
+    "default": "tight",
+    "description": "how the session writes replies: tight drops preamble, recap and filler; standard keeps full prose",
+    "rules": {
+      "tight": "Replies are tight: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. An output style outranks this.",
+      "standard": "Replies are standard: full prose. An output style outranks this."
+    }
+  },
+  "interview": {
+    "type": "string",
+    "options": ["chat", "page"],
+    "default": "chat",
+    "description": "where define-scope asks its questions: chat asks in the conversation; page opens a browser tab that shows every decision"
+  },
+  "context": {
+    "type": "number",
+    "default": 100,
+    "description": "thousands of tokens a session's context may reach before the next phase of a skill moves to a fresh context"
+  }
+}

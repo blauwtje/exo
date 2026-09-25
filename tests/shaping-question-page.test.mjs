@@ -10,9 +10,9 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, jsonFixture, run } from './harness.mjs';
-import { checkedMap, renderRound, roundAnswer } from '../skills/shaping/scripts/question-page.mjs';
+import { checkedMap, renderRound, roundAnswer } from '../skills/define-scope/scripts/question-page.mjs';
 
-const QUESTION_PAGE = fileURLToPath(new URL('../skills/shaping/scripts/question-page.mjs', import.meta.url));
+const QUESTION_PAGE = fileURLToPath(new URL('../skills/define-scope/scripts/question-page.mjs', import.meta.url));
 const ANSWER_RETRY_MS = 200;
 const ANSWER_ATTEMPTS = 40;
 

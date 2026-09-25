@@ -1,4 +1,4 @@
-// Behavioral tests for the visual-parity pixel-diff.mjs comparison script.
+// Behavioral tests for the compare-renders pixel-diff.mjs comparison script.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -8,7 +8,7 @@ import { deflateSync } from 'node:zlib';
 import { describe, it } from 'node:test';
 import { fixture, run } from './harness.mjs';
 
-const PIXEL_DIFF = fileURLToPath(new URL('../skills/visual-parity/scripts/pixel-diff.mjs', import.meta.url));
+const PIXEL_DIFF = fileURLToPath(new URL('../skills/compare-renders/scripts/pixel-diff.mjs', import.meta.url));
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, byte) => {
   let value = byte;

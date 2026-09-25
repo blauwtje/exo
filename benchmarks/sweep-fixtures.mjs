@@ -198,7 +198,7 @@ export function prepareBuildRepository(repository, task) {
 }
 
 // Each safe task's seed carries one known defect against its solution; the
-// range and evidence below are what a branch-reviewer would confirm on that
+// range and evidence below are what a review-branch would confirm on that
 // seed, so a fixer cell starts from a review already run rather than one it
 // must run itself.
 const FIXER_FINDINGS = {
@@ -222,7 +222,7 @@ function branchReviewReport(task) {
 }
 
 // A fixer cell starts from the branch a review cell's seeded variant does,
-// plus the report a branch-reviewer would have written against it, because
+// plus the report a review-branch would have written against it, because
 // the fixer fixture is a review already run, never one the cell runs itself.
 export function prepareFixerBranch(repository, task) {
   prepareReviewBranch(repository, task, 'seed');
@@ -277,7 +277,7 @@ export function flowPlanText(repository) {
     `Branch: ${FLOW_BRANCH}`,
     'Worktree setup: none',
     '',
-    'Planned against the seed commit on `main`. `npm test` runs `node --test`, which finds every `*.test.js` file. Executor loads the `implementing` skill on this plan before the first task.',
+    'Planned against the seed commit on `main`. `npm test` runs `node --test`, which finds every `*.test.js` file. Executor loads the `run-plan` skill on this plan before the first task.',
     '',
     '## Non-goals',
     '',
@@ -301,7 +301,7 @@ export function flowPlanText(repository) {
 }
 
 // The bare origin gives the repository `origin/main` and `origin/HEAD`, which
-// implementing reads for its default branch and its merge-base.
+// run-plan reads for its default branch and its merge-base.
 export function prepareFlowRepository(repository, origin, withPlan) {
   git(repository, ['init', '-q', '-b', 'main']);
   const files = withPlan ? { ...FLOW_SEED, [FLOW_PLAN]: flowPlanText(repository) } : FLOW_SEED;

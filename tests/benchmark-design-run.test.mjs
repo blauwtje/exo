@@ -1,4 +1,4 @@
-// design-run.mjs reports what one designing run spent inside the window its run
+// design-run.mjs reports what one design-ui run spent inside the window its run
 // directory spans, and reports the transcript's other responses as excluded.
 
 import assert from 'node:assert/strict';

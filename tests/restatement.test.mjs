@@ -1,4 +1,4 @@
-// The restatement is built from skills/using-exo/SKILL.md every time it is
+// The restatement is built from skills/route-skills/SKILL.md every time it is
 // sent, so the repository holds those rules once: a copy anywhere else would
 // have to follow every edit of the skill, and would not.
 

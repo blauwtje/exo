@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const SCRIPTS = fileURLToPath(new URL('../skills/savings/scripts/', import.meta.url));
+const SCRIPTS = fileURLToPath(new URL('../skills/show-savings/scripts/', import.meta.url));
 const BUDGET = path.join(SCRIPTS, 'delegate-budget.mjs');
 
 function runBudget(script, hookInput, env) {
@@ -50,7 +50,7 @@ async function budgetFixture(lines) {
     session_id: 's1',
     transcript_path: mainTranscript,
     agent_id: 'a1',
-    agent_type: 'exo:implementer',
+    agent_type: 'exo:build-task',
     hook_event_name: 'PreToolUse',
     tool_name: 'Read',
     tool_input: { file_path: '/repo/a.mjs' }
@@ -101,7 +101,7 @@ test('past the hard limit an Edit, a Write and a task update still run', async (
 test('past the hard limit a lone git add, commit, status or diff --stat still runs', async () => {
   const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const commands = [
-    'git add skills/savings/scripts/delegate-budget.mjs tests/delegate-budget.test.mjs',
+    'git add skills/show-savings/scripts/delegate-budget.mjs tests/delegate-budget.test.mjs',
     'git add -A',
     '  git commit -m "fix(savings): let a delegate commit past the hard limit"  ',
     'git status',
@@ -201,8 +201,8 @@ test('a transcript with no complete usage line gets nothing', async () => {
 // A copy of the scripts beside its own budgets file, so a per-type limit is
 // tested without writing one into the shipped file.
 async function pluginCopy(root, budgets) {
-  const scripts = path.join(root, 'plugin', 'skills', 'savings', 'scripts');
-  const assets = path.join(root, 'plugin', 'skills', 'savings', 'assets');
+  const scripts = path.join(root, 'plugin', 'skills', 'show-savings', 'scripts');
+  const assets = path.join(root, 'plugin', 'skills', 'show-savings', 'assets');
   await fs.mkdir(scripts, { recursive: true });
   await fs.mkdir(assets, { recursive: true });
   for (const name of ['delegate-budget.mjs', 'transcript-tail.mjs', 'token-weights.mjs']) {
@@ -212,14 +212,14 @@ async function pluginCopy(root, budgets) {
   return path.join(scripts, 'delegate-budget.mjs');
 }
 
-const TYPED_BUDGETS = { default: { soft: 40, hard: 70, calls: 60 }, agents: { 'exo:implementer': { soft: 20, hard: 30 } } };
+const TYPED_BUDGETS = { default: { soft: 40, hard: 70, calls: 60 }, agents: { 'exo:build-task': { soft: 20, hard: 30 } } };
 
 test('an agent type listed in the budgets file gets its own limits', async () => {
   const { root, hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(25_000), '']);
   const script = await pluginCopy(root, TYPED_BUDGETS);
   const decision = decisionOf(await runBudget(script, hookInput, env));
   assert.equal(decision.additionalContext, 'exo budget: 25k of 30k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
-  assert.equal(decisionOf(await runBudget(script, { ...hookInput, agent_type: 'exo:explorer' }, env)), null);
+  assert.equal(decisionOf(await runBudget(script, { ...hookInput, agent_type: 'exo:locate-code' }, env)), null);
 });
 
 test('a Budget line in the dispatch outranks the agent type limits', async () => {
@@ -231,14 +231,14 @@ test('a Budget line in the dispatch outranks the agent type limits', async () =>
 });
 
 test('the shipped budgets file gives every read-only agent type a soft limit of 70k and the default hard and call limits', async () => {
-  const budgets = JSON.parse(await fs.readFile(new URL('../skills/savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
-  const readers = ['exo:explorer', 'exo:researcher', 'exo:design-discovery', 'exo:design-critic', 'exo:branch-reviewer', 'exo:branch-reviewer-deep', 'Explore'];
+  const budgets = JSON.parse(await fs.readFile(new URL('../skills/show-savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
+  const readers = ['exo:locate-code', 'exo:fetch-docs', 'exo:survey-ui', 'exo:critique-ui', 'exo:review-branch', 'exo:review-branch-deep', 'Explore'];
   for (const agentType of readers) {
     assert.deepEqual(budgets.agents[agentType], { soft: 70 }, agentType);
   }
 });
 
-test('using-exo tells the lead to give a read-only dispatch without its own limit a standalone 70k Budget line', async () => {
-  const usingExo = await fs.readFile(new URL('../skills/using-exo/SKILL.md', import.meta.url), 'utf8');
+test('route-skills tells the lead to give a read-only dispatch without its own limit a standalone 70k Budget line', async () => {
+  const usingExo = await fs.readFile(new URL('../skills/route-skills/SKILL.md', import.meta.url), 'utf8');
   assert.match(usingExo, /^- \*\*Reader budget\.\*\* .*`general-purpose`.*standalone `Budget: 70k\/100k` line/m);
 });

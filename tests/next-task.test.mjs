@@ -8,10 +8,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { nextTaskReport } from '../skills/implementing/scripts/next-task.mjs';
+import { nextTaskReport } from '../skills/run-plan/scripts/next-task.mjs';
 import { git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/implementing/scripts/next-task.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/next-task.mjs', import.meta.url));
 
 const PLAN = planFixture({ worktreeSetup: 'none', tasks: [
   taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], code: 'export function greet() {\n  return "hello";\n}', subject: 'feat(app): greet' }),
@@ -78,8 +78,8 @@ test('a landed task leaves the report, and a Design: task builds alone with the 
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   assert.match(report, /^Landed: 1, 3$/m);
   assert.match(report, /^Next: Task 2$/m);
-  assert.match(report, /^Design: designing$/m);
-  assert.match(await fs.readFile(briefPath(root, 2), 'utf8'), /^Visual direction:\nDesign skill: designing$/m);
+  assert.match(report, /^Design: design-ui$/m);
+  assert.match(await fs.readFile(briefPath(root, 2), 'utf8'), /^Visual direction:\nDesign skill: design-ui$/m);
   await assert.rejects(fs.access(briefPath(root, 4)), { code: 'ENOENT' });
 });
 

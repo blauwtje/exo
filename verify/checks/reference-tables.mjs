@@ -1,6 +1,6 @@
 // Every reference a skill exposes is reachable from its table, the required
 // cross-skill owner rows are present with their timing predicate, every
-// delegate prompt beside a SKILL.md has a row, and the designing reference set
+// delegate prompt beside a SKILL.md has a row, and the design-ui reference set
 // matches its table file for file.
 
 import fs from 'node:fs';
@@ -12,19 +12,19 @@ const VISUAL_DESIGN_REFERENCE_COUNT = 22;
 const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data-migration.md'];
 
 const EXPECTED_OWNER_ROWS = {
-  'skills/debug/SKILL.md': [
-    '../implementing/references/workspace.md',
+  'skills/find-cause/SKILL.md': [
+    '../run-plan/references/workspace.md',
     'investigator-prompt.md',
     'fixer-prompt.md',
-    '../implementing-batch/references/performance.md',
+    '../build-change/references/performance.md',
     'references/profiling.md',
-    '../implementing-batch/references/critique.md',
-    '../implementing-batch/references/security.md',
-    '../implementing-batch/references/data-migration.md',
-    '../implementing-batch/references/test-design.md',
+    '../build-change/references/critique.md',
+    '../build-change/references/security.md',
+    '../build-change/references/data-migration.md',
+    '../build-change/references/test-design.md',
   ],
-  'skills/implementing-batch/SKILL.md': [
-    '../implementing/references/workspace.md',
+  'skills/build-change/SKILL.md': [
+    '../run-plan/references/workspace.md',
     'reviewer-prompt.md',
     'references/critique.md',
     'references/security.md',
@@ -32,41 +32,41 @@ const EXPECTED_OWNER_ROWS = {
     'references/test-design.md',
     'references/test-first.md',
     'references/performance.md',
-    '../using-exo/references/question.md',
+    '../route-skills/references/question.md',
   ],
-  'skills/planning/SKILL.md': [
+  'skills/draft-plan/SKILL.md': [
     'references/plan-spec.md',
     'references/example-plan.md',
-    '../implementing-batch/references/data-migration.md',
-    '../implementing-batch/references/test-design.md',
-    '../implementing-batch/references/security.md',
-    '../using-exo/references/question.md',
+    '../build-change/references/data-migration.md',
+    '../build-change/references/test-design.md',
+    '../build-change/references/security.md',
+    '../route-skills/references/question.md',
   ],
-  'skills/deepen/SKILL.md': [
+  'skills/audit-architecture/SKILL.md': [
     'auditor-prompt.md',
-    '../planning/references/plan-spec.md',
-    '../implementing-batch/references/test-design.md',
-    '../using-exo/references/question.md',
+    '../draft-plan/references/plan-spec.md',
+    '../build-change/references/test-design.md',
+    '../route-skills/references/question.md',
   ],
-  'skills/implementing/SKILL.md': [
+  'skills/run-plan/SKILL.md': [
     'references/workspace.md',
     'references/wave-worktrees.md',
     'implementer-prompt.md',
     'bug-fixer-prompt.md',
     'review-fixer-prompt.md',
     'drift-repairer-prompt.md',
-    '../using-exo/references/question.md',
+    '../route-skills/references/question.md',
     'references/design-tasks.md',
   ],
-  'skills/research/SKILL.md': [],
-  'skills/savings/SKILL.md': [],
-  'skills/settings/SKILL.md': [
+  'skills/check-docs/SKILL.md': [],
+  'skills/show-savings/SKILL.md': [],
+  'skills/configure/SKILL.md': [
     'references/setup-map.md',
-    '../using-exo/references/question.md',
+    '../route-skills/references/question.md',
   ],
-  'skills/shipping/SKILL.md': [
-    '../issuing/references/fields.md',
-    '../using-exo/references/question.md',
+  'skills/ship/SKILL.md': [
+    '../file-issues/references/fields.md',
+    '../route-skills/references/question.md',
     'references/pr-prep.md',
     'verifier-prompt.md',
     'references/fix-ci.md',
@@ -74,39 +74,39 @@ const EXPECTED_OWNER_ROWS = {
     'references/pr-comments.md',
     'references/babysit.md',
   ],
-  'skills/memory/SKILL.md': [
-    '../using-exo/references/question.md',
-    '../skills-tool/references/where-a-fix-lives.md',
+  'skills/remember/SKILL.md': [
+    '../route-skills/references/question.md',
+    '../edit-skills/references/where-a-fix-lives.md',
   ],
-  'skills/prototyping/SKILL.md': [
+  'skills/try-idea/SKILL.md': [
     'references/exhaust-the-design-space.md',
   ],
-  'skills/handoff/SKILL.md': [
+  'skills/save-session/SKILL.md': [
     'references/reconstructing-without-a-note.md',
   ],
-  'skills/issuing/SKILL.md': [
+  'skills/file-issues/SKILL.md': [
     'references/fields.md',
   ],
-  'skills/investigation/SKILL.md': [
+  'skills/explain-code/SKILL.md': [
     'references/history.md',
     'references/confidence.md',
     'references/answer-shapes.md',
   ],
-  'skills/refactoring/SKILL.md': [
+  'skills/refactor/SKILL.md': [
     'references/behavior-pin.md',
     'references/legacy-api.md',
   ],
-  'skills/shaping/SKILL.md': [
+  'skills/define-scope/SKILL.md': [
     'references/stored-brief.md',
     'references/brief.md',
     'references/brief-in-an-issue.md',
-    '../issuing/references/fields.md',
+    '../file-issues/references/fields.md',
     'references/decision-map.md',
     'references/architecture-sketch.md',
     'references/interview-page.md',
-    '../using-exo/references/question.md',
+    '../route-skills/references/question.md',
   ],
-  'skills/skills-tool/SKILL.md': [
+  'skills/edit-skills/SKILL.md': [
     'references/pressure-scenarios.md',
     'references/where-a-fix-lives.md',
     'references/wording.md',
@@ -115,7 +115,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/plugging-holes.md',
     'references/blind-eval.md',
   ],
-  'skills/designing/SKILL.md': [
+  'skills/design-ui/SKILL.md': [
     'references/intake.md',
     'references/phase-detail.md',
     'references/phase-direction.md',
@@ -139,36 +139,36 @@ const EXPECTED_OWNER_ROWS = {
     'references/performance-budget.md',
     'references/internationalization.md',
   ],
-  'skills/blast-radius/SKILL.md': [
+  'skills/check-impact/SKILL.md': [
     'references/hand-back.md',
   ],
-  'skills/technical-writing/SKILL.md': [
+  'skills/write-docs/SKILL.md': [
     'references/ai-tics.md',
   ],
-  'skills/swarm/SKILL.md': [
+  'skills/run-parallel/SKILL.md': [
     'worker-prompt.md',
     'judge-prompt.md',
   ],
-  'skills/hillclimb/SKILL.md': [
+  'skills/tune-metric/SKILL.md': [
     'references/decision-log.md',
     'attempt-prompt.md',
     'auditor-prompt.md',
   ],
-  'skills/visual-parity/SKILL.md': [
+  'skills/compare-renders/SKILL.md': [
     'references/capture-harness.md',
   ],
 };
 
 const EXPECTED_CONTRACTS = {
-  'skills/debug/SKILL.md': {
-    '../implementing-batch/references/security.md':
+  'skills/find-cause/SKILL.md': {
+    '../build-change/references/security.md':
       'After Step 4 identifies the predicted change and before its first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
-    '../implementing-batch/references/data-migration.md':
+    '../build-change/references/data-migration.md':
       'After Step 4 identifies the predicted change and before editing, only when the fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
-    '../implementing-batch/references/test-design.md':
+    '../build-change/references/test-design.md':
       'After reproduction and before the first affected test or production edit, only when the symptom changes logic or public behavior and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
   },
-  'skills/implementing-batch/SKILL.md': {
+  'skills/build-change/SKILL.md': {
     'references/security.md':
       'After orientation and baseline, before the first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
     'references/data-migration.md':
@@ -176,16 +176,16 @@ const EXPECTED_CONTRACTS = {
     'references/test-design.md':
       'After the baseline and before adding or changing an automated test or production behavior, only when logic or public behavior changes or the request adds or changes an automated test, and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
   },
-  'skills/planning/SKILL.md': {
-    '../implementing-batch/references/test-design.md':
+  'skills/draft-plan/SKILL.md': {
+    '../build-change/references/test-design.md':
       'Before composing the first task, to decide which tasks are risky and therefore write their test first.',
-    '../implementing-batch/references/data-migration.md':
+    '../build-change/references/data-migration.md':
       'After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
-    '../implementing-batch/references/security.md':
+    '../build-change/references/security.md':
       'After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
   },
-  'skills/deepen/SKILL.md': {
-    '../planning/references/plan-spec.md':
+  'skills/audit-architecture/SKILL.md': {
+    '../draft-plan/references/plan-spec.md':
       'Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact\'s sections, order, and step contents. Do not load in report mode.',
   },
 };
@@ -225,8 +225,8 @@ function checkTimingContracts(errors, skillPath, entries) {
 }
 
 function checkVisualDesignSet(errors, repository) {
-  const skillFile = path.join(repository.skillsRoot, 'designing', 'SKILL.md');
-  const referencesRoot = path.join(repository.skillsRoot, 'designing', 'references');
+  const skillFile = path.join(repository.skillsRoot, 'design-ui', 'SKILL.md');
+  const referencesRoot = path.join(repository.skillsRoot, 'design-ui', 'references');
   const rows = referenceTableEntries(repository.text(skillFile))
     .map((entry) => entry.path)
     .filter((row) => row.startsWith('references/'))
@@ -235,7 +235,7 @@ function checkVisualDesignSet(errors, repository) {
   const present = new Set(repository.walk(referencesRoot, (file) => file.endsWith('.md')));
   const equal = tabled.size === present.size && [...tabled].every((file) => present.has(file));
   if (present.size !== VISUAL_DESIGN_REFERENCE_COUNT || tabled.size !== VISUAL_DESIGN_REFERENCE_COUNT || !equal) {
-    errors.push(`designing requires set equality for ${VISUAL_DESIGN_REFERENCE_COUNT} files and rows; files=${present.size}, rows=${tabled.size}`);
+    errors.push(`design-ui requires set equality for ${VISUAL_DESIGN_REFERENCE_COUNT} files and rows; files=${present.size}, rows=${tabled.size}`);
   }
 }
 
@@ -273,9 +273,9 @@ export function checkReferenceTables(report, repository) {
 
   for (const name of IMPLEMENT_ONLY) {
     const matches = repository.walk(repository.skillsRoot, (file) => path.basename(file) === name);
-    const expected = path.join(repository.skillsRoot, 'implementing-batch', 'references', name);
+    const expected = path.join(repository.skillsRoot, 'build-change', 'references', name);
     if (matches.length !== 1 || matches[0] !== expected) {
-      errors.push(`${name} must exist only at skills/implementing-batch/references/${name}`);
+      errors.push(`${name} must exist only at skills/build-change/references/${name}`);
     }
   }
 

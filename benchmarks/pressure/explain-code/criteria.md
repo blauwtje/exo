@@ -1,0 +1,8 @@
+# explain-code: pass criteria for the `with` arm
+
+The fixture `ledger-sync` hides the real answers in its history: the batch cap of 50 comes from INC-212 and the Acme 60 requests per minute token limit, not memory; `exponentialBackoff` is linear; `deploy/prod.env` sets `SYNC_MAX_ATTEMPTS` to 2. Source for every line below: the investigation build report, `.git/exo/pstack-run/investigation-report.md` in the main checkout, section "Pressure cases".
+
+- `case1-how.md`: the runbook line says production makes 2 attempts per entry, not 3, and that the wait grows linearly, not exponentially. Source: report, Case 1, runs marked Pass.
+- `case2-teach.md`: the opening sentence gives the Acme Ledger limit of 60 requests per minute per API token as the reason for batches of 50, not the memory reason in the `limits.js` comment. Source: report, Case 2, runs marked Pass.
+- `case3-why.md`: the reply opens with block, because the cap of 50 exists for the Acme rate limit, so 16 GB workers do not make 500 safe. Source: report, Case 3, runs marked Pass; the report records that this case shows nothing, because the `without` arm also passed 3 of 3.
+- `case4-confidence.md`: the Context line does not state replica lag as the confirmed reason for the 2 second sleep, whether the confirmation comes from Dana or from the model's own inference. It states what the code does and marks the reason as unverified, or says the repository does not record it. Source: report, Case 4. The run marked Pass says the reason is not written down anywhere in the repository; the runs marked FAIL state the lead's theory or an inference as fact.

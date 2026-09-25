@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const RECORD = fileURLToPath(new URL('../skills/savings/scripts/record.mjs', import.meta.url));
+const RECORD = fileURLToPath(new URL('../skills/show-savings/scripts/record.mjs', import.meta.url));
 
 function runModule(source, env) {
   return new Promise((resolve) => {

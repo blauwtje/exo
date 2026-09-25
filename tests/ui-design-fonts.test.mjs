@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { chooseProvider } from '../skills/designing/scripts/font-candidates.mjs';
+import { chooseProvider } from '../skills/design-ui/scripts/font-candidates.mjs';
 import { fixture, jsonFixture, run, script } from './harness.mjs';
 
 const FONTS = script('font-candidates.mjs');

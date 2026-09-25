@@ -18,12 +18,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/restate.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/restate.mjs\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/memory/scripts/nudge.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/nudge.mjs\"",
             "timeout": 10
           }
         ]
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/read-guard.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/read-guard.mjs\"",
             "timeout": 10
           }
         ]
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/repeat-guard.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/repeat-guard.mjs\"",
             "timeout": 10
           }
         ]
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/memory/scripts/nudge.mjs\" approve",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/nudge.mjs\" approve",
             "timeout": 10
           }
         ]
@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/delegate-budget.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/delegate-budget.mjs\"",
             "timeout": 10
           }
         ]
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/read-guard.mjs\" book",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/read-guard.mjs\" book",
             "timeout": 10
           }
         ]
@@ -87,7 +87,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/repeat-guard.mjs\" edited",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/repeat-guard.mjs\" edited",
             "timeout": 10
           }
         ]
@@ -98,7 +98,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/savings/scripts/savings.mjs\" record",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/savings.mjs\" record",
             "timeout": 10
           }
         ]

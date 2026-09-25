@@ -4,7 +4,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { addDecisions, applyAnswer, nextRound } from '../skills/shaping/scripts/map-transition.mjs';
+import { addDecisions, applyAnswer, nextRound } from '../skills/define-scope/scripts/map-transition.mjs';
 
 /** interview-page.md's example map, round 2: format closed as you, start
  *  closed by the code, range open and asked (Q2), layout waiting on range. */

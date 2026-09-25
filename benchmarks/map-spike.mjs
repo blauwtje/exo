@@ -3,7 +3,7 @@
 // the size of its map with the cap lifted and at the default cap, the files
 // named against the files counted at that cap, the share of JavaScript and
 // TypeScript files whose exported names survive it, and the generator's run
-// time; beside them, what the exo:explorer dispatches in this machine's session
+// time; beside them, what the exo:locate-code dispatches in this machine's session
 // transcripts cost. It prints a markdown comment body that opens on the pass
 // mark and says which marks the figures meet. A repository is known by its
 // position on the command line and never by anything read from it: the first
@@ -21,19 +21,19 @@ import { performance } from 'node:perf_hooks';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { configDirectory } from '#config-directory';
-import { DEFAULT_CAP, renderMap } from '../skills/planning/scripts/map-render.mjs';
-import { SCRIPT_EXTENSIONS, locateRepository, readTrackedFiles } from '../skills/planning/scripts/map-source.mjs';
-import { countsCost } from '../skills/savings/scripts/pricing.mjs';
-import { emptySession } from '../skills/savings/scripts/record.mjs';
-import { sumCounts } from '../skills/savings/scripts/token-weights.mjs';
-import { ingestTranscript, sumTokens } from '../skills/savings/scripts/transcript.mjs';
+import { DEFAULT_CAP, renderMap } from '../skills/draft-plan/scripts/map-render.mjs';
+import { SCRIPT_EXTENSIONS, locateRepository, readTrackedFiles } from '../skills/draft-plan/scripts/map-source.mjs';
+import { countsCost } from '../skills/show-savings/scripts/pricing.mjs';
+import { emptySession } from '../skills/show-savings/scripts/record.mjs';
+import { sumCounts } from '../skills/show-savings/scripts/token-weights.mjs';
+import { ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 import { meanAndSd } from './statistics.mjs';
 
 export const SPIKE_MARKER = '<!-- exo:map-spike -->';
 
 const USAGE = 'usage: map-spike.mjs <exo directory> <second directory> --verdict "<Yes|Partly|No>: <one sentence>"';
 const LABELS = ['exo', 'second repository (private)'];
-const EXPLORER_AGENT = 'exo:explorer';
+const EXPLORER_AGENT = 'exo:locate-code';
 
 // The pass mark. It is committed before the measurement is taken, so the
 // figures cannot move it: stage two is built only when every mark holds.
@@ -125,7 +125,7 @@ function dispatchFigures(session) {
   return { tokens: sumTokens(session).raw, largestCall: Math.max(0, ...callTotals), calls: calls.length, cost };
 }
 
-// One entry per exo:explorer dispatch under the harness's projects folder.
+// One entry per exo:locate-code dispatch under the harness's projects folder.
 export function explorerDispatches(projectsDirectory) {
   const dispatches = [];
   for (const metaFile of metaFiles(projectsDirectory)) {
@@ -187,7 +187,7 @@ export function passMarks({ measurements, dispatches, verdict }) {
       holds: second.milliseconds <= PASS_MARK.secondRepositoryMilliseconds
     },
     {
-      mark: `The median explorer dispatch bills at least ${PASS_MARK.dispatchTokens} tokens`,
+      mark: `The median locate-code dispatch bills at least ${PASS_MARK.dispatchTokens} tokens`,
       measured: medianTokens === null ? 'none' : wholeNumber(medianTokens),
       holds: medianTokens !== null && medianTokens >= PASS_MARK.dispatchTokens
     },

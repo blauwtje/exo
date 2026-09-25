@@ -1,5 +1,5 @@
 // context.mjs reports approval_status in its JSON (tested in ui-design-scripts.test.mjs);
-// this guards that the designing references actually read it instead of sending the
+// this guards that the design-ui references actually read it instead of sending the
 // model into DESIGN.md's body to learn whether an identity is approved or a draft.
 
 import assert from 'node:assert/strict';
@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../${relative}`, import.meta.url), 'utf8');
-const INTAKE = read('skills/designing/references/intake.md');
-const VISUAL_DIRECTION = read('skills/designing/references/visual-direction.md');
+const INTAKE = read('skills/design-ui/references/intake.md');
+const VISUAL_DIRECTION = read('skills/design-ui/references/visual-direction.md');
 
 test('rung 5 settled identity gates on approval_status, not an open DESIGN.md read', () => {
   assert.ok(INTAKE.includes('`approval_status` of `approved`'), 'rung 5 names the approved value');

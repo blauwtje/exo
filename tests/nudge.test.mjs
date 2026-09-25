@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const NUDGE = path.join(REPOSITORY, 'skills', 'memory', 'scripts', 'nudge.mjs');
+const NUDGE = path.join(REPOSITORY, 'skills', 'remember', 'scripts', 'nudge.mjs');
 
 function runNudge(args, input, environment) {
   return new Promise((resolve) => {

@@ -1,4 +1,4 @@
-// The session hook hands the model the using-exo body, the right-sizing ladder
+// The session hook hands the model the route-skills body, the right-sizing ladder
 // and its guards included, so the ladder holds before every edit without a
 // skill call. The savings switch does not reach it: it silences the counter,
 // the status line segment and the read guard, and the ladder rides either way.
@@ -60,9 +60,9 @@ test('the session hook carries the right-sizing ladder whether exo savings are o
     const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
     assert.ok(context.includes('# Using exo'), context);
     for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
-    assert.ok(context.includes('`research`, `designing` and `skills-tool` hand control back to a stage that borrowed them and own the turn alone.'), context);
+    assert.ok(context.includes('`check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.'), context);
     // The frontmatter is dropped, so the description never reaches the context twice.
-    assert.ok(!context.includes('name: using-exo'), context);
+    assert.ok(!context.includes('name: route-skills'), context);
   }
 });
 
@@ -95,7 +95,7 @@ test('without jq the hook still writes the plugin-root pointer and exits 0 with 
   const result = await runHookWith(bash, { PATH: binDirectory, CLAUDE_CONFIG_DIR: configDirectory }, 'startup');
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, '');
-  assert.match(result.stderr, /exo: jq not on PATH, using-exo not injected/);
+  assert.match(result.stderr, /exo: jq not on PATH, route-skills not injected/);
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
 });
@@ -128,6 +128,6 @@ test('on a 60-character branch both pointers go first, named from the repository
   const memoryPointer = 'A project memory for this repository sits at `.git/exo/memory.md` from the repository root.';
   assert.ok(context.startsWith(handoffPointer), context.slice(0, 300));
   assert.ok(context.includes(memoryPointer), context.slice(0, 600));
-  assert.ok(context.indexOf(memoryPointer) < context.indexOf('# Using exo'), 'the memory pointer follows the using-exo text');
+  assert.ok(context.indexOf(memoryPointer) < context.indexOf('# Using exo'), 'the memory pointer follows the route-skills text');
   assert.ok(context.length <= HOOK_OUTPUT_CAP.chars, `${context.length} characters`);
 });

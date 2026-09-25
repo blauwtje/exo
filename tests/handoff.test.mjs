@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, gitRepository, run } from './harness.mjs';
 
-const HANDOFF = fileURLToPath(new URL('../skills/handoff/scripts/handoff.mjs', import.meta.url));
+const HANDOFF = fileURLToPath(new URL('../skills/save-session/scripts/handoff.mjs', import.meta.url));
 
 // A real repository on branch main with one commit: `rev-parse --abbrev-ref
 // HEAD` names the branch only once HEAD resolves to a commit, printing the
