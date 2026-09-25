@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`define-scope` now asks every costly question in one message, lists routine choices as assumptions, and writes the brief after a single reply.**
+
+### Changed
+
+- `define-scope` sorts each open point as costly (asked), testable by running (`try-idea`) or routine (an assumption line); `ok` accepts everything, and a question a reply skips takes its recommendation.
+- `define-scope` drops the separate checkpoint round; the reply to the bundled message confirms the brief.
+- The brief holds Goal, Decisions, Assumptions and Acceptance, plus Visual direction for a new screen; Problem, Out of scope and Proof are gone.
+- `file-issues` fills a Spec's `### Assumptions` from the brief and no longer maps Problem, Proof or Out of scope to brief sections.
+- A fourth `define-scope` pressure case checks that one costly and three routine points yield exactly one question.
+
 ## 0.48.4 - 2026-09-25
 
 ### Highlights
