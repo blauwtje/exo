@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **A build dispatch is under 500 words: `build-task` builds a compact task from its `Files:` and `Data:` and proves it with one targeted test for the plan's success criterion.**
+
+### Changed
+
+- `build-task` is rewritten as short imperative rules under Scope, Build, Git, Stop and Report headings, from 1,238 to 477 words, and the implementer prompt lists its fields one per line.
+- The brief `next-task` writes carries the plan's `## Success criterion` as a `Success criterion:` line after `Goal:`.
+
 ## 0.48.6 - 2026-09-25
 
 ### Highlights
