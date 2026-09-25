@@ -5,7 +5,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
-import { CLOSERS, OPTIONS_MAX, STATES } from '../../skills/define-scope/scripts/question-page.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/run-plan/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
@@ -24,10 +23,8 @@ const HANDSHAKE_SKILLS = ['define-scope', 'design-ui'];
 
 const PINNED_SENTENCES = {
   'skills/define-scope/SKILL.md': [
-    'Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention.',
     'Zero open decisions means leave this skill and write no brief',
-    'Resolve “this” from the first source containing a candidate: working-tree diff, most recent failing check, then last touched file.',
-    'changes persisted-data format, a public protocol or signature, a paid external provider, or an irreversible deletion/migration',
+    'An open decision is one the user would notice that neither request nor code settles.',
     'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
     '`find-cause` outranks this skill when existing behavior fails and the cause is unproven.',
   ],
@@ -166,29 +163,6 @@ function checkPinnedLists(errors, repository) {
   }
 }
 
-// question-page.mjs owns the interview map's enums. interview-page.md keeps
-// them in its prose, because the model reading it never reads the script, so
-// this holds the prose to the script.
-const INTERVIEW_PAGE = 'skills/define-scope/references/interview-page.md';
-
-function interviewPageDrift(repository) {
-  const file = path.resolve(repository.root, INTERVIEW_PAGE);
-  if (!fs.existsSync(file)) return [`${INTERVIEW_PAGE}: file is missing`];
-  const text = repository.text(file);
-  const errors = [];
-  for (const state of STATES) {
-    if (!text.includes(`"state": "${state}"`)) errors.push(`${INTERVIEW_PAGE}: the example map shows no "state": "${state}"`);
-  }
-  const closedBy = /`closedBy` \(([^)]*)\)/.exec(text);
-  const closers = closedBy === null ? [] : [...closedBy[1].matchAll(/`([^`]+)`/g)].map((match) => match[1]);
-  if (closers.join(', ') !== CLOSERS.join(', ')) {
-    errors.push(`${INTERVIEW_PAGE}: closedBy lists ${closers.join(', ') || 'nothing'}, the script accepts ${CLOSERS.join(', ')}`);
-  }
-  const optionsRange = `two to ${NUMBER_WORDS[OPTIONS_MAX]} \`options\``;
-  if (!text.includes(optionsRange)) errors.push(`${INTERVIEW_PAGE}: lacks "${optionsRange}", the script's OPTIONS_MAX`);
-  return errors;
-}
-
 export function checkSharedContracts(report, repository) {
   const errors = [];
   for (const [relative, fragments] of Object.entries(PINNED_SENTENCES)) {
@@ -221,8 +195,6 @@ export function checkSharedContracts(report, repository) {
   if (handshakes.size === 2 && handshakes.get('define-scope') !== handshakes.get('design-ui')) {
     errors.push('define-scope and design-ui handshake sentences are not byte-identical');
   }
-
-  errors.push(...interviewPageDrift(repository));
 
   report.assert(
     errors.length === 0,

@@ -101,10 +101,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/brief.md',
     'references/brief-in-an-issue.md',
     '../file-issues/references/fields.md',
-    'references/decision-map.md',
     'references/architecture-sketch.md',
-    'references/interview-page.md',
-    '../route-skills/references/question.md',
   ],
   'skills/edit-skills/SKILL.md': [
     'references/pressure-scenarios.md',

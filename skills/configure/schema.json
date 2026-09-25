@@ -15,12 +15,6 @@
       "standard": "Replies are standard: full prose. An output style outranks this."
     }
   },
-  "interview": {
-    "type": "string",
-    "options": ["chat", "page"],
-    "default": "chat",
-    "description": "where define-scope asks its questions: chat asks in the conversation; page opens a browser tab that shows every decision"
-  },
   "context": {
     "type": "number",
     "default": 100,

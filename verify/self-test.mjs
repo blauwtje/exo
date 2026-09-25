@@ -67,7 +67,7 @@ const SCENARIOS = [
   { name: 'dangling-script-link', mutate: (root) =>
     replaceText(root, 'skills/design-ui/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
   { name: 'dangling-sibling-script-link', mutate: (root) =>
-    replaceText(root, 'skills/configure/SKILL.md', '../define-scope/scripts/question-page.mjs', '../define-scope/scripts/absent.mjs') },
+    replaceText(root, 'skills/configure/SKILL.md', '../show-savings/scripts/savings.mjs', '../show-savings/scripts/absent.mjs') },
   { name: 'noncanonical-skill-replacement', mutate: (root) => {
     const nested = path.join(root, 'skills/define-scope/define-scope');
     fs.mkdirSync(nested);
@@ -79,10 +79,8 @@ const SCENARIOS = [
     'from the working tree diff before the next edit', 'from memory before the next edit') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
-  { name: 'drifted-closer-list', mutate: (root) => replaceText(root, 'skills/define-scope/references/interview-page.md',
-    '`closedBy` (`you`, `code` or `exo`)', '`closedBy` (`you` or `code`)') },
   { name: 'define-scope-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
-    'Count the product decisions the request leaves open', 'Count the files the request changes') },
+    'An open decision is one the user would notice that neither request nor code settles.', 'An open decision is one more file the request changes.') },
   { name: 'define-scope-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
     'Zero open decisions means leave this skill and write no brief', 'Zero means carry on anyway') },
   { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',

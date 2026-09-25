@@ -2,7 +2,7 @@
 name: configure
 description: Use when the user asks to set up or configure exo, or to see or change one exo setting, such as where specs go, the savings counter or the read guard, for every project, one repository or this machine. Not for the harness's own settings.json, permissions or hooks.
 argument-hint: "[nothing to walk every setting, or a key, a value and --scope project|local]"
-allowed-tools: Bash(node *settings.mjs*), Bash(node *savings.mjs*), Bash(node *question-page.mjs*), Bash(git remote get-url origin), Bash(git rev-parse *), Bash(gh auth status)
+allowed-tools: Bash(node *settings.mjs*), Bash(node *savings.mjs*), Bash(git remote get-url origin), Bash(git rev-parse *), Bash(gh auth status)
 model: sonnet
 ---
 
@@ -48,7 +48,7 @@ A project value adds one line under the fence: collaborators receive it once `.c
 
 ## The walk
 
-Follow `references/setup-map.md` from its first step, running its `<page>` as `node "${CLAUDE_SKILL_DIR}/../define-scope/scripts/question-page.mjs"`. Offer `issues` and `both` only when `git remote get-url origin` is on GitHub and `gh auth status` passes, because either answer fails at the first spec otherwise. Never pick an answer for the user. Write nothing before the review is confirmed, then only the changed values: a kept value is never written, even when it equals the default, and a rejection stops every write after it.
+Follow `references/setup-map.md` from its first step, asking in the chat one setting per message. Offer `issues` and `both` only when `git remote get-url origin` is on GitHub and `gh auth status` passes, because either answer fails at the first spec otherwise. Never pick an answer for the user. Write nothing before the review is confirmed, then only the changed values: a kept value is never written, even when it equals the default, and a rejection stops every write after it.
 
 ## The write commands
 
@@ -64,7 +64,7 @@ Follow `references/setup-map.md` from its first step, running its `<page>` as `n
 
 | File | Read it when |
 |---|---|
-| `references/setup-map.md` | The walk, before its first step: every step, the page map, each setting's question and answers, and the chat fallback. Not for one setting. |
+| `references/setup-map.md` | The walk, before its first step: every step, the order, and each setting's question and answers. Not for one setting. |
 | `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options. |
 
 ## Judgment
