@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.5 - 2026-09-25
+
 ### Highlights
 
 - **`define-scope` now asks every costly question in one message, lists routine choices as assumptions, and writes the brief after a single reply.**
