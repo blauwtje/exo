@@ -7,6 +7,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `define-scope` calls its questioning step the interview instead of the grill.
+- `define-scope` asks one question per message, the decision others depend on first, and no longer repeats the previous question or its answer.
+- `define-scope` questions use everyday words with two or three one-line options, the recommended one first with a one-line reason, answered by a digit, own words or `go`.
+
+### Removed
+
+- The `define-scope` interview web page and its decision-map scripts; `configure` asks its setup in chat.
+- The `interview` setting (`chat` or `page`); a leftover `interview` key in a settings file is ignored.
+
 ## 0.43.0 - 2026-09-25
 
 ### Highlights
