@@ -42,6 +42,15 @@ function dropLines(root, relative, prefix) {
   write(root, relative, kept.join('\n'));
 }
 
+// A scenario that gives find-cause a real effort value keeps the model table
+// in step, so it exercises only the frontmatter shape rule it names.
+function patchTableEffort(root, key, effort) {
+  const file = path.join(root, 'verify/model-table.json');
+  const table = JSON.parse(read(root, 'verify/model-table.json'));
+  table[key] = { ...table[key], effort };
+  fs.writeFileSync(file, `${JSON.stringify(table, null, 2)}\n`, 'utf8');
+}
+
 const SCENARIOS = [
   { name: 'invalid-yaml', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
     read(root, 'skills/define-scope/SKILL.md').replace(/^name: define-scope$/gm, 'name: [define-scope')) },
@@ -114,14 +123,22 @@ const SCENARIOS = [
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {
     for (const skill of ['find-cause', 'audit-architecture']) dropLines(root, `skills/${skill}/SKILL.md`, 'effort:');
   } },
-  { name: 'effort-low', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low') },
-  { name: 'effort-medium', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: medium') },
-  { name: 'effort-high', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high') },
-  { name: 'effort-max', expect: 'accept', mutate: (root) =>
-    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max') },
+  { name: 'effort-low', expect: 'accept', mutate: (root) => {
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low');
+    patchTableEffort(root, 'skills/find-cause', 'low');
+  } },
+  { name: 'effort-medium', expect: 'accept', mutate: (root) => {
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: medium');
+    patchTableEffort(root, 'skills/find-cause', 'medium');
+  } },
+  { name: 'effort-high', expect: 'accept', mutate: (root) => {
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high');
+    patchTableEffort(root, 'skills/find-cause', 'high');
+  } },
+  { name: 'effort-max', expect: 'accept', mutate: (root) => {
+    replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max');
+    patchTableEffort(root, 'skills/find-cause', 'max');
+  } },
   { name: 'effort-bogus', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: bogus') },
   { name: 'model-bogus', mutate: (root) =>

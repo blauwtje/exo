@@ -29,6 +29,7 @@ import { checkSkillScriptBehavior } from './verify/checks/skill-script-behavior.
 import { checkGitWhitespace } from './verify/checks/git-whitespace.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkDelegateBudgetKeys } from './verify/checks/delegate-budget-keys.mjs';
+import { checkModelTable } from './verify/checks/model-table.mjs';
 import { runSelfTest } from './verify/self-test.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -74,6 +75,7 @@ checkSkillScriptBehavior(report, repository);
 checkGitWhitespace(report, repository);
 checkPluginVersion(report, repository);
 checkDelegateBudgetKeys(report, repository);
+checkModelTable(report, repository);
 
 if (values['self-test']) runSelfTest(report, repository);
 

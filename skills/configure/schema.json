@@ -19,5 +19,14 @@
     "type": "number",
     "default": 100,
     "description": "thousands of tokens a session's context may reach before the next phase of a skill moves to a fresh context"
+  },
+  "budget": {
+    "type": "string",
+    "options": ["normal", "lean"],
+    "default": "normal",
+    "description": "normal: every agent dispatch uses the model verify/model-table.json names. lean: an opus agent dispatches on sonnet instead",
+    "rules": {
+      "lean": "Budget is lean: when the Task tool dispatches a plugin agent whose entry in verify/model-table.json names model opus, pass sonnet as the Task call's own model parameter instead; an agent named sonnet or haiku there dispatches unchanged."
+    }
   }
 }

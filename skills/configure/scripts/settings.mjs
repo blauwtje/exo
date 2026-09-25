@@ -31,6 +31,16 @@ import {
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
 
+// A schema key with a `rules` map contributes its current value's rule text to
+// the injected settings line; a value with no entry there (such as budget's
+// default `normal`) adds nothing.
+function activeRules(values) {
+  return Object.entries(SCHEMA)
+    .map(([key, entry]) => entry.rules?.[values[key]])
+    .filter(Boolean)
+    .join(' ');
+}
+
 // The session hook prints this line into every session, so a broken layer
 // degrades to the defaults and names the file instead of failing the hook.
 function contextLine(root) {
@@ -40,11 +50,12 @@ function contextLine(root) {
     const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
     const parts = Object.keys(SCHEMA).map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
-    const repliesRule = SCHEMA.replies.rules[resolved.replies.value];
-    return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${repliesRule}`;
+    const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
+    return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${rules}`;
   } catch (error) {
-    const defaults = Object.entries(SCHEMA).map(([key, entry]) => `${key}=${entry.default} (default)`);
-    return `exo settings: ${defaults.join(', ')}; ${error.message}. ${SCHEMA.replies.rules[SCHEMA.replies.default]}`;
+    const defaults = Object.fromEntries(Object.entries(SCHEMA).map(([key, entry]) => [key, entry.default]));
+    const defaultParts = Object.entries(defaults).map(([key, value]) => `${key}=${value} (default)`);
+    return `exo settings: ${defaultParts.join(', ')}; ${error.message}. ${activeRules(defaults)}`;
   }
 }
 

@@ -30,6 +30,13 @@
       "description": "Thousands of tokens the session's context may reach; past it, the next phase of a skill runs in a helper or hands off. Not sure? Keep 100. A project overrides this in .claude/exo.json.",
       "min": 1,
       "default": 100
+    },
+    "budget": {
+      "type": "string",
+      "title": "Agent model budget",
+      "description": "normal: every agent dispatches on the model verify/model-table.json names. lean: an opus agent dispatches on sonnet instead. Not sure? Keep normal. A project overrides this in .claude/exo.json.",
+      "options": ["normal", "lean"],
+      "default": "normal"
     }
   }
 }
