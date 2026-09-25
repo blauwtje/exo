@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`draft-plan` writes a compact plan of at most 30 non-blank lines: goal, plan basis, success criterion, a four-point checkpoint and one field line per task.**
+
+### Changed
+
+- A plan task is its conventional-commit heading plus one line `Depends on: … | Files: … | Data: …`, with an optional `Design:` segment; steps, `Run:`, `Expected:` and `Commit:` blocks are gone from new plans.
+- `land-task` derives a compact task's commit from its heading, its `Files:` paths and the `Plan-task:` trailer; a plan in the long format still runs as before.
+- `plan-check` holds a compact plan to 30 non-blank lines and requires `## Goal`, `## Plan basis` with `Repository:` and `Branch:`, `## Success criterion` and all four `## Checkpoint` points.
+
 ## 0.48.5 - 2026-09-25
 
 ### Highlights
