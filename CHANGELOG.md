@@ -11,8 +11,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 **Breaking: every exo skill and agent has a new name, and the old names no longer resolve.** Replace each `exo:<old>` in your prompts, settings and CLAUDE.md with its new name from the Changed list below. **exo is now MIT licensed.**
 
+### Added
+
+- `npm run overlap -- <dir>...` lists every run of eight prose words that a skill or agent file shares with the Markdown under the given directories, with file and line on both sides, and skips code, commands and file names.
+
 ### Changed
 
+- Passages in `ship`, `find-cause`, `refactor`, `run-parallel`, `try-idea`, `tune-metric` and `write-docs` that followed an external skill collection word for word are rewritten in exo's own words, with the same rules.
 - Breaking: skills renamed `blast-radius` to `check-impact`, `debug` to `find-cause`, `deepen` to `audit-architecture`, `designing` to `design-ui`, `handoff` to `save-session`, `hillclimb` to `tune-metric`, `implementing` to `run-plan`, `implementing-batch` to `build-change`, `investigation` to `explain-code`, `issuing` to `file-issues`, `memory` to `remember`, `planning` to `draft-plan`, `prototyping` to `try-idea`, `refactoring` to `refactor`, `research` to `check-docs`, `savings` to `show-savings`, `settings` to `configure`, `shaping` to `define-scope`, `shipping` to `ship`, `skills-tool` to `edit-skills`, `swarm` to `run-parallel`, `technical-writing` to `write-docs`, `using-exo` to `route-skills` and `visual-parity` to `compare-renders`.
 - Breaking: agents renamed `branch-reviewer` to `review-branch`, `branch-reviewer-deep` to `review-branch-deep`, `design-builder` to `build-ui`, `design-critic` to `critique-ui`, `design-discovery` to `survey-ui`, `explorer` to `locate-code`, `implementer` to `build-task` and `researcher` to `fetch-docs`.
 - `edit-skills` names every skill and agent as an imperative verb phrase of one or two words.
