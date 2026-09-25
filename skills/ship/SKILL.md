@@ -9,7 +9,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 
 Carry finished commits as far as the user's pick reaches, and claim only what the GitHub API has just confirmed. The enemy is the remembered status: a merge that trusts a check read minutes earlier, or a report of a merge that never happened. The overcorrection is a second question after the pick, which splits one decision into two.
 
-The digit the user picks authorizes that route to its end, and a request to merge named or all open pull requests authorizes those merges. A request to watch or address review comments on a pull request authorizes fix commits, their plain push, and replies there, never its merge.
+The digit the user picks, or a `ship` setting other than `ask`, authorizes that route to its end, and a request to merge named or all open pull requests authorizes those merges. A request to watch or address review comments on a pull request authorizes fix commits, their plain push, and replies there, never its merge.
 None authorizes deleting a branch, forcing, or bypassing a hook with `--no-verify` or a gate.
 None authorizes weakening or skipping a failing test, marking a failing check not required, or cutting a release.
 
@@ -53,6 +53,11 @@ On the default branch:
 ```
 
 When `gh auth status` fails, both pull-request routes are left out and `1. **Push (Recommended)**` leads.
+
+When `ship` in the session's `exo settings:` line names a route other than `ask`, that route runs without the question once it can run, because the setting is the user's standing pick.
+`local` is Keep local; `push` needs `origin`; `pr-merge` and `open-pr` need `origin`, a branch other than the default and a passing `gh auth status`.
+When the set route cannot run, the question is asked with one line naming why the setting did not apply.
+The conflict question under `DIRTY` is always asked, because the setting picks a route, not a resolution.
 
 ## The routes
 

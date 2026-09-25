@@ -6,7 +6,8 @@ Ask where a code-changing run commits before its first edit, and commit only whe
 
 1. **Outside git, never.** When `git rev-parse --show-toplevel` fails, nothing is committed and the report says so in one line. A run on a plan whose `Repository:` line names the current folder is the exception: when `ls -A` there lists nothing but `docs`, it runs `git init -b main` and commits on `main` without asking, because a repository with no commit has nothing to branch from; when it lists anything else, the run stops before any edit and names those entries, because an init would capture files the plan never named. A plan whose `Repository:` folder sits inside another repository, where `git rev-parse --show-toplevel` prints a parent folder, stops the same way and names both paths.
 2. **In a chosen place, never.** Inside a linked worktree, where `git rev-parse --git-dir` and `git rev-parse --git-common-dir` differ, or on a branch other than the default one, the run commits there and the report names it, because asking would offer a branch off a branch. The exception is a branch whose pull request `gh pr list --head <branch> --state merged --json number` already lists: it counts as the default branch, because a commit there stacks on history `main` holds and conflicts with itself at the next pull request.
-3. **Otherwise first.** The question is the run's first message, before any edit or dispatch, in the question shape, and the run stops until the digit arrives:
+3. **Set, never.** When `workspace` in the session's `exo settings:` line is `branch`, `worktree` or `current`, the run carries out that pick with no question and the report names where it commits, because the setting is the user's standing answer.
+4. **Otherwise first.** The question is the run's first message, before any edit or dispatch, in the question shape, and the run stops until the digit arrives:
 
 ```text
 1. **Branch (Recommended)**: a new branch here
@@ -26,6 +27,6 @@ Every landed unit then commits in Conventional Commits where the pick put it. No
 
 ## Judgment
 
-- An explicit instruction in the request, such as a branch name, "work on main" or "use a worktree", is the answer, so the question is not asked.
+- An explicit instruction in the request, such as a branch name, "work on main" or "use a worktree", is the answer, so the question is not asked; it outranks the `workspace` setting.
 - A run another stage started holds its caller's answer; it asks nothing, and the caller finishes.
 - A failed `git switch` or `git worktree add` is reported with its output and the run stops before any edit, because an edit on the wrong branch is the failure this step prevents.

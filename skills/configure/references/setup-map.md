@@ -19,7 +19,7 @@ Walk every setting in the chat, one question per message, and write only what th
 
 ## The order
 
-`scope`, `specs`, `replies`, `counter`, `guard`, `guardLines`. `scope` decides the layer for `specs` and `replies`; the savings switches hold for this machine and take none.
+`scope`, `specs`, `replies`, `workspace`, `ship`, `counter`, `guard`, `guardLines`. `scope` decides the layer for `specs`, `replies`, `workspace` and `ship`; the savings switches hold for this machine and take none.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -35,6 +35,8 @@ Every setting but `scope` offers its current value first, as `1. **Keep <value> 
 |---|---|---|
 | `specs` | Where should a spec go when exo shapes a change? | `docs`: a file under docs/specs in the repository. `issues`: a GitHub issue. `both`: a file plus a linked issue. |
 | `replies` | How should exo write its replies? | `tight`: short, no preamble, recap or filler. `standard`: full prose. |
+| `workspace` | Where should a code-changing run commit? | `ask`: the run asks each time. `branch`: a new branch. `worktree`: a separate folder. `current`: the current branch. |
+| `ship` | How should finished commits leave this machine? | `ask`: ship asks each time. `pr-merge`: a pull request, merged once checks pass. `open-pr`: a pull request left open. `push`: a push, no pull request. `local`: nothing leaves. |
 | `counter` | Should exo count what it costs? | `on`: the cost shows in the status line. `off`: no counting, no status line segment and no read guard. |
 | `guard` | Should exo refuse to read a big file whole? | `on`: it reads the part it needs. `off`: any file may be read whole. |
 | `guardLines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |

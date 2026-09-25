@@ -28,5 +28,17 @@
     "rules": {
       "lean": "Budget is lean: when the Task tool dispatches a plugin agent whose entry in verify/model-table.json names model opus, pass sonnet as the Task call's own model parameter instead; an agent named sonnet or haiku there dispatches unchanged."
     }
+  },
+  "ship": {
+    "type": "string",
+    "options": ["ask", "pr-merge", "open-pr", "push", "local"],
+    "default": "ask",
+    "description": "the finish route ship takes without asking: ask puts the question; pr-merge, open-pr, push or local run that route when it can"
+  },
+  "workspace": {
+    "type": "string",
+    "options": ["ask", "branch", "worktree", "current"],
+    "default": "ask",
+    "description": "where a code-changing run commits without asking: ask puts the question; branch, worktree or current take that place"
   }
 }
