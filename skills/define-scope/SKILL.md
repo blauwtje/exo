@@ -6,11 +6,11 @@ argument-hint: <outcome to shape>
 
 # Shaping
 
-Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before any work. Decide the routine choices, ask each decision the user would notice until none is open, and keep moving.
+Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before any work. Decide routine choices, ask each decision the user would notice until none is open, and keep moving.
 
 ## Decision gate
 
-Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision stays open only while the request, repository conventions and this turn's ranges all fail to settle it. Zero open decisions means leave this skill and write no brief: a clear goal goes to `draft-plan` when a session or executor runs it, `build-change` when it builds here. A spec or brief request already resolved gets none either: the reply says nothing is open, names that stage by its skill name and ends on no question — a menu of Plan, Build and Stop counts as one. Size is not the gate: a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. Establish facts via `exo:locate-code` when the request names no path, reading only the ranges it returns: kept search output outlives the brief.
+Count the product decisions the request leaves open: what counts as done; which data the outcome stores or shows; which of two or more architectures, dependencies, or owning layers carries it; what happens in a case the request does not mention. A decision stays open only while the request, repository conventions and this turn's ranges fail to settle it. Zero open decisions means leave this skill and write no brief: a clear goal goes to `draft-plan` when a session or executor runs it, `build-change` when it builds here. A spec or brief request already resolved gets none either: the reply says nothing is open, names that stage's skill and ends on no question — a menu of Plan, Build and Stop counts as one. Size is not the gate: a three-file change with one obvious shape needs no brief and a one-file change resting on an unmade data decision does. Establish facts via `exo:locate-code` when the request names no path, reading only the ranges it returns: kept search output outlives the brief.
 
 New wishes for work that already has a brief, issue or plan reopen that brief: a second brief for one outcome disagrees with the first by the next edit.
 
@@ -49,7 +49,7 @@ The map sets how long the interview runs: no budget ends it and no guess closes 
 
 ## A round
 
-The reader has not seen the code, so every part is written for that reader, in order:
+The reader has not seen the code, so write every part for them, in order:
 
 ```text
 <above the first round only, from three open decisions, one line each:>
@@ -109,7 +109,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 ## Judgment
 
 - `find-cause` outranks this skill when existing behavior fails and the cause is unproven.
-- The loaded frontend-design skill owns visual decisions, then hands control back; this skill keeps product, data, and architecture decisions.
+- The loaded frontend-design skill owns visual decisions, then hands back; this skill keeps product, data, and architecture decisions.
 - Explicit user wording outranks mode selection and artifact defaults.
 - A stored brief outranks a new one while both name the same outcome.
-- A brief hands over through its stored copy: after a compaction notice, re-read `docs/specs/<topic>.md` or `gh issue view <n> --json body` and continue from it, never from the conversation; planning starts only on the user's pick.
+- A brief hands over through its stored copy: after a compaction notice, re-read `docs/specs/<topic>.md` or `gh issue view <n> --json body` and continue from it, not the conversation; planning starts only on the user's pick.
