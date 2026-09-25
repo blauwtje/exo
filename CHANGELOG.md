@@ -21,6 +21,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `define-scope` marks the recommended option the way the active output style does, and `(recommended)` only without one.
 - `define-scope` questions put the reason on its own line under the options, name nothing from the code, open on the question itself, and end on the same reply line at the checkpoint.
+- `find-cause` resumes its fix delegate with SendMessage on a plain retry instead of starting a fresh one.
 
 ## 0.44.0 - 2026-09-25
 
