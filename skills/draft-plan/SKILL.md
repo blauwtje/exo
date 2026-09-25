@@ -31,9 +31,9 @@ Discovery beyond the map goes to the `exo:locate-code` agent by default, briefed
 
 Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
 
-A task whose path crosses a security boundary carries that reference's checks as its own steps, each with `Run:` and `Expected:`, never as a warning in `## Context`: the executor runs steps and reads past notes. A risky task gets its `Risk:` line and failing-test step (`references/plan-spec.md` rule 3) now, never left to the executor to notice.
+A task whose path crosses a security boundary names that reference in its own heading or `Data:` clause, never as a warning left for later: the builder reads the named files and the reference together before it writes a line.
 
-Do not pre-run the plan: a context that applies every step and runs every `Run:` implements the change before the plan exists, and the executor implements it again. Each task's `Run:` and `Expected:` prove it where a failure is cheapest to fix, and `## Plan basis` names every command this session could not run.
+Do not pre-run the plan: writing the code now means the builder writes it again. `## Success criterion` names the one proof this session could not already show; the task's own build supplies the rest.
 
 ## Depth
 
@@ -44,7 +44,7 @@ Do not pre-run the plan: a context that applies every step and runs every `Run:`
 
 A deliverable plan is never message-only: a fresh session with zero context must be able to open the artifact and execute it. Update an existing plan for the same topic rather than creating a sibling, and extend it with edits rather than rewriting the file, because a rewrite re-enters every task into the context.
 
-Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <plan path>` and repair each line it prints, because a missing `Commit:` trailer, a `git add` mismatch, a step without `Run:` and `Expected:`, a placeholder, or an oversized task reads from the file, not from memory. Then grep the plan for `Expected:`, `## Final verification` and `## Non-goals` lines against the brief's acceptance list: an item that reaches none of the three is repaired now, because the executor cannot.
+Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <plan path>` and repair each line it prints, because a missing `Files:` segment, a `## Checkpoint` short a point, or a plan past 30 non-blank lines reads from the file, not from memory. Then check the brief's acceptance list against the plan: an item that reaches no task heading, `Data:` clause or `## Success criterion` is repaired now, because the executor cannot.
 
 ## Handing it over
 
@@ -63,7 +63,7 @@ A deliverable plan ends the turn on `node "${CLAUDE_SKILL_DIR}/../route-skills/s
 
 ## Judgment
 
-- While a read-only planning mode is active, this skill owns the turn. The one exception is an architecture audit, which `audit-architecture` owns while still writing the plan artifact this skill defines. `define-scope` decides product and architecture, the frontend-design skill the executing session has loaded decides visual direction, `check-docs` confirms external behavior, and each hands control back into the plan. Here that skill is `design-ui`: `## Visual direction` records `Design skill: design-ui`, a task with a `Design:` line schedules the build, and the plan never restates that skill's quality floor.
+- While a read-only planning mode is active, this skill owns the turn. The one exception is an architecture audit, which `audit-architecture` owns while still writing the plan artifact this skill defines. `define-scope` decides product and architecture, the frontend-design skill the executing session has loaded decides visual direction, `check-docs` confirms external behavior, and each hands control back into the plan. Here that skill is `design-ui`: a task's `Design:` field schedules its build, and the plan never restates that skill's quality floor.
 - A specialist's brief, audit, or selected direction is intermediate input: this skill compiles those decisions into the persisted artifact, and a specialist ending its own workflow never ends the planning turn.
 - An unproven failure inside a planning turn makes reproduction and proof the plan's first phase; plan no fix past the proof point. Outside a planning turn, `find-cause` outranks draft-plan until the cause is proven. Each hypothesis tried before the cause is proven, kept or reverted, enters `## Context` with the evidence that decided it: the fix step is the conclusion, not the trail that reached it.
 - An internal migration outside `../build-change/references/data-migration.md`'s scope — in-memory types, a client library swap, an internal API surface — orders tasks toward the end architecture directly; a task earns a compatibility layer only where that reference requires one for persisted data, because that is the one case where intermediate compatibility outranks convergence.

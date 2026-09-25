@@ -1,67 +1,70 @@
 # Plan artifact specification
 
-Give a zero-context executor every file, line of code, command and expected result it needs, so a cheap model pastes and runs instead of deciding. The enemy is a task that describes a change and leaves the code to the executor. The overcorrection is loading this depth for a two-edit inline order the current session executes immediately.
+A compact plan names the goal, the basis, the proof and one line per task,
+nothing more. The enemy is a task whose file or shape stays implicit, forcing
+the builder to guess it from prose. The overcorrection is spelling out every
+step's code, which the compact grammar leaves to each task's own builder.
+`node scripts/plan-check.mjs <path>` enforces every rule below; run it before
+ending the turn and repair each line it prints.
 
-Write for a reader with zero conversation context: no "as discussed", no "above", no reference back to the request; every referent is a path, symbol or command named inside the plan. The plan carries no question and no placeholder: a fact the planning session could not settle is asked before the plan is written, and a choice the user would not notice is made in the plan.
+Write for a reader with zero conversation context: no "as discussed", no
+reference back to the request. A fact the planning session could not settle
+is asked before the plan is written; a choice the user would not notice is
+made in the plan, in a task's `Data:` field or its heading.
 
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the observable result.
-2. `## Plan basis`: opens with `Repository: <absolute root>` and `Branch: <branch>` on their own lines, which `run-plan` reads to match a plan to a checkout; for a folder that is not a git repository yet, `Repository:` still names it, `Branch:` reads `main`, and one basis line says the executor runs `git init -b main` there before the first task, never an init step for the owner. A plan in which at least two tasks do not depend on each other, directly or through another task, adds a third line, `Worktree setup: <command>` or `Worktree setup: none`: the command that lets a fresh worktree of this repository run the plan's `Run:` lines, such as the dependency install the repository's manifest and lockfile call for, because `run-plan` builds such tasks together in worktrees that hold no ignored file; without the line the run builds one task at a time. Then the ref planned against, relevant dirty state, the pinned tool and library versions the plan depends on, and every command the planning session could not run itself; closes with the literal sentence "Executor loads the `run-plan` skill on this plan before the first task." It carries no branching, commit, push or pull-request policy: the skill that runs the plan owns those, and a plan that overrides them disables a gate the executor cannot see.
-3. `## Non-goals`: adjacent work that stays unchanged; the executor treats these as hard boundaries.
-4. `## Context`: the verified facts the plan depends on: current behavior, owning files and symbols, the conventions the edits follow, and every signature two tasks share, because a task's executor sees only its own task. A choice that came from trying something and measuring it — a hypothesis kept or reverted before the design settled — records the hypothesis and the evidence that decided it here, not only the choice it produced.
-5. `## Visual direction`: only when a task carries a `Design:` line; exactly one `Design skill: <name>` line naming the skill that task loads, then the chosen direction in one line, or `Direction: pending at rung <n>` when that skill ran inside a read-only planning mode, the evidence it rests on, and the choices an executor may not invent.
-6. `## Tasks`: dependency-ordered tasks in the template below. A plan spanning several phases or pull requests groups its tasks under a `### Phase <n>: <title>` heading before the phase's first task; the phase boundary is its last task's commit landing, and the next phase's first task names it in `Depends on:`.
-7. `## Final verification`: the commands proving the whole change with their expected results, closing with a literal `Walkthrough:` line: the one command or URL a person runs to see the result. `Walkthrough: none` is valid only when nothing is user-visible, and says why on the same line.
+2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>` on their own lines, so `run-plan` matches this plan to a checkout; for a folder that is not a git repository yet, `Repository:` still names it, `Branch:` reads `main`, and the executor runs `git init -b main` there before the first task, never an init step for the owner. Once two tasks share no `Depends on:` chain between them, directly or through another task, the basis adds a third line, `Worktree setup: <command>` or `Worktree setup: none`, naming the command a fresh worktree needs before it can build either task, such as a dependency install; without the line the run builds one task at a time.
+3. `## Success criterion`: the one command or observation that proves every
+   task landed; a cheap model reruns it, so it names no interpretation step.
+4. `## Checkpoint`: four literal points read as one paragraph or list —
+   `Blocks first:` the task every other task needs, or `none`; `Parallel:`
+   which tasks need no earlier one; `Shared state:` the file, key or branch
+   more than one task touches, or `none`; `Smallest safe split:` the
+   narrowest unit a delegate can build alone, such as one task per file.
+5. `## Tasks`: the dependency-ordered list in the template below.
 
 ## The task template
 
-````
-### Task <n>: <title>
-
-Depends on: none | Task <m>[, Task <k>]
-Design: <skill name>    (only when the task changes what a page looks like; omit otherwise)
-Risk: <the boundary this task crosses>    (only when the task is risky; omit otherwise)
-
-Files:
-- Create: `<path>`
-- Modify: `<path>` (`<function, selector, or config key>`)
-- Test: `<path>`
-
-Step 1: <imperative title>
-```<lang>
-<the complete file, or the complete function or region, as it must read after this step>
 ```
-Run: `<command>`
-Expected: <the observable result, quoted where it is output>
+### Task <n>: <type>(<scope>): <subject>
 
-Step 2: <imperative title>
-...
-
-Commit:
-```bash
-git add <every path under Files>
-git commit -m "<type>(<scope>): <title>" -m "Plan-task: <n>"
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>]
 ```
-````
+
+The heading is the exact conventional-commit subject `land-task` commits with,
+trailed by `Plan-task: <n>`; it stages the `Files:` paths itself, so the plan
+never repeats a `Commit:` block. `Data:` names the structure the task's code
+holds its result in (a plain object, a `Map` keyed by id, an array of rows) in
+one clause, not its fields or algorithm. `Design:` names the skill a task
+loads before its first edit, only on a task that changes what a page looks
+like; every other task omits the segment entirely.
 
 ## Rules
 
-1. **The code is the spec.** Every step that changes a file shows the whole file, or the whole function or region, as it must read afterwards. "Similar to Task 2", "add validation", "handle errors" and TODO-shaped steps are plan failures; the plan repeats code rather than pointing at it.
-2. **Verified names only.** Every path, symbol, signature, version, fixture key and environment variable was read in this repository during the planning session; an invented one still reads well and fails at the executor's first run.
-3. **Every change is proven.** A step that changes a file ends with `Run:` and `Expected:`, or the next step's `Run:` covers it. A task that is risky as build-change's test-design reference defines it carries a `Risk:` line naming that boundary. Its first step writes the test, with an `Expected:` that is the failure the missing behavior causes, before the step that writes the code, whose `Expected:` is the pass. Where the repository exposes a test runner and a routine task changes behavior, the same order holds.
-4. **One task, one commit.** The `Commit:` block names every path under `Files:` and carries the `Plan-task: <n>` trailer, which is how `run-plan` detects a landed task. A task changes nothing outside `Files:`.
-5. **Small tasks.** A task lands in one delegate context: about two to five steps and one concern. Split a task whose steps reach a second concern.
-6. **Rationale where required.** A file the request did not name, and an edit not forced by a signature or call site, is explained in `## Context` or the step title, never as a comment inside the code: the executor pastes that code, and a comment telling the change's story outlives it.
-7. **Repository conventions.** Each task connects to the repository's own test registration, error types, logging and layout; the plan invents no parallel pattern.
-8. **Design tasks.** A task with a `Design:` line fixes structure, class names and copy in its code and leaves the visual values to the named skill, which the executing session loads before that task's first edit.
-9. **Drift.** The executor compares each `Modify:` region with the tree before editing; a region that no longer matches stops that task before any edit with `PLAN DRIFT: Task <n>` and the mismatch, and the running `run-plan` session repairs that task alone.
-10. **Acceptance coverage.** Every acceptance check in the brief reaches a step's `Expected:`, a `## Final verification` line, or `## Non-goals`, in the brief's own words; a check in none of the three is a plan failure, because the branch review is the next thing that would catch it.
-11. **Vertical slices.** A change that crosses layers, such as data, API and UI, plans each task as one path through every layer it needs, with a `Run:` that exercises that path, never one layer per task: a plan by layer proves itself only at its last task. The exception is a `Design:` task, which builds the UI of a path an earlier task already serves, because its build routes to the named design skill.
-12. **Shared write target.** Two tasks with `Depends on: none` between them that would both modify one file, key, or branch get that target split — a file or section per task — before `Files:` lists them as independent; only when one target is a real shared invariant does the later task carry `Depends on:` the earlier one instead, serializing them.
+1. **Verified names only.** Every path in `Files:` was read in this
+   repository during planning; an invented one still reads well and fails at
+   the executor's first run.
+2. **One field line, one task.** A task with a second field line, a `Run:`,
+   an `Expected:` line or a shown code block is not compact, and `plan-check`
+   holds every one of today's step-and-commit rules against it instead.
+3. **Small tasks.** A task lands in one delegate context: one heading names
+   one concern, split further only when `Files:` would otherwise span both a
+   shared write target (rule 4) and an independent one.
+4. **Shared write target.** Two tasks with `Depends on: none` between them
+   that would both touch one file, key or branch get that target split before
+   `Files:` lists them as independent; only a real shared invariant earns a
+   `Depends on:` edge that serializes them instead.
+5. **Thirty lines, no more.** `plan-check` rejects a compact plan past 30
+   non-blank lines; a plan that does not fit is split into phases, each its
+   own plan file linked from the first's `## Goal`.
 
 ## Judgment
 
-- Verified repository evidence outranks remembered symbols and generic patterns.
-- Explicit user decisions outrank inferred implementation choices; a choice the user would notice is asked before writing, never left to the executor.
-- A green task outranks a tidy diff: never leave the repository red to finish a task sooner.
+- Verified repository evidence outranks a remembered symbol or a generic
+  pattern.
+- An explicit user decision outranks an inferred one; ask before writing
+  rather than leaving it to the executor.
+- A `Data:` choice that changes a public signature or a persisted format is a
+  decision the user would notice: ask, do not infer it silently.
