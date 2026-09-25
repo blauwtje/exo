@@ -126,13 +126,17 @@ export function compactTask({ number, title, dependsOn = 'none', files, data = '
   ].join('\n');
 }
 
-/** A whole compact plan around `tasks`: the `## Goal`/`## Success criterion`/`## Checkpoint` frame the grammar requires, then `## Tasks`. */
+/** A whole compact plan around `tasks`: the `## Goal`/`## Plan basis`/`## Success criterion`/`## Checkpoint` frame the grammar requires, then `## Tasks`. */
 export function compactPlanFixture({ tasks }) {
   return [
     '# Plan: compact fixture',
     '',
     '## Goal',
     'The fixture proves the compact plan reader.',
+    '',
+    '## Plan basis',
+    'Repository: /tmp/fixture',
+    'Branch: feat/fixture',
     '',
     '## Success criterion',
     '`node --test` passes.',

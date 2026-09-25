@@ -91,14 +91,29 @@ function checkSize(task) {
 }
 
 // A compact plan (every task in `Depends on: ... | Files: ...` form) trades
-// the old per-step rules for a line cap and the three frame headings the
-// compact grammar requires; a plan with even one old-format task keeps
-// today's rules for every task, so an in-flight or mixed plan never changes
-// behavior under this check.
+// the old per-step rules for a line cap and the frame headings the compact
+// grammar requires; a plan with even one old-format task keeps today's rules
+// for every task, so an in-flight or mixed plan never changes behavior under
+// this check. The cap counts non-blank lines only, so a blank separator
+// between tasks (as the grammar's own example uses) never counts against it.
 function checkCompactSize(planText) {
-  const lineCount = planText.replace(/\n$/, '').split('\n').length;
-  if (lineCount > MAX_COMPACT_LINES) return [`the plan is ${lineCount} lines, past the ${MAX_COMPACT_LINES}-line compact cap`];
+  const nonBlankCount = planText.replace(/\n$/, '').split('\n').filter((line) => line.trim() !== '').length;
+  if (nonBlankCount > MAX_COMPACT_LINES) {
+    return [`the plan is ${nonBlankCount} non-blank lines, past the ${MAX_COMPACT_LINES}-line compact cap`];
+  }
   return [];
+}
+
+// run-plan's SKILL.md step 1 matches a plan to a checkout by the '## Plan
+// basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
+// frameOf); a compact plan with neither would parse but never be matched to
+// a checkout, so plan-check fails it here instead.
+function checkPlanBasis(frame) {
+  const basis = frame['Plan basis'] ?? '';
+  const problems = [];
+  if (!/^Repository: .+$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Repository:' line");
+  if (!/^Branch: .+$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Branch:' line");
+  return problems;
 }
 
 function checkFrame(frame) {
@@ -127,7 +142,12 @@ export function planCheckReport(planText) {
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
   const problems = compactPlan
-    ? [...checkCompactSize(planText), ...checkFrame(plan.frame), ...plan.tasks.flatMap((task) => checkCompactFields(task))]
+    ? [
+        ...checkCompactSize(planText),
+        ...checkFrame(plan.frame),
+        ...checkPlanBasis(plan.frame),
+        ...plan.tasks.flatMap((task) => checkCompactFields(task))
+      ]
     : plan.tasks.flatMap((task) => [
         ...checkCommit(task),
         ...checkGitAdd(task),

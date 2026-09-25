@@ -95,12 +95,18 @@ function compactTasks(count) {
   }));
 }
 
-test('plan-check passes a 30-line compact plan and fails one past the cap', () => {
-  const ok = planCheckReport(compactPlanFixture({ tasks: compactTasks(7) }));
+test('plan-check counts non-blank lines for the 30-line compact cap, ignoring blank separators between tasks', () => {
+  const tasks = compactTasks(8);
+  const withBlankSeparators = tasks.flatMap((task, index) => (index === 0 ? [task] : ['', task]));
+  const ok = planCheckReport(compactPlanFixture({ tasks: withBlankSeparators }));
   assert.equal(ok.ok, true);
-  const tooLong = planCheckReport(compactPlanFixture({ tasks: compactTasks(8) }));
-  assert.equal(tooLong.ok, false);
-  assert.ok(tooLong.lines.some((line) => line.includes('32 lines, past the 30-line compact cap')));
+});
+
+test('plan-check fails a compact plan past 30 non-blank lines even with no blank lines to spare', () => {
+  const overCap = planCheckReport(compactPlanFixture({ tasks: compactTasks(8) })
+    .replace('The fixture proves the compact plan reader.', 'The fixture proves the compact plan reader.\nA second sentence pushes it one line over.'));
+  assert.equal(overCap.ok, false);
+  assert.ok(overCap.lines.some((line) => line.includes('31 non-blank lines, past the 30-line compact cap')));
 });
 
 test('plan-check fails a compact task whose field line lacks Files:', () => {
@@ -108,6 +114,18 @@ test('plan-check fails a compact task whose field line lacks Files:', () => {
   const report = planCheckReport(plan);
   assert.equal(report.ok, false);
   assert.ok(report.lines.some((line) => line.includes("Task 1: field line lacks 'Files:'")));
+});
+
+test('plan-check fails a compact plan whose Plan basis lacks a Repository: or a Branch: line', () => {
+  const missingRepository = planCheckReport(compactPlanFixture({ tasks: compactTasks(1) })
+    .replace('Repository: /tmp/fixture\n', ''));
+  assert.equal(missingRepository.ok, false);
+  assert.ok(missingRepository.lines.some((line) => line.includes("no 'Repository:' line")));
+
+  const missingBranch = planCheckReport(compactPlanFixture({ tasks: compactTasks(1) })
+    .replace('Branch: feat/fixture\n', ''));
+  assert.equal(missingBranch.ok, false);
+  assert.ok(missingBranch.lines.some((line) => line.includes("no 'Branch:' line")));
 });
 
 test('plan-check fails a compact plan missing Goal, Success criterion or a Checkpoint point', () => {
