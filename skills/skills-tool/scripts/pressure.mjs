@@ -1,16 +1,24 @@
 #!/usr/bin/env node
 // Runs one pressure-scenario prompt on every model:effort cell, both without
-// the skill and with it, so skills-tool's step 2 and step 4 stop reading N
-// manual `claude -p` transcripts by hand. The with arm loads the clone
-// through --plugin-dir; the without arm gets no --plugin-dir and disables
-// the installed copy of the clone's plugin (`<plugin>@<marketplace>`, read
-// from the clone's manifests) through --settings, since an installed and
-// enabled plugin otherwise loads anyway. Each cell's two arms run in
-// parallel in their own scratch directory outside the repository, matching
-// pressure-scenarios.md:41; nothing here writes a case to disk beyond that
-// temporary directory.
+// the skill and with it, --runs times per arm (default 3), so skills-tool's
+// step 2 and step 4 stop reading N manual `claude -p` transcripts by hand.
+// The with arm loads the clone through --plugin-dir; the without arm gets no
+// --plugin-dir and disables the installed copy of the clone's plugin
+// (`<plugin>@<marketplace>`, read from the clone's manifests) through
+// --settings, since an installed and enabled plugin otherwise loads anyway.
+// Every run of both arms of a cell runs in parallel, each in its own scratch
+// directory outside the repository, matching pressure-scenarios.md:41; cells
+// run one after another.
 //
-//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone>
+// Each run's full final answer, untruncated, goes to its own file
+// `<model>-<effort>-<arm>-<run>.md` in the --out directory (default a fresh
+// temporary directory outside any repository); a timeout or a run with no
+// result gets a note holding the full stderr instead. stdout opens with
+// `answers: <dir>`, then per cell its label and one line per arm and run:
+//
+//   without 1: <file> [first edit/write: Edit /x.js] [skills: exo:debug]
+//
+//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--runs 3] [--out <dir>]
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -21,23 +29,35 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { UsageError, parseFlags } from '#script-flags';
 
-const TRUNCATE_AT = 300;
 const TIMEOUT_MS = 600_000;
+const DEFAULT_RUNS = 3;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
+const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
+const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', runs: 'value', out: 'value' });
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
   if (!flags['plugin-dir']) throw new UsageError('--plugin-dir needs a clone of the plugin');
+  if (flags.runs !== undefined && !POSITIVE_INTEGER.test(flags.runs)) {
+    throw new UsageError(`--runs needs a positive integer, got '${flags.runs}'`);
+  }
   const cells = flags.cells.split(',').map((cell) => {
     const match = CELL_PATTERN.exec(cell);
     if (!match) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort, got '${cell}'`);
     return { model: match[1], effort: match[2] };
   });
   const pluginDir = flags['plugin-dir'];
-  return { promptFile: flags.prompt, cells, pluginDir, pluginId: installedPluginId(pluginDir) };
+  return {
+    promptFile: flags.prompt,
+    cells,
+    pluginDir,
+    pluginId: installedPluginId(pluginDir),
+    runs: flags.runs === undefined ? DEFAULT_RUNS : Number(flags.runs),
+    outDir: flags.out
+  };
 }
 
 function manifestName(pluginDir, file) {
@@ -73,12 +93,14 @@ function claudeArguments({ model, effort, promptText, armFlags }) {
   return args;
 }
 
-// The result of one arm's run: the final assistant text (undefined when the
-// run never produced one, such as a timeout or a refusal) and the first
-// Edit or Write tool call across the whole run, in order.
+// The result of one run: the final assistant text (undefined when the run
+// never produced one, such as a timeout or a refusal), the first Edit or
+// Write tool call across the whole stream, and the `skill` input of every
+// Skill tool call, in order.
 function parseStream(rawStdout) {
   let finalText;
   let firstAction = null;
+  const skills = [];
   for (const line of rawStdout.split('\n')) {
     if (line.trim() === '') continue;
     let event;
@@ -87,14 +109,18 @@ function parseStream(rawStdout) {
     } catch {
       continue;
     }
-    if (firstAction === null && event.type === 'assistant') {
-      const blocks = event.message?.content ?? [];
-      const toolUse = blocks.find((block) => block.type === 'tool_use' && ACTIONS.has(block.name));
-      if (toolUse) firstAction = `${toolUse.name} ${toolUse.input?.file_path ?? ''}`.trim();
+    if (event.type === 'assistant') {
+      const toolUses = (event.message?.content ?? []).filter((block) => block.type === 'tool_use');
+      for (const toolUse of toolUses) {
+        if (firstAction === null && ACTIONS.has(toolUse.name)) {
+          firstAction = `${toolUse.name} ${toolUse.input?.file_path ?? ''}`.trim();
+        }
+        if (toolUse.name === 'Skill') skills.push(String(toolUse.input?.skill ?? ''));
+      }
     }
     if (event.type === 'result') finalText = typeof event.result === 'string' ? event.result : '';
   }
-  return { finalText, firstAction };
+  return { finalText, firstAction, skills };
 }
 
 function runArm(args, cwd) {
@@ -111,36 +137,45 @@ function runArm(args, cwd) {
     }, TIMEOUT_MS);
     child.on('close', () => {
       clearTimeout(timer);
-      if (timedOut) {
-        resolve({ finalText: undefined, firstAction: null, timedOut: true });
-        return;
-      }
-      const parsed = parseStream(stdout);
-      resolve({ ...parsed, timedOut: false, stderr });
+      resolve({ ...parseStream(stdout), timedOut, stderr });
     });
   });
 }
 
-function summarize(outcome) {
-  if (outcome.timedOut) return `(timed out after ${TIMEOUT_MS / 1000}s)`;
-  const text = outcome.finalText === undefined
-    ? `(no result; stderr: ${outcome.stderr.trim().slice(0, TRUNCATE_AT) || 'empty'})`
-    : outcome.finalText.slice(0, TRUNCATE_AT);
-  const action = outcome.firstAction ?? 'none';
-  return `${text} [first edit/write: ${action}]`;
+// The answer file's content: the full final answer, or a note holding the
+// full stderr when the run timed out or produced no result.
+function answerText(outcome) {
+  const stderr = outcome.stderr.trim() || 'empty';
+  if (outcome.timedOut) return `(timed out after ${TIMEOUT_MS / 1000}s)\n\nstderr:\n${stderr}\n`;
+  if (outcome.finalText === undefined) return `(no result)\n\nstderr:\n${stderr}\n`;
+  return outcome.finalText;
 }
 
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId }) {
-  const scratchWithout = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-without-'));
-  const scratchWith = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-with-'));
+// A file-name-safe form of one cell value, since a model id may hold
+// characters such as `[` or `/`.
+function fileSafe(value) {
+  return value.replace(/[^A-Za-z0-9._-]/g, '_');
+}
+
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, runs, outDir }) {
   const disableInstalled = JSON.stringify({ enabledPlugins: { [pluginId]: false } });
-  const [without, withSkill] = await Promise.all([
-    runArm(claudeArguments({ model, effort, promptText, armFlags: ['--settings', disableInstalled] }), scratchWithout),
-    runArm(claudeArguments({ model, effort, promptText, armFlags: ['--plugin-dir', pluginDir] }), scratchWith)
-  ]);
+  const arms = [
+    { name: 'without', flags: ['--settings', disableInstalled] },
+    { name: 'with', flags: ['--plugin-dir', pluginDir] }
+  ];
+  const planned = arms.flatMap((arm) => Array.from({ length: runs }, (_, index) => ({ arm, runNumber: index + 1 })));
+  const outcomes = await Promise.all(planned.map(({ arm }) => {
+    const scratch = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
+    return runArm(claudeArguments({ model, effort, promptText, armFlags: arm.flags }), scratch);
+  }));
   console.log(`${model}:${effort}`);
-  console.log(`  without: ${summarize(without)}`);
-  console.log(`  with:    ${summarize(withSkill)}`);
+  planned.forEach(({ arm, runNumber }, index) => {
+    const outcome = outcomes[index];
+    const file = path.join(outDir, `${fileSafe(model)}-${fileSafe(effort)}-${arm.name}-${runNumber}.md`);
+    fs.writeFileSync(file, answerText(outcome));
+    const skills = outcome.skills.length > 0 ? outcome.skills.join(', ') : 'none';
+    console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]`);
+  });
 }
 
 async function main() {
@@ -149,7 +184,7 @@ async function main() {
     flags = readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>: ${error.message}`);
+    console.error(`${USAGE}: ${error.message}`);
     process.exitCode = 2;
     return;
   }
@@ -161,8 +196,20 @@ async function main() {
     process.exitCode = 2;
     return;
   }
+  let outDir;
+  try {
+    outDir = flags.outDir === undefined
+      ? fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-answers-'))
+      : path.resolve(flags.outDir);
+    fs.mkdirSync(outDir, { recursive: true });
+  } catch (error) {
+    console.error(`usage: pressure.mjs: cannot create --out directory '${flags.outDir}': ${error.message}`);
+    process.exitCode = 2;
+    return;
+  }
+  console.log(`answers: ${outDir}`);
   for (const cell of flags.cells) {
-    await runCell(cell, promptText, flags);
+    await runCell(cell, promptText, { ...flags, outDir });
   }
 }
 

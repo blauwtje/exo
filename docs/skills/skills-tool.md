@@ -10,7 +10,7 @@ A skill or agent is created, changed, or judged too long. It is not for a one-of
 
 - The skill written to one shape: a trigger-only description, an opening that names the enemy and the overcorrection, numbered steps that each carry their reason, and a judgment ladder.
 - Bulk moved out of the body into `references/`, with the moment to open each one named.
-- A run of the same prompt without the skill and with it, so a rule exists only where the run without it failed.
+- Several runs of the same prompt without the skill and with it, each full answer kept in its own file with the skills the run called, so a rule exists only where the runs without it failed.
 - A green `node verify.mjs`, which enforces the shape rather than describing it.
 
 ## Where its rules live

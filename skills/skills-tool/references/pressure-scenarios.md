@@ -35,9 +35,9 @@ One pressure gives a usable case; stack three for a strong one, because a skill 
 ## Running it
 
 1. Save the case to a prompt file, then take the model and effort from the next-stage model table of `using-exo` for a stage skill, from the frontmatter for an agent with the session's effort where it names none, `sonnet` at `high` for a build delegate's prompt, and the session's own for any other skill; a rule one model or effort needs is noise to another.
-2. Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`; it runs the without-skill and with-skill arm of every cell in parallel, in a scratch directory outside the repository, and prints 3 lines per cell: the cell, the `without` arm, and the `with` arm, each a truncated final answer plus its first Edit or Write action.
-3. Copy the chosen action and the justification word for word from the `without` line; that wording is what the skill has to answer.
-4. Read the `with` line for the same cell; it counts as a pass only when the `without` line failed.
+2. Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`; it runs the without-skill and with-skill arm of every cell `--runs` times (default 3) in parallel, each in a scratch directory outside the repository. It writes every full final answer to its own file in the `--out` directory (default a fresh temporary directory, named on the first line), and prints per cell its label, then one line per arm and run: the answer file, the first Edit or Write action, and every skill the run called.
+3. Copy the chosen action and the justification word for word from the `without` answer files; that wording is what the skill has to answer.
+4. Read the `with` answer files for the same cell; they count as a pass only when the `without` answers failed.
 5. Keep the prompt and both justifications in the edit's report and save no case in the repository, because a case on disk invites a paid rerun on every later edit; the prompt file itself lives in the scratch directory `pressure.mjs` makes, not in the repository.
 6. A run the API refuses before any tool call is neither a pass nor a fail: remove the framing that added the most pressure and rerun, never the same prompt unchanged.
 
