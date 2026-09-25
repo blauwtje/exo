@@ -55,18 +55,23 @@ Every skill is invoked as `/exo:<name>`. The first group Claude may also start o
 | `refactoring <the refactor to run>` | A named refactor, rename, move or internal API reshape must keep behavior unchanged, with no shim or compatibility re-export left behind. |
 | `research <library, version, question>` | A decision hinges on how a pinned external version behaves and a wrong guess would still compile. |
 | `skills-tool <skill>` | A skill or agent is created, edited or judged too long. |
+| `blast-radius <the diff, branch or claim to check>` | You ask whether a diff is safe to merge or ship, what a change could break, or build on a claim that existing code already handles something or nothing uses it: the claim is proven by running the real code. |
+| `technical-writing <the document or text to write or edit>` | Prose someone reads later is written or edited: a README or doc page, a pull request, issue or commit body, a changelog line, a brief or spec. |
 | `savings` | You ask what exo saved or what the read guard kept out of context. |
 | `settings [key value scope]` | You set up exo with no argument, or show or change one setting, the savings counter and the read guard included, for every project, one repository, or this machine only. |
 | `using-exo` | Injected at every session start, resume, clear and compaction. It names the other skills and their order. |
 
 ### User-invoked
 
-These carry `disable-model-invocation: true`, so Claude never starts one itself: they write a record only you should approve.
+These carry `disable-model-invocation: true`, so Claude never starts one itself: each writes a record only you should approve or runs a long or costly job only you should start.
 
 | Skill | Use it when |
 |---|---|
 | `handoff` | You save an unfinished session's live state to a file a fresh session reads after a clear. |
 | `memory` | You record what this repository taught exo, approve a claim two sessions have booked, or drop a line whose files are gone. |
+| `swarm <coverage, race, gauntlet or arena> <done predicate or artifact> [N]` | You fan one job out to parallel workers for split coverage, a race, a gauntlet of checks or an arena of candidates, with every rule that judges them fixed before the first one runs. |
+| `hillclimb <metric and direction> <target and attempt floor>` | You push one measured metric toward a target in an unattended loop that keeps or reverts each change against a frozen harness. |
+| `visual-parity <surfaces and the URL that renders them>` | You prove that a refactor, migration or dependency bump leaves every rendered surface pixel-identical to a baseline captured before the first edit. |
 
 Each skill also has a page under `docs/skills/`, written for a person: what the skill is for and what it leaves behind, without the instruction the model reads.
 

@@ -139,6 +139,24 @@ const EXPECTED_OWNER_ROWS = {
     'references/performance-budget.md',
     'references/internationalization.md',
   ],
+  'skills/blast-radius/SKILL.md': [
+    'references/hand-back.md',
+  ],
+  'skills/technical-writing/SKILL.md': [
+    'references/ai-tics.md',
+  ],
+  'skills/swarm/SKILL.md': [
+    'worker-prompt.md',
+    'judge-prompt.md',
+  ],
+  'skills/hillclimb/SKILL.md': [
+    'references/decision-log.md',
+    'attempt-prompt.md',
+    'auditor-prompt.md',
+  ],
+  'skills/visual-parity/SKILL.md': [
+    'references/capture-harness.md',
+  ],
 };
 
 const EXPECTED_CONTRACTS = {
