@@ -81,9 +81,14 @@ function modifyRanges(task, root) {
     });
 }
 
+function successCriterionLines(frame) {
+  return frame.successCriterion === null ? [] : [`Success criterion: ${frame.successCriterion}`];
+}
+
 function taskBrief(task, frame, root) {
   return [
     `Goal: ${frame.goal}`,
+    ...successCriterionLines(frame),
     'Non-goals touching these paths:',
     ...bulletLines(bulletsFor(task, frame.nonGoals)),
     'Context for these paths and symbols:',

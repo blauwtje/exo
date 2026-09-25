@@ -61,6 +61,22 @@ test('the brief file holds the frame and the task section, and the report holds 
   assert.doesNotMatch(report, /^### Task \d+:/m);
   assert.doesNotMatch(report, /^Goal:/m);
   assert.ok(!report.includes('return "hello"'), report);
+  assert.doesNotMatch(brief, /^Success criterion:/m);
+});
+
+test('a Success criterion section becomes a Success criterion: line after Goal:, joined across its lines', async () => {
+  const planWithCriterion = PLAN.replace(
+    '\n## Non-goals',
+    '\n## Success criterion\n\n`node --test` passes.\nNo new files remain uncommitted.\n\n## Non-goals'
+  );
+  const root = await gitRepository({
+    'src/app.js': 'export function greet() {\n  return "hi";\n}\n',
+    'docs/plans/fixture.md': planWithCriterion
+  });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  nextTaskReport({ planPath, planText: planWithCriterion, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, /^Goal: The fixture proves the plan reader\.\nSuccess criterion: `node --test` passes\.\nNo new files remain uncommitted\.$/m);
 });
 
 test('a wave of two writes two briefs, and a task outside the wave gets none', async () => {
