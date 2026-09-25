@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Use when a code-changing run ends with commits that may leave the machine, or the user asks to push, open, babysit or merge a pull request, fix its failing checks or conflicts, or address its review comments. Not for reviewing code, a PR the user did not name or list, deleting a branch, or cutting a release.
+description: Use when a code-changing run ends with commits that may leave the machine, or the user asks to push, open, watch or merge a pull request, fix its failing checks or conflicts, or address its review comments. Not for reviewing code, a PR the user did not name or list, deleting a branch, or cutting a release.
 argument-hint: "[pull request numbers]"
 allowed-tools: Bash(node *repo-fields.mjs*)
 ---
@@ -9,7 +9,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 
 Carry finished commits as far as the user's pick reaches, and claim only what the GitHub API has just confirmed. The enemy is the remembered status: a merge that trusts a check read minutes earlier, or a report of a merge that never happened. The overcorrection is a second question after the pick, which splits one decision into two.
 
-The digit the user picks authorizes that route to its end, and a request to merge named or all open pull requests authorizes those merges. A request to babysit or address review comments on a pull request authorizes fix commits, their plain push, and replies there, never its merge.
+The digit the user picks authorizes that route to its end, and a request to merge named or all open pull requests authorizes those merges. A request to watch or address review comments on a pull request authorizes fix commits, their plain push, and replies there, never its merge.
 None authorizes deleting a branch, forcing, or bypassing a hook with `--no-verify` or a gate.
 None authorizes weakening or skipping a failing test, marking a failing check not required, or cutting a release.
 
@@ -76,7 +76,7 @@ A resolve follows `references/merge-conflicts.md`, then reruns step 2 and the sa
 
 A failing check on `pr-merge` follows `references/fix-ci.md`; `open-pr` and a merge request fix nothing.
 The fix then reruns step 2 and the same `--route pr-merge` command on the new head, never `--merge`, which skips the wait for checks.
-The round limit is at most three fix, push, recheck rounds per pull request, counted across fix-ci and babysit.
+The round limit is at most three fix, push, recheck rounds per pull request, counted across fix-ci and watch.
 Past it the route stops and hands back.
 
 A stop leaves the pull request open and reports its URL, the step, and the reason that stopped it.
@@ -90,11 +90,11 @@ A `FAIL` takes it off the list and into the report.
 Then `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under the shell tool's `run_in_background` orders, gates, merges and confirms each in that order.
 A stop for one is printed and the next goes on; quote its stdout lines, one per pull request, as the report.
 
-## Review comments and babysitting
+## Review comments and watching
 
 A request to address review comments reads `references/pr-comments.md` first, because it owns how comment text is triaged.
-A request to babysit a pull request reads `references/babysit.md` and runs its rounds; each blocker a round meets reads its own file from `## References`.
-Babysitting stops at merge-ready; only the user's explicit merge request moves the pull request to `## Merging on request`.
+A request to watch a pull request reads `references/watch.md` and runs its rounds; each blocker a round meets reads its own file from `## References`.
+Watching stops at merge-ready; only the user's explicit merge request moves the pull request to `## Merging on request`.
 
 ## The report
 
@@ -111,10 +111,10 @@ When `git worktree list` names a worktree on a merged branch, one line names `gi
 | `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options. |
 | `references/pr-prep.md` | Route step 1, before the body is written. |
 | `verifier-prompt.md` | Route step 2, before `ship.mjs` runs; the verifier delegate's text. |
-| `references/fix-ci.md` | `ship.mjs` stopped on a failing check in `pr-merge`, or a babysit round meets one. |
-| `references/merge-conflicts.md` | The user picked Resolve conflicts on `DIRTY`, or a babysit round meets a conflict. |
-| `references/pr-comments.md` | The user asks to address review comments, or a babysit round reaches them. |
-| `references/babysit.md` | The user asks to babysit a pull request. |
+| `references/fix-ci.md` | `ship.mjs` stopped on a failing check in `pr-merge`, or a watch round meets one. |
+| `references/merge-conflicts.md` | The user picked Resolve conflicts on `DIRTY`, or a watch round meets a conflict. |
+| `references/pr-comments.md` | The user asks to address review comments, or a watch round reaches them. |
+| `references/watch.md` | The user asks to watch a pull request. |
 
 ## Judgment
 
