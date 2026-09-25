@@ -21,7 +21,7 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/define-scope/
 
 ## Checkpoint
 
-- Each decision sits on its own line with who decided it: you, `code: <path>` or exo.
+- Each decision sits on its own line with who decided it: you, code or exo.
 - The confirm question follows in the question shape, its options on separate lines, "write the brief" recommended.
 - No file is written before the user confirms.
 
