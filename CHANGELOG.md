@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.4 - 2026-09-25
+
 ### Highlights
 
 - **`run-parallel`'s rubric-judged shape is now called `contest`, and `ship` now says it watches a pull request.**
