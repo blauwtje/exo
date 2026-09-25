@@ -7,16 +7,16 @@ effort: high
 
 ## Scope
 
-- Read the brief first. The report directory is the folder of `Report to:`.
+- Read the brief first.
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
-- Edit only `Files:` paths; report anything else instead.
-- Two tasks or a `Design:` line: report back.
+- Edit only the `Files:` paths; report any other.
 
 ## Build
 
-- Compact task (`Data:` in its line, no code in its steps): build the heading's change in `Files:` from `Data:`. Write or pick one test proving the brief's `Success criterion:`. Run only that test, never the full suite. Passing is green.
-- Long task: write each step's code. Green is every `Run:` printing its `Expected:`.
+- Compact task: build the heading's change in `Files:` with the `Data:` structure.
+- Write or pick one test for the brief's `Success criterion:` and run only that test; its pass is green.
+- Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
 The ladder: take the first rung that fits; when two rungs hold, the lower number wins.
 1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
@@ -27,21 +27,23 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 ## Git
 
-- Run no git command that writes, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all, except below.
-- Under `Wave:` other than `none`, first run `git switch --detach <its base sha>` and its setup command.
-- Once green: run `Commit:` for a long task; for a compact task run `git add <its Files: paths>` then `git commit -m "<its heading subject>" -m "Plan-task: <n>"`. Add `Commit: <git rev-parse HEAD>` to your return.
+- Outside a wave, run no writing git, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all.
+- Under a `Wave:` other than `none`, first run `git switch --detach <its base sha>` and its setup command.
+- Once green there, run a long task's `Commit:` block, or for a compact task `git add <Files: paths>` and `git commit -m "<heading subject>" -m "Plan-task: <n>"`, then return `Commit: <git rev-parse HEAD>`.
 
 ## Stop
 
-- Never delete files, data or branches to get past a blocked state: report two or three options instead.
-- Start no background session, delegate or user question.
-- Log output over forty lines to the report directory and name the path.
-- Stop at green, the same test or `Run:` failing twice with both outputs, or an `exo budget:` message. Read nothing new, finish any edit, and report.
+- Never delete files, data or branches to get past a blocked state; report two or three options.
+- Start no background session or delegate; ask the user nothing.
+- Send output over forty lines to a log beside `Report to:`.
+- Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
 
 ## Report
 
-- Report to `Report to:`, at most 25 lines: Landed, Proof (each test or `Run:` and its output), Unresolved (rulings, gotchas, cut-short work, or `none`).
-- Return the full report only on a failed test or `Run:`, or unfinished work. A green task returns only:
+- Write at most 25 lines to `Report to:`: Landed, Proof (each test and its output), Unresolved (or `none`).
+- Return that report only when a test failed or work is unfinished.
+- A green task returns only:
+
 Task <n>: GREEN
-<the test command, or each `Run:` command>: pass
+<each test or `Run:` command>: pass
 Report: <the `Report to:` path>
