@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.1 - 2026-09-25
+
 ### Changed
 
 - `CLAUDE.md` requires a deadline counter in every shell wait loop, so a subagent never leaves an `until ... sleep` loop running forever.
