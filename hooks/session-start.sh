@@ -19,10 +19,14 @@ fi
 # A clear or a compaction empties the context, so the read guard forgets which
 # ranges the model still holds and the repeat guard forgets which calls it saw.
 source=$(printf '%s' "$input" | jq -r '.source // ""')
+running_plan=""
 case "$source" in
   clear|compact)
     printf '%s' "$input" | node "$root/skills/show-savings/scripts/read-guard.mjs" reset >/dev/null
     printf '%s' "$input" | node "$root/skills/show-savings/scripts/repeat-guard.mjs" reset >/dev/null
+    # A plan run-plan left open survives only as its marker, so the cleared
+    # session is told to resume it instead of waiting for the user to ask.
+    running_plan=$(printf '%s' "$input" | node "$root/skills/run-plan/scripts/resume-plan.mjs" session)
     ;;
 esac
 # Every source ends with the whole body injected below, so the restatement
@@ -55,6 +59,9 @@ located() {
   printf '`%s` from the repository root' "$relative"
 }
 pointers=""
+if [ -n "$running_plan" ]; then
+  pointers="$running_plan"$'\n\n'
+fi
 # A handoff the user wrote before a clear sits beside the branch it belongs to,
 # so a session resuming that work is told where it is instead of searching for
 # it. Only the pointer is injected: the file itself is often longer than this
