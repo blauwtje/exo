@@ -60,6 +60,9 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/check-docs/SKILL.md': [],
   'skills/show-savings/SKILL.md': [],
+  'skills/start/SKILL.md': [
+    'references/cheat-sheet.md',
+  ],
   'skills/configure/SKILL.md': [
     'references/setup-map.md',
     '../route-skills/references/question.md',

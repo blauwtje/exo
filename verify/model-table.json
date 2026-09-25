@@ -20,6 +20,7 @@
   "skills/save-session": { "model": null, "effort": null },
   "skills/ship": { "model": null, "effort": null },
   "skills/show-savings": { "model": "haiku", "effort": null },
+  "skills/start": { "model": null, "effort": null },
   "skills/try-idea": { "model": null, "effort": null },
   "skills/tune-metric": { "model": null, "effort": null },
   "skills/write-docs": { "model": null, "effort": null },
