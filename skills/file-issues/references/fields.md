@@ -43,13 +43,14 @@ Every section is an H3, because a repository's issue form renders each of its fi
 **Spec**, for a brief `define-scope` produced and for any feature work:
 
 - `### Outcome`: one sentence naming the result, in the present tense; a brief's Goal.
-- `### Problem`: what goes wrong for the user today, seen from their side, in one or two sentences; a brief's Problem.
+- `### Problem`: what goes wrong for the user today, seen from their side, in one or two sentences.
 - `### Done when`: checkable criteria as a task list, each a state a reader verifies without reading the diff; a brief's Acceptance.
-- `### Proof`: the highest seam that runs the criteria and which of them it runs; a brief's Proof.
-- `### Out of scope`: what a reader would otherwise assume is included; a brief's Out of scope.
+- `### Proof`: the highest seam that runs the criteria and which of them it runs; a brief's Acceptance also names this seam.
+- `### Out of scope`: what a reader would otherwise assume is included.
 - `### References`: the paths and symbols the criteria rest on, one per line.
 - `### Decided`: for a brief, one line per decision it closed, as `<decision>: <answer> (<you, code: path, or exo>)`, because later wishes reopen only the lines they touch; a brief's Decisions.
-- A Spec no brief produced keeps `### Decided` optional, only for a constraint the user settled that the criteria do not already carry, and `### Problem` and `### Proof` optional too.
+- `### Assumptions`: one line per routine point the brief settled without asking; a brief's Assumptions.
+- A Spec keeps `### Decided` optional, only for a constraint the user settled that the criteria do not already carry; keeps `### Problem`, `### Proof` and `### Out of scope` optional too, since neither shape carries them from a brief; and carries `### Assumptions` only when a brief produced one.
 
 **Report**, for what needs no define-scope: a bug, a regression, a chore or a documentation fix.
 
