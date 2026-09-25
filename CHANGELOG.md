@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.2 - 2026-09-25
+
 ### Fixed
 
 - The README `### User-invoked` sentence gives a true reason for every skill that carries `disable-model-invocation: true`.
