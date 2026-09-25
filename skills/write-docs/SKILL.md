@@ -36,5 +36,5 @@ Prose for a reader who was not in the session says who does what, by which mecha
 
 - The fields ship, file-issues or define-scope set outrank this skill's layout; only the wording inside them follows it.
 - The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
-- A reader's ease outranks a rule: when a rule makes a sentence worse, fix the sentence another way or leave it.
+- A reader's ease outranks a rule: if following one hurts a sentence, mend it differently or keep it as written.
 - Clarity outranks brevity: an article or verb whose loss makes the reader decode stays.

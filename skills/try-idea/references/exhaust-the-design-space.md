@@ -9,7 +9,7 @@ Build competing variants before answering a question no precedent settles. The e
 
 ## The loop
 
-1. **Name 2-3 structurally different shapes.** Different types, module boundaries, or control flow, not the same shape with a variable renamed; a second flavor of the first shape does not count.
+1. **Name 2-3 structurally different shapes.** Each differs in types, module boundaries, or control flow; a variant of one shape, down to a renamed variable, is that shape again.
 2. **Build the least each needs to be told apart.** Each variant follows step 4's throwaway rules and lands on the same `temp/<name>`, one commit per variant.
 3. **Compare, then answer.** Read the question's observation off each variant before recording the decision at step 6.
 
