@@ -1,6 +1,6 @@
 ---
 name: blast-radius
-description: "Use when asked to merge or ship a diff if safe, what a change could break, or to build on a claim that existing code handles X or nothing uses Y. Not for reported failures (debug), explaining code (investigation), plan conformance (branch-reviewer) or one-function edits."
+description: "Use when asked to merge or ship a diff if safe, what a change could break, or to build on a claim existing code already handles X or nothing uses Y. Not for reported failures (debug), explaining code (investigation), plan conformance (branch-reviewer) or one-function edits."
 argument-hint: <the diff, branch or claim to check>
 ---
 
@@ -35,6 +35,7 @@ Before a change lands, find what it breaks outside its diff and prove the fact i
 | "CI is green and it was approved." | The suite tests the diff's own code; breakage outside it runs in no test the diff touched. |
 | "The comment, README or standup says it is handled." | That is level 1; the installed code at the pinned version decides. |
 | "Grep finds no other caller." | Grep misses built keys, callbacks, other languages and readers of the same data; name what was searched. |
+| "They asked for a few lines, so the levels can go." | A tag costs three words; a short reply keeps a tag on every safety claim. |
 | "No time for a script before the deadline." | One script calling the real function takes minutes; report the fact as unproven rather than safe. |
 
 ## References
