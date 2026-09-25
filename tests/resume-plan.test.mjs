@@ -18,19 +18,26 @@ const PLAN = planFixture({ tasks: [
   taskSection({ number: 2, title: 'Style', dependsOn: 'Task 1', files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
 ] });
 
-async function checkout({ marker }) {
+const SESSION_ID = 'run-plan-session';
+const HOUR_MS = 60 * 60 * 1000;
+
+async function checkout({ marker, writtenAt = new Date() }) {
   const root = await gitRepository({ 'docs/plans/fixture.md': PLAN });
   const planPath = path.join(root, 'docs/plans/fixture.md');
+  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active');
   if (marker) {
-    const exoDirectory = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo');
-    await fs.mkdir(exoDirectory, { recursive: true });
-    await fs.writeFile(path.join(exoDirectory, 'run-plan.active'), `${planPath}\n${root}\n`);
+    await fs.mkdir(path.dirname(markerPath), { recursive: true });
+    await fs.writeFile(markerPath, `${planPath}\n${root}\n${SESSION_ID}\n${writtenAt.toISOString()}\n`);
   }
-  return { root, planPath };
+  return { root, planPath, markerPath };
 }
 
-function stopInput(root, stopHookActive) {
-  return JSON.stringify({ hook_event_name: 'Stop', cwd: root, stop_hook_active: stopHookActive });
+function stopInput(root, stopHookActive, sessionId = SESSION_ID) {
+  return JSON.stringify({ hook_event_name: 'Stop', cwd: root, session_id: sessionId, stop_hook_active: stopHookActive });
+}
+
+async function exists(file) {
+  return fs.access(file).then(() => true, () => false);
 }
 
 test('a stop with the marker and an open task blocks with the next task', async () => {
@@ -64,6 +71,22 @@ test('a stop after every task landed does not block', async () => {
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): style', '-m', 'Plan-task: 2');
   const result = await run(SCRIPT, ['stop'], { input: stopInput(root, false) });
   assert.equal(result.stdout, '');
+});
+
+test('a stop with a marker older than six hours does not block and removes the marker', async () => {
+  const { root, markerPath } = await checkout({ marker: true, writtenAt: new Date(Date.now() - 7 * HOUR_MS) });
+  const result = await run(SCRIPT, ['stop'], { input: stopInput(root, false) });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, '');
+  assert.equal(await exists(markerPath), false);
+});
+
+test('a stop from another session does not block and removes the marker', async () => {
+  const { root, markerPath } = await checkout({ marker: true });
+  const result = await run(SCRIPT, ['stop'], { input: stopInput(root, false, 'another-session') });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, '');
+  assert.equal(await exists(markerPath), false);
 });
 
 async function sessionContext(root, source) {
