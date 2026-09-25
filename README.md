@@ -59,7 +59,7 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 
 ### User-invoked
 
-These carry `disable-model-invocation: true`, so Claude never starts one itself: each opens the way in, saves a live state, or writes a record only you should approve.
+These carry `disable-model-invocation: true`, so Claude never starts one itself: `start` shows the skills when you ask, and `save-session` and `remember` write a record only you should approve. The flag also keeps `route-skills` and the three long runs under Rarely needed (`compare-renders`, `run-parallel`, `tune-metric`) for you to start.
 
 | Skill | What it does | Just say |
 |---|---|---|
