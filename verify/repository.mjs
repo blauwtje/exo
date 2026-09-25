@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { EXPECTED_SKILLS } from './budgets.mjs';
 
 // PowerShell's Sort-Object orders paths case-insensitively, so a references/
@@ -40,11 +41,29 @@ export function createRepository(root) {
     return found.sort(comparePaths);
   }
 
+  // Every file git tracks under the root. The self-test fixture is a plain copy
+  // outside any work tree, so there every file under the root counts instead.
+  function trackedFiles() {
+    const listing = spawnSync('git', ['-C', absoluteRoot, 'ls-files', '-z'], { encoding: 'utf8' });
+    if (listing.status === 0) {
+      return listing.stdout.split('\0')
+        .filter((entry) => entry !== '')
+        .map((entry) => path.join(absoluteRoot, entry))
+        .filter((full) => fs.existsSync(full) && fs.statSync(full).isFile())
+        .sort(comparePaths);
+    }
+    return fs.readdirSync(absoluteRoot, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => path.join(entry.parentPath, entry.name))
+      .sort(comparePaths);
+  }
+
   return {
     root: absoluteRoot,
     skillsRoot,
     relative,
     walk,
+    trackedFiles,
     join: (...segments) => path.join(absoluteRoot, ...segments),
     skillDirectories: () => fs.readdirSync(skillsRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && EXPECTED_SKILLS.includes(entry.name))

@@ -1,11 +1,12 @@
-// Every name in a shipped file is a name exo owns. The list is held
+// Every name in a tracked text file is a name exo owns: shipped files, the
+// changelog, benchmarks, tests and the verifier alike. The list is held
 // base64-encoded and decoded here, because a plaintext list would itself be the
 // text this check forbids and `git grep -i` for those names has to come back
-// empty. A third-party notice file at the root fails too: the MIT licence in
+// empty; this file is the one tracked file the scan skips, since it holds the
+// list. A third-party notice file at the root fails too: the MIT licence in
 // LICENSE is the whole licence, and a notice file would say otherwise.
 
 import fs from 'node:fs';
-import path from 'node:path';
 import { Buffer } from 'node:buffer';
 
 const ENCODED_NAMES = [
@@ -22,13 +23,27 @@ const ENCODED_NAMES = [
   'd2FpdC13aGF0',
   'dG8tcXVlc3Rpb25uYWlyZQ==',
   'bG9vcC1tZQ==',
-  'c3VwZXJwb3dlcnM='
+  'c3VwZXJwb3dlcnM=',
+  'cHN0YWNr',
+  'cG90ZXRv',
+  'bGF1cmVuIHRhbg==',
+  'bWF0dCBwb2NvY2s=',
+  'Z29kbW9kZQ==',
+  'Ym1hZA==',
+  'Ymxhc3QtcmFkaXVz',
+  'c3dhcm0=',
+  'aGlsbGNsaW1i',
+  'dmlzdWFsLXBhcml0eQ==',
+  'dGVjaG5pY2FsLXdyaXRpbmc=',
+  'aW52ZXN0aWdhdGlvbg==',
+  'cmVmYWN0b3Jpbmc=',
+  'YmFieXNpdA==',
+  'YXJlbmE='
 ];
 
-// Only a name the plugin ships is scanned. `docs/` is git-ignored apart from
-// `docs/skills/`, so the private reading these names come from is out of reach.
-const ROOT_TEXT_FILES = ['README.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'ABOUT.md'];
-const SHIPPED_DOCS = 'docs/skills';
+// Only tracked files are scanned: `docs/` is git-ignored apart from
+// `docs/skills/`, so the private reading these names come from stays out of reach.
+const LIST_FILE = 'verify/checks/derivation.mjs';
 
 const NOTICE_FILES = [
   'NOTICE', 'NOTICE.md', 'NOTICE.txt',
@@ -43,25 +58,14 @@ function derivedNames() {
 export function checkDerivation(report, repository) {
   const errors = [];
   const names = derivedNames();
-  const files = new Set([
-    ...repository.processFiles(),
-    ...repository.promptFiles(),
-    ...repository.agentFiles(),
-    ...repository.everySkillFile()
-  ]);
-  for (const relative of ROOT_TEXT_FILES) {
-    const file = repository.join(relative);
-    if (fs.existsSync(file)) files.add(file);
-  }
-  // The one part of docs/ that ships, absent from the verifier's own fixture.
-  const shippedDocs = repository.join(SHIPPED_DOCS);
-  if (fs.existsSync(shippedDocs)) {
-    for (const entry of fs.readdirSync(shippedDocs)) {
-      if (entry.endsWith('.md')) files.add(path.join(shippedDocs, entry));
-    }
-  }
-  for (const file of files) {
-    const lowered = repository.text(file).toLowerCase();
+  let scanned = 0;
+  for (const file of repository.trackedFiles()) {
+    if (repository.relative(file) === LIST_FILE) continue;
+    const text = repository.text(file);
+    // A NUL byte marks a binary file, which holds no prose to scan.
+    if (text.includes('\0')) continue;
+    scanned += 1;
+    const lowered = text.toLowerCase();
     for (const name of names) {
       if (lowered.includes(name)) errors.push(`${repository.relative(file)}: derived name '${name}'`);
     }
@@ -74,7 +78,7 @@ export function checkDerivation(report, repository) {
   report.assert(
     errors.length === 0,
     'derivation',
-    `no derived name and no third-party notice reaches a shipped file, across ${files.size} files`,
+    `no derived name and no third-party notice reaches a tracked file, across ${scanned} files`,
     errors.join('; ')
   );
 }
