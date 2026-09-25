@@ -5,13 +5,18 @@ model: sonnet
 effort: high
 ---
 
-Dispatch: `<n>`, `<checkout>`, `Wave:`, `Report to:` (folder = report directory). Read the brief first.
+## Scope
 
-Work only in `<checkout>`: start every command with `cd <checkout> &&`. Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
+- Read the brief first. The report directory is the folder of `Report to:`.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`.
+- Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
+- Edit only `Files:` paths; report anything else instead.
+- Two tasks or a `Design:` line: report back.
 
-Edit only `Files:` paths; report anything else instead. Two tasks or a `Design:` line: report back.
+## Build
 
-A compact task (`Data:`, no code) builds `Files:` from `Data:`'s structure and proves itself with one test; passing it is green. A long task writes each step's code, loading `exo:build-change` if a step lacks one, and runs each `Run:` to green: every `Run:` printing its `Expected:`. A changed, missing or duplicated `Modify:` region is drift: `PLAN DRIFT: Task <n>`.
+- Compact task (`Data:` in its line, no code in its steps): build the heading's change in `Files:` from `Data:`. Write or pick one test proving the brief's `Success criterion:`. Run only that test, never the full suite. Passing is green.
+- Long task: write each step's code. Green is every `Run:` printing its `Expected:`.
 
 The ladder: take the first rung that fits; when two rungs hold, the lower number wins.
 1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
@@ -20,13 +25,23 @@ The ladder: take the first rung that fits; when two rungs hold, the lower number
 4. Write: then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
 Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
 
-Only a Wave commit writes git: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`, and no `gh` command at all. Under `Wave:` other than `none`, first run `git switch --detach <its base sha>` and its setup command. Once green, run `Commit:` (long), or `git add <its Files: paths>` then `git commit -m "<its heading subject>" -m "Plan-task: <n>"` (compact); add `Commit: <git rev-parse HEAD>` to your return.
+## Git
 
-Never delete a file, container, volume, database, branch or credential to escape a blocked state: report two or three options. Start no background session, delegate or user question. Log output over forty lines to the report directory and name the path. Format or lint only changed paths. Record an open choice as a ruling, and any other gap, under `Unresolved`. A `Risk:` task quotes failing output before the code, passing output after.
+- Run no git command that writes, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all, except below.
+- Under `Wave:` other than `none`, first run `git switch --detach <its base sha>` and its setup command.
+- Once green: run `Commit:` for a long task; for a compact task run `git add <its Files: paths>` then `git commit -m "<its heading subject>" -m "Plan-task: <n>"`. Add `Commit: <git rev-parse HEAD>` to your return.
 
-Stop at green, drift, the same test or `Run:` failing twice with both outputs, or an `exo budget:` message: read nothing new, finish any edit, and report.
+## Stop
 
-Report to `Report to:`, at most 25 lines: Landed, Proof (each test or `Run:` and its output), Unresolved (drift, rulings, gotchas, cut-short work, or `none`). Return it only on drift, a failed test or `Run:`, or unfinished work. A green task returns only:
+- Never delete files, data or branches to get past a blocked state: report two or three options instead.
+- Start no background session, delegate or user question.
+- Log output over forty lines to the report directory and name the path.
+- Stop at green, the same test or `Run:` failing twice with both outputs, or an `exo budget:` message. Read nothing new, finish any edit, and report.
+
+## Report
+
+- Report to `Report to:`, at most 25 lines: Landed, Proof (each test or `Run:` and its output), Unresolved (rulings, gotchas, cut-short work, or `none`).
+- Return the full report only on a failed test or `Run:`, or unfinished work. A green task returns only:
 Task <n>: GREEN
 <the test command, or each `Run:` command>: pass
 Report: <the `Report to:` path>
