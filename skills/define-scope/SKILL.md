@@ -17,8 +17,8 @@ Turn a request into a confirmed brief, so nobody codes through an unmade decisio
 
 ## Interview
 
-1. **Ask or decide.** Ask what the user would notice or is costly to reverse; decide the routine.
-   Costly means stored data format, a public interface, a paid service or a deletion.
+1. **Ask or decide.** Ask only what is costly or irreversible; decide the routine, a visible but cheap point included.
+   Costly means stored data format, a public interface, a paid service, a deletion, or access rights and security.
 2. **Look facts up** in the code while the user answers.
 3. **Root first.** Ask what other decisions hang on, and finish its branch first.
 4. **Sort each open point into a bin.** Costly (step 1) asks; answerable by running something (which approach works, how it feels, whether it is fast enough) goes to `try-idea` and comes back as a decision, never a question; routine you decide and list as an assumption.
@@ -59,6 +59,7 @@ Reply 1a or 1b, your own words, or ok to take every recommendation and assumptio
 - A reply names the question's number and letter, or answers in the user's own words, unambiguous about which question it answers; `ok`, or its synonym `go`, takes every recommendation and every assumption.
 - That reply is the confirmation: the brief is written right after it, with no separate confirmation round.
 - A reply that opens a new costly or irreversible point earns one more bundled message holding just that point.
+- A question a reply leaves unanswered takes its recommendation; the reply still confirms, and the brief follows.
 - "I don't know" on a point gets two everyday sentences on how its options differ, with one example the user would see, then that point once more.
   A second "I don't know" on the same point takes the recommendation, credited to exo.
 
