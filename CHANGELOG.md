@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.6 - 2026-09-25
+
 ### Highlights
 
 - **`draft-plan` writes a compact plan of at most 30 non-blank lines: goal, plan basis, success criterion, a four-point checkpoint and one field line per task.**
