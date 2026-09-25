@@ -1,6 +1,6 @@
 # Judge prompt
 
-The text `swarm` hands one read-only `general-purpose` delegate at step 6, on `opus` when the candidates ran on `sonnet` and on `sonnet` when they ran on `opus`, dispatched only after every candidate has returned. It scores against the rubric fixed in `frame.md` before any candidate ran.
+The text `swarm` hands one read-only `general-purpose` delegate at step 6, on `opus` when the candidates ran on `sonnet` and on `sonnet` when they ran on `opus`, dispatched only after every candidate has returned. It scores against the rubric fixed in `<git dir>/exo/swarm/<slug>/frame.md` before any candidate ran.
 
 ```text
 Swarm <slug>, arena judge.

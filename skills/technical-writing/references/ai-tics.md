@@ -1,6 +1,8 @@
 # AI writing tics
 
-Each tic below is a pattern that marks text as machine-written, with its id, the fix, and one before/after pair. An id is stable: a review cites it, a new tic takes the next free number in its group, and a removed tic retires its number rather than passing it on.
+Each tic below is a pattern that marks text as machine-written, with its id, the fix, and one before/after pair. The enemy is prose a reader dismisses as generated before weighing what it says. The overcorrection is a rewrite that strips a term or number the reader needs because it matched a pattern.
+
+An id is stable: a review cites it, a new tic takes the next free number in its group, and a removed tic retires its number rather than passing it on.
 
 ## Contents
 
@@ -12,6 +14,7 @@ Each tic below is a pattern that marks text as machine-written, with its id, the
 - [Metaphor and jargon](#metaphor-and-jargon)
 - [Plain mechanism](#plain-mechanism)
 - [Documentation mode](#documentation-mode)
+- [Judgment](#judgment)
 
 ## Content
 
@@ -32,7 +35,7 @@ Words chosen for their sound, not their meaning. Fix: the word a developer says 
 | Id | Tic | Before | After |
 |---|---|---|---|
 | W1 | Stock AI vocabulary: delve, interplay, tapestry, landscape, pivotal, seamless, showcase, foster, streamline, vibrant | This PR delves into the interplay between the cache and memory. | This PR changes how the cache evicts entries. |
-| W2 | A fancy verb in place of "is" or "has": serves as, stands as, boasts, features | `config.md` serves as the home for every setting. | `config.md` lists every setting. |
+| W2 | A fancy verb in place of "is" or "has": serves as, stands as, boasts, features | `config.toml` serves as the home for every setting. | `config.toml` lists every setting. |
 | W3 | "Not just X, but Y" and "It's not X, it's Y" | This isn't just a bug fix, it's a rethink of caching. | This fixes #412 by evicting on bytes. |
 | W4 | A list of three forced for rhythm | Fast, reliable and scalable image compression. | Compresses JPEG and PNG files in place. |
 | W5 | Synonym cycling: one thing under several names | The cache fills up, the store evicts, the LRU layer logs it. | The cache fills up, evicts, and logs the eviction. |
@@ -118,3 +121,9 @@ A document serves one reader need: learning by doing (tutorial), getting a known
 | M3 | The condition after the instruction | Run `npm run bump` if the version changed. | If the version changed, run `npm run bump`. |
 | M4 | The warning after the step it guards | Run `tidyimg ./photos`. Note: this overwrites the originals. | `tidyimg` overwrites the originals, so commit them first. Then run `tidyimg ./photos`. |
 | M5 | The rare case before the common one | With a proxy, set `HTTPS_PROXY`. Otherwise run `npm install`. | Run `npm install`. Behind a proxy, set `HTTPS_PROXY` first. |
+
+## Judgment
+
+- A fact, number or term the reader needs outranks every tic fix; a fix that drops it is wrong, whatever tic it clears.
+- Documentation mode decides first: move a sentence to the page its mode belongs on before rewording it, because a sentence that moves may need no fix.
+- A tic in a quotation, a command or a code sample stays as written, because a changed quotation or command no longer matches its source.

@@ -35,3 +35,9 @@ Step 3's double capture fails on noise; these are the usual sources, fixed befor
 
 - A bump of the capture engine itself changes the harness, so this harness cannot prove it; say so rather than recapture the baseline.
 - A pass proves the captured states, viewports and schemes only; the report lists every one that was not captured.
+
+## Judgment
+
+- A double capture that differs outranks a deadline: no change is judged until two captures of the unchanged tree match, because noise found later cannot be told apart from drift.
+- The base commit outranks a faster tree: a baseline from a tree holding part of the change is recaptured, never kept.
+- A state with no URL is listed as unproven rather than captured by clicking, because a click path is not in the harness and does not repeat.

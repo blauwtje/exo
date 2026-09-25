@@ -1,6 +1,6 @@
 # Worker prompt
 
-The text `swarm` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `frame.md`; an arena candidate gets the second block, which carries the task and never the rubric.
+The text `swarm` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<git dir>/exo/swarm/<slug>/frame.md`; an arena candidate gets the second block, which carries the task and never the rubric.
 
 ## Coverage, race or gauntlet worker
 

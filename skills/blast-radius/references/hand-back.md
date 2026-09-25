@@ -15,3 +15,9 @@ The result a reviewer, a planner or the user acts on. The enemy is a verdict wit
 - Cite only a `file:line` opened this session; never name a caller, field or API not seen in the code.
 - A claim from a brief that proved false goes first, above section 1, because a design is about to be built on it.
 - Strip secrets, customer data and internal hostnames before the result leaves the session.
+
+## Judgment
+
+- A claim from a brief that proved false outranks the section order and goes above section 1, because a reader stops at the first section that looks settled.
+- A level tag outranks length: cut a cleared item before the proof behind a risk, because an untagged risk reads as proven.
+- "Unproven" outranks a plausible trace; a proof never run is written as unproven, never promoted a level.
