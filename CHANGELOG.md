@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.45.0 - 2026-09-25
+
 ### Added
 
 - Three multi-turn pressure cases for `define-scope` under `benchmarks/pressure/define-scope/`, with their fixtures and pass criteria.
