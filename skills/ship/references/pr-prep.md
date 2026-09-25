@@ -40,7 +40,7 @@ Use these sections in order, dropping one with nothing to say:
 - `## Why`: the goal and how the change reaches it, in at most two brief paragraphs; no SHAs or rebase genealogy, no "based on main" preamble.
 - `## Scope`: a bullet per real symbol or path; a rename or retarget gives old and new name; mark in or out only where that line matters.
 - `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about; skip when there was no real choice.
-- `## Blast Radius`: at most three sentences on whom or what the change reaches and what makes it safe or risky.
+- `## Blast Radius`: one sentence, three at most, on whom or what the change reaches and what makes it safe or risky.
   Name the cost of staying red without the fix.
 - `## Verification`: each real run path and its outcome, exo's proof line included; for a performance change, one primary number with unit in `before → after` form; link fuller evidence rather than tabulating it.
 End on `Closes #<n>` when an issue is behind the change.
