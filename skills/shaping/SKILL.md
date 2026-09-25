@@ -6,7 +6,7 @@ argument-hint: <outcome to shape>
 
 # Shaping
 
-Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before doing any work. Decide the routine choices, ask each decision the user would notice until none is open, and keep moving.
+Turn an outcome into a recommendation or a buildable brief before implementation. The enemy is coding through an unstated product or architecture decision. The overcorrection is interviewing every ambiguity before any work. Decide the routine choices, ask each decision the user would notice until none is open, and keep moving.
 
 ## Decision gate
 
@@ -74,7 +74,7 @@ Answer like `4.1 5.2`, `ok` for every recommended answer, or `go` for the recomm
 ```
 
 - Options follow the question shape; the question names the decision. Question numbers run on across rounds, so a reply can cite Q2 from round 3.
-- A path or an identifier appears only beside what it means: the reader answers from the product, never from the code.
+- A path or an identifier appears only beside what it means: the reader answers from the product, not the code.
 - Any answer counts: `ok` takes every recommended answer of the round, a round of one question takes a bare digit, and a worded reply is read as the decisions it names. A skipped question stays open for the next round; one whose answer fits two options is asked again. Fold it onto the map with `--apply`.
 - "I don't know" gets the difference in two sentences with one example from the product, and the question returns next round; a second one takes the recommended answer, listed as exo's.
 
@@ -109,7 +109,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 ## Judgment
 
 - `debug` outranks this skill when existing behavior fails and the cause is unproven.
-- The loaded frontend-design skill owns visual decisions, then hands control back; this skill retains product, data, and architecture decisions.
+- The loaded frontend-design skill owns visual decisions, then hands control back; this skill keeps product, data, and architecture decisions.
 - Explicit user wording outranks mode selection and artifact defaults.
 - A stored brief outranks a new one while both name the same outcome.
 - A brief hands over through its stored copy: after a compaction notice, re-read `docs/specs/<topic>.md` or `gh issue view <n> --json body` and continue from it, never from the conversation; planning starts only on the user's pick.
