@@ -14,24 +14,24 @@ Load a large artifact into a form you can query (one row per sample, frame, or n
 ## Prove the mechanism
 
 - **Live process.** Confirm the hypothesis cheaply before believing it: evaluate an expression against the running process through its live-eval or debugger protocol, or apply a scoped hotfix without a restart.
-- **Captured artifact.** Confirm against a paired before/after capture when one exists. Without one, report the finding as the strongest hypothesis the artifact supports, not a confirmed cause.
+- **Captured artifact.** Confirm against a paired before/after capture when one exists. Without one, call the finding the best reading this artifact allows, a hypothesis nothing has confirmed.
 
 ## Attribute to source
 
-Map the hot frame or retainer to file, symbol, and the line that allocates, blocks, or schedules. A frame with no source mapping is not yet a diagnosis; say so rather than guessing the symbol.
+Map the hot frame or retainer to file, symbol, and the line that allocates, blocks, or schedules. A frame the artifact carries no symbols for leaves the diagnosis open; report that gap, never a guessed symbol.
 
 ## Hypothesis families for a slowdown
 
-Once the trace names a region, use these to ground the fix; a family earns an attempt only when the trace shows the signal it names, not as a checklist run in order.
+Once the trace names a region, these ground the fix. Try a family only if the trace carries its signal, never as an ordered checklist.
 
-- **Elimination.** The region need not run at all: dead computation, an always-off gate, a redundant sync.
-- **Divide and conquer.** Cost scales with input size; split the work so each piece touches less, or run independent pieces in parallel.
-- **Caching.** The same computation or fetch repeats on identical inputs; store and reuse the result, and name what invalidates it.
-- **Indirection.** A cheaper intermediate could absorb the cost: an index instead of a scan, a queue off the interactive thread.
-- **Batching.** Many small operations each pay a fixed overhead; coalesce them to pay it once.
-- **Redundancy.** One slow instance dominates a wait with headroom elsewhere; duplicate the attempt and take the fastest result.
-- **Lazy evaluation.** The cost lands on a result nobody uses yet; defer it to first use.
-- **Scheduling.** The work must happen, but not during the interactive moment; move it off the path the user waits on.
+- **Elimination.** Nothing needs the region to run (dead computation, an always-off gate, a redundant sync): remove it.
+- **Divide and conquer.** Cost grows with input size: cut the input into smaller parts, or run independent parts concurrently.
+- **Caching.** Identical inputs repeat a computation or fetch: keep the first answer and name what makes it stale.
+- **Indirection.** A cheaper intermediate could absorb the cost: look up through an index rather than scanning, or queue work off the interactive thread.
+- **Batching.** Each of many small calls pays the same fixed cost: combine them to pay it once.
+- **Redundancy.** One slow instance dominates a wait while others have headroom: run the attempt twice, keep the first to finish.
+- **Lazy evaluation.** The cost goes to a result nothing reads yet: postpone it until the first read.
+- **Scheduling.** The work is required, but not while the user interacts: move it out of the user's wait.
 
 ## Judgment
 
