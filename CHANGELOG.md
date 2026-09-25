@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.46.0 - 2026-09-25
+
 ### Added
 
 - `verify/model-table.json` holds the model and effort of every skill and agent, checked by verify, and a `budget` setting (`normal`, `lean`) makes a lean session dispatch an opus agent on sonnet.
