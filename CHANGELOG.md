@@ -13,6 +13,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The README skill tables say in plain words what each skill does and what to say instead of its name, with rare skills apart.
 - `route-skills` runs only when typed, because the session hook already injects its rules at every start, clear and compaction.
 
 ### Fixed

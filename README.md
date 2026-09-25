@@ -80,6 +80,8 @@ Skills for a case most sessions never hit; still worth knowing about.
 | `run-parallel <coverage, race, gauntlet or arena> <done predicate or artifact> [N]` | Hands one job to parallel helpers. | Type `/exo:run-parallel` |
 | `tune-metric <metric and direction> <target and attempt floor>` | Pushes one metric up in a loop that reverts itself. | Type `/exo:tune-metric` |
 
+`route-skills` holds the routing rules every other skill follows. The session hook injects it at every start, resume, clear and compaction, so it is never picked; type `/exo:route-skills` to read it.
+
 Each skill also has a page under `docs/skills/`, written for a person: what the skill is for and what it leaves behind, without the instruction the model reads.
 
 `skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so nothing staged there is listed, invoked or counted against a budget. Promotion means all five of: the folder moves to `skills/<name>/`, the name joins `EXPECTED_SKILLS` in `verify/budgets.mjs`, it gets a reference contract in `verify/checks/reference-tables.mjs`, its description is paid for in the description budgets, and it gets a page under `docs/skills/`.
