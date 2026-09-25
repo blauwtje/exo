@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**Breaking: every exo skill and agent has a new name, and the old names no longer resolve.** Replace each `exo:<old>` in your prompts, settings and CLAUDE.md with its new name from the Changed list below. **exo is now MIT licensed.**
+
+### Changed
+
+- Breaking: skills renamed `blast-radius` to `check-impact`, `debug` to `find-cause`, `deepen` to `audit-architecture`, `designing` to `design-ui`, `handoff` to `save-session`, `hillclimb` to `tune-metric`, `implementing` to `run-plan`, `implementing-batch` to `build-change`, `investigation` to `explain-code`, `issuing` to `file-issues`, `memory` to `remember`, `planning` to `draft-plan`, `prototyping` to `try-idea`, `refactoring` to `refactor`, `research` to `check-docs`, `savings` to `show-savings`, `settings` to `configure`, `shaping` to `define-scope`, `shipping` to `ship`, `skills-tool` to `edit-skills`, `swarm` to `run-parallel`, `technical-writing` to `write-docs`, `using-exo` to `route-skills` and `visual-parity` to `compare-renders`.
+- Breaking: agents renamed `branch-reviewer` to `review-branch`, `branch-reviewer-deep` to `review-branch-deep`, `design-builder` to `build-ui`, `design-critic` to `critique-ui`, `design-discovery` to `survey-ui`, `explorer` to `locate-code`, `implementer` to `build-task` and `researcher` to `fetch-docs`.
+- `edit-skills` names every skill and agent as an imperative verb phrase of one or two words.
+- The license is MIT instead of PolyForm Noncommercial 1.0.0.
+
+### Removed
+
+- The old skill and agent names, with no alias: a call to `exo:<old>` or an old `subagent_type` no longer resolves.
+
 ## 0.42.2 - 2026-09-25
 
 ### Fixed
