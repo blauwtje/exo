@@ -3,7 +3,7 @@
 The text `tune-metric` hands a `general-purpose` delegate on `sonnet` to build one attempt in its own worktree, so the session reviews a diff and measures it rather than typing the change.
 
 ```text
-Hillclimb attempt <n> for metric <metric, direction>, worktree <absolute path>, based on commit <current best>.
+Tune-metric attempt <n> for metric <metric, direction>, worktree <absolute path>, based on commit <current best>.
 
 Hypothesis: <the change, one line>
 Mechanism: <why it moves the metric, with the file:line it acts on>

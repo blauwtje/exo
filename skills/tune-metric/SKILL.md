@@ -5,7 +5,7 @@ argument-hint: "<metric and direction> <target and attempt floor> [harness comma
 disable-model-invocation: true
 ---
 
-# Hillclimb
+# Tune metric
 
 A number counts only when a frozen harness measured it and the regression checks stayed green around it. The enemy is the run that edits its own yardstick, keeps changes it never measured, and calls a lucky sample or a plateau the finish. The overcorrection is a loop so cautious it stops at the first reject or asks the user about every reversible fix, while nobody is there to answer.
 

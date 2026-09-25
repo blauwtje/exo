@@ -3,7 +3,7 @@
 # history included, because the cases rely on its commit messages and blame.
 set -euo pipefail
 
-root=/tmp/exo-pressure/investigation
+root=/tmp/exo-pressure/explain-code
 stream="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ledger-sync.fast-export"
 
 rm -rf "$root"

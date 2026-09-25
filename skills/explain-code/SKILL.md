@@ -4,7 +4,7 @@ description: "Use when asked how X works or why it is so, to explain, teach or c
 argument-hint: <how, why or teach, and the code in question>
 ---
 
-# Investigation
+# Explain code
 
 Explain this repository from what was read in it this session, and say how sure each claim is. The enemy is the fluent answer built from a name, a comment, the asker's own theory or memory, which the user then acts on. The overcorrection is an answer so hedged or so long it decides nothing, or a list of locations where a narrative was asked.
 

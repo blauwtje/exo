@@ -4,7 +4,7 @@ description: "Use when a named refactor, rename, move or internal API reshape mu
 argument-hint: <the refactor to run>
 ---
 
-# Refactoring
+# Refactor
 
 Change structure while behavior stays pinned, and leave less code than you found. The enemy is the half-finished move: the old API kept beside the new one, a shim forwarding to it, or a reshape trusted because it type-checks. The overcorrection is a refactor that grows new layers for needs nobody has written yet.
 

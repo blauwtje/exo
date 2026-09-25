@@ -3,7 +3,7 @@
 # each prompt starts in an empty directory and runs one of these scripts there.
 set -euo pipefail
 
-root=/tmp/exo-pressure/refactoring
+root=/tmp/exo-pressure/refactor
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 rm -rf "$root"

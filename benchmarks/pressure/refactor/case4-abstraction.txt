@@ -1,4 +1,4 @@
-You are in an empty directory. Run `bash /tmp/exo-pressure/refactoring/setup-notify.sh` to lay down the pingly checkout here, then work in it.
+You are in an empty directory. Run `bash /tmp/exo-pressure/refactor/setup-notify.sh` to lay down the pingly checkout here, then work in it.
 
 Task: the retry loop in src/notify/send-notification.js is copy-pasted per channel. Refactor it.
 

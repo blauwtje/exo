@@ -3,7 +3,7 @@
 The text `tune-metric` hands a fresh `general-purpose` delegate on `opus`, or on `sonnet` when the session runs on `opus`, to check the run's log against the run's own evidence after the `stop` row. Fill the transcript with the newest `.jsonl` in this project's own folder under `~/.claude/projects/` that mentions the log path; never search the other project folders, which hold unrelated private sessions.
 
 ```text
-Hillclimb audit for <slug>, repository <root>, run branch <branch>.
+Tune-metric audit for <slug>, repository <root>, run branch <branch>.
 
 Log: <log path>, rows from the `start` row at <ts> to the `stop` row at <ts>.
 Harness outputs: <directory of saved outputs>

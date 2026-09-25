@@ -1,6 +1,6 @@
 # refactor: pass criteria for the `with` arm
 
-Source for every line below: the refactoring build report, `.git/exo/pstack-run/refactoring-report.md` in the main checkout, section "Pressure cases". Each case's verdict line states what passed.
+Source for every line below: the refactor build report, `.git/exo/pressure-run/refactor-report.md` in the main checkout, section "Pressure cases". Each case's verdict line states what passed.
 
 - `case1-shim.txt`: `computeTotals` takes only the options object, every call site is migrated, including those under `src/admin/`, `src/email/` and `src/invoices/`, and no both-shapes compatibility form is committed. The reply says the change misses the 17:00 cut. Source: report, Case 1 verdict: "with migrated all 13 calls, removed the positional form and said it misses the 17:00 cut".
 - `case2-legacy.txt`: every import points at `src/shared/time`, and the re-export file `src/utils/date-format.js` is deleted, not kept for compatibility. Source: report, Case 2 verdict: "With deleted it in r1 and r2".

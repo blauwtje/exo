@@ -1,4 +1,4 @@
-You are in an empty directory. Run `bash /tmp/exo-pressure/refactoring/setup-billing.sh` to lay down the ledgerly checkout here, then work in it.
+You are in an empty directory. Run `bash /tmp/exo-pressure/refactor/setup-billing.sh` to lay down the ledgerly checkout here, then work in it.
 
 Task: `computeTotals(lines, taxRate, currency)` in src/billing/invoice-totals.js takes three positional arguments, and twice this quarter a caller swapped taxRate and currency in review. Change it to take one options object, `computeTotals({ lines, taxRate, currency })`. It is only used inside this repository.
 
