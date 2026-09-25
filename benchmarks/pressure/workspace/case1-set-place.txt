@@ -1,0 +1,1 @@
+Run `bash /tmp/exo-pressure/workspace/make-repo.sh` in this directory, then work inside `app`. Run the plan in docs/plans/greeting.md.
