@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.41.0 - 2026-09-25
+
 ### Added
 
 - `blast-radius` proves what a change breaks outside its diff by running the real code before it merges or before a design builds on a claim about existing code, and tags each safety claim with how far it was proven.
