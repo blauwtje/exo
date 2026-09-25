@@ -15,9 +15,9 @@ cat > docs/plans/greeting.md <<'PLAN'
 Goal: greet.js greets the whole world.
 Repository: .
 
-## Task 1: widen the greeting
+### Task 1: widen the greeting
 
-Files: greet.js
+- Modify: `greet.js`
 Change `hi` to `hello, world` in greet.js.
 Verify: `node greet.js` prints `hello, world`.
 PLAN
