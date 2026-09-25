@@ -137,4 +137,34 @@ cat > "$dir/src/users/user.ts" <<'EOF'
 export type User = { id: string; email: string; displayName: string };
 EOF
 
+# Case D: a notes app with local storage, no export yet; one costly point (where
+# rendering happens) and three routine points (order, file name, page size) the
+# fixture code leaves open.
+dir="$root/fx-notes-export"
+mkdir -p "$dir/src"
+mkdir -p "$dir/src/notes"
+cat > "$dir/README.md" <<'EOF'
+# scribble
+Notes app. Notes live in the browser's local storage, newest first on screen.
+EOF
+cat > "$dir/package.json" <<'EOF'
+{ "name": "scribble", "version": "0.4.0", "dependencies": { "react": "^18.3.1" } }
+EOF
+cat > "$dir/src/notes/note-repository.ts" <<'EOF'
+export type Note = { id: string; title: string; body: string; createdAt: string };
+
+export function listNotes(): Note[] {
+  const raw = localStorage.getItem('notes');
+  return raw ? JSON.parse(raw) : [];
+}
+EOF
+cat > "$dir/src/notes/note-list.tsx" <<'EOF'
+import { listNotes } from './note-repository';
+
+export function NoteList() {
+  const notes = listNotes();
+  return notes.map((n) => n.title);
+}
+EOF
+
 echo "define-scope fixtures ready under $root"

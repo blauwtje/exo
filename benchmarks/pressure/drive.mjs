@@ -9,12 +9,13 @@ const PROMPTS = {
   A: "I want to add a DeepSeek worker to this project that can take coding tasks off my hands. Help me figure out what it should do before we build it.",
   B: "Add an export for tide alerts so harbour masters can get them out of the app. Let's pin down what it should be first.",
   C: "Let people share their shopping lists with family. Shape this with me before building.",
+  D: "Add a way to export a note to PDF. Shape this with me before building.",
 };
 const id = `${scenario}-${model}-${arm}`;
 const dir = path.join(S, 'runs', id);
 const cwd = path.join(dir, 'work');
 fs.mkdirSync(cwd, { recursive: true });
-fs.cpSync(path.join('/tmp/exo-pressure/define-scope', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share'}[scenario]), cwd, { recursive: true });
+fs.cpSync(path.join('/tmp/exo-pressure/define-scope', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export'}[scenario]), cwd, { recursive: true });
 const armFlags = arm === 'with' ? ['--plugin-dir', PLUGIN]
   : ['--settings', JSON.stringify({ enabledPlugins: { 'exo@blauwtje': false } })];
 const log = (m) => { const l = `[${new Date().toISOString().slice(11,19)}] ${id}: ${m}`; console.log(l); fs.appendFileSync(path.join(dir, 'progress.log'), l + '\n'); };
@@ -41,7 +42,7 @@ function turn(prompt, sessionId, n) {
 }
 const isQuestion = (t) => /\?|Reply /i.test(t ?? '');
 const isCheckpoint = (t) => /write the brief/i.test(t ?? '');
-const replies = { B: ["I don't know", "I don't know", '1', '1'], C: ['2', 'go'] }[scenario];
+const replies = { B: ["I don't know", "I don't know", '1', '1'], C: ['2', 'go'], D: ['ok'] }[scenario];
 let aOnes = 0, aOk = false;
 const maxTurns = Number(maxTurnsArg || 99);
 let prompt = PROMPTS[scenario], sid, n = 1;

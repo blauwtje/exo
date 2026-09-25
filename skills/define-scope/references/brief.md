@@ -7,11 +7,9 @@ A brief is the decided outcome, written in fixed sections a later session resume
 The brief holds these sections, in this order:
 
 - **Goal:** one sentence describing the observable result.
-- **Problem:** what goes wrong for the user today, seen from their side, in one or two sentences.
-- **Decisions:** every decision with its answer and who closed it: you, the code with the path that settles it, or exo for a routine one.
-- **Out of scope:** what a reader would otherwise assume is included.
-- **Acceptance:** observable checks.
-- **Proof:** the highest seam that can run the acceptance checks, the one closest to what the user does, and which checks it runs there.
+- **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
+- **Assumptions:** every bin-3 point as one line each, so a later correction costs one sentence.
+- **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
 
 `docs` writes `docs/specs/<topic>.md` in these section names.

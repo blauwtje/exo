@@ -21,44 +21,46 @@ Turn a request into a confirmed brief, so nobody codes through an unmade decisio
    Costly means stored data format, a public interface, a paid service or a deletion.
 2. **Look facts up** in the code while the user answers.
 3. **Root first.** Ask what other decisions hang on, and finish its branch first.
-4. **Keep going** until you and the user picture the same build.
-5. **One question per message**, in the shape below.
-6. **After a compaction**, list the decisions so far before the next question.
+4. **Sort each open point into a bin.** Costly (step 1) asks; answerable by running something (which approach works, how it feels, whether it is fast enough) goes to `try-idea` and comes back as a decision, never a question; routine you decide and list as an assumption.
+5. **Bundle every bin-1 question and bin-3 assumption into one message**, in the shape below.
+   No bin-1 point with an assumption writes the brief unasked, no confirmation needed; no bin-1 point and no assumption follows the Gate.
+6. **After a compaction**, list the decisions so far before the next message.
 7. **Name the owning layer**; two or more structural shapes open `references/architecture-sketch.md`.
 8. **Name a smaller alternative** when one exists.
 
 ## Question shape
 
-The user never saw the code, so no name from it appears in any message, checkpoint included: no path, class, field, setting, role, status code or technical term, only what it means for the user.
+The user never saw the code, so no name from it appears in any message, assumption lines included: no path, class, field, setting, role, status code or technical term, only what it means for the user.
 
-- A question message holds question, options, why line and reply line, opening with the question, short and in everyday words.
-  The exception is one context line above, when the question needs it; earlier answers and code findings wait for the checkpoint.
-- Two or three one-line options holding only what the user gets.
+- The message opens with each bin-1 question in turn, short and in everyday words, numbered when more than one.
+  The exception is one context line above a question, when it needs it; earlier answers and code findings wait for the brief.
+- Two or three one-line options per question, holding only what the user gets, lettered when the question is numbered.
 - Recommended first, with the active output style's marker for a recommended choice; only without one, `(recommended)`.
-- Under the list, one short unlabelled line says why, because a reason inside an option blurs the choice.
-- Close with the example's reply line, its digits matching the options.
+- Under each question's options, one short unlabelled line says why, because a reason inside an option blurs the choice.
+- After the questions, every bin-3 assumption as one plain line each, in what the user gets, under an "Assuming" line.
+- Close with one reply line naming how to answer each question and that `ok` or `go` takes every recommendation and assumption.
 
 ```text
-How should harbour masters get their tide alerts out of the app?
+1. How should harbour masters get their tide alerts out of the app?
 
-1. Download their harbour's alerts as a spreadsheet. (recommended)
-2. Add the alerts to their own calendar.
-A spreadsheet opens anywhere and needs no setup.
+   a. Download their harbour's alerts as a spreadsheet. (recommended)
+   b. Add the alerts to their own calendar.
+   A spreadsheet opens anywhere and needs no setup.
 
-Reply 1 or 2, in your own words, or go to take every recommendation.
+Assuming, unless you say otherwise:
+- The export uses the same date format the alert list already shows.
+- The export button sits beside the existing refresh button.
+
+Reply 1a or 1b, your own words, or ok to take every recommendation and assumption.
 ```
 
 ## Replies
 
-- A digit or own words answer the question; `ok` takes the recommended option.
-- `go` takes the recommendation for every open decision, asked or not, and brings the checkpoint at once.
-- "I don't know" gets two everyday sentences on how the options differ, with one example the user would see, then the same question again.
-  A second takes the recommendation, credited to exo.
-
-## Checkpoint
-
-List each decision on its own plain line with who decided it: you, `code` or exo.
-Then ask in the question shape, reply line included: 1 write the brief (recommended), 2 change something; nothing is written before the yes.
+- A reply names the question's number and letter, or answers in the user's own words, unambiguous about which question it answers; `ok`, or its synonym `go`, takes every recommendation and every assumption.
+- That reply is the confirmation: the brief is written right after it, with no separate confirmation round.
+- A reply that opens a new costly or irreversible point earns one more bundled message holding just that point.
+- "I don't know" on a point gets two everyday sentences on how its options differ, with one example the user would see, then that point once more.
+  A second "I don't know" on the same point takes the recommendation, credited to exo.
 
 ## Spec
 
