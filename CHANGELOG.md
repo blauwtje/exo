@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/pressure/` keeps the pressure cases of `investigation`, `refactoring`, `blast-radius` and `technical-writing`, each with a fixture setup and a pass criterion per case, so they can be rerun.
+
+### Changed
+
+- `skills-tool`'s `pressure.mjs` writes every full answer to its own file instead of printing the first 300 characters, lists the skills each run invoked, and repeats each cell `--runs` times, 3 by default.
+
 ## 0.41.0 - 2026-09-25
 
 ### Added
