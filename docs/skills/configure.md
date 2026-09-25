@@ -1,10 +1,10 @@
-# settings
+# configure
 
 Shows and changes exo's settings: one at a time, or all of them in one walk.
 
 ## When it fires
 
-When you run `/exo:settings`, ask to set up or configure exo, or ask to see or change one setting, for every project, one repository, or this machine only.
+When you run `/exo:configure`, ask to set up or configure exo, or ask to see or change one setting, for every project, one repository, or this machine only.
 
 ## What you get
 
@@ -15,4 +15,4 @@ When you run `/exo:settings`, ask to set up or configure exo, or ask to see or c
 
 ## Where its rules live
 
-`skills/settings/SKILL.md`, with the schema beside it and the walk's page map in `skills/settings/references/setup-map.md`. The harness's own `settings.json`, its permissions and its hooks are not exo's to change.
+`skills/configure/SKILL.md`, with the schema beside it and the walk's page map in `skills/configure/references/setup-map.md`. The harness's own `settings.json`, its permissions and its hooks are not exo's to change.

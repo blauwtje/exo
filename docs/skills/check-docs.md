@@ -1,4 +1,4 @@
-# research
+# check-docs
 
 Confirms how a pinned external version actually behaves.
 
@@ -14,4 +14,4 @@ A code decision hinges on a library, framework, API or service, and a wrong reca
 
 ## Where its rules live
 
-`skills/research/SKILL.md`, with the delegate prompt beside it.
+`skills/check-docs/SKILL.md`, with the delegate prompt beside it.

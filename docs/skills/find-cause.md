@@ -1,4 +1,4 @@
-# debug
+# find-cause
 
 Finds the cause of a failure before anything is changed.
 
@@ -15,4 +15,4 @@ Existing behavior is reported wrong as a bug, error, crash, regression, broken o
 
 ## Where its rules live
 
-`skills/debug/SKILL.md`.
+`skills/find-cause/SKILL.md`.

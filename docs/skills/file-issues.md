@@ -1,4 +1,4 @@
-# issuing
+# file-issues
 
 Writes and files GitHub issues for this repository as specs.
 
@@ -14,4 +14,4 @@ When you ask in plain words to file, open, write or split issues. The request is
 
 ## Where its rules live
 
-`skills/issuing/SKILL.md`, with the field and body standard in its `references/fields.md`, which shaping and shipping read as well.
+`skills/file-issues/SKILL.md`, with the field and body standard in its `references/fields.md`, which define-scope and ship read as well.

@@ -1,10 +1,10 @@
-# prototyping
+# try-idea
 
 Answers one open question with code built to be deleted, then keeps only the answer.
 
 ## When it fires
 
-A decision about logic, state or data flow needs running code before it can be made: a state model, an algorithm choice, an integration nobody has tried. It fires on prototype, throwaway or proof of concept. A decided change belongs to implementing-batch, and a look to choose belongs to designing, which already renders rival directions.
+A decision about logic, state or data flow needs running code before it can be made: a state model, an algorithm choice, an integration nobody has tried. It fires on prototype, throwaway or proof of concept. A decided change belongs to build-change, and a look to choose belongs to design-ui, which already renders rival directions.
 
 ## What you get
 
@@ -15,4 +15,4 @@ A decision about logic, state or data flow needs running code before it can be m
 
 ## Where its rules live
 
-`skills/prototyping/SKILL.md`.
+`skills/try-idea/SKILL.md`.

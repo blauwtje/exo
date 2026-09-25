@@ -1,4 +1,4 @@
-# memory
+# remember
 
 Records what this repository taught exo, once and only when you approve it.
 
@@ -14,4 +14,4 @@ Only when you invoke it. A correction you just made is booked silently by a hook
 
 ## Where its rules live
 
-`skills/memory/SKILL.md`, with its scripts beside it. A build or test command belongs in `AGENTS.md` or `CLAUDE.md`, not here.
+`skills/remember/SKILL.md`, with its scripts beside it. A build or test command belongs in `AGENTS.md` or `CLAUDE.md`, not here.

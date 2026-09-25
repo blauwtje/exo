@@ -1,10 +1,10 @@
-# hillclimb
+# tune-metric
 
 Improves one measured metric in an unattended loop: each change is measured against a frozen harness, then kept or reverted, until a target and a minimum number of attempts both hold.
 
 ## When it fires
 
-Only when you invoke it. Claude never starts it, because only you can name the metric, the target and how long the run may go. A single decided change belongs to implementing-batch, a failure with an unproven cause to debug, and finding what to improve to deepen.
+Only when you invoke it. Claude never starts it, because only you can name the metric, the target and how long the run may go. A single decided change belongs to build-change, a failure with an unproven cause to find-cause, and finding what to improve to audit-architecture.
 
 ## What you get
 
@@ -16,4 +16,4 @@ Only when you invoke it. Claude never starts it, because only you can name the m
 
 ## Where its rules live
 
-`skills/hillclimb/SKILL.md`, with `references/decision-log.md`, `attempt-prompt.md` and `auditor-prompt.md`.
+`skills/tune-metric/SKILL.md`, with `references/decision-log.md`, `attempt-prompt.md` and `auditor-prompt.md`.

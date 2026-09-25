@@ -1,10 +1,10 @@
-# investigation
+# explain-code
 
 Explains this repository from code and history read in the session, and says how sure each claim is.
 
 ## When it fires
 
-Someone asks how part of the repository works, why code is built the way it is, whether a stated reason holds, or wants to be taught a part of it. It runs in three modes: `how` for the mechanism, `why` for the reason, and `teach` for both at the asker's level. It changes no file. A list of locations belongs to the explorer agent, an external library to research, a failure with an unproven cause to debug, and a question about where the architecture should change to deepen.
+Someone asks how part of the repository works, why code is built the way it is, whether a stated reason holds, or wants to be taught a part of it. It runs in three modes: `how` for the mechanism, `why` for the reason, and `teach` for both at the asker's level. It changes no file. A list of locations belongs to the locate-code agent, an external library to check-docs, a failure with an unproven cause to find-cause, and a question about where the architecture should change to audit-architecture.
 
 ## What you get
 
@@ -16,4 +16,4 @@ Someone asks how part of the repository works, why code is built the way it is, 
 
 ## Where its rules live
 
-`skills/investigation/SKILL.md`.
+`skills/explain-code/SKILL.md`.

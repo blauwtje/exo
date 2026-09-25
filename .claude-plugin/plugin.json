@@ -7,7 +7,7 @@
   },
   "homepage": "https://github.com/blauwtje/exo",
   "repository": "https://github.com/blauwtje/exo",
-  "license": "PolyForm-Noncommercial-1.0.0",
+  "license": "MIT",
   "keywords": ["skills", "agents", "delegates", "workflow", "planning", "debugging"],
   "userConfig": {
     "specs": {

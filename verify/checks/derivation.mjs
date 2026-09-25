@@ -1,9 +1,8 @@
 // Every name in a shipped file is a name exo owns. The list is held
 // base64-encoded and decoded here, because a plaintext list would itself be the
 // text this check forbids and `git grep -i` for those names has to come back
-// empty. A third-party notice file at the root fails too: PolyForm
-// Noncommercial 1.0.0 is the whole licence, and a notice file would say
-// otherwise.
+// empty. A third-party notice file at the root fails too: the MIT licence in
+// LICENSE is the whole licence, and a notice file would say otherwise.
 
 import fs from 'node:fs';
 import path from 'node:path';

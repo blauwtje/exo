@@ -1,10 +1,10 @@
-# technical-writing
+# write-docs
 
 Words the prose exo writes for a later reader in one documentation mode, with the actor, the mechanism and the codebase's own names, and scans it against a catalogue of machine-written tics.
 
 ## When it fires
 
-A README or doc page, an ADR, a pull request, issue or commit body, a changelog line, a brief or a spec is being written or edited, or such a text is reviewed because it reads as machine-written. The fields of a pull request, issue, commit subject or brief stay with shipping, issuing and shaping; this skill words the text inside them. Chat replies belong to the output style and code comments to the code standard.
+A README or doc page, an ADR, a pull request, issue or commit body, a changelog line, a brief or a spec is being written or edited, or such a text is reviewed because it reads as machine-written. The fields of a pull request, issue, commit subject or brief stay with ship, file-issues and define-scope; this skill words the text inside them. Chat replies belong to the output style and code comments to the code standard.
 
 ## What you get
 
@@ -16,4 +16,4 @@ A README or doc page, an ADR, a pull request, issue or commit body, a changelog 
 
 ## Where its rules live
 
-`skills/technical-writing/SKILL.md`, with `references/ai-tics.md`.
+`skills/write-docs/SKILL.md`, with `references/ai-tics.md`.

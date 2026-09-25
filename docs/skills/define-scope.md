@@ -1,4 +1,4 @@
-# shaping
+# define-scope
 
 Decides what to build, before anything is planned or written.
 
@@ -14,8 +14,8 @@ A request names a result, or brings new wishes for work that already has a brief
 - New wishes reopen the brief you already have: only the decisions they touch are asked again, and the issue or the file is edited where it stands.
 - With the `interview` setting on `page`, the questions appear in one browser tab that shows every decision, open and closed, and a click answers.
 - A list of what the change will not do, so the next stage cannot widen it quietly.
-- A question offering planning as the next stage.
+- A question offering draft-plan as the next stage.
 
 ## Where its rules live
 
-`skills/shaping/SKILL.md`, with reopening a stored brief in `skills/shaping/references/stored-brief.md`, the brief's sections in `skills/shaping/references/brief.md`, the issue path in `skills/shaping/references/brief-in-an-issue.md`, the page's protocol in `skills/shaping/references/interview-page.md` and its script in `skills/shaping/scripts/`.
+`skills/define-scope/SKILL.md`, with reopening a stored brief in `skills/define-scope/references/stored-brief.md`, the brief's sections in `skills/define-scope/references/brief.md`, the issue path in `skills/define-scope/references/brief-in-an-issue.md`, the page's protocol in `skills/define-scope/references/interview-page.md` and its script in `skills/define-scope/scripts/`.
