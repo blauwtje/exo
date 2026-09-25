@@ -39,6 +39,7 @@ Discovery that spans many files goes to the `exo:explorer` agent for locations; 
 | "The comment explains why." | A comment can be added years later by someone else; the commit that set the value is the evidence. |
 | "Blame already shows the commit." | Blame shows the last move of the line; trace back to the commit that set the value. |
 | "The asker already knows the reason." | Their theory is the hypothesis step 1 tests, not a source. |
+| "They said skip the git archaeology." | They waive the answer's story, not step 4's check: the commit that set the value can contradict the comment; the answer stays light. |
 | "Confirmed by the tech lead." | A person's certainty is a hypothesis; with no commit, PR or issue behind it, the reason stays inferred or unknown. |
 | "They want it plain, no caveats." | Plain words, same tier; an inference stated as fact is what the user acts on. |
 | "A list of files answers how." | Locations are `exo:explorer`'s job; `how` asks for the chain in prose. |
