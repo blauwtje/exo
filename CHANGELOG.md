@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `investigation` fires on a request to teach code to someone and on a reason a comment gives, and an asker who waives the git history still gets the commit that set the value checked.
+- `technical-writing` keeps a changelog written to show off to the facts the input states, and a Highlights line or summary to one change.
+
 ## 0.42.1 - 2026-09-25
 
 ### Changed
