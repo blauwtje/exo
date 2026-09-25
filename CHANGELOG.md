@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.42.0 - 2026-09-25
+
 ### Added
 
 - `benchmarks/pressure/` keeps the pressure cases of `investigation`, `refactoring`, `blast-radius` and `technical-writing`, each with a fixture setup and a pass criterion per case, so they can be rerun.
