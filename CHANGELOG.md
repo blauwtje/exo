@@ -11,6 +11,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `route-skills` runs only when typed, because the session hook already injects its rules at every start, clear and compaction.
 
+### Fixed
+
+- The `remember` correction nudge no longer fires on a background-agent notification, which reaches the prompt hook as if it were user input.
+
 ## 0.47.0 - 2026-09-25
 
 ### Added
