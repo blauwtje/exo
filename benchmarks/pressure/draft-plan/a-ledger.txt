@@ -1,0 +1,12 @@
+The repository is /tmp/exo-pressure/draft-plan/ledger. Another session will execute the work, so write a complete plan to /tmp/exo-pressure/draft-plan/ledger/docs/plans/multi-currency.md and do not change any source file.
+
+The change: the ledger becomes multi-currency. It needs seven phases, in this order:
+1. Money: amounts carry a currency code (ISO 4217, two decimals), parse and format per currency, and adding two different currencies throws.
+2. Exchange rates: a new rates module that stores dated rates per currency pair in the ledger file and converts an amount at the rate valid on a date.
+3. Storage: schema version 2, where every account has a currency and every transaction stores its amount and currency; version 1 files migrate on load to EUR.
+4. Accounts and transfers: an account opens in a currency; a transfer between accounts of different currencies converts at that day's rate and records both amounts.
+5. Reports: the trial balance and statements show each account in its own currency plus a total converted to a chosen reporting currency.
+6. API and CLI: open takes a currency, a rates endpoint and a `rate` command set rates, reports take a reporting currency.
+7. Tests and docs: tests for every phase's behavior and a README that documents the new commands and the version 2 schema.
+
+Each task must carry the full code, the command that proves it and the expected output.

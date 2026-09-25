@@ -1,7 +1,7 @@
 ---
 name: draft-plan
 description: Use when a read-only planning mode is active, a plan is requested, another session runs the work, or edits have two or more order dependencies. Not for same-session work with at most one dependency, one-file edits, git-only work, an unproven failure outside planning mode, or an architecture audit.
-argument-hint: <what to plan, a spec path, or an issue number>
+argument-hint: <what to plan, a spec path, or an issue number> [--run]
 ---
 
 # Planning
@@ -29,7 +29,7 @@ Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` before any dispatch and re
 
 Discovery beyond the map goes to the `exo:locate-code` agent by default, briefed with the files, symbols and call sites the plan will name and told to quote the range around each, never a path the map names. Reading here is the exception, at most eight direct file reads before the plan file is first written, each of only the range around one name; past eight, the rest of the discovery goes to `exo:locate-code`, because a session that greps the tree or opens whole files carries that output into every later turn. A name reaches a step only after its range was read, here or in that report. For a deliverable plan, write each step's code in full while the range is in view: the executor pastes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
 
-Discovery is the only work this skill delegates. This session chooses the design, orders the tasks, and writes the artifact: a delegated design comes back whole and names files this session never read. A delegated context may critique a finished ordering, never author one.
+A plan of two or more phases is written a phase at a time. This session writes `## Goal`, `## Plan basis`, `## Non-goals`, `## Context` and a phase list, because it owns the design and the order. Each phase then goes to a fresh `general-purpose` delegate on the session's model, one at a time in list order, since a session writing every task carries all of them into each later turn. Its brief names the plan path, the phase, `references/plan-spec.md` and the earlier phases' returned lines. It finds code through `exo:locate-code`, appends the phase's tasks to the plan with `Edit`, and returns at most 10 lines: the exports and paths later phases need. A delegate may critique a finished order, never author one.
 
 A task whose path crosses a security boundary names that reference in its own heading or `Data:` clause, never as a warning left for later: the builder reads the named files and the reference together before it writes a line.
 
@@ -48,7 +48,7 @@ Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" -
 
 ## Handing it over
 
-A deliverable plan ends the turn on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after draft-plan --artifact <plan path>`'s output: the reply names the plan path and the task count, never the plan text, then that output.
+With `--run`, the same turn continues into `run-plan` on the written plan instead of asking. Otherwise a deliverable plan ends the turn on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after draft-plan --artifact <plan path>`'s output: the reply names the plan path and the task count, never the plan text, then that output.
 
 ## References
 
