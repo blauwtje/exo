@@ -37,6 +37,20 @@
       "description": "normal: every agent dispatches on the model verify/model-table.json names. lean: an opus agent dispatches on sonnet instead. Not sure? Keep normal. A project overrides this in .claude/exo.json.",
       "options": ["normal", "lean"],
       "default": "normal"
+    },
+    "ship": {
+      "type": "string",
+      "title": "How ship finishes a run",
+      "description": "ask: ship puts the question. pr-merge: open a pull request and merge it once checks pass. open-pr: open a pull request and stop. push: push the branch. local: keep the commits on this machine. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
+      "options": ["ask", "pr-merge", "open-pr", "push", "local"],
+      "default": "ask"
+    },
+    "workspace": {
+      "type": "string",
+      "title": "Where a code-changing run commits",
+      "description": "ask: the run puts the question. branch: a new branch in this checkout. worktree: a new git worktree. current: the branch already checked out. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
+      "options": ["ask", "branch", "worktree", "current"],
+      "default": "ask"
     }
   }
 }
