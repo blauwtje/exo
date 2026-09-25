@@ -19,7 +19,7 @@ Change structure while behavior stays pinned, and leave less code than you found
 
 ## The loop
 
-1. **Pin behavior before the first move.** Capture current outputs in a test, snapshot or before/after script over the inputs that matter; type check and lint are not a pin, because both pass on a wrong price.
+1. **Pin behavior before the first move.** Capture current outputs in a test, snapshot or before/after script over the inputs that matter; type check and lint pin nothing, because both pass on a wrong price.
 2. **Name the target shape.** One sentence on the module layout and call graph as if built today; the reshape removes branches, layers or states, never adds indirection.
 3. **Subtract first.** Delete dead code, one-caller wrappers and orphaned references before building the new shape, because each is a line the reshape no longer carries.
 4. **Migrate every caller, then delete the old API, in the same change.** No shim, deprecated wrapper, both-shapes signature or re-export stays behind, because nothing then forces the last caller over. Search strings, docs, scripts and tests too, since renames miss usages there.
