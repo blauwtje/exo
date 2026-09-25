@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.42.2 - 2026-09-25
+
 ### Fixed
 
 - `investigation` fires on a request to teach code to someone and on a reason a comment gives, and an asker who waives the git history still gets the commit that set the value checked.
