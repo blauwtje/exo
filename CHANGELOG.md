@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `blast-radius` proves what a change breaks outside its diff by running the real code before it merges or before a design builds on a claim about existing code, and tags each safety claim with how far it was proven.
+- `technical-writing` holds prose read later, a README, doc page, pull request, issue or commit body, changelog line, brief or spec, to one documentation mode, the plain word and a catalogue of machine-sounding tics.
+- `swarm`, user-invoked, fans one job out to parallel workers for split coverage, a race, a gauntlet of checks or an arena of candidates judged against a rubric fixed before they run.
+- `hillclimb`, user-invoked, pushes one metric toward a target in an unattended keep-or-revert loop against a frozen harness, with an append-only decision log audited by a second model.
+- `visual-parity`, user-invoked, proves a refactor, migration or dependency bump changes no pixel, from a baseline captured before the first edit and an exact pixel diff.
+
+### Changed
+
+- The locked description total rises by the two model-invoked descriptions only, from 4,608 to 5,128 characters.
+
 ## 0.40.3 - 2026-09-25
 
 ### Changed
