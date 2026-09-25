@@ -31,14 +31,10 @@ const ENCODED_NAMES = [
   'Z29kbW9kZQ==',
   'Ym1hZA==',
   'Ymxhc3QtcmFkaXVz',
-  'c3dhcm0=',
   'aGlsbGNsaW1i',
   'dmlzdWFsLXBhcml0eQ==',
   'dGVjaG5pY2FsLXdyaXRpbmc=',
-  'aW52ZXN0aWdhdGlvbg==',
-  'cmVmYWN0b3Jpbmc=',
-  'YmFieXNpdA==',
-  'YXJlbmE='
+  'YmFieXNpdA=='
 ];
 
 // Only tracked files are scanned: `docs/` is git-ignored apart from
