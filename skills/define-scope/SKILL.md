@@ -6,7 +6,7 @@ argument-hint: <outcome to shape>
 
 # Shaping
 
-Turn a request into a brief the user confirmed, so nobody codes through an unmade decision. The enemy is building on a guess. The overcorrection is asking what the code already answers.
+Turn a request into a confirmed brief, so nobody codes through an unmade decision. The enemy is building on a guess. The overcorrection is asking what the code already answers.
 
 ## Gate
 
@@ -17,11 +17,11 @@ Turn a request into a brief the user confirmed, so nobody codes through an unmad
 
 ## Interview
 
-1. **Ask or decide.** Ask what the user would notice, or what is costly to reverse; decide everything routine.
+1. **Ask or decide.** Ask what the user would notice or is costly to reverse; decide the routine.
    Costly means stored data format, a public interface, a paid service or a deletion.
-2. **Look facts up** in the code while the user answers another question.
-3. **Root first.** Ask what other decisions depend on, and finish its branch before the next.
-4. **Keep going** until you and the user share one picture of what gets built.
+2. **Look facts up** in the code while the user answers.
+3. **Root first.** Ask what other decisions hang on, and finish its branch first.
+4. **Keep going** until you and the user picture the same build.
 5. **One question per message**, in the shape below.
 6. **After a compaction**, list the decisions so far before the next question.
 7. **Name the owning layer**; two or more structural shapes open `references/architecture-sketch.md`.
@@ -29,38 +29,36 @@ Turn a request into a brief the user confirmed, so nobody codes through an unmad
 
 ## Question shape
 
-A question message holds only these four parts: question, options, why line, reply line.
+The user never saw the code, so no name from it appears in any message, checkpoint included: no path, class, field, setting, role, status code or technical term, only what it means for the user.
 
-- The question is short and in everyday words: no file, setting, flag, model name or technical term.
-- Two or three options, one line each, holding only what the user gets.
-- Recommended first, marked the way the active output style marks a recommended choice; only without one, `(recommended)`.
-- Directly under the list, one short unlabelled line says why, because a reason inside an option blurs the choice.
-- Never restate the last answer; what the code settled or exo decided waits for the checkpoint.
-  The exception is one line above the question when it cannot be understood without it.
+- A question message holds question, options, why line and reply line, opening with the question, short and in everyday words.
+  The exception is one context line above, when the question needs it; earlier answers and code findings wait for the checkpoint.
+- Two or three one-line options holding only what the user gets.
+- Recommended first, with the active output style's marker for a recommended choice; only without one, `(recommended)`.
+- Under the list, one short unlabelled line says why, because a reason inside an option blurs the choice.
 - Close with the example's reply line, its digits matching the options.
 
 ```text
-What may the new helper do in your project?
+How should harbour masters get their tide alerts out of the app?
 
-1. Edit files but not run commands. (recommended)
-2. Only suggest changes for you to apply.
-3. Edit files and run commands.
-It makes the change, while running anything stays with you.
+1. Download their harbour's alerts as a spreadsheet. (recommended)
+2. Add the alerts to their own calendar.
+A spreadsheet opens anywhere and needs no setup.
 
-Reply 1, 2 or 3, in your own words, or go to take every recommendation.
+Reply 1 or 2, in your own words, or go to take every recommendation.
 ```
 
 ## Replies
 
 - A digit or own words answer the question; `ok` takes the recommended option.
 - `go` takes the recommendation for every open decision, asked or not, and brings the checkpoint at once.
-- "I don't know" gets the difference in about two sentences with one example, then the same question again.
+- "I don't know" gets two everyday sentences on how the options differ, with one example the user would see, then the same question again.
   A second takes the recommendation, credited to exo.
 
 ## Checkpoint
 
-List each decision on its own line with who decided it: you, `code: <path>`, or exo.
-Then ask in the question shape: 1 write the brief (recommended), 2 change something; nothing is written before the yes.
+List each decision on its own plain line with who decided it: you, `code` or exo.
+Then ask in the question shape, reply line included: 1 write the brief (recommended), 2 change something; nothing is written before the yes.
 
 ## Spec
 
@@ -72,7 +70,7 @@ End on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-sta
 
 | File | Read it when |
 |---|---|
-| `references/stored-brief.md` | The request names a brief, issue or plan, or adds wishes to one. |
+| `references/stored-brief.md` | The request names or extends a brief, issue or plan. |
 | `references/brief.md` | Before writing the brief. |
 | `references/brief-in-an-issue.md` | `specs` is `issues` or `both`. |
 | `../file-issues/references/fields.md` | Before creating that issue. |
