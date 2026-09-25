@@ -1,0 +1,266 @@
+blob
+mark :1
+data 112
+{
+  "sync": { "maxAttempts": 6, "pauseMs": 1000 },
+  "ledger": { "baseUrl": "https://api.acmeledger.com/v2" }
+}
+
+blob
+mark :2
+data 90
+{ "name": "ledger-sync", "version": "1.4.0", "main": "src/index.js", "type": "commonjs" }
+
+blob
+mark :3
+data 159
+const { createPool } = require('./pool');
+module.exports = { primaryDb: createPool(process.env.PRIMARY_URL), replicaDb: createPool(process.env.REPLICA_URL) };
+
+blob
+mark :4
+data 161
+const { runNightlySync } = require('./sync/runner');
+const { handleWebhook } = require('./webhook/handler');
+module.exports = { runNightlySync, handleWebhook };
+
+blob
+mark :5
+data 526
+const config = require('../config/default.json');
+
+async function postEntry(entry) {
+  const response = await fetch(`${config.ledger.baseUrl}/entries`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${process.env.LEDGER_TOKEN}` },
+    body: JSON.stringify(entry)
+  });
+  if (!response.ok) {
+    const error = new Error(`ledger responded ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
+module.exports = { postEntry };
+
+blob
+mark :6
+data 245
+const BATCH_SIZE = 500;
+
+function toBatches(entries) {
+  const batches = [];
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) batches.push(entries.slice(i, i + BATCH_SIZE));
+  return batches;
+}
+
+module.exports = { toBatches, BATCH_SIZE };
+
+blob
+mark :7
+data 584
+const MAX_ATTEMPTS = 3;
+
+function exponentialBackoff(attempt) {
+  return 1000 * attempt;
+}
+
+async function withRetry(task, maxAttempts = MAX_ATTEMPTS) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await task();
+    } catch (error) {
+      lastError = error;
+      if (error.status && error.status < 500 && error.status !== 429) throw error;
+      await new Promise((resolve) => setTimeout(resolve, exponentialBackoff(attempt)));
+    }
+  }
+  throw lastError;
+}
+
+module.exports = { withRetry, exponentialBackoff, MAX_ATTEMPTS };
+
+blob
+mark :8
+data 607
+const config = require('../../config/default.json');
+const { toBatches } = require('./batch');
+const { withRetry } = require('./retry');
+const ledger = require('../ledger-client');
+
+async function runNightlySync(store) {
+  const entries = await store.pendingEntries();
+  for (const batch of toBatches(entries)) {
+    await Promise.all(batch.map((entry) => withRetry(() => ledger.postEntry(entry), config.sync.maxAttempts)));
+    await store.markSynced(batch.map((entry) => entry.id));
+    await new Promise((resolve) => setTimeout(resolve, config.sync.pauseMs));
+  }
+}
+
+module.exports = { runNightlySync };
+
+blob
+mark :9
+data 571
+const { primaryDb, replicaDb } = require('../db');
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function handleWebhook(event) {
+  await primaryDb.insert('webhook_events', { id: event.id, payload: event });
+  await sleep(2000);
+  const invoice = await replicaDb.findOne('invoices', { externalId: event.data.invoiceId });
+  if (!invoice) return { status: 'ignored' };
+  await primaryDb.insert('pending_entries', { invoiceId: invoice.id, amount: event.data.amount });
+  return { status: 'queued' };
+}
+
+module.exports = { handleWebhook };
+
+reset refs/heads/main
+commit refs/heads/main
+mark :10
+author Marta Kowalski <marta@acme-fin.io> 1730710800 +0100
+committer Marta Kowalski <marta@acme-fin.io> 1730710800 +0100
+data 44
+chore: initial import from billing monorepo
+M 100644 :1 config/default.json
+M 100644 :2 package.json
+M 100644 :3 src/db.js
+M 100644 :4 src/index.js
+M 100644 :5 src/ledger-client.js
+M 100644 :6 src/sync/batch.js
+M 100644 :7 src/sync/retry.js
+M 100644 :8 src/sync/runner.js
+M 100644 :9 src/webhook/handler.js
+
+blob
+mark :11
+data 244
+const BATCH_SIZE = 50;
+
+function toBatches(entries) {
+  const batches = [];
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) batches.push(entries.slice(i, i + BATCH_SIZE));
+  return batches;
+}
+
+module.exports = { toBatches, BATCH_SIZE };
+
+commit refs/heads/main
+mark :12
+author Sven Olsen <sven@acme-fin.io> 1741767240 +0100
+committer Sven Olsen <sven@acme-fin.io> 1741767240 +0100
+data 573
+fix(sync): cap batch at 50 after INC-212 (#148)
+
+Acme Ledger enforces 60 requests per minute per API token and answers
+429 above it. runNightlySync fans out one POST per entry in a batch, so a
+batch of 500 fired 500 requests at once. On 2025-03-11 the nightly sync
+was throttled for six hours and the 06:00 close ran on stale balances
+(INC-212).
+
+50 entries per batch plus the 1s pause keeps us under the limit with
+headroom for the webhook path, which uses the same token. Raising the
+batch needs a per-token limit increase from Acme first (ticket ACME-3312,
+still open).
+from :10
+M 100644 :11 src/sync/batch.js
+
+blob
+mark :13
+data 310
+// Keep batches small so memory stays bounded on the 2 GB worker.
+const BATCH_SIZE = 50;
+
+function toBatches(entries) {
+  const batches = [];
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) batches.push(entries.slice(i, i + BATCH_SIZE));
+  return batches;
+}
+
+module.exports = { toBatches, BATCH_SIZE };
+
+commit refs/heads/main
+mark :14
+author Lena Brandt <lena@acme-fin.io> 1755697200 +0200
+committer Lena Brandt <lena@acme-fin.io> 1755697200 +0200
+data 33
+chore: tidy sync module comments
+from :12
+M 100644 :13 src/sync/batch.js
+
+blob
+mark :15
+data 253
+const { BATCH_SIZE } = require('./limits');
+
+function toBatches(entries) {
+  const batches = [];
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) batches.push(entries.slice(i, i + BATCH_SIZE));
+  return batches;
+}
+
+module.exports = { toBatches };
+
+blob
+mark :16
+data 156
+// Batches stay small so memory stays bounded on the 2 GB worker.
+const BATCH_SIZE = 50;
+const PAUSE_MS = 1000;
+
+module.exports = { BATCH_SIZE, PAUSE_MS };
+
+commit refs/heads/main
+mark :17
+author Lena Brandt <lena@acme-fin.io> 1768471320 +0100
+committer Lena Brandt <lena@acme-fin.io> 1768471320 +0100
+data 173
+refactor(sync): move sync limits into one module
+
+BATCH_SIZE and the pause now live in src/sync/limits.js. Batch size stays
+small to keep memory bounded on the 2 GB worker.
+from :14
+M 100644 :15 src/sync/batch.js
+M 100644 :16 src/sync/limits.js
+
+blob
+mark :18
+data 67
+LEDGER_TOKEN_SECRET_REF=ledger-sync/prod-token
+SYNC_MAX_ATTEMPTS=2
+
+blob
+mark :19
+data 690
+const config = require('../../config/default.json');
+const { toBatches } = require('./batch');
+const { withRetry } = require('./retry');
+const ledger = require('../ledger-client');
+
+const maxAttempts = () => Number(process.env.SYNC_MAX_ATTEMPTS) || config.sync.maxAttempts;
+
+async function runNightlySync(store) {
+  const entries = await store.pendingEntries();
+  for (const batch of toBatches(entries)) {
+    await Promise.all(batch.map((entry) => withRetry(() => ledger.postEntry(entry), maxAttempts())));
+    await store.markSynced(batch.map((entry) => entry.id));
+    await new Promise((resolve) => setTimeout(resolve, config.sync.pauseMs));
+  }
+}
+
+module.exports = { runNightlySync };
+
+commit refs/heads/main
+mark :20
+author Tomasz Wrona <tomasz@acme-fin.io> 1775139600 +0200
+committer Tomasz Wrona <tomasz@acme-fin.io> 1775139600 +0200
+data 56
+feat(sync): read the attempt count from the environment
+from :17
+M 100644 :18 deploy/prod.env
+M 100644 :19 src/sync/runner.js

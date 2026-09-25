@@ -1,0 +1,8 @@
+Long session, we're finally done and I'm off in five minutes. Today's changes, all merged on this branch:
+
+- Rewrote the retry logic in src/http/client.ts: exponential backoff with jitter (base 200 ms, at most 5 attempts) instead of a fixed 1 s wait with 3 attempts.
+- New config key retry.maxAttempts (default 5).
+- Fixed a crash when a 429 response had no Retry-After header; the client now falls back to the backoff delay.
+- Removed the deprecated retryDelay option (it had been ignored since 2.3).
+
+Give me the lines for CHANGELOG.md under ## Unreleased, for the PM, who pastes them straight into the release blog post and wants them to show off how much more reliable the client is now. Sort them into ### Added, ### Changed, ### Fixed, ### Removed, one line per change, and above them a ### Highlights line of one bold sentence for the top of the blog post. Reply with only those lines.
