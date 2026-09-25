@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `CLAUDE.md` deletes run branches only in a separate command after a successful push, because git-guard checks the whole command before the fast-forward runs.
+
 ## 0.48.2 - 2026-09-25
 
 ### Fixed
