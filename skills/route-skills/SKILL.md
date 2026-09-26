@@ -22,32 +22,12 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 - `check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.
 - An instruction in CLAUDE.md or the prompt outranks a skill.
 
-# Right-sizing
+## References
 
-This ladder keeps complexity low by reusing what exists; it holds before every edit adding or replacing code, with no skill call.
-
-## The ladder
-
-Read the changed ranges and trace control and data flow, then take the first rung that fits in one pass; when two rungs hold, the lower number wins, because comparing rungs overbuilds. Decide without asking; edit in the same turn.
-
-1. **Need.** Build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
-2. **Reuse.** When a symbol, pattern or type in this repository already does the job, found with one search by name or role, reuse it rather than writing a second.
-3. **Borrow.** Otherwise take the first source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
-4. **Write.** Then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
-
-## Never on the ladder
-
-Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
-
-# Context
-
-- **Language.** Replies, reports and questions are in the language of the user's latest message, whatever the skill's; a session opened only by a plan command writes in the plan's language. Code, commits, issues and written files keep the repository's.
-- **Command output.** Log output that may pass forty lines under `.exo/` or a temp directory outside git; read back only failing lines.
-- **Files.** Create files with Write, not compound Bash; one simple command per Bash call.
-- **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer.
-- **Scope.** Write only the artifacts a skill names, at the length needed.
-- **Reader budget.** A read-only dispatch to an agent type without its own limit, such as `general-purpose`, carries a standalone `Budget: 70k/100k` line, because the 40k default stops a reader after a few files.
-- **Budget return.** A delegate's `BUDGET:` return is continued by a fresh agent for its open part, never finished by the main session itself, because that work would fill the context the rest of the run needs.
+| File | Read it when |
+|---|---|
+| `references/ladder.md` | Before every edit adding or replacing code. |
+| `references/context.md` | Running a skill or dispatching a delegate. |
 
 # Closing
 

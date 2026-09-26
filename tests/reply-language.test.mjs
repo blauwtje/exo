@@ -7,9 +7,10 @@ import fs from 'node:fs';
 import { test } from 'node:test';
 
 const USING_EXO = fs.readFileSync(new URL('../skills/route-skills/SKILL.md', import.meta.url), 'utf8');
+const CONTEXT = fs.readFileSync(new URL('../skills/route-skills/references/context.md', import.meta.url), 'utf8');
 
-test('route-skills states one reply-language rule for every reply, report and question', () => {
-  const rule = USING_EXO.match(/^- \*\*Language\.\*\* .+$/m);
+test('route-skills references/context.md states one reply-language rule for every reply, report and question', () => {
+  const rule = CONTEXT.match(/^- \*\*Language\.\*\* .+$/m);
   assert.ok(rule, 'the Language bullet exists');
   assert.ok(rule[0].includes("in the language of the user's latest message"));
   assert.ok(rule[0].includes("writes in the plan's language"));
@@ -19,5 +20,5 @@ test('the question options point at the reply-language rule instead of stating t
   const question = fs.readFileSync(new URL('../skills/route-skills/references/question.md', import.meta.url), 'utf8');
   assert.ok(question.includes('as the language rule under `# Context` in route-skills sets'));
   assert.ok(!question.includes("are in the conversation's language"));
-  assert.ok(!USING_EXO.includes("are in the conversation's language"));
+  assert.ok(!CONTEXT.includes("are in the conversation's language"));
 });

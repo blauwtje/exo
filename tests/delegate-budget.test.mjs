@@ -257,7 +257,7 @@ test('the shipped budgets file gives every read-only agent type a soft limit of 
   }
 });
 
-test('route-skills tells the lead to give a read-only dispatch without its own limit a standalone 70k Budget line', async () => {
-  const usingExo = await fs.readFile(new URL('../skills/route-skills/SKILL.md', import.meta.url), 'utf8');
-  assert.match(usingExo, /^- \*\*Reader budget\.\*\* .*`general-purpose`.*standalone `Budget: 70k\/100k` line/m);
+test('route-skills references/context.md tells the lead to give a read-only dispatch without its own limit a standalone 70k Budget line', async () => {
+  const context = await fs.readFile(new URL('../skills/route-skills/references/context.md', import.meta.url), 'utf8');
+  assert.match(context, /^- \*\*Reader budget\.\*\* .*`general-purpose`.*standalone `Budget: 70k\/100k` line/m);
 });

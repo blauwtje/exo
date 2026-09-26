@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
+const LADDER = new URL('../skills/route-skills/references/ladder.md', import.meta.url);
 const USING_EXO = new URL('../skills/route-skills/SKILL.md', import.meta.url);
 const PROMPTS = [
-  'agents/build-task.md',
   'skills/run-plan/bug-fixer-prompt.md',
   'skills/run-plan/review-fixer-prompt.md',
   'agents/build-ui.md',
@@ -42,17 +42,22 @@ function expectedLadderLines(source) {
   return [...rungLines, tieBreak[1], ...guardSentences];
 }
 
-test('route-skills yields four rungs, a tie-break and two guard sentences', () => {
-  const source = fs.readFileSync(USING_EXO, 'utf8');
+test('route-skills references/ladder.md yields four rungs, a tie-break and two guard sentences', () => {
+  const source = fs.readFileSync(LADDER, 'utf8');
   assert.equal(expectedLadderLines(source).length, 7);
 });
 
 for (const promptPath of PROMPTS) {
   test(`${promptPath} carries the route-skills ladder rules`, () => {
-    const source = fs.readFileSync(USING_EXO, 'utf8');
+    const source = fs.readFileSync(LADDER, 'utf8');
     const prompt = fs.readFileSync(new URL(`../${promptPath}`, import.meta.url), 'utf8');
     for (const line of expectedLadderLines(source)) {
       assert.ok(prompt.includes(line), `missing: ${line}`);
     }
   });
 }
+
+test('agents/build-task.md points to references/ladder.md instead of carrying its own copy', () => {
+  const prompt = fs.readFileSync(new URL('../agents/build-task.md', import.meta.url), 'utf8');
+  assert.ok(prompt.includes('skills/route-skills/references/ladder.md'), 'missing a reference to references/ladder.md');
+});

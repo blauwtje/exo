@@ -16,7 +16,7 @@ import { fixture, git, gitRepository } from './harness.mjs';
 
 const HOOK = fileURLToPath(new URL('../hooks/session-start.sh', import.meta.url));
 const PLUGIN_ROOT = path.dirname(path.dirname(HOOK));
-const LADDER_TEXTS = ['## The ladder', '## Never on the ladder', 'edit in the same turn'];
+const LADDER_TEXTS = ['references/ladder.md', 'Before every edit adding or replacing code.'];
 
 function runHookWith(bash, env, source) {
   return new Promise((resolve) => {
@@ -50,7 +50,7 @@ function jqAvailable() {
 
 const withoutJq = !(await jqAvailable()) && 'jq not on PATH';
 
-test('the session hook carries the right-sizing ladder whether exo savings are on or off', { skip: withoutJq }, async () => {
+test('the session hook carries the pointer to the right-sizing ladder whether exo savings are on or off', { skip: withoutJq }, async () => {
   const configDirectory = await fixture();
   const on = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
   assert.equal(on.code, 0, on.stderr);

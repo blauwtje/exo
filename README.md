@@ -39,7 +39,7 @@ It prints the savings report, which says nothing was refused yet until the read 
 
 - **Steps.** A request is shaped, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:locate-code` agent on Haiku, the discovery of a redesign in the `exo:survey-ui` agent on Sonnet at high effort, the final branch review in the `exo:review-branch` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:review-branch-deep` at high effort above that, the post-build design critique in the `exo:critique-ui` agent on Opus at medium effort, and documentation research in the `exo:fetch-docs` agent on Sonnet with web and read tools only; all six live under `agents/`.
-- **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
+- **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below links to the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
 - **The savings counter.** The read guard books the bytes of every read it refuses; `/exo:show-savings` prints them as an estimated token saving.
 
@@ -99,14 +99,7 @@ A new skill needs all of: the folder at `skills/<name>/`, the name joining `EXPE
 
 ## The ladder
 
-Before every edit that adds or replaces code, Claude takes the first rung that fits:
-
-1. Need: nothing is built for a use the request does not name.
-2. Reuse: what the repository already has is called, not copied.
-3. Borrow: the standard library, then a platform feature, then an installed dependency, and no new dependency for ten lines.
-4. Write: new code comes last, as few statements as pass, one action per line.
-
-On every rung, checks at a trust boundary, failure handling that keeps data from being lost, anything security depends on, accessibility and anything you asked for by name are built completely.
+`skills/route-skills/references/ladder.md` holds the ladder Claude takes before every edit that adds or replaces code: the rungs, the tie-break between them, and what is never shortened on any rung.
 
 ## Savings
 

@@ -21,12 +21,7 @@ effort: high
 - Without one, write or pick one test for the brief's `Success criterion:` and run only that test; its report line comes first under Proof, because run-plan lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
-The ladder: take the first rung that fits; when two rungs hold, the lower number wins.
-1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
-2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by name or role, reuse it rather than writing a second.
-3. Borrow: otherwise take the first source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
-4. Write: then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
-Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code: it holds the ladder's rungs, the tie-break between them, and what is never shortened on any rung.
 
 ## Git
 

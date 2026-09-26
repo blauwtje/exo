@@ -173,7 +173,7 @@ test('a sentence added to a restated section fails the restatement lock', (t) =>
 test('a sentence added outside the restated sections leaves the restatement lock alone', (t) => {
   const root = skillsFixture(t);
   const baseline = restatedBytes(verdict(root, checkRestatement).detail);
-  editUsingExo(root, (text) => text.replace('## The ladder\n\n', '## The ladder\n\nEvery reply names the skill it followed.\n\n'));
+  editUsingExo(root, (text) => text.replace('## References\n\n', '## References\n\nEvery reply names the skill it followed.\n\n'));
 
   const run = verdict(root, checkRestatement);
 
