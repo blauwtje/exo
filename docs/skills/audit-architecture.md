@@ -9,8 +9,8 @@ You ask about tech debt, coupling, shallow modules or refactor candidates across
 ## What you get
 
 - Ranked findings, each with what implementing it would take.
-- Inside a read-only planning mode, the plan for the top findings as well, in the shape draft-plan defines.
-- A question offering draft-plan for the top finding.
+- Inside a read-only planning mode, the plan for the top findings as well, as the task list define-scope defines, ready for run-plan.
+- A question offering define-scope, which turns the top finding into a confirmed brief.
 
 ## Where its rules live
 
