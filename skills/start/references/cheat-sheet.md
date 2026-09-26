@@ -13,6 +13,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 | `run-plan` | Runs a plan file, with helpers and review | "run the plan at docs/...", or after `/clear`: "carry on" |
 | `ship` | Pushes, opens or merges a pull request, fixes its checks or review comments | "push this", "merge the PR", "fix the checks" |
 | `define-scope` | Decides what "done" means, when that is still open | "I want something for X but I'm not sure what exactly" |
+| `define-scope` then `run-plan` | Writes the brief with its task list and goes straight on to building it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |
 | `write-docs` | Writes a README, docs page, PR or commit text | "write the README", "PR description" |
 | `check-impact` | Says what a change could break, with evidence | "is this safe to merge?", "what does this break?" |
 | `find-cause` | Finds the real cause of a failure before fixing it | "this doesn't work", "why does X crash?" |

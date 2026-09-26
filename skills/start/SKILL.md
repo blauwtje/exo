@@ -1,7 +1,7 @@
 ---
 name: start
 description: "Use when the user does not remember a skill's name, wants the list of exo skills in plain words, or names a goal and wants exo to pick. Not for a session's own routing rules, which route-skills owns and loads by itself."
-argument-hint: "[goal]"
+argument-hint: "[goal or spec-path]"
 disable-model-invocation: true
 ---
 
@@ -13,6 +13,7 @@ One door for a user who does not remember a skill's name. The enemy is a list no
 
 - `/exo:start` with nothing after it: relay the cheat sheet.
 - `/exo:start <goal>`: pick the one skill for that goal and invoke it.
+- `/exo:start <spec-path>`, or a spec or big wish to build: `define-scope`, which writes the brief with its task list and goes straight on to `run-plan`.
 - Not for a session's own routing rules: `route-skills` owns those and loads on its own; it is never itself a pick.
 
 ## No goal
@@ -22,6 +23,7 @@ Relay the two tables in `references/cheat-sheet.md` as the whole reply, rows unc
 ## With a goal
 
 1. **Match.** Read every skill's `description` and pick the one whose trigger fits the stated goal, the same match a session makes on its own under `route-skills`.
+   The exception is a path to a spec file, or a spec or big wish to build: pick `define-scope` with that path or wish as its argument, and add no stop after it, because it loads `run-plan` itself once the brief is written.
 2. **Several fit.** Order by `route-skills`' "When several fire" section rather than guessing.
 3. **None fits.** Follow `route-skills` step 2 and do the work without a skill.
 4. **Invoke or tell.** Call the picked skill through the Skill tool with the goal as its argument; a skill carrying `disable-model-invocation` cannot be called that way, so name the exact command to type instead, such as `/exo:remember <goal>`.
