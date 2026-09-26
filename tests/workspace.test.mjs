@@ -111,6 +111,8 @@ test('ask: workspace setting "ask" on the default branch prints the menu, branch
   const lines = result.stdout.trimEnd().split('\n');
   assert.equal(lines[0], 'ask');
   assert.match(lines[1], /^1\. \*\*Branch \(Recommended\)\*\*/);
+  assert.match(lines[2], /^2\. \*\*Worktree\*\*/);
+  assert.match(lines[3], /^3\. \*\*Current branch\*\*/);
 });
 
 test('ask: --current-recommended reorders the menu, current branch first', async () => {
@@ -118,6 +120,8 @@ test('ask: --current-recommended reorders the menu, current branch first', async
   const result = await runWorkspace(['--repository', root, '--current-recommended']);
   const lines = result.stdout.trimEnd().split('\n');
   assert.match(lines[1], /^1\. \*\*Current branch \(Recommended\)\*\*/);
+  assert.match(lines[2], /^2\. \*\*Branch\*\*/);
+  assert.match(lines[3], /^3\. \*\*Worktree\*\*/);
 });
 
 test('--pick branch: switches to a new branch and reports it', async () => {

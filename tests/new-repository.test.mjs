@@ -12,11 +12,13 @@ const WORKSPACE = read('run-plan/references/workspace.md');
 const PLAN_SPEC = read('define-scope/references/task-list.md');
 
 test('the workspace step initialises a folder that holds only the plan docs', () => {
-  const outside = WORKSPACE.match(/^1\. \*\*Outside git, never\.\*\* .+$/m);
-  assert.ok(outside, 'the outside-git rule exists');
-  assert.ok(outside[0].includes('it runs `git init -b main`'));
-  assert.ok(outside[0].includes('when it lists anything else, the run stops before any edit'));
-  assert.ok(outside[0].includes('sits inside another repository'));
+  // The "holds only the plan docs" rule now lives in lib/workspace.mjs,
+  // exercised against a real temporary folder by tests/workspace.test.mjs's
+  // 'init: --plan-repository names a folder holding only docs'; this test
+  // only guards that workspace.md still sends the reader to that script and
+  // its `init` outcome.
+  assert.ok(WORKSPACE.includes('lib/workspace.mjs'), 'workspace.md names the script');
+  assert.ok(WORKSPACE.includes('`init` runs `git init -b main`'), 'workspace.md names the init outcome');
 });
 
 test('a plan for a new folder leaves no init step to the owner', () => {

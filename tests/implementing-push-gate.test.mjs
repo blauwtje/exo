@@ -28,11 +28,15 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
 });
 
 test('the workspace question offers a branch, a worktree and the current branch, recommended first', () => {
-  const branch = WORKSPACE.indexOf('1. **Branch (Recommended)**:');
-  const worktree = WORKSPACE.indexOf('2. **Worktree**:');
-  const current = WORKSPACE.indexOf('3. **Current branch**:');
-  assert.ok(branch !== -1 && branch < worktree && worktree < current);
-  assert.ok(WORKSPACE.includes('the current branch becomes `1. **Current branch (Recommended)**`'));
+  // The three-item menu and its two recommended-first orders now live in
+  // lib/workspace.mjs, exercised against real temporary git repositories by
+  // tests/workspace.test.mjs's 'ask: workspace setting "ask" on the default
+  // branch prints the menu, branch first' and 'ask: --current-recommended
+  // reorders the menu, current branch first'; this test only guards that
+  // workspace.md still sends the reader to that script and its `ask` outcome.
+  assert.ok(WORKSPACE.includes('lib/workspace.mjs'), 'workspace.md names the script');
+  assert.ok(WORKSPACE.includes('follow its one line'), 'workspace.md directs the reader to follow the script output');
+  assert.ok(WORKSPACE.includes('`ask` puts its menu as the question'), 'workspace.md names the ask outcome');
   assert.ok(!WORKSPACE.includes('git push'), 'the workspace step pushes nothing');
 });
 
