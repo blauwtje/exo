@@ -21,8 +21,8 @@ test('the run creates, lands and removes every wave worktree itself', () => {
   assert.ok(section.includes('git cherry-pick --abort'));
   assert.ok(section.includes('git worktree remove "<root>-task-<n>"'));
   assert.ok(section.includes('git worktree list'));
-  assert.ok(section.includes('`isolation: "worktree"`'), 'an isolated session dispatches wave builds with worktree isolation');
-  assert.ok(section.includes('`Commit:` sha an isolated delegate returned'));
+  assert.ok(section.includes('Never dispatch a build with the dispatch tool\'s worktree isolation'), 'a wave builds only in folders the run makes');
+  assert.ok(!section.includes('isolated delegate returned'), 'no wave task lands from an isolated delegate');
   assert.ok(!section.includes('git push'), 'a wave pushes nothing');
   assert.ok(!section.includes('git branch'), 'a wave creates and deletes no branch');
 });
@@ -35,7 +35,9 @@ test('the implementer brief carries only the task fields, and the agent still wr
   assert.ok(IMPLEMENTER_AGENT.includes('Never create a worktree, never switch, stash or reset.'));
   assert.ok(IMPLEMENTER_AGENT.includes('`push`, `worktree`, and no `gh` command at all'));
   assert.ok(IMPLEMENTER_AGENT.includes('Never call a tool that enters or leaves a worktree'));
-  assert.ok(IMPLEMENTER_AGENT.includes('first run `git switch --detach <its base sha>`'), 'an isolated delegate starts on the run branch commit');
+  assert.ok(IMPLEMENTER_AGENT.includes('- Run no writing git,'), 'the agent commits nothing, inside a wave or not');
+  assert.ok(!IMPLEMENTER_BRIEF.includes('Wave:'), 'no dispatch sends the agent a wave to commit in');
+  assert.ok(!IMPLEMENTER_BRIEF.includes('Your brief:'), 'the brief is named by path, never pasted');
 });
 
 const SKILL = read('run-plan/SKILL.md');

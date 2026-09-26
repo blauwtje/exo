@@ -27,21 +27,18 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 ## Git
 
-- Outside a wave, run no writing git, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all.
-- In a wave (`Wave:` other than `none`), first run `git switch --detach <its base sha>` and its setup command.
-- In a wave, once green, run a long task's `Commit:` block, or for a compact task `git add <Files: paths>` and `git commit -m "<heading subject>" -m "Plan-task: <n>"`, then return `Commit: <git rev-parse HEAD>`.
+- Run no writing git, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all.
 
 ## Stop
 
 - Never delete files, data or branches to get past a blocked state; report two or three options.
 - Start no background session or delegate; ask the user nothing.
-- Send output over forty lines to a log beside `Report to:`, or in your checkout's `.exo/` when `Report to:` is your final message.
+- Send output over forty lines to a log beside `Report to:`.
 - Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
 
 ## Report
 
 - Write at most 25 lines to `Report to:`: Landed, Proof (each test and its output), Unresolved (or `none`).
-- When `Report to:` is your final message, write no report file and return those lines, after the green lines below when green, in place of `Report:`; a file in an isolated worktree with no commit is removed with it.
 - Return it only on a failed test or unfinished work.
 - A green task returns only:
 
