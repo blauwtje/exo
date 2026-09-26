@@ -30,7 +30,7 @@ const PINNED_SENTENCES = {
   ],
   'skills/find-cause/SKILL.md': [
     'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
-    'Outside a read-only planning turn, `find-cause` outranks `define-scope`, `draft-plan`, and `build-change` until the cause is proven; at proof `find-cause` applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `draft-plan` owns the turn and schedules reproduction as its first phase.',
+    'Outside a read-only planning turn, `find-cause` outranks `define-scope` and `build-change` until the cause is proven; at proof `find-cause` applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `define-scope` owns the turn and schedules reproduction as its first phase.',
   ],
   'skills/build-change/SKILL.md': [
     'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',
@@ -39,7 +39,7 @@ const PINNED_SENTENCES = {
     ...REVIEW_THRESHOLD,
   ],
   'skills/audit-architecture/SKILL.md': [
-    'While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `draft-plan` defines; every other planning turn belongs to `draft-plan`.',
+    'While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `define-scope` defines; every other planning turn belongs to `define-scope`.',
   ],
   'skills/check-docs/SKILL.md': [
     'Never end a turn on a research pass alone.',
@@ -47,7 +47,7 @@ const PINNED_SENTENCES = {
   'skills/design-ui/SKILL.md': [
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive',
-    'This skill owns visual decisions only. When a `define-scope`, `draft-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
+    'This skill owns visual decisions only. When a `define-scope`, `run-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
   ],
