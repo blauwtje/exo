@@ -56,6 +56,16 @@ const SCENARIOS = [
     read(root, 'skills/define-scope/SKILL.md').replace(/^name: define-scope$/gm, 'name: [define-scope')) },
   { name: 'missing-judgment', mutate: (root) =>
     replaceText(root, 'skills/check-docs/SKILL.md', '## Judgment', '## Verdict') },
+  { name: 'slim-skill-stance-paragraph', mutate: (root) => replaceText(root, 'skills/run-plan/SKILL.md',
+    '# Implementing a plan\n', '# Implementing a plan\n\nRun it. The enemy is drift. The overcorrection is stalling.\n') },
+  { name: 'slim-skill-judgment-section', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
+    '\n## References\n', '\n## Judgment\n\n- Stop.\n\n## References\n') },
+  { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
+    read(root, 'skills/define-scope/SKILL.md').replace(/^\d+\. /gm, '- ')) },
+  { name: 'slim-skill-without-references-table', mutate: (root) =>
+    replaceText(root, 'skills/find-cause/SKILL.md', '## References', '## Sources') },
+  { name: 'slim-skill-report-not-last', mutate: (root) =>
+    append(root, 'skills/ship/SKILL.md', '\nA closing line after the report.\n') },
   { name: 'banned-phrase', mutate: (root) =>
     append(root, 'skills/define-scope/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>
@@ -85,9 +95,9 @@ const SCENARIOS = [
     fs.renameSync(path.join(root, 'skills/define-scope/SKILL.md'), path.join(nested, 'SKILL.md'));
   } },
   { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
-    'more than two source/test/config files must change', 'more than one source/test/config file must change') },
+    'over two source, test or config files change', 'over one source, test or config file changes') },
   { name: 'drifted-record-rule', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
-    'from the working tree diff before the next edit', 'from memory before the next edit') },
+    'rebuild what landed from the working-tree diff, not memory.', 'rebuild what landed from memory.') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
   { name: 'define-scope-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',

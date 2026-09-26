@@ -22,6 +22,8 @@ const EXPECTED_OWNER_ROWS = {
     '../build-change/references/security.md',
     '../build-change/references/data-migration.md',
     '../build-change/references/test-design.md',
+    'references/handoff.md',
+    '../build-change/references/project-knowledge.md',
   ],
   'skills/build-change/SKILL.md': [
     '../run-plan/references/workspace.md',
@@ -31,6 +33,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/data-migration.md',
     'references/test-design.md',
     'references/test-first.md',
+    'references/project-knowledge.md',
     'references/performance.md',
     '../route-skills/references/question.md',
   ],
@@ -93,6 +96,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/define-scope/SKILL.md': [
     'references/stored-brief.md',
+    'references/question-shape.md',
     'references/brief.md',
     'references/task-list.md',
     'references/example-plan.md',
@@ -156,31 +160,45 @@ const EXPECTED_OWNER_ROWS = {
   ],
 };
 
+// A row that defers to its target's first line points at a file whose first
+// non-empty line is a read-when predicate, so the row can never name a file
+// that states no predicate.
+const FIRST_LINE_PREDICATE = 'When its first line applies.';
+const FIRST_LINE_ROW = /first line applies/i;
+const READ_WHEN_OPENING = 'Read this when ';
+
+// The first-line predicate of each implement-only reference keeps its trigger
+// list and its exclusion, so a shared row cannot widen or blur the read.
+const FIRST_LINE_QUALIFIERS = {
+  'security.md': [
+    'changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries',
+    'filenames and dependency names alone do not qualify.',
+  ],
+  'data-migration.md': [
+    'changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions',
+    'in-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
+  ],
+  'test-design.md': [
+    'logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner',
+    'before the first affected test or production edit',
+    'style, text, and version-only changes do not qualify',
+  ],
+};
+
+const FIRST_LINE_CONTRACTS = {
+  '../build-change/references/security.md': FIRST_LINE_PREDICATE,
+  '../build-change/references/data-migration.md': FIRST_LINE_PREDICATE,
+  '../build-change/references/test-design.md': FIRST_LINE_PREDICATE,
+};
+
 const EXPECTED_CONTRACTS = {
-  'skills/find-cause/SKILL.md': {
-    '../build-change/references/security.md':
-      'After Step 4 identifies the predicted change and before its first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
-    '../build-change/references/data-migration.md':
-      'After Step 4 identifies the predicted change and before editing, only when the fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
-    '../build-change/references/test-design.md':
-      'After reproduction and before the first affected test or production edit, only when the symptom changes logic or public behavior and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
-  },
+  'skills/find-cause/SKILL.md': FIRST_LINE_CONTRACTS,
   'skills/build-change/SKILL.md': {
-    'references/security.md':
-      'After orientation and baseline, before the first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
-    'references/data-migration.md':
-      'After orientation and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
-    'references/test-design.md':
-      'After the baseline and before adding or changing an automated test or production behavior, only when logic or public behavior changes or the request adds or changes an automated test, and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
+    'references/security.md': FIRST_LINE_PREDICATE,
+    'references/data-migration.md': FIRST_LINE_PREDICATE,
+    'references/test-design.md': FIRST_LINE_PREDICATE,
   },
-  'skills/define-scope/SKILL.md': {
-    '../build-change/references/test-design.md':
-      'Before the first task, to decide which tasks are risky and therefore write their test first.',
-    '../build-change/references/data-migration.md':
-      'After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
-    '../build-change/references/security.md':
-      'After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
-  },
+  'skills/define-scope/SKILL.md': FIRST_LINE_CONTRACTS,
   'skills/audit-architecture/SKILL.md': {
     '../define-scope/references/task-list.md':
       'Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact\'s sections, order, and step contents. Do not load in report mode.',
@@ -210,6 +228,10 @@ function checkOwnerRows(errors, skillPath, rows) {
   }
 }
 
+function firstNonEmptyLine(target) {
+  return fs.readFileSync(target, 'utf8').split(/\r?\n/).find((line) => line.trim() !== '') ?? '';
+}
+
 function checkTimingContracts(errors, skillPath, entries) {
   const contracts = EXPECTED_CONTRACTS[skillPath];
   if (contracts === undefined) return;
@@ -217,6 +239,23 @@ function checkTimingContracts(errors, skillPath, entries) {
     const matches = entries.filter((entry) => entry.path === target);
     if (matches.length !== 1 || matches[0].readWhen !== timing) {
       errors.push(`${skillPath}: '${target}' timing/predicate contract differs`);
+    }
+  }
+}
+
+function checkFirstLinePredicates(errors, skillFile, skillPath, entries) {
+  for (const entry of entries.filter((row) => FIRST_LINE_ROW.test(row.readWhen))) {
+    const target = path.resolve(path.dirname(skillFile), entry.path);
+    if (!isFile(target)) continue;
+    const opening = firstNonEmptyLine(target);
+    if (!opening.startsWith(READ_WHEN_OPENING)) {
+      errors.push(`${skillPath}: '${entry.path}' defers to its first line, which is not a '${READ_WHEN_OPENING.trim()}' predicate`);
+      continue;
+    }
+    const missing = (FIRST_LINE_QUALIFIERS[path.basename(target)] ?? [])
+      .filter((qualifier) => !opening.includes(qualifier));
+    if (missing.length > 0) {
+      errors.push(`${skillPath}: '${entry.path}' first-line predicate lacks: ${missing.join(' | ')}`);
     }
   }
 }
@@ -251,6 +290,7 @@ export function checkReferenceTables(report, repository) {
     }
     checkOwnerRows(errors, skillPath, rows);
     checkTimingContracts(errors, skillPath, entries);
+    checkFirstLinePredicates(errors, skillFile, skillPath, entries);
     for (const row of rows) {
       const target = path.resolve(path.dirname(skillFile), row);
       if (isFile(target)) referenced.add(target.toLowerCase());

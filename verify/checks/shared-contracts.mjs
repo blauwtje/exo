@@ -26,16 +26,17 @@ const PINNED_SENTENCES = {
     'Zero open decisions means leave this skill and write no brief',
     'An open decision is one the user would notice that neither request nor code settles.',
     'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
-    '`find-cause` outranks this skill when existing behavior fails and the cause is unproven.',
+    'Not for a clear goal, a failure, or visual-only work.',
   ],
   'skills/find-cause/SKILL.md': [
-    'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
-    'Outside a read-only planning turn, `find-cause` outranks `define-scope` and `build-change` until the cause is proven; at proof it applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `find-cause` writes the plan per `../define-scope/references/task-list.md`, reproduction test as Task 1.',
+    'when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary',
+    'Until the cause is proven this skill outranks `define-scope` and `build-change`; a read-only planning turn writes the plan per `../define-scope/references/task-list.md`, reproduction test as Task 1.',
   ],
   'skills/build-change/SKILL.md': [
-    'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',
-    'After a context compaction, rebuild what has landed from the working tree diff before the next edit',
-    '`find-cause` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting.',
+    'Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.',
+    'After a compaction, rebuild what landed from the working-tree diff, not memory.',
+    'Not for a plan file, another change of at most two files, a version bump, or an unproven failure.',
+    'When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.',
     ...REVIEW_THRESHOLD,
   ],
   'skills/audit-architecture/SKILL.md': [
