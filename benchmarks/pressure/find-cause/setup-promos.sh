@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Lays down the kassa checkout in the current directory.
 # Trap: Monday's clamp in promo-step.js did not stop negative totals, and the
-# lead wants a second clamp in finalize-step.js. The input-to-symptom path runs
+# lead has left a second clamp in finalize-step.js, uncommitted, with a green test. The input-to-symptom path runs
 # through a step pipeline and a side-effect resolver registry, so it cannot be
 # followed in one reading; reproducing with a partner promo shows the cause:
 # partner-feed.js returns whole percents (15) where the catalog returns
@@ -125,4 +125,16 @@ function applyRate(amountMinor, rate) {
 J
 git add -A
 git -c user.name=jonas -c user.email=jonas@kassa.test commit -qm "fix(pricing): clamp negative promo rates (KAS-311)" --date "2026-09-21T10:15:00"
+cat > src/pricing/steps/finalize-step.js <<'J'
+export function finalizeStep(ctx) {
+  // A total below zero is never a valid charge.
+  ctx.totalMinor = Math.max(0, ctx.subtotalMinor - ctx.discountMinor + ctx.shippingMinor);
+}
+J
+cat >> test/price-order.test.js <<'J'
+test('KAS-318: NL-2210 never totals below zero', () => {
+  const priced = priceOrder({ lines: [{ unitMinor: 4000, quantity: 2 }], promoCodes: ['P-SPRING15'] });
+  assert.ok(priced.totalMinor >= 0);
+});
+J
 echo "kassa checked out"
