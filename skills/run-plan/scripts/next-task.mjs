@@ -1,10 +1,10 @@
 // Prints what the next build needs, read from the plan and the checkout's
 // history instead of the session's memory: the landed set, the next task or
-// wave, and for each of its tasks its Budget:, Design: and Run: lines, the
-// drift of its Modify: regions and the path of its brief. The brief, the
-// frame fields and the section verbatim, goes to a file under the checkout's
-// scratch directory, so the section reaches only build-task and stays out
-// of the session.
+// wave, and for each of its tasks its Budget:, Design:, Proof: and Run:
+// lines, the drift of its Modify: regions and the path of its brief. The
+// brief, the frame fields and the section verbatim, goes to a file under the
+// checkout's scratch directory, so the section reaches only build-task and
+// stays out of the session.
 
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
@@ -113,12 +113,21 @@ function writeBrief(task, frame, root, briefDirectory) {
   return briefPath;
 }
 
+// A compact task's `Design:` segment sits mid-line, after `| `, not at line
+// start, so the old start-anchored match missed it and always fell back to
+// `Design: none` even though `task.design` (lib/plan-tasks.mjs) saw it.
+function designLine(task) {
+  const match = task.section.match(/(?:^|\| )Design: (.+?)(?: \||$)/m);
+  return match === null ? 'Design: none' : `Design: ${match[1]}`;
+}
+
 function taskLines(task, frame, root, briefDirectory) {
   const drift = driftOf(task, root);
   return [
     `Task ${task.number}: ${task.title}`,
     budgetLine(task),
-    task.section.match(/^Design: .+$/m)?.[0] ?? 'Design: none',
+    designLine(task),
+    ...(task.proof === null ? [] : [`Proof: ${task.proof}`]),
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
     ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
     `Brief: ${writeBrief(task, frame, root, briefDirectory)}`

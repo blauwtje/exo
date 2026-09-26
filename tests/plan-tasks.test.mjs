@@ -223,9 +223,9 @@ test('driftOf finds a region declared as a method, getter, type or in another la
   assert.deepEqual(driftOf(called, root), ['region `handle` is missing from `f.ts`']);
 });
 
-test('a compact field line reads its dependencies, files, data and design', () => {
+test('a compact field line reads its dependencies, files, data, design and proof', () => {
   const plan = parsePlan(compactPlanFixture({ tasks: [
-    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'src/app.test.js'] }),
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js', 'src/app.test.js'], proof: 'node --test -- app.test' }),
     compactTask({ number: 2, title: 'feat(app): style', dependsOn: '1', files: ['src/app.css'], data: 'a CSS module', design: 'design-ui' })
   ] }));
   assert.deepEqual(plan.tasks.map((task) => task.number), [1, 2]);
@@ -236,10 +236,18 @@ test('a compact field line reads its dependencies, files, data and design', () =
   ]);
   assert.equal(plan.tasks[0].compact, true);
   assert.equal(plan.tasks[0].commitBlock, null);
+  assert.equal(plan.tasks[0].proof, 'node --test -- app.test');
   assert.equal(plan.tasks[1].dependsOn.length, 1);
   assert.deepEqual(plan.tasks[1].dependsOn, [1]);
   assert.equal(plan.tasks[1].design, true);
   assert.equal(plan.tasks[0].design, false);
+});
+
+test('a compact task with no Proof: segment reads proof as null', () => {
+  const plan = parsePlan(compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: null })
+  ] }));
+  assert.equal(plan.tasks[0].proof, null);
 });
 
 test('an old-format task still parses beside a compact one in the same plan', () => {
