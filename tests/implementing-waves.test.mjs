@@ -69,7 +69,7 @@ test('a wave builds in worktrees and lands in plan order or not at all', () => {
 });
 
 test('the plan basis is where a plan allows waves', () => {
-  const specification = read('draft-plan/references/plan-spec.md');
+  const specification = read('define-scope/references/task-list.md');
   assert.ok(specification.includes('`Worktree setup: <command>`'));
   assert.ok(specification.includes('`Worktree setup: none`'));
   assert.ok(specification.includes('without the line the run builds one task at a time'));

@@ -35,8 +35,8 @@ const EXPECTED_OWNER_ROWS = {
     '../route-skills/references/question.md',
   ],
   'skills/draft-plan/SKILL.md': [
-    'references/plan-spec.md',
-    'references/example-plan.md',
+    '../define-scope/references/task-list.md',
+    '../define-scope/references/example-plan.md',
     '../build-change/references/data-migration.md',
     '../build-change/references/test-design.md',
     '../build-change/references/security.md',
@@ -44,7 +44,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/audit-architecture/SKILL.md': [
     'auditor-prompt.md',
-    '../draft-plan/references/plan-spec.md',
+    '../define-scope/references/task-list.md',
     '../build-change/references/test-design.md',
     '../route-skills/references/question.md',
   ],
@@ -185,7 +185,7 @@ const EXPECTED_CONTRACTS = {
       'After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
   },
   'skills/audit-architecture/SKILL.md': {
-    '../draft-plan/references/plan-spec.md':
+    '../define-scope/references/task-list.md':
       'Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact\'s sections, order, and step contents. Do not load in report mode.',
   },
 };

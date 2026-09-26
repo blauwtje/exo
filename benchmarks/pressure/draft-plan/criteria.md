@@ -10,7 +10,7 @@
 
 `b-run-small.txt` runs `/exo:draft-plan ... --run` on the same fixture for a two-phase, three-task change and proves the run goes from planning through both phases in one session. Read the fixture with `git -C /tmp/exo-pressure/draft-plan/ledger log --format='%h %s%n%(trailers:key=Plan-task)' feat/close-account` and the run's transcript with grep or jq.
 
-- `docs/plans/close-account.md` exists, and its `## Goal` holds `Phase 1: docs/plans/close-account.md` and `Phase 2: docs/plans/close-account-2.md`; `docs/plans/close-account-2.md` exists and its `## Goal` holds `Phases: docs/plans/close-account.md`. (`references/plan-spec.md` rule 5)
+- `docs/plans/close-account.md` exists, and its `## Goal` holds `Phase 1: docs/plans/close-account.md` and `Phase 2: docs/plans/close-account-2.md`; `docs/plans/close-account-2.md` exists and its `## Goal` holds `Phases: docs/plans/close-account.md`. (`references/task-list.md` rule 6)
 - Branch `feat/close-account` holds three commits with a `Plan-task:` trailer, one per task, and both phase 1 commits come before the phase 2 commit.
 - The transcript holds no user turn after the first prompt: every later `user` entry is a tool result or a harness message.
 - The session does not stop between phase 1 and phase 2: one `result` event ends the run, and no Stop-hook continuation sits between the last phase 1 commit and the first phase 2 dispatch. (`run-plan` step 3, `Next phase:`)

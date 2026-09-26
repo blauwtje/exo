@@ -1,9 +1,9 @@
-// plan-check.mjs checks a plan against plan-spec.md per task, so planning
+// plan-check.mjs checks a plan against task-list.md per task, so planning
 // repairs each problem line instead of reading the whole plan back.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { planCheckReport } from '../skills/draft-plan/scripts/plan-check.mjs';
+import { planCheckReport } from '../skills/define-scope/scripts/plan-check.mjs';
 import { briefFixture, compactPlanFixture, compactTask, planFixture, taskSection } from './harness.mjs';
 
 const GOOD_CODE = 'export function greet() {\n  return "hello";\n}';

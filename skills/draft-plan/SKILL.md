@@ -25,11 +25,11 @@ An outcome with no chosen solution borrows `define-scope` for its product and ar
 
 ## Investigate
 
-Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` before any dispatch and read the file at the path it prints: tracked paths with the exported names of their JavaScript and TypeScript files. It writes only under the git directory, so a read-only planning mode runs it too; outside a git repository it prints one `no map` line and discovery starts at the dispatch.
+Run `node "${CLAUDE_SKILL_DIR}/../define-scope/scripts/repo-map.mjs"` before any dispatch and read the file at the path it prints: tracked paths with the exported names of their JavaScript and TypeScript files. It writes only under the git directory, so a read-only planning mode runs it too; outside a git repository it prints one `no map` line and discovery starts at the dispatch.
 
 Discovery beyond the map goes to the `exo:locate-code` agent by default, briefed with the files, symbols and call sites the plan will name and told to quote the range around each, never a path the map names. Reading here is the exception, at most eight direct reads before the plan file is first written, each of one name's range, never source printed with `cat`, `head` or `sed`, and a saved tool result only by grep or at most 40 lines; the rest goes to `exo:locate-code`, because output read here rides in every later turn. A name reaches a step only after its range was read, here or in that report. For a deliverable plan, write each step's code in full while the range is in view: the executor pastes it. While a read-only planning mode is active, run only commands that leave the working tree unchanged; when proof requires an edit, make it the plan's first step.
 
-A plan of two or more phases is written a phase at a time, each phase its own plan file linked as `references/plan-spec.md` rule 5 defines. This session writes only the order and the frame, the phase list with each phase's plan path, the `## Goal` sentence and `## Plan basis`, because it owns the order, and designs no task, file or test, which would ride in every later turn. Each phase goes, in list order, to a fresh `general-purpose` delegate on the session's model. Its brief names the phase, the phase list, the frame, earlier returns and the task-timed References rows, read there only. It finds code through `exo:locate-code`, writes its own phase file in the compact format `references/plan-spec.md` defines, keeps findings in that file, and returns at most 10 lines, only `PHASE <n>: OK|FAIL`, an `exports: <name> <path>` per name later phases need, and `open: <one line at most>`. A delegate may critique a finished order, never author one.
+A plan of two or more phases is written a phase at a time, each phase its own plan file linked as the task-list reference's rule 6 defines. This session writes only the order and the frame: the phase list with each phase's plan path, the `## Goal` sentence and `## Plan basis`; it owns the order and designs no task, file or test, which would ride in every later turn. Each phase goes, in list order, to a fresh `general-purpose` delegate on the session's model. Its brief names the phase, the phase list, the frame, earlier returns and the task-timed References rows, read there only. It finds code through `exo:locate-code`, writes its own phase file in the compact format that reference defines, keeps findings in that file, and returns at most 10 lines, only `PHASE <n>: OK|FAIL`, an `exports: <name> <path>` per name later phases need, and `open: <one line at most>`. A delegate may critique a finished order, never author one.
 
 A task whose path crosses a security boundary names that reference in its own heading or `Data:` clause, never as a warning left for later: the builder reads the named files and the reference together before it writes a line.
 
@@ -40,11 +40,11 @@ Do not pre-run the plan: writing the code now means the builder writes it again.
 | Executor | Output |
 |---|---|
 | This session continues straight into the edits and nobody asked for a plan | Inline: at most 20 lines in the current message with ordered steps, affected paths, each edge's reason, and the final verification. |
-| A read-only planning mode, a requested plan, or another executor | Deliverable: the artifact `references/plan-spec.md` defines, written to the harness-designated plan file when one exists, otherwise `docs/plans/<topic>.md`. |
+| A read-only planning mode, a requested plan, or another executor | Deliverable: the task-list artifact, written to the harness-designated plan file when one exists, otherwise `docs/plans/<topic>.md`. |
 
 A deliverable plan is never message-only: a fresh session with zero context must be able to open the artifact and execute it. Update an existing plan for the same topic rather than creating a sibling, and extend it with edits rather than rewriting the file, because a rewrite re-enters every task into the context.
 
-Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <plan path>` and repair each line it prints, because a missing `Files:` segment, a `## Checkpoint` short a point, or a plan past 30 non-blank lines reads from the file, not from memory. Then check the brief's acceptance list against the plan: an item that reaches no task heading, `Data:` clause or `## Success criterion` is repaired now, because the executor cannot. A phased plan runs the check on each phase file, and its repair goes to one delegate, given the checker lines and the acceptance list verbatim, returning only the lines the checker then prints; this session does not diagnose them.
+Before ending the turn, run `node "${CLAUDE_SKILL_DIR}/../define-scope/scripts/plan-check.mjs" --plan <plan path>` and repair each line it prints, because a missing `Files:` segment, a `## Checkpoint` short a point, or a plan past 30 non-blank lines reads from the file, not from memory. Then check the brief's acceptance list against the plan: an item that reaches no task heading, `Data:` clause or `## Success criterion` is repaired now, because the executor cannot. A phased plan runs the check on each phase file, and its repair goes to one delegate, given the checker lines and the acceptance list verbatim, returning only the lines the checker then prints; this session does not diagnose them.
 
 ## Handing it over
 
@@ -54,8 +54,8 @@ With `--run`, the same turn continues into `run-plan` on the written plan, a pha
 
 | File | Read it when |
 |---|---|
-| `references/plan-spec.md` | Before writing a deliverable plan; never for the inline row. |
-| `references/example-plan.md` | Once, before the first task of a deliverable plan. |
+| `../define-scope/references/task-list.md` | Before writing a deliverable plan, not inline. |
+| `../define-scope/references/example-plan.md` | Once, before a deliverable plan's first task. |
 | `../build-change/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
 | `../build-change/references/test-design.md` | Before composing the first task, to decide which tasks are risky and therefore write their test first. |
 | `../build-change/references/security.md` | After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |

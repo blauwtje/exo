@@ -1,4 +1,4 @@
-// Checks a plan against plan-spec.md's per-task rules without carrying its
+// Checks a plan against task-list.md's per-task rules without carrying its
 // code into the caller's context: a Commit: block with the task's Plan-task:
 // trailer, a git add line matching Files:, Run: and Expected: on every step
 // with code, no placeholder, and a size within the split threshold. Planning

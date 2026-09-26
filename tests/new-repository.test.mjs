@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('run-plan/references/workspace.md');
-const PLAN_SPEC = read('draft-plan/references/plan-spec.md');
+const PLAN_SPEC = read('define-scope/references/task-list.md');
 
 test('the workspace step initialises a folder that holds only the plan docs', () => {
   const outside = WORKSPACE.match(/^1\. \*\*Outside git, never\.\*\* .+$/m);

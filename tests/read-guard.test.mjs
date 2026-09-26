@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture, gitRepository, run } from './harness.mjs';
 
 const GUARD = fileURLToPath(new URL('../skills/show-savings/scripts/read-guard.mjs', import.meta.url));
-const REPO_MAP = fileURLToPath(new URL('../skills/draft-plan/scripts/repo-map.mjs', import.meta.url));
+const REPO_MAP = fileURLToPath(new URL('../skills/define-scope/scripts/repo-map.mjs', import.meta.url));
 const OVER_CAP = Array.from({ length: 600 }, (_, index) => `line ${index + 1}`).join('\n');
 
 function runGuard(args, hookInput, env) {

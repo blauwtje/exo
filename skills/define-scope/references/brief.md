@@ -14,12 +14,7 @@ The brief holds these sections, in this order:
 - **Plan basis:** `Repository: <absolute root>` and `Branch: <branch>` lines, so `run-plan` matches the brief to a checkout, plus `Worktree setup: <command>` or `Worktree setup: none` once two tasks share no dependency chain.
 - **Success criterion:** the one command that proves every task landed.
 - **Checkpoint:** the four points `Blocks first:`, `Parallel:`, `Shared state:` and `Smallest safe split:`, each naming tasks, a shared target or `none`.
-- **Tasks:** last, because a `## ` heading after a task ends that task; each task is a heading and one field line:
-
-```
-### Task <n>: <type>(<scope>): <subject>
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: design-ui] | Proof: <bare command, no backticks>
-```
+- **Tasks:** last, because a `## ` heading after a task ends that task; the task template and its per-task rules follow the skill's References row for it.
 
 `docs` writes `docs/specs/<topic>.md` in these section names.
 
@@ -29,8 +24,6 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 - A choice the user would notice goes to Decisions, a routine one to Assumptions or the task's `Data:` segment.
 - The exception is an open visual choice: its task carries `Design: design-ui`, and `run-plan` routes it by the brief's Visual direction.
 - The heading is the commit subject the run lands the task with, so it names one concern.
-- Every `Files:` path was read in this repository during the interview; two tasks with no dependency between them share no file.
-- `Proof:` is one bare command that passes only once the task's change exists, such as a run of the test the task writes, because it is how the builder knows it is done.
 
 ## Judgment
 

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { test } from 'node:test';
-import { DEFAULT_CAP, renderMap } from '../skills/draft-plan/scripts/map-render.mjs';
+import { DEFAULT_CAP, renderMap } from '../skills/define-scope/scripts/map-render.mjs';
 
 const COMMIT = 'a'.repeat(40);
 

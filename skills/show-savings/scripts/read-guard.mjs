@@ -39,7 +39,7 @@ function resolvedDirectory(directory) {
   }
 }
 
-// The repository map skills/draft-plan/scripts/repo-map.mjs writes is generated,
+// The repository map skills/define-scope/scripts/repo-map.mjs writes is generated,
 // held to its own cap and printed to be read whole, so the line cap does not
 // apply to it. Only that one file is exempt: the exo directory comes from git,
 // so a map.md in a tracked folder named exo stays capped.

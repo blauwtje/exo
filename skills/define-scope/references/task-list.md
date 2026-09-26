@@ -14,7 +14,7 @@ made in the plan, in a task's `Data:` field or its heading.
 
 ## Header sections, in order
 
-1. `## Goal`: one sentence naming the observable result, plus rule 5's
+1. `## Goal`: one sentence naming the observable result, plus rule 6's
    phase lines in a phased plan.
 2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>` on their own lines, so `run-plan` matches this plan to a checkout; for a folder that is not a git repository yet, `Repository:` still names it, `Branch:` reads `main`, and the executor runs `git init -b main` there before the first task, never an init step for the owner. Once two tasks share no `Depends on:` chain between them, directly or through another task, the basis adds a third line, `Worktree setup: <command>` or `Worktree setup: none`, naming the command a fresh worktree needs before it can build either task, such as a dependency install; without the line the run builds one task at a time.
 3. `## Success criterion`: the one command or observation that proves every
@@ -61,11 +61,12 @@ cheap model runs it in place of the plan's `## Success criterion`.
    `Files:` lists them as independent; only a real shared invariant earns a
    `Depends on:` edge that serializes them instead.
 5. **Thirty lines, no more.** `plan-check` rejects a compact plan past 30
-   non-blank lines; a plan that does not fit is split into phases, each its
-   own plan file. The first file's `## Goal` adds one line per phase, in
-   order, `Phase <n>: <repository-relative plan path>`, itself as `Phase 1`;
-   every later file's `## Goal` adds `Phases: <repository-relative path of
-   the first file>`.
+   non-blank lines.
+6. **Phase files.** A plan that does not fit rule 5 is split into phases,
+   each its own plan file. The first file's `## Goal` adds one line per
+   phase, in order, `Phase <n>: <repository-relative plan path>`, itself as
+   `Phase 1`; every later file's `## Goal` adds `Phases: <repository-relative
+   path of the first file>`.
 
 ## Judgment
 
