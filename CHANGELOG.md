@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `build-change` counts a change as done only with a `Proof: <command> -> <output>` line from a product run, not a test runner, on input the session did not write, else `Unverified: <reason>`; a Stop hook blocks the final message until it has one.
+- `run-plan`'s workspace reference now matches the git-init menu: a stop that an init would fix asks init here or another folder and edits nothing before the answer, and every other stop ends the turn on its reason.
+
 ## 0.55.0 - 2026-09-26
 
 ### Added
