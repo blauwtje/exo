@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.54.2 - 2026-09-26
+
 ### Fixed
 
 - `design-ui`'s `check-ui.mjs` reloads the page for every viewport, so focus left by the previous viewport's Tab pass no longer reports a false `focus-indicator-missing`.
