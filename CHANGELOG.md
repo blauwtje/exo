@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.50.0 - 2026-09-26
+
 ### Added
 
 - `lib/scratch-path.mjs` prints and creates a checkout's own `.exo/` scratch folder, and `lib/scratch-exclude.mjs` adds `.exo/` to the shared `info/exclude` once.
