@@ -34,8 +34,9 @@ function goodTask({ number = 1, title = 'Greet', dependsOn = 'none', files = ['-
   ].join('\n');
 }
 
-test('plan-check prints ok for a plan whose task satisfies every rule', () => {
-  const plan = planFixture({ tasks: [goodTask()] });
+test('plan-check prints ok for a plan whose task satisfies every rule', async () => {
+  const root = await gitRepository({ 'src/app.js': GOOD_CODE });
+  const plan = planFixture({ tasks: [goodTask()] }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
   const report = planCheckReport(plan);
   assert.equal(report.ok, true);
   assert.deepEqual(report.lines, ['plan-check: ok, 1 tasks, largest Task 1 (3 lines)']);

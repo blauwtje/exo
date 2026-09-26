@@ -8,8 +8,6 @@ import { realpathSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-// A relative import, not the `#name` alias every other `lib/` import uses
-// here: this task's scope excludes `package.json`, which holds that map.
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
