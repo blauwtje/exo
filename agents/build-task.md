@@ -9,6 +9,8 @@ effort: high
 
 - Read the brief first.
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`.
+- Before the first edit, run `git rev-parse --show-toplevel` from inside `<checkout>` and check it prints exactly `<checkout>`; a different toplevel means the edit would land outside the checkout its dispatch named, so stop and report BLOCKED with what it printed and what it expected.
+- Give Edit and Write only absolute paths inside `<checkout>`.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Edit only the `Files:` paths; report any other.
 
@@ -34,7 +36,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 - Never delete files, data or branches to get past a blocked state; report two or three options.
 - Start no background session or delegate; ask the user nothing.
 - Send output over forty lines to a log beside `Report to:`.
-- Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
+- Stop at green, a second failure of one test or `Run:`, a mismatched toplevel, or an `exo budget:` message.
 
 ## Report
 
