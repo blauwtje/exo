@@ -129,28 +129,32 @@ export function proofOf(task, reportText, reportPath) {
 // checkout's own `${SCRATCH_FOLDER}/` scratch folder (the build report
 // land-task itself reads) is never a stray: a host that has not yet run
 // `scratch-exclude.mjs` still leaves it untracked, so it is dropped here
-// rather than trusted to `--exclude-standard`.
-function changedPaths(root) {
+// rather than trusted to `--exclude-standard`. Likewise the plan file itself,
+// when `planPath` sits inside `root`: define-scope hands its brief straight
+// to run-plan without committing it, so the plan the run is landing from can
+// still be untracked in the very checkout it lands into.
+function changedPaths(root, planPath) {
   const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
   const untracked = execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' });
   const scratchPrefix = `${SCRATCH_FOLDER}/`;
+  const planRelative = planPath === undefined ? null : path.relative(path.resolve(root), path.resolve(planPath));
   return [...new Set([...tracked.split('\n'), ...untracked.split('\n')])]
-    .filter((line) => line !== '' && !line.startsWith(scratchPrefix));
+    .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && line !== planRelative);
 }
 
 // A task lands only the paths its `Files:` lines name: a build that also
 // touched or added another path is not this task's, whatever its proof, so
 // this stops the Commit: block before it stages or commits anything.
-function strayPaths(task, root) {
+function strayPaths(task, root, planPath) {
   const allowed = new Set(task.files.map((file) => file.path));
-  return changedPaths(root).filter((changed) => !allowed.has(changed));
+  return changedPaths(root, planPath).filter((changed) => !allowed.has(changed));
 }
 
-export function landTask({ planText, number, root, reportText = null, reportPath = '--report' }) {
+export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   const plan = parsePlan(planText);
   const block = commitBlockOf(plan, number);
   const task = plan.tasks.find((entry) => entry.number === number);
-  const stray = strayPaths(task, root);
+  const stray = strayPaths(task, root, planPath);
   if (stray.length > 0) {
     throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
@@ -188,7 +192,7 @@ function main(argv) {
   // finds its own report with no extra flag.
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
-  process.stdout.write(landTask({ planText, number: Number(flags.task), root, reportText, reportPath }));
+  process.stdout.write(landTask({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {

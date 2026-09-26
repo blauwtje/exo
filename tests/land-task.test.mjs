@@ -77,6 +77,20 @@ test('a task whose changes match every Files: path lands clean', async () => {
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
+test('an untracked plan inside the checkout is never a stray, and the task lands', async () => {
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  const planPath = path.join(root, 'docs/specs/topic.md');
+  await fs.mkdir(path.join(root, 'docs/specs'), { recursive: true });
+  await fs.writeFile(planPath, PLAN);
+  await editApp(root);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Landed: 1$/m);
+});
+
 test('the command line lands a task, and a refusal leaves stdout empty', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
