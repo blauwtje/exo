@@ -30,7 +30,7 @@ const PINNED_SENTENCES = {
   ],
   'skills/find-cause/SKILL.md': [
     'more than two changed files, a dependency, a public signature, a crossed persisted format or security boundary, or a required file outside initial inspection',
-    'Outside a read-only planning turn, `find-cause` outranks `define-scope` and `build-change` until the cause is proven; at proof `find-cause` applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `define-scope` owns the turn and schedules reproduction as its first phase.',
+    'Outside a read-only planning turn, `find-cause` outranks `define-scope` and `build-change` until the cause is proven; at proof it applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `find-cause` writes the plan per `../define-scope/references/task-list.md`, reproduction test as Task 1.',
   ],
   'skills/build-change/SKILL.md': [
     'count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection.',
