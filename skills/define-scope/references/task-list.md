@@ -17,8 +17,9 @@ made in the plan, in a task's `Data:` field or its heading.
 
 1. `## Goal`: one sentence naming the observable result.
 2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>` on their own lines, so `run-plan` matches this plan to a checkout; for a folder that is not a git repository yet, `Repository:` still names it, `Branch:` reads `main`, and the executor runs `git init -b main` there before the first task, never an init step for the owner. Once two tasks share no `Depends on:` chain between them, directly or through another task, the basis adds a third line, `Worktree setup: <command>` or `Worktree setup: none`, naming the command a fresh worktree needs before it can build either task, such as a dependency install; without the line the run builds one task at a time.
-3. `## Success criterion`: the one command or observation that proves every
-   task landed; a cheap model reruns it, so it names no interpretation step.
+3. `## Success criterion`: the one command that proves every task landed; a
+   cheap model reruns it, so it names no interpretation step and no check only
+   the user can make, which goes to the brief's `## Manual checks` instead.
 4. `## Checkpoint`: four literal points read as one paragraph or list:
    `Blocks first:` the task every other task needs, or `none`; `Parallel:`
    which tasks need no earlier one; `Shared state:` the file, key or branch

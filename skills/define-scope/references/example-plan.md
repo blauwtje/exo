@@ -5,13 +5,16 @@ A compact plan reads exactly as the checker expects it. The enemy is an example 
 ## Goal
 A task row shows a colored badge for its due date.
 
+## Manual checks
+- A task due tomorrow shows its badge in the app's task list.
+
 ## Plan basis
 Repository: /repo
 Branch: due-date-badge
 Worktree setup: none
 
 ## Success criterion
-`npm test` passes and the badge renders in the app's task list.
+`npm test` passes.
 
 ## Checkpoint
 - Blocks first: none.

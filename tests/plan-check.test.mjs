@@ -3,6 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { parsePlan } from '#plan-tasks';
 import { planCheckReport } from '../skills/define-scope/scripts/plan-check.mjs';
 import { briefFixture, compactPlanFixture, compactTask, planFixture, taskSection } from './harness.mjs';
 
@@ -121,6 +122,23 @@ test('plan-check prints ok for a brief whose Decisions, Assumptions and Acceptan
   const report = planCheckReport(briefFixture({ tasks: compactTasks(8) }));
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok, 8 tasks/);
+});
+
+test('plan-check passes a brief with a Manual checks list, and parsePlan reads no task from it', () => {
+  const manualChecks = [
+    '- Click Export in the app and open the file in a spreadsheet.',
+    '- Sign in to the payment dashboard and confirm the test charge shows.'
+  ];
+  const brief = briefFixture({ tasks: compactTasks(2) })
+    .replace('## Plan basis', ['## Manual checks', ...manualChecks, '', '## Plan basis'].join('\n'));
+  const report = planCheckReport(brief);
+  assert.equal(report.ok, true);
+  assert.match(report.lines[0], /^plan-check: ok, 2 tasks/);
+
+  const plan = parsePlan(brief);
+  assert.deepEqual(plan.tasks.map((task) => task.number), [1, 2]);
+  assert.ok(plan.tasks.every((task) => !task.section.includes('Click Export') && !task.section.includes('payment dashboard')));
+  assert.equal(plan.frame['Manual checks'], manualChecks.join('\n'));
 });
 
 test('plan-check fails a compact plan whose Plan basis lacks a Repository: or a Branch: line', () => {
