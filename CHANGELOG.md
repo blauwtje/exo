@@ -7,6 +7,29 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`run-plan` hands each block of at most eight tasks to a fresh `run-unit` agent, so the main session stays small without compaction; it needs `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` of 2 or more.**
+
+### Added
+
+- `agents/run-unit.md` builds and lands one block of at most eight plan tasks through `exo:build-task` and returns at most ten `LANDED`, `OPEN` or `BLOCKED` lines; a question for the user comes back as `BLOCKED` and `run-plan` asks it.
+- `benchmarks/pressure/run-plan/` holds a pressure case with a twelve-task spec that needs two unit agents.
+
+### Changed
+
+- `run-plan`'s main session only splits tasks into blocks, dispatches unit agents, relays `BLOCKED` questions and re-dispatches on `BUDGET` or `OPEN`; it never builds or lands a task itself.
+- The session context tells the main session to give a delegate's `BUDGET:` return to a fresh agent for the open part and never finish it itself.
+
+### Fixed
+
+- A delegate past its tool-call budget is told to stop and return a `BUDGET: done …; open …; next …` line instead of retrying blocked tools, and can still commit through `git -C <path>`.
+- `context-watch` no longer claims the harness compacts the context on its own.
+
+### Removed
+
+- `docs/skills/draft-plan.md`, and the last draft-plan references in `docs/skills/audit-architecture.md`.
+
 ## 0.51.0 - 2026-09-26
 
 ### Highlights
