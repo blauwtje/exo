@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.54.1 - 2026-09-26
+
 ### Fixed
 
 - `define-scope` sorts tasks into risky and routine again outside plan mode, because `test-design.md`'s first line no longer limits that to plan mode.

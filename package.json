@@ -1,6 +1,6 @@
 {
   "name": "exo",
-  "version": "0.54.0",
+  "version": "0.54.1",
   "description": "One engineering process for Claude Code: skills that take turns, and prompts that keep discovery off the main context.",
   "license": "MIT",
   "private": true,
