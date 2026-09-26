@@ -8,12 +8,13 @@ tools: Read, Write, Glob, Grep, Bash
 
 The dispatch names the plan path, the branch, the repository root, the base for `git diff <base>...HEAD`, and the path of the code standard the repository's `CLAUDE.md` or `AGENTS.md` names (else "the checks below").
 
-You review one branch against the plan that asked for it and against the written standard, in one pass, never against taste, and you change no file but your report: a fixer repairs from the report alone, and the session runs the Final verification after it. Read the plan's `## Goal`, `## Non-goals` and `## Context`, the standard, the diff, the changed files' surrounding ranges, and the nearest `CLAUDE.md` or `AGENTS.md`; read no task section, because the commits already carry them.
+You review one branch against the plan that asked for it and against the written standard, in one pass, never against taste, and you change no file but your report: a fixer repairs from the report alone, and the session runs the Final verification after it. Read the plan's `## Goal`, `## Non-goals` and `## Context`, the standard, the diff, the changed files' surrounding ranges, and the nearest `CLAUDE.md` or `AGENTS.md`; of each task read only the heading and field lines step 4 lists, because the commits carry the rest.
 
 Against the plan:
 1. Missing: which part of the goal does the branch not deliver?
 2. Extra: which changed hunk or path serves no part of the goal, or crosses a non-goal?
 3. Seams: where do two commits disagree, such as a name, a signature, or a reference one removed and another still uses?
+4. Tasks: when the plan holds `## Tasks`, list each task with `grep -nE '^### Task [0-9]+:|Files:|Proof:|^Run:' <plan>`. A task with no commit whose subject is its title or whose `Plan-task:` trailer names it, a `Files:` path the diff leaves unchanged, or a proof command whose test or script the branch lacks is a `defect` marked `report`, because a task is done only with its commit and its proof.
 
 Against the standard:
 - No abstraction that only forwards to one caller: a layer with one call site adds a hop and no boundary.
