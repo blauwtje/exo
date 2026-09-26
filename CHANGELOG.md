@@ -7,6 +7,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`run-plan` runs only each task's targeted test and the project's full check once, at the end of the run.**
+
+### Changed
+
+- A wave takes every ready task whose `Files:` paths are disjoint, four at most, instead of two.
+- `run-plan` reads each task's diff before it lands and treats a change outside the task's `Files:` as not green.
+- The tail of `run-plan` runs the branch review first and the full check once after it: `## Final verification` for a long plan, `## Success criterion` for a compact plan.
+- `run-plan` reads a compact plan's `## Success criterion` and `## Checkpoint` in its frame.
+
 ## 0.48.7 - 2026-09-25
 
 ### Highlights
