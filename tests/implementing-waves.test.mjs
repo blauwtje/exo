@@ -42,9 +42,10 @@ test('the implementer brief carries only the task fields, and the agent still wr
 });
 
 const SKILL = read('run-plan/SKILL.md');
+const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 
-function loopStep(number) {
-  const step = SKILL.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
+function loopStep(number, text = SKILL) {
+  const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];
 }
@@ -57,10 +58,10 @@ test('step 3 forms a wave only from the plan, four tasks at most', () => {
 });
 
 test('a wave builds in worktrees and lands in plan order or not at all', () => {
-  const dispatchStep = loopStep(5);
+  const dispatchStep = loopStep(3, UNIT_AGENT);
   assert.ok(dispatchStep.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(dispatchStep.includes('in one message'));
-  const commitStep = loopStep(6);
+  const commitStep = loopStep(4, UNIT_AGENT);
   assert.ok(commitStep.includes('only when every report in it is green'));
   assert.ok(commitStep.includes('`git cherry-pick <sha>` brings the commits onto the branch in plan order'));
   assert.ok(commitStep.includes('no task of it commits'));

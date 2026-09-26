@@ -34,8 +34,8 @@ test('every general-purpose delegate dispatch names its model', () => {
 });
 
 test('every build goes to the implementer agent, and a design build with a named direction loads design-ui in-session', () => {
-  const skill = fs.readFileSync(path.join(skillsRoot, 'run-plan', 'SKILL.md'), 'utf8');
-  const dispatchStep = skill.match(/^5\. \*\*Dispatch the build\.\*\*.+$/m)[0];
+  const unit = fs.readFileSync(path.join(skillsRoot, '..', 'agents', 'run-unit.md'), 'utf8');
+  const dispatchStep = unit.match(/^3\. \*\*Dispatch the build\.\*\*.+$/m)[0];
   assert.ok(dispatchStep.includes('Each build goes to the `exo:build-task` agent'));
   const designTasks = fs.readFileSync(path.join(skillsRoot, 'run-plan', 'references', 'design-tasks.md'), 'utf8');
   const designRoute = designTasks.match(/^- \*\*It names the chosen direction\.\*\*.+$/m)[0];

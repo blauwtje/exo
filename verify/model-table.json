@@ -30,5 +30,6 @@
   "agents/locate-code": { "model": "haiku", "effort": null },
   "agents/review-branch": { "model": "opus", "effort": "medium" },
   "agents/review-branch-deep": { "model": "opus", "effort": "high" },
+  "agents/run-unit": { "model": "sonnet", "effort": "high" },
   "agents/survey-ui": { "model": "sonnet", "effort": "high" }
 }

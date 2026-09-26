@@ -37,9 +37,10 @@ test('the workspace question offers a branch, a worktree and the current branch,
 });
 
 test('a green task commits and pushes nothing', () => {
-  const commitStep = loopStep(6);
+  const unit = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
+  const commitStep = unit.match(/^4\. \*\*Commit a green task\.\*\*.+$/m)[0];
   assert.ok(commitStep.includes('push nothing'));
-  assert.ok(!commitStep.includes('git push'), 'step 6 runs no push');
+  assert.ok(!commitStep.includes('git push'), 'the unit commit step runs no push');
 });
 
 test('the tail pushes only through the finish question', () => {
