@@ -11,6 +11,7 @@ const WORKSPACE = read('run-plan/references/workspace.md');
 const WAVE_WORKTREES = read('run-plan/references/wave-worktrees.md');
 const IMPLEMENTER_BRIEF = read('run-plan/implementer-prompt.md');
 const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/build-task.md', import.meta.url), 'utf8');
+const RUN_PARALLEL = read('run-parallel/SKILL.md');
 
 test('the run creates, lands and removes every wave worktree itself', () => {
   assert.ok(!WORKSPACE.includes('## Wave worktrees'), 'the wave section moved out of workspace.md');
@@ -72,4 +73,21 @@ test('the plan basis is where a plan allows waves', () => {
   assert.ok(specification.includes('`Worktree setup: <command>`'));
   assert.ok(specification.includes('`Worktree setup: none`'));
   assert.ok(specification.includes('without the line the run builds one task at a time'));
+});
+
+
+test('a wave stops and lands nothing when it dirties the run\'s checkout', () => {
+  const section = WAVE_WORKTREES;
+  assert.ok(section.includes("record `git -C <root> status --porcelain` as this wave's baseline"), 'step 1 records the baseline before dispatch');
+  assert.ok(section.includes("First run `git -C <root> status --porcelain` again and compare it with step 1's baseline"), 'step 3 checks it again before landing');
+  assert.ok(section.includes('stop, show the listed paths, land nothing from this wave'), 'a dirtied checkout lands nothing');
+  assert.ok(section.includes('go to step 4, which force-removes it as a discarded wave'), 'the worktrees are still removed');
+  assert.ok(section.includes("excluded by `lib/scratch-exclude.mjs`"), '.exo/ never counts as dirt');
+});
+
+test('run-parallel stops and lands or grafts nothing when a worker dirties the repository root', () => {
+  assert.ok(RUN_PARALLEL.includes("record `git -C <root> status --porcelain`"), 'step 4 records the baseline before fan-out');
+  assert.ok(RUN_PARALLEL.includes("First run `git -C <root> status --porcelain` again and compare it with step 4's baseline"), 'step 5 checks it again after every worker returns');
+  assert.ok(RUN_PARALLEL.includes('stop, show the listed paths, land or graft nothing from this run'), 'a dirtied root lands or grafts nothing');
+  assert.ok(RUN_PARALLEL.includes('remove every worktree the run made as step 3 says'), 'the worktrees are still removed');
 });
