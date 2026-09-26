@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.52.0 - 2026-09-26
+
 ### Highlights
 
 - **`run-plan` hands each block of at most eight tasks to a fresh `run-unit` agent, so the main session stays small without compaction; it needs `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` of 2 or more.**
