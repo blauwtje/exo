@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.55.1 - 2026-09-26
+
 ### Fixed
 
 - `build-change` counts a change as done only with a `Proof: <command> -> <output>` line from a product run, not a test runner, on input the session did not write, else `Unverified: <reason>`; a Stop hook blocks the final message until it has one.
