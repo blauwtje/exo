@@ -9,7 +9,6 @@ effort: high
 
 - Read the brief first.
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`.
-- When `Report to:` names the directory a `node` command prints, run that command first, bare and in your worktree, and write to the printed directory with the Write tool, never through `mkdir -p` chained into a heredoc.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Edit only the `Files:` paths; report any other.
 
@@ -36,12 +35,13 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 - Never delete files, data or branches to get past a blocked state; report two or three options.
 - Start no background session or delegate; ask the user nothing.
-- Send output over forty lines to a log beside `Report to:`.
+- Send output over forty lines to a log beside `Report to:`, or in your checkout's `.exo/` when `Report to:` is your final message.
 - Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
 
 ## Report
 
 - Write at most 25 lines to `Report to:`: Landed, Proof (each test and its output), Unresolved (or `none`).
+- When `Report to:` is your final message, write no report file and return those lines, after the green lines below when green, in place of `Report:`; a file in an isolated worktree with no commit is removed with it.
 - Return it only on a failed test or unfinished work.
 - A green task returns only:
 
