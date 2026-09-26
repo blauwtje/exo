@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `build-task` and every `run-parallel` worker check with `git rev-parse --show-toplevel` that they stand in the checkout their dispatch names before the first edit, stop with `BLOCKED` when they do not, and give Edit and Write only absolute paths inside it.
+- `run-plan` and `run-parallel` compare `git status --porcelain` of the main checkout before and after each wave, and land nothing when a wave left it dirty, listing the files.
+
 ## 0.50.4 - 2026-09-26
 
 ### Changed
