@@ -13,15 +13,17 @@ exo is a Claude Code plugin that gives Claude one way of working: decide what to
 
 Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` on `PATH`.
 
-Then set the auto-compact window in `~/.claude/settings.json`, so a long plan run compacts at 120k tokens instead of near the end of a 1M window:
+exo needs a subagent spawn depth of at least 2 in `~/.claude/settings.json`; Claude Code 2.1.219 and later default to 3, so this entry only matters on 2.1.217, 2.1.218, or wherever something has set a lower value:
 
 ```json
 {
-  "autoCompactWindow": "120k"
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "2"
+  }
 }
 ```
 
-The key takes a window from 100K to 1M tokens, as a plain token count or with a `k` or `M` suffix; `/autocompact 120k` writes the same value ([model configuration](https://code.claude.com/docs/en/model-config#set-the-auto-compact-window), [settings reference](https://code.claude.com/docs/en/settings-reference#autocompactwindow)).
+`run-plan` dispatches a `run-unit` agent that dispatches `exo:build-task` agents, so a subagent must be able to spawn subagents of its own ([subagents](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents)).
 
 ## Check that it works
 
