@@ -1,7 +1,11 @@
 #!/usr/bin/env node
-// Ends a run-plan session's step 7 tail: takes the merge-base with
-// `origin/<default>` the way ship.mjs reads the default branch and runs
-// pick-reviewer.mjs on that base exactly as run-plan's SKILL.md does.
+// Ends a run-plan session's step 7 tail: takes the merge-base with the
+// default branch and runs pick-reviewer.mjs on that base exactly as
+// run-plan's SKILL.md does. The default branch is `origin/HEAD`'s target,
+// the way ship.mjs reads it, or, in a checkout with no `origin` remote or
+// no `origin/HEAD` set, the first of `origin/<name>` or the local `<name>`
+// branch among `main`, `master` and git's `init.defaultBranch`, the way
+// v0.53's step 7 read the local `main` directly.
 // `--done` instead removes step 1's `run-plan.active` marker, which the
 // skill runs only once the review, its fixes and the final verification
 // landed, so the hooks keep resuming the run until then.
@@ -34,10 +38,36 @@ function gitLine(root, args) {
   }
 }
 
-/** The branch `refs/remotes/origin/HEAD` names, its `origin/` remote stripped, as ship.mjs reads it. */
+const FALLBACK_BRANCH_NAMES = ['main', 'master'];
+
+function refExists(root, ref) {
+  return gitLine(root, ['rev-parse', '--verify', '--quiet', ref]) !== null;
+}
+
+/** `main`, `master`, and git's `init.defaultBranch` first when configured, in the order to try them. */
+function fallbackBranchNames(root) {
+  const configured = gitLine(root, ['config', '--get', 'init.defaultBranch']);
+  return configured === null ? FALLBACK_BRANCH_NAMES : [configured, ...FALLBACK_BRANCH_NAMES];
+}
+
+/**
+ * The default branch and the ref to take the merge-base against:
+ * `origin/<branch>` from `refs/remotes/origin/HEAD`, as ship.mjs reads it,
+ * when that ref is set; otherwise the first of `origin/<name>` or the local
+ * `<name>` branch to exist among `fallbackBranchNames`, for a checkout with
+ * no `origin` remote or no `origin/HEAD` set. Null when nothing resolves.
+ */
 export function defaultBranch(root) {
-  const ref = gitLine(root, ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
-  return ref === null ? null : ref.replace(/^origin\//, '');
+  const originRef = gitLine(root, ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+  if (originRef !== null) {
+    const branch = originRef.replace(/^origin\//, '');
+    return { branch, ref: `origin/${branch}` };
+  }
+  for (const name of fallbackBranchNames(root)) {
+    if (refExists(root, `refs/remotes/origin/${name}`)) return { branch: name, ref: `origin/${name}` };
+    if (refExists(root, `refs/heads/${name}`)) return { branch: name, ref: name };
+  }
+  return null;
 }
 
 function firstLine(text) {
@@ -59,10 +89,10 @@ export function reviewerFor(root, { base, reviewer }) {
 
 /** The reviewer line and the merge-base for `root`'s branch review; step 1's marker is untouched. */
 export function finishRun(root, { reviewer } = {}) {
-  const branch = defaultBranch(root);
-  if (branch === null) throw new FinishRunError('no default branch: refs/remotes/origin/HEAD is unset');
-  const base = gitLine(root, ['merge-base', 'HEAD', `origin/${branch}`]);
-  if (base === null) throw new FinishRunError(`no merge base with origin/${branch}`);
+  const resolved = defaultBranch(root);
+  if (resolved === null) throw new FinishRunError('no default branch: refs/remotes/origin/HEAD is unset and no local main or master');
+  const base = gitLine(root, ['merge-base', 'HEAD', resolved.ref]);
+  if (base === null) throw new FinishRunError(`no merge base with ${resolved.ref}`);
   const line = reviewerFor(root, { base, reviewer });
   return { line, base };
 }

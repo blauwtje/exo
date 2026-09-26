@@ -72,14 +72,39 @@ test('a --reviewer flag passes through to pick-reviewer unchanged', async () => 
   assert.equal(result.stdout.split('\n')[0], 'exo:review-branch-deep');
 });
 
-test('exits 1 with one line when the repository has no default branch', async () => {
+test('falls back to the local main and its merge-base in a checkout with no origin remote', async () => {
+  const root = await gitRepository({ 'README.md': '# fixture\n' });
+  const base = git(root, 'rev-parse', 'HEAD');
+  git(root, 'checkout', '-q', '-b', 'fix/x');
+  await commitFiles(root, { 'src/app.js': 'export const greet = () => "hi";\n' }, 'feat(app): greet');
+  const markerPath = await writeMarker(root);
+
+  const result = await run(SCRIPT, ['--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['exo:review-branch', `base=${base}`]);
+  await fs.access(markerPath);
+});
+
+test('falls back to origin/main when refs/remotes/origin/HEAD is unset but origin/main exists', async () => {
   const root = await checkoutRepository();
   git(root, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+  const base = git(root, 'merge-base', 'HEAD', 'origin/main');
+  await writeMarker(root);
+
+  const result = await run(SCRIPT, ['--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['exo:review-branch', `base=${base}`]);
+});
+
+test('exits 1 with one line when no default branch can be resolved at all', async () => {
+  const root = await gitRepository({ 'README.md': '# fixture\n' });
+  git(root, 'branch', '-m', 'trunk');
+  await writeMarker(root);
 
   const result = await run(SCRIPT, ['--root', root], { cwd: root });
   assert.equal(result.code, 1);
   assert.equal(result.stdout, '');
-  assert.equal(result.stderr.trim(), 'finish-run: no default branch: refs/remotes/origin/HEAD is unset');
+  assert.equal(result.stderr.trim(), 'finish-run: no default branch: refs/remotes/origin/HEAD is unset and no local main or master');
 });
 
 test('exits 1 with one line when the default branch has no merge-base', async () => {
