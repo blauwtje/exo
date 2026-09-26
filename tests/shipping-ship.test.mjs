@@ -117,14 +117,28 @@ test('push on the default branch runs --follow-tags and carries an unpushed tag 
   assert.match(remoteTags, /refs\/tags\/v0\.0\.1/);
 });
 
-test('push stops when the default branch cannot be read, and never pushes', async () => {
+test('push succeeds when the default branch cannot be read', async () => {
+  const { workDir, origin } = await shipRepository();
+  git(workDir, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+  await commitFiles(workDir, { 'x.txt': 'x\n' }, 'chore: change');
+  const outcome = await shipRun(workDir, ['--route', 'push']);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, 'main pushed\n');
+  const remoteHead = execFileSync('git', ['rev-parse', 'main'], { cwd: origin, encoding: 'utf8' }).trim();
+  const localHead = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: workDir, encoding: 'utf8' }).trim();
+  assert.equal(remoteHead, localHead);
+});
+
+test('open-pr still stops when the default branch cannot be read', async () => {
   const { workDir, origin } = await shipRepository();
   git(workDir, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
   const before = execFileSync('git', ['rev-parse', 'main'], { cwd: origin, encoding: 'utf8' }).trim();
-  await commitFiles(workDir, { 'x.txt': 'x\n' }, 'chore: change');
-  const outcome = await shipRun(workDir, ['--route', 'push']);
+  git(workDir, 'checkout', '-q', '-b', 'feat/x');
+  await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
+  await fs.writeFile(path.join(workDir, 'body.md'), 'Adds the feature.\n\nCloses #7\n');
+  const outcome = await shipRun(workDir, ['--route', 'open-pr', '--title', 'feat: x', '--body', 'body.md', '--issue', '7']);
   assert.equal(outcome.code, 1, outcome.stderr);
-  assert.equal(outcome.stdout, 'main stopped push default-branch=unknown\n');
+  assert.equal(outcome.stdout, 'feat/x stopped push default-branch=unknown\n');
   const after = execFileSync('git', ['rev-parse', 'main'], { cwd: origin, encoding: 'utf8' }).trim();
   assert.equal(after, before);
 });

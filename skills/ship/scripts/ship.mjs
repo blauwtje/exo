@@ -353,7 +353,7 @@ function run(flags, branch, base) {
   }
 
   announce('push');
-  if (base === null) throw new StepError('push', 'default-branch=unknown');
+  if (base === null && flags.route !== 'push') throw new StepError('push', 'default-branch=unknown');
   const push = runGit(branch === base ? ['push', '--follow-tags'] : ['push', '-u', 'origin', branch]);
   if (!push.ok) throw new StepError('push', push.error);
   if (flags.route === 'push') return `${branch} pushed`;
