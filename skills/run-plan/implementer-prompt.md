@@ -14,4 +14,4 @@ Read your brief at <brief path>.
 Report to: <report directory>/implementer-<n>.md
 ```
 
-The brief holds the plan's fields verbatim: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green. The `Commit:` block is the caller's, never the agent's.
+The brief holds the plan's fields verbatim: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green, and a compact task's `Proof:` command decides it alone. The `Commit:` block is the caller's, never the agent's.

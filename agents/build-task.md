@@ -17,7 +17,7 @@ effort: high
 ## Build
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
-- Write or pick one test for the brief's `Success criterion:` and run only that test; its pass is green.
+- Run its `Proof:` command; its pass is green. Without one, write or pick one test for the brief's `Success criterion:` and run only that test.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
 The ladder: take the first rung that fits; when two rungs hold, the lower number wins.
@@ -37,6 +37,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 - Start no background session or delegate; ask the user nothing.
 - Send output over forty lines to a log beside `Report to:`.
 - Stop at green, a second failure of one test or `Run:`, a mismatched toplevel, or an `exo budget:` message.
+- Stop before a choice the user would notice that the brief does not settle, and report it BLOCKED with the options, because the run asks the user.
 
 ## Report
 
@@ -45,5 +46,5 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 - A green task returns only:
 
 Task <n>: GREEN
-<each test or `Run:` command>: pass
+<each test, `Proof:` or `Run:` command>: pass
 Report: <the `Report to:` path>
