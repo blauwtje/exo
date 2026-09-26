@@ -1,6 +1,6 @@
 # Worker prompt
 
-The text `run-parallel` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<run dir>/frame.md`, and `<output path>` with an absolute path inside the worker's own checkout; a contest candidate gets the second block, which carries the task and never the rubric. For a worker dispatched with worktree isolation, fill `<output path>` with `your final message, at most 25 lines,` and drop the `Return one line` paragraph, because its worktree is removed with every file in it when it ends with no commit.
+The text `run-parallel` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<run dir>/frame.md`, and `<output path>` with an absolute path inside the worker's own checkout; a contest candidate gets the second block, which carries the task and never the rubric. The lead writes each filled block to `<run dir>/brief-<n>.md`, and the dispatch message reads only `Read your brief at <brief path>.` plus the `Budget:` line.
 
 ## Coverage, race or gauntlet worker
 
@@ -17,7 +17,7 @@ Work only inside your slice; another worker owns every other one. You make no gi
 
 Write your full detail to <output path>: the verdict, then every issue you can prove, each with its evidence (file and line, command and output), not only the first one, then the SHAs and method you used.
 
-Return one line and nothing before or after it, so the report caps at most 1 lines: verdict=<PASS|ISSUES|BLOCKED> issues=<count> file=<output path>
+Your final message is your report, at most 25 lines: verdict=<PASS|ISSUES|BLOCKED> issues=<count> file=<output path> first; a PASS returns only that line, ISSUES or BLOCKED adds each proven issue with its evidence after it, within 25 lines.
 ```
 
 ## Contest candidate
@@ -34,5 +34,5 @@ Build the whole artifact in your checkout and nowhere else; other candidates bui
 
 Write beside the artifact a rationale file, <output path>, of at most 15 lines: the approach you took and each alternative you rejected with its reason.
 
-Return one line and nothing before or after it, so the report caps at most 1 lines: status=<done|blocked> checkout=<path> rationale=<output path>
+Your final message is your report, at most 25 lines: status=<done|blocked> checkout=<path> rationale=<output path> first; `done` returns only that line, `blocked` adds each proven issue with its evidence after it, within 25 lines.
 ```
