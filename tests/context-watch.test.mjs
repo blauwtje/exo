@@ -111,6 +111,20 @@ test('the notice repeats once per 25k step and again after the figure falls back
   assert.equal(await fired(102_000), true, 'first step again after the reset');
 });
 
+test('the session stays marked warned after the figure falls back below the threshold', async () => {
+  const { env, hookInput, transcript } = await watchFixture([assistantLine(60_000)]);
+  const hotFile = path.join(env.CLAUDE_CONFIG_DIR, 'exo', 'savings', 'sessions', `${hookInput.session_id}.json`);
+  const warned = async (tokens) => {
+    await fs.writeFile(transcript, `${assistantLine(tokens)}\n`);
+    await notice(hookInput, env);
+    const stored = await fs.readFile(hotFile, 'utf8').catch(() => null);
+    return stored === null ? null : JSON.parse(stored).contextWatch.warned;
+  };
+  assert.equal(await warned(60_000), null, 'under the threshold, nothing is stored yet');
+  assert.equal(await warned(101_000), true, 'the first notice marks the session');
+  assert.equal(await warned(60_000), true, 'a compaction keeps the mark');
+});
+
 test('the user notice follows the context setting', async () => {
   const below = await watchFixture([assistantLine(59_000)], { context: 60 });
   assert.equal(await notice(below.hookInput, below.env), null);

@@ -105,14 +105,16 @@ function reachedStep(tokens, threshold) {
 }
 
 // True when this call is the first to reach `step`. The stored step follows the
-// figure down as well as up, so a figure under it resets the watch. The unlocked
-// read keeps an unchanged step, the case on nearly every call, off the lock.
+// figure down as well as up, so a figure under it resets the watch; `warned`
+// never resets, because route-skills' next-stage.mjs reads it as "a notice fired
+// this session" to recommend stopping. The unlocked read keeps an unchanged
+// step, the case on nearly every call, off the lock.
 function claimStep(sessionId, step) {
   if ((readHotSession(sessionId)?.contextWatch?.notifiedStep ?? null) === step) return false;
   let claimed = false;
   updateHotSession(sessionId, (session) => {
     if ((session.contextWatch?.notifiedStep ?? null) === step) return false;
-    session.contextWatch = { notifiedStep: step };
+    session.contextWatch = { notifiedStep: step, warned: session.contextWatch?.warned === true || step !== null };
     claimed = step !== null;
     return true;
   });
