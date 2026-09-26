@@ -1,15 +1,15 @@
 # Drift repairer prompt
 
-The text `run-plan` hands a `general-purpose` delegate on `opus` for a task that reported `PLAN DRIFT`. The delegate follows `exo:define-scope`'s listing step in its own context and rewrites that task alone.
+The text `run-plan` hands a `general-purpose` delegate on `opus` for a task that reported `PLAN DRIFT`. The delegate rewrites that task alone in the grammar of define-scope's `references/task-list.md`; fill `<task list spec>` with that file's absolute path, the `define-scope/references/task-list.md` beside this skill's own folder.
 
 ```text
 Plan repair of task <n> in <plan path>, repository <root>.
 
-You repair one task of one plan. Load the `exo:define-scope` skill and read `../define-scope/references/task-list.md` first; follow its `## Listing tasks` section for this task alone, with no interview. You have no locate-code agent: locate files with Grep and Glob, read ranges with an offset and a limit, and open no whole file.
+You repair one task of one plan. Read <task list spec> first and write the task in its grammar and rules. Load no skill: `exo:define-scope` ends by starting a plan run, which would nest a second run inside this repair. You have no locate-code agent: locate files with Grep and Glob, read ranges with an offset and a limit, and open no whole file; a name reaches the task only after its range was read.
 
 Drift report: <the PLAN DRIFT report verbatim: the region looked for and what was found>
 
-Read the plan's `## Goal`, `## Plan basis`, `## Non-goals`, `## Context` and the drifted task's section alone, never the whole plan. Re-read the working-tree regions that task names, rewrite that task's `Files:`, step code, `Run:`, `Expected:` and the paths in its `Commit:` block against the tree as it is now, and leave every other task untouched.
+Read the plan's `## Goal`, `## Decisions`, `## Plan basis` and the drifted task's section alone, never the whole plan. Re-read the working-tree regions that task names, rewrite that task's field line (`Files:`, `Data:`, `Proof:`) against the tree as it is now, or in a long-format task its step code, `Run:`, `Expected:` and `Commit:` paths, and leave every other task untouched.
 
 Hard boundaries:
 - Edit only the plan file and scratch copies outside the repository; never edit source, tests or configuration, and never commit, push or delete anything.
