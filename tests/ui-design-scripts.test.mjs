@@ -1136,6 +1136,33 @@ const MISSING_FACE_PAGE = `<!doctype html>
 <body><main><h1>Absent family</h1><p>Copy set in a family the machine does not have.</p></main></body></html>
 `;
 
+// Two links with a genuine :focus-visible outline, plus two tabindex="-1" buttons:
+// check-ui's interactiveSelector counts every <button> regardless of tabindex, but
+// Tab itself skips a negative tabindex, so the focus budget (4) overshoots the
+// actually tabbable controls (2). That spare budget is what lets Tab wrap all the
+// way back onto link-one within a single pass. The page strips its own `#token=`
+// fragment on load, same as the real app's post-login URL rewrite.
+const URL_REWRITE_PAGE = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Rewrite</title><style>
+  body { margin: 0; background: #fff; color: #111; font: 16px/1.5 system-ui; }
+  a, button { display: inline-block; padding: 8px; color: #111; text-decoration: none;
+    font: inherit; background: #eee; border: 1px solid #ccc; }
+  a:focus-visible, button:focus-visible { outline: 3px solid #0b57d0; outline-offset: 2px; }
+</style></head>
+<body>
+<a class="link-one" href="#main">Skip to content</a>
+<a class="link-two" href="#extra">Second link</a>
+<button type="button" tabindex="-1">Roving one</button>
+<button type="button" tabindex="-1">Roving two</button>
+<main id="main"><h1>Rewritten</h1><p>The URL loses its fragment once this loads.</p></main>
+<script>
+  window.addEventListener('load', () => {
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  });
+</script>
+</body></html>
+`;
+
 async function pageFixture() {
   const root = await fixture();
   const file = path.join(root, 'page.html');
@@ -1306,5 +1333,31 @@ describe('rendered capability', () => {
     assert.equal(record.declared, true);
     assert.notEqual(record.confidence, 'definite', 'a family with no @font-face was never proven to paint');
     assert.ok(['potential', 'unknown'].includes(record.confidence), `unexpected confidence ${record.confidence}`);
+  });
+
+  it('does not carry focus from one viewport into the next when the page rewrites its URL', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    // obscura (rung 1) never moves focus on Tab, so it cannot exercise this bug either
+    // way; only a real Chrome/Chromium driven through Playwright (CHROME_PATH or a
+    // resolvable Playwright browser) can.
+    if (capability.engine !== 'playwright') {
+      return t.skip(`needs real Chrome/Chromium via Playwright, not obscura: ${capability.reason}`);
+    }
+    const root = await fixture();
+    const file = path.join(root, 'rewrite.html');
+    await fs.writeFile(file, URL_REWRITE_PAGE);
+
+    const result = await run(script('check-ui.mjs'),
+      ['--url', `file://${file}#token=secret`, '--viewport', '390x844', '--viewport', '1440x900'],
+      { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.rendered.status, 'ok', JSON.stringify(report.rendered));
+    const findings = Object.values(report.rendered.viewports).flatMap((entry) => entry.findings);
+    assert.deepEqual(
+      findings.filter((entry) => entry.type === 'focus-indicator-missing'),
+      [],
+      JSON.stringify(findings)
+    );
   });
 });
