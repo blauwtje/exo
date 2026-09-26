@@ -47,8 +47,7 @@ test('a stop with the marker and an open task blocks with the next task', async 
   assert.equal(result.code, 0, result.stderr);
   const output = JSON.parse(result.stdout);
   assert.equal(output.decision, 'block');
-  assert.ok(output.reason.startsWith('Next: Task 2: Style.'), output.reason);
-  assert.ok(output.reason.includes(planPath), output.reason);
+  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:run-plan on ${planPath} from step 3.`);
 });
 
 test('a stop that already follows a block does not block again', async () => {
@@ -128,8 +127,7 @@ test('a stop after the last task of phase 1 blocks with the first task of phase 
   assert.equal(result.code, 0, result.stderr);
   const output = JSON.parse(result.stdout);
   assert.equal(output.decision, 'block');
-  assert.ok(output.reason.startsWith('Next: Task 1: Style.'), output.reason);
-  assert.ok(output.reason.includes(phase2Path), output.reason);
+  assert.equal(output.reason, `Next: Task 1: Style. Continue exo:run-plan on ${phase2Path} from step 2.`);
 });
 
 test('a stop after every task of every phase landed does not block', async () => {
@@ -144,5 +142,5 @@ test('a stop after every task of every phase landed does not block', async () =>
 test('the session hook after the last task of phase 1 names phase 2', async () => {
   const { root, phase2Path } = await phasedCheckout();
   const context = await sessionContext(root, 'clear');
-  assert.ok(context.startsWith(`A plan is running: ${phase2Path}.`), context.slice(0, 300));
+  assert.ok(context.startsWith(`A plan is running: ${phase2Path}. On the next message, start the skill exo:run-plan on this plan from step 2.\n`), context.slice(0, 300));
 });

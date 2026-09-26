@@ -22,14 +22,15 @@ const MARKER_LIFETIME_MS = 6 * 60 * 60 * 1000;
 
 // The first ready task of the plan, or, once every task of it landed, of the
 // first later phase file with one open, so a run crossing into the next phase
-// keeps blocking a stop; null when every phase landed.
+// keeps blocking a stop; null when every phase landed. `step` is where run-plan
+// resumes: 3 in the marker's own file, 2 in a later phase, whose frame is unread.
 function firstOpenTask(planPath, root) {
   const visited = new Set();
   for (let phase = planPath; phase !== null && fs.existsSync(phase) && !visited.has(phase); phase = nextPhasePath(phase)) {
     visited.add(phase);
     const tasks = parsePlan(fs.readFileSync(phase, 'utf8')).tasks;
     const [next] = readyTasks(tasks, landedTasks(tasks, root));
-    if (next !== undefined) return { planPath: phase, task: next };
+    if (next !== undefined) return { planPath: phase, task: next, step: phase === planPath ? 3 : 2 };
   }
   return null;
 }
@@ -58,7 +59,7 @@ export function stopOutput(input) {
   if (input.stop_hook_active === true || typeof input.session_id !== 'string') return '';
   const running = runningPlan(input.cwd || process.cwd(), input.session_id);
   if (running === null) return '';
-  const reason = `Next: Task ${running.task.number}: ${running.task.title}. Continue exo:run-plan on ${running.planPath} from step 3.`;
+  const reason = `Next: Task ${running.task.number}: ${running.task.title}. Continue exo:run-plan on ${running.planPath} from step ${running.step}.`;
   return `${JSON.stringify({ decision: 'block', reason })}\n`;
 }
 
@@ -67,7 +68,7 @@ export function stopOutput(input) {
 export function sessionOutput(input) {
   const running = runningPlan(input.cwd || process.cwd());
   if (running === null) return '';
-  return `A plan is running: ${running.planPath}. On the next message, start the skill exo:run-plan on this plan.\n`;
+  return `A plan is running: ${running.planPath}. On the next message, start the skill exo:run-plan on this plan${running.step === 2 ? ' from step 2' : ''}.\n`;
 }
 
 const OUTPUTS = { stop: stopOutput, session: sessionOutput };
