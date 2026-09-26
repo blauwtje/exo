@@ -1,10 +1,12 @@
 // Lands one green task: runs the task's `Commit:` block as the plan wrote it,
 // checks that the new commit carries the `Plan-task: <n>` trailer and that the
 // landed set now holds the task, and prints that set, so the session neither
-// pastes the block nor reads the log.
+// pastes the block nor reads the log. A compact task lands only on a build
+// report whose `Proof:` command passed, and the printout carries that output.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
@@ -44,9 +46,52 @@ export function commitBlockOf(plan, number) {
   throw new LandingError(`Task ${number} has no Commit: block`);
 }
 
-export function landTask({ planText, number, root }) {
+const SKIPPED_OUTCOME = /^(?:skip|skipped|todo|pending)\b/;
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// A task is done only on proof from the real product: the report's
+// `<Proof command>: pass` line with the command's own output indented under it.
+// Any other outcome for that command, or none, leaves the task not done.
+export function proofOf(task, reportText, reportPath) {
+  if (task.proof === null) throw new LandingError(`Task ${task.number} has no Proof: command to prove it`);
+  if (reportText === null) {
+    throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove "${task.proof}"`);
+  }
+  const command = task.proof.replace(/^`(.*)`$/, '$1');
+  const outcomeLine = new RegExp(`^\\s*(?:[-*]\\s+)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
+  const lines = reportText.split('\n');
+  const outcomes = lines.flatMap((line, index) => {
+    const match = line.match(outcomeLine);
+    return match === null ? [] : [{ outcome: match[1].toLowerCase(), index }];
+  });
+  if (outcomes.length === 0) {
+    throw new LandingError(`Task ${task.number}: the build report has no "${command}: pass" line`);
+  }
+  const skipped = outcomes.find(({ outcome }) => SKIPPED_OUTCOME.test(outcome));
+  if (skipped !== undefined) throw new LandingError(`Task ${task.number}: the Proof: command "${command}" was skipped`);
+  const unclear = outcomes.find(({ outcome }) => outcome !== 'pass');
+  if (unclear !== undefined) {
+    throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${unclear.outcome}", no clear pass`);
+  }
+  const output = [];
+  for (const line of lines.slice(outcomes[0].index + 1)) {
+    if (!/^\s+\S/.test(line)) break;
+    output.push(line);
+  }
+  if (output.length === 0) {
+    throw new LandingError(`Task ${task.number}: the build report shows no output under "${command}: pass"`);
+  }
+  return [`${command}: pass`, ...output].join('\n');
+}
+
+export function landTask({ planText, number, root, reportText = null, reportPath = '--report' }) {
   const plan = parsePlan(planText);
   const block = commitBlockOf(plan, number);
+  const task = plan.tasks.find((entry) => entry.number === number);
+  const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
@@ -63,19 +108,24 @@ export function landTask({ planText, number, root }) {
   // subject the plan does not give, and next-task would build the task again.
   const landed = landedTasks(plan.tasks, root);
   if (!landed.includes(number)) {
-    const task = plan.tasks.find((entry) => entry.number === number);
     throw new LandingError(`HEAD ${sha} carries "Plan-task: ${number}", yet next-task does not count Task ${number} as landed: the commit's subject reads "${subject}" and the Commit: block gives "${task.commitSubject}"`);
   }
-  return `Committed: ${sha} Task ${number}\nLanded: ${landed.join(', ')}\n`;
+  const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n`;
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  process.stdout.write(landTask({ planText, number: Number(flags.task), root: flags.root ?? process.cwd() }));
+  const root = flags.root ?? process.cwd();
+  // The implementer prompt's `Report to:` path, so a wave's per-task worktree
+  // finds its own report with no extra flag.
+  const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
+  const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
+  process.stdout.write(landTask({ planText, number: Number(flags.task), root, reportText, reportPath }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
