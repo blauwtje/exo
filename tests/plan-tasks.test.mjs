@@ -250,6 +250,13 @@ test('a compact task with no Proof: segment reads proof as null', () => {
   assert.equal(plan.tasks[0].proof, null);
 });
 
+test('a Proof: command with a shell pipe keeps the whole pipeline', () => {
+  const plan = parsePlan(compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test | tail -5' })
+  ] }));
+  assert.equal(plan.tasks[0].proof, 'node --test | tail -5');
+});
+
 test('an old-format task still parses beside a compact one in the same plan', () => {
   const plan = parsePlan(compactPlanFixture({ tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),

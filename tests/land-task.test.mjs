@@ -88,8 +88,8 @@ const PASS_REPORT = [
   ''
 ].join('\n');
 
-async function compactCheckout() {
-  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/compact.md': COMPACT_PLAN });
+async function compactCheckout(plan = COMPACT_PLAN) {
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/compact.md': plan });
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
@@ -187,4 +187,39 @@ test('a commit the landed set does not count stops with exit 1', async () => {
   assert.equal(result.code, 1);
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /Task 1 as landed: the commit's subject reads "feat: price in" and the Commit: block gives "feat: price in \$USD"/);
+});
+
+// An older compact plan names no `Proof:`, so build-task writes or picks one
+// test for the Success criterion; that test's pass line is the proof.
+const OLDER_PLAN = compactPlanFixture({ tasks: [
+  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: null })
+] });
+
+test('a compact task without Proof: lands on the pass line of the test the builder ran', async () => {
+  const { root, planPath } = await compactCheckout(OLDER_PLAN);
+  await writeReport(root, 'Landed: src/app.js\nProof:\n- `node --test tests/greet.test.mjs`: pass\n  # pass 1\nUnresolved: none\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/greet\.test\.mjs: pass\n {2}# pass 1$/m);
+  assert.match(result.stdout, /^Landed: 1$/m);
+});
+
+test('not done without proof: a compact task without Proof: and no passing test is refused', async () => {
+  const { root, planPath } = await compactCheckout(OLDER_PLAN);
+  await assertRefused(root, planPath, [], /no build report/);
+  await writeReport(root, 'Landed: src/app.js\nProof: the tests look fine\nUnresolved: none\n');
+  await assertRefused(root, planPath, [], /no "<test>: pass" line/);
+  await writeReport(root, 'node --test tests/greet.test.mjs: fail\n  # fail 1\n');
+  await assertRefused(root, planPath, [], /no clear pass/);
+  await writeReport(root, 'node --test tests/greet.test.mjs: skipped\n  # tests 0\n');
+  await assertRefused(root, planPath, [], /was skipped/);
+  await writeReport(root, 'node --test tests/greet.test.mjs: pass\n\nUnresolved: none\n');
+  await assertRefused(root, planPath, [], /no output under/);
+});
+
+test('the proof output stops at the next outcome line in an indented Proof list', async () => {
+  const { root } = await compactCheckout();
+  const report = 'Proof:\n  - `node --test tests/app.test.mjs`: pass\n    # pass 3\n  - `npm run lint`: pass\n    0 problems\n';
+  const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
+  assert.match(output, /^Proof: node --test tests\/app\.test\.mjs: pass\n {4}# pass 3\nLanded: 1$/m);
 });
