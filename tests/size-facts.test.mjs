@@ -76,7 +76,7 @@ test('a version-only bump in package.json is not a dependency added', async () =
   assert.match(result.stdout, /dependency-added no\n/);
 });
 
-test('an added dependency in a new untracked package.json counts too', async () => {
+test('an added dependency in a new untracked requirements.txt counts too', async () => {
   const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
   await fs.writeFile(path.join(root, 'requirements.txt'), 'requests==2.31.0\n');
   const result = await run(SCRIPT, [], { cwd: root });
