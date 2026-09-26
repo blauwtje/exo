@@ -13,7 +13,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 2. **Write the overview** in the user's language: an outcome line, `Changed`, `Verified` and `Branch` lines, the question under it.
    `Changed` holds at most five `<what>: <why>` lines; a check not run gets its `Verified` line; no table or plan recap.
 3. **Ask the question.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit.
-   `no origin remote` or `default-branch=unknown` means no route can run: end with no question.
+   `no origin remote` means no route can run: end with no question.
    `route: ` names the set route, run unasked; `ship=` says why the setting did not apply.
    Pushing release steps wait for this answer.
 4. **Write the pull request body**, for `open-pr` and `pr-merge`, after reading `references/pr-prep.md`, with `Closes #<n>` for work from issue `<n>`.

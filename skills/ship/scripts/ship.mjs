@@ -164,7 +164,12 @@ function printRoutes() {
   }
   const base = defaultBranch();
   if (base === null) {
-    console.log('default-branch=unknown; no route can run');
+    if (setting === 'push') {
+      console.log('route: push (set)');
+      return;
+    }
+    if (setting !== 'ask') console.log(`ship=${setting} cannot run: default branch unknown`);
+    for (const line of MENU_PUSH_ONLY) console.log(line);
     return;
   }
   const onDefault = currentBranch() === base && !inWorktree();

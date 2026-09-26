@@ -65,12 +65,30 @@ test('--routes: no origin remote rules out every route', async () => {
   assert.equal(outcome.stdout, 'no origin remote; no route can run\n');
 });
 
-test('--routes: default branch unknown rules out every route', async () => {
+test('--routes: default branch unknown, ship=push runs without a question', async () => {
+  const { workDir } = await shipRepository();
+  git(workDir, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+  await setShipSetting(workDir, 'push');
+  const outcome = await shipRoutes(workDir);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, 'route: push (set)\n');
+});
+
+test('--routes: default branch unknown, ship=open-pr names why, then the push-only menu', async () => {
+  const { workDir } = await shipRepository();
+  git(workDir, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+  await setShipSetting(workDir, 'open-pr');
+  const outcome = await shipRoutes(workDir, { ghOk: true });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, `ship=open-pr cannot run: default branch unknown\n${MENU_PUSH_ONLY}`);
+});
+
+test('--routes: default branch unknown offers the push-only menu', async () => {
   const { workDir } = await shipRepository();
   git(workDir, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
   const outcome = await shipRoutes(workDir);
   assert.equal(outcome.code, 0, outcome.stderr);
-  assert.equal(outcome.stdout, 'default-branch=unknown; no route can run\n');
+  assert.equal(outcome.stdout, MENU_PUSH_ONLY);
 });
 
 test('--routes: a feature branch with gh auth ok offers the full menu', async () => {
