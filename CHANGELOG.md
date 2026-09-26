@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `lib/scratch-path.mjs` prints and creates a checkout's own `.exo/` scratch folder, and `lib/scratch-exclude.mjs` adds `.exo/` to the shared `info/exclude` once.
+
+### Changed
+
+- `route-skills` says to create a file with the Write tool, never a compound Bash command, and to log long output under `.exo/`.
+
+### Fixed
+
+- Agents and delegates of `run-plan`, `build-change`, `find-cause`, `run-parallel` and `audit-architecture` write their reports and briefs under `.exo/` in their own checkout instead of the git directory, so a worktree agent no longer stops on "too complex to verify that it stays inside the worktree".
+
 ## 0.49.0 - 2026-09-26
 
 ### Added
