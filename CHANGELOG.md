@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.8 - 2026-09-26
+
 ### Highlights
 
 - **`run-plan` runs only each task's targeted test and the project's full check once, at the end of the run.**
