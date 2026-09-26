@@ -61,17 +61,55 @@ test('a task lands with its trailer and its own commit subject, never with an ea
   assert.deepEqual(landedTasks(tasks, root), [1]);
 });
 
-test('the wave is the current task plus the next ready task without Design:, only when the plan allows one', () => {
+test('the wave is the current task plus every further ready task without Design: whose files are disjoint from the wave, up to four, only when the plan allows one', () => {
   const four = [1, 2, 3, 4].map((number) => taskSection({
-    number, title: `T${number}`, design: number === 2, files: ['- Create: `f`'], subject: `feat: t${number}`
+    number, title: `T${number}`, design: number === 2, files: [`- Create: \`f${number}\``], subject: `feat: t${number}`
   }));
   const withSetup = parsePlan(planFixture({ worktreeSetup: 'none', tasks: four }));
-  assert.deepEqual(nextWave(withSetup.tasks, [], 'none').map((task) => task.number), [1, 3]);
-  assert.deepEqual(nextWave(withSetup.tasks, [1, 3], 'none').map((task) => task.number), [2]);
+  assert.deepEqual(nextWave(withSetup.tasks, [], 'none').map((task) => task.number), [1, 3, 4]);
+  assert.deepEqual(nextWave(withSetup.tasks, [1, 3, 4], 'none').map((task) => task.number), [2]);
   assert.deepEqual(nextWave(withSetup.tasks, [], null).map((task) => task.number), [1]);
   assert.deepEqual(nextWave(withSetup.tasks, [1, 2, 3, 4], 'none'), []);
   const three = parsePlan(planFixture({ worktreeSetup: 'none', tasks: four.slice(0, 3) }));
   assert.deepEqual(nextWave(three.tasks, [], 'none').map((task) => task.number), [1]);
+});
+
+test('four disjoint ready tasks form a wave of four', () => {
+  const tasks = [1, 2, 3, 4].map((number) => taskSection({
+    number, title: `T${number}`, files: [`- Create: \`f${number}\``], subject: `feat: t${number}`
+  }));
+  const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks }));
+  assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1, 2, 3, 4]);
+});
+
+test('a fifth disjoint ready task stays out of the wave', () => {
+  const tasks = [1, 2, 3, 4, 5].map((number) => taskSection({
+    number, title: `T${number}`, files: [`- Create: \`f${number}\``], subject: `feat: t${number}`
+  }));
+  const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks }));
+  assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1, 2, 3, 4]);
+});
+
+test('a ready task sharing a path with an earlier wave member is skipped while a later disjoint one joins', () => {
+  const tasks = [
+    taskSection({ number: 1, title: 'T1', files: ['- Create: `shared.js`'], subject: 'feat: t1' }),
+    taskSection({ number: 2, title: 'T2', files: ['- Create: `shared.js`'], subject: 'feat: t2' }),
+    taskSection({ number: 3, title: 'T3', files: ['- Create: `f3.js`'], subject: 'feat: t3' }),
+    taskSection({ number: 4, title: 'T4', files: ['- Create: `f4.js`'], subject: 'feat: t4' })
+  ];
+  const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks }));
+  assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1, 3, 4]);
+});
+
+test('a task with no file paths stays out of the wave', () => {
+  const tasks = [
+    taskSection({ number: 1, title: 'T1', files: ['- Create: `f1.js`'], subject: 'feat: t1' }),
+    taskSection({ number: 2, title: 'T2', files: [], subject: 'feat: t2' }),
+    taskSection({ number: 3, title: 'T3', files: ['- Create: `f3.js`'], subject: 'feat: t3' }),
+    taskSection({ number: 4, title: 'T4', files: ['- Create: `f4.js`'], subject: 'feat: t4' })
+  ];
+  const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks }));
+  assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1, 3, 4]);
 });
 
 test('driftOf reports a Modify: region that is missing, duplicated or already changed', async () => {
