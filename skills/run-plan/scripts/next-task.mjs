@@ -12,7 +12,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextPhasePath, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
 
 // The show-savings skill owns the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/100.
@@ -42,8 +42,10 @@ function budgetLine(task) {
   return `Budget: ${soft}k/${hard}k`;
 }
 
-function waveLine(wave) {
-  if (wave.length === 0) return 'Next: none, every task landed';
+// With every task landed, a plan split into phases goes on in its next phase
+// file; `Next: none` is left for the last phase or a plan without phases.
+function waveLine(wave, nextPhase) {
+  if (wave.length === 0) return nextPhase === null ? 'Next: none, every task landed' : `Next phase: ${nextPhase}`;
   if (wave.length === 1) return `Next: Task ${wave[0].number}`;
   return `Wave: ${wave.map((task) => `Task ${task.number}`).join(', ')}`;
 }
@@ -136,7 +138,7 @@ export function nextTaskReport({ planPath, planText, root }) {
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
-    waveLine(wave)
+    waveLine(wave, wave.length === 0 ? nextPhasePath(planPath, planText) : null)
   ];
   const gitDirectory = execFileSync('git', ['-C', root, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).trim();
   const briefDirectory = path.join(gitDirectory, 'exo', 'briefs');

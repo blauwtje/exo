@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
+import { fixture, git, gitRepository, phasedRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/resume-plan.mjs', import.meta.url));
 const SESSION_HOOK = fileURLToPath(new URL('../hooks/session-start.sh', import.meta.url));
@@ -111,4 +111,38 @@ test('the session hook on startup names no running plan', async () => {
   const { root } = await checkout({ marker: true });
   const context = await sessionContext(root, 'startup');
   assert.ok(!context.includes('A plan is running'), context.slice(0, 300));
+});
+
+async function phasedCheckout() {
+  const phased = await phasedRepository();
+  const markerPath = path.join(git(phased.root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active');
+  await fs.mkdir(path.dirname(markerPath), { recursive: true });
+  await fs.writeFile(markerPath, `${phased.phase1Path}\n${phased.root}\n${SESSION_ID}\n${new Date().toISOString()}\n`);
+  git(phased.root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
+  return phased;
+}
+
+test('a stop after the last task of phase 1 blocks with the first task of phase 2', async () => {
+  const { root, phase2Path } = await phasedCheckout();
+  const result = await run(SCRIPT, ['stop'], { input: stopInput(root, false) });
+  assert.equal(result.code, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.decision, 'block');
+  assert.ok(output.reason.startsWith('Next: Task 1: Style.'), output.reason);
+  assert.ok(output.reason.includes(phase2Path), output.reason);
+});
+
+test('a stop after every task of every phase landed does not block', async () => {
+  const { root } = await phasedCheckout();
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): style', '-m', 'Plan-task: 1');
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): tail', '-m', 'Plan-task: 2');
+  const result = await run(SCRIPT, ['stop'], { input: stopInput(root, false) });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, '');
+});
+
+test('the session hook after the last task of phase 1 names phase 2', async () => {
+  const { root, phase2Path } = await phasedCheckout();
+  const context = await sessionContext(root, 'clear');
+  assert.ok(context.startsWith(`A plan is running: ${phase2Path}.`), context.slice(0, 300));
 });

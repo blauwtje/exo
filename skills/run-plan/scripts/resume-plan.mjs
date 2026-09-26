@@ -2,7 +2,7 @@
 // run-plan writes `<git-dir>/exo/run-plan.active` at its step 1 and removes it
 // at step 7. Its lines are the plan path, the run's checkout (may be empty),
 // the session id and the ISO write time; only a plan named there with an open
-// task counts as running.
+// task, in its own file or a later phase file, counts as running.
 //
 //   node resume-plan.mjs stop      Stop hook: blocks once with the next task
 //   node resume-plan.mjs session   SessionStart on clear or compact: prints the
@@ -16,12 +16,26 @@ import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { landedTasks, parsePlan, readyTasks } from '#plan-tasks';
+import { landedTasks, nextPhasePath, parsePlan, readyTasks } from '#plan-tasks';
 
 const MARKER_LIFETIME_MS = 6 * 60 * 60 * 1000;
 
-// The first ready task of the running plan, or null when no live marker names
-// a plan or every task landed. A marker past its lifetime, or one written by
+// The first ready task of the plan, or, once every task of it landed, of the
+// first later phase file with one open, so a run crossing into the next phase
+// keeps blocking a stop; null when every phase landed.
+function firstOpenTask(planPath, root) {
+  const visited = new Set();
+  for (let phase = planPath; phase !== null && fs.existsSync(phase) && !visited.has(phase); phase = nextPhasePath(phase)) {
+    visited.add(phase);
+    const tasks = parsePlan(fs.readFileSync(phase, 'utf8')).tasks;
+    const [next] = readyTasks(tasks, landedTasks(tasks, root));
+    if (next !== undefined) return { planPath: phase, task: next };
+  }
+  return null;
+}
+
+// The first open task of the running plan, or null when no live marker names
+// a plan or every task of every phase landed. A marker past its lifetime, or one written by
 // another session when `sessionId` is given, is removed, so an abandoned run
 // or another session's run never blocks this one.
 export function runningPlan(cwd, sessionId) {
@@ -34,10 +48,8 @@ export function runningPlan(cwd, sessionId) {
     fs.rmSync(marker, { force: true });
     return null;
   }
-  if (!planPath || !fs.existsSync(planPath)) return null;
-  const tasks = parsePlan(fs.readFileSync(planPath, 'utf8')).tasks;
-  const [next] = readyTasks(tasks, landedTasks(tasks, checkout || cwd));
-  return next === undefined ? null : { planPath, task: next };
+  if (!planPath) return null;
+  return firstOpenTask(planPath, checkout || cwd);
 }
 
 // Stop: `stop_hook_active` means this stop already follows one block, so the
