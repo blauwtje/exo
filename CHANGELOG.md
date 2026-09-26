@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `run-plan` keeps one harness task-list entry per run and updates it once per wave or lone task, instead of one entry and update per plan task, because `Plan-task:` commits already track which tasks landed.
+
 ## 0.50.1 - 2026-09-26
 
 ### Fixed
