@@ -172,16 +172,20 @@ const READ_WHEN_OPENING = 'Read this when ';
 const FIRST_LINE_QUALIFIERS = {
   'security.md': [
     'changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries',
+    'before ordering tasks, the first affected test, or the first production edit',
     'filenames and dependency names alone do not qualify.',
   ],
   'data-migration.md': [
     'changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions',
+    'before ordering tasks or the first edit',
     'in-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
   ],
   'test-design.md': [
     'logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner',
     'before the first affected test or production edit',
+    'before writing the first task of any task list, to sort tasks into risky and routine so the risky ones write their test first',
     'style, text, and version-only changes do not qualify',
+    'report mode never loads it',
   ],
 };
 
