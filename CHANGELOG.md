@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `run-plan` always builds a wave in folders it makes with `git worktree add --detach`, never with the dispatch tool's worktree isolation, and every build brief is named by path, never pasted, which saves about 6.7k lead tokens per eight tasks.
+- `run-plan` and `build-change` keep no harness task list; `Plan-task:` commits and the working tree track what landed.
 
 ## 0.50.2 - 2026-09-26
 
