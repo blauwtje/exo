@@ -903,24 +903,62 @@ export async function staticAudit(directory) {
   return findings;
 }
 
+/**
+ * Channels (0 to 255) and alpha (0 to 1) of a computed colour string, read from the
+ * string itself because a canvas round-trip is not exact in every engine: obscura's
+ * canvas returns 0.2 alpha as 10/255. Reads rgb()/rgba() in comma or space form and
+ * color(srgb), each with number or percentage channels and alpha. Another colour
+ * space keeps its alpha with null channels; a value with no colour function is null.
+ * The page audit receives this function's source, so it must not reach module scope.
+ */
+export function parseComputedColor(value) {
+  const text = String(value).trim().toLowerCase();
+  if (text === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+  const match = /^([a-z-]+)\((.*)\)$/.exec(text);
+  if (!match) return null;
+  const [, name, body] = match;
+  const slash = body.indexOf('/');
+  let channels = (slash === -1 ? body : body.slice(0, slash)).trim().split(/\s*,\s*|\s+/).filter(Boolean);
+  let alphaToken = slash === -1 ? null : body.slice(slash + 1).trim();
+  const isSrgbColor = name === 'color' && channels[0] === 'srgb';
+  if (name === 'color') channels = channels.slice(1);
+  if (alphaToken === null && channels.length === 4) alphaToken = channels.pop();
+  const amount = (token, whole) => {
+    if (token === 'none') return 0;
+    return token.endsWith('%') ? (Number.parseFloat(token) / 100) * whole : Number.parseFloat(token);
+  };
+  const clamp = (number, max) => Math.min(max, Math.max(0, number));
+  const a = alphaToken === null ? 1 : clamp(amount(alphaToken, 1), 1);
+  if (Number.isNaN(a)) return null;
+  const isRgb = name === 'rgb' || name === 'rgba';
+  if ((!isRgb && !isSrgbColor) || channels.length !== 3) return { r: null, g: null, b: null, a };
+  const [r, g, b] = channels.map((token) => clamp(isRgb ? amount(token, 255) : amount(token, 1) * 255, 255));
+  if ([r, g, b].some(Number.isNaN)) return null;
+  return { r, g, b, a };
+}
+
 // Passed into both in-page functions rather than written twice: `focusIndicatorFindings`
 // compares the two joined strings, so a one-sided edit would silently stop reporting
 // missing focus indicators instead of failing.
 const FOCUS_SIGNATURE_PROPERTIES = ['outlineStyle', 'outlineWidth', 'outlineColor',
   'boxShadow', 'borderColor', 'backgroundColor', 'color'];
 
-const PAGE_AUDIT = (focusProperties) => {
+const PAGE_AUDIT = (focusProperties, parseColor) => {
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
   const paint = canvas.getContext('2d', { willReadFrequently: true });
+  // The canvas only converts channels of a colour space parseColor cannot, painted
+  // opaque, so its alpha, which some engines round-trip wrongly, is never read.
   const toRgba = (value) => {
+    const parsed = parseColor(value) ?? { r: null, g: null, b: null, a: 1 };
+    if (parsed.r !== null) return parsed;
     paint.clearRect(0, 0, 1, 1);
-    paint.fillStyle = 'rgba(0, 0, 0, 0)';
-    paint.fillStyle = value;
+    paint.fillStyle = 'rgb(0, 0, 0)';
+    paint.fillStyle = value.replace(/\s*\/[^/)]*\)\s*$/, ')');
     paint.fillRect(0, 0, 1, 1);
-    const [r, g, b, a] = paint.getImageData(0, 0, 1, 1).data;
-    return { r, g, b, a: a / 255 };
+    const [r, g, b] = paint.getImageData(0, 0, 1, 1).data;
+    return { r, g, b, a: parsed.a };
   };
   // WCAG 2.x relative luminance, which pins the knee at 0.03928; inspect-render.mjs
   // linearizes against the sRGB spec's 0.04045 instead. Both read 8-bit channels, and
@@ -962,9 +1000,11 @@ const PAGE_AUDIT = (focusProperties) => {
     let uncertain = false;
     while (node) {
       const style = getComputedStyle(node);
-      if (style.backgroundImage !== 'none') uncertain = true;
+      // An engine that does not implement a property serialises it as '', as
+      // backdropFilter already allows; obscura does so for these two.
+      if (style.backgroundImage && style.backgroundImage !== 'none') uncertain = true;
       if (parseFloat(style.opacity) < 1) uncertain = true;
-      if (style.mixBlendMode !== 'normal') uncertain = true;
+      if (style.mixBlendMode && style.mixBlendMode !== 'normal') uncertain = true;
       if (style.backdropFilter && style.backdropFilter !== 'none') uncertain = true;
       const background = toRgba(style.backgroundColor);
       if (background.a >= 0.999) return { color: background, uncertain };
@@ -1342,7 +1382,10 @@ export async function renderedAudit({ url, viewports, cwd }) {
       // over from the previous viewport's Tab pass would otherwise survive
       // into this viewport's baseline audit. Force a real reload per viewport.
       await page.reload({ waitUntil: 'load' });
-      const audit = await page.evaluate(PAGE_AUDIT, FOCUS_SIGNATURE_PROPERTIES);
+      // A function argument cannot cross into the page, so the audit and the colour
+      // parser travel as one source expression.
+      const audit = await page.evaluate(
+        `(${PAGE_AUDIT})(${JSON.stringify(FOCUS_SIGNATURE_PROPERTIES)}, ${parseComputedColor})`);
       const focusFindings = await focusIndicatorFindings(page, audit.focusables);
       const findings = [...audit.findings, ...focusFindings].map((entry) => ({ ...entry, viewport: key }));
       perViewport[key] = { status: 'ok', findings };
