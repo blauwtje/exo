@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `lib/scratch-path.mjs` treats an argument whose last segment has an extension, such as `report.md`, as a file and creates only its parent folder, so a later Write no longer fails with "is a directory".
+- An agent that `run-plan` or `run-parallel` dispatches with worktree isolation returns its report as its final message, at most 25 lines, because the harness removes an isolated worktree with no commit, and its `.exo/` report with it.
+
 ## 0.50.0 - 2026-09-26
 
 ### Added
