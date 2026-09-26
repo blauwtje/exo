@@ -12,6 +12,7 @@
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#restatement": "./lib/restatement.mjs",
+    "#scratch-path": "./lib/scratch-path.mjs",
     "#script-flags": "./lib/script-flags.mjs",
     "#settings-store": "./lib/settings-store.mjs"
   },
