@@ -1,3 +1,5 @@
+Read this when work or a fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions, once orientation, the affected paths, or the predicted change are known and before ordering tasks or the first edit — in-memory types, cache rebuilds, and version-only dependency bumps do not qualify.
+
 # Data migration
 
 Keep every deployed reader and writer compatible until migrated data is proven. The enemy is a schema or format switch that makes one deployment green by breaking another. The overcorrection is permanent dual paths with no measured contract point. Move through four ordered phases and name the rollback boundary.

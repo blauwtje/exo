@@ -1,3 +1,5 @@
+Read this when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries, once the affected paths or the predicted change are known and before ordering tasks, the first affected test, or the first production edit — filenames and dependency names alone do not qualify.
+
 # Security boundaries
 
 Make every changed trust crossing explicit before it can become an exploit path. The enemy is a happy-path change that treats identity, input, or a destination as already trusted. The overcorrection is a generic security audit detached from the changed behavior. Run only the checks whose predicates below are true.
