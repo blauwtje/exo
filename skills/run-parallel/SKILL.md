@@ -1,6 +1,6 @@
 ---
 name: run-parallel
-description: Use when the user invokes it to fan one job out to parallel workers for split coverage, a race, a gauntlet of checks, or a contest of rubric-judged candidates. Not for a plan's tasks, which run-plan runs in waves, or one lookup, which exo:locate-code answers.
+description: Use when the user invokes it to fan one job out to parallel workers for split coverage, a race, a gauntlet of checks, or a contest of rubric-judged candidates. Not for a plan's tasks, which build runs in waves, or one lookup, which exo:locate-code answers.
 argument-hint: "<coverage|race|gauntlet|contest> <done predicate or artifact> [N]"
 disable-model-invocation: true
 ---
@@ -12,7 +12,7 @@ Parallel workers are only worth their cost when every rule that judges them is f
 ## When to use
 
 - The user invokes it with a shape: coverage splits a scope into slices, race runs one brief N times, gauntlet runs N distinct checks against one artifact, contest has N candidates build the same thing.
-- Not for a plan's tasks: `run-plan` fans those out in waves.
+- Not for a plan's tasks: `build` fans those out in waves.
 - Not for one read-only lookup: the `exo:locate-code` agent answers it.
 
 ## The run
@@ -21,7 +21,7 @@ Each delegate brief follows the delegation contract of the user's `CLAUDE.md` an
 
 1. **Frame.** Before any spawn, run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`, so `.exo/` stays untracked, then `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" run-parallel/<slug>`, which prints `<run dir>`, and write `<run dir>/frame.md`: the done predicate, the shape, N, and each worker's slice, arm or check with its own output path, inside that worker's checkout: a worker in a worktree the run made writes to its worktree's `.exo/run-parallel/<slug>/`, read there before the worktree is removed, because a path outside the worktree stops the worker. A rule written after results exist bends to them.
 2. **Fix the judge.** Also in `<run dir>/frame.md`: a race names `first pass`, `rank all` or `best-of`; a gauntlet passes only when every check passes; a contest gets 3 to 6 gradeable criteria for what success means for this artifact. The rubric never enters a candidate brief, because a candidate that sees it writes to the grader.
-3. **Disjoint scopes.** No two workers share a slice or a writable path: code goes to a worktree the lead makes and removes, as `../run-plan/references/wave-worktrees.md` steps 1 (Create) and 4 (Remove) do, and prose to a file each; no dispatch uses worktree isolation, such as `isolation: "worktree"`. A brief that measures names the exact SHAs and the method (sample count, one sample, order), or two numbers cannot be compared.
+3. **Disjoint scopes.** No two workers share a slice or a writable path: code goes to a worktree the lead makes and removes, as `../build/references/wave-worktrees.md` steps 1 (Create) and 4 (Remove) do, and prose to a file each; no dispatch uses worktree isolation, such as `isolation: "worktree"`. A brief that measures names the exact SHAs and the method (sample count, one sample, order), or two numbers cannot be compared.
 4. **Fan out.** Before dispatch, record `git -C <root> status --porcelain`, where `<root>` is what `git rev-parse --show-toplevel` prints, as this run's baseline; step 5 checks it again once every worker returns, because a worker without worktree isolation can still write outside the slice or worktree it was given. Send all N in one message, in the background, each a `general-purpose` delegate on `sonnet` from `worker-prompt.md`: write each filled brief to `<run dir>/brief-<n>.md` and dispatch with only a line naming that path. Every worker writes its full detail to its file; its final message is its report, at most 25 lines, verdict first. Read a worker's detail file inside its worktree before removing it. A dropout leaves N-1, noted in the report.
 5. **Aggregate.** First run `git -C <root> status --porcelain` again and compare it with step 4's baseline: a path it lists now that step 4 did not (`.exo/` never shows, excluded by `lib/scratch-exclude.mjs`) means a worker wrote outside the worktree or file it was given; stop, show the listed paths, land or graft nothing from this run, remove every worktree the run made as step 3 says, and end the turn naming those paths. Otherwise, a result missing its named SHAs or method reruns once; a second miss is a gap, and a gap never counts as a pass. Coverage needs a result for every slice; race and gauntlet apply the rule from `<run dir>/frame.md`. Coverage, race and gauntlet end here at step 8.
 6. **Judge the contest.** Only once every candidate has finished, dispatch one read-only `general-purpose` delegate on `opus` from `judge-prompt.md`; candidates set to `opus` get a `sonnet` judge, because a judge favors its own model's style. Meanwhile read every candidate end to end yourself and score it criterion by criterion. Where your pick and the judge's differ, read both rationales: either side is biased or the rubric is unclear.

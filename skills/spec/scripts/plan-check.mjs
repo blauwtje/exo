@@ -160,7 +160,7 @@ function checkSharedFiles(tasks) {
   return problems;
 }
 
-// run-plan's SKILL.md step 1 matches a plan to a checkout by the '## Plan
+// build's SKILL.md step 1 matches a plan to a checkout by the '## Plan
 // basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
 // frameOf); a compact plan with neither would parse but never be matched to
 // a checkout, so plan-check fails it here instead.

@@ -31,10 +31,10 @@ argument-hint: <outcome to shape>
 6. **Store it.** Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
    The exception is plan mode: the brief goes into the plan file the harness names.
    `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`.
-   `issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints, the copy `run-plan` runs.
+   `issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints, the copy `build` runs.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>` and repair each line it prints.
    Then repair any Acceptance item that reaches no task heading, `Data:` segment, Success criterion or `## Manual checks` line, because the builder cannot.
-8. **Hand off.** Load `exo:run-plan` on that file with the Skill tool, in this turn and unasked, because the context watch reads a plan run from that load.
+8. **Hand off.** Load `exo:build` on that file with the Skill tool, in this turn and unasked, because the context watch reads a plan run from that load.
    The exception is a read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path, or #<n> for an issue>`.
 
 ## References

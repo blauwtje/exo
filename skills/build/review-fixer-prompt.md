@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The text `run-plan` hands a `general-purpose` delegate on `sonnet` when the branch review returns `FINDINGS`. The delegate repairs from the review report alone and leaves the Final verification to the session.
+The text `build` hands a `general-purpose` delegate on `sonnet` when the branch review returns `FINDINGS`. The delegate repairs from the review report alone and leaves the Final verification to the session.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>, report <report path>.

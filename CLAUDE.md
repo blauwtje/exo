@@ -17,7 +17,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 - Run those deletions in a separate command after a successful push, never in the same command as the fast-forward or push, because git-guard checks the whole command before any part runs and so finds the branch commits missing from `main`.
 - A subagent never runs `git stash`, because all worktrees share one stash list; the cleanup drops a stash made on a run branch once its content is on `main`, and leaves every other stash untouched.
 - Give every shell wait loop such as `until <condition>; do sleep N; done` a deadline, a counter inside the loop that exits with an error after a set number of rounds, not GNU `timeout`, which stock macOS lacks, because an unbounded loop leaves a subagent running forever.
-- This workflow outranks the workspace question in `skills/run-plan/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
+- This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
 - End a report that changed exo with a line telling the user to run `/reload-plugins`.
 
 ## Commands

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the run-plan fixture under /tmp/exo-pressure/run-plan/:
+# Builds the build fixture under /tmp/exo-pressure/build/:
 # setup-strings.sh, which the case prompt runs in its empty directory to lay
 # down the fx-strings checkout there, and fx-strings, one checkout it built,
 # for inspecting the fixture without running a case.
@@ -9,7 +9,7 @@
 # `node scripts/prove.mjs <file>`, which fails until that task has landed.
 set -euo pipefail
 
-root=/tmp/exo-pressure/run-plan
+root=/tmp/exo-pressure/build
 rm -rf "$root"
 mkdir -p "$root"
 
@@ -293,4 +293,4 @@ SCRIPT
 
 mkdir -p "$root/fx-strings"
 (cd "$root/fx-strings" && bash "$root/setup-strings.sh")
-echo "run-plan fixture ready: $root/setup-strings.sh and $root/fx-strings"
+echo "build fixture ready: $root/setup-strings.sh and $root/fx-strings"

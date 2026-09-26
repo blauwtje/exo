@@ -25,9 +25,9 @@ case "$source" in
   clear|compact)
     printf '%s' "$input" | node "$root/skills/show-savings/scripts/read-guard.mjs" reset >/dev/null
     printf '%s' "$input" | node "$root/skills/show-savings/scripts/repeat-guard.mjs" reset >/dev/null
-    # A plan run-plan left open survives only as its marker, so the cleared
+    # A plan build left open survives only as its marker, so the cleared
     # session is told to resume it instead of waiting for the user to ask.
-    running_plan=$(printf '%s' "$input" | node "$root/skills/run-plan/scripts/resume-plan.mjs" session)
+    running_plan=$(printf '%s' "$input" | node "$root/skills/build/scripts/resume-plan.mjs" session)
     ;;
 esac
 # Every source ends with the whole body injected below, so the restatement

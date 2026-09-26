@@ -167,13 +167,13 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> report=<path>`'), 'the reviewer returns one verdict line');
 });
 
-test('run-plan sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.md', () => {
-  const fixerPath = path.join(skillsRoot, 'run-plan', 'review-fixer-prompt.md');
-  assert.ok(fs.existsSync(fixerPath), 'skills/run-plan/review-fixer-prompt.md exists');
+test('build sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.md', () => {
+  const fixerPath = path.join(skillsRoot, 'build', 'review-fixer-prompt.md');
+  assert.ok(fs.existsSync(fixerPath), 'skills/build/review-fixer-prompt.md exists');
   const fixerPrompt = fs.readFileSync(fixerPath, 'utf8');
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
   assert.match(fixerPrompt, /`general-purpose` delegate on `sonnet`/);
-  const implementing = fs.readFileSync(path.join(skillsRoot, 'run-plan', 'SKILL.md'), 'utf8');
+  const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
   assert.match(implementing, /`FINDINGS`[^\n]*`review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
 });
@@ -186,13 +186,13 @@ test('the implementer pins sonnet at high effort whatever the session runs at', 
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
-test('a Design: task with a named direction stays in the run-plan session, not the implementer', () => {
+test('a Design: task with a named direction stays in the build session, not the implementer', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
   assert.ok(implementer, 'agents/build-task.md exists');
   assert.doesNotMatch(implementer.body, /enter it at its Build phase/);
   assert.doesNotMatch(implementer.frontmatter.description, /opus/);
 
-  const designTasksPath = path.join(skillsRoot, 'run-plan', 'references', 'design-tasks.md');
+  const designTasksPath = path.join(skillsRoot, 'build', 'references', 'design-tasks.md');
   const designTasks = fs.readFileSync(designTasksPath, 'utf8');
   assert.doesNotMatch(designTasks, /exo:build-task/);
   assert.match(designTasks, /\$RUN\/files\.md/);

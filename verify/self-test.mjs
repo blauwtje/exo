@@ -56,15 +56,15 @@ const SCENARIOS = [
     read(root, 'skills/spec/SKILL.md').replace(/^name: spec$/gm, 'name: [spec')) },
   { name: 'missing-judgment', mutate: (root) =>
     replaceText(root, 'skills/check-docs/SKILL.md', '## Judgment', '## Verdict') },
-  // run-plan's body sits at its SLIM_BODY_TOKENS lock, so the stance paragraph
+  // build's body sits at its SLIM_BODY_TOKENS lock, so the stance paragraph
   // added here also trims two References descriptions by more bytes than it
   // costs: the mutation reaches the slim-shape check instead of the lock.
   { name: 'slim-skill-stance-paragraph', mutate: (root) => {
-    replaceText(root, 'skills/run-plan/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       '# Implementing a plan\n', '# Implementing a plan\n\nRun it. The enemy is drift. The overcorrection is stalling.\n');
-    replaceText(root, 'skills/run-plan/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       'Before asking the user to pick among numbered options.', 'Before asking.');
-    replaceText(root, 'skills/run-plan/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       'Never here: `exo:run-unit` reads it.', 'Never here.');
   } },
   // build-change's body sits at its SLIM_BODY_TOKENS lock; trimming one
@@ -77,15 +77,15 @@ const SCENARIOS = [
   } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/spec/SKILL.md',
     read(root, 'skills/spec/SKILL.md').replace(/^\d+\. /gm, '- ')) },
-  // run-plan's body sits at its SLIM_BODY_TOKENS lock; the two trims below pay
+  // build's body sits at its SLIM_BODY_TOKENS lock; the two trims below pay
   // for the inserted paragraph, so the mutation reaches the opening-heading
   // check instead of the byte lock.
   { name: 'slim-skill-heading-opens-on-paragraph', mutate: (root) => {
-    replaceText(root, 'skills/run-plan/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       '## The loop\n', '## The loop\n\nIt runs until the plan lands or a repair pass ends it.\n');
-    replaceText(root, 'skills/run-plan/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       'Before asking the user to pick among numbered options.', 'Before asking.');
-    replaceText(root, 'skills/run-plan/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       'Never here: `exo:run-unit` reads it.', 'Never here.');
   } },
   { name: 'slim-skill-without-references-table', mutate: (root) =>
@@ -110,7 +110,7 @@ const SCENARIOS = [
   { name: 'broken-reference', mutate: (root) =>
     replaceText(root, 'skills/build-change/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>
-    replaceText(root, 'skills/run-plan/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
+    replaceText(root, 'skills/build/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
   { name: 'removed-required-owner-row', mutate: (root) =>
     dropLines(root, 'skills/find-cause/SKILL.md', '| `../build-change/references/security.md` |') },
   { name: 'dropped-security-ordering-window', mutate: (root) => replaceText(root,

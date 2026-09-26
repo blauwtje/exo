@@ -1,6 +1,6 @@
 ---
 name: build-task
-description: "Builds one decided plan task in the checkout its dispatch names, from the brief file holding its frame and task section, and reports GREEN or what stopped it. Dispatched by run-plan for every build. Not for a plan repair, a failed Run: with no causal line, a review, a task with a Design: line, or a change with no plan task."
+description: "Builds one decided plan task in the checkout its dispatch names, from the brief file holding its frame and task section, and reports GREEN or what stopped it. Dispatched by build for every build. Not for a plan repair, a failed Run: with no causal line, a review, a task with a Design: line, or a change with no plan task."
 model: sonnet
 effort: high
 ---
@@ -18,7 +18,7 @@ effort: high
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
 - Run its `Proof:` command; its pass is green.
-- Without one, write or pick one test for the brief's `Success criterion:` and run only that test; its report line comes first under Proof, because run-plan lands on the first outcome line.
+- Without one, write or pick one test for the brief's `Success criterion:` and run only that test; its report line comes first under Proof, because build lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code: it holds the ladder's rungs, the tie-break between them, and what is never shortened on any rung.
@@ -38,7 +38,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 ## Report
 
 - Write at most 25 lines to `Report to:`: Landed, Proof, Unresolved (or `none`).
-- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail`, its last output lines indented under it, never a summary, because run-plan lands a compact task only on that line and output.
+- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail`, its last output lines indented under it, never a summary, because build lands a compact task only on that line and output.
 - A task is done only once committed on proof from the real product: a test, a command or the running app, not a reading of the code.
 - A check that was skipped or gave no clear outcome is not done: write it as it ran, never as `pass`.
 - Return it only on a failed test or unfinished work.

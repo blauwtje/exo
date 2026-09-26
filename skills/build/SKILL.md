@@ -1,5 +1,5 @@
 ---
-name: run-plan
+name: build
 description: Use when a session opens on a plan file to run, after a clear, or when the user says to run or resume a plan. Not for authoring or repairing a plan, or a decided change with no plan file, which build-change owns.
 argument-hint: "[plan path]"
 effort: medium
@@ -9,7 +9,7 @@ effort: medium
 
 ## The loop
 
-1. **Find the plan, settle the workspace, then start the run.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only` (`--plan <path>` for a named plan); a failure line on zero or several matches becomes the question to run. Settle where the run commits as `references/workspace.md` says. Read that plan's `Repository:` and `Branch:` lines. Rerun `start-run.mjs --plan <path> --checkout <run's checkout> --session "${CLAUDE_SESSION_ID}"` to write the marker, which survives a clear. Invoking run-plan authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`.
+1. **Find the plan, settle the workspace, then start the run.** Run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --find-only` (`--plan <path>` for a named plan); a failure line on zero or several matches becomes the question to run. Settle where the run commits as `references/workspace.md` says. Read that plan's `Repository:` and `Branch:` lines. Rerun `start-run.mjs --plan <path> --checkout <run's checkout> --session "${CLAUDE_SESSION_ID}"` to write the marker, which survives a clear. Invoking build authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`.
 2. **Read the frame, not the plan.** Read `## Goal`, `## Plan basis`, `## Success criterion` and `## Checkpoint`, plus `## Non-goals`, `## Context`, `## Decisions` and `## Visual direction` when present. List tasks with `grep -n '^### Task [0-9]' <plan>`; never open or `@`-reference it, because every later turn re-reads it.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>`; `Next: none` sends you to step 7. Only a `Plan-task:` commit decides what landed, never memory, so after a compaction it reruns before any edit.
 4. **Form the block.** The current task and the unlanded tasks after it in plan order, eight at most, ending before a `Design:` task or an unlanded `Depends on:` outside the block. A current `Design:` task routes as `references/design-tasks.md` says, then step 3 repeats. There, an open choice the user would not notice is ruled and recorded in the commit body; one they would notice stops the run with one question, because a guess ships as a decision.

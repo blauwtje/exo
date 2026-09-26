@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Finds the plan run-plan's step 1 should run: the file under docs/plans/,
+// Finds the plan build's step 1 should run: the file under docs/plans/,
 // docs/specs/ or ~/.claude/plans/ whose `Repository:` line equals the
 // checkout's toplevel, preferring one whose `Branch:` line equals the
-// current branch, exactly as run-plan's SKILL.md describes. Writes step 1's
-// four-line `exo/run-plan.active` marker and runs scratch-exclude.mjs, so a
+// current branch, exactly as build's SKILL.md describes. Writes step 1's
+// four-line `exo/build.active` marker and runs scratch-exclude.mjs, so a
 // session that opens on a plan reaches its first dispatch in one command
 // instead of picking the plan and writing the marker by hand.
 //
@@ -94,7 +94,7 @@ function writeMarker(root, planPath, checkout, sessionId) {
   const gitDirectory = gitLine(root, ['rev-parse', '--absolute-git-dir']);
   const markerDirectory = path.join(gitDirectory, 'exo');
   fs.mkdirSync(markerDirectory, { recursive: true });
-  fs.writeFileSync(path.join(markerDirectory, 'run-plan.active'), markerContent(planPath, checkout, sessionId));
+  fs.writeFileSync(path.join(markerDirectory, 'build.active'), markerContent(planPath, checkout, sessionId));
 }
 
 function main(argv) {

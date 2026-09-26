@@ -13,7 +13,7 @@ const IMPLEMENT_ONLY = ['security.md', 'test-design.md', 'performance.md', 'data
 
 const EXPECTED_OWNER_ROWS = {
   'skills/find-cause/SKILL.md': [
-    '../run-plan/references/workspace.md',
+    '../build/references/workspace.md',
     'investigator-prompt.md',
     'fixer-prompt.md',
     '../build-change/references/performance.md',
@@ -26,7 +26,7 @@ const EXPECTED_OWNER_ROWS = {
     '../build-change/references/project-knowledge.md',
   ],
   'skills/build-change/SKILL.md': [
-    '../run-plan/references/workspace.md',
+    '../build/references/workspace.md',
     'reviewer-prompt.md',
     'references/critique.md',
     'references/security.md',
@@ -43,7 +43,7 @@ const EXPECTED_OWNER_ROWS = {
     '../build-change/references/test-design.md',
     '../route-skills/references/question.md',
   ],
-  'skills/run-plan/SKILL.md': [
+  'skills/build/SKILL.md': [
     'references/workspace.md',
     'references/wave-worktrees.md',
     'implementer-prompt.md',

@@ -277,7 +277,7 @@ export function flowPlanText(repository) {
     `Branch: ${FLOW_BRANCH}`,
     'Worktree setup: none',
     '',
-    'Planned against the seed commit on `main`. `npm test` runs `node --test`, which finds every `*.test.js` file. Executor loads the `run-plan` skill on this plan before the first task.',
+    'Planned against the seed commit on `main`. `npm test` runs `node --test`, which finds every `*.test.js` file. Executor loads the `build` skill on this plan before the first task.',
     '',
     '## Non-goals',
     '',
@@ -301,7 +301,7 @@ export function flowPlanText(repository) {
 }
 
 // The bare origin gives the repository `origin/main` and `origin/HEAD`, which
-// run-plan reads for its default branch and its merge-base.
+// build reads for its default branch and its merge-base.
 export function prepareFlowRepository(repository, origin, withPlan) {
   git(repository, ['init', '-q', '-b', 'main']);
   const files = withPlan ? { ...FLOW_SEED, [FLOW_PLAN]: flowPlanText(repository) } : FLOW_SEED;

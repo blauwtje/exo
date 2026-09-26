@@ -8,10 +8,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { nextTaskReport } from '../skills/run-plan/scripts/next-task.mjs';
+import { nextTaskReport } from '../skills/build/scripts/next-task.mjs';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/next-task.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/next-task.mjs', import.meta.url));
 
 const PLAN = planFixture({ worktreeSetup: 'none', tasks: [
   taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], code: 'export function greet() {\n  return "hello";\n}', subject: 'feat(app): greet' }),

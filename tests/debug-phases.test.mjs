@@ -72,7 +72,7 @@ test('references/handoff.md states the 25-line cap and every D1 field, and SKILL
 test('Step 7 runs pick-reviewer.mjs --effort and drops the hardcoded thresholds', () => {
   const source = fs.readFileSync(SKILL, 'utf8');
   assert.ok(
-    source.includes('node "${CLAUDE_SKILL_DIR}/../run-plan/scripts/pick-reviewer.mjs" --effort'),
+    source.includes('node "${CLAUDE_SKILL_DIR}/../build/scripts/pick-reviewer.mjs" --effort'),
     'Step 7 runs pick-reviewer.mjs --effort',
   );
   assert.ok(source.includes('`skip`'), 'Step 7 names skip');

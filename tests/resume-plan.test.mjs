@@ -1,4 +1,4 @@
-// resume-plan.mjs blocks a stop once while the plan named in the run-plan
+// resume-plan.mjs blocks a stop once while the plan named in the build
 // marker has an open task, and on a clear or compaction the session hook tells
 // the fresh context to resume that plan.
 
@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/resume-plan.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/resume-plan.mjs', import.meta.url));
 const SESSION_HOOK = fileURLToPath(new URL('../hooks/session-start.sh', import.meta.url));
 
 const PLAN = planFixture({ tasks: [
@@ -18,13 +18,13 @@ const PLAN = planFixture({ tasks: [
   taskSection({ number: 2, title: 'Style', dependsOn: 'Task 1', files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
 ] });
 
-const SESSION_ID = 'run-plan-session';
+const SESSION_ID = 'build-session';
 const HOUR_MS = 60 * 60 * 1000;
 
 async function checkout({ marker, writtenAt = new Date() }) {
   const root = await gitRepository({ 'docs/plans/fixture.md': PLAN });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active');
+  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'build.active');
   if (marker) {
     await fs.mkdir(path.dirname(markerPath), { recursive: true });
     await fs.writeFile(markerPath, `${planPath}\n${root}\n${SESSION_ID}\n${writtenAt.toISOString()}\n`);
@@ -47,13 +47,13 @@ test('a stop with the marker and an open task blocks with the next task', async 
   assert.equal(result.code, 0, result.stderr);
   const output = JSON.parse(result.stdout);
   assert.equal(output.decision, 'block');
-  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:run-plan on ${planPath} from step 3.`);
+  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:build on ${planPath} from step 3.`);
 });
 
 test('wait marks the run waiting, so the next stop does not block, and the stop after that blocks again', async () => {
   const { root, planPath } = await checkout({ marker: true });
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
-  const waitPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.wait');
+  const waitPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'build.wait');
   const waitResult = await run(SCRIPT, ['wait'], { cwd: root });
   assert.equal(waitResult.code, 0, waitResult.stderr);
   assert.equal(waitResult.stdout, '');
@@ -68,12 +68,12 @@ test('wait marks the run waiting, so the next stop does not block, and the stop 
   assert.equal(nextStop.code, 0, nextStop.stderr);
   const output = JSON.parse(nextStop.stdout);
   assert.equal(output.decision, 'block');
-  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:run-plan on ${planPath} from step 3.`);
+  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:build on ${planPath} from step 3.`);
 });
 
 test('wait without a live marker writes nothing and leaves no mark', async () => {
   const { root } = await checkout({ marker: false });
-  const waitPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.wait');
+  const waitPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'build.wait');
   const result = await run(SCRIPT, ['wait'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, '');
@@ -132,7 +132,7 @@ for (const source of ['clear', 'compact']) {
   test(`the session hook on ${source} sends the fresh context back to the running plan`, async () => {
     const { root, planPath } = await checkout({ marker: true });
     const context = await sessionContext(root, source);
-    assert.ok(context.startsWith(`A plan is running: ${planPath}. On the next message, start the skill exo:run-plan on this plan.\n`), context.slice(0, 300));
+    assert.ok(context.startsWith(`A plan is running: ${planPath}. On the next message, start the skill exo:build on this plan.\n`), context.slice(0, 300));
   });
 }
 

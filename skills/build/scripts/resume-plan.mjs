@@ -1,12 +1,12 @@
 // Keeps a running plan going across a stop, a clear and a compaction.
-// run-plan writes `<git-dir>/exo/run-plan.active` at its step 1 and removes it
+// build writes `<git-dir>/exo/build.active` at its step 1 and removes it
 // at step 7. Its lines are the plan path, the run's checkout (may be empty),
 // the session id and the ISO write time; only a plan named there with an open
 // task counts as running.
 //
 //   node resume-plan.mjs stop      Stop hook: blocks once with the next task
 //   node resume-plan.mjs session   SessionStart on clear or compact: prints the
-//                                  line that sends the session back to run-plan
+//                                  line that sends the session back to build
 //   node resume-plan.mjs wait      Marks, once, that the running plan now waits
 //                                  on the user, so the next stop does not block
 //
@@ -29,8 +29,8 @@ function gitDirectoryOf(cwd) {
 
 function markerPaths(gitDirectory) {
   return {
-    active: path.join(gitDirectory, 'exo', 'run-plan.active'),
-    wait: path.join(gitDirectory, 'exo', 'run-plan.wait')
+    active: path.join(gitDirectory, 'exo', 'build.active'),
+    wait: path.join(gitDirectory, 'exo', 'build.wait')
   };
 }
 
@@ -81,16 +81,16 @@ export function stopOutput(input) {
   }
   const running = runningPlan(cwd, input.session_id);
   if (running === null) return '';
-  const reason = `Next: Task ${running.task.number}: ${running.task.title}. Continue exo:run-plan on ${running.planPath} from step 3.`;
+  const reason = `Next: Task ${running.task.number}: ${running.task.title}. Continue exo:build on ${running.planPath} from step 3.`;
   return `${JSON.stringify({ decision: 'block', reason })}\n`;
 }
 
 // SessionStart checks only the marker's age: whether a clear keeps the
-// session id is undocumented, and run-plan rewrites the marker when it resumes.
+// session id is undocumented, and build rewrites the marker when it resumes.
 export function sessionOutput(input) {
   const running = runningPlan(input.cwd || process.cwd());
   if (running === null) return '';
-  return `A plan is running: ${running.planPath}. On the next message, start the skill exo:run-plan on this plan.\n`;
+  return `A plan is running: ${running.planPath}. On the next message, start the skill exo:build on this plan.\n`;
 }
 
 // Wait: mark, once, that the running plan now waits on the user. A no-op

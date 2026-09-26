@@ -49,7 +49,7 @@ Each directory under `benchmarks/safe/` holds a seed, a reference solution and a
 | `build` | 5: each `safe/` task built from its seed | Sonnet 5 at `high` |
 | `fixer` | 5: each `safe/` task's review-fixer dispatch, from `review-fixer-prompt.md` | Sonnet 5 at `high` |
 | `plan` | 3: one fixed request planned in a small text library | Opus 5.5 at `high`, Fable 5.1 at `high` and `xhigh` |
-| `flow` | 1: a fixed four-task plan run through `run-plan` (C7) | Sonnet 5 at `high` |
+| `flow` | 1: a fixed four-task plan run through `build` (C7) | Sonnet 5 at `high` |
 
 ```bash
 node benchmarks/sweep.mjs --set all                    # prints the 44 calls it would make and starts none

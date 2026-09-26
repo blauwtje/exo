@@ -94,10 +94,10 @@ function buildCells() {
 }
 
 // review-fixer-prompt.md's fenced block is the whole dispatch a sonnet
-// general-purpose delegate gets, placeholders filled the way run-plan
+// general-purpose delegate gets, placeholders filled the way build
 // fills them, because that role carries no agent frontmatter of its own.
 function fixerTemplate() {
-  const text = fs.readFileSync(path.join(ROOT, 'skills', 'run-plan', 'review-fixer-prompt.md'), 'utf8');
+  const text = fs.readFileSync(path.join(ROOT, 'skills', 'build', 'review-fixer-prompt.md'), 'utf8');
   return text.match(/```text\r?\n([\s\S]*?)\r?\n```/)[1];
 }
 
@@ -113,7 +113,7 @@ function fixerDispatch(template, task) {
 }
 
 // A fixer cell pairs with each safe task the way a build cell does, on the
-// sonnet the review-fixer role is pinned to; run-plan names no effort for
+// sonnet the review-fixer role is pinned to; build names no effort for
 // it, so it runs at the same high effort the build and flow cells run at.
 function fixerCells() {
   const template = fixerTemplate();
@@ -159,7 +159,7 @@ function flowCell() {
     source: null,
     model: SWEEP_MODELS.sonnet,
     effort: 'high',
-    prompt: `Load the exo:run-plan skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`,
+    prompt: `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`,
     appendSystemPrompt: null,
     disallowedTools: [],
     budgetUsd: '25',

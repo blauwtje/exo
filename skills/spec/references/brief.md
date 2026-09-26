@@ -10,9 +10,9 @@ The brief holds these sections, in this order:
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
 - **Assumptions:** every bin-3 point as one line each, so a later correction costs one sentence.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
-- **Manual checks:** only when a check needs the user's own eyes, hands or account: one line per check, which `run-plan` ends its final report with.
+- **Manual checks:** only when a check needs the user's own eyes, hands or account: one line per check, which `build` ends its final report with.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
-- **Plan basis:** `Repository: <absolute root>` and `Branch: <branch>` lines, so `run-plan` matches the brief to a checkout, plus `Worktree setup: <command>` or `Worktree setup: none` once two tasks share no dependency chain.
+- **Plan basis:** `Repository: <absolute root>` and `Branch: <branch>` lines, so `build` matches the brief to a checkout, plus `Worktree setup: <command>` or `Worktree setup: none` once two tasks share no dependency chain.
 - **Success criterion:** the one command that proves every task landed.
 - **Checkpoint:** the four points `Blocks first:`, `Parallel:`, `Shared state:` and `Smallest safe split:`, each naming tasks, a shared target or `none`.
 - **Tasks:** last, because a `## ` heading after a task ends that task; the task template and its per-task rules follow the skill's References row for it.
@@ -23,7 +23,7 @@ The brief holds these sections, in this order:
 
 - You make the split and every design choice before the list is written, because the builder runs on `sonnet` and cannot ask.
 - A choice the user would notice goes to Decisions, a routine one to Assumptions or the task's `Data:` segment.
-- The exception is an open visual choice: its task carries `Design: design-ui`, and `run-plan` routes it by the brief's Visual direction.
+- The exception is an open visual choice: its task carries `Design: design-ui`, and `build` routes it by the brief's Visual direction.
 - The heading is the commit subject the run lands the task with, so it names one concern.
 
 ## Judgment

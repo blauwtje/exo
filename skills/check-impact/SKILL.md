@@ -15,7 +15,7 @@ Before a change lands, find what it breaks outside its diff and prove the fact i
 - A brief, plan or request asserting that existing code already handles something or that nothing depends on something, before a design builds on it.
 - Not for a failure already observed: `find-cause` owns it.
 - Not for how or why code works with no decision riding on it: `explain-code` owns it.
-- Not for checking a finished plan branch against its plan: the review-branch agents `run-plan` dispatches own it.
+- Not for checking a finished plan branch against its plan: the review-branch agents `build` dispatches own it.
 - Not for choosing what to restructure (`audit-architecture`) or pinning a named refactor's behavior (`refactor`).
 
 ## The loop

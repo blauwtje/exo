@@ -11,8 +11,8 @@ import { test } from 'node:test';
 const LADDER = new URL('../skills/route-skills/references/ladder.md', import.meta.url);
 const USING_EXO = new URL('../skills/route-skills/SKILL.md', import.meta.url);
 const PROMPTS = [
-  'skills/run-plan/bug-fixer-prompt.md',
-  'skills/run-plan/review-fixer-prompt.md',
+  'skills/build/bug-fixer-prompt.md',
+  'skills/build/review-fixer-prompt.md',
   'agents/build-ui.md',
   'skills/find-cause/fixer-prompt.md',
 ];

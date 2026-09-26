@@ -15,7 +15,7 @@
   "skills/remember": { "model": null, "effort": null },
   "skills/route-skills": { "model": null, "effort": null },
   "skills/run-parallel": { "model": null, "effort": null },
-  "skills/run-plan": { "model": null, "effort": "medium" },
+  "skills/build": { "model": null, "effort": "medium" },
   "skills/save-session": { "model": null, "effort": null },
   "skills/ship": { "model": null, "effort": null },
   "skills/show-savings": { "model": "haiku", "effort": null },

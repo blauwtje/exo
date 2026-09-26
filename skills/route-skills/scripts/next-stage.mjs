@@ -23,14 +23,14 @@ import { hotSessionFile, isSessionId } from '#session-record-path';
 // `label` and `does` follow `references/question.md`'s shape: a one-to-three-word
 // bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
-  'spec': { stage: 'run-plan', label: 'Run-plan', does: 'runs the plan' },
+  'spec': { stage: 'build', label: 'Run-plan', does: 'runs the plan' },
   'audit-architecture': { stage: 'spec', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
   'find-cause': { stage: 'build-change', label: 'Build-change', does: 'builds the edits the proof left' }
 };
 
 function commandFor(stage, artifact) {
   if (stage === 'spec') return `/exo:spec ${artifact}`;
-  if (stage === 'run-plan') return `/exo:run-plan ${artifact}`;
+  if (stage === 'build') return `/exo:build ${artifact}`;
   if (stage === 'build-change') return '/exo:build-change';
   throw new UsageError(`no command known for next stage '${stage}'`);
 }
@@ -53,7 +53,7 @@ function modelLineFor(stage, artifact) {
   if (stage === 'build-change') {
     return 'Next stage runs on `opus` at `high`, because it decides the change while building it.';
   }
-  if (stage === 'run-plan') {
+  if (stage === 'build') {
     return designPending(artifact)
       ? 'Next stage runs on `opus` at `medium`, because that task builds in the session, and the skill pins `medium`.'
       : "Next stage runs on `sonnet` at `medium`, because the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps `high`.";

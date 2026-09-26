@@ -1,6 +1,6 @@
 ---
 name: review-branch-deep
-description: Reviews one finished plan branch above five changed files or 200 changed lines against its plan and the written code standard, and writes its findings to a report without changing any file. Dispatched once by run-plan after every task landed. Not for a smaller branch, which review-branch reviews, a single task, a pull request or a diff without a plan.
+description: Reviews one finished plan branch above five changed files or 200 changed lines against its plan and the written code standard, and writes its findings to a report without changing any file. Dispatched once by build after every task landed. Not for a smaller branch, which review-branch reviews, a single task, a pull request or a diff without a plan.
 model: opus
 effort: high
 tools: Read, Write, Glob, Grep, Bash

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Ends a run-plan session's step 7 tail: takes the merge-base with the
+// Ends a build session's step 7 tail: takes the merge-base with the
 // default branch and runs pick-reviewer.mjs on that base exactly as
-// run-plan's SKILL.md does. The default branch is `origin/HEAD`'s target,
+// build's SKILL.md does. The default branch is `origin/HEAD`'s target,
 // the way ship.mjs reads it, or, in a checkout with no `origin` remote or
 // no `origin/HEAD` set, the first of `origin/<name>` or the local `<name>`
 // branch among `main`, `master` and git's `init.defaultBranch`, the way
 // v0.53's step 7 read the local `main` directly.
-// `--done` instead removes step 1's `run-plan.active` marker, which the
+// `--done` instead removes step 1's `build.active` marker, which the
 // skill runs only once the review, its fixes and the final verification
 // landed, so the hooks keep resuming the run until then.
 //
@@ -76,7 +76,7 @@ function firstLine(text) {
 
 function markerPath(root) {
   const gitDirectory = execFileSync('git', ['-C', root, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).trim();
-  return path.join(gitDirectory, 'exo', 'run-plan.active');
+  return path.join(gitDirectory, 'exo', 'build.active');
 }
 
 /** Runs pick-reviewer.mjs as a subprocess and returns its one stdout line. */
@@ -97,7 +97,7 @@ export function finishRun(root, { reviewer } = {}) {
   return { line, base };
 }
 
-/** Removes step 1's `run-plan.active` marker; a missing marker is not an error. */
+/** Removes step 1's `build.active` marker; a missing marker is not an error. */
 export function finishRunDone(root) {
   fs.rmSync(markerPath(root), { force: true });
 }

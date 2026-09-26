@@ -107,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/run-plan/scripts/resume-plan.mjs\" stop",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/resume-plan.mjs\" stop",
             "timeout": 10
           }
         ]

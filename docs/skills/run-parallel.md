@@ -4,7 +4,7 @@ Fans one job out to N parallel workers and returns one report, or in contest sha
 
 ## When it fires
 
-Only when the user invokes it, naming a shape: coverage splits a scope into disjoint slices, race runs one brief N times, gauntlet runs N distinct checks against one artifact, and contest has N candidates build the same thing. A plan's tasks belong to run-plan, which fans them out in waves, and a single read-only lookup to the locate-code agent.
+Only when the user invokes it, naming a shape: coverage splits a scope into disjoint slices, race runs one brief N times, gauntlet runs N distinct checks against one artifact, and contest has N candidates build the same thing. A plan's tasks belong to build, which fans them out in waves, and a single read-only lookup to the locate-code agent.
 
 ## What you get
 

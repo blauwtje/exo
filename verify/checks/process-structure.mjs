@@ -11,10 +11,10 @@ const SLIM_SKILLS = [
   'skills/build-change/SKILL.md',
   'skills/spec/SKILL.md',
   'skills/find-cause/SKILL.md',
-  'skills/run-plan/SKILL.md',
+  'skills/build/SKILL.md',
   'skills/ship/SKILL.md'
 ];
-const POINTER_REFERENCES = ['skills/run-plan/references/workspace.md'];
+const POINTER_REFERENCES = ['skills/build/references/workspace.md'];
 
 const H1 = /^# [^\r\n]+\r?$/m;
 const H2 = /^## (?<name>[^\r\n]+)\r?$/gm;

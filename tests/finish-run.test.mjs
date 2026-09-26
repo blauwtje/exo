@@ -1,5 +1,5 @@
-// finish-run.mjs ends a run-plan session's step 7 tail: the merge-base with
-// origin/<default>, pick-reviewer.mjs run on it, and the run-plan.active
+// finish-run.mjs ends a build session's step 7 tail: the merge-base with
+// origin/<default>, pick-reviewer.mjs run on it, and the build.active
 // marker removed once the reviewer is picked.
 
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/finish-run.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/finish-run.mjs', import.meta.url));
 
 // A repository on `main`, cloned from a bare `origin` the way a real checkout
 // would be, so `refs/remotes/origin/HEAD` and the merge-base are real.
@@ -26,7 +26,7 @@ async function checkoutRepository() {
 }
 
 async function writeMarker(root) {
-  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active');
+  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'build.active');
   await fs.mkdir(path.dirname(markerPath), { recursive: true });
   await fs.writeFile(markerPath, `${path.join(root, 'plan.md')}\n${root}\nsess-1\n${new Date().toISOString()}\n`);
   return markerPath;

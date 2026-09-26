@@ -82,16 +82,16 @@ const slashCommand = (skill) =>
   JSON.stringify({ type: 'user', message: { role: 'user', content: `<command-message>${skill}</command-message>\n<command-name>/${skill}</command-name>\n<command-args>docs/plans/x.md</command-args>` } });
 
 test('while a plan skill is the last exo skill loaded, the notice advises to keep working', async () => {
-  for (const loaded of [slashCommand('exo:run-plan'), skillCall('exo:run-plan')]) {
+  for (const loaded of [slashCommand('exo:build'), skillCall('exo:build')]) {
     const { env, hookInput } = await watchFixture([loaded, assistantLine(100_000)]);
     assert.equal((await notice(hookInput, env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${PLAN_ADVICE}`);
   }
 });
 
 test('another skill loaded after the plan skill, or one loaded in a delegate, keeps the handoff advice', async () => {
-  const later = await watchFixture([slashCommand('exo:run-plan'), skillCall('exo:build-change'), assistantLine(100_000)]);
+  const later = await watchFixture([slashCommand('exo:build'), skillCall('exo:build-change'), assistantLine(100_000)]);
   assert.equal((await notice(later.hookInput, later.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
-  const sidechain = JSON.stringify({ ...JSON.parse(skillCall('exo:run-plan')), isSidechain: true });
+  const sidechain = JSON.stringify({ ...JSON.parse(skillCall('exo:build')), isSidechain: true });
   const delegated = await watchFixture([sidechain, assistantLine(100_000)]);
   assert.equal((await notice(delegated.hookInput, delegated.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
 });

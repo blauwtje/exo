@@ -7,10 +7,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { landTask, LandingError } from '../skills/run-plan/scripts/land-task.mjs';
+import { landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/land-task.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
 
 const PLAN = planFixture({ tasks: [
   taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),

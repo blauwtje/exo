@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
-import { FILE_LIMIT, LINE_LIMIT } from '../../skills/run-plan/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT } from '../../skills/build/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { CHARACTERS_PER_TOKEN, DEFAULT_GUARD_LINES, SESSION_RETENTION_DAYS } from '../../skills/show-savings/scripts/record.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
@@ -48,7 +48,7 @@ const PINNED_SENTENCES = {
   'skills/design-ui/SKILL.md': [
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive',
-    'This skill owns visual decisions only. When a `spec`, `run-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
+    'This skill owns visual decisions only. When a `spec`, `build`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
   ],

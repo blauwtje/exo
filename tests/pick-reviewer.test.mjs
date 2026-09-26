@@ -8,11 +8,11 @@ import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { FILE_LIMIT, LINE_LIMIT, parseNumstat, parseShortstat, pickEffort, pickReviewer, resolveReviewer } from '../skills/run-plan/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT, parseNumstat, parseShortstat, pickEffort, pickReviewer, resolveReviewer } from '../skills/build/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
 import { gitRepository, run } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/pick-reviewer.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/pick-reviewer.mjs', import.meta.url));
 
 test('parses files, insertions and deletions out of a shortstat line', () => {
   assert.deepEqual(parseShortstat(' 3 files changed, 9 insertions(+), 1 deletion(-)'), { files: 3, changedLines: 10 });

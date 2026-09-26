@@ -1,4 +1,4 @@
-# run-plan
+# build
 
 Runs a plan file, one task per fresh context.
 
@@ -16,4 +16,4 @@ A session opens on a plan to run, or you say to run or resume one. It does not a
 
 ## Where its rules live
 
-`skills/run-plan/SKILL.md`, with the delegate prompts beside it.
+`skills/build/SKILL.md`, with the delegate prompts beside it.

@@ -41,7 +41,7 @@ A card an id cannot settle stays as the delegate wrote it; ask at most one quest
 | Mode | Output |
 |---|---|
 | A read-only planning mode is active, or the user asks for the plan | In this one invocation, audit, then write the plan for the top findings per the References row into the harness's plan file, else `docs/plans/<topic>.md`. Write the ranked cards into its `## Context` before loading that row, so a compaction loses no finding. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after audit-architecture --artifact <plan path>`'s output. |
-| Otherwise | The ranked cards in this message, each with what run-plan it takes; no production edits and no file unless asked. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after audit-architecture --artifact <top card's id>`'s output. |
+| Otherwise | The ranked cards in this message, each with what build it takes; no production edits and no file unless asked. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after audit-architecture --artifact <top card's id>`'s output. |
 
 ## References
 

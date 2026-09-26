@@ -1,6 +1,6 @@
 # Bug fixer prompt
 
-The text `run-plan` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line. The delegate runs `exo:find-cause` in its own context, writes the handoff file, and returns it.
+The text `build` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line. The delegate runs `exo:find-cause` in its own context, writes the handoff file, and returns it.
 
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.

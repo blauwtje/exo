@@ -1,4 +1,4 @@
-// Pins the return contract between run-plan and its exo:run-unit agent: a unit
+// Pins the return contract between build and its exo:run-unit agent: a unit
 // ends its turn only when every block task is LANDED or BLOCKED, or with a
 // BUDGET line at the hard budget message, and the caller reads a BUDGET line as
 // unfinished work whose landed part only the branch knows.
@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const SKILL = fs.readFileSync(new URL('../skills/run-plan/SKILL.md', import.meta.url), 'utf8');
+const SKILL = fs.readFileSync(new URL('../skills/build/SKILL.md', import.meta.url), 'utf8');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../skills/show-savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
 
@@ -50,11 +50,11 @@ test('each former OPEN case in the unit becomes a BLOCKED line', () => {
   assert.ok(loopStep(3, UNIT_AGENT).includes('a second drift or failure on one task returns it `BLOCKED` with both report paths and two or three options'));
 });
 
-test('run-plan forms no block around an unlanded dependency outside it', () => {
+test('build forms no block around an unlanded dependency outside it', () => {
   assert.ok(loopStep(4, SKILL).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
 });
 
-test('run-plan dispatches the unit in the foreground and waits on its return, never a poll', () => {
+test('build dispatches the unit in the foreground and waits on its return, never a poll', () => {
   const dispatchStep = loopStep(5, SKILL);
   assert.ok(dispatchStep.includes('Send each block to the `exo:run-unit` agent with `run_in_background: false`'));
   assert.ok(dispatchStep.includes('Wait on its return, never a poll or Monitor.'));
@@ -63,7 +63,7 @@ test('run-plan dispatches the unit in the foreground and waits on its return, ne
   assert.doesNotMatch(SKILL, /`OPEN`/);
 });
 
-test('run-plan reads a BUDGET return as unfinished and asks the branch what landed', () => {
+test('build reads a BUDGET return as unfinished and asks the branch what landed', () => {
   const routeStep = loopStep(6, SKILL);
   assert.ok(routeStep.includes('`BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.'));
   const askStep = loopStep(3, SKILL);

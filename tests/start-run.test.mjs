@@ -1,6 +1,6 @@
-// start-run.mjs picks the plan run-plan's step 1 should run by matching a
+// start-run.mjs picks the plan build's step 1 should run by matching a
 // plan's `Repository:` and `Branch:` lines against the checkout, writes the
-// four-line `run-plan.active` marker and excludes the scratch folder.
+// four-line `build.active` marker and excludes the scratch folder.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, run } from './harness.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/start-run.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/start-run.mjs', import.meta.url));
 
 function plan(repository, branch) {
   return [
@@ -36,7 +36,7 @@ async function noHomePlans() {
 }
 
 async function markerLines(root) {
-  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active');
+  const markerPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'build.active');
   return (await fs.readFile(markerPath, 'utf8')).split('\n');
 }
 
@@ -145,7 +145,7 @@ test('--find-only prints the resolved plan and writes no marker, before the chec
   const result = await run(SCRIPT, ['--root', root, '--find-only'], { cwd: root, env: { HOME: home } });
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout.trim(), path.join(root, 'docs/plans/one.md'));
-  await assert.rejects(fs.access(path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active')));
+  await assert.rejects(fs.access(path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'build.active')));
 });
 
 test('--find-only still exits 1 with one line when no plan matches', async () => {

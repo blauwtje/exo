@@ -8,9 +8,9 @@ import { test } from 'node:test';
 import { nextWave } from '../lib/plan-tasks.mjs';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
-const WORKSPACE = read('run-plan/references/workspace.md');
-const WAVE_WORKTREES = read('run-plan/references/wave-worktrees.md');
-const IMPLEMENTER_BRIEF = read('run-plan/implementer-prompt.md');
+const WORKSPACE = read('build/references/workspace.md');
+const WAVE_WORKTREES = read('build/references/wave-worktrees.md');
+const IMPLEMENTER_BRIEF = read('build/implementer-prompt.md');
 const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/build-task.md', import.meta.url), 'utf8');
 const RUN_PARALLEL = read('run-parallel/SKILL.md');
 
@@ -42,7 +42,7 @@ test('the implementer brief carries only the task fields, and the agent still wr
   assert.ok(!IMPLEMENTER_BRIEF.includes('Your brief:'), 'the brief is named by path, never pasted');
 });
 
-const SKILL = read('run-plan/SKILL.md');
+const SKILL = read('build/SKILL.md');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 
 function loopStep(number, text = SKILL) {
@@ -71,7 +71,7 @@ test('a wave builds in worktrees and lands in plan order or not at all', () => {
   assert.ok(commitStep.includes('only when every report in it is green'));
   assert.ok(commitStep.includes('`git cherry-pick <sha>` brings the commits onto the branch in plan order'));
   assert.ok(commitStep.includes('no task of it commits'));
-  const authorization = loopStep(1).match(/Invoking run-plan authorizes [^.]+\./);
+  const authorization = loopStep(1).match(/Invoking build authorizes [^.]+\./);
   assert.ok(authorization[0].includes("a wave's worktrees beside it"));
 });
 

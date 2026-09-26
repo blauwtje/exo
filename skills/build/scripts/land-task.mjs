@@ -131,7 +131,7 @@ export function proofOf(task, reportText, reportPath) {
 // `scratch-exclude.mjs` still leaves it untracked, so it is dropped here
 // rather than trusted to `--exclude-standard`. Likewise the plan file itself,
 // when `planPath` sits inside `root`: spec hands its brief straight
-// to run-plan without committing it, so the plan the run is landing from can
+// to build without committing it, so the plan the run is landing from can
 // still be untracked in the very checkout it lands into.
 function changedPaths(root, planPath) {
   const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
