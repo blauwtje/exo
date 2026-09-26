@@ -1,9 +1,11 @@
-// Lands one green task: runs the task's `Commit:` block as the plan wrote it,
-// checks that the new commit carries the `Plan-task: <n>` trailer and that the
-// landed set now holds the task, and prints that set, so the session neither
-// pastes the block nor reads the log. A compact task lands only on a build
-// report whose `Proof:` command, or with none its Success-criterion test,
-// passed, and the printout carries that output.
+// Lands one green task: refuses before it stages or commits anything when
+// the checkout has changed or added a path outside the task's `Files:`,
+// else runs the task's `Commit:` block as the plan wrote it, checks that the
+// new commit carries the `Plan-task: <n>` trailer and that the landed set now
+// holds the task, and prints that set, so the session neither pastes the
+// block nor reads the log. A compact task lands only on a build report whose
+// `Proof:` command, or with none its Success-criterion test, passed, and the
+// printout carries that output.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -12,6 +14,7 @@ import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { landedTasks, parsePlan, PlanError } from '#plan-tasks';
+import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
@@ -119,10 +122,38 @@ export function proofOf(task, reportText, reportPath) {
   return [`${command}: pass`, ...output].join('\n');
 }
 
+// Every path the checkout has changed or added since HEAD, tracked or not: a
+// `Commit:` block's own `git add` (the derived Files: list for a compact
+// task, or a plan-written `git add .`) stages an untracked path alongside the
+// task's files, so an untracked stray is as real as a tracked one. The
+// checkout's own `${SCRATCH_FOLDER}/` scratch folder (the build report
+// land-task itself reads) is never a stray: a host that has not yet run
+// `scratch-exclude.mjs` still leaves it untracked, so it is dropped here
+// rather than trusted to `--exclude-standard`.
+function changedPaths(root) {
+  const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
+  const untracked = execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' });
+  const scratchPrefix = `${SCRATCH_FOLDER}/`;
+  return [...new Set([...tracked.split('\n'), ...untracked.split('\n')])]
+    .filter((line) => line !== '' && !line.startsWith(scratchPrefix));
+}
+
+// A task lands only the paths its `Files:` lines name: a build that also
+// touched or added another path is not this task's, whatever its proof, so
+// this stops the Commit: block before it stages or commits anything.
+function strayPaths(task, root) {
+  const allowed = new Set(task.files.map((file) => file.path));
+  return changedPaths(root).filter((changed) => !allowed.has(changed));
+}
+
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report' }) {
   const plan = parsePlan(planText);
   const block = commitBlockOf(plan, number);
   const task = plan.tasks.find((entry) => entry.number === number);
+  const stray = strayPaths(task, root);
+  if (stray.length > 0) {
+    throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
+  }
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.

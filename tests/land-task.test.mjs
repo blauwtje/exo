@@ -8,14 +8,15 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { landTask, LandingError } from '../skills/run-plan/scripts/land-task.mjs';
-import { compactPlanFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
+import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/land-task.mjs', import.meta.url));
 
 const PLAN = planFixture({ tasks: [
   taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),
   taskSection({ number: 2, title: 'No trailer', files: ['- Create: `src/none.js`'], subject: 'feat(app): none', trailer: false }),
-  taskSection({ number: 3, title: 'No block', files: ['- Create: `src/none.js`'], subject: 'feat(app): none', commit: false })
+  taskSection({ number: 3, title: 'No block', files: ['- Create: `src/none.js`'], subject: 'feat(app): none', commit: false }),
+  taskSection({ number: 4, title: 'Two files', files: ['- Modify: `src/app.js`', '- Create: `src/note.md`'], subject: 'feat(app): two files' })
 ] });
 
 // The block runs `git commit` outside the harness's `git()`, so the fixture
@@ -56,6 +57,24 @@ test('a task without a Commit: block is refused', async () => {
 test('a failing block reports the failure', async () => {
   const { root } = await landingCheckout();
   assert.throws(() => landTask({ planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
+});
+
+test('a stray path outside Files: is refused before anything stages or commits', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  assert.throws(() => landTask({ planText: PLAN, number: 1, root }), /Task 1 changed a path outside Files: `src\/extra\.js`/);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+  assert.match(git(root, 'status', '--porcelain'), /extra\.js/);
+});
+
+test('a task whose changes match every Files: path lands clean', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
+  const output = landTask({ planText: PLAN, number: 4, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
+  assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
 test('the command line lands a task, and a refusal leaves stdout empty', async () => {
@@ -169,7 +188,9 @@ test('a report with a clear pass lands and records the SHA and the proof output'
 
 test('--report names a report outside the default path', async () => {
   const { root, planPath } = await compactCheckout();
-  const reportPath = path.join(root, 'build-report.md');
+  // Outside the checkout entirely: a report path inside root's working tree
+  // would itself be an untracked path the new scope check refuses.
+  const reportPath = path.join(await fixture(), 'build-report.md');
   await fs.writeFile(reportPath, PASS_REPORT);
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--report', reportPath], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
@@ -182,6 +203,8 @@ test('a commit the landed set does not count stops with exit 1', async () => {
   ] });
   const { root } = await landingCheckout();
   await fs.writeFile(path.join(root, 'docs/plans/price.md'), plan);
+  git(root, 'add', 'docs/plans/price.md');
+  git(root, 'commit', '-q', '-m', 'chore: add the price plan');
   await editApp(root);
   const result = await run(SCRIPT, ['--plan', path.join(root, 'docs/plans/price.md'), '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 1);
