@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.48.9 - 2026-09-26
+
 ### Changed
 
 - `run-plan` compares a task's changed paths with its `Files:` instead of reading its diff.
