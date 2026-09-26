@@ -47,8 +47,9 @@ cheap model runs it in place of the plan's `## Success criterion`.
 
 ## Rules
 
-1. **Verified names only.** List a path only after reading it in this
-   repository during planning; `plan-check` catches a missing `Modify:` path,
+1. **Verified names only.** List a path or symbol only after reading its
+   range in this repository during planning, here or in an
+   `exo:locate-code` report; `plan-check` catches a missing `Modify:` path,
    not a wrong one that still exists.
 2. **One field line, one task.** A task with a second field line, a `Run:`,
    an `Expected:` line or a shown code block is not compact, and `plan-check`
