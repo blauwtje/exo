@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { planCheckReport } from '../skills/draft-plan/scripts/plan-check.mjs';
-import { compactPlanFixture, compactTask, planFixture, taskSection } from './harness.mjs';
+import { briefFixture, compactPlanFixture, compactTask, planFixture, taskSection } from './harness.mjs';
 
 const GOOD_CODE = 'export function greet() {\n  return "hello";\n}';
 
@@ -114,6 +114,19 @@ test('plan-check fails a compact task whose field line lacks Files:', () => {
   const report = planCheckReport(plan);
   assert.equal(report.ok, false);
   assert.ok(report.lines.some((line) => line.includes("Task 1: field line lacks 'Files:'")));
+});
+
+test('plan-check fails a compact task whose field line lacks Proof:', () => {
+  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: null })] });
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) => line.includes("Task 1: field line lacks 'Proof:'")));
+});
+
+test('plan-check prints ok for a brief whose Decisions, Assumptions and Acceptance sit ahead of a compact task list', () => {
+  const report = planCheckReport(briefFixture({ tasks: compactTasks(8) }));
+  assert.equal(report.ok, true);
+  assert.match(report.lines[0], /^plan-check: ok, 8 tasks/);
 });
 
 test('plan-check fails a compact plan whose Plan basis lacks a Repository: or a Branch: line', () => {

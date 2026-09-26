@@ -31,7 +31,7 @@ made in the plan, in a task's `Data:` field or its heading.
 ```
 ### Task <n>: <type>(<scope>): <subject>
 
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>]
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>] | Proof: <one bare command>
 ```
 
 The heading is the exact conventional-commit subject `land-task` commits with,
@@ -40,7 +40,9 @@ never repeats a `Commit:` block. `Data:` names the structure the task's code
 holds its result in (a plain object, a `Map` keyed by id, an array of rows) in
 one clause, not its fields or algorithm. `Design:` names the skill a task
 loads before its first edit, only on a task that changes what a page looks
-like; every other task omits the segment entirely.
+like; every other task omits the segment entirely. `Proof:` names the one
+bare command, no interpretation step, that shows this task alone landed; a
+cheap model runs it in place of the plan's `## Success criterion`.
 
 ## Rules
 

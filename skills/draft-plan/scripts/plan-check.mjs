@@ -90,6 +90,26 @@ function checkSize(task) {
   return [];
 }
 
+// A brief (skills/define-scope/references/brief.md) carries `## Decisions`,
+// `## Assumptions` and `## Acceptance` ahead of the plan frame; no draft-plan
+// plan has these, so stripping their content, heading included, before the
+// cap counts leaves a draft-plan plan's count exactly as it reads today.
+const BRIEF_ONLY_SECTIONS = new Set(['Decisions', 'Assumptions', 'Acceptance']);
+
+function stripBriefSections(planText) {
+  const kept = [];
+  let name = null;
+  let fence = 0;
+  for (const line of planText.split('\n')) {
+    fence = fenceAfter(line, fence);
+    const heading = fence === 0 ? line.match(/^## (.+)$/) : null;
+    if (heading !== null) name = heading[1];
+    if (name !== null && BRIEF_ONLY_SECTIONS.has(name)) continue;
+    kept.push(line);
+  }
+  return kept.join('\n');
+}
+
 // A compact plan (every task in `Depends on: ... | Files: ...` form) trades
 // the old per-step rules for a line cap and the frame headings the compact
 // grammar requires; a plan with even one old-format task keeps today's rules
@@ -97,7 +117,7 @@ function checkSize(task) {
 // this check. The cap counts non-blank lines only, so a blank separator
 // between tasks (as the grammar's own example uses) never counts against it.
 function checkCompactSize(planText) {
-  const nonBlankCount = planText.replace(/\n$/, '').split('\n').filter((line) => line.trim() !== '').length;
+  const nonBlankCount = stripBriefSections(planText).replace(/\n$/, '').split('\n').filter((line) => line.trim() !== '').length;
   if (nonBlankCount > MAX_COMPACT_LINES) {
     return [`the plan is ${nonBlankCount} non-blank lines, past the ${MAX_COMPACT_LINES}-line compact cap`];
   }
@@ -132,8 +152,10 @@ function checkFrame(frame) {
 }
 
 function checkCompactFields(task) {
-  if (task.filesField === null) return [`Task ${task.number}: field line lacks 'Files:'`];
-  return [];
+  const problems = [];
+  if (task.filesField === null) problems.push(`Task ${task.number}: field line lacks 'Files:'`);
+  if (task.proof === null) problems.push(`Task ${task.number}: field line lacks 'Proof:'`);
+  return problems;
 }
 
 /** Reads `planText` and returns `{ ok, lines }`: the problems found, or the one ok line. */
