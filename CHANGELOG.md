@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.55.0 - 2026-09-26
+
 ### Added
 
 - `benchmarks/pressure/build-change/` and `benchmarks/pressure/find-cause/` hold three pressure cases each for rules that 0.54.0 dropped. Build-change cases 2 and 3 are marked weak, because a run without exo passes them too.
