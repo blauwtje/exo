@@ -10,8 +10,8 @@ Turn a request into a confirmed brief, so nobody codes through an unmade decisio
 
 ## Gate
 
-- Zero open decisions means no interview and no brief; hand the goal to `build-change`.
-  The exception is two or more order dependencies: write the brief unasked, from `## Task list` on.
+- Zero open decisions means leave this skill and write no brief; hand the goal to `build-change`.
+  The exception is two or more order dependencies: write the brief unasked, from `## Listing tasks` on.
   `A → B` is one when B cannot build, test or keep its data before A lands.
   An open decision is one the user would notice that neither request nor code settles.
 - Asked for options, give directions, recommended first, and write no file.
@@ -65,7 +65,7 @@ Reply 1a or 1b, your own words, or ok to take every recommendation and assumptio
 - "I don't know" on a point gets two everyday sentences on how its options differ, with one example the user would see, then that point once more.
   A second "I don't know" on the same point takes the recommendation, credited to exo.
 
-## Task list
+## Listing tasks
 
 Every brief ends in a task list, written in the grammar `references/task-list.md` sets.
 
@@ -84,7 +84,7 @@ Every brief ends in a task list, written in the grammar `references/task-list.md
 ## Spec
 
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
-The exception is Claude Code's plan mode: the brief goes into the plan file the harness names, the one file that mode lets you write.
+The exception is plan mode, the read-only planning mode where the harness names a plan file: the brief goes into that file, the one it lets you write.
 `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`.
 `issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints; `run-plan` runs that copy, and the issue stays the source.
 Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>` and repair each line it prints.
