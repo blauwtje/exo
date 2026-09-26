@@ -10,7 +10,7 @@ Location lines: <exo:locate-code output, or none>
 
 No production edit. Revert every instrumentation edit you make before you stop, whether the loop ends in a proven cause, an unproven state, or no reproduction.
 
-Handoff file: `$(git rev-parse --git-dir)/exo/debug/<slug>.md`. Create its directory first with `mkdir -p`. Write the investigate part there, at most 25 lines, one line per field, in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). A field the loop did not reach is written `none`.
+Handoff file: `<scratch>/<slug>.md`, `<scratch>` being the absolute `.exo/debug` directory of <root>; write it with the Write tool. Write the investigate part there, at most 25 lines, one line per field, in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). A field the loop did not reach is written `none`.
 
 Never ask the user questions; record what is missing as `none`. Never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with two or three options instead.
 

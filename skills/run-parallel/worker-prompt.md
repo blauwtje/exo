@@ -1,6 +1,6 @@
 # Worker prompt
 
-The text `run-parallel` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<git dir>/exo/run-parallel/<slug>/frame.md`; a contest candidate gets the second block, which carries the task and never the rubric.
+The text `run-parallel` hands each `general-purpose` delegate on `sonnet` at step 4, one brief per worker, so every worker stands alone and writes its detail to a file of its own. Fill the placeholders from `<run dir>/frame.md`, and `<output path>` with an absolute path inside the worker's own checkout; a contest candidate gets the second block, which carries the task and never the rubric.
 
 ## Coverage, race or gauntlet worker
 

@@ -30,7 +30,7 @@ Use these words and no substitute such as component, service, unit, API, boundar
 ## The audit
 
 1. Run `scripts/hotspots.mjs` when the scope has no target; a named target skips it.
-2. Dispatch one `general-purpose` delegate on `opus` with the role text from `auditor-prompt.md`, the scope paths (and the hotspots lines when used) filled in. The delegate reads the code, not this session, and writes at most 5 cards to `<git dir>/exo/deepen/<topic>.md`.
+2. Run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`, so `.exo/` stays untracked, then `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" deepen`, which prints `<deepen dir>`. Dispatch one `general-purpose` delegate on `opus` with the role text from `auditor-prompt.md`, the scope paths (and the hotspots lines when used) and `<deepen dir>` filled in. The delegate reads the code, not this session, and writes at most 5 cards to `<deepen dir>/<topic>.md`.
 3. Read that file and assign each card an id `C1`, `C2` in the session's own ranking order, so a reply can point at one.
 4. End with the card to take first and why it goes first.
 
@@ -58,4 +58,4 @@ A card an id cannot settle stays as the delegate wrote it; ask at most one quest
 - Failing existing behavior outranks this skill: an unproven failure routes to `find-cause`, and a finding that explains a live symptom is a `find-cause` hypothesis, not an audit card.
 - A single named refactor or rename is a decided change for `refactor`.
 - Every card states its migration cost, including a deepening that invalidates the whole test suite.
-- The cards file at `<git dir>/exo/deepen/<topic>.md` is the compaction anchor: after a compaction, reread it rather than rerunning the audit or locate-code.
+- The cards file at `<deepen dir>/<topic>.md` is the compaction anchor: after a compaction, reread it rather than rerunning the audit or locate-code.

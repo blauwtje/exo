@@ -28,6 +28,6 @@ Payoff: <locality and leverage gained, which tests stay and which move>
 Confidence: Firm|Plausible|Speculative
 Migration cost: <including a deepening that invalidates the whole test suite>
 
-Write the file to: <absolute git dir>/exo/deepen/<topic>.md (create the directory if it does not exist).
+Write the file with the Write tool to: <deepen dir>/<topic>.md, <deepen dir> being the absolute `.exo/deepen/` directory of your checkout.
 Return this line and nothing before or after it, so the report caps at most 1 lines: cards=<n> file=<path>
 ```
