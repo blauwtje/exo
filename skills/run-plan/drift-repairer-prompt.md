@@ -1,6 +1,6 @@
 # Drift repairer prompt
 
-The text `run-plan` hands a `general-purpose` delegate on `opus` for a task that reported `PLAN DRIFT`. The delegate rewrites that task alone in the grammar of define-scope's `references/task-list.md`; fill `<task list spec>` with that file's absolute path, the `define-scope/references/task-list.md` beside this skill's own folder.
+The text `run-plan` hands a `general-purpose` delegate on `opus` for a task that reported `PLAN DRIFT`. The delegate rewrites that task alone in the grammar of `../define-scope/references/task-list.md`; fill `<task list spec>` with that file's absolute path.
 
 ```text
 Plan repair of task <n> in <plan path>, repository <root>.
