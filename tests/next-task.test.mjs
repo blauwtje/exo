@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { nextTaskReport } from '../skills/run-plan/scripts/next-task.mjs';
-import { git, gitRepository, phasedRepository, planFixture, run, taskSection } from './harness.mjs';
+import { briefFixture, compactTask, git, gitRepository, phasedRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/next-task.mjs', import.meta.url));
 
@@ -97,6 +97,25 @@ test('a landed task leaves the report, and a Design: task builds alone with the 
   assert.match(report, /^Design: design-ui$/m);
   assert.match(await fs.readFile(briefPath(root, 2), 'utf8'), /^Visual direction:\nDesign skill: design-ui$/m);
   await assert.rejects(fs.access(briefPath(root, 4)), { code: 'ENOENT' });
+});
+
+test('a brief with a compact task list prints Brief:, Proof: and the compact Design: segment, not "Design: none"', async () => {
+  const compactPlan = briefFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(tasks): add a dueDate field', files: ['src/tasks/task.js'], design: 'design-ui', proof: 'node --test -- task.test' })
+  ] });
+  const root = await gitRepository({
+    'src/tasks/task.js': 'export const task = {};\n',
+    'docs/plans/fixture.md': compactPlan
+  });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  const report = nextTaskReport({ planPath, planText: compactPlan, root });
+  assert.match(report, /^Design: design-ui$/m);
+  assert.match(report, /^Proof: node --test -- task\.test$/m);
+  const briefMatch = report.match(/^Brief: (.+)$/m);
+  assert.ok(briefMatch, report);
+  const brief = await fs.readFile(briefMatch[1], 'utf8');
+  assert.match(brief, /^### Task 1: feat\(tasks\): add a dueDate field$/m);
+  assert.match(brief, /Depends on: none \| Files: `src\/tasks\/task\.js` \| Data: a plain object \| Design: design-ui \| Proof: node --test -- task\.test$/m);
 });
 
 test('drift in a Modify: region is a PLAN DRIFT line for that task', async () => {

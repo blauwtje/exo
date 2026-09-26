@@ -116,13 +116,14 @@ export function taskSection({ number, title, dependsOn = 'none', design = false,
   ].join('\n');
 }
 
-/** One compact task: its heading plus the single `Depends on: ... | Files: ... | Data: ...` field line. */
-export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', design = null }) {
+/** One compact task: its heading plus the single `Depends on: ... | Files: ... | Data: ...` field line. `proof: null` drops the `Proof:` segment, for a test that checks plan-check catches its absence. */
+export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', design = null, proof = 'node --test' }) {
   const filesSegment = `Files: ${files.map((filePath) => `\`${filePath}\``).join(', ')}`;
   const designSegment = design === null ? '' : ` | Design: ${design}`;
+  const proofSegment = proof === null ? '' : ` | Proof: ${proof}`;
   return [
     `### Task ${number}: ${title}`,
-    `Depends on: ${dependsOn} | ${filesSegment} | Data: ${data}${designSegment}`
+    `Depends on: ${dependsOn} | ${filesSegment} | Data: ${data}${designSegment}${proofSegment}`
   ].join('\n');
 }
 
@@ -133,6 +134,45 @@ export function compactPlanFixture({ tasks }) {
     '',
     '## Goal',
     'The fixture proves the compact plan reader.',
+    '',
+    '## Plan basis',
+    'Repository: /tmp/fixture',
+    'Branch: feat/fixture',
+    '',
+    '## Success criterion',
+    '`node --test` passes.',
+    '',
+    '## Checkpoint',
+    '- Blocks first: none.',
+    '- Parallel: every task.',
+    '- Shared state: none.',
+    '- Smallest safe split: one task per file.',
+    '',
+    '## Tasks',
+    '',
+    ...tasks,
+    ''
+  ].join('\n');
+}
+
+/** A define-scope brief around `tasks`: the compact frame plus the brief-only
+ * `## Decisions`, `## Assumptions` and `## Acceptance` sections ahead of it,
+ * per skills/define-scope/references/brief.md. */
+export function briefFixture({ tasks }) {
+  return [
+    '# Brief: compact fixture',
+    '',
+    '## Goal',
+    'The fixture proves a brief with a task list checks like a plan.',
+    '',
+    '## Decisions',
+    '- The badge tone comes from the due date alone, decided during the interview.',
+    '',
+    '## Assumptions',
+    '- No existing due-date field to reuse; the interview found none.',
+    '',
+    '## Acceptance',
+    '- An overdue task shows a badge in the warning tone.',
     '',
     '## Plan basis',
     'Repository: /tmp/fixture',
