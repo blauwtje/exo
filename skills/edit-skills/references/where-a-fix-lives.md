@@ -7,7 +7,7 @@ A mistake seen in a run is fixed in the cheapest place that still stops it, and 
 Read the transcript of the run that failed, go down this list, and stop at the first line that holds.
 
 1. **A machine can tell right from wrong.** The verifier, a hook or a test refuses it, and the skill says nothing. Example: a description over its character limit.
-2. **The steps never vary and a slip damages state.** A script the skill runs, named with its command. Example: the repo map command in `draft-plan`.
+2. **The steps never vary and a slip damages state.** A script the skill runs, named with its command. Example: the repo map command in `define-scope`.
 3. **The content varies and the layout does not.** A template in a fenced block, every part named in order. Example: the question layout in `define-scope`.
 4. **The right move depends on a fact the session can read.** A gate: the fact first, then the move for each outcome. Example: `Zero open decisions means leave this skill`.
 5. **The session knew the rule and argued past it.** A rule with its reason in one clause, and the argument it used becomes a row under `## Red flags`.

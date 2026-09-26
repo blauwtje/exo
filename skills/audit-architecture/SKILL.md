@@ -54,7 +54,7 @@ A card an id cannot settle stays as the delegate wrote it; ask at most one quest
 
 ## Judgment
 
-- While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `draft-plan` defines; every other planning turn belongs to `draft-plan`.
+- While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `define-scope` defines; every other planning turn belongs to `define-scope`.
 - Failing existing behavior outranks this skill: an unproven failure routes to `find-cause`, and a finding that explains a live symptom is a `find-cause` hypothesis, not an audit card.
 - A single named refactor or rename is a decided change for `refactor`.
 - Every card states its migration cost, including a deepening that invalidates the whole test suite.

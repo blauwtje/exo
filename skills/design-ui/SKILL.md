@@ -83,4 +83,4 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 - Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
 - Accessibility and complete content/state coverage outrank visual novelty.
 - A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become minimums to exceed; contrast, reduced-motion, and state coverage still hold.
-- This skill owns visual decisions only. When a `define-scope`, `draft-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
+- This skill owns visual decisions only. When a `define-scope`, `run-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.

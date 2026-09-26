@@ -16,7 +16,7 @@ because two words for one thing turn into two things.
 | helper, delegate | subagent | the harness word ages with the product, and the portable-language check refuses it inside skill text |
 | skill | command, prompt | a user invokes a skill as `/exo:<name>` and the model invokes one by its trigger; both are the same file |
 | trigger | activation, routing rule | a skill's `description` is its trigger, and a trigger is public surface: renaming one is a breaking change |
-| stage | phase | a stage is define-scope, draft-plan, run-plan, build-change, find-cause or audit-architecture; `design-ui` owns the word phase for its own five |
+| stage | phase | a stage is define-scope, run-plan, build-change, find-cause or audit-architecture; `design-ui` owns the word phase for its own five |
 | rung | level, tier | the right-sizing ladder has four rungs; a step is a numbered line inside a task |
 | brief | spec document, requirements | `define-scope` writes one brief and stores it as a file, an issue, or both |
 | plan, task, step | ticket, story, epic | a plan holds tasks, a task holds steps, and one task lands in one context with one commit |

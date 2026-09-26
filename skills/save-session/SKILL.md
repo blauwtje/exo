@@ -1,6 +1,6 @@
 ---
 name: save-session
-description: Use when the user invokes it to save an unfinished session's state for a fresh session after a clear. Not for a plan another executor runs, which draft-plan owns, or finished work, which the commit and pull request record.
+description: Use when the user invokes it to save an unfinished session's state for a fresh session after a clear. Not for a plan another executor runs, which define-scope owns, or finished work, which the commit and pull request record.
 argument-hint: "[what the next session must not lose]"
 disable-model-invocation: true
 ---
@@ -12,7 +12,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is the
 ## When to use
 
 - The user invokes it: the work is unfinished and the context is about to be cleared.
-- Not for work another executor runs from a specification: that is a plan, and `draft-plan` owns it.
+- Not for work another executor runs from a specification: that is a plan, and `define-scope` owns it.
 - Not for finished work: the commit, the pull request and the changelog record that.
 - Not for reconstructing state with no note to read: `references/reconstructing-without-a-note.md` mines the branch, the log, the diff against base, and open PRs and issues instead.
 

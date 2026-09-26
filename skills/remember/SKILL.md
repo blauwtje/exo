@@ -1,6 +1,6 @@
 ---
 name: remember
-description: "Use when the user wants a correction about this repository kept, or asks what exo remembers here, what still holds, or to forget a line. Not for a plan another session runs, which draft-plan owns, or a build or test command, which find-cause writes to AGENTS.md or CLAUDE.md."
+description: "Use when the user wants a correction about this repository kept, or asks what exo remembers here, what still holds, or to forget a line. Not for a plan another session runs, which define-scope owns, or a build or test command, which find-cause writes to AGENTS.md or CLAUDE.md."
 argument-hint: "[the correction this session must not lose]"
 allowed-tools: Bash(node *memory.mjs*)
 disable-model-invocation: true
@@ -14,7 +14,7 @@ Keep only what two sessions attested and the repository still supports. The enem
 
 - The user corrects a repository fact this session got wrong and wants it kept.
 - The user asks what exo remembers here, or asks it to forget something.
-- Not for a plan another session runs: `draft-plan` owns that.
+- Not for a plan another session runs: `define-scope` owns that.
 - Not for a build, test or run command a reproduction revealed: `find-cause` step 6 appends that to `AGENTS.md` or `CLAUDE.md`, and two writers of project knowledge produce two truths.
 - Not for what the repository already records: code structure, git history and `CLAUDE.md` are re-read faster than they are remembered.
 

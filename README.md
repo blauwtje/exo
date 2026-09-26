@@ -2,7 +2,7 @@
 
 [![quality](https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg)](https://github.com/blauwtje/exo/actions/workflows/quality.yml)
 
-exo is a Claude Code plugin that gives Claude one way of working: decide what to build, plan it, build it and review it, each as its own step. It is built for the ways a long session goes wrong: code nobody asked for, whole files read to find one function, and a context so full that earlier decisions drop out of it.
+exo is a Claude Code plugin that gives Claude one way of working: decide what to build, build it and review it, each as its own step. It is built for the ways a long session goes wrong: code nobody asked for, whole files read to find one function, and a context so full that earlier decisions drop out of it.
 
 ## Install
 
@@ -35,7 +35,7 @@ It prints the savings report, which says nothing was refused yet until the read 
 
 ## How exo works
 
-- **Steps.** A request is shaped, planned, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
+- **Steps.** A request is shaped, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:locate-code` agent on Haiku, the discovery of a redesign in the `exo:survey-ui` agent on Sonnet at high effort, the final branch review in the `exo:review-branch` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:review-branch-deep` at high effort above that, the post-build design critique in the `exo:critique-ui` agent on Opus at medium effort, and documentation research in the `exo:fetch-docs` agent on Sonnet with web and read tools only; all six live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below lists the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
@@ -52,7 +52,6 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 | Skill | What it does | Just say |
 |---|---|---|
 | `define-scope <outcome>` | Decides what "done" means, when that is still open: the result, the data, the architecture. | "I want something for X but I'm not sure what exactly" |
-| `draft-plan <topic, spec or issue>` | Writes a step-by-step plan for later or another session. | "make a plan for ..." |
 | `run-plan [plan]` | Runs a plan file, with helpers and review. | "run the plan at docs/...", or after `/clear`: "carry on" |
 | `build-change <change>` | Builds a decided change, test-first where it can. | "build X", "fix this bug, here's how to reproduce it" |
 | `ship [numbers]` | Pushes, opens or merges a pull request, fixes its checks or review comments. | "push this", "merge the PR", "fix the checks" |
@@ -143,7 +142,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `define-scope` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
-| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:draft-plan` or `exo:run-plan` is the last exo skill loaded, to keep working because the harness compacts on its own. A stored value that is not a whole number of at least 1 reads as the default. |
+| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:define-scope` or `exo:run-plan` is the last exo skill loaded, to keep working because the harness compacts on its own. A stored value that is not a whole number of at least 1 reads as the default. |
 
 ## Develop
 

@@ -47,5 +47,5 @@ Write `docs/research/<library>.md` only when the user asks for a file, or a name
 ## Judgment
 
 - For what deployed code does today, the repository's working code outranks fetched docs; for code written or upgraded now, the pinned or target version's docs outrank a pattern the source marks deprecated or unsafe, and unrelated code is not modernized.
-- Never end a turn on a research pass alone. It unblocks a `define-scope`, `draft-plan`, `build-change` or `find-cause` step in progress, unless the user asked a standalone question with no code to follow.
+- Never end a turn on a research pass alone. It unblocks a `define-scope`, `run-plan`, `build-change` or `find-cause` step in progress, unless the user asked a standalone question with no code to follow.
 - After a compaction notice, restate the facts from the delegated report or the research file, or repeat the delegated read; recollection is not research.
