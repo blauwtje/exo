@@ -8,7 +8,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 # Shipping
 
 1. **Know what is authorized.** The picked digit, a `ship` setting other than `ask`, or a merge request authorizes that route or those merges to their end.
-   Watching or addressing review comments authorizes fix commits, their plain push and replies, never the merge.
+   Watching or addressing review comments authorizes fix commits, their push and replies, never the merge.
    Nothing authorizes deleting a branch no instruction names, forcing, `--no-verify`, relaxing a gate or test, or a release.
 2. **Write the overview** in the user's language: an outcome line, `Changed`, `Verified` and `Branch` lines, the question under it.
    `Changed` holds at most five `<what>: <why>` lines; a check not run gets its `Verified` line; no table or plan recap.
@@ -27,7 +27,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    `DIRTY` always asks, setting or not: `1. **Resolve conflicts (Recommended)**` or `2. **Stop**: leave the pull request open`.
    A resolve follows `references/merge-conflicts.md`, never `--strategy` or `-X`, which pick a side unread; step 5 and the command then rerun.
    A failing check on `pr-merge` follows `references/fix-ci.md`, then reruns step 5 and `--route pr-merge`, never `--merge`, which skips the wait.
-   `open-pr` and a merge request fix nothing; stop, leaving it open, after three fix rounds per pull request, watch included.
+   `open-pr` and a merge request fix nothing; stop, leaving it open, after three fix rounds, watch included.
 7. **Merge on request.** Print `gh pr list --json number,title,baseRefName,headRefName` in the user's order or the list's before acting.
    Each gets a step 5 verdict read from `gh pr view <n> --json headRefOid,baseRefName,title,body`; a `FAIL` drops out to the report.
    Then `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; one stop never halts the rest.
