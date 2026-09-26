@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.49.0 - 2026-09-26
+
 ### Added
 
 - `draft-plan --run` continues into `run-plan` in the same turn instead of asking.
