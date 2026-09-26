@@ -26,11 +26,13 @@ test('the route-skills body keeps the core of the question shape', () => {
   assert.ok(USING_EXO.includes('a reply of `1` carries out option 1 at once'));
 });
 
-test('the next stage keeps its fixed order and recommends the stop after every stage', () => {
-  assert.ok(NEXT_STAGE.includes('After `define-scope`: 1. Stop, 2. Planning.'));
-  assert.ok(NEXT_STAGE.includes('After `draft-plan`: 1. Stop, 2. Implementing.'));
-  assert.ok(NEXT_STAGE.includes('**Stopping is recommended**'));
+test('the next stage recommends continuing, and stopping once a context notice fired', () => {
+  assert.ok(NEXT_STAGE.includes('After `define-scope`: 1. Planning, 2. Stop.'));
+  assert.ok(NEXT_STAGE.includes('After `draft-plan`: 1. Implementing, 2. Stop.'));
+  assert.ok(NEXT_STAGE.includes('**Continuing is recommended**'));
+  assert.ok(NEXT_STAGE.includes('**After a context notice, stopping is recommended.**'));
   assert.ok(NEXT_STAGE.includes('a clear loses nothing the next stage reads'));
+  assert.ok(!NEXT_STAGE.includes('stopping leads after every stage'), 'Stop no longer leads unconditionally');
   assert.ok(NEXT_STAGE.includes('**One model line.**'));
   assert.ok(!NEXT_STAGE.includes('names its command, model and effort'));
 });

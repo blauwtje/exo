@@ -5,17 +5,22 @@
 // final message instead of reading `references/next-stage.md` and
 // `references/question.md` itself.
 //
-//   node next-stage.mjs --after <stage> --artifact <path>
+//   node next-stage.mjs --after <stage> --artifact <path> [--session <id>]
+//
+// The session defaults to CLAUDE_CODE_SESSION_ID, which a Bash call carries
+// with the same value the hooks receive as `session_id`.
 
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { configDirectory } from '#config-directory';
 import { parseFlags, UsageError } from '#script-flags';
 import { frameOf, parsePlan } from '#plan-tasks';
 
 // The stage a session just finished names the stage its next-stage question
-// opens, per `references/next-stage.md`'s fixed order: Stop first, then this
-// one stage. `label` and `does` follow `references/question.md`'s shape: a
+// opens, per `references/next-stage.md`'s order: this one stage and Stop. `label` and `does` follow `references/question.md`'s shape: a
 // one-to-three-word bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
   'define-scope': { stage: 'draft-plan', label: 'Draft-plan', does: 'orders the brief into a plan' },
@@ -60,24 +65,49 @@ function modelLineFor(stage, artifact) {
   return null;
 }
 
-/** The next-stage question's lines: the fixed-order options, then the model line when the table names one. */
-export function nextStageReport({ after, artifact }) {
+// The session id shape show-savings' record.mjs accepts as a file name.
+const SESSION_ID = /^[\w-]+$/;
+
+// True once show-savings' context-watch.mjs has sent its `exo: context` notice
+// in this session. The hot record's path is spelled out as record.mjs builds
+// it, because no script imports from another skill's folder. A session with no
+// id or no readable hot record has not been warned.
+function warnedThisSession(sessionId) {
+  if (sessionId === undefined || sessionId === '') return false;
+  if (!SESSION_ID.test(sessionId)) throw new UsageError(`invalid session id: ${sessionId}`);
+  const savings = process.env.EXO_SAVINGS_DIR || path.join(configDirectory(), 'exo', 'savings');
+  try {
+    const hot = JSON.parse(fs.readFileSync(path.join(savings, 'sessions', `${sessionId}.json`), 'utf8'));
+    return hot?.contextWatch?.warned === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The next-stage question's lines: continuing first and recommended, or Stop
+ * first and recommended once the session was warned, then the model line when
+ * the table names one.
+ */
+export function nextStageReport({ after, artifact, sessionId }) {
   const next = NEXT_STAGE[after];
   if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
-  const lines = [
-    `1. **Stop (Recommended)**: run \`${commandFor(next.stage, artifact)}\` after a context clear.`,
-    `2. **${next.label}**: ${next.does}.`
-  ];
+  const stopText = `run \`${commandFor(next.stage, artifact)}\` after a context clear.`;
+  const stageText = `${next.does}.`;
+  const lines = warnedThisSession(sessionId)
+    ? [`1. **Stop (Recommended)**: ${stopText}`, `2. **${next.label}**: ${stageText}`]
+    : [`1. **${next.label} (Recommended)**: ${stageText}`, `2. **Stop**: ${stopText}`];
   const modelLine = modelLineFor(next.stage, artifact);
   if (modelLine !== null) lines.push(modelLine);
   return `${lines.join('\n')}\n`;
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { after: 'value', artifact: 'value' });
+  const flags = parseFlags(argv, { after: 'value', artifact: 'value', session: 'value' });
   if (flags.after === undefined) throw new UsageError("flag '--after' names the stage that just ran");
   if (flags.artifact === undefined) throw new UsageError("flag '--artifact' names the artifact's path");
-  process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact }));
+  const sessionId = flags.session ?? process.env.CLAUDE_CODE_SESSION_ID;
+  process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact, sessionId }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
