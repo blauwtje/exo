@@ -94,6 +94,11 @@ const EXPECTED_OWNER_ROWS = {
   'skills/define-scope/SKILL.md': [
     'references/stored-brief.md',
     'references/brief.md',
+    'references/task-list.md',
+    'references/example-plan.md',
+    '../build-change/references/data-migration.md',
+    '../build-change/references/test-design.md',
+    '../build-change/references/security.md',
     'references/brief-in-an-issue.md',
     '../file-issues/references/fields.md',
     'references/architecture-sketch.md',
@@ -167,6 +172,14 @@ const EXPECTED_CONTRACTS = {
       'After orientation and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
     'references/test-design.md':
       'After the baseline and before adding or changing an automated test or production behavior, only when logic or public behavior changes or the request adds or changes an automated test, and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify.',
+  },
+  'skills/define-scope/SKILL.md': {
+    '../build-change/references/test-design.md':
+      'Before the first task, to decide which tasks are risky and therefore write their test first.',
+    '../build-change/references/data-migration.md':
+      'After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify.',
+    '../build-change/references/security.md':
+      'After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify.',
   },
   'skills/audit-architecture/SKILL.md': {
     '../define-scope/references/task-list.md':
