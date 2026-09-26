@@ -8,7 +8,7 @@ One outcome keeps one brief, and new wishes edit it where it stands. The enemy i
 2. **One match is the brief**, named in one line above the first question. Two or more is one question naming them, a new brief last. None is a new brief.
 3. **Load its decisions as closed**, each with its source. Only a decision the new wishes contradict or leave unanswered goes on the map.
 4. **Edit in place.** A file is edited where it stands. An issue whose body opens `<!-- exo:spec -->` is rewritten with `gh issue edit <n> --body-file <file>`, keeping that first line and its sections, because the issue's edit history keeps the earlier body. Any other issue was written by a person: leave its body alone and name it under the new brief's references.
-5. **The tasks follow the brief.** The brief's task list is edited with its decisions, and the next-stage question offers `/exo:run-plan` on the brief.
+5. **The tasks follow the brief.** Edit its task list with its decisions, then finish as define-scope's `## Spec` says for a new brief, because an edited brief runs the same way.
 
 ## Judgment
 
