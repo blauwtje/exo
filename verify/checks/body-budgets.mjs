@@ -1,6 +1,6 @@
 // Every SKILL.md body after its frontmatter stays within SKILL_BODY_TOKENS.ceiling
-// tokens, INJECTED_BODY_TOKENS.ceiling for the skill the session hook injects,
-// because a body is paid for on every run of its skill while a reference costs
+// tokens, INJECTED_BODY_TOKENS.ceiling for the skill the session hook injects
+// and SLIM_BODY_TOKENS for a skill locked at its trimmed size, because a body is paid for on every run of its skill while a reference costs
 // nothing until the step that opens it. A body over its ceiling moves its bulk
 // to references/; the ceiling is never raised for one skill. A skill named in
 // PENDING_TRIM.body is held to the older whole-file ceiling until its trim, and
@@ -9,7 +9,7 @@
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import { markdownBody } from '../markdown.mjs';
-import { BYTES_PER_TOKEN, SKILL_BODY_TOKENS, INJECTED_BODY_TOKENS, PENDING_TRIM } from '../budgets.mjs';
+import { BYTES_PER_TOKEN, SKILL_BODY_TOKENS, INJECTED_BODY_TOKENS, SLIM_BODY_TOKENS, PENDING_TRIM } from '../budgets.mjs';
 
 export function checkBodyBudgets(report, repository) {
   const failures = [];
@@ -22,7 +22,9 @@ export function checkBodyBudgets(report, repository) {
     const text = repository.text(file);
     const bodyBytes = Buffer.byteLength(markdownBody('SKILL.md', text), 'utf8');
     const tokens = Math.round(bodyBytes / BYTES_PER_TOKEN);
-    const ceiling = skill === INJECTED_BODY_TOKENS.skill ? INJECTED_BODY_TOKENS.ceiling : SKILL_BODY_TOKENS.ceiling;
+    const ceiling = skill === INJECTED_BODY_TOKENS.skill
+      ? INJECTED_BODY_TOKENS.ceiling
+      : SLIM_BODY_TOKENS[skill] ?? SKILL_BODY_TOKENS.ceiling;
     const over = bodyBytes > ceiling * BYTES_PER_TOKEN;
     if (tokens > largest.tokens) largest = { tokens, skill };
     if (tokens > SKILL_BODY_TOKENS.realistic) aboveRealistic.push(`${skill} ${tokens}`);

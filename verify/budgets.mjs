@@ -41,6 +41,10 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 563 };
+// Skills trimmed to the slim shape, locked at their measured size so growth fails.
+export const SLIM_BODY_TOKENS = {
+  'define-scope': 1051, 'run-plan': 1058, 'build-change': 1077, 'find-cause': 1166, 'ship': 1086,
+};
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;
