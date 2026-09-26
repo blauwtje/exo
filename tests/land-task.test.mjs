@@ -1,5 +1,6 @@
 // land-task.mjs runs a task's Commit: block as the plan wrote it, checks the
-// Plan-task trailer on the new commit and prints the landed set.
+// Plan-task trailer on the new commit and prints the landed set; a compact task
+// lands only on a build report whose Proof: command passed.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -73,21 +74,106 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
   assert.match(noTrailer.stderr, /Plan-task: 2/);
 });
 
-test('a compact task with no Commit: block lands on a derived commit and trailer', async () => {
-  const plan = compactPlanFixture({ tasks: [
-    compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'] })
-  ] });
-  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
+const COMPACT_PLAN = compactPlanFixture({ tasks: [
+  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })
+] });
+
+const PASS_REPORT = [
+  'Landed: src/app.js',
+  'Proof:',
+  '- `node --test tests/app.test.mjs`: pass',
+  '  # pass 3',
+  '  # fail 0',
+  'Unresolved: none',
+  ''
+].join('\n');
+
+async function compactCheckout() {
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/compact.md': COMPACT_PLAN });
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
   await editApp(root);
-  const output = landTask({ planText: plan, number: 1, root });
+  return { root, planPath: path.join(root, 'docs/plans/compact.md') };
+}
+
+async function writeReport(root, text) {
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/implementer-1.md'), text);
+}
+
+test('a compact task with no Commit: block lands on a derived commit and trailer', async () => {
+  const { root } = await compactCheckout();
+  const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1$/m);
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: 1$/m);
   assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), ['src/app.js']);
+});
+
+// Not done without proof: each refusal exits 1 before the commit runs, so HEAD
+// and the edit stay as the build left them.
+async function assertRefused(root, planPath, extraArgs, stderrPattern) {
+  const head = git(root, 'rev-parse', 'HEAD');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, ...extraArgs], { cwd: root });
+  assert.equal(result.code, 1, result.stderr);
+  assert.equal(result.stdout, '');
+  assert.match(result.stderr, stderrPattern);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.match(git(root, 'status', '--porcelain'), /src\/app\.js/);
+}
+
+test('not done without proof: a compact task with no build report is refused', async () => {
+  const { root, planPath } = await compactCheckout();
+  await assertRefused(root, planPath, [], /no build report/);
+  await assertRefused(root, planPath, ['--report', path.join(root, 'missing.md')], /no build report/);
+});
+
+test('not done without proof: a report without a pass line for the Proof: command is refused', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, 'Landed: src/app.js\nProof: the tests look fine\nnode --test: pass\n  # pass 1\n');
+  await assertRefused(root, planPath, [], /no "node --test tests\/app\.test\.mjs: pass" line/);
+});
+
+test('not done without proof: a skipped or unclear proof is refused', async () => {
+  const { root, planPath } = await compactCheckout();
+  for (const outcome of ['skipped', 'skip', 'todo', 'pending']) {
+    await writeReport(root, `node --test tests/app.test.mjs: ${outcome}\n  # tests 0\n`);
+    await assertRefused(root, planPath, [], /was skipped/);
+  }
+  for (const outcome of ['fail', 'passed?', 'unclear']) {
+    await writeReport(root, `node --test tests/app.test.mjs: ${outcome}\n  # tests 1\n`);
+    await assertRefused(root, planPath, [], /no clear pass/);
+  }
+  await writeReport(root, `${PASS_REPORT}node --test tests/app.test.mjs: skipped\n`);
+  await assertRefused(root, planPath, [], /was skipped/);
+});
+
+test('not done without proof: a pass line with no output under it is refused', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, 'node --test tests/app.test.mjs: pass\n\nUnresolved: none\n');
+  await assertRefused(root, planPath, [], /no output under/);
+});
+
+test('a report with a clear pass lands and records the SHA and the proof output', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, PASS_REPORT);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const sha = git(root, 'rev-parse', '--short', 'HEAD');
+  assert.match(result.stdout, new RegExp(`^Committed: ${sha} Task 1$`, 'm'));
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3\n {2}# fail 0$/m);
+  assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
+});
+
+test('--report names a report outside the default path', async () => {
+  const { root, planPath } = await compactCheckout();
+  const reportPath = path.join(root, 'build-report.md');
+  await fs.writeFile(reportPath, PASS_REPORT);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--report', reportPath], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Landed: 1$/m);
 });
 
 test('a commit the landed set does not count stops with exit 1', async () => {
