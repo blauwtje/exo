@@ -78,6 +78,12 @@ test('past the soft limit a delegate gets one line with the tokens used', async 
   assert.equal(decision.additionalContext, 'exo budget: 45k of 100k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
 });
 
+test('past the soft limit an exo:run-unit delegate is told to land the task in flight, not to write its report', async () => {
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(80_000), '']);
+  const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, agent_type: 'exo:run-unit' }, env));
+  assert.equal(decision.additionalContext, 'exo budget: 80k of 100k tokens used. Read nothing new; finish and land the task in flight, then continue with the next task.');
+});
+
 test('past the hard limit a delegate is denied a Read and told to write its report', async () => {
   const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const decision = decisionOf(await runBudget(BUDGET, hookInput, env));

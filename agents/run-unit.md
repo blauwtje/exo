@@ -26,7 +26,6 @@ The dispatch names the plan path, the branch, the checkout, the run-plan skill d
 - Never delete files, data or branches to get past a blocked state; return the task `BLOCKED` with two or three options.
 - Leave no wave worktree behind: no return while `git worktree list` still prints one this agent made.
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line, except with the `BUDGET:` line below.
-- A soft `exo budget: <n> of <hard>k tokens used` note means read nothing new and keep looping, although it says to write your report, because a unit stopped there strands its unbuilt tasks.
 - Only the hard message, `past the limit of`, ends the loop: finish the task in flight, then return only `BUDGET: done <comma list or none>; open <comma list>; next <one sentence>`, because the caller then asks the branch what landed and hands the rest to a fresh unit.
 - A build agent returning a `BUDGET:` line gets a fresh `exo:build-task` dispatch for its open part, never a finish here.
 

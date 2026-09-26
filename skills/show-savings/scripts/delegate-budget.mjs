@@ -86,7 +86,7 @@ function isCommitCommand(toolName, toolInput) {
   return COMMIT_COMMAND.test(command) && !SHELL_METACHARACTERS.test(command);
 }
 
-function decision(toolName, toolInput, tokens, calls, limits) {
+function decision(toolName, toolInput, tokens, calls, limits, agentType) {
   const used = `${Math.round(tokens / 1000)}k`;
   const pastHard = tokens > limits.hard * 1000 || calls > limits.calls;
   if (pastHard && !REPORT_TOOLS.has(toolName) && !isCommitCommand(toolName, toolInput)) {
@@ -94,7 +94,10 @@ function decision(toolName, toolInput, tokens, calls, limits) {
     return { permissionDecision: 'deny', permissionDecisionReason };
   }
   if (tokens <= limits.soft * 1000) return null;
-  return { additionalContext: `exo budget: ${used} of ${limits.hard}k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.` };
+  const softAdvice = agentType === 'exo:run-unit'
+    ? 'finish and land the task in flight, then continue with the next task.'
+    : 'commit what is green now, finish the current step and write your report.';
+  return { additionalContext: `exo budget: ${used} of ${limits.hard}k tokens used. Read nothing new; ${softAdvice}` };
 }
 
 function guard(hookInput) {
@@ -108,7 +111,7 @@ function guard(hookInput) {
     const calls = countCall(hookInput.agent_id);
     const agentBudget = BUDGETS.agents[hookInput.agent_type] ?? {};
     const limits = { ...BUDGETS.default, ...agentBudget, ...dispatchBudget(descriptor, size) };
-    const verdict = decision(hookInput.tool_name, hookInput.tool_input, tokens, calls, limits);
+    const verdict = decision(hookInput.tool_name, hookInput.tool_input, tokens, calls, limits, hookInput.agent_type);
     if (verdict === null) return;
     const hookSpecificOutput = { hookEventName: 'PreToolUse', ...verdict };
     process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);

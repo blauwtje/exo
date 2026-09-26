@@ -32,7 +32,6 @@ test('the unit dispatches every build in the foreground, a wave still in one mes
 test('the unit ends its turn only with every block task LANDED or BLOCKED, or at the hard budget message', () => {
   const stop = section(UNIT_AGENT, 'Stop');
   assert.ok(stop.includes('Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line'));
-  assert.match(stop, /A soft `exo budget: .+` note means read nothing new and keep looping/);
   assert.ok(stop.includes('Only the hard message, `past the limit of`, ends the loop'));
   assert.ok(loopStep(4, UNIT_AGENT).includes('until every block task has a `LANDED` or `BLOCKED` line'));
 });
