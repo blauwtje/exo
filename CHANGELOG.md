@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.54.0 - 2026-09-26
+
 ### Highlights
 
 **`define-scope`, `run-plan`, `build-change`, `find-cause` and `ship` are cut to at most 700 words each, and the session-start text drops from 4501 to 2141 bytes.** The right-sizing ladder is no longer injected at session start; it lives in `skills/route-skills/references/ladder.md`.
