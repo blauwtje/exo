@@ -67,7 +67,10 @@ Reply 1a or 1b, your own words, or ok to take every recommendation and assumptio
 
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
 `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`.
-End on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after define-scope --artifact <brief path, or #<n> for an issue>`.
+`issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints; `run-plan` runs that copy, and the issue stays the source.
+Run `node "${CLAUDE_SKILL_DIR}/../draft-plan/scripts/plan-check.mjs" --plan <brief file>` and repair each line it prints.
+Then load `exo:run-plan` on that file with the Skill tool, in this turn and unasked: the interview settled what the run needs, and the context watch reads a plan run from that load.
+The exception is a read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after define-scope --artifact <brief path, or #<n> for an issue>`.
 
 ## References
 
