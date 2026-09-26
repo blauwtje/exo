@@ -50,9 +50,16 @@ function slimContractErrors(relative, body, afterHeading) {
   if (DROPPED_SECTION.test(body)) {
     errors.push(`${relative}: slim skill keeps a Judgment or Red flags section`);
   }
-  const firstBlock = afterHeading.split(BLANK_LINE)[0].trim();
-  if (!/^(?:## |1\. )/.test(firstBlock)) {
+  const blocks = afterHeading.split(BLANK_LINE);
+  const firstBlock = (blocks[0] ?? '').trim();
+  const STEP_START = /^(?:\d+\. |[a-z]\. )/;
+  if (!/^## /.test(firstBlock) && !STEP_START.test(firstBlock)) {
     errors.push(`${relative}: slim skill opens on a paragraph instead of a heading or step 1`);
+  } else if (/^## /.test(firstBlock)) {
+    const nextBlock = (blocks[1] ?? '').trim();
+    if (!/^## /.test(nextBlock) && !STEP_START.test(nextBlock)) {
+      errors.push(`${relative}: slim skill's heading opens on a paragraph instead of step 1`);
+    }
   }
   const numbers = [...body.matchAll(NUMBERED_STEP)].map((match) => Number(match.groups.number));
   const run = numbers.findIndex((number, index) => number === 1 && numbers[index + MIN_STEPS - 1] === MIN_STEPS

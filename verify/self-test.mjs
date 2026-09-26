@@ -77,6 +77,17 @@ const SCENARIOS = [
   } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
     read(root, 'skills/define-scope/SKILL.md').replace(/^\d+\. /gm, '- ')) },
+  // run-plan's body sits at its SLIM_BODY_TOKENS lock; the two trims below pay
+  // for the inserted paragraph, so the mutation reaches the opening-heading
+  // check instead of the byte lock.
+  { name: 'slim-skill-heading-opens-on-paragraph', mutate: (root) => {
+    replaceText(root, 'skills/run-plan/SKILL.md',
+      '## The loop\n', '## The loop\n\nIt runs until the plan lands or a repair pass ends it.\n');
+    replaceText(root, 'skills/run-plan/SKILL.md',
+      'Before asking the user to pick among numbered options.', 'Before asking.');
+    replaceText(root, 'skills/run-plan/SKILL.md',
+      'Never here: `exo:run-unit` reads it.', 'Never here.');
+  } },
   { name: 'slim-skill-without-references-table', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', '## References', '## Sources') },
   // ship's body sits at its SLIM_BODY_TOKENS lock; trimming one References
