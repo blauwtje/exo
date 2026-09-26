@@ -1207,6 +1207,52 @@ describe('rendered capability', () => {
     assert.ok(overflowGeometry.width > 390, `full-page width ${overflowGeometry.width}`);
   });
 
+  it('blends a half-transparent border over its background before measuring contrast', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.driven) return t.skip(`no driven browser: ${capability.reason}`);
+    const root = await fixture();
+    const file = path.join(root, 'translucent-border.html');
+    // rgba(0,0,0,0.2) blended over white is a light grey (~1.6:1), below the 3:1
+    // minimum; read as opaque black it would score ~21:1 and never surface.
+    await fs.writeFile(file, '<!doctype html><html><head><style>'
+      + 'body { margin: 0; background: #ffffff; }'
+      + 'button { border: 4px solid rgba(0, 0, 0, 0.2); background: transparent;'
+      + ' width: 120px; height: 48px; font-size: 16px; }'
+      + '</style></head><body><button type="button">Save</button></body></html>');
+
+    const result = await run(script('check-ui.mjs'), ['--url', `file://${file}`, '--viewport', '1440x900']);
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const findings = report.rendered.viewports['1440x900'].findings
+      .filter((entry) => entry.type === 'contrast-non-text-ui' && entry.selector === 'button');
+    assert.equal(findings.length, 1, 'the translucent border should score below the 3:1 minimum');
+    const measured = Number.parseFloat(findings[0].measured);
+    assert.ok(measured > 1.4 && measured < 1.8, `expected the blended ratio (~1.6:1), got ${findings[0].measured}`);
+  });
+
+  it('blends half-transparent text over its background before measuring contrast', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.driven) return t.skip(`no driven browser: ${capability.reason}`);
+    const root = await fixture();
+    const file = path.join(root, 'translucent-text.html');
+    // rgba(0,0,0,0.4) blended over white is ~2.85:1, below the 4.5:1 text minimum;
+    // read as opaque black it would score ~21:1 and never surface.
+    await fs.writeFile(file, '<!doctype html><html><head><style>'
+      + 'body { margin: 0; background: #ffffff; font-size: 16px; }'
+      + 'p { color: rgba(0, 0, 0, 0.4); }'
+      + '</style></head><body><p>Translucent label text</p></body></html>');
+
+    const result = await run(script('check-ui.mjs'), ['--url', `file://${file}`, '--viewport', '1440x900']);
+    assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const findings = report.rendered.viewports['1440x900'].findings
+      .filter((entry) => entry.type === 'contrast-normal-text' && entry.selector === 'p');
+    assert.equal(findings.length, 1, 'the translucent text should score below the 4.5:1 minimum');
+    assert.equal(findings[0].confidence, 'definite', 'a fully known background makes the blended ratio exact');
+    const measured = Number.parseFloat(findings[0].measured);
+    assert.ok(measured > 2.6 && measured < 3.1, `expected the blended ratio (~2.85:1), got ${findings[0].measured}`);
+  });
+
   it('renders light and dark differently and defaults to no-preference', async (t) => {
     const capability = await resolveBrowser({ cwd: SCRIPTS });
     if (!capability.driven) return t.skip(`no driven browser: ${capability.reason}`);
