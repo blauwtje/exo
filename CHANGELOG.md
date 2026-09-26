@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `draft-plan --run` continues into `run-plan` in the same turn instead of asking.
+- `run-plan` moves from a phase's last task into the next phase file by itself, and the tail runs once, after the last phase.
+- A Stop hook keeps a running `run-plan` going while its plan has open tasks, and the session hook names the running plan after a clear or compaction; the run marker belongs to one session and expires after six hours.
+- `ship` and `workspace` settings let `ship` and `run-plan` skip their route and workspace questions; the conflict question stays.
+
+### Changed
+
+- `draft-plan` hands each phase of a plan with two or more phases to a fresh subagent that writes its own phase file, and a phased plan's repair goes to a subagent too.
+- `context-watch` tells a session inside `draft-plan` or `run-plan` to keep working instead of saving and clearing, and its user notice follows the `context` setting instead of a fixed 150k.
+- `run-plan` keeps working after an `exo: context` line.
+
+### Fixed
+
+- The README sets `autoCompactWindow` as the string `"120k"`.
+
 ## 0.48.9 - 2026-09-26
 
 ### Changed
