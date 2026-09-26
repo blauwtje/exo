@@ -7,9 +7,13 @@
 // session that opens on a plan reaches its first dispatch in one command
 // instead of picking the plan and writing the marker by hand.
 //
-//   node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--session <id>] [--plan <path>]
+//   node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--session <id>] [--plan <path>] [--find-only]
 //
 // `--plan` names the plan the user gave, which skips the search.
+// `--find-only` only resolves and prints the plan, writing no marker: the
+// workspace decision reads the plan's `Repository:` and `Branch:` lines
+// before the run's checkout is known, so it runs before the marker-writing
+// call.
 // Prints the picked plan's absolute path, or exits 1 with one line when zero
 // or several plans match.
 
@@ -94,9 +98,13 @@ function writeMarker(root, planPath, checkout, sessionId) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', checkout: 'value', session: 'value', plan: 'value' });
+  const flags = parseFlags(argv, { root: 'value', checkout: 'value', session: 'value', plan: 'value', 'find-only': 'boolean' });
   const root = flags.root ?? process.cwd();
   const planPath = flags.plan ? path.resolve(flags.plan) : resolvePlan(root);
+  if (flags['find-only']) {
+    process.stdout.write(`${planPath}\n`);
+    return;
+  }
   writeMarker(root, planPath, flags.checkout ?? root, flags.session ?? process.env.CLAUDE_SESSION_ID ?? process.env.CLAUDE_CODE_SESSION_ID ?? '');
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   process.stdout.write(`${planPath}\n`);

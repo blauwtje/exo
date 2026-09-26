@@ -11,11 +11,11 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    Watching or addressing review comments authorizes fix commits, their plain push and replies, never the merge.
    Nothing authorizes deleting a branch no instruction names, forcing, `--no-verify`, relaxing a gate or test, or a release.
 2. **Write the overview** in the user's language: an outcome line, `Changed`, `Verified` and `Branch` lines, the question under it.
-   `Changed` holds at most five `<what>: <why>` lines; a check not run gets its own `Verified` line; no table or plan recap.
+   `Changed` holds at most five `<what>: <why>` lines; a check not run gets its `Verified` line; no table or plan recap.
 3. **Ask the question.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit.
-   One line means no route can run: end with no question.
+   `no origin remote` or `default-branch=unknown` means no route can run: end with no question.
    `route: ` names the set route, run unasked; `ship=` says why the setting did not apply.
-   Pushing release steps still wait for this answer.
+   Pushing release steps wait for this answer.
 4. **Write the pull request body**, for `open-pr` and `pr-merge`, after reading `references/pr-prep.md`, with `Closes #<n>` for work from issue `<n>`.
    With no issue behind it, run `node "${CLAUDE_SKILL_DIR}/../file-issues/scripts/repo-fields.mjs"` and its `--size` form for the fields.
 5. **Verify**, for `pr-merge`: hand `verifier-prompt.md` to a fresh `general-purpose` delegate on `sonnet`, because the writer's proof misses what it never exercised.
@@ -32,7 +32,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    Each gets a step 5 verdict read from `gh pr view <n> --json headRefOid,baseRefName,title,body`; a `FAIL` drops out to the report.
    Then `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; one stop never halts the rest.
 8. **Review comments and watching.** Addressing comments starts from `references/pr-comments.md`.
-   Watching runs the rounds of `references/watch.md` and stops at merge-ready; only an explicit merge request moves on to step 7.
+   Watching runs the rounds of `references/watch.md` and stops at merge-ready; only an explicit merge request moves to step 7.
 
 ## References
 

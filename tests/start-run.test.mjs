@@ -136,3 +136,24 @@ test('a --plan flag skips the search, even where several plans match, and writes
   const [planLine] = await markerLines(root);
   assert.equal(planLine, path.join(root, 'docs/plans/b.md'));
 });
+
+test('--find-only prints the resolved plan and writes no marker, before the checkout is known', async () => {
+  const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
+  await fs.writeFile(path.join(root, 'docs/plans/one.md'), plan(root, 'main'));
+  const home = await noHomePlans();
+
+  const result = await run(SCRIPT, ['--root', root, '--find-only'], { cwd: root, env: { HOME: home } });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout.trim(), path.join(root, 'docs/plans/one.md'));
+  await assert.rejects(fs.access(path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.active')));
+});
+
+test('--find-only still exits 1 with one line when no plan matches', async () => {
+  const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
+  await fs.writeFile(path.join(root, 'docs/plans/one.md'), plan('/tmp/some-other-repo', 'main'));
+  const home = await noHomePlans();
+
+  const result = await run(SCRIPT, ['--root', root, '--find-only'], { cwd: root, env: { HOME: home } });
+  assert.equal(result.code, 1);
+  assert.equal(result.stdout, '');
+});

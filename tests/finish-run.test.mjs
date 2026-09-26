@@ -32,15 +32,34 @@ async function writeMarker(root) {
   return markerPath;
 }
 
-test('takes the merge-base and prints the pick-reviewer line for a small change', async () => {
+test('takes the merge-base and prints the pick-reviewer line plus a base= line, leaving the marker', async () => {
+  const root = await checkoutRepository();
+  await commitFiles(root, { 'src/app.js': 'export const greet = () => "hi";\n' }, 'feat(app): greet');
+  const markerPath = await writeMarker(root);
+  const base = git(root, 'merge-base', 'HEAD', 'origin/main');
+
+  const result = await run(SCRIPT, ['--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['exo:review-branch', `base=${base}`]);
+  await fs.access(markerPath);
+});
+
+test('--done removes the marker and prints nothing', async () => {
   const root = await checkoutRepository();
   await commitFiles(root, { 'src/app.js': 'export const greet = () => "hi";\n' }, 'feat(app): greet');
   const markerPath = await writeMarker(root);
 
-  const result = await run(SCRIPT, ['--root', root], { cwd: root });
+  const result = await run(SCRIPT, ['--root', root, '--done'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo:review-branch');
+  assert.equal(result.stdout, '');
   await assert.rejects(fs.access(markerPath));
+});
+
+test('--done on an already-removed marker is not an error', async () => {
+  const root = await checkoutRepository();
+
+  const result = await run(SCRIPT, ['--root', root, '--done'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
 });
 
 test('a --reviewer flag passes through to pick-reviewer unchanged', async () => {
@@ -50,7 +69,7 @@ test('a --reviewer flag passes through to pick-reviewer unchanged', async () => 
 
   const result = await run(SCRIPT, ['--root', root, '--reviewer', 'exo:review-branch-deep'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo:review-branch-deep');
+  assert.equal(result.stdout.split('\n')[0], 'exo:review-branch-deep');
 });
 
 test('exits 1 with one line when the repository has no default branch', async () => {
