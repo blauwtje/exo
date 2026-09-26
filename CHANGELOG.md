@@ -13,18 +13,24 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- `agents/run-unit.md` builds and lands one block of at most eight plan tasks through `exo:build-task` and returns at most ten `LANDED`, `OPEN` or `BLOCKED` lines; a question for the user comes back as `BLOCKED` and `run-plan` asks it.
+- `agents/run-unit.md` builds and lands one block of at most eight plan tasks through `exo:build-task` and returns at most ten `LANDED` or `BLOCKED` lines; a question for the user comes back as `BLOCKED` and `run-plan` asks it.
 - `benchmarks/pressure/run-plan/` holds a pressure case with a twelve-task spec that needs two unit agents.
 
 ### Changed
 
-- `run-plan`'s main session only splits tasks into blocks, dispatches unit agents, relays `BLOCKED` questions and re-dispatches on `BUDGET` or `OPEN`; it never builds or lands a task itself.
+- `run-plan`'s main session only splits tasks into blocks, dispatches unit agents, relays `BLOCKED` questions and re-dispatches on `BUDGET`; it never builds or lands a task itself.
 - The session context tells the main session to give a delegate's `BUDGET:` return to a fresh agent for the open part and never finish it itself.
+- `define-scope` writes no manual task: a check only the user can do goes under `## Manual checks` in the brief, and `run-plan` and `build-change` end their final report with that list.
 
 ### Fixed
 
 - A delegate past its tool-call budget is told to stop and return a `BUDGET: done …; open …; next …` line instead of retrying blocked tools, and can still commit through `git -C <path>`.
 - `context-watch` no longer claims the harness compacts the context on its own.
+- `land-task.mjs` reads a build report's `<command>: pass` line and its output at any indentation, across blank lines, trailing whitespace and CRLF, so a green build is no longer refused and built twice.
+- `run-plan` treats a unit's `BUDGET:` return as unfinished whatever its `done` list says: it asks the branch what landed and gives the rest to a fresh unit.
+- A unit dispatches its builds in the foreground and returns only when every block task is `LANDED` or `BLOCKED`, or at the hard budget limit; the soft budget note no longer ends it, and `exo:run-unit` gets a 70k soft limit and 90 tool calls.
+- `run-plan` dispatches each unit in the foreground and waits on its return instead of polling for commits.
+- The Stop hook no longer blocks while a run waits on the user: `resume-plan.mjs wait` marks the wait, and the next stop passes once.
 
 ### Removed
 
