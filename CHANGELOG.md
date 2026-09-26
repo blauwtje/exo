@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.50.5 - 2026-09-26
+
 ### Fixed
 
 - `build-task` and every `run-parallel` worker check with `git rev-parse --show-toplevel` that they stand in the checkout their dispatch names before the first edit, stop with `BLOCKED` when they do not, and give Edit and Write only absolute paths inside it.
