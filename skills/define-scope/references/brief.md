@@ -10,6 +10,7 @@ The brief holds these sections, in this order:
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
 - **Assumptions:** every bin-3 point as one line each, so a later correction costs one sentence.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
+- **Manual checks:** only when a check needs the user's own eyes, hands or account: one line per check, which `run-plan` ends its final report with.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
 - **Plan basis:** `Repository: <absolute root>` and `Branch: <branch>` lines, so `run-plan` matches the brief to a checkout, plus `Worktree setup: <command>` or `Worktree setup: none` once two tasks share no dependency chain.
 - **Success criterion:** the one command that proves every task landed.

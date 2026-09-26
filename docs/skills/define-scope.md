@@ -12,6 +12,7 @@ A request names a result, or brings new wishes for work that already has a brief
 - Only what you would notice or what is costly to undo is asked; Claude looks facts up in the code and decides routine choices itself.
 - A checkpoint listing every decision and who made it: you, the code with its path, or exo. Nothing is written before you say yes.
 - One brief, stored where the `specs` setting points: a file under `docs/specs/`, a GitHub issue, or both.
+- Checks only you can make, such as clicking through a screen or acting in an outside account, go to the brief's short `## Manual checks` list, never into the task list; the run's final report ends with them.
 - New wishes reopen the brief you already have and edit it where it stands.
 - A question offering the next stage.
 
