@@ -935,6 +935,15 @@ const PAGE_AUDIT = (focusProperties) => {
     const [light, dark] = [luminance(first), luminance(second)].sort((a, b) => b - a);
     return Number(((light + 0.05) / (dark + 0.05)).toFixed(2));
   };
+  // ratio()/luminance() read only r/g/b; a translucent color has to be composited
+  // (source-over) against its effective background first, or it measures as its
+  // unblended channel values, e.g. a black border at 50% opacity would read as
+  // opaque black regardless of what shows through it.
+  const blend = (foreground, background) => {
+    if (foreground.a >= 1) return foreground;
+    const mix = (channel) => foreground.a * foreground[channel] + (1 - foreground.a) * background[channel];
+    return { r: mix('r'), g: mix('g'), b: mix('b'), a: 1 };
+  };
   const describe = (element) => {
     const id = element.id ? `#${element.id}` : '';
     const classes = typeof element.className === 'string' && element.className
@@ -980,8 +989,7 @@ const PAGE_AUDIT = (focusProperties) => {
     const large = size >= 24 || (size >= 18.66 && weight >= 700);
     const foreground = toRgba(style.color);
     const background = effectiveBackground(element);
-    if (foreground.a < 0.999) background.uncertain = true;
-    const measured = ratio(foreground, background.color);
+    const measured = ratio(blend(foreground, background.color), background.color);
     const threshold = large ? 3 : 4.5;
     if (measured >= threshold) continue;
     push({
@@ -1053,9 +1061,13 @@ const PAGE_AUDIT = (focusProperties) => {
 
     const style = getComputedStyle(element);
     const borderWidth = parseFloat(style.borderTopWidth);
-    if (borderWidth > 0 && style.borderTopStyle !== 'none') {
+    const borderColor = toRgba(style.borderTopColor);
+    // A fully transparent border (e.g. `border-transparent` used for layout) composites
+    // to the background itself and draws no visible boundary, so it identifies nothing
+    // to hold to the non-text contrast minimum.
+    if (borderWidth > 0 && style.borderTopStyle !== 'none' && borderColor.a > 0) {
       const background = effectiveBackground(element.parentElement ?? element);
-      const measured = ratio(toRgba(style.borderTopColor), background.color);
+      const measured = ratio(blend(borderColor, background.color), background.color);
       if (measured < 3) {
         push({
           type: 'contrast-non-text-ui',
