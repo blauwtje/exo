@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **exo has no separate plan stage anymore: `define-scope` writes the brief with a task list and continues into `run-plan` in the same session.**
+- **The question after a stage recommends continuing, and recommends Stop with a clear only once the context notice fired in the session.**
+- **A task counts as done only with its commit SHA and the passing output of its proof command.**
+
+### Changed
+
+- `define-scope` ends its brief with a task list in the compact task format, each task naming its files, dependencies and one `Proof:` command, checks it with `plan-check`, and continues into `run-plan` on that brief; `run-plan` runs a brief as its plan and stops to ask when a task needs a product decision the brief does not name.
+- The question after a stage puts continuing in this session first as the recommended option; Stop with a context clear becomes the recommended option only after `context-watch` warned in this session.
+- `run-plan`'s `land-task.mjs` refuses to land a task whose build report lacks a pass line with output for its proof command, a skipped or unclear proof counts as not done, `find-cause` and `build-change` commit the reproduction test before the fix, and `review-branch` and `review-branch-deep` check each task's files and proof.
+
+### Removed
+
+- The `draft-plan` skill, the 30-line cap on a plan and phase files: `plan-check` moved to `define-scope` and checks a brief's task list, `build-change` with two or more order dependencies writes a task-list brief through `define-scope`, and in plan mode `define-scope` writes the brief into the plan file the harness names.
+
 ## 0.50.5 - 2026-09-26
 
 ### Fixed
