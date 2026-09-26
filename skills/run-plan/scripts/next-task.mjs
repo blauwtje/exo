@@ -111,9 +111,8 @@ function writeBrief(task, frame, root, briefDirectory) {
   return briefPath;
 }
 
-// A compact task's `Design:` segment sits mid-line, after `| `, not at line
-// start, so the old start-anchored match missed it and always fell back to
-// `Design: none` even though `task.design` (lib/plan-tasks.mjs) saw it.
+// A compact task's `Design:` segment sits mid-line after `| `; a long task's
+// `Design:` line opens its line.
 function designLine(task) {
   const match = task.section.match(/(?:^|\| )Design: (.+?)(?: \||$)/m);
   return match === null ? 'Design: none' : `Design: ${match[1]}`;
