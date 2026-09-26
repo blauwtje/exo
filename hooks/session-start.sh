@@ -1,9 +1,9 @@
 #!/bin/bash
-# SessionStart hook on startup, resume, clear and compact: hand the model the
-# body of the route-skills skill, because a skill body is read only when invoked
-# and this one says when to invoke the others and points to the right-sizing
-# ladder in `references/ladder.md`, which it no longer carries itself. The
-# frontmatter is dropped; the descriptions already sit in context.
+# SessionStart hook on startup, resume, clear and compact: builds one
+# additionalContext string, in order: a resume-plan pointer on clear or
+# compact, a handoff pointer, a project-memory pointer, the settings line,
+# then the body of the route-skills skill (frontmatter dropped), the only
+# skill invoked this way because its frontmatter blocks model invocation.
 input=$(cat)
 root="$(cd "$(dirname "$0")/.." && pwd)"
 # The installed copy lives under a versioned cache path, so the status line
