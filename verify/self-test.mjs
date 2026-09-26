@@ -56,16 +56,36 @@ const SCENARIOS = [
     read(root, 'skills/define-scope/SKILL.md').replace(/^name: define-scope$/gm, 'name: [define-scope')) },
   { name: 'missing-judgment', mutate: (root) =>
     replaceText(root, 'skills/check-docs/SKILL.md', '## Judgment', '## Verdict') },
-  { name: 'slim-skill-stance-paragraph', mutate: (root) => replaceText(root, 'skills/run-plan/SKILL.md',
-    '# Implementing a plan\n', '# Implementing a plan\n\nRun it. The enemy is drift. The overcorrection is stalling.\n') },
-  { name: 'slim-skill-judgment-section', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
-    '\n## References\n', '\n## Judgment\n\n- Stop.\n\n## References\n') },
+  // run-plan's body sits at its SLIM_BODY_TOKENS lock, so the stance paragraph
+  // added here also trims two References descriptions by more bytes than it
+  // costs: the mutation reaches the slim-shape check instead of the lock.
+  { name: 'slim-skill-stance-paragraph', mutate: (root) => {
+    replaceText(root, 'skills/run-plan/SKILL.md',
+      '# Implementing a plan\n', '# Implementing a plan\n\nRun it. The enemy is drift. The overcorrection is stalling.\n');
+    replaceText(root, 'skills/run-plan/SKILL.md',
+      'Before asking the user to pick among numbered options.', 'Before asking.');
+    replaceText(root, 'skills/run-plan/SKILL.md',
+      'Never here: `exo:run-unit` reads it.', 'Never here.');
+  } },
+  // build-change's body sits at its SLIM_BODY_TOKENS lock; trimming one
+  // References description offsets the added Judgment section's bytes.
+  { name: 'slim-skill-judgment-section', mutate: (root) => {
+    replaceText(root, 'skills/build-change/SKILL.md',
+      '\n## References\n', '\n## Judgment\n\n- Stop.\n\n## References\n');
+    replaceText(root, 'skills/build-change/SKILL.md',
+      'Before asking the user to pick among numbered options.', 'Before asking.');
+  } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
     read(root, 'skills/define-scope/SKILL.md').replace(/^\d+\. /gm, '- ')) },
   { name: 'slim-skill-without-references-table', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', '## References', '## Sources') },
-  { name: 'slim-skill-report-not-last', mutate: (root) =>
-    append(root, 'skills/ship/SKILL.md', '\nA closing line after the report.\n') },
+  // ship's body sits at its SLIM_BODY_TOKENS lock; trimming one References
+  // description offsets the added closing line's bytes.
+  { name: 'slim-skill-report-not-last', mutate: (root) => {
+    append(root, 'skills/ship/SKILL.md', '\nA closing line after the report.\n');
+    replaceText(root, 'skills/ship/SKILL.md',
+      'Resolve conflicts, in step 6 or a watch round.', 'In step 6.');
+  } },
   { name: 'banned-phrase', mutate: (root) =>
     append(root, 'skills/define-scope/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>
