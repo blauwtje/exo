@@ -7,8 +7,12 @@
 // new and commit what is green; past the hard limit, in tokens or tool calls, it
 // denies every tool but the ones that finish a half-made edit and write the
 // report, plus a Bash call of `git add`, `git commit`, `git status` or
-// `git diff --stat`, so green work still lands. That command may hold no
-// chaining, substitution, redirection or second line, so nothing rides along.
+// `git diff --stat`, optionally after `-C <path>`, so green work still lands.
+// That command may hold no chaining, substitution, redirection or second line,
+// so nothing rides along. The denial tells the delegate to end its reply with
+// the BUDGET line, because a delegate told only that a tool is denied keeps
+// retrying it instead of returning, and its caller needs the open part to hand
+// it to a fresh agent.
 // The main session carries no `agent_id` and is never measured here: its call
 // goes to the context watch in context-watch.mjs instead, imported only then, so
 // a delegate's call never loads the watch's session store or settings code.
@@ -35,7 +39,7 @@ const PLAIN_ID = /^[\w-]+$/;
 const DISPATCH_BYTES = 64 * 1024;
 const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;
 const REPORT_TOOLS = new Set(['Edit', 'Write', 'TaskUpdate', 'TodoWrite']);
-const COMMIT_COMMAND = /^git (?:add|commit|status|diff --stat)(?:\s.*)?$/s;
+const COMMIT_COMMAND = /^git (?:-C \S+ )?(?:add|commit|status|diff --stat)(?:\s.*)?$/s;
 // Chaining, a pipe, substitution, redirection or a second line could run anything.
 const SHELL_METACHARACTERS = /[;&|`<>\n]|\$\(/;
 
@@ -86,7 +90,7 @@ function decision(toolName, toolInput, tokens, calls, limits) {
   const used = `${Math.round(tokens / 1000)}k`;
   const pastHard = tokens > limits.hard * 1000 || calls > limits.calls;
   if (pastHard && !REPORT_TOOLS.has(toolName) && !isCommitCommand(toolName, toolInput)) {
-    const permissionDecisionReason = `exo budget: ${used} tokens after ${calls} tool calls, past the limit of ${limits.hard}k tokens or ${limits.calls} tool calls. Write your report now and list what is still open under Unresolved. Only Edit to finish a half-made edit, Write, task updates and a lone git add, git commit, git status or git diff --stat still run; give a commit message as -m "..." holding no ; & | \` $( < > or newline.`;
+    const permissionDecisionReason = `exo budget: ${used} tokens after ${calls} tool calls, past the limit of ${limits.hard}k tokens or ${limits.calls} tool calls. Write your report now and list what is still open under Unresolved. Then stop and end your reply with the one line \`BUDGET: done <finished items or none>; open <items left>; next <one sentence>\`, so the caller hands the open part to a fresh agent. Only Edit to finish a half-made edit, Write, task updates and a lone git add, git commit, git status or git diff --stat, optionally after -C <path>, still run: commit only work that is consistent, and give a commit message as -m "..." holding no ; & | \` $( < > or newline.`;
     return { permissionDecision: 'deny', permissionDecisionReason };
   }
   if (tokens <= limits.soft * 1000) return null;

@@ -47,6 +47,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 - **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer.
 - **Scope.** Write only the artifacts a skill names, at the length needed.
 - **Reader budget.** A read-only dispatch to an agent type without its own limit, such as `general-purpose`, carries a standalone `Budget: 70k/100k` line, because the 40k default stops a reader after a few files.
+- **Budget return.** A delegate's `BUDGET:` return is continued by a fresh agent for its open part, never finished by the main session itself, because that work would fill the context the rest of the run needs.
 
 # Closing
 

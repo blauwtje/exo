@@ -1,7 +1,8 @@
 // The delegate budget measures only a delegate: past the soft limit it adds
 // one line before each call, past the hard limit it denies every tool but the
 // ones that finish an edit, write the report and commit green work through a
-// lone git add, commit, status or diff --stat, and in the main session, on a
+// lone git add, commit, status or diff --stat, and tells the delegate to return
+// the BUDGET line; in the main session, on a
 // missing transcript or on a fault it prints nothing.
 
 import assert from 'node:assert/strict';
@@ -85,6 +86,14 @@ test('past the hard limit a delegate is denied a Read and told to write its repo
   assert.match(decision.permissionDecisionReason, /Write your report now and list what is still open under Unresolved\./);
 });
 
+test('a denied call tells the delegate to stop and end its reply with the BUDGET line', async () => {
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
+  const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: 'Bash', tool_input: { command: 'npm test' } }, env));
+  assert.equal(decision.permissionDecision, 'deny');
+  assert.match(decision.permissionDecisionReason, /stop and end your reply with the one line `BUDGET: done <finished items or none>; open <items left>; next <one sentence>`/);
+  assert.match(decision.permissionDecisionReason, /the caller hands the open part to a fresh agent/);
+});
+
 test('past the hard limit an Edit, a Write and a task update still run', async () => {
   const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   for (const toolName of ['Edit', 'Write', 'TaskUpdate', 'TodoWrite']) {
@@ -107,7 +116,9 @@ test('past the hard limit a lone git add, commit, status or diff --stat still ru
     'git status',
     'git status --short',
     'git diff --stat',
-    'git diff --stat HEAD~1\n'
+    'git diff --stat HEAD~1\n',
+    'git -C /repo/.worktrees/t2 add -A',
+    'git -C /repo/.worktrees/t2 commit -m "fix(savings): commit from an absolute path"'
   ];
   for (const command of commands) {
     const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: 'Bash', tool_input: { command } }, env));
@@ -132,7 +143,9 @@ test('past the hard limit any other Bash command, or a git command that chains, 
     'git status > out.txt',
     'git add < list.txt',
     'git add .\nrm x',
-    'git add . & rm x'
+    'git add . & rm x',
+    'git -C /repo push',
+    'git -C /repo commit -m "$(rm x)"'
   ];
   for (const command of commands) {
     const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, tool_name: 'Bash', tool_input: { command } }, env));
