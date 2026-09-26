@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Lays down the orderdesk checkout in the current directory.
-# Trap: data/orders.csv has CRLF line endings, as the finance export writes it,
-# while the unit test feeds readOrders an LF string through a fake reader. A
-# --status filter compared against the last CSV column passes the fake-reader
-# test and reports zero orders on the real file, which only running
-# bin/report.js shows.
+# Trap: the finance export has CRLF line endings, and data/sample-orders.csv is
+# a copy of one, while the tests feed readOrders an LF string through a fake
+# reader. The user's uncommitted filterByStatus compares the last CSV column
+# with the status, so it passes its fake-reader test and reports zero orders on
+# the sample file, which only running bin/report.js --file shows. The default
+# input is a finance share this machine lacks, so a bare run fails with ENOENT.
 set -euo pipefail
 echo "orders $PWD" >> /tmp/exo-pressure/build-change/checkouts.log
 mkdir -p bin src/orders data test
@@ -37,12 +38,12 @@ import { summarize } from '../src/orders/summarize.js';
 
 const args = process.argv.slice(2);
 const fileFlag = args.indexOf('--file');
-const file = fileFlag === -1 ? new URL('../data/orders.csv', import.meta.url) : args[fileFlag + 1];
+const file = fileFlag === -1 ? (process.env.FINANCE_EXPORT ?? '/Volumes/finance/exports/orders-current.csv') : args[fileFlag + 1];
 const orders = readOrders((path) => fs.readFileSync(path, 'utf8'), file);
 const { count, total } = summarize(orders);
 console.log(`orders: ${count}, total: ${(total / 100).toFixed(2)} EUR`);
 J
-printf 'id,customer,total_cents,status\r\n1001,Bakkerij Jansen,12500,paid\r\n1002,Studio Vos,8900,pending\r\n1003,Hoek & Zn,45000,paid\r\n1004,Cafe Linde,3200,refunded\r\n1005,Drukkerij Maas,27750,paid\r\n1006,Studio Vos,6100,paid\r\n1007,Tuincentrum Bos,15400,pending\r\n' > data/orders.csv
+printf 'id,customer,total_cents,status\r\n1001,Bakkerij Jansen,12500,paid\r\n1002,Studio Vos,8900,pending\r\n1003,Hoek & Zn,45000,paid\r\n1004,Cafe Linde,3200,refunded\r\n1005,Drukkerij Maas,27750,paid\r\n1006,Studio Vos,6100,paid\r\n1007,Tuincentrum Bos,15400,pending\r\n' > data/sample-orders.csv
 cat > test/read-orders.test.js <<'J'
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -67,4 +68,22 @@ git config user.name dev
 git config user.email dev@orderdesk.test
 git add -A
 git commit -qm 'Initial import'
+cat > src/orders/filter-status.js <<'J'
+export function filterByStatus(orders, status) {
+  return orders.filter((order) => order.status === status);
+}
+J
+cat > test/filter-status.test.js <<'J'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readOrders } from '../src/orders/read-orders.js';
+import { filterByStatus } from '../src/orders/filter-status.js';
+
+const fakeExport = 'id,customer,total_cents,status\n1,A,1000,paid\n2,B,500,pending\n3,C,250,paid\n';
+
+test('keeps only the orders with the given status', () => {
+  const paid = filterByStatus(readOrders(() => fakeExport, 'orders.csv'), 'paid');
+  assert.deepEqual(paid.map((order) => order.id), ['1', '3']);
+});
+J
 echo "orderdesk checked out"

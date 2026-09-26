@@ -12,7 +12,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$root"
 mkdir -p "$root"
 : > "$root/checkouts.log"
-for fixture in setup-orders.sh setup-shop.sh setup-parcels.sh; do
+for fixture in setup-orders.sh setup-shop.sh setup-invoices.sh; do
   cp "$here/$fixture" "$root/$fixture"
   chmod +x "$root/$fixture"
 done
