@@ -7,7 +7,7 @@ Fix the proven cause in the handoff below, repository <root>. Load the `exo:find
 
 Handoff file: <path>
 
-Write the failing test the test-design row calls for first and quote its failure, then make the predicted fix, then prove it: re-run the reproduction and the isolated case, then the required suite, grepping its log for failures.
+Write the failing test the test-design row calls for first, in files the fix does not touch where the repository allows it, and quote its failure, because the session commits those files alone before the fix. Then make the predicted fix, then prove it: re-run the reproduction and the isolated case, then the required suite, grepping its log for failures. A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
 
 The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins.
 1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
@@ -22,7 +22,7 @@ Hard boundaries:
 - Never ask the user questions; record what is missing under `Unresolved`.
 - Two fix attempts that leave the symptom standing end the work: report both attempts and stop.
 
-Append a `## Fix` section to the handoff file and write nothing elsewhere: `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most 10 lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
+Append a `## Fix` section to the handoff file and write nothing elsewhere: `Tests` (the files holding only the new failing test, else `none`), `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most 10 lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
 
 Return this one line: `status=<fixed|failed|blocked> handoff=<path>`.
 ```
