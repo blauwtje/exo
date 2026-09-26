@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `run-parallel` builds each worker in a worktree it makes with `git worktree add --detach`, never with the dispatch tool's worktree isolation, names each worker's brief by path, and has a worker `cd` into its checkout and return its report of at most 25 lines as its final message.
+
 ## 0.50.3 - 2026-09-26
 
 ### Changed
