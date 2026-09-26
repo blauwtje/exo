@@ -13,13 +13,13 @@ argument-hint: <outcome to shape>
    The exception is two or more order dependencies, B unable to build, test or keep its data before A lands: write the brief unasked, from step 4 on.
    Asked for options, give directions, recommended first, and write no file.
    New wishes for briefed work reopen that brief, since two briefs for one outcome drift apart.
-2. **Sort each open point.** Ask only what is costly or irreversible, the root that other decisions hang on first.
+2. **Sort each open point.** Ask only what is costly or irreversible, the root other decisions hang on first.
    Costly means stored data format, a public interface, a paid service, a deletion, or access rights and security.
    A point answerable by running something goes to `try-idea` and returns as a decision.
    Decide the routine, a visible but cheap point included, and list it as an assumption.
    A decision the user left undecided stays open whatever the code suggests.
    Name the owning layer and any smaller alternative.
-3. **Ask once.** Bundle all costly questions and assumptions into one message shaped by `references/question-shape.md`.
+3. **Ask once.** Read `references/question-shape.md`, then bundle all costly questions and assumptions into one message in its shape.
    With assumptions but no costly question, write the brief unasked; with neither, step 1 applies.
    After a compaction, list the decisions so far before the next message.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode included, and read the file at the path it prints.
@@ -27,8 +27,8 @@ argument-hint: <outcome to shape>
    Read at most eight ranges here, never through `cat`, `head` or `sed`, since each read rides in every later turn.
 5. **List tasks** in the grammar `references/task-list.md` sets.
    A task crossing a security boundary names the security reference in its heading or `Data:` segment, so the builder reads it first.
-   Plan mode runs only commands that leave the working tree unchanged; a proof that needs an edit makes that edit the first task.
-6. **Store the brief.** Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
+   Plan mode runs only commands that leave the working tree unchanged; a proof needing an edit makes that edit the first task.
+6. **Store it.** Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
    The exception is plan mode: the brief goes into the plan file the harness names.
    `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`.
    `issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints, the copy `run-plan` runs.
