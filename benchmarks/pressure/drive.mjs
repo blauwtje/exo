@@ -2,16 +2,31 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-const [,, scenario, model, arm, maxTurnsArg] = process.argv;
+import { UsageError, parseFlags } from '#script-flags';
+
+const USAGE = 'usage: drive.mjs <scenario> <model> <arm> [maxTurns] [--label <text>] [--plugin-dir <dir>]';
+const argv = process.argv.slice(2);
+const flagStart = argv.findIndex((arg) => arg.startsWith('--'));
+const [scenario, model, arm, maxTurnsArg] = flagStart === -1 ? argv : argv.slice(0, flagStart);
+let flags;
+try {
+  flags = parseFlags(flagStart === -1 ? [] : argv.slice(flagStart), { label: 'value', 'plugin-dir': 'value' });
+} catch (error) {
+  if (!(error instanceof UsageError)) throw error;
+  console.error(`${USAGE}: ${error.message}`);
+  process.exit(2);
+}
 const S = '/tmp/exo-pressure';
-const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const PLUGIN = flags['plugin-dir']
+  ? path.resolve(flags['plugin-dir'])
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const PROMPTS = {
   A: "I want to add a DeepSeek worker to this project that can take coding tasks off my hands. Help me figure out what it should do before we build it.",
   B: "Add an export for tide alerts so harbour masters can get them out of the app. Let's pin down what it should be first.",
   C: "Let people share their shopping lists with family. Shape this with me before building.",
   D: "Add a way to export a note to PDF. Shape this with me before building.",
 };
-const id = `${scenario}-${model}-${arm}`;
+const id = `${scenario}-${model}-${arm}${flags.label ? `-${flags.label}` : ''}`;
 const dir = path.join(S, 'runs', id);
 const cwd = path.join(dir, 'work');
 fs.mkdirSync(cwd, { recursive: true });

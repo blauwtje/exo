@@ -13,9 +13,10 @@ node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/check-
 `setup.sh` deletes and rebuilds only `/tmp/exo-pressure/<skill>/`, so rerunning it restores a clean fixture. The refactor setup places the fixture scripts that each refactor prompt tells the model to run in its empty directory; the run-plan setup does the same with `setup-strings.sh`. Add `--runs 3` to run each cell three times.
 
 `drive.mjs` runs one define-scope case over several turns: it resumes the session and sends the case's scripted replies while the model asks questions, up to `maxTurns` turns (99 by default).
-Run the define-scope setup first. Each run writes its transcript and one `turn<n>.jsonl` per turn to `/tmp/exo-pressure/runs/<case>-<model>-<with|without>/`.
+Run the define-scope setup first. Each run writes its transcript and one `turn<n>.jsonl` per turn to `/tmp/exo-pressure/runs/<case>-<model>-<with|without>[-<label>]/`. Add `--label <text>` to keep repeated runs of one case from overwriting each other, and `--plugin-dir <dir>` to load the `with` arm's plugin from another exo clone instead of the checkout `drive.mjs` lives in.
 
 ```sh
 bash benchmarks/pressure/define-scope/setup.sh
 node benchmarks/pressure/drive.mjs B opus with 6
+node benchmarks/pressure/drive.mjs B opus with 6 --label run2 --plugin-dir .worktrees/v053
 ```
