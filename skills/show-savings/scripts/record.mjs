@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { configDirectory } from '#config-directory';
+import { hotSessionFile, savingsDirectory } from '#session-record-path';
 
 // Every hook in hooks/hooks.json times out after 10 s, so a lock older than
 // LOCK_STALE_MS outlived any hook and belongs to one that died, and a waiter
@@ -22,32 +22,23 @@ const SESSION_RETENTION_MS = SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 // Exported here because savings.mjs, which prints it, runs its command on import.
 export const CHARACTERS_PER_TOKEN = 3.5;
 
-// EXO_SAVINGS_DIR relocates the record and its config alone, so a benchmark
-// cell keeps its own record while the session keeps its login and settings.
-function recordDirectory() {
-  return process.env.EXO_SAVINGS_DIR || path.join(configDirectory(), 'exo', 'savings');
-}
-
 export function recordFile() {
-  return path.join(recordDirectory(), 'sessions.json');
+  return path.join(savingsDirectory(), 'sessions.json');
 }
 
 function hotSessionsDirectory() {
-  return path.join(recordDirectory(), 'sessions');
+  return path.join(savingsDirectory(), 'sessions');
 }
 
-// A session id becomes a file name, so only the shape transcript.mjs already
-// accepts for the same purpose is allowed; every hook already catches a
-// throw here and exits 0.
-const SESSION_ID = /^[\w-]+$/;
-
+// A hook already catches a throw here (an invalid session id) and exits 0;
+// #session-record-path is also route-skills' next-stage.mjs's only source for
+// this path, so the two never drift apart.
 export function hotFile(sessionId) {
-  if (!SESSION_ID.test(sessionId)) throw new Error(`invalid session id: ${sessionId}`);
-  return path.join(hotSessionsDirectory(), `${sessionId}.json`);
+  return hotSessionFile(sessionId);
 }
 
 export function configFile() {
-  return path.join(recordDirectory(), 'config.json');
+  return path.join(savingsDirectory(), 'config.json');
 }
 
 export function readJson(file, fallback) {

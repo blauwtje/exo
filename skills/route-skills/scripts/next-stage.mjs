@@ -12,16 +12,16 @@
 
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
-import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { configDirectory } from '#config-directory';
 import { parseFlags, UsageError } from '#script-flags';
 import { frameOf, parsePlan } from '#plan-tasks';
+import { hotSessionFile, isSessionId } from '#session-record-path';
 
 // The stage a session just finished names the stage its next-stage question
-// opens, per `references/next-stage.md`'s order: this one stage and Stop. `label` and `does` follow `references/question.md`'s shape: a
-// one-to-three-word bold label, then a few words on what happens, never why.
+// opens, per `references/next-stage.md`'s order: this one stage and Stop.
+// `label` and `does` follow `references/question.md`'s shape: a one-to-three-word
+// bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
   'define-scope': { stage: 'run-plan', label: 'Run-plan', does: 'runs the plan' },
   'audit-architecture': { stage: 'define-scope', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
@@ -61,22 +61,19 @@ function modelLineFor(stage, artifact) {
   return null;
 }
 
-// The session id shape show-savings' record.mjs accepts as a file name.
-const SESSION_ID = /^[\w-]+$/;
-
 // True once show-savings' context-watch.mjs has sent its `exo: context` notice
-// in this session. The hot record's path is spelled out as record.mjs builds
-// it, because no script imports from another skill's folder. A session with no
-// id or no readable hot record has not been warned.
+// in this session. `#session-record-path` builds the hot record's path, so it
+// cannot drift from the one record.mjs writes. A session with no id or no hot
+// record file has not been warned; any other read or parse failure surfaces.
 function warnedThisSession(sessionId) {
   if (sessionId === undefined || sessionId === '') return false;
-  if (!SESSION_ID.test(sessionId)) throw new UsageError(`invalid session id: ${sessionId}`);
-  const savings = process.env.EXO_SAVINGS_DIR || path.join(configDirectory(), 'exo', 'savings');
+  if (!isSessionId(sessionId)) throw new UsageError(`invalid session id: ${sessionId}`);
   try {
-    const hot = JSON.parse(fs.readFileSync(path.join(savings, 'sessions', `${sessionId}.json`), 'utf8'));
+    const hot = JSON.parse(fs.readFileSync(hotSessionFile(sessionId), 'utf8'));
     return hot?.contextWatch?.warned === true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
   }
 }
 

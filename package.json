@@ -14,6 +14,7 @@
     "#restatement": "./lib/restatement.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-flags": "./lib/script-flags.mjs",
+    "#session-record-path": "./lib/session-record-path.mjs",
     "#settings-store": "./lib/settings-store.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",

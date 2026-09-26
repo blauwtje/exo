@@ -15,7 +15,7 @@ A stage skill (`define-scope`, `audit-architecture`, `find-cause`) whose work le
 | Next stage | Model and effort | Because |
 |---|---|---|
 | `run-plan`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `medium` | that task builds in the session, and the skill pins `medium`. |
-| `run-plan`, any other plan | `sonnet` at `medium` | the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps `high`. |
+| `run-plan`, any other plan | `sonnet` at `medium` | each task names its files, data and proof, and the build-task agent keeps `high`. |
 | `build-change` | `opus` at `high` | it decides the change while building it. |
 
 ## Judgment
