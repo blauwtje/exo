@@ -30,7 +30,7 @@ const id = `${scenario}-${model}-${arm}${flags.label ? `-${flags.label}` : ''}`;
 const dir = path.join(S, 'runs', id);
 const cwd = path.join(dir, 'work');
 fs.mkdirSync(cwd, { recursive: true });
-fs.cpSync(path.join('/tmp/exo-pressure/define-scope', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export'}[scenario]), cwd, { recursive: true });
+fs.cpSync(path.join('/tmp/exo-pressure/spec', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export'}[scenario]), cwd, { recursive: true });
 const armFlags = arm === 'with' ? ['--plugin-dir', PLUGIN]
   : ['--settings', JSON.stringify({ enabledPlugins: { 'exo@blauwtje': false } })];
 const log = (m) => { const l = `[${new Date().toISOString().slice(11,19)}] ${id}: ${m}`; console.log(l); fs.appendFileSync(path.join(dir, 'progress.log'), l + '\n'); };

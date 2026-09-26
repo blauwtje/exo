@@ -48,13 +48,13 @@ A card an id cannot settle stays as the delegate wrote it; ask at most one quest
 | File | Read it when |
 |---|---|
 | `auditor-prompt.md` | Step 2 of the audit, to fill in the delegate dispatch. |
-| `../define-scope/references/task-list.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
+| `../spec/references/task-list.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
 | `../build-change/references/test-design.md` | In plan mode, before writing the first task, to decide which tasks are risky and therefore write their test first. Do not load in report mode. |
 | `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options, other than the next-stage question the script prints. |
 
 ## Judgment
 
-- While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `define-scope` defines; every other planning turn belongs to `define-scope`.
+- While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `spec` defines; every other planning turn belongs to `spec`.
 - Failing existing behavior outranks this skill: an unproven failure routes to `find-cause`, and a finding that explains a live symptom is a `find-cause` hypothesis, not an audit card.
 - A single named refactor or rename is a decided change for `refactor`.
 - Every card states its migration cost, including a deepening that invalidates the whole test suite.

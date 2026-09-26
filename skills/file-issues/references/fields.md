@@ -40,7 +40,7 @@ A milestone is set only when the repository has an open one whose title the outc
 
 Every section is an H3, because a repository's issue form renders each of its fields as one, and an item this standard writes then reads as an item a person filed. A Spec's `### Problem` names what goes wrong for the user today; neither shape carries any other background or motivation section, a quote of the request, or a second copy of what the metadata already shows beside the body: labels, type, parent, blocked-by and milestone go stale in a body on the first edit.
 
-**Spec**, for a brief `define-scope` produced and for any feature work:
+**Spec**, for a brief `spec` produced and for any feature work:
 
 - `### Outcome`: one sentence naming the result, in the present tense; a brief's Goal.
 - `### Problem`: what goes wrong for the user today, seen from their side, in one or two sentences.
@@ -52,7 +52,7 @@ Every section is an H3, because a repository's issue form renders each of its fi
 - `### Assumptions`: one line per routine point the brief settled without asking; a brief's Assumptions.
 - A Spec no brief produced keeps `### Decided` optional, only for a constraint the user settled that the criteria do not already carry. `### Problem`, `### Proof` and `### Out of scope` are optional for every Spec, and `### Assumptions` appears only when a brief produced one.
 
-**Report**, for what needs no define-scope: a bug, a regression, a chore or a documentation fix.
+**Report**, for what needs no spec: a bug, a regression, a chore or a documentation fix.
 
 - `### What happens`: one sentence naming the current behavior, in the present tense.
 - `### Expected`: what should happen instead.

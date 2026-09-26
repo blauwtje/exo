@@ -130,7 +130,7 @@ export function proofOf(task, reportText, reportPath) {
 // land-task itself reads) is never a stray: a host that has not yet run
 // `scratch-exclude.mjs` still leaves it untracked, so it is dropped here
 // rather than trusted to `--exclude-standard`. Likewise the plan file itself,
-// when `planPath` sits inside `root`: define-scope hands its brief straight
+// when `planPath` sits inside `root`: spec hands its brief straight
 // to run-plan without committing it, so the plan the run is landing from can
 // still be untracked in the very checkout it lands into.
 function changedPaths(root, planPath) {

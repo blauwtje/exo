@@ -90,7 +90,7 @@ export async function gitRepository(files) {
 
 const FENCE = '```';
 
-/** One task in the grammar `define-scope` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
+/** One task in the grammar `spec` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
 export function taskSection({ number, title, dependsOn = 'none', design = false, files, code = '', subject, trailer = true, commit = true }) {
   const commitLine = trailer
     ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
@@ -155,9 +155,9 @@ export function compactPlanFixture({ tasks }) {
   ].join('\n');
 }
 
-/** A define-scope brief around `tasks`: the compact frame plus the brief-only
+/** A spec brief around `tasks`: the compact frame plus the brief-only
  * `## Decisions`, `## Assumptions` and `## Acceptance` sections ahead of it,
- * per skills/define-scope/references/brief.md. */
+ * per skills/spec/references/brief.md. */
 export function briefFixture({ tasks }) {
   return [
     '# Brief: compact fixture',

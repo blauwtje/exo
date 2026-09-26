@@ -14,4 +14,4 @@ When you ask in plain words to file, open, write or split issues. The request is
 
 ## Where its rules live
 
-`skills/file-issues/SKILL.md`, with the field and body standard in its `references/fields.md`, which define-scope and ship read as well.
+`skills/file-issues/SKILL.md`, with the field and body standard in its `references/fields.md`, which spec and ship read as well.

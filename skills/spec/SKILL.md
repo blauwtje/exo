@@ -1,6 +1,6 @@
 ---
-name: define-scope
-description: "Use when a request, or new wishes for a stored brief, issue or plan, leaves a product decision open: what counts as done, data, architecture or a trade-off. When a new visual surface does not name its displayed data, settings, or behavior, define-scope decides those first; design-ui follows for presentation. Not for a clear goal, a failure, or visual-only work."
+name: spec
+description: "Use when a request, or new wishes for a stored brief, issue or plan, leaves a product decision open: what counts as done, data, architecture or a trade-off. When a new visual surface does not name its displayed data, settings, or behavior, spec decides those first; design-ui follows for presentation. Not for a clear goal, a failure, or visual-only work."
 argument-hint: <outcome to shape>
 ---
 
@@ -35,7 +35,7 @@ argument-hint: <outcome to shape>
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>` and repair each line it prints.
    Then repair any Acceptance item that reaches no task heading, `Data:` segment, Success criterion or `## Manual checks` line, because the builder cannot.
 8. **Hand off.** Load `exo:run-plan` on that file with the Skill tool, in this turn and unasked, because the context watch reads a plan run from that load.
-   The exception is a read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after define-scope --artifact <brief path, or #<n> for an issue>`.
+   The exception is a read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path, or #<n> for an issue>`.
 
 ## References
 

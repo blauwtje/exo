@@ -4,7 +4,7 @@
 # down the fx-strings checkout there, and fx-strings, one checkout it built,
 # for inspecting the fixture without running a case.
 # The checkout is a Node string library with no dependencies, one commit on
-# main, and docs/specs/string-utils.md: a define-scope task list of twelve
+# main, and docs/specs/string-utils.md: a spec task list of twelve
 # compact tasks, each adding one pure function and its test, each proved by
 # `node scripts/prove.mjs <file>`, which fails until that task has landed.
 set -euo pipefail

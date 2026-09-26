@@ -52,8 +52,8 @@ function patchTableEffort(root, key, effort) {
 }
 
 const SCENARIOS = [
-  { name: 'invalid-yaml', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
-    read(root, 'skills/define-scope/SKILL.md').replace(/^name: define-scope$/gm, 'name: [define-scope')) },
+  { name: 'invalid-yaml', mutate: (root) => write(root, 'skills/spec/SKILL.md',
+    read(root, 'skills/spec/SKILL.md').replace(/^name: spec$/gm, 'name: [spec')) },
   { name: 'missing-judgment', mutate: (root) =>
     replaceText(root, 'skills/check-docs/SKILL.md', '## Judgment', '## Verdict') },
   // run-plan's body sits at its SLIM_BODY_TOKENS lock, so the stance paragraph
@@ -75,8 +75,8 @@ const SCENARIOS = [
     replaceText(root, 'skills/build-change/SKILL.md',
       'Before asking the user to pick among numbered options.', 'Before asking.');
   } },
-  { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/define-scope/SKILL.md',
-    read(root, 'skills/define-scope/SKILL.md').replace(/^\d+\. /gm, '- ')) },
+  { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/spec/SKILL.md',
+    read(root, 'skills/spec/SKILL.md').replace(/^\d+\. /gm, '- ')) },
   // run-plan's body sits at its SLIM_BODY_TOKENS lock; the two trims below pay
   // for the inserted paragraph, so the mutation reaches the opening-heading
   // check instead of the byte lock.
@@ -98,11 +98,11 @@ const SCENARIOS = [
       'Resolve conflicts, in step 6 or a watch round.', 'In step 6.');
   } },
   { name: 'banned-phrase', mutate: (root) =>
-    append(root, 'skills/define-scope/SKILL.md', "\nlet me know if you'd like me to continue\n") },
+    append(root, 'skills/spec/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>
-    append(root, 'skills/define-scope/SKILL.md', '\nUse WebSearch when useful.\n') },
+    append(root, 'skills/spec/SKILL.md', '\nUse WebSearch when useful.\n') },
   { name: 'derived-name', mutate: (root) =>
-    append(root, 'skills/define-scope/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
+    append(root, 'skills/spec/SKILL.md', `\n${Buffer.from('d2F5ZmluZGVy', 'base64')}\n`) },
   { name: 'derived-name-outside-shipped-files', mutate: (root) =>
     append(root, 'benchmarks/README.md', `\n${Buffer.from('cHN0YWNr', 'base64')}\n`) },
   { name: 'oversized-skill-body', mutate: (root) =>
@@ -136,9 +136,9 @@ const SCENARIOS = [
   { name: 'dangling-sibling-script-link', mutate: (root) =>
     replaceText(root, 'skills/configure/SKILL.md', '../show-savings/scripts/savings.mjs', '../show-savings/scripts/absent.mjs') },
   { name: 'noncanonical-skill-replacement', mutate: (root) => {
-    const nested = path.join(root, 'skills/define-scope/define-scope');
+    const nested = path.join(root, 'skills/spec/spec');
     fs.mkdirSync(nested);
-    fs.renameSync(path.join(root, 'skills/define-scope/SKILL.md'), path.join(nested, 'SKILL.md'));
+    fs.renameSync(path.join(root, 'skills/spec/SKILL.md'), path.join(nested, 'SKILL.md'));
   } },
   { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
     'over two source, test or config files change', 'over one source, test or config file changes') },
@@ -146,13 +146,13 @@ const SCENARIOS = [
     'rebuild what landed from the working-tree diff, not memory.', 'rebuild what landed from memory.') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
-  { name: 'define-scope-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
+  { name: 'spec-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/spec/SKILL.md',
     'An open decision is one the user would notice that neither request nor code settles.', 'An open decision is one more file the request changes.') },
-  { name: 'define-scope-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
+  { name: 'spec-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/spec/SKILL.md',
     'Zero open decisions means leave this skill and write no brief', 'Zero means carry on anyway') },
-  { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/define-scope/SKILL.md',
-    'define-scope decides those first; design-ui follows for presentation',
-    'define-scope decides these first; design-ui follows for presentation') },
+  { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/spec/SKILL.md',
+    'spec decides those first; design-ui follows for presentation',
+    'spec decides these first; design-ui follows for presentation') },
   { name: 'oversized-description', mutate: (root) => replaceText(root, 'skills/check-docs/SKILL.md',
     'description: Use when a code decision', `description: ${'overlong '.repeat(140)}Use when a code decision`) },
   { name: 'model-invocable-description-without-use-when', mutate: (root) => replaceText(root, 'skills/check-docs/SKILL.md',
@@ -226,7 +226,7 @@ const SCENARIOS = [
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
   { name: 'broken-skill-script', mutate: (root) =>
     append(root, 'skills/design-ui/scripts/capture.mjs', '\nexport function broken( {\n') },
-  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/define-scope/references/data-migration.md',
+  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/spec/references/data-migration.md',
     read(root, 'skills/build-change/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
     replaceText(root, 'agents/fetch-docs.md', 'at most 25 lines', 'a short report') },

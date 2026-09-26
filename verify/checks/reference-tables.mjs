@@ -39,7 +39,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/audit-architecture/SKILL.md': [
     'auditor-prompt.md',
-    '../define-scope/references/task-list.md',
+    '../spec/references/task-list.md',
     '../build-change/references/test-design.md',
     '../route-skills/references/question.md',
   ],
@@ -94,7 +94,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/behavior-pin.md',
     'references/legacy-api.md',
   ],
-  'skills/define-scope/SKILL.md': [
+  'skills/spec/SKILL.md': [
     'references/stored-brief.md',
     'references/question-shape.md',
     'references/brief.md',
@@ -202,9 +202,9 @@ const EXPECTED_CONTRACTS = {
     'references/data-migration.md': FIRST_LINE_PREDICATE,
     'references/test-design.md': FIRST_LINE_PREDICATE,
   },
-  'skills/define-scope/SKILL.md': FIRST_LINE_CONTRACTS,
+  'skills/spec/SKILL.md': FIRST_LINE_CONTRACTS,
   'skills/audit-architecture/SKILL.md': {
-    '../define-scope/references/task-list.md':
+    '../spec/references/task-list.md':
       'Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact\'s sections, order, and step contents. Do not load in report mode.',
   },
 };

@@ -3,7 +3,7 @@
     "type": "string",
     "options": ["docs", "issues", "both"],
     "default": "docs",
-    "description": "where define-scope stores a spec: docs/specs files, GitHub issues, or both"
+    "description": "where spec stores a spec: docs/specs files, GitHub issues, or both"
   },
   "replies": {
     "type": "string",

@@ -205,7 +205,7 @@ export function planCheckReport(planText, { root } = {}) {
   const compactPlan = plan.tasks.every((task) => task.compact);
   // No --root from the caller falls back to the plan's own 'Repository:'
   // line, the checkout the plan names, rather than the process's cwd, which
-  // define-scope's own plan-check step never shares with the plan's target.
+  // spec's own plan-check step never shares with the plan's target.
   const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
   const problems = [

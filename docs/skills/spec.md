@@ -1,4 +1,4 @@
-# define-scope
+# spec
 
 Decides what to build, before anything is planned or written.
 
@@ -18,4 +18,4 @@ A request names a result, or brings new wishes for work that already has a brief
 
 ## Where its rules live
 
-`skills/define-scope/SKILL.md`, with reopening a stored brief in `skills/define-scope/references/stored-brief.md`, the brief's sections in `skills/define-scope/references/brief.md` and the issue path in `skills/define-scope/references/brief-in-an-issue.md`.
+`skills/spec/SKILL.md`, with reopening a stored brief in `skills/spec/references/stored-brief.md`, the brief's sections in `skills/spec/references/brief.md` and the issue path in `skills/spec/references/brief-in-an-issue.md`.

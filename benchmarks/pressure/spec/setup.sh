@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Builds the three define-scope fixture projects under /tmp/exo-pressure/define-scope/:
+# Builds the three spec fixture projects under /tmp/exo-pressure/spec/:
 # fx-deepseek-worker, fx-tide-export and fx-shopping-share, one per case prompt.
 # Each case runs from its fixture directory; the fixtures hold no git history.
 set -euo pipefail
 
-root=/tmp/exo-pressure/define-scope
+root=/tmp/exo-pressure/spec
 rm -rf "$root"
 mkdir -p "$root"
 
@@ -167,4 +167,4 @@ export function NoteList() {
 }
 EOF
 
-echo "define-scope fixtures ready under $root"
+echo "spec fixtures ready under $root"

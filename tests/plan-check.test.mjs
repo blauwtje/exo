@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { parsePlan } from '#plan-tasks';
-import { planCheckReport } from '../skills/define-scope/scripts/plan-check.mjs';
+import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import { briefFixture, compactPlanFixture, compactTask, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 const GOOD_CODE = 'export function greet() {\n  return "hello";\n}';

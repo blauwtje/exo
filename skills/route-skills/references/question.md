@@ -11,7 +11,7 @@ A skill reads this file before a message of its asks the user to pick; the core 
 3. **The recommended option is number 1** in every question; the next stage's order turns on whether an `exo: context` notice fired this session; stopping or keeping things as they are comes last unless it is the recommended one. Label, marker and clause are in the reply's language, as the language rule under `# Context` in route-skills sets.
 4. **Nothing follows the options** except the one model line `## The next stage` allows.
 5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
-6. **One question a turn**, or one round of up to four in `define-scope`. Nothing is written, edited or run until the answer arrives, because work done first is work the answer undoes.
+6. **One question a turn**, or one round of up to four in `spec`. Nothing is written, edited or run until the answer arrives, because work done first is work the answer undoes.
 
 ## Around the options
 
@@ -21,4 +21,4 @@ A skill reads this file before a message of its asks the user to pick; the core 
 ## Judgment
 
 - The user's typed digit outranks any reading of the conversation: option 1 runs at once.
-- One clear question outranks a complete one: a second question waits for the next turn, except in a `define-scope` round.
+- One clear question outranks a complete one: a second question waits for the next turn, except in a `spec` round.

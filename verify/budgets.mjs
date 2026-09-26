@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'check-impact', 'find-cause', 'audit-architecture', 'design-ui', 'save-session', 'tune-metric', 'run-plan', 'build-change', 'explain-code', 'file-issues', 'remember', 'try-idea', 'refactor', 'check-docs', 'show-savings', 'configure', 'define-scope', 'ship', 'edit-skills', 'run-parallel', 'write-docs', 'compare-renders', 'start'
+  'check-impact', 'find-cause', 'audit-architecture', 'design-ui', 'save-session', 'tune-metric', 'run-plan', 'build-change', 'explain-code', 'file-issues', 'remember', 'try-idea', 'refactor', 'check-docs', 'show-savings', 'configure', 'spec', 'ship', 'edit-skills', 'run-parallel', 'write-docs', 'compare-renders', 'start'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -44,7 +44,7 @@ export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 563 };
 // Skills trimmed to the slim shape, locked at their measured size so growth fails.
 // find-cause's lock includes the restored missing-infrastructure, unread-file and one-reading rules.
 export const SLIM_BODY_TOKENS = {
-  'define-scope': 1051, 'run-plan': 1058, 'build-change': 1099, 'find-cause': 1289, 'ship': 1086,
+  'spec': 1051, 'run-plan': 1058, 'build-change': 1099, 'find-cause': 1289, 'ship': 1086,
 };
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };

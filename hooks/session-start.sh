@@ -36,7 +36,7 @@ printf '%s' "$input" | node "$root/skills/show-savings/scripts/restate.mjs" rese
 skill="$root/skills/route-skills/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")
-# Skills read project and global choices, such as where define-scope stores a spec,
+# Skills read project and global choices, such as where spec stores a spec,
 # from this one line instead of opening the settings files themselves.
 settings=$(node "$root/skills/configure/scripts/settings.mjs" context 2>/dev/null) || settings="exo settings: unresolved, defaults apply"
 # A file inside the repository is named from its root, because a full path

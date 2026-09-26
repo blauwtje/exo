@@ -142,7 +142,7 @@ function planCells() {
     source: null,
     model: SWEEP_MODELS[run.model],
     effort: run.effort,
-    prompt: `Load the exo:define-scope skill and plan this request: ${FLOW_REQUEST}\n${NO_ANSWER}`,
+    prompt: `Load the exo:spec skill and plan this request: ${FLOW_REQUEST}\n${NO_ANSWER}`,
     appendSystemPrompt: null,
     disallowedTools: [],
     budgetUsd: '10',

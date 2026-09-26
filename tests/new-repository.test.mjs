@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('run-plan/references/workspace.md');
-const PLAN_SPEC = read('define-scope/references/task-list.md');
+const PLAN_SPEC = read('spec/references/task-list.md');
 
 test('the workspace step initialises a folder that holds only the plan docs', () => {
   // The "holds only the plan docs" rule now lives in lib/workspace.mjs,

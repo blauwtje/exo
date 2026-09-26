@@ -1,6 +1,6 @@
 # run-plan: pass criteria for the `with` arm
 
-One case, `case1-twelve-tasks.txt`: the prompt runs `setup-strings.sh` in an empty directory, which lays down the fx-strings checkout with one commit on `main` and the spec `docs/specs/string-utils.md`, a define-scope task list of twelve compact tasks. Each task adds one pure function in `src/<file>.js` and its test in `test/<file>.test.js`; its `Proof:` is `node scripts/prove.mjs <file>`, which fails until that task has landed. Tasks 7 and 9 depend on tasks 5 and 1; the other ten depend on nothing. `## Decisions` fixes every function's behavior, and the prompt names the branch and rules out a push, so a correct run needs no answer from the user.
+One case, `case1-twelve-tasks.txt`: the prompt runs `setup-strings.sh` in an empty directory, which lays down the fx-strings checkout with one commit on `main` and the spec `docs/specs/string-utils.md`, a spec task list of twelve compact tasks. Each task adds one pure function in `src/<file>.js` and its test in `test/<file>.test.js`; its `Proof:` is `node scripts/prove.mjs <file>`, which fails until that task has landed. Tasks 7 and 9 depend on tasks 5 and 1; the other ten depend on nothing. `## Decisions` fixes every function's behavior, and the prompt names the branch and rules out a push, so a correct run needs no answer from the user.
 
 The run passes when every line below holds.
 

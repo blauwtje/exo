@@ -4,7 +4,7 @@ Words the prose exo writes for a later reader in one documentation mode, with th
 
 ## When it fires
 
-A README or doc page, an ADR, a pull request, issue or commit body, a changelog line, a brief or a spec is being written or edited, or such a text is reviewed because it reads as machine-written. The fields of a pull request, issue, commit subject or brief stay with ship, file-issues and define-scope; this skill words the text inside them. Chat replies belong to the output style and code comments to the code standard.
+A README or doc page, an ADR, a pull request, issue or commit body, a changelog line, a brief or a spec is being written or edited, or such a text is reviewed because it reads as machine-written. The fields of a pull request, issue, commit subject or brief stay with ship, file-issues and spec; this skill words the text inside them. Chat replies belong to the output style and code comments to the code standard.
 
 ## What you get
 

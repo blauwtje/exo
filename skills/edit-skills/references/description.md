@@ -19,7 +19,7 @@ The description is the only text the model reads before deciding to load the ski
 
 - Aim at 300 characters and stay within 375, so the sum across the corpus stays inside what the harness shows the model.
 - No angle brackets and no line breaks; the harness rejects both.
-- The name is an imperative verb phrase of one or two words naming what it does (`define-scope`, `check-docs`).
+- The name is an imperative verb phrase of one or two words naming what it does (`spec`, `check-docs`).
 
 ## Judgment
 

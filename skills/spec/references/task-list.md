@@ -5,7 +5,7 @@ line per task, nothing more. The enemy is a task whose file or shape stays impli
 the builder to guess it from prose. The overcorrection is spelling out every
 step's code, which the compact grammar leaves to each task's own builder.
 `node <skill>/scripts/plan-check.mjs --plan <path>`, where `<skill>` is the
-define-scope folder holding this file, enforces every rule below; run it
+spec folder holding this file, enforces every rule below; run it
 before ending the turn and repair each line it prints.
 
 Write for a reader with zero conversation context: no "as discussed", no

@@ -4,7 +4,7 @@ Owns how a surface looks, so the result cannot be mistaken for a template.
 
 ## When it fires
 
-A page, component or visual axis changes: typography, color, spacing, motion or copy. It fires on a new surface, a redesign, and on a report that an existing surface is empty, boring or generic, at any file count. When a new surface has not had its data, settings or behavior decided, define-scope decides those first and design-ui follows for presentation.
+A page, component or visual axis changes: typography, color, spacing, motion or copy. It fires on a new surface, a redesign, and on a report that an existing surface is empty, boring or generic, at any file count. When a new surface has not had its data, settings or behavior decided, spec decides those first and design-ui follows for presentation.
 
 ## What you get
 

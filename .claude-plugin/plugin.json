@@ -12,7 +12,7 @@
   "userConfig": {
     "specs": {
       "type": "string",
-      "title": "Where define-scope stores specs",
+      "title": "Where spec stores specs",
       "description": "docs: files under docs/specs. issues: GitHub issues. both: a file plus a linked issue. Not sure? Keep docs. A project overrides this in .claude/exo.json.",
       "options": ["docs", "issues", "both"],
       "default": "docs"

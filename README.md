@@ -57,7 +57,7 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 
 | Skill | What it does | Just say |
 |---|---|---|
-| `define-scope <outcome>` | Decides what "done" means, when that is still open: the result, the data, the architecture. | "I want something for X but I'm not sure what exactly" |
+| `spec <outcome>` | Decides what "done" means, when that is still open: the result, the data, the architecture. | "I want something for X but I'm not sure what exactly" |
 | `run-plan [plan]` | Runs a plan file, with helpers and review. | "run the plan at docs/...", or after `/clear`: "carry on" |
 | `build-change <change>` | Builds a decided change, test-first where it can. | "build X", "fix this bug, here's how to reproduce it" |
 | `ship [numbers]` | Pushes, opens or merges a pull request, fixes its checks or review comments. | "push this", "merge the PR", "fix the checks" |
@@ -139,9 +139,9 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 
 | Key | Values | Default | Effect |
 |---|---|---|---|
-| `specs` | `docs`, `issues`, `both` | `docs` | Where `define-scope` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
+| `specs` | `docs`, `issues`, `both` | `docs` | Where `spec` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
-| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:define-scope` or `exo:run-plan` is the last exo skill loaded, to keep working because the harness compacts on its own. A stored value that is not a whole number of at least 1 reads as the default. |
+| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:spec` or `exo:run-plan` is the last exo skill loaded, to keep working because the harness compacts on its own. A stored value that is not a whole number of at least 1 reads as the default. |
 
 ## Develop
 

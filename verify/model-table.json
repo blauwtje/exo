@@ -5,7 +5,7 @@
   "skills/check-impact": { "model": null, "effort": null },
   "skills/compare-renders": { "model": null, "effort": null },
   "skills/configure": { "model": "sonnet", "effort": null },
-  "skills/define-scope": { "model": null, "effort": null },
+  "skills/spec": { "model": null, "effort": null },
   "skills/design-ui": { "model": null, "effort": "high" },
   "skills/edit-skills": { "model": null, "effort": null },
   "skills/explain-code": { "model": null, "effort": null },

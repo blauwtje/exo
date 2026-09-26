@@ -1,7 +1,7 @@
 // Prints the next-stage option block and, when the next stage's model or
 // effort differs from the session's, the one model line `references/
 // next-stage.md` allows under it. A stage skill whose work leaves a next
-// stage open (`define-scope`, `audit-architecture`, `find-cause`) runs this at its
+// stage open (`spec`, `audit-architecture`, `find-cause`) runs this at its
 // final message instead of reading `references/next-stage.md` and
 // `references/question.md` itself.
 //
@@ -23,13 +23,13 @@ import { hotSessionFile, isSessionId } from '#session-record-path';
 // `label` and `does` follow `references/question.md`'s shape: a one-to-three-word
 // bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
-  'define-scope': { stage: 'run-plan', label: 'Run-plan', does: 'runs the plan' },
-  'audit-architecture': { stage: 'define-scope', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
+  'spec': { stage: 'run-plan', label: 'Run-plan', does: 'runs the plan' },
+  'audit-architecture': { stage: 'spec', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
   'find-cause': { stage: 'build-change', label: 'Build-change', does: 'builds the edits the proof left' }
 };
 
 function commandFor(stage, artifact) {
-  if (stage === 'define-scope') return `/exo:define-scope ${artifact}`;
+  if (stage === 'spec') return `/exo:spec ${artifact}`;
   if (stage === 'run-plan') return `/exo:run-plan ${artifact}`;
   if (stage === 'build-change') return '/exo:build-change';
   throw new UsageError(`no command known for next stage '${stage}'`);

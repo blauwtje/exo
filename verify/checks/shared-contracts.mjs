@@ -19,10 +19,10 @@ const thousands = (value) => value.toLocaleString('en-US');
 
 const LABEL_LIMIT = 70;
 const HANDSHAKE = /When a new visual surface does not name [^.]+; design-ui follows for presentation\./;
-const HANDSHAKE_SKILLS = ['define-scope', 'design-ui'];
+const HANDSHAKE_SKILLS = ['spec', 'design-ui'];
 
 const PINNED_SENTENCES = {
-  'skills/define-scope/SKILL.md': [
+  'skills/spec/SKILL.md': [
     'Zero open decisions means leave this skill and write no brief',
     'An open decision is one the user would notice that neither request nor code settles.',
     'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
@@ -30,7 +30,7 @@ const PINNED_SENTENCES = {
   ],
   'skills/find-cause/SKILL.md': [
     'when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary',
-    'Until the cause is proven this skill outranks `define-scope` and `build-change`; a read-only planning turn writes the plan per `../define-scope/references/task-list.md`, reproduction test as Task 1.',
+    'Until the cause is proven this skill outranks `spec` and `build-change`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1.',
   ],
   'skills/build-change/SKILL.md': [
     'Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.',
@@ -40,7 +40,7 @@ const PINNED_SENTENCES = {
     ...REVIEW_THRESHOLD,
   ],
   'skills/audit-architecture/SKILL.md': [
-    'While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `define-scope` defines; every other planning turn belongs to `define-scope`.',
+    'While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `spec` defines; every other planning turn belongs to `spec`.',
   ],
   'skills/check-docs/SKILL.md': [
     'Never end a turn on a research pass alone.',
@@ -48,7 +48,7 @@ const PINNED_SENTENCES = {
   'skills/design-ui/SKILL.md': [
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive',
-    'This skill owns visual decisions only. When a `define-scope`, `run-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
+    'This skill owns visual decisions only. When a `spec`, `run-plan`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
   ],
@@ -181,13 +181,13 @@ export function checkSharedContracts(report, repository) {
     const parsed = readFrontmatter(repository.lines(path.join(repository.skillsRoot, skill, 'SKILL.md')));
     const match = HANDSHAKE.exec(parsed.values.get('description') ?? '');
     if (match === null) {
-      errors.push(`${skill}: description lacks the define-scope/design-ui handshake sentence`);
+      errors.push(`${skill}: description lacks the spec/design-ui handshake sentence`);
     } else {
       handshakes.set(skill, match[0]);
     }
   }
-  if (handshakes.size === 2 && handshakes.get('define-scope') !== handshakes.get('design-ui')) {
-    errors.push('define-scope and design-ui handshake sentences are not byte-identical');
+  if (handshakes.size === 2 && handshakes.get('spec') !== handshakes.get('design-ui')) {
+    errors.push('spec and design-ui handshake sentences are not byte-identical');
   }
 
   report.assert(

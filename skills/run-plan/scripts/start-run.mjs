@@ -45,7 +45,7 @@ function markdownFiles(directory) {
 }
 
 // The frame's fields of one plan file, or null when it does not parse as
-// define-scope writes a plan.
+// spec writes a plan.
 function planFrame(file) {
   try {
     return frameOf(parsePlan(fs.readFileSync(file, 'utf8')).frame);

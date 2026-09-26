@@ -1,6 +1,6 @@
 ---
 name: write-docs
-description: "Use when writing or editing prose read later: a README or doc page, a PR, issue or commit body, a changelog line, a brief or spec. Not for chat replies (the output style), code comments (the code standard), or fields ship, file-issues and define-scope set."
+description: "Use when writing or editing prose read later: a README or doc page, a PR, issue or commit body, a changelog line, a brief or spec. Not for chat replies (the output style), code comments (the code standard), or fields ship, file-issues and spec set."
 argument-hint: <the document or text to write or edit>
 ---
 
@@ -12,7 +12,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 
 - Writing or editing a README, doc page, ADR, pull request body, issue body, commit body, changelog line, brief or spec.
 - Reviewing such a text because it reads as machine-written.
-- Not for the shape of a pull request, issue, commit subject or brief: ship, file-issues and define-scope set the fields, and this skill words the text inside them.
+- Not for the shape of a pull request, issue, commit subject or brief: ship, file-issues and spec set the fields, and this skill words the text inside them.
 - Not for chat replies: the output style owns them.
 - Not for code comments: the code standard owns them.
 - Not for product interface strings: the product's copy rules own them.
@@ -34,7 +34,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 
 ## Judgment
 
-- The fields ship, file-issues or define-scope set outrank this skill's layout; only the wording inside them follows it.
+- The fields ship, file-issues or spec set outrank this skill's layout; only the wording inside them follows it.
 - The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
 - A reader's ease outranks a rule: if following one hurts a sentence, mend it differently or keep it as written.
 - Clarity outranks brevity: an article or verb whose loss makes the reader decode stays.
