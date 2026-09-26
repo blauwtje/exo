@@ -4,10 +4,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import fs_promises from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, run } from './harness.mjs';
+import { decide } from '../lib/workspace.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../lib/workspace.mjs', import.meta.url));
 
@@ -166,4 +168,41 @@ test('--pick branch without --name exits 1', async () => {
   const result = await runWorkspace(['--repository', root, '--pick', 'branch']);
   assert.equal(result.code, 1);
   assert.match(result.stderr, /needs --name/);
+});
+
+test('stop, not a crash: workspace setting "branch" with no --name', async () => {
+  const root = await gitRepository({ 'README.md': 'root\n' });
+  await setWorkspaceSetting(root, 'branch');
+  const result = await runWorkspace(['--repository', root]);
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout.trim(), 'stop --pick branch needs --name <branch-name>');
+});
+
+test('stop, not a crash: workspace setting "worktree" with no --name', async () => {
+  const root = await gitRepository({ 'README.md': 'root\n' });
+  await setWorkspaceSetting(root, 'worktree');
+  const result = await runWorkspace(['--repository', root]);
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout.trim(), 'stop --pick worktree needs --name <branch-name>');
+});
+
+test('ask: the current-branch line names the resolved default branch, not the placeholder', async () => {
+  const root = await gitRepository({ 'README.md': 'root\n' });
+  const result = await runWorkspace(['--repository', root]);
+  const lines = result.stdout.trimEnd().split('\n');
+  assert.equal(lines[3], '3. **Current branch**: commit onto main');
+});
+
+test('ask, not commit-here HEAD: a detached checkout is treated as no branch', async () => {
+  const root = await gitRepository({ 'README.md': 'root\n' });
+  fakeOriginHead(root);
+  git(root, 'checkout', '--detach', 'main');
+  const result = await runWorkspace(['--repository', root]);
+  assert.equal(result.stdout.trim().split('\n')[0], 'ask');
+});
+
+test('stop, not a crash: --plan-repository names a folder that does not exist yet', () => {
+  const missing = path.join(os.tmpdir(), `workspace-missing-${process.pid}-${Date.now()}`);
+  const result = decide({ dir: missing, planRepository: true });
+  assert.deepEqual(result, { kind: 'stop', reason: `${missing} does not exist` });
 });
