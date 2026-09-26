@@ -87,7 +87,9 @@ function claudeArguments({ model, effort, promptText, armFlags }) {
     '--effort', effort,
     '--output-format', 'stream-json',
     '--verbose',
-    '--permission-mode', 'bypassPermissions'
+    '--permission-mode', 'bypassPermissions',
+    // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case.
+    '--strict-mcp-config'
   ];
   args.push(...armFlags);
   return args;

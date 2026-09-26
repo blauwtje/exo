@@ -185,6 +185,15 @@ test('the without arm disables the installed plugin through --settings and the w
   assert.ok(!withCall.includes('--settings'), withCall);
 });
 
+test('every call gets --strict-mcp-config so a user\'s MCP servers cannot steer a run', async () => {
+  const clone = await pluginClone();
+  const out = await fixture();
+  const outcome = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out, '--runs', '1']);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.calls.length, 2, outcome.calls.join('\n'));
+  for (const call of outcome.calls) assert.ok(call.includes('--strict-mcp-config'), call);
+});
+
 test('the first Edit or Write tool call is named in each arm line', async () => {
   const clone = await pluginClone();
   const out = await fixture();

@@ -35,7 +35,8 @@ const armFlags = arm === 'with' ? ['--plugin-dir', PLUGIN]
   : ['--settings', JSON.stringify({ enabledPlugins: { 'exo@blauwtje': false } })];
 const log = (m) => { const l = `[${new Date().toISOString().slice(11,19)}] ${id}: ${m}`; console.log(l); fs.appendFileSync(path.join(dir, 'progress.log'), l + '\n'); };
 function turn(prompt, sessionId, n) {
-  const args = ['-p', prompt, '--model', model, '--effort', 'high', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', ...armFlags];
+  // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case.
+  const args = ['-p', prompt, '--model', model, '--effort', 'high', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', '--strict-mcp-config', ...armFlags];
   if (sessionId) args.push('--resume', sessionId);
   return new Promise((resolve) => {
     const child = spawn('claude', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
