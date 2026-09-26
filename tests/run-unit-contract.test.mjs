@@ -51,19 +51,24 @@ test('each former OPEN case in the unit becomes a BLOCKED line', () => {
 });
 
 test('run-plan forms no block around an unlanded dependency outside it', () => {
-  assert.ok(loopStep(4, SKILL).includes('ending before the first task with a `Design:` line or one with an unlanded `Depends on:` outside it'));
+  assert.ok(loopStep(4, SKILL).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
 });
 
 test('run-plan dispatches the unit in the foreground and waits on its return, never a poll', () => {
   const dispatchStep = loopStep(5, SKILL);
-  assert.ok(dispatchStep.includes('Each block goes to the `exo:run-unit` agent with `run_in_background: false`'));
-  assert.ok(dispatchStep.includes('Wait on its return, one `LANDED` or `BLOCKED` line per task or one `BUDGET:` line, never a commit poll or Monitor'));
+  assert.ok(dispatchStep.includes('Send each block to the `exo:run-unit` agent with `run_in_background: false`'));
+  assert.ok(dispatchStep.includes('Wait on its return, never a poll or Monitor.'));
+  const routeStep = loopStep(6, SKILL);
+  for (const line of ['`LANDED`', '`BUDGET:`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
   assert.doesNotMatch(SKILL, /`OPEN`/);
 });
 
 test('run-plan reads a BUDGET return as unfinished and asks the branch what landed', () => {
   const routeStep = loopStep(6, SKILL);
-  assert.ok(routeStep.includes('A `BUDGET:` line means unfinished, whatever its `done` list says: step 3 asks the branch what landed and a fresh unit takes the unlanded rest'));
+  assert.ok(routeStep.includes('`BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.'));
+  const askStep = loopStep(3, SKILL);
+  assert.ok(askStep.includes('**Ask the branch what landed.**'));
+  assert.ok(askStep.includes('Only a `Plan-task:` commit decides what landed, never memory'));
   assert.ok(routeStep.includes('`BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait`'));
 });
 

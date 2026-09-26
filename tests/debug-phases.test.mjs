@@ -58,14 +58,14 @@ test('fixer prompt names sonnet, Steps 4-6 and the handoff path', () => {
   assert.ok(source.includes('Handoff file:'), 'names the handoff path');
 });
 
-test("SKILL.md's Handoff section states the 25-line cap and every D1 field", () => {
-  const source = fs.readFileSync(SKILL, 'utf8');
-  const handoffSection = source.match(/## Handoff\n([\s\S]*?)\n## References/);
-  assert.ok(handoffSection, 'SKILL.md has a ## Handoff section');
-  const body = handoffSection[1];
-  assert.ok(body.includes('25 lines'), 'states the 25-line cap');
+test('references/handoff.md states the 25-line cap and every D1 field, and SKILL.md routes to it', () => {
+  const references = fs.readFileSync(SKILL, 'utf8').match(/## References\n([\s\S]*?)(\n## |\nReport:)/);
+  assert.ok(references, 'SKILL.md has a ## References table');
+  assert.ok(references[1].includes('`references/handoff.md`'), 'the References table names references/handoff.md');
+  const body = fs.readFileSync(new URL('../skills/find-cause/references/handoff.md', import.meta.url), 'utf8');
+  assert.ok(body.includes('at most 25 lines'), 'states the 25-line cap');
   for (const field of HANDOFF_FIELDS) {
-    assert.ok(body.includes(`\`${field}\``), `Handoff section names ${field}`);
+    assert.ok(body.includes(`\`${field}\``), `handoff.md names ${field}`);
   }
 });
 

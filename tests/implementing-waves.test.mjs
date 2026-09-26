@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
+import { nextWave } from '../lib/plan-tasks.mjs';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('run-plan/references/workspace.md');
@@ -50,11 +51,16 @@ function loopStep(number, text = SKILL) {
   return step[0];
 }
 
-test('step 3 forms a wave only from the plan, four tasks at most', () => {
-  const landedStep = loopStep(3);
-  assert.ok(landedStep.includes('`Worktree setup:`'));
-  assert.ok(landedStep.includes('four at most'));
-  assert.ok(landedStep.includes('whose `Files:` paths share none with a task already in it'));
+test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four tasks at most, disjoint `Files:`', () => {
+  const askStep = loopStep(1, UNIT_AGENT);
+  assert.ok(askStep.includes('Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` line and its `Next:` or `Wave:` line'));
+  assert.ok(loopStep(2, UNIT_AGENT).includes("**Take the task from the script's output**, never from the plan file"));
+  const task = (number, path) => ({ number, dependsOn: [], design: false, files: path ? [{ path }] : [] });
+  const disjoint = [1, 2, 3, 4, 5].map((number) => task(number, `src/file-${number}.mjs`));
+  assert.deepEqual(nextWave(disjoint, [], null).map((t) => t.number), [1], 'no `Worktree setup:`, no wave');
+  assert.deepEqual(nextWave(disjoint, [], 'npm ci').map((t) => t.number), [1, 2, 3, 4], 'four at most');
+  const shared = [task(1, 'src/a.mjs'), task(2, 'src/a.mjs'), task(3, 'src/b.mjs'), task(4, 'src/c.mjs')];
+  assert.deepEqual(nextWave(shared, [], 'npm ci').map((t) => t.number), [1, 3, 4], 'a task sharing a `Files:` path stays out');
 });
 
 test('a wave builds in worktrees and lands in plan order or not at all', () => {
@@ -65,8 +71,8 @@ test('a wave builds in worktrees and lands in plan order or not at all', () => {
   assert.ok(commitStep.includes('only when every report in it is green'));
   assert.ok(commitStep.includes('`git cherry-pick <sha>` brings the commits onto the branch in plan order'));
   assert.ok(commitStep.includes('no task of it commits'));
-  const authorization = SKILL.match(/^Invoking `\/exo:run-plan` on a plan authorizes .+$/m);
-  assert.ok(authorization[0].includes("a wave's temporary worktrees beside it"));
+  const authorization = loopStep(1).match(/Invoking run-plan authorizes [^.]+\./);
+  assert.ok(authorization[0].includes("a wave's worktrees beside it"));
 });
 
 test('the plan basis is where a plan allows waves', () => {

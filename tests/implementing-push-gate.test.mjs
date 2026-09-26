@@ -22,7 +22,9 @@ function loopStep(number) {
 
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes('settle where the run commits as `references/workspace.md` says, before any dispatch'));
+  assert.ok(branchStep.includes('Settle where the run commits as `references/workspace.md` says.'));
+  assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before the first dispatch. |'), 'the workspace is read before the first dispatch');
+  assert.ok(SKILL.indexOf('Settle where the run commits') < SKILL.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
@@ -49,16 +51,15 @@ test('a green task commits and pushes nothing', () => {
 
 test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7);
-  assert.ok(tailStep.includes('Then end on `ship`'));
+  assert.ok(tailStep.includes('then end on `ship`'));
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
-  const question = SHIPPING.indexOf('## The question');
-  const firstShipScript = SHIPPING.indexOf('scripts/ship.mjs');
-  assert.ok(question !== -1 && firstShipScript > question, 'the script that pushes is named only after the question');
-  const merge = SHIPPING.indexOf('1. **PR + merge (Recommended)**:');
-  const openPr = SHIPPING.indexOf('2. **Open PR**:');
-  const push = SHIPPING.indexOf('3. **Push**:');
-  const keep = SHIPPING.indexOf('4. **Keep local**:');
-  assert.ok(merge !== -1 && merge < openPr && openPr < push && push < keep, 'the four routes in order');
+  const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit.');
+  const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
+  const firstMerge = SHIPPING.indexOf('scripts/ship.mjs" --merge ');
+  assert.ok(question !== -1 && firstRoute > question && firstMerge > question, 'the commands that push or merge are named only after the question');
+  // The four routes and their order come from `ship.mjs --routes`, run against
+  // real repositories in tests/ship-routes.test.mjs ('--routes: a feature
+  // branch with gh auth ok offers the full menu').
 });
 
 test('ship merges only after the bounded wait and the API gate, and deletes no branch', () => {
@@ -72,10 +73,11 @@ test('ship merges only after the bounded wait and the API gate, and deletes no b
 });
 
 test('the authorization line grants no push before the finish answer and no merge', () => {
-  const authorization = SKILL.match(/^Invoking `\/exo:run-plan` on a plan authorizes .+$/m);
-  assert.ok(authorization, 'the authorization line exists');
-  assert.ok(authorization[0].includes('a push or a pull request only after your answer to the finish question'));
+  const authorization = loopStep(1).match(/Invoking run-plan authorizes [^.]+\./);
+  assert.ok(authorization, 'the authorization sentence exists');
+  assert.ok(authorization[0].includes("a push or pull request waits for the user's answer to `ship`"));
   assert.ok(!authorization[0].includes('merge'), 'run-plan grants no merge');
+  assert.doesNotMatch(SKILL, /git push|gh pr (create|merge)|git merge |--route |--merge /, 'run-plan runs no push, pull request or merge of its own');
 });
 
 test('build-change and find-cause settle the workspace and end on ship', () => {

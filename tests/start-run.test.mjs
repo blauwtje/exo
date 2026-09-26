@@ -109,3 +109,19 @@ test('exits 1 with one line when several plans still match after the branch pref
   assert.equal(result.stdout, '');
   assert.match(result.stderr, /^start-run: 2 plans name Repository: /);
 });
+
+test('a --plan flag skips the search, even where several plans match, and writes its absolute path to the marker', async () => {
+  const root = await gitRepository({
+    'docs/plans/a.md': 'placeholder',
+    'docs/plans/b.md': 'placeholder'
+  });
+  await fs.writeFile(path.join(root, 'docs/plans/a.md'), plan(root, 'main'));
+  await fs.writeFile(path.join(root, 'docs/plans/b.md'), plan(root, 'main'));
+  const home = await noHomePlans();
+
+  const result = await run(SCRIPT, ['--root', root, '--plan', 'docs/plans/b.md'], { cwd: root, env: { HOME: home } });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout.trim(), path.join(root, 'docs/plans/b.md'));
+  const [planLine] = await markerLines(root);
+  assert.equal(planLine, path.join(root, 'docs/plans/b.md'));
+});
