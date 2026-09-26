@@ -5,15 +5,15 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { parsePlan } from '#plan-tasks';
 import { planCheckReport } from '../skills/define-scope/scripts/plan-check.mjs';
-import { briefFixture, compactPlanFixture, compactTask, planFixture, taskSection } from './harness.mjs';
+import { briefFixture, compactPlanFixture, compactTask, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 const GOOD_CODE = 'export function greet() {\n  return "hello";\n}';
 
-function goodTask({ number = 1, title = 'Greet', files = ['- Modify: `src/app.js` (`greet`)'], code = GOOD_CODE } = {}) {
+function goodTask({ number = 1, title = 'Greet', dependsOn = 'none', files = ['- Modify: `src/app.js` (`greet`)'], code = GOOD_CODE } = {}) {
   return [
     `### Task ${number}: ${title}`,
     '',
-    'Depends on: none',
+    `Depends on: ${dependsOn}`,
     '',
     'Files:',
     ...files,
@@ -139,6 +139,41 @@ test('plan-check passes a brief with a Manual checks list, and parsePlan reads n
   assert.deepEqual(plan.tasks.map((task) => task.number), [1, 2]);
   assert.ok(plan.tasks.every((task) => !task.section.includes('Click Export') && !task.section.includes('payment dashboard')));
   assert.equal(plan.frame['Manual checks'], manualChecks.join('\n'));
+});
+
+test('plan-check prints ok when a Modify: path exists in the repository named by root', async () => {
+  const root = await gitRepository({ 'src/app.js': GOOD_CODE });
+  const report = planCheckReport(planFixture({ tasks: [goodTask()] }), { root });
+  assert.equal(report.ok, true);
+});
+
+test('plan-check reports a Modify: path missing from the repository named by root', async () => {
+  const root = await gitRepository({ 'README.md': 'placeholder\n' });
+  const report = planCheckReport(planFixture({ tasks: [goodTask()] }), { root });
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) =>
+    line.includes('Task 1') && line.includes('src/app.js') && line.includes('does not exist')));
+});
+
+test('plan-check skips the Modify: check with no root given', () => {
+  const report = planCheckReport(planFixture({ tasks: [goodTask()] }));
+  assert.equal(report.ok, true);
+});
+
+test('plan-check reports two tasks sharing a Files: path with no Depends on chain', () => {
+  const first = goodTask({ number: 1, title: 'Add', files: ['- Modify: `src/shared.js`'] });
+  const second = goodTask({ number: 2, title: 'Change', files: ['- Modify: `src/shared.js`'] });
+  const report = planCheckReport(planFixture({ tasks: [first, second] }));
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) =>
+    line.includes('Task 1') && line.includes('Task 2') && line.includes('src/shared.js') && line.includes('Depends on chain')));
+});
+
+test('plan-check prints ok for two tasks sharing a Files: path through a Depends on chain', () => {
+  const first = goodTask({ number: 1, title: 'Add', files: ['- Modify: `src/shared.js`'] });
+  const second = goodTask({ number: 2, title: 'Change', dependsOn: '1', files: ['- Modify: `src/shared.js`'] });
+  const report = planCheckReport(planFixture({ tasks: [first, second] }));
+  assert.equal(report.ok, true);
 });
 
 test('plan-check fails a compact plan whose Plan basis lacks a Repository: or a Branch: line', () => {

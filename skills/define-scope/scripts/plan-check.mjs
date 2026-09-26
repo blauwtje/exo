@@ -1,11 +1,14 @@
 // Checks a plan against task-list.md's per-task rules without carrying its
 // code into the caller's context: a Commit: block with the task's Plan-task:
 // trailer, a git add line matching Files:, Run: and Expected: on every step
-// with code, no placeholder, and a size within the split threshold. Planning
-// runs this instead of reading the finished plan back.
+// with code, no placeholder, a size within the split threshold, every
+// Modify: path present in the target repository, and no shared Files: path
+// between two tasks with no Depends on chain between them. Planning runs
+// this instead of reading the finished plan back.
 
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { codeBlocks, parsePlan, PlanError, taskSize } from '#plan-tasks';
@@ -89,6 +92,61 @@ function checkSize(task) {
   return [];
 }
 
+// task-list.md rule 1 asks for a verified path; a task's own Modify: entry
+// names one the executor edits rather than creates, so plan-check resolves
+// it against the target repository the way driftOf() does and fails the
+// plan when it is missing. With no root given (a caller that never resolved
+// the plan to a checkout) the check is skipped rather than guessed.
+function checkFilesExist(task, root) {
+  if (root === undefined || root === null) return [];
+  const problems = [];
+  for (const file of task.files.filter((entry) => entry.kind === 'Modify')) {
+    if (!fs.existsSync(path.join(root, file.path))) {
+      problems.push(`Task ${task.number}: 'Modify: \`${file.path}\`' does not exist in the target repository`);
+    }
+  }
+  return problems;
+}
+
+// A depth-first walk of the Depends on edges already validated by
+// parsePlan/checkOrder (no cycle, every number known), so it always halts.
+function reachesThrough(byNumber, from, to) {
+  const stack = [...byNumber.get(from).dependsOn];
+  const seen = new Set();
+  while (stack.length > 0) {
+    const number = stack.pop();
+    if (number === to) return true;
+    if (seen.has(number)) continue;
+    seen.add(number);
+    stack.push(...byNumber.get(number).dependsOn);
+  }
+  return false;
+}
+
+// task-list.md rule 4 asks the author to split a shared write target unless
+// a real invariant earns a Depends on edge that serializes the two tasks;
+// plan-check fails a plan where two tasks list the same Files: path with no
+// such chain between them, in either direction, and names both tasks and
+// the path.
+function checkSharedFiles(tasks) {
+  const byNumber = new Map(tasks.map((task) => [task.number, task]));
+  const problems = [];
+  for (let i = 0; i < tasks.length; i++) {
+    for (let j = i + 1; j < tasks.length; j++) {
+      const first = tasks[i];
+      const second = tasks[j];
+      const secondPaths = new Set(second.files.map((file) => file.path));
+      const shared = new Set(first.files.map((file) => file.path).filter((filePath) => secondPaths.has(filePath)));
+      if (shared.size === 0) continue;
+      if (reachesThrough(byNumber, first.number, second.number) || reachesThrough(byNumber, second.number, first.number)) continue;
+      for (const filePath of shared) {
+        problems.push(`Task ${first.number} and Task ${second.number} both list Files: \`${filePath}\` with no Depends on chain between them`);
+      }
+    }
+  }
+  return problems;
+}
+
 // run-plan's SKILL.md step 1 matches a plan to a checkout by the '## Plan
 // basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
 // frameOf); a compact plan with neither would parse but never be matched to
@@ -123,24 +181,32 @@ function checkCompactFields(task) {
   return problems;
 }
 
-/** Reads `planText` and returns `{ ok, lines }`: the problems found, or the one ok line. */
-export function planCheckReport(planText) {
+/**
+ * Reads `planText` and returns `{ ok, lines }`: the problems found, or the
+ * one ok line. `root` names the repository the plan targets, so a task's
+ * Modify: entry can be checked against it; omit it to skip that one check.
+ */
+export function planCheckReport(planText, { root } = {}) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
-  const problems = compactPlan
-    ? [
-        ...checkFrame(plan.frame),
-        ...checkPlanBasis(plan.frame),
-        ...plan.tasks.flatMap((task) => checkCompactFields(task))
-      ]
-    : plan.tasks.flatMap((task) => [
-        ...checkCommit(task),
-        ...checkGitAdd(task),
-        ...checkSteps(task),
-        ...checkPlaceholders(task),
-        ...checkSize(task)
-      ]);
+  const problems = [
+    ...(compactPlan
+      ? [
+          ...checkFrame(plan.frame),
+          ...checkPlanBasis(plan.frame),
+          ...plan.tasks.flatMap((task) => checkCompactFields(task))
+        ]
+      : plan.tasks.flatMap((task) => [
+          ...checkCommit(task),
+          ...checkGitAdd(task),
+          ...checkSteps(task),
+          ...checkPlaceholders(task),
+          ...checkSize(task),
+          ...checkFilesExist(task, root)
+        ])),
+    ...checkSharedFiles(plan.tasks)
+  ];
   if (problems.length > 0) return { ok: false, lines: problems };
   const largest = plan.tasks.reduce((best, task) => {
     const size = taskSize(task);
@@ -150,11 +216,11 @@ export function planCheckReport(planText) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  const report = planCheckReport(planText);
+  const report = planCheckReport(planText, { root: flags.root ?? process.cwd() });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;
 }

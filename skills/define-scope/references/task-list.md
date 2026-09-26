@@ -47,9 +47,9 @@ cheap model runs it in place of the plan's `## Success criterion`.
 
 ## Rules
 
-1. **Verified names only.** Every path in `Files:` was read in this
-   repository during planning; an invented one still reads well and fails at
-   the executor's first run.
+1. **Verified names only.** List a path only after reading it in this
+   repository during planning; `plan-check` catches a missing `Modify:` path,
+   not a wrong one that still exists.
 2. **One field line, one task.** A task with a second field line, a `Run:`,
    an `Expected:` line or a shown code block is not compact, and `plan-check`
    checks it as a long-format task instead, which then needs a `Commit:`
@@ -57,10 +57,9 @@ cheap model runs it in place of the plan's `## Success criterion`.
 3. **Small tasks.** A task lands in one delegate context: one heading names
    one concern, split further only when `Files:` would otherwise span both a
    shared write target (rule 4) and an independent one.
-4. **Shared write target.** Two tasks with `Depends on: none` between them
-   that would both touch one file, key or branch get that target split before
-   `Files:` lists them as independent; only a real shared invariant earns a
-   `Depends on:` edge that serializes them instead.
+4. **Shared write target.** Split a file, key or branch two tasks would both
+   touch, unless a real shared invariant earns the `Depends on:` edge that
+   serializes them; `plan-check` catches an unsplit share with no such chain.
 
 ## Judgment
 
