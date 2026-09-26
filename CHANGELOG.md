@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `design-ui`'s `check-ui.mjs` reloads the page for every viewport, so focus left by the previous viewport's Tab pass no longer reports a false `focus-indicator-missing`.
+- `design-ui`'s `check-ui.mjs` blends a translucent border or text color over its background before measuring contrast, and skips a fully transparent border, so `border-transparent` no longer reads as black.
+
 ## 0.54.1 - 2026-09-26
 
 ### Fixed
