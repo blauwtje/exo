@@ -83,6 +83,25 @@ test('--effort prints low for three new untracked files', async () => {
   assert.equal(result.stdout, 'low\n');
 });
 
+test('--effort prints low for a lockfile-only change, not skip', async () => {
+  const root = await gitRepository({
+    'package.json': '{\n  "dependencies": {\n    "left-pad": "1.0.0"\n  }\n}\n',
+    'package-lock.json': '{\n  "lockfileVersion": 3,\n  "packages": {}\n}\n'
+  });
+  await fs.writeFile(path.join(root, 'package-lock.json'), '{\n  "lockfileVersion": 3,\n  "packages": {\n    "left-pad": {}\n  }\n}\n');
+  const result = await run(SCRIPT, ['--effort'], { cwd: root });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, 'low\n');
+});
+
+test('--effort prints low for a version-only bump with no dependency added', async () => {
+  const root = await gitRepository({ 'package.json': '{\n  "dependencies": {\n    "left-pad": "1.0.0"\n  }\n}\n' });
+  await fs.writeFile(path.join(root, 'package.json'), '{\n  "dependencies": {\n    "left-pad": "1.0.1"\n  }\n}\n');
+  const result = await run(SCRIPT, ['--effort'], { cwd: root });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, 'low\n');
+});
+
 test('--effort with --base is rejected', async () => {
   const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
   const result = await run(SCRIPT, ['--effort', '--base', 'x'], { cwd: root });

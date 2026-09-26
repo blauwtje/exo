@@ -167,6 +167,18 @@ test('--verdict-current: a stale patch-id, or a further commit on the same branc
   assert.equal(outcome.stdout, 'stale\n');
 });
 
+test('--verdict-current: a matching patch-id on a checkout with no local default branch, only origin/main', async () => {
+  const { workDir } = await shipRepository();
+  git(workDir, 'checkout', '-q', '-b', 'feat/x');
+  await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
+  const diff = execFileSync('git', ['diff', 'origin/main...HEAD'], { cwd: workDir, encoding: 'utf8' });
+  const patchId = execFileSync('git', ['patch-id', '--stable'], { cwd: workDir, encoding: 'utf8', input: diff }).trim().split(/\s+/)[0];
+  git(workDir, 'branch', '-D', 'main');
+  const outcome = await run(SHIP, ['--verdict-current', patchId], { cwd: workDir });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, 'current\n');
+});
+
 test('--verdict-current: a usage error when the patch-id is missing', async () => {
   const { workDir } = await shipRepository();
   const outcome = await run(SHIP, ['--verdict-current'], { cwd: workDir });

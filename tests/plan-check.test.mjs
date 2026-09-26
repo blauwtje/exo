@@ -155,24 +155,42 @@ test('plan-check reports a Modify: path missing from the repository named by roo
     line.includes('Task 1') && line.includes('src/app.js') && line.includes('does not exist')));
 });
 
-test('plan-check skips the Modify: check with no root given', () => {
-  const report = planCheckReport(planFixture({ tasks: [goodTask()] }));
+test('plan-check skips the Modify: check with no root given and no Repository: line', () => {
+  const plan = planFixture({ tasks: [goodTask()] }).replace('Repository: /tmp/fixture\n', '');
+  const report = planCheckReport(plan);
   assert.equal(report.ok, true);
 });
 
-test('plan-check reports two tasks sharing a Files: path with no Depends on chain', () => {
+test('plan-check with no --root falls back to the plan\'s own Repository: line', async () => {
+  const root = await gitRepository({ 'src/app.js': GOOD_CODE });
+  const plan = planFixture({ tasks: [goodTask()] }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, true);
+});
+
+test('plan-check reports two tasks sharing a Files: path with no Depends on chain', async () => {
+  const root = await gitRepository({ 'src/shared.js': GOOD_CODE });
   const first = goodTask({ number: 1, title: 'Add', files: ['- Modify: `src/shared.js`'] });
   const second = goodTask({ number: 2, title: 'Change', files: ['- Modify: `src/shared.js`'] });
-  const report = planCheckReport(planFixture({ tasks: [first, second] }));
+  const report = planCheckReport(planFixture({ tasks: [first, second] }), { root });
   assert.equal(report.ok, false);
   assert.ok(report.lines.some((line) =>
     line.includes('Task 1') && line.includes('Task 2') && line.includes('src/shared.js') && line.includes('Depends on chain')));
 });
 
-test('plan-check prints ok for two tasks sharing a Files: path through a Depends on chain', () => {
+test('plan-check prints ok for two tasks sharing a Files: path through a Depends on chain', async () => {
+  const root = await gitRepository({ 'src/shared.js': GOOD_CODE });
   const first = goodTask({ number: 1, title: 'Add', files: ['- Modify: `src/shared.js`'] });
   const second = goodTask({ number: 2, title: 'Change', dependsOn: '1', files: ['- Modify: `src/shared.js`'] });
-  const report = planCheckReport(planFixture({ tasks: [first, second] }));
+  const report = planCheckReport(planFixture({ tasks: [first, second] }), { root });
+  assert.equal(report.ok, true);
+});
+
+test('plan-check does not flag a Modify: path an earlier task in its Depends on chain lists as Create:', async () => {
+  const root = await gitRepository({ 'README.md': 'placeholder\n' });
+  const first = goodTask({ number: 1, title: 'Add', files: ['- Create: `src/a.ts`'] });
+  const second = goodTask({ number: 2, title: 'Change', dependsOn: '1', files: ['- Modify: `src/a.ts`'] });
+  const report = planCheckReport(planFixture({ tasks: [first, second] }), { root });
   assert.equal(report.ok, true);
 });
 

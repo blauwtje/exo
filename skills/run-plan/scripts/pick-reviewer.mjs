@@ -5,17 +5,29 @@
 
 import { execFileSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
+import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 // A relative import, not the `#name` alias every other `lib/` import uses
 // here: this task's scope excludes `package.json`, which holds that map.
-import { measureSizeFacts, parseNumstat } from '#size-facts';
+import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
 export const LINE_LIMIT = 200;
 const REVIEWERS = ['exo:review-branch', 'exo:review-branch-deep'];
 const EFFORT_SKIP_FILE_LIMIT = 2;
 export { parseNumstat };
+
+// Any touch to one of these -- a lockfile bump included -- moves the effort
+// pick off `skip`, because it can shift what a repository resolves even with
+// no dependency *added*; `lib/size-facts.mjs` reserves "dependency-added" for
+// the narrower question its own callers ask.
+export const MANIFESTS = [
+  'package.json', 'package-lock.json', 'npm-shrinkwrap.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb',
+  'requirements.txt', 'pyproject.toml', 'poetry.lock', 'uv.lock', 'Pipfile', 'Pipfile.lock',
+  'Cargo.toml', 'Cargo.lock', 'go.mod', 'go.sum', 'Gemfile', 'Gemfile.lock',
+  'composer.json', 'composer.lock', 'pom.xml', 'build.gradle', 'build.gradle.kts'
+];
 
 export function parseShortstat(output) {
   const files = Number(output.match(/(\d+) files? changed/)?.[1] ?? 0);
@@ -34,10 +46,16 @@ export function pickEffort({ files, changedLines, manifestChanged }) {
   return files <= FILE_LIMIT && changedLines <= LINE_LIMIT ? 'low' : 'medium';
 }
 
-/** `lib/size-facts.mjs` holds the one count of files, lines and a dependency addition. */
+/**
+ * `lib/size-facts.mjs` holds the one count of files and lines; this pick
+ * still asks its own broader manifest question, because a lockfile bump or a
+ * version-only change moves the review effort even without adding a
+ * dependency by that module's narrower meaning.
+ */
 function measureEffort() {
-  const { files, changedLines, dependencyAdded } = measureSizeFacts();
-  return pickEffort({ files, changedLines, manifestChanged: dependencyAdded });
+  const { files, changedLines } = measureSizeFacts();
+  const manifestChanged = changedPaths().some((relativePath) => MANIFESTS.includes(basename(relativePath)));
+  return pickEffort({ files, changedLines, manifestChanged });
 }
 
 export function resolveReviewer({ reviewer, shortstatOutput }) {

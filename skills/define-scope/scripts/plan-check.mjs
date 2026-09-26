@@ -11,7 +11,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { codeBlocks, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, frameOf, parsePlan, PlanError, taskSize } from '#plan-tasks';
 
 const STEP_HEADING = /^Step \d+: .*$/;
 // A run of dots on their own, not a spread or rest operator: `...args` and
@@ -95,12 +95,21 @@ function checkSize(task) {
 // task-list.md rule 1 asks for a verified path; a task's own Modify: entry
 // names one the executor edits rather than creates, so plan-check resolves
 // it against the target repository the way driftOf() does and fails the
-// plan when it is missing. With no root given (a caller that never resolved
-// the plan to a checkout) the check is skipped rather than guessed.
-function checkFilesExist(task, root) {
+// plan when it is missing. With no root given, and no Repository: line in
+// the plan to fall back on, the check is skipped rather than guessed. A path
+// an earlier task in this task's Depends on chain lists as Create: does not
+// exist yet either, so it is not a miss.
+function checkFilesExist(task, root, byNumber) {
   if (root === undefined || root === null) return [];
+  const createdEarlier = new Set(
+    [...dependencyChainOf(byNumber, task.number)]
+      .flatMap((number) => byNumber.get(number).files)
+      .filter((entry) => entry.kind === 'Create')
+      .map((entry) => entry.path)
+  );
   const problems = [];
   for (const file of task.files.filter((entry) => entry.kind === 'Modify')) {
+    if (createdEarlier.has(file.path)) continue;
     if (!fs.existsSync(path.join(root, file.path))) {
       problems.push(`Task ${task.number}: 'Modify: \`${file.path}\`' does not exist in the target repository`);
     }
@@ -110,17 +119,21 @@ function checkFilesExist(task, root) {
 
 // A depth-first walk of the Depends on edges already validated by
 // parsePlan/checkOrder (no cycle, every number known), so it always halts.
-function reachesThrough(byNumber, from, to) {
+// Collects every task number `from` depends on, transitively.
+function dependencyChainOf(byNumber, from) {
   const stack = [...byNumber.get(from).dependsOn];
   const seen = new Set();
   while (stack.length > 0) {
     const number = stack.pop();
-    if (number === to) return true;
     if (seen.has(number)) continue;
     seen.add(number);
     stack.push(...byNumber.get(number).dependsOn);
   }
-  return false;
+  return seen;
+}
+
+function reachesThrough(byNumber, from, to) {
+  return dependencyChainOf(byNumber, from).has(to);
 }
 
 // task-list.md rule 4 asks the author to split a shared write target unless
@@ -190,6 +203,11 @@ export function planCheckReport(planText, { root } = {}) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
+  // No --root from the caller falls back to the plan's own 'Repository:'
+  // line, the checkout the plan names, rather than the process's cwd, which
+  // define-scope's own plan-check step never shares with the plan's target.
+  const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
+  const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
   const problems = [
     ...(compactPlan
       ? [
@@ -203,7 +221,7 @@ export function planCheckReport(planText, { root } = {}) {
           ...checkSteps(task),
           ...checkPlaceholders(task),
           ...checkSize(task),
-          ...checkFilesExist(task, root)
+          ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
     ...checkSharedFiles(plan.tasks)
   ];
@@ -220,7 +238,7 @@ function main(argv) {
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  const report = planCheckReport(planText, { root: flags.root ?? process.cwd() });
+  const report = planCheckReport(planText, { root: flags.root });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;
 }

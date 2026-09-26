@@ -24,8 +24,8 @@
 //
 // --verdict-current <patch-id> compares it against the current branch's own
 // patch-id, computed the way SKILL.md's route step 2 does: `git diff
-// <default>...HEAD | git patch-id --stable`. Prints `current` on a match,
-// else `stale`.
+// origin/<default>...HEAD | git patch-id --stable`. Prints `current` on a
+// match, else `stale`.
 //
 // Steps run in order, stopping at the first that fails: body check, push,
 // create, wait, gate, merge, confirm. Once a pull request is known, a stop
@@ -180,11 +180,19 @@ function printRoutes() {
   for (const line of !onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY) console.log(line);
 }
 
-/** The current branch's patch-id against the default branch, `git diff <base>...HEAD | git patch-id --stable`, matching SKILL.md's verdict rule; null when the default branch cannot be read. */
+/**
+ * The current branch's patch-id against origin's default branch, `git diff
+ * origin/<base>...HEAD | git patch-id --stable`, matching SKILL.md's verdict
+ * rule; null when the default branch cannot be read. Reads `origin/<base>`,
+ * not the local branch of that name: a checkout with no local `main` (a
+ * fresh worktree, a CI clone) has no such ref to diff against, and a local
+ * `main` that lags `origin/main` gives a different merge-base than the one
+ * the recorded verdict's patch-id was computed from.
+ */
 function currentPatchId() {
   const base = defaultBranch();
   if (base === null) return null;
-  const diff = execFileSync('git', ['diff', `${base}...HEAD`], { encoding: 'utf8' });
+  const diff = execFileSync('git', ['diff', `origin/${base}...HEAD`], { encoding: 'utf8' });
   const patchId = execFileSync('git', ['patch-id', '--stable'], { encoding: 'utf8', input: diff });
   return patchId.trim().split(/\s+/)[0] || null;
 }
