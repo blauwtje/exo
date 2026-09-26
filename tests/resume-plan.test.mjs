@@ -50,6 +50,36 @@ test('a stop with the marker and an open task blocks with the next task', async 
   assert.equal(output.reason, `Next: Task 2: Style. Continue exo:run-plan on ${planPath} from step 3.`);
 });
 
+test('wait marks the run waiting, so the next stop does not block, and the stop after that blocks again', async () => {
+  const { root, planPath } = await checkout({ marker: true });
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
+  const waitPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.wait');
+  const waitResult = await run(SCRIPT, ['wait'], { cwd: root });
+  assert.equal(waitResult.code, 0, waitResult.stderr);
+  assert.equal(waitResult.stdout, '');
+  assert.equal(await exists(waitPath), true);
+
+  const waitingStop = await run(SCRIPT, ['stop'], { input: stopInput(root, false) });
+  assert.equal(waitingStop.code, 0, waitingStop.stderr);
+  assert.equal(waitingStop.stdout, '');
+  assert.equal(await exists(waitPath), false);
+
+  const nextStop = await run(SCRIPT, ['stop'], { input: stopInput(root, false) });
+  assert.equal(nextStop.code, 0, nextStop.stderr);
+  const output = JSON.parse(nextStop.stdout);
+  assert.equal(output.decision, 'block');
+  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:run-plan on ${planPath} from step 3.`);
+});
+
+test('wait without a live marker writes nothing and leaves no mark', async () => {
+  const { root } = await checkout({ marker: false });
+  const waitPath = path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'run-plan.wait');
+  const result = await run(SCRIPT, ['wait'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, '');
+  assert.equal(await exists(waitPath), false);
+});
+
 test('a stop that already follows a block does not block again', async () => {
   const { root } = await checkout({ marker: true });
   const result = await run(SCRIPT, ['stop'], { input: stopInput(root, true) });
