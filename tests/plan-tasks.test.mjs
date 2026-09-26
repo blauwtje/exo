@@ -101,6 +101,17 @@ test('a ready task sharing a path with an earlier wave member is skipped while a
   assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1, 3, 4]);
 });
 
+test('a wave stays solo when the current task itself names no files', () => {
+  const tasks = [
+    taskSection({ number: 1, title: 'T1', files: [], subject: 'feat: t1' }),
+    taskSection({ number: 2, title: 'T2', files: ['- Create: `f2.js`'], subject: 'feat: t2' }),
+    taskSection({ number: 3, title: 'T3', files: ['- Create: `f3.js`'], subject: 'feat: t3' }),
+    taskSection({ number: 4, title: 'T4', files: ['- Create: `f4.js`'], subject: 'feat: t4' })
+  ];
+  const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks }));
+  assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1]);
+});
+
 test('a task with no file paths stays out of the wave', () => {
   const tasks = [
     taskSection({ number: 1, title: 'T1', files: ['- Create: `f1.js`'], subject: 'feat: t1' }),
