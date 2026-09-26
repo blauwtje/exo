@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.53.0 - 2026-09-26
+
 ### Added
 
 - `start` routes a spec or big wish to build, and `/exo:start <spec-path>`, to `define-scope`, which writes the brief with its task list and goes straight on to `run-plan`.
