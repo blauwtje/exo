@@ -27,6 +27,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `finish-run.mjs` resolves the default branch when `origin/HEAD` is unset, trying `init.defaultBranch`, `main` and `master` on origin and then locally.
 - The header comment of `hooks/session-start.sh` lists the order in which the hook injects its text.
 - `tests/size-facts.test.mjs` names its test after the `requirements.txt` body it checks.
+- `check-ui.mjs` reads a computed colour's alpha from the colour string through `parseComputedColor()`, because obscura's canvas squared it and a translucent border or text blended as nearly transparent. It also treats an empty `backgroundImage` or `mixBlendMode` as unset.
 
 ## 0.54.2 - 2026-09-26
 
