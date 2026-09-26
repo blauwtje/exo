@@ -17,7 +17,8 @@ effort: high
 ## Build
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
-- Run its `Proof:` command; its pass is green. Without one, write or pick one test for the brief's `Success criterion:` and run only that test.
+- Run its `Proof:` command; its pass is green.
+- Without one, write or pick one test for the brief's `Success criterion:` and run only that test; its report line comes first under Proof, because run-plan lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
 The ladder: take the first rung that fits; when two rungs hold, the lower number wins.
