@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 // A relative import, not the `#name` alias every other `lib/` import uses
 // here: this task's scope excludes `package.json`, which holds that map.
-import { measureSizeFacts, parseNumstat } from '../../../lib/size-facts.mjs';
+import { measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
 export const LINE_LIMIT = 200;

@@ -15,7 +15,8 @@
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-flags": "./lib/script-flags.mjs",
     "#session-record-path": "./lib/session-record-path.mjs",
-    "#settings-store": "./lib/settings-store.mjs"
+    "#settings-store": "./lib/settings-store.mjs",
+    "#size-facts": "./lib/size-facts.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {
