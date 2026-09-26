@@ -56,7 +56,7 @@ The fix delegate appends a `## Fix` section: `Tests`, the files holding only the
 
 ## Judgment
 
-- Outside a read-only planning turn, `find-cause` outranks `define-scope` and `build-change` until the cause is proven; at proof `find-cause` applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `define-scope` owns the turn and schedules reproduction as its first phase.
+- Outside a read-only planning turn, `find-cause` outranks `define-scope` and `build-change` until the cause is proven; at proof it applies the predicted fix itself through Steps 4 to 7 and offers `build-change` on the next-stage question for edits beyond the predicted change. Inside one, `find-cause` writes the plan per `../define-scope/references/task-list.md`, reproduction test as Task 1.
 - A user-stated cause outranks the search for a cause only after it matches the source and predicts the reproduction.
 - Return to Step 1 instead of patching again when the repair reaches a second owner, an old route and its replacement both run, supporting code grows while behavior stays the same, or the path from input to symptom cannot be followed in one reading: each means the proven cause was not the real one.
 - Patching again on a `failed` status resumes the fix delegate with SendMessage rather than a fresh dispatch, because its transcript already holds the ranges and the attempts it made.
