@@ -7,8 +7,9 @@
 // session that opens on a plan reaches its first dispatch in one command
 // instead of picking the plan and writing the marker by hand.
 //
-//   node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--session <id>]
+//   node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--session <id>] [--plan <path>]
 //
+// `--plan` names the plan the user gave, which skips the search.
 // Prints the picked plan's absolute path, or exits 1 with one line when zero
 // or several plans match.
 
@@ -93,9 +94,9 @@ function writeMarker(root, planPath, checkout, sessionId) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', checkout: 'value', session: 'value' });
+  const flags = parseFlags(argv, { root: 'value', checkout: 'value', session: 'value', plan: 'value' });
   const root = flags.root ?? process.cwd();
-  const planPath = resolvePlan(root);
+  const planPath = flags.plan ? path.resolve(flags.plan) : resolvePlan(root);
   writeMarker(root, planPath, flags.checkout ?? root, flags.session ?? process.env.CLAUDE_SESSION_ID ?? '');
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   process.stdout.write(`${planPath}\n`);

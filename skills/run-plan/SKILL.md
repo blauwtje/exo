@@ -7,51 +7,27 @@ effort: medium
 
 # Implementing a plan
 
-Run a plan task by task through delegated contexts, so the session that commits stays small. The enemy is reading the whole plan or building in the session: both spend the context the review and the pull request need. The overcorrection is delegating a decision: a task with a `Design:` line needs a judgment only the session can make.
-
-Invoking `/exo:run-plan` on a plan authorizes the workspace you pick at step 1, a wave's temporary worktrees beside it, commits there as the units of step 5 and step 7 time them, and the review's fixes; a push or a pull request only after your answer to the finish question, and nothing else.
-
-## When to use
-
-- A `define-scope` brief with a `## Tasks` list, or an older plan, to run or resume, named or found for the current branch.
-- Not for writing or repairing the task list (`define-scope`), a change without a plan (`build-change`), or a failure whose cause is unproven (`find-cause`).
-
 ## The loop
 
-1. **Resolve the plan, then the workspace.** Use the path the user named; without one, take the plan under `docs/plans/`, `docs/specs/` or `~/.claude/plans/` whose `Repository:` line equals `git rev-parse --show-toplevel`, prefer one whose `Branch:` equals the current branch, and name the pick. Then settle where the run commits as `references/workspace.md` says, before any dispatch; it covers the plan's `Branch:` and a `Repository:` folder not yet under git. Then write four lines to `exo/run-plan.active` under the session directory's `git rev-parse --absolute-git-dir`: the plan's absolute path, the run's checkout, `${CLAUDE_SESSION_ID}` and `date -u +%Y-%m-%dT%H:%M:%SZ`. The Stop and SessionStart hooks read it to carry the run across a stop, clear or compaction. Then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` so git ignores each agent's `.exo/`.
-2. **Read the frame, not the plan.** Read `## Goal`, `## Plan basis`, `## Success criterion` and `## Checkpoint`; for a long plan or a brief also `## Non-goals`, `## Context`, `## Decisions` and `## Visual direction` when present. List the tasks with `grep -n '^### Task [0-9]' <plan>`; never open the whole file or `@`-reference it.
-3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` line and its `Next:` or `Wave:` line: a task has landed when a commit on the branch carries its `Commit:` subject and `Plan-task: <n>` trailer, a task is ready when it has not landed and its `Depends on:` all landed, the first ready task is current, and `Next: none` sends you to step 7. The script forms a wave only when `## Plan basis` carries a `Worktree setup:` line, the plan holds four or more tasks and the current task has no `Design:` line: the wave adds to it each further ready task without `Design:` whose `Files:` paths share none with a task already in it, four at most.
-4. **Form the block.** The block is the current task and the unlanded tasks after it in plan order, eight at most, ending before the first task with a `Design:` line or one with an unlanded `Depends on:` outside it, because a ninth task would crowd the unit's one fresh context. A current task with a `Design:` line routes as `references/design-tasks.md` says, then step 3 repeats.
-5. **Dispatch the unit.** Each block goes to the `exo:run-unit` agent with `run_in_background: false`, naming the plan path, the branch, the checkout, `${CLAUDE_SKILL_DIR}` resolved as `<skill>`, and the block's task numbers; it builds, repairs and lands its tasks, so this session never does: that work would fill it. Wait on its return, one `LANDED` or `BLOCKED` line per task or one `BUDGET:` line, never a commit poll or Monitor, which cannot see it end.
-6. **Route the return.** `LANDED` needs nothing. A `BUDGET:` line means unfinished, whatever its `done` list says: step 3 asks the branch what landed and a fresh unit takes the unlanded rest, never a finish here. `BLOCKED all nested dispatch unavailable` ends the turn: set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 2 or more, with no fallback, because building here is the bloat the unit avoids. `BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait`, so the stop does not block, asks it, then a fresh unit takes the rest from step 3. Loop to step 3 silently; only a blocked task, a failed check or a user question earns a message.
-7. **The tail.** With every task landed, take the base `git merge-base HEAD origin/<default>` and run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --base <base>`, adding `--reviewer <name>` only when the user names one directly. Dispatch the `exo:review-branch` agent or the `exo:review-branch-deep` agent it prints, giving it the plan path, branch, repository root, base and code standard path; it fixes nothing and returns one `verdict=` line. `BLOCKED` ends the turn with its report. On `FINDINGS`, dispatch a `general-purpose` delegate on `sonnet` from `review-fixer-prompt.md` with the report path. Then run the full check once: the plan's `## Final verification` commands for a long plan, or its `## Success criterion` command for a compact plan. A failed, skipped or unclear command goes to a `general-purpose` delegate on `opus` from `bug-fixer-prompt.md`, then the check reruns once; a second failure on one command ends the turn with both outputs. Commit what `git status --porcelain` lists as `fix(<scope>): address the branch review`. Remove step 1's `run-plan.active` marker, so hooks stop pushing a finished run. Then end on `ship`: its overview is this turn's one report, ending with the brief's `## Manual checks`, and the pull request carries `Closes #<n>` when `## Goal` names issue `#<n>`.
-
-## Red flags
-
-| The excuse | What holds |
-|---|---|
-| "I'll read the plan once to get the picture." | The frame plus one task is the picture; the rest is paid on every turn. |
-| "This task is small, I'll build it here." | Small edits still fill the session; only a `Design:` task builds here, and every other task goes to a unit. |
-| "A reviewer per task catches more." | `Proof:` proves a compact task, `Run:` and `Expected:` a long one; the one branch review on `opus` reads what crosses tasks, once. |
-| "A status line between two tasks is cheap." | It is written once and re-read on every later turn; the `Plan-task:` trailers already carry it. |
-| "One commit at the end is cleaner." | The task's own commit, with its `Plan-task:` trailer, is how a cleared context finds where to resume. |
+1. **Resolve the workspace, then start the run.** Settle where the run commits as `references/workspace.md` says. Then run `node "${CLAUDE_SKILL_DIR}/scripts/start-run.mjs" --checkout <run's checkout>`, adding `--plan <path>` when the user named one. Name the plan path it prints; its marker carries the run across a clear. A failure line on zero or several matching plans becomes the question which plan to run. A push or pull request waits for the user's answer to `ship`.
+2. **Read the frame, not the plan.** Read `## Goal`, `## Plan basis`, `## Success criterion` and `## Checkpoint`, plus `## Non-goals`, `## Context`, `## Decisions` and `## Visual direction` when present. List tasks with `grep -n '^### Task [0-9]' <plan>`; never open or `@`-reference the whole file, because every later turn re-reads it.
+3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>`; `Next: none` sends you to step 7. Only a `Plan-task:` commit decides what landed, never memory, so after a compaction this step reruns before any edit.
+4. **Form the block.** The current task and the unlanded tasks after it in plan order, eight at most, ending before a `Design:` task or an unlanded `Depends on:` outside the block. A current `Design:` task routes as `references/design-tasks.md` says, then step 3 repeats. There, an open choice the user would not notice is ruled and recorded in the commit body; one they would notice stops the run with one question, because a guess ships as a decision.
+5. **Dispatch the unit.** Send each block to the `exo:run-unit` agent with `run_in_background: false`, naming the plan path, branch, checkout, `${CLAUDE_SKILL_DIR}` resolved as `<skill>`, and the task numbers. It builds and lands, so this session never builds, however small the task. Wait on its return, never a poll or Monitor.
+6. **Route the return.** `LANDED` needs nothing. `BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3. `BLOCKED all nested dispatch unavailable` ends the turn asking to set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 2 or more, with no fallback building here. `BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait` before asking it. Loop to step 3 silently; only a block, a failed check or a question earns a message. An `exo: context` line means keep working once the task in flight lands.
+7. **The tail.** Run `node "${CLAUDE_SKILL_DIR}/scripts/finish-run.mjs"`, adding `--reviewer <name>` only when the user names one; it takes the merge-base, removes the marker and names the reviewer, or prints a failure line that ends the turn. Dispatch the `exo:review-branch` agent or `exo:review-branch-deep` agent it names with the plan path, branch, repository root, base and code standard path; `BLOCKED` ends the turn with its report, and `FINDINGS` goes to a `general-purpose` delegate on `sonnet` from `review-fixer-prompt.md` with the report path. Then run the plan's `## Final verification`, or `## Success criterion` for a compact plan. A failed, skipped or unclear command goes to a `general-purpose` delegate on `opus` from `bug-fixer-prompt.md`, then reruns once; a second failure ends the turn with both outputs. Commit what `git status --porcelain` lists as `fix(<scope>): address the branch review`, then end on `ship`, with `Closes #<n>` when `## Goal` names issue `#<n>`.
 
 ## References
 
 | File | Read it when |
 |---|---|
 | `references/workspace.md` | Step 1 before the first dispatch. |
-| `references/wave-worktrees.md` | Never here: the `exo:run-unit` agent reads it before a wave's first worktree. |
-| `implementer-prompt.md` | Never here: the unit reads it for every build dispatch. |
-| `drift-repairer-prompt.md` | Never here: the unit reads it on `PLAN DRIFT`. |
-| `bug-fixer-prompt.md` | Step 7, on a failed check; the unit reads it on a failed `Run:` with no causal line. |
+| `references/wave-worktrees.md` | Never here: `exo:run-unit` reads it. |
+| `implementer-prompt.md` | Never here: the unit reads it. |
+| `drift-repairer-prompt.md` | Never here: the unit reads it. |
+| `bug-fixer-prompt.md` | Step 7, on a failed check. |
 | `review-fixer-prompt.md` | Step 7, on a `FINDINGS` verdict. |
 | `references/design-tasks.md` | Step 4, for a task with a `Design:` line. |
-| `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options. |
+| `../route-skills/references/question.md` | Before asking the user to pick among numbered options. |
 
-## Judgment
-
-- The plan's settled decisions outrank implementation defaults; a choice it leaves open that the user would not notice is ruled here and recorded in the commit body, never asked.
-- A product choice the user would notice that the plan leaves open stops the run with one question to the user, because a builder's guess ships as a decision.
-- Repository state outranks memory: only a `Plan-task:` commit on the branch decides what has landed, and after a compaction notice step 3 runs again before any edit.
-- An `exo: context` line means keep working, not stop: follow its advice once the task in flight lands, then go on.
+Report: `ship`'s overview as this turn's one report, ending with the brief's `## Manual checks`.
