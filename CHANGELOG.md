@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `start` routes a spec or big wish to build, and `/exo:start <spec-path>`, to `define-scope`, which writes the brief with its task list and goes straight on to `run-plan`.
+
+### Changed
+
+- The README drops the `autoCompactWindow` step and asks for a `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` of at least 2, which Claude Code 2.1.219 and later meet by default.
+
+### Fixed
+
+- At the soft budget limit an `exo:run-unit` agent is told to land the task in flight and go on with the next task instead of writing its report; other agents keep the old note, and `agents/run-unit.md` drops its line telling the unit to ignore it.
+
+### Removed
+
+- The empty `skills/drafts/` staging folder and its README and CONTRIBUTING paragraphs; the checklist for adding a skill stays.
+
 ## 0.52.0 - 2026-09-26
 
 ### Highlights
