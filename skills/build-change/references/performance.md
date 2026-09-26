@@ -1,6 +1,6 @@
 # Performance debugging
 
-Measure the experienced path before optimizing it. The enemy is a plausible micro-optimization applied without a baseline. The overcorrection is collecting numbers without a decision rule; fixed sampling and a keep/revert threshold prevent both.
+Measure the experienced path before optimizing it. The enemy is a plausible micro-optimization applied without a baseline. The overcorrection is collecting numbers without a decision rule; fixed sampling and a keep/revert threshold prevent both. Measure before any hypothesis or edit, because a mechanism guessed before measuring is that same enemy.
 
 ## The loop
 
