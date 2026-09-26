@@ -15,7 +15,7 @@ import {
 import { parseFrontmatter } from '../skills/design-ui/scripts/context.mjs';
 import { fontConfidence } from '../skills/design-ui/scripts/inspect-styles.mjs';
 import {
-  ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable
+  ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable, parseComputedColor
 } from '../skills/design-ui/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
 
@@ -698,6 +698,47 @@ describe('check-ui.mjs named anti-patterns', () => {
     });
     const selectors = ofType(findings, 'monospace-label').map((entry) => entry.selector).sort();
     assert.deepEqual(selectors, ['.stat-label (styles.css:1)', 'page.html:2']);
+  });
+});
+
+describe('check-ui.mjs computed colour parsing', () => {
+  const close = (actual, expected) => {
+    for (const key of ['r', 'g', 'b', 'a']) {
+      if (expected[key] === null) assert.equal(actual[key], null, key);
+      else assert.ok(Math.abs(actual[key] - expected[key]) < 0.01, `${key}: ${actual[key]} vs ${expected[key]}`);
+    }
+  };
+
+  it('reads the legacy comma form with and without alpha', () => {
+    close(parseComputedColor('rgba(0, 0, 0, 0.2)'), { r: 0, g: 0, b: 0, a: 0.2 });
+    close(parseComputedColor('rgb(12, 34, 56)'), { r: 12, g: 34, b: 56, a: 1 });
+  });
+
+  it('reads the space form with a number or percentage alpha', () => {
+    close(parseComputedColor('rgb(0 0 0 / 0.4)'), { r: 0, g: 0, b: 0, a: 0.4 });
+    close(parseComputedColor('rgb(10 20 30 / 40%)'), { r: 10, g: 20, b: 30, a: 0.4 });
+  });
+
+  it('reads percentage channels', () => {
+    close(parseComputedColor('rgb(100% 50% 0% / 25%)'), { r: 255, g: 127.5, b: 0, a: 0.25 });
+  });
+
+  it('reads color(srgb) with number or percentage channels', () => {
+    close(parseComputedColor('color(srgb 1 0.5 0 / 0.2)'), { r: 255, g: 127.5, b: 0, a: 0.2 });
+    close(parseComputedColor('color(srgb 100% 0% 50%)'), { r: 255, g: 0, b: 127.5, a: 1 });
+  });
+
+  it('reads transparent as zero alpha', () => {
+    close(parseComputedColor('transparent'), { r: 0, g: 0, b: 0, a: 0 });
+  });
+
+  it('keeps the alpha of a colour space it cannot convert', () => {
+    close(parseComputedColor('oklch(0.5 0.1 200 / 0.3)'), { r: null, g: null, b: null, a: 0.3 });
+    close(parseComputedColor('color(display-p3 1 0 0)'), { r: null, g: null, b: null, a: 1 });
+  });
+
+  it('returns null for a value that is no colour function', () => {
+    assert.equal(parseComputedColor('currentcolor'), null);
   });
 });
 
