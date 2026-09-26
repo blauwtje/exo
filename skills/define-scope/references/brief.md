@@ -18,7 +18,7 @@ The brief holds these sections, in this order:
 
 ```
 ### Task <n>: <type>(<scope>): <subject>
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: design-ui] | Proof: <command>
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: design-ui] | Proof: <bare command, no backticks>
 ```
 
 `docs` writes `docs/specs/<topic>.md` in these section names.
