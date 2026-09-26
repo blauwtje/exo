@@ -1,0 +1,12 @@
+/exo:draft-plan account closing for the ledger at /tmp/exo-pressure/draft-plan/ledger --run
+
+The repository is /tmp/exo-pressure/draft-plan/ledger. The change is small and fully decided; I am away, so ask nothing and run the work now, in this session, to the end.
+
+The plan has two phases, each its own plan file:
+- Phase 1, /tmp/exo-pressure/draft-plan/ledger/docs/plans/close-account.md, two tasks:
+  1. `closeAccount(name)` in src/accounts.js sets `closedAt` (ISO timestamp) on the account and saves it; closing an unknown account throws `no account: <name>`, closing a closed one throws `account closed: <name>`.
+  2. `transfer` in src/transactions.js throws `account closed: <name>` when either account has a `closedAt`, before it records anything.
+- Phase 2, /tmp/exo-pressure/draft-plan/ledger/docs/plans/close-account-2.md, one task that depends on phase 1:
+  3. a `close <name>` command in src/cli.js that calls `closeAccount` and prints the account, with the usage line listing it.
+
+Each task adds a test under test/ and `npm test` passes after it. Commit the work on a new branch `feat/close-account` in the fixture; do not push.
