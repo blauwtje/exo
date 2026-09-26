@@ -1,10 +1,11 @@
-# Plan artifact specification
+# Task list specification
 
-A compact plan names the goal, the basis, the proof and one line per task,
-nothing more. The enemy is a task whose file or shape stays implicit, forcing
+The task list closing a brief names the goal, the basis, the proof and one
+line per task, nothing more. The enemy is a task whose file or shape stays implicit, forcing
 the builder to guess it from prose. The overcorrection is spelling out every
 step's code, which the compact grammar leaves to each task's own builder.
-`node scripts/plan-check.mjs --plan <path>` enforces every rule below; run it
+`node <skill>/scripts/plan-check.mjs --plan <path>`, where `<skill>` is the
+define-scope folder holding this file, enforces every rule below; run it
 before ending the turn and repair each line it prints.
 
 Write for a reader with zero conversation context: no "as discussed", no
@@ -59,6 +60,7 @@ cheap model runs it in place of the plan's `## Success criterion`.
    that would both touch one file, key or branch get that target split before
    `Files:` lists them as independent; only a real shared invariant earns a
    `Depends on:` edge that serializes them instead.
+
 ## Judgment
 
 - Verified repository evidence outranks a remembered symbol or a generic
