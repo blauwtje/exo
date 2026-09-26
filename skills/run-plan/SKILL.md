@@ -13,8 +13,8 @@ Invoking `/exo:run-plan` on a plan authorizes the workspace you pick at step 1, 
 
 ## When to use
 
-- A `draft-plan` plan or a `define-scope` brief with a `## Tasks` list, to run or resume, named or found for the current branch.
-- Not for writing or repairing the plan (`draft-plan`), a change without a plan (`build-change`), or a failure whose cause is unproven (`find-cause`).
+- A `define-scope` brief with a `## Tasks` list, or an older plan, to run or resume, named or found for the current branch.
+- Not for writing or repairing the task list (`define-scope`), a change without a plan (`build-change`), or a failure whose cause is unproven (`find-cause`).
 
 ## The loop
 

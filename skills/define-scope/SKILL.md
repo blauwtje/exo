@@ -10,7 +10,9 @@ Turn a request into a confirmed brief, so nobody codes through an unmade decisio
 
 ## Gate
 
-- Zero open decisions means leave this skill and write no brief; hand the goal to `draft-plan` or `build-change`.
+- Zero open decisions means no interview and no brief; hand the goal to `build-change`.
+  The exception is two or more order dependencies: write the brief unasked, from `## Task list` on.
+  `A → B` is one when B cannot build, test or keep its data before A lands.
   An open decision is one the user would notice that neither request nor code settles.
 - Asked for options, give directions, recommended first, and write no file.
 - New wishes for briefed work reopen that brief, since two briefs for one outcome drift apart.
@@ -63,14 +65,32 @@ Reply 1a or 1b, your own words, or ok to take every recommendation and assumptio
 - "I don't know" on a point gets two everyday sentences on how its options differ, with one example the user would see, then that point once more.
   A second "I don't know" on the same point takes the recommendation, credited to exo.
 
+## Task list
+
+Every brief ends in a task list, written in the grammar `references/task-list.md` sets.
+
+1. **Map first.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` before any dispatch and read the file at the path it prints.
+   It lists tracked paths and their exported names, and writes only under the git directory, so plan mode runs it too.
+   Outside a git repository it prints one `no map` line, and discovery starts at the dispatch.
+2. **Locate, do not read.** Discovery beyond the map goes to the `exo:locate-code` agent, never for a path the map names.
+   Brief it with the files, symbols and call sites the tasks will name, and have it quote the range around each.
+3. **Read at most eight ranges here**, one name each and never through `cat`, `head` or `sed`, since each read rides in every later turn.
+   A name reaches a task only after its range was read, here or in that report.
+4. **Put security in the task.** A task crossing a security boundary names the security reference in its heading or `Data:` segment.
+   The builder then reads that reference with the files, before it writes a line.
+5. **Plan mode edits nothing.** While it is active, run only commands that leave the working tree unchanged.
+   When a proof needs an edit, that edit is the first task.
+
 ## Spec
 
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
+The exception is Claude Code's plan mode: the brief goes into the plan file the harness names, the one file that mode lets you write.
 `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`.
 `issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints; `run-plan` runs that copy, and the issue stays the source.
 Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>` and repair each line it prints.
-Then load `exo:run-plan` on that file with the Skill tool, in this turn and unasked: the interview settled what the run needs, and the context watch reads a plan run from that load.
-The exception is a read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after define-scope --artifact <brief path, or #<n> for an issue>`.
+Then check each Acceptance item reaches a task heading, a `Data:` segment or the Success criterion, and repair a miss now, because the builder cannot.
+Then load `exo:run-plan` on that file with the Skill tool, in this turn and unasked: no decision is left open, and the context watch reads a plan run from that load.
+The exception is plan mode or another read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after define-scope --artifact <brief path, or #<n> for an issue>`.
 
 ## References
 
@@ -78,6 +98,11 @@ The exception is a read-only planning mode: end on the output of `node "${CLAUDE
 |---|---|
 | `references/stored-brief.md` | The request names or extends a brief, issue or plan. |
 | `references/brief.md` | Before writing the brief. |
+| `references/task-list.md` | Before writing the task list. |
+| `references/example-plan.md` | Once, before the first task. |
+| `../build-change/references/data-migration.md` | After affected paths are known and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
+| `../build-change/references/test-design.md` | Before the first task, to decide which tasks are risky and therefore write their test first. |
+| `../build-change/references/security.md` | After affected paths are known and before ordering, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
 | `references/brief-in-an-issue.md` | `specs` is `issues` or `both`. |
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |

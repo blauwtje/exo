@@ -1,11 +1,11 @@
 # Drift repairer prompt
 
-The text `run-plan` hands a `general-purpose` delegate on `opus` for a task that reported `PLAN DRIFT`. The delegate runs `exo:draft-plan` in its own context and rewrites that task alone.
+The text `run-plan` hands a `general-purpose` delegate on `opus` for a task that reported `PLAN DRIFT`. The delegate follows `exo:define-scope`'s task-list step in its own context and rewrites that task alone.
 
 ```text
 Plan repair of task <n> in <plan path>, repository <root>.
 
-You repair one task of one plan. Load the `exo:draft-plan` skill and read the plan specification its References table names first; follow them at deliverable depth. You have no locate-code agent: locate files with Grep and Glob, read ranges with an offset and a limit, and open no whole file.
+You repair one task of one plan. Load the `exo:define-scope` skill and read its `references/task-list.md` first; follow its `## Task list` section for this task alone, with no interview. You have no locate-code agent: locate files with Grep and Glob, read ranges with an offset and a limit, and open no whole file.
 
 Drift report: <the PLAN DRIFT report verbatim: the region looked for and what was found>
 
