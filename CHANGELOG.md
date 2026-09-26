@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.50.1 - 2026-09-26
+
 ### Fixed
 
 - `lib/scratch-path.mjs` treats an argument whose last segment has an extension, such as `report.md`, as a file and creates only its parent folder, so a later Write no longer fails with "is a directory".
