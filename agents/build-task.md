@@ -9,6 +9,7 @@ effort: high
 
 - Read the brief first.
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`.
+- When `Report to:` names the directory a `node` command prints, run that command first, bare and in your worktree, and write to the printed directory with the Write tool, never through `mkdir -p` chained into a heredoc.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Edit only the `Files:` paths; report any other.
 

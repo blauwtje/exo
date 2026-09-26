@@ -6,7 +6,7 @@
 - `<budget>`: that task's `Budget:` line, verbatim on its own line, so the delegate-budget hook uses it over the shared default.
 - `Read your brief at <brief path>.`: for an agent dispatched with worktree isolation, which reads nothing outside its worktree, use `Your brief:` followed by the file's content instead.
 - `<checkout>`: the run's checkout, the task's own worktree inside a wave, or `the worktree you start in` for an isolated agent.
-- `<report directory>`: what `git rev-parse --absolute-git-dir` prints in the run's checkout, or `your worktree's git directory` for an isolated agent.
+- `<report directory>`: `<checkout>/.exo`, the checkout's scratch directory, because an agent writes nothing outside its own checkout; for an isolated agent, `the directory "node <scratch script>" prints in your worktree`, with `<scratch script>` the absolute path of exo's `lib/scratch-path.mjs`, two folders above this skill's.
 - `<wave>`: `none`, except for an isolated agent, per `references/wave-worktrees.md`.
 
 ```text

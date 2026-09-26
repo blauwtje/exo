@@ -33,7 +33,7 @@ function land(root, number, subject) {
 }
 
 function briefPath(root, number) {
-  return path.join(git(root, 'rev-parse', '--absolute-git-dir'), 'exo', 'briefs', `task-${number}.md`);
+  return path.join(git(root, 'rev-parse', '--show-toplevel'), '.exo', 'briefs', `task-${number}.md`);
 }
 
 test('with nothing landed, the report names the first wave with no drift and a brief per task', async () => {

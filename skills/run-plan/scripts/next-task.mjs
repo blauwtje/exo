@@ -3,15 +3,15 @@
 // wave, and for each of its tasks its Budget:, Design: and Run: lines, the
 // drift of its Modify: regions and the path of its brief. The brief, the
 // frame fields and the section verbatim, goes to a file under the checkout's
-// git directory, so the section reaches only build-task and stays out
+// scratch directory, so the section reaches only build-task and stays out
 // of the session.
 
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
+import { scratchPath } from '#scratch-path';
 import { driftOf, frameOf, landedTasks, nextPhasePath, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
 
 // The show-savings skill owns the delegate's default budget; reading it here keeps
@@ -105,8 +105,8 @@ function taskBrief(task, frame, root) {
   ].join('\n');
 }
 
-// The brief sits under the run checkout's git directory, which a wave's
-// worktrees do not share, so a worktree never sees or commits it.
+// The brief sits in the run checkout's scratch directory, which git ignores
+// and a wave's worktrees do not share, so a worktree never commits it.
 function writeBrief(task, frame, root, briefDirectory) {
   const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
   fs.writeFileSync(briefPath, taskBrief(task, frame, root));
@@ -140,9 +140,8 @@ export function nextTaskReport({ planPath, planText, root }) {
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
     waveLine(wave, wave.length === 0 ? nextPhasePath(planPath, planText) : null)
   ];
-  const gitDirectory = execFileSync('git', ['-C', root, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' }).trim();
-  const briefDirectory = path.join(gitDirectory, 'exo', 'briefs');
-  if (wave.length > 0) fs.mkdirSync(briefDirectory, { recursive: true });
+  if (wave.length === 0) return `${lines.join('\n')}\n`;
+  const briefDirectory = scratchPath(root, 'briefs');
   for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
   return `${lines.join('\n')}\n`;
 }
