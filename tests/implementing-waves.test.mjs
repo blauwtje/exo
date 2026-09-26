@@ -46,11 +46,11 @@ function loopStep(number) {
   return step[0];
 }
 
-test('step 3 forms a wave only from the plan, two tasks at most', () => {
+test('step 3 forms a wave only from the plan, four tasks at most', () => {
   const landedStep = loopStep(3);
   assert.ok(landedStep.includes('`Worktree setup:`'));
-  assert.ok(landedStep.includes('two at most'));
-  assert.ok(landedStep.includes('never a guess from paths'));
+  assert.ok(landedStep.includes('four at most'));
+  assert.ok(landedStep.includes('whose `Files:` paths share none with a task already in it'));
 });
 
 test('a wave builds in worktrees and lands in plan order or not at all', () => {
