@@ -95,18 +95,12 @@ function compactTasks(count) {
   }));
 }
 
-test('plan-check counts non-blank lines for the 30-line compact cap, ignoring blank separators between tasks', () => {
-  const tasks = compactTasks(8);
-  const withBlankSeparators = tasks.flatMap((task, index) => (index === 0 ? [task] : ['', task]));
-  const ok = planCheckReport(compactPlanFixture({ tasks: withBlankSeparators }));
-  assert.equal(ok.ok, true);
-});
-
-test('plan-check fails a compact plan past 30 non-blank lines even with no blank lines to spare', () => {
-  const overCap = planCheckReport(compactPlanFixture({ tasks: compactTasks(8) })
-    .replace('The fixture proves the compact plan reader.', 'The fixture proves the compact plan reader.\nA second sentence pushes it one line over.'));
-  assert.equal(overCap.ok, false);
-  assert.ok(overCap.lines.some((line) => line.includes('31 non-blank lines, past the 30-line compact cap')));
+test('plan-check prints ok for a 60-line brief with tasks, past the old 30-line compact cap', () => {
+  const brief = briefFixture({ tasks: compactTasks(15) });
+  assert.equal(brief.split('\n').length, 60);
+  const report = planCheckReport(brief);
+  assert.equal(report.ok, true);
+  assert.match(report.lines[0], /^plan-check: ok/);
 });
 
 test('plan-check fails a compact task whose field line lacks Files:', () => {

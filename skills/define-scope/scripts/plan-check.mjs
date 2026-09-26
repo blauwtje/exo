@@ -17,7 +17,6 @@ const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
-const MAX_COMPACT_LINES = 30;
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
 // A fence closes only on a run of backticks at least as long as the one that
@@ -90,40 +89,6 @@ function checkSize(task) {
   return [];
 }
 
-// A brief (skills/define-scope/references/brief.md) carries `## Decisions`,
-// `## Assumptions` and `## Acceptance` ahead of the plan frame; no define-scope
-// plan has these, so stripping their content, heading included, before the
-// cap counts leaves a define-scope plan's count exactly as it reads today.
-const BRIEF_ONLY_SECTIONS = new Set(['Decisions', 'Assumptions', 'Acceptance']);
-
-function stripBriefSections(planText) {
-  const kept = [];
-  let name = null;
-  let fence = 0;
-  for (const line of planText.split('\n')) {
-    fence = fenceAfter(line, fence);
-    const heading = fence === 0 ? line.match(/^## (.+)$/) : null;
-    if (heading !== null) name = heading[1];
-    if (name !== null && BRIEF_ONLY_SECTIONS.has(name)) continue;
-    kept.push(line);
-  }
-  return kept.join('\n');
-}
-
-// A compact plan (every task in `Depends on: ... | Files: ...` form) trades
-// the old per-step rules for a line cap and the frame headings the compact
-// grammar requires; a plan with even one old-format task keeps today's rules
-// for every task, so an in-flight or mixed plan never changes behavior under
-// this check. The cap counts non-blank lines only, so a blank separator
-// between tasks (as the grammar's own example uses) never counts against it.
-function checkCompactSize(planText) {
-  const nonBlankCount = stripBriefSections(planText).replace(/\n$/, '').split('\n').filter((line) => line.trim() !== '').length;
-  if (nonBlankCount > MAX_COMPACT_LINES) {
-    return [`the plan is ${nonBlankCount} non-blank lines, past the ${MAX_COMPACT_LINES}-line compact cap`];
-  }
-  return [];
-}
-
 // run-plan's SKILL.md step 1 matches a plan to a checkout by the '## Plan
 // basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
 // frameOf); a compact plan with neither would parse but never be matched to
@@ -165,7 +130,6 @@ export function planCheckReport(planText) {
   const compactPlan = plan.tasks.every((task) => task.compact);
   const problems = compactPlan
     ? [
-        ...checkCompactSize(planText),
         ...checkFrame(plan.frame),
         ...checkPlanBasis(plan.frame),
         ...plan.tasks.flatMap((task) => checkCompactFields(task))

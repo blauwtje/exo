@@ -60,8 +60,6 @@ cheap model runs it in place of the plan's `## Success criterion`.
    that would both touch one file, key or branch get that target split before
    `Files:` lists them as independent; only a real shared invariant earns a
    `Depends on:` edge that serializes them instead.
-5. **Thirty lines, no more.** `plan-check` rejects a compact plan past 30
-   non-blank lines.
 6. **Phase files.** A plan that does not fit rule 5 is split into phases,
    each its own plan file. The first file's `## Goal` adds one line per
    phase, in order, `Phase <n>: <repository-relative plan path>`, itself as
