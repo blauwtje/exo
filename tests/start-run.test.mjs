@@ -59,6 +59,17 @@ test('picks the sole plan matching the repository and branch, and writes the mar
   assert.match(exclude, /^\.exo\/$/m);
 });
 
+test('falls back to CLAUDE_CODE_SESSION_ID when no --session is given, the name a Bash call carries', async () => {
+  const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
+  await fs.writeFile(path.join(root, 'docs/plans/one.md'), plan(root, 'main'));
+  const home = await noHomePlans();
+
+  const result = await run(SCRIPT, ['--root', root], { cwd: root, env: { HOME: home, CLAUDE_CODE_SESSION_ID: 'bash-sess-9' } });
+  assert.equal(result.code, 0, result.stderr);
+  const [, , sessionLine] = await markerLines(root);
+  assert.equal(sessionLine, 'bash-sess-9');
+});
+
 test('a --checkout flag overrides the marker\'s second line', async () => {
   const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
   await fs.writeFile(path.join(root, 'docs/plans/one.md'), plan(root, 'main'));

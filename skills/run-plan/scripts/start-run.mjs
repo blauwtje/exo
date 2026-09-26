@@ -97,7 +97,7 @@ function main(argv) {
   const flags = parseFlags(argv, { root: 'value', checkout: 'value', session: 'value', plan: 'value' });
   const root = flags.root ?? process.cwd();
   const planPath = flags.plan ? path.resolve(flags.plan) : resolvePlan(root);
-  writeMarker(root, planPath, flags.checkout ?? root, flags.session ?? process.env.CLAUDE_SESSION_ID ?? '');
+  writeMarker(root, planPath, flags.checkout ?? root, flags.session ?? process.env.CLAUDE_SESSION_ID ?? process.env.CLAUDE_CODE_SESSION_ID ?? '');
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
   process.stdout.write(`${planPath}\n`);
 }
