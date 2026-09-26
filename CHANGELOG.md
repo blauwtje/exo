@@ -7,6 +7,27 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/pressure/build-change/` and `benchmarks/pressure/find-cause/` hold three pressure cases each for rules that 0.54.0 dropped. Build-change cases 2 and 3 are marked weak, because a run without exo passes them too.
+- `benchmarks/pressure/drive.mjs` takes `--label <text>` to keep repeated runs of one case apart and `--plugin-dir <dir>` to load the `with` arm from another exo clone.
+- `verify/checks/process-structure.mjs` fails a slim skill whose opening heading starts with a paragraph instead of its first step.
+
+### Changed
+
+- `drive.mjs` and `skills/edit-skills/scripts/pressure.mjs` run with `--strict-mcp-config`, so the host's MCP servers no longer steer a pressure run.
+
+### Fixed
+
+- `define-scope`'s `task-list.md` rule 1 lists a symbol, not only a path, only after reading its range here or in an `exo:locate-code` report.
+- `build-change` again holds the comment rule and counts a change as done only with a commit and proof on the real product.
+- `find-cause` again names the missing infrastructure, reproduces at the first repository-owned function below it, and claims no sign-off for the path that did not run.
+- `find-cause` again sends a fix to review when it needed an unread file or cannot be followed in one reading, and drops an earlier symptom patch instead of keeping it as a backstop. Its body lock in `verify/budgets.mjs` rises from 1166 to 1289 tokens to hold these rules.
+- `verify/checks/reference-tables.mjs` again pins the four first-line clauses it had dropped, each with a self-test attack.
+- `finish-run.mjs` resolves the default branch when `origin/HEAD` is unset, trying `init.defaultBranch`, `main` and `master` on origin and then locally.
+- The header comment of `hooks/session-start.sh` lists the order in which the hook injects its text.
+- `tests/size-facts.test.mjs` names its test after the `requirements.txt` body it checks.
+
 ## 0.54.2 - 2026-09-26
 
 ### Fixed
