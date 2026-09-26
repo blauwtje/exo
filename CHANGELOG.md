@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `run-plan` compares a task's changed paths with its `Files:` instead of reading its diff.
+
+### Fixed
+
+- A compact task whose report carries a further `pass` line for a check the task did not name stays green, so one extra check no longer discards its wave.
+
 ## 0.48.8 - 2026-09-26
 
 ### Highlights
