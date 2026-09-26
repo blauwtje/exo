@@ -13,8 +13,12 @@ function transcript(entries) {
 
 const SKILL_CALL = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Skill', id: 'toolu_skill', input: { skill: 'build-change' } }] } };
 
-function bashCall(id, command) {
-  return { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', id, input: { command } }] } };
+function bashCall(id, command, cwd) {
+  return { type: 'assistant', cwd, message: { content: [{ type: 'tool_use', name: 'Bash', id, input: { command } }] } };
+}
+
+function writeCall(filePath) {
+  return { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Write', input: { file_path: filePath } }] } };
 }
 
 function bashResult(id, text) {
@@ -94,4 +98,31 @@ test('stays silent when stop_hook_active is true', () => {
     finalReport('**Done:** wired --status into bin/report.js.')
   ]);
   assert.equal(stopOutput({ transcript_path: file, stop_hook_active: true }), '');
+});
+
+test('blocks a Proof run on a fixture this session wrote with Write', () => {
+  const file = transcript([
+    SKILL_CALL,
+    writeCall('/tmp/manual-orders.csv'),
+    bashCall('toolu_bash1', 'node bin/report.js --file /tmp/manual-orders.csv --status paid'),
+    bashResult('toolu_bash1', 'orders: 2, total: 12.50 EUR'),
+    finalReport('**Done:** wired --status into bin/report.js.\nProof: node bin/report.js --file /tmp/manual-orders.csv --status paid -> orders: 2, total: 12.50 EUR')
+  ]);
+  const result = JSON.parse(stopOutput({ transcript_path: file }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /input this session wrote/);
+});
+
+test('blocks a Proof run on a fixture a heredoc Bash call wrote', () => {
+  const file = transcript([
+    SKILL_CALL,
+    bashCall('toolu_bash1', "cat > /tmp/proof-orders.csv <<EOF\nid,status,total\n1,paid,12.50\nEOF", '/Users/thomash/project'),
+    bashResult('toolu_bash1', ''),
+    bashCall('toolu_bash2', 'node bin/report.js --file /tmp/proof-orders.csv --status paid'),
+    bashResult('toolu_bash2', 'orders: 2, total: 12.50 EUR'),
+    finalReport('**Done:** wired --status into bin/report.js.\nProof: node bin/report.js --file /tmp/proof-orders.csv --status paid -> orders: 2, total: 12.50 EUR')
+  ]);
+  const result = JSON.parse(stopOutput({ transcript_path: file }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /input this session wrote/);
 });

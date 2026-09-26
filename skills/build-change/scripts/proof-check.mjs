@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import path from 'node:path';
 
 const BUILD_CHANGE_SKILL = /(^|:)build-change$/i;
 const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
@@ -91,6 +92,66 @@ function bashOutputsAfter(rows, startIndex) {
   return outputs;
 }
 
+// A Bash command's redirection/copy destination: `> path`, `>> path`,
+// `tee [-a] path`, `cp ... path`, `mv ... path`. Best-effort text parsing,
+// not a shell parser: good enough to catch a fixture the session wrote.
+function bashDestinationPaths(command) {
+  const destinations = [];
+  for (const match of command.matchAll(/(?:^|[\s;&|])>{1,2}\s*(\S+)/g)) {
+    destinations.push(match[1]);
+  }
+  const tee = command.match(/\btee\b\s+(?:-a\s+)?(\S+)/);
+  if (tee) destinations.push(tee[1]);
+  const copyOrMove = command.match(/\b(?:cp|mv)\b\s+(.+)/);
+  if (copyOrMove) {
+    const args = copyOrMove[1].trim().split(/\s+/).filter((arg) => !arg.startsWith('-'));
+    if (args.length > 0) destinations.push(args[args.length - 1]);
+  }
+  return destinations.map((destination) => destination.replace(/^['"]|['"]$/g, ''));
+}
+
+// Paths the session itself wrote after the build-change Skill call: a Write,
+// Edit, MultiEdit or NotebookEdit target, or a Bash redirection/copy
+// destination. Each carries the cwd of the entry that produced it (when the
+// transcript has one) so a relative path can be resolved to absolute later.
+function sessionWrittenPaths(rows, startIndex) {
+  const written = [];
+  for (let index = startIndex + 1; index < rows.length; index += 1) {
+    const cwd = rows[index]?.cwd;
+    for (const block of contentBlocks(rows[index])) {
+      if (block?.type !== 'tool_use') continue;
+      if (['Write', 'Edit', 'MultiEdit'].includes(block.name) && typeof block.input?.file_path === 'string') {
+        written.push({ path: block.input.file_path, cwd });
+      } else if (block.name === 'NotebookEdit' && typeof block.input?.notebook_path === 'string') {
+        written.push({ path: block.input.notebook_path, cwd });
+      } else if (block.name === 'Bash' && typeof block.input?.command === 'string') {
+        for (const destination of bashDestinationPaths(block.input.command)) {
+          written.push({ path: destination, cwd });
+        }
+      }
+    }
+  }
+  return written;
+}
+
+// True once a written path resolves absolute, joined to the cwd the
+// transcript recorded for the call that wrote it.
+function absoluteForm(writtenPath, cwd) {
+  if (path.isAbsolute(writtenPath)) return writtenPath;
+  if (!cwd) return null;
+  return path.join(cwd, writtenPath);
+}
+
+// Only the Proof line's command counts as input; the product's own output
+// naming a written path is not the issue this guards against.
+function proofNamesWrittenInput(command, writtenPaths) {
+  return writtenPaths.some(({ path: writtenPath, cwd }) => {
+    if (command.includes(writtenPath)) return true;
+    const absolute = absoluteForm(writtenPath, cwd);
+    return absolute !== null && command.includes(absolute);
+  });
+}
+
 function claimsDone(text) {
   return text.split('\n').some((line) => {
     const trimmed = line.trim();
@@ -99,14 +160,16 @@ function claimsDone(text) {
 }
 
 const MISSING_PROOF = 'The report claims Done with no Proof line backed by a product command this session ran.';
+const WRITTEN_INPUT = 'The Proof line ran the product on input this session wrote, not the repository\'s or the user\'s real input.';
 const REASON_SUFFIX = ' Run the product\'s entry point on real input in this session and report "Proof: <command> -> <output line>", or report "Unverified: <reason>" without claiming Done.';
 
-function verify(text, bashOutputs) {
+function verify(text, bashOutputs, writtenPaths) {
   const proof = text.match(PROOF_LINE);
   if (proof) {
     const command = normalizeCommand(proof[1]);
     const output = proof[2].trim();
     if (TEST_RUNNER_DENYLIST.test(command)) return 'The Proof line names a test runner, not the product.';
+    if (proofNamesWrittenInput(command, writtenPaths)) return WRITTEN_INPUT;
     const ran = bashOutputs.get(command);
     if (ran !== undefined && ran.includes(output)) return null;
     return 'The Proof line\'s command or output does not match a Bash call this session ran.';
@@ -132,7 +195,7 @@ export function stopOutput(input) {
   }
   if (!lastAssistantText) return '';
 
-  const problem = verify(lastAssistantText, bashOutputsAfter(rows, skillIndex));
+  const problem = verify(lastAssistantText, bashOutputsAfter(rows, skillIndex), sessionWrittenPaths(rows, skillIndex));
   if (problem === null) return '';
   return `${JSON.stringify({ decision: 'block', reason: problem + REASON_SUFFIX })}\n`;
 }
