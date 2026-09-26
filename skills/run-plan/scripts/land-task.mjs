@@ -59,6 +59,12 @@ function escapeRegExp(text) {
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
 // The build report's own field names, never a command.
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
+// Lines that end a command's output: the report's own fields (including
+// `Report:`, the GREEN template's last line) or another backticked
+// `command`: outcome line. A bare line with a colon, or one starting with
+// `#`, stays output, since either is as likely to be the command's own text
+// (for example "pass kebab-case: 4 cases..." or a TAP "# pass 3" count).
+const OUTPUT_END_LINE = new RegExp(`^\\s*(?:[-*]\\s+)?(?:${[...REPORT_FIELDS, 'Report'].join('|')}):|^\\s*(?:[-*]\\s+)?\`[^\`]+\`:\\s*\\S`);
 
 // The command whose outcome proves the task: the plan's `Proof:`, or for an
 // older compact plan with none, the first command the report gives an outcome
@@ -74,14 +80,15 @@ function provedCommand(task, lines) {
 }
 
 // A task is done only on proof from the real product: the report's
-// `<command>: pass` line with the command's own output indented under it.
-// Any other outcome for that command, or none, leaves the task not done.
+// `<command>: pass` line with the command's own output under it, at any
+// indentation. Any other outcome for that command, or none, leaves the task
+// not done.
 export function proofOf(task, reportText, reportPath) {
   if (reportText === null) {
     const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
     throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}`);
   }
-  const lines = reportText.split('\n');
+  const lines = reportText.replace(/\r\n/g, '\n').split('\n');
   const command = provedCommand(task, lines);
   const outcomeLine = new RegExp(`^(\\s*)(?:[-*]\\s+)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
   const outcomes = lines.flatMap((line, index) => {
@@ -97,12 +104,13 @@ export function proofOf(task, reportText, reportPath) {
   if (unclear !== undefined) {
     throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${unclear.outcome}", no clear pass`);
   }
-  // Output sits deeper than its outcome line, so the next command's outcome
-  // line in an indented Proof list ends it.
+  // Blank lines before the output, and any indentation the output carries
+  // relative to its outcome line, are the report writer's style, not a rule:
+  // only an end-of-output line closes the loop.
   const output = [];
   for (const line of lines.slice(outcomes[0].index + 1)) {
-    const indent = line.match(/^\s*/)[0].length;
-    if (line.trim() === '' || indent <= outcomes[0].indent) break;
+    if (line.trim() === '') continue;
+    if (OUTPUT_END_LINE.test(line)) break;
     output.push(line);
   }
   if (output.length === 0) {
