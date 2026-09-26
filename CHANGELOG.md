@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `define-scope` sorts tasks into risky and routine again outside plan mode, because `test-design.md`'s first line no longer limits that to plan mode.
+- `define-scope` reads `question-shape.md` before writing the bundled message, so its shape holds again.
+- `define-scope`'s `task-list.md` again keeps a check only the user can make out of the tasks, as a `## Manual checks` line.
+- `build-change` and `find-cause` skip their fresh-eyes review only when the caller says a pull-request review follows.
+- `build-change` reports a `BLOCKED` review and leaves it open instead of having no route for it.
+- `build-change`'s `test-first.md` again accepts the closest executable check when the red run needs infrastructure the repository lacks.
+- `find-cause` fixes each confirmed `code-review` finding under Step 5's proof before committing.
+- `performance.md` measures before any hypothesis or edit.
+- `ship.mjs` offers and runs the push route when origin's default branch is unknown; only `open-pr` and `pr-merge` need it.
+- `land-task.mjs` no longer counts the uncommitted plan file inside the checkout as a stray path.
+- The verifier self-test's slim-shape attacks stay within the body lock, so they reach the slim check instead of the size check.
+
 ## 0.54.0 - 2026-09-26
 
 ### Highlights
