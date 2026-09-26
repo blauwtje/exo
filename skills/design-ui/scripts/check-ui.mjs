@@ -1337,6 +1337,11 @@ export async function renderedAudit({ url, viewports, cwd }) {
       const key = `${viewport.width}x${viewport.height}`;
       await page.setViewportSize(viewport);
       await page.goto(url, { waitUntil: 'load' });
+      // A same-document navigation (e.g. the page only stripped a URL fragment
+      // via history.replaceState) does not reload the document, so focus left
+      // over from the previous viewport's Tab pass would otherwise survive
+      // into this viewport's baseline audit. Force a real reload per viewport.
+      await page.reload({ waitUntil: 'load' });
       const audit = await page.evaluate(PAGE_AUDIT, FOCUS_SIGNATURE_PROPERTIES);
       const focusFindings = await focusIndicatorFindings(page, audit.focusables);
       const findings = [...audit.findings, ...focusFindings].map((entry) => ({ ...entry, viewport: key }));
