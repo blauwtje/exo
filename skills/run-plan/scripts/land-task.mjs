@@ -2,7 +2,8 @@
 // checks that the new commit carries the `Plan-task: <n>` trailer and that the
 // landed set now holds the task, and prints that set, so the session neither
 // pastes the block nor reads the log. A compact task lands only on a build
-// report whose `Proof:` command passed, and the printout carries that output.
+// report whose `Proof:` command, or with none its Success-criterion test,
+// passed, and the printout carries that output.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -52,20 +53,40 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// `<command>: <outcome>`, backticked or bare, optionally as a list item; a
+// bare command runs to the last colon, so `npm run test:unit: pass` keeps its
+// script name.
+const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
+// The build report's own field names, never a command.
+const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
+
+// The command whose outcome proves the task: the plan's `Proof:`, or for an
+// older compact plan with none, the first command the report gives an outcome
+// for, which is the Success-criterion test build-task wrote or picked.
+function provedCommand(task, lines) {
+  if (task.proof !== null) return task.proof.replace(/^`(.*)`$/, '$1');
+  for (const line of lines) {
+    const match = line.match(ANY_OUTCOME_LINE);
+    const command = match?.[1] ?? match?.[2];
+    if (command !== undefined && match[3] !== '' && !REPORT_FIELDS.has(command)) return command;
+  }
+  throw new LandingError(`Task ${task.number}: no Proof: command, and the build report has no "<test>: pass" line`);
+}
+
 // A task is done only on proof from the real product: the report's
-// `<Proof command>: pass` line with the command's own output indented under it.
+// `<command>: pass` line with the command's own output indented under it.
 // Any other outcome for that command, or none, leaves the task not done.
 export function proofOf(task, reportText, reportPath) {
-  if (task.proof === null) throw new LandingError(`Task ${task.number} has no Proof: command to prove it`);
   if (reportText === null) {
-    throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove "${task.proof}"`);
+    const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
+    throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}`);
   }
-  const command = task.proof.replace(/^`(.*)`$/, '$1');
-  const outcomeLine = new RegExp(`^\\s*(?:[-*]\\s+)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
   const lines = reportText.split('\n');
+  const command = provedCommand(task, lines);
+  const outcomeLine = new RegExp(`^(\\s*)(?:[-*]\\s+)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
   const outcomes = lines.flatMap((line, index) => {
     const match = line.match(outcomeLine);
-    return match === null ? [] : [{ outcome: match[1].toLowerCase(), index }];
+    return match === null ? [] : [{ outcome: match[2].toLowerCase(), indent: match[1].length, index }];
   });
   if (outcomes.length === 0) {
     throw new LandingError(`Task ${task.number}: the build report has no "${command}: pass" line`);
@@ -76,9 +97,12 @@ export function proofOf(task, reportText, reportPath) {
   if (unclear !== undefined) {
     throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${unclear.outcome}", no clear pass`);
   }
+  // Output sits deeper than its outcome line, so the next command's outcome
+  // line in an indented Proof list ends it.
   const output = [];
   for (const line of lines.slice(outcomes[0].index + 1)) {
-    if (!/^\s+\S/.test(line)) break;
+    const indent = line.match(/^\s*/)[0].length;
+    if (line.trim() === '' || indent <= outcomes[0].indent) break;
     output.push(line);
   }
   if (output.length === 0) {
