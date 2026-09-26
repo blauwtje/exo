@@ -6,62 +6,28 @@ argument-hint: <decided change>
 
 # Implement
 
-Run a decided change to completion in one pass. The enemy is checkpoint implementation: repeated confirmation of decisions already made. The overcorrection is unchecked autonomy: one wrong assumption propagates through every file.
-
-## Activation gate
-
-For a decided change, count these facts after initial inspection: more than two source/test/config files must change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; a required file was not covered by the inspection. Zero facts means read the ranges, make the direct edits, run their check, report, and stop, applying the test-design row first when the change is risky or adds or changes an automated test. One or more runs the loop.
-
-A change the user wants test-first (test-first, TDD, red-green, write the test first, a bug with a reproduction) runs the loop with `## Test first` at any file count, because the two-file shortcut has no red run.
-
-## Context discipline
-
-- Address files by repository-root-relative or absolute paths. Never chain `cd &&` and never pipe a test or build runner, because both hide which command failed and its exit code.
-- Read ranges with an offset and a limit and scope every grep to a path; read here only the ranges you will edit.
-
-## The loop
-
-1. **Orient.** A main session runs `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`. Read `<scratch>/implement-next.md` first if present, `<scratch>` being what `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs"` prints: it holds the landed and remaining edits from a previous context; delete it once they land. When one plan task is the unit of work, its `Files:` lines and step code are the orientation: read those regions and dispatch no discovery. When the request names the file or symbol, read its range here. Otherwise, or when one direct search failed to settle it, dispatch discovery to the `exo:locate-code` agent with the change and the files or symbols to locate, then read only the ranges it names under `Read next` plus their direct callers or callees. Treat upstream Decisions as settled. Then apply the data-migration row.
-2. **Order.** Draw the dependency edges between edits: `A → B` means B cannot land green before A. Two or more edges go to `define-scope`, which writes a task-list brief and runs it through `run-plan`, unless a brief already orders every edge. Settle a shared data shape's types before ordering behavior edits against it.
-3. **Settle the workspace, then the baseline.** Before the first edit, settle where the change commits as `../run-plan/references/workspace.md` says, and stop until the answer when it asks; its question offers three options, a new branch, a worktree and the current branch, the recommended one first. When more than one file will change, confirm the working tree is clean or name every pre-existing changed path. Then apply the security and test-design rows.
-4. **Build.** Make the decided edits in dependency order against the ranges you have read; do not re-scan the tree between edits or ask between files already inside scope. A hand edit repeated across many files becomes a script or codemod, run once. Keep every mutating edit idempotent: a retry reaches the same end state, not a second effect. A comment states a constraint, an invariant, or a reason a reader of that file needs, never the change's story, which goes in the commit and pull request because a comment outlives the change. After a context compaction, rebuild what has landed from the working tree diff before the next edit: the tree, not memory, records what landed.
-5. **Prove.** A risky change, as `references/test-design.md` defines it, quotes the failing test output before the first production edit and the passing output after it, and no other tier substitutes. Otherwise use the first available tier: exercise the feature; else run a test that failed before and passes after; else run type check and build. *Done* needs a commit SHA and that proof's output on the real product; a reasoned argument, a skipped check or an unclear outcome is *unverified*.
-6. **Retain project knowledge.** A recurring correction becomes a lint, type, or check before a text line, when the repository can build one. If proof revealed a build, test, or run command, or a failure-causing repository gotcha, missing from the root `AGENTS.md`, or else the root `CLAUDE.md`, append one line there; with neither, create nothing. Record no session history: progress lives in the working tree and commits, reaching a file only through the context breaker.
-7. **Fresh eyes.** Skip this step when the caller states that a pull-request review follows, because that review is the one fresh look, or when `git diff --stat` reports at most two changed files and under 80 changed lines. Otherwise dispatch a `general-purpose` delegate on the session's model from `reviewer-prompt.md`, carrying the request, the repository root, and the effort (`low` up to five changed files or 200 changed lines, `medium` above); it writes batch-review.md. On `CLEAN`, go to Step 8. On `BLOCKED`, report the line and go to Step 8 with the review open. On `FINDINGS`, read only batch-review.md and, per `fix` finding, only its `file:start-end` range, fix it under Step 5's proof, then append `fixed` or `reported: <reason>` to that line; leave each `report` finding unchanged and give it one line in Step 8's overview. Request match, scope, and claimed proof stay with Step 8, because `code-review` takes no Goal. When the session cannot dispatch, run `code-review`, or else the critique checks, inline as today, and report that no separate context was available.
-8. **Commit, then finish.** Commit where step 3 placed it, in Conventional Commits, leaving out each pre-existing path step 3 named; outside a git repository nothing commits. Then end on `ship`: its overview carries the goal met, the commit SHA, the proof command and its output, a decision made on the user's behalf as one line, then a brief's `## Manual checks`; its question is the one open action. A decision's reasoning and out-of-request work stay out.
-
-## Test first
-
-This route runs inside steps 3 to 8, one behavior per cycle through every layer it touches, with `references/test-design.md` loaded. Read `references/test-first.md` before naming the first boundary: it holds the cycle and the excuses that skip the red run. Two rules hold even unread: the user confirms the observable boundaries before the first test, unless the request names each input with its expected output; and no production edit lands before the new test's failing output is quoted, unless the red run needs infrastructure the repository lacks, which reports the closest executable check used instead. For a bug, commit the failing test alone before the first production edit, because a test committed with its fix never shows it failed.
-
-## Breakers
-
-Three conditions stop the loop and force an evidence report:
-
-- A hook reports the context budget crossed. Finish the edit in progress at a green state, write the landed and remaining edits to `<scratch>/implement-next.md`, report, and say a context clear comes next. In a delegate the `exo budget:` hook does the reporting; once it denies tools, no check runs, so the unproven edit is reported as open.
-- The same symptom survives two fix attempts. Report both attempts and observations; do not try a third variation of the same mechanism.
-- A required edit lies outside the paths named during orientation or by the brief or plan. Report the path and dependency before touching it; work that belongs on its own branch is reported, never started.
+1. **Orient.** A main session runs `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`. Resume from `<scratch>/implement-next.md` if present (`<scratch>` is what `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs"` prints), deleting it once its edits land. Read only the ranges a plan task's `Files:` lines or the request name. Otherwise, or when one direct search failed, dispatch `exo:locate-code` and read only its `Read next` ranges plus their direct callers or callees. Treat upstream Decisions as settled.
+2. **Gate.** Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file. Zero facts: edit directly, run the check, report, and stop. A test-first request continues at any count, because the direct route has no red run. Otherwise draw `A → B` when edit B cannot land green before A; two or more edges go to `define-scope` unless a brief already orders them.
+3. **Settle the workspace, then the baseline.** Before the first edit, settle where the change commits as `../run-plan/references/workspace.md` says, stopping until the answer when it asks. When more than one file will change, confirm the working tree is clean or name every pre-existing changed path.
+4. **Build.** Edit in dependency order without asking between files in scope. A hand edit repeated across many files becomes one script, and every mutating edit stays idempotent so a retry reaches the same end state. After a compaction, rebuild what landed from the working-tree diff, not memory. Report a required edit outside the oriented paths before touching it. When a hook reports the context budget crossed, write the landed and remaining edits to `<scratch>/implement-next.md` at a green state and report that a clear comes next.
+5. **Prove.** A risky change per `references/test-design.md` quotes the failing test output before the first production edit and the passing output after. A test-first bug commits its failing test alone first, because a test committed with its fix never shows it failed. Otherwise exercise the feature, else run a test that failed before, else type check and build. Run each runner unpiped and without `cd &&`, which hide the failing command. *Done* needs that proof's output; an argument or a skipped check is *unverified*. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
+6. **Retain project knowledge.** Follow `references/project-knowledge.md`.
+7. **Fresh eyes.** Skip when a pull-request review follows, or when `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"` ends with `small`. Otherwise dispatch a `general-purpose` delegate on the session's model from `reviewer-prompt.md` with the request, repository root and effort (`low` up to five changed files or 200 changed lines, else `medium`). On `FINDINGS`, read only batch-review.md and, per `fix` finding, only its `file:start-end` range; fix it under step 5's proof and append `fixed` or `reported: <reason>`. Without a delegate, run `code-review`, else `references/critique.md`, and report that no separate context was available.
+8. **Commit, then finish.** Commit where step 3 placed it, leaving out each pre-existing path step 3 named, then end on `ship`.
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `../run-plan/references/workspace.md` | Step 3, before the first edit. |
+| `../run-plan/references/workspace.md` | Step 3. |
 | `reviewer-prompt.md` | Step 7, before the dispatch. |
-| `references/critique.md` | Step 7, only when no delegate can be dispatched and `code-review` is absent. |
-| `references/security.md` | After orientation and baseline, before the first affected test or production edit, only when changed behavior crosses authentication/authorization; tenant/resource ownership; secrets/credentials; untrusted input; network, file, or process execution; cryptography; or payments/regulated-data boundaries. Filenames and dependency names alone do not qualify. |
-| `references/data-migration.md` | After orientation and before ordering, only when work changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. In-memory types, cache rebuilds, and version-only dependency bumps do not qualify. |
-| `references/test-design.md` | After the baseline and before adding or changing an automated test or production behavior, only when logic or public behavior changes or the request adds or changes an automated test, and the repository exposes an automated test runner. Style, text, and version-only changes do not qualify. |
-| `references/test-first.md` | The `## Test first` route, before naming the first boundary. |
-| `references/performance.md` | A speed-only change, before the measurement that precedes the first edit; not for correctness work. |
-| `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options. |
+| `references/critique.md` | Step 7, without a delegate or `code-review`. |
+| `references/security.md` | When its first line applies. |
+| `references/data-migration.md` | When its first line applies. |
+| `references/test-design.md` | When its first line applies. |
+| `references/test-first.md` | A test-first change, before naming the first boundary. |
+| `references/project-knowledge.md` | Step 6, when its first line applies. |
+| `references/performance.md` | A speed-only change, before measuring. |
+| `../route-skills/references/question.md` | Before asking the user to pick among numbered options. |
 
-## Precedence
-
-`find-cause` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting.
-
-## Judgment
-
-- Explicit user instructions outrank this skill.
-- A repair that crosses a second owner, keeps an old route beside the new one, or cannot be explained in one pass goes to `find-cause` instead of a further patch, because each sign says the cause is elsewhere.
-- Repository test, build, naming, and review conventions outrank unspecified defaults here.
+Report: goal met, commit SHA, proof command and output, one line per decision made for the user, a brief's `## Manual checks`, open review findings, and the one open action.
