@@ -48,6 +48,27 @@ test('a sub path nests below the scratch folder and is created, repeatably', asy
   assert.equal(second.stdout.trim(), printed);
 });
 
+test('a sub path whose last segment has an extension creates the parent folder, not the file', async () => {
+  const { worktree } = await repositoryWithWorktree();
+  const result = await run(SCRATCH_PATH, ['nested/report.md'], { cwd: worktree });
+  assert.equal(result.code, 0, result.stderr);
+  const printed = result.stdout.trim();
+  assert.equal(printed, path.join(worktree, '.exo', 'nested', 'report.md'));
+  assert.ok(fs.statSync(path.dirname(printed)).isDirectory());
+  assert.ok(!fs.existsSync(printed));
+  fs.writeFileSync(printed, 'findings\n');
+  assert.equal(fs.readFileSync(printed, 'utf8'), 'findings\n');
+});
+
+test('a sub path whose last segment has no extension still creates and returns a folder', async () => {
+  const { worktree } = await repositoryWithWorktree();
+  const result = await run(SCRATCH_PATH, ['nested/debug'], { cwd: worktree });
+  assert.equal(result.code, 0, result.stderr);
+  const printed = result.stdout.trim();
+  assert.equal(printed, path.join(worktree, '.exo', 'nested', 'debug'));
+  assert.ok(fs.statSync(printed).isDirectory());
+});
+
 test('a sub path that climbs out or is absolute is refused with one stderr line', async () => {
   const { worktree } = await repositoryWithWorktree();
   for (const sub of ['..', '../escape', 'reports/../../escape', path.join(worktree, 'elsewhere')]) {
