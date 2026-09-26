@@ -233,23 +233,3 @@ export function planFixture({ worktreeSetup = null, tasks }) {
     ''
   ].join('\n');
 }
-
-// A checkout holding a plan split in two phase files as define-scope writes it:
-// phase 1's Goal lists both phases, phase 2's names phase 1 as `Phases:`.
-export async function phasedRepository() {
-  const root = await gitRepository({ 'src/app.js': 'export const app = 1;\n' });
-  const phase = (goal, tasks) => planFixture({ tasks })
-    .replace('The fixture proves the plan reader.', goal)
-    .replace('Repository: /tmp/fixture', `Repository: ${root}`);
-  const phase1Path = path.join(root, 'docs/plans/phase-1.md');
-  const phase2Path = path.join(root, 'docs/plans/phase-2.md');
-  await fs.mkdir(path.dirname(phase1Path), { recursive: true });
-  await fs.writeFile(phase1Path, phase('Phase 1: docs/plans/phase-1.md\nPhase 2: docs/plans/phase-2.md', [
-    taskSection({ number: 1, title: 'Greet', files: ['- Create: `src/greet.js`'], subject: 'feat(app): greet' })
-  ]));
-  await fs.writeFile(phase2Path, phase('Phases: docs/plans/phase-1.md', [
-    taskSection({ number: 1, title: 'Style', files: ['- Create: `src/app.css`'], subject: 'feat(app): style' }),
-    taskSection({ number: 2, title: 'Tail', dependsOn: 'Task 1', files: ['- Create: `src/tail.js`'], subject: 'feat(app): tail' })
-  ]));
-  return { root, phase1Path, phase2Path };
-}

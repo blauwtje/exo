@@ -12,7 +12,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { driftOf, frameOf, landedTasks, nextPhasePath, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
 
 // The show-savings skill owns the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/100.
@@ -42,10 +42,8 @@ function budgetLine(task) {
   return `Budget: ${soft}k/${hard}k`;
 }
 
-// With every task landed, a plan split into phases goes on in its next phase
-// file; `Next: none` is left for the last phase or a plan without phases.
-function waveLine(wave, nextPhase) {
-  if (wave.length === 0) return nextPhase === null ? 'Next: none, every task landed' : `Next phase: ${nextPhase}`;
+function waveLine(wave) {
+  if (wave.length === 0) return 'Next: none, every task landed';
   if (wave.length === 1) return `Next: Task ${wave[0].number}`;
   return `Wave: ${wave.map((task) => `Task ${task.number}`).join(', ')}`;
 }
@@ -147,7 +145,7 @@ export function nextTaskReport({ planPath, planText, root }) {
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
-    waveLine(wave, wave.length === 0 ? nextPhasePath(planPath, planText) : null)
+    waveLine(wave)
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;
   const briefDirectory = scratchPath(root, 'briefs');

@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { nextTaskReport } from '../skills/run-plan/scripts/next-task.mjs';
-import { briefFixture, compactTask, git, gitRepository, phasedRepository, planFixture, run, taskSection } from './harness.mjs';
+import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/run-plan/scripts/next-task.mjs', import.meta.url));
 
@@ -208,26 +208,7 @@ test('a one-file task of a few lines still gets a hard limit of at least 50k, ha
   assert.ok(Number(match[2]) >= 50, report);
 });
 
-test('with every task of phase 1 landed, the report names the next phase file', async () => {
-  const { root, phase1Path, phase2Path } = await phasedRepository();
-  land(root, 1, 'feat(app): greet');
-  const report = nextTaskReport({ planPath: phase1Path, planText: await fs.readFile(phase1Path, 'utf8'), root });
-  assert.match(report, /^Landed: 1$/m);
-  assert.ok(report.includes(`\nNext phase: ${phase2Path}\n`), report);
-  assert.doesNotMatch(report, /^Next: none/m);
-});
-
-test('with every task of the last phase landed, the report reads Next: none', async () => {
-  const { root, phase2Path } = await phasedRepository();
-  land(root, 1, 'feat(app): greet');
-  land(root, 1, 'feat(app): style');
-  land(root, 2, 'feat(app): tail');
-  const report = nextTaskReport({ planPath: phase2Path, planText: await fs.readFile(phase2Path, 'utf8'), root });
-  assert.match(report, /^Next: none, every task landed$/m);
-  assert.doesNotMatch(report, /^Next phase:/m);
-});
-
-test('a plan without phase lines reads Next: none once every task landed', async () => {
+test('with every task landed, the report reads Next: none and never Next phase:', async () => {
   const { root, planPath } = await checkout();
   land(root, 1, 'feat(app): greet');
   land(root, 2, 'feat(app): style');
