@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // Tells the main session and the user when its context has reached the
-// `context` setting, because the model gets no token
-// count and the 1M window compacts only near its end. Before every tool call it
-// reads the input, cache read and cache creation tokens of the last main-thread
+// `context` setting, because the model gets no token count. Before every tool
+// call it reads the input, cache read and cache creation tokens of the last main-thread
 // assistant turn; the notice goes out once per step, the threshold and each
 // further STEP_THOUSANDS above it, and again after the figure falls back below
 // the last notified step, as a compaction or /clear makes it. While the last exo
@@ -46,7 +45,7 @@ function thresholdThousands() {
 // Handoff is user-invoked, and the session hook points the fresh session at its file.
 const HANDOFF_ADVICE = 'finish the current step, then tell the user to run `/exo:save-session` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
 // A plan run keeps its state in the plan file and the commits, so a compaction loses nothing.
-const PLAN_ADVICE = 'keep working; the state lives in the plan file and the commits, and the harness compacts on its own';
+const PLAN_ADVICE = 'keep working; the state lives in the plan file and the commits';
 const PLAN_SKILLS = new Set(['exo:run-plan']);
 
 function mainSessionTokens(transcriptPath) {

@@ -13,16 +13,6 @@ exo is a Claude Code plugin that gives Claude one way of working: decide what to
 
 Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` on `PATH`.
 
-Then set the auto-compact window in `~/.claude/settings.json`, so a long plan run compacts at 120k tokens instead of near the end of a 1M window:
-
-```json
-{
-  "autoCompactWindow": "120k"
-}
-```
-
-The key takes a window from 100K to 1M tokens, as a plain token count or with a `k` or `M` suffix; `/autocompact 120k` writes the same value ([model configuration](https://code.claude.com/docs/en/model-config#set-the-auto-compact-window), [settings reference](https://code.claude.com/docs/en/settings-reference#autocompactwindow)).
-
 ## Check that it works
 
 Start a new session and run:
@@ -142,7 +132,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `define-scope` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
-| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:define-scope` or `exo:run-plan` is the last exo skill loaded, to keep working because the harness compacts on its own. A stored value that is not a whole number of at least 1 reads as the default. |
+| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note, shown to you as well, once per further 25k: to finish the current step and hand off with `/exo:save-session` and `/clear`, or, while `exo:define-scope` or `exo:run-plan` is the last exo skill loaded, to keep working. A stored value that is not a whole number of at least 1 reads as the default. |
 
 ## Develop
 
