@@ -223,3 +223,49 @@ test('the proof output stops at the next outcome line in an indented Proof list'
   const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
   assert.match(output, /^Proof: node --test tests\/app\.test\.mjs: pass\n {4}# pass 3\nLanded: 1$/m);
 });
+
+// land-task.mjs refused these four shapes from a real run (tasks 7, 9, 10, 11
+// of a second run-unit): the report was genuinely green, but its pass line
+// and output shared the same indentation, so the old "output must sit deeper
+// than its outcome line" rule read the report as having no output at all.
+test('a report whose output sits at the same indentation as its pass line still lands', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, 'Task 1: GREEN\nnode --test tests/app.test.mjs: pass\npass: 3 cases\nReport: /tmp/implementer-1.md\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\npass: 3 cases$/m);
+});
+
+test('a pass line indented inside a markdown list, with output at no indentation, still lands', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, '- `node --test tests/app.test.mjs`: pass\n# pass 3\nUnresolved: none\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n# pass 3$/m);
+});
+
+test('a blank line between the pass line and its output still lands', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, 'node --test tests/app.test.mjs: pass\n\n  # pass 3\nUnresolved: none\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+});
+
+test('trailing whitespace and CRLF line endings on the report still land', async () => {
+  const { root, planPath } = await compactCheckout();
+  const report = 'node --test tests/app.test.mjs: pass  \r\n  # pass 3\r\nUnresolved: none\r\n';
+  await writeReport(root, report);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+});
+
+test('the next report field ends the output with no blank line between them', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, 'node --test tests/app.test.mjs: pass\n  # pass 3\nUnresolved: none\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+  assert.doesNotMatch(result.stdout, /Unresolved/);
+});
