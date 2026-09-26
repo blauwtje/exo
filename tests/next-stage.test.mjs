@@ -13,7 +13,7 @@ import { hotFile } from '../skills/show-savings/scripts/record.mjs';
 import { fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
-const DRAFT_PLAN_MODEL_LINE = "Next stage runs on `opus` at `high`, because a plan's code is pasted as written, so a slip repeats in every task.";
+const RUN_PLAN_SONNET_LINE = "Next stage runs on `sonnet` at `medium`, because the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps `high`.";
 
 // A savings directory holding one session's hot record at the path record.mjs
 // keeps it, so the path next-stage.mjs spells out cannot drift from it;
@@ -38,31 +38,46 @@ async function withSavingsDirectory(directory, work) {
   }
 }
 
-test('with no session named, define-scope recommends continuing into draft-plan, Stop second', () => {
-  const report = nextStageReport({ after: 'define-scope', artifact: 'docs/specs/topic.md' });
+test('with no session named, define-scope recommends continuing into run-plan, Stop second', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
+  ] });
+  const root = await gitRepository({ 'docs/plans/fixture.md': plan });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  const report = nextStageReport({ after: 'define-scope', artifact: planPath });
   assert.equal(report, [
-    '1. **Draft-plan (Recommended)**: orders the brief into a plan.',
-    '2. **Stop**: run `/exo:draft-plan docs/specs/topic.md` after a context clear.',
-    DRAFT_PLAN_MODEL_LINE
+    '1. **Run-plan (Recommended)**: runs the plan.',
+    `2. **Stop**: run \`/exo:run-plan ${planPath}\` after a context clear.`,
+    RUN_PLAN_SONNET_LINE
   ].join('\n') + '\n');
 });
 
 test('a session the context watch has not warned recommends continuing', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
+  ] });
+  const root = await gitRepository({ 'docs/plans/fixture.md': plan });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
   const directory = await savingsDirectory('quiet-session', false);
   const report = await withSavingsDirectory(directory, () =>
-    nextStageReport({ after: 'define-scope', artifact: 'docs/specs/topic.md', sessionId: 'quiet-session' }));
-  assert.match(report, /^1\. \*\*Draft-plan \(Recommended\)\*\*: /);
-  assert.match(report, /\n2\. \*\*Stop\*\*: run `\/exo:draft-plan docs\/specs\/topic\.md` after a context clear\.\n/);
+    nextStageReport({ after: 'define-scope', artifact: planPath, sessionId: 'quiet-session' }));
+  assert.match(report, /^1\. \*\*Run-plan \(Recommended\)\*\*: /);
+  assert.ok(report.includes(`2. **Stop**: run \`/exo:run-plan ${planPath}\` after a context clear.\n`));
 });
 
 test('a session the context watch has warned recommends stopping with the command, continuing second', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
+  ] });
+  const root = await gitRepository({ 'docs/plans/fixture.md': plan });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
   const directory = await savingsDirectory('warned-session', true);
   const report = await withSavingsDirectory(directory, () =>
-    nextStageReport({ after: 'define-scope', artifact: 'docs/specs/topic.md', sessionId: 'warned-session' }));
+    nextStageReport({ after: 'define-scope', artifact: planPath, sessionId: 'warned-session' }));
   assert.equal(report, [
-    '1. **Stop (Recommended)**: run `/exo:draft-plan docs/specs/topic.md` after a context clear.',
-    '2. **Draft-plan**: orders the brief into a plan.',
-    DRAFT_PLAN_MODEL_LINE
+    `1. **Stop (Recommended)**: run \`/exo:run-plan ${planPath}\` after a context clear.`,
+    '2. **Run-plan**: runs the plan.',
+    RUN_PLAN_SONNET_LINE
   ].join('\n') + '\n');
 });
 
@@ -73,24 +88,24 @@ test('a session with no hot record yet recommends continuing', async () => {
   assert.match(report, /^1\. \*\*Build-change \(Recommended\)\*\*: /);
 });
 
-test('draft-plan opens run-plan on sonnet when every Design: task holds a frozen direction', async () => {
+test('define-scope opens run-plan on sonnet when every Design: task holds a frozen direction', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Style', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
   ] });
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextStageReport({ after: 'draft-plan', artifact: planPath });
+  const report = nextStageReport({ after: 'define-scope', artifact: planPath });
   assert.match(report, /^1\. \*\*Run-plan \(Recommended\)\*\*: runs the plan\.\n/);
   assert.match(report, /Next stage runs on `sonnet` at `medium`/);
 });
 
-test('draft-plan opens run-plan on opus when a Design: task is still pending', async () => {
+test('define-scope opens run-plan on opus when a Design: task is still pending', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Style', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
   ] }).replace('Quiet record.', 'Direction: pending at rung 2');
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextStageReport({ after: 'draft-plan', artifact: planPath });
+  const report = nextStageReport({ after: 'define-scope', artifact: planPath });
   assert.match(report, /Next stage runs on `opus` at `medium`/);
 });
 
@@ -109,13 +124,13 @@ test('CLI prints the report for the flags given', async () => {
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const directory = await savingsDirectory('warned-session', true);
   const env = { EXO_SAVINGS_DIR: directory, CLAUDE_CODE_SESSION_ID: '' };
-  const unnamed = await run(SCRIPT, ['--after', 'draft-plan', '--artifact', planPath], { env });
+  const unnamed = await run(SCRIPT, ['--after', 'define-scope', '--artifact', planPath], { env });
   assert.equal(unnamed.code, 0, unnamed.stderr);
   assert.match(unnamed.stdout, /^1\. \*\*Run-plan \(Recommended\)\*\*: runs the plan\.\n2\. \*\*Stop\*\*: run `\/exo:run-plan/);
-  const flagged = await run(SCRIPT, ['--after', 'draft-plan', '--artifact', planPath, '--session', 'warned-session'], { env });
+  const flagged = await run(SCRIPT, ['--after', 'define-scope', '--artifact', planPath, '--session', 'warned-session'], { env });
   assert.equal(flagged.code, 0, flagged.stderr);
   assert.match(flagged.stdout, /^1\. \*\*Stop \(Recommended\)\*\*: run `\/exo:run-plan/);
-  const fromEnvironment = await run(SCRIPT, ['--after', 'draft-plan', '--artifact', planPath], { env: { ...env, CLAUDE_CODE_SESSION_ID: 'warned-session' } });
+  const fromEnvironment = await run(SCRIPT, ['--after', 'define-scope', '--artifact', planPath], { env: { ...env, CLAUDE_CODE_SESSION_ID: 'warned-session' } });
   assert.equal(fromEnvironment.code, 0, fromEnvironment.stderr);
   assert.match(fromEnvironment.stdout, /^1\. \*\*Stop \(Recommended\)\*\*: run `\/exo:run-plan/);
 });

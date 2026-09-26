@@ -90,7 +90,7 @@ export async function gitRepository(files) {
 
 const FENCE = '```';
 
-/** One task in the grammar `draft-plan` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
+/** One task in the grammar `define-scope` writes; `trailer: false` drops the Plan-task trailer, `commit: false` the whole block. */
 export function taskSection({ number, title, dependsOn = 'none', design = false, files, code = '', subject, trailer = true, commit = true }) {
   const commitLine = trailer
     ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
@@ -234,7 +234,7 @@ export function planFixture({ worktreeSetup = null, tasks }) {
   ].join('\n');
 }
 
-// A checkout holding a plan split in two phase files as draft-plan writes it:
+// A checkout holding a plan split in two phase files as define-scope writes it:
 // phase 1's Goal lists both phases, phase 2's names phase 1 as `Phases:`.
 export async function phasedRepository() {
   const root = await gitRepository({ 'src/app.js': 'export const app = 1;\n' });

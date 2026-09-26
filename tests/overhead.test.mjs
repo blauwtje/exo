@@ -84,7 +84,7 @@ function sessionLines(withInjections) {
     { type: 'user', uuid: 'p1', timestamp: '2026-09-11T10:00:02.000Z', message: { role: 'user', content: 'go' } },
     call('msg_skill', '2026-09-11T10:00:07.000Z', [skillUse('exo:find-cause')]),
     call('msg_mixed', '2026-09-11T10:00:09.000Z', [{ type: 'tool_use', id: 'toolu_read', name: 'Read', input: { file_path: '/repo/a.ts' } }]),
-    call('msg_mixed', '2026-09-11T10:00:10.000Z', [skillUse('exo:draft-plan')]),
+    call('msg_mixed', '2026-09-11T10:00:10.000Z', [skillUse('exo:build-change')]),
     call('msg_text', '2026-09-11T10:00:12.000Z', TEXT),
     { type: 'system', subtype: 'stop_hook_summary', timestamp: '2026-09-11T10:00:13.000Z',
       hookInfos: [{ command: STOP_HOOK, durationMs: 40 }, { command: 'node other.mjs', durationMs: 999 }] }
@@ -179,7 +179,7 @@ test('each exo call books its kind, and the split by kind adds up to the totals'
     call('msg_again', '2026-09-11T10:00:14.000Z', [readUse('toolu_big3', '/repo/big.ts')]),
     toolResult('r5', '2026-09-11T10:00:16.000Z', { type: 'tool_result', tool_use_id: 'toolu_big3', is_error: true, content: REFUSAL }),
     call('msg_both', '2026-09-11T10:00:18.000Z', [readUse('toolu_big4', '/repo/big.ts', { offset: 51, limit: 50 })]),
-    call('msg_both', '2026-09-11T10:00:19.000Z', [skillUse('exo:draft-plan')])
+    call('msg_both', '2026-09-11T10:00:19.000Z', [skillUse('exo:build-change')])
   ], { guard });
   const kinds = Object.fromEntries(Object.entries(session.overhead.calls).map(([id, booked]) => [id, booked.kind]));
   // A call that re-reads and loads a skill books as a skill load.

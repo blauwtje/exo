@@ -91,9 +91,9 @@ function checkSize(task) {
 }
 
 // A brief (skills/define-scope/references/brief.md) carries `## Decisions`,
-// `## Assumptions` and `## Acceptance` ahead of the plan frame; no draft-plan
+// `## Assumptions` and `## Acceptance` ahead of the plan frame; no define-scope
 // plan has these, so stripping their content, heading included, before the
-// cap counts leaves a draft-plan plan's count exactly as it reads today.
+// cap counts leaves a define-scope plan's count exactly as it reads today.
 const BRIEF_ONLY_SECTIONS = new Set(['Decisions', 'Assumptions', 'Acceptance']);
 
 function stripBriefSections(planText) {

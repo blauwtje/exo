@@ -82,7 +82,7 @@ const slashCommand = (skill) =>
   JSON.stringify({ type: 'user', message: { role: 'user', content: `<command-message>${skill}</command-message>\n<command-name>/${skill}</command-name>\n<command-args>docs/plans/x.md</command-args>` } });
 
 test('while a plan skill is the last exo skill loaded, the notice advises to keep working', async () => {
-  for (const loaded of [slashCommand('exo:run-plan'), skillCall('exo:draft-plan')]) {
+  for (const loaded of [slashCommand('exo:run-plan'), skillCall('exo:run-plan')]) {
     const { env, hookInput } = await watchFixture([loaded, assistantLine(100_000)]);
     assert.equal((await notice(hookInput, env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${PLAN_ADVICE}`);
   }
