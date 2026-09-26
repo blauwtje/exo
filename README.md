@@ -93,7 +93,7 @@ Skills for a case most sessions never hit; still worth knowing about.
 
 Each skill also has a page under `docs/skills/`, written for a person: what the skill is for and what it leaves behind, without the instruction the model reads.
 
-`skills/drafts/` stages a skill that is written but not loaded. A plugin loader discovers `skills/<name>/SKILL.md` only and does not recurse, so nothing staged there is listed, invoked or counted against a budget. Promotion means all five of: the folder moves to `skills/<name>/`, the name joins `EXPECTED_SKILLS` in `verify/budgets.mjs`, it gets a reference contract in `verify/checks/reference-tables.mjs`, its description is paid for in the description budgets, and it gets a page under `docs/skills/`.
+A new skill needs all of: the folder at `skills/<name>/`, the name joining `EXPECTED_SKILLS` in `verify/budgets.mjs`, a reference contract in `verify/checks/reference-tables.mjs`, its description paid for in the description budgets, and a page under `docs/skills/`.
 
 ## The ladder
 
