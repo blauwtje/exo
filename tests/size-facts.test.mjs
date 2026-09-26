@@ -94,6 +94,30 @@ test('--base measures a committed branch against a base ref instead of the worki
   assert.equal(result.stdout, 'changed files 1\nchanged lines 2\ndependency-added no\nsmall\n');
 });
 
+test('a manifest moved and given a new dependency in one commit is caught by its new path', async () => {
+  const root = await gitRepository({ 'package.json': '{\n  "name": "demo",\n  "version": "1.0.0",\n  "description": "a fixture package",\n  "dependencies": {}\n}\n' });
+  await fs.mkdir(path.join(root, 'config'));
+  await fs.rename(path.join(root, 'package.json'), path.join(root, 'config', 'package.json'));
+  await fs.writeFile(path.join(root, 'config', 'package.json'), '{\n  "name": "demo",\n  "version": "1.0.0",\n  "description": "a fixture package",\n  "dependencies": {\n    "left-pad": "1.0.0"\n  }\n}\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'refactor: move package.json into config');
+  assert.match(git(root, 'diff', '--numstat', 'HEAD~1', 'HEAD'), / => /);
+  const result = await run(SCRIPT, ['--base', 'HEAD~1'], { cwd: root });
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /dependency-added yes\n/);
+});
+
+test('a renamed file with a common prefix is caught by both its old and new path', async () => {
+  const root = await gitRepository({ 'src/old-name.js': 'export function greet() {\n  return 1;\n}\n' });
+  await fs.rename(path.join(root, 'src', 'old-name.js'), path.join(root, 'src', 'new-name.js'));
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'refactor: rename old-name to new-name');
+  assert.match(git(root, 'diff', '--numstat', 'HEAD~1', 'HEAD'), /\{old-name\.js => new-name\.js\}/);
+  const result = await run(SCRIPT, ['--base', 'HEAD~1'], { cwd: root });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, 'changed files 1\nchanged lines 0\ndependency-added no\nsmall\n');
+});
+
 test('an unknown flag is rejected', async () => {
   const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
   const result = await run(SCRIPT, ['--bogus'], { cwd: root });
