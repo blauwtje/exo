@@ -1,4 +1,4 @@
-# Task list specification
+# Specification of the task list
 
 The task list closing a brief names the goal, the basis, the proof and one
 line per task, nothing more. The enemy is a task whose file or shape stays implicit, forcing
