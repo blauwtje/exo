@@ -1,7 +1,7 @@
 // Prints the next-stage option block and, when the next stage's model or
 // effort differs from the session's, the one model line `references/
 // next-stage.md` allows under it. A stage skill whose work leaves a next
-// stage open (`define-scope`, `draft-plan`, `audit-architecture`, `find-cause`) runs this at its
+// stage open (`define-scope`, `audit-architecture`, `find-cause`) runs this at its
 // final message instead of reading `references/next-stage.md` and
 // `references/question.md` itself.
 //
@@ -23,14 +23,13 @@ import { frameOf, parsePlan } from '#plan-tasks';
 // opens, per `references/next-stage.md`'s order: this one stage and Stop. `label` and `does` follow `references/question.md`'s shape: a
 // one-to-three-word bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
-  'define-scope': { stage: 'draft-plan', label: 'Draft-plan', does: 'orders the brief into a plan' },
-  'draft-plan': { stage: 'run-plan', label: 'Run-plan', does: 'runs the plan' },
-  'audit-architecture': { stage: 'draft-plan', label: 'Draft-plan', does: 'orders the top card into a plan' },
+  'define-scope': { stage: 'run-plan', label: 'Run-plan', does: 'runs the plan' },
+  'audit-architecture': { stage: 'define-scope', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
   'find-cause': { stage: 'build-change', label: 'Build-change', does: 'builds the edits the proof left' }
 };
 
 function commandFor(stage, artifact) {
-  if (stage === 'draft-plan') return `/exo:draft-plan ${artifact}`;
+  if (stage === 'define-scope') return `/exo:define-scope ${artifact}`;
   if (stage === 'run-plan') return `/exo:run-plan ${artifact}`;
   if (stage === 'build-change') return '/exo:build-change';
   throw new UsageError(`no command known for next stage '${stage}'`);
@@ -51,9 +50,6 @@ function designPending(planPath) {
 // stage the question opens next; `null` when that stage names no row, which
 // leaves the session's own model and effort unnamed under the options.
 function modelLineFor(stage, artifact) {
-  if (stage === 'draft-plan') {
-    return "Next stage runs on `opus` at `high`, because a plan's code is pasted as written, so a slip repeats in every task.";
-  }
   if (stage === 'build-change') {
     return 'Next stage runs on `opus` at `high`, because it decides the change while building it.';
   }

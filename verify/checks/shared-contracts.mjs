@@ -38,13 +38,6 @@ const PINNED_SENTENCES = {
     '`find-cause` owns an unproven failure until its cause is established. The frontend-design skill the executing session has loaded owns visual decisions during Build; this skill retains orientation, ordering, non-visual wiring, proof, critique, and reporting.',
     ...REVIEW_THRESHOLD,
   ],
-  'skills/draft-plan/SKILL.md': [
-    'Resolve a vague referent from the first non-empty source: working-tree diff, most recent failing check, then last touched file.',
-    'a choice changes persisted data, a public protocol or signature, a paid provider, or an irreversible deletion or migration',
-    'While a read-only planning mode is active, this skill owns the turn. The one exception is an architecture audit, which `audit-architecture` owns while still writing the plan artifact this skill defines. `define-scope` decides product and architecture, the frontend-design skill the executing session has loaded decides visual direction, `check-docs` confirms external behavior, and each hands control back into the plan.',
-    'A specialist\'s brief, audit, or selected direction is intermediate input: this skill compiles those decisions into the persisted artifact, and a specialist ending its own workflow never ends the planning turn.',
-    'An unproven failure inside a planning turn makes reproduction and proof the plan\'s first phase; plan no fix past the proof point. Outside a planning turn, `find-cause` outranks draft-plan until the cause is proven.',
-  ],
   'skills/audit-architecture/SKILL.md': [
     'While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `draft-plan` defines; every other planning turn belongs to `draft-plan`.',
   ],

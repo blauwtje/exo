@@ -47,7 +47,7 @@ function thresholdThousands() {
 const HANDOFF_ADVICE = 'finish the current step, then tell the user to run `/exo:save-session` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
 // A plan run keeps its state in the plan file and the commits, so a compaction loses nothing.
 const PLAN_ADVICE = 'keep working; the state lives in the plan file and the commits, and the harness compacts on its own';
-const PLAN_SKILLS = new Set(['exo:draft-plan', 'exo:run-plan']);
+const PLAN_SKILLS = new Set(['exo:run-plan']);
 
 function mainSessionTokens(transcriptPath) {
   if (!fs.existsSync(transcriptPath)) return null;

@@ -7,7 +7,6 @@
   "skills/configure": { "model": "sonnet", "effort": null },
   "skills/define-scope": { "model": null, "effort": null },
   "skills/design-ui": { "model": null, "effort": "high" },
-  "skills/draft-plan": { "model": null, "effort": null },
   "skills/edit-skills": { "model": null, "effort": null },
   "skills/explain-code": { "model": null, "effort": null },
   "skills/file-issues": { "model": "opus", "effort": "high" },

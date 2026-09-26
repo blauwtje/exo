@@ -170,7 +170,7 @@ const SCENARIOS = [
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
   { name: 'broken-skill-script', mutate: (root) =>
     append(root, 'skills/design-ui/scripts/capture.mjs', '\nexport function broken( {\n') },
-  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/draft-plan/references/data-migration.md',
+  { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/define-scope/references/data-migration.md',
     read(root, 'skills/build-change/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
     replaceText(root, 'agents/fetch-docs.md', 'at most 25 lines', 'a short report') },
