@@ -41,7 +41,10 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 ## Report
 
-- Write at most 25 lines to `Report to:`: Landed, Proof (each test and its output), Unresolved (or `none`).
+- Write at most 25 lines to `Report to:`: Landed, Proof, Unresolved (or `none`).
+- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail`, its last output lines indented under it, never a summary, because run-plan lands a compact task only on that line and output.
+- A task is done only once committed on proof from the real product: a test, a command or the running app, not a reading of the code.
+- A check that was skipped or gave no clear outcome is not done: write it as it ran, never as `pass`.
 - Return it only on a failed test or unfinished work.
 - A green task returns only:
 
