@@ -60,6 +60,8 @@ cheap model runs it in place of the plan's `## Success criterion`.
 4. **Shared write target.** Split a file, key or branch two tasks would both
    touch, unless a real shared invariant earns the `Depends on:` edge that
    serializes them; `plan-check` catches an unsplit share with no such chain.
+5. **No manual task.** A check only the user can make is one `## Manual
+   checks` line, never a task, because no builder lands it and the run stalls.
 
 ## Judgment
 

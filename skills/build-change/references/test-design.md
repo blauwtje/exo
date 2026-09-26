@@ -1,4 +1,4 @@
-Read this when logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner, after the baseline, orientation, or reproduction and before the first affected test or production edit; or, before writing the first task in plan mode only, to sort tasks into risky and routine so the risky ones write their test first — style, text, and version-only changes do not qualify, and report mode never loads it.
+Read this when logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner, after the baseline, orientation, or reproduction and before the first affected test or production edit; or before writing the first task of any task list, to sort tasks into risky and routine so the risky ones write their test first — style, text, and version-only changes do not qualify, and report mode never loads it.
 
 # Test design
 
