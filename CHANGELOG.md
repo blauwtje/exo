@@ -7,6 +7,26 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`define-scope`, `run-plan`, `build-change`, `find-cause` and `ship` are cut to at most 700 words each, and the session-start text drops from 4501 to 2141 bytes.** The right-sizing ladder is no longer injected at session start; it lives in `skills/route-skills/references/ladder.md`.
+
+### Added
+
+- `lib/workspace.mjs` decides where a run commits (`commit-here`, `init`, `stop` or `ask` with its menu) and carries out a `--pick`; `run-plan`'s `workspace.md` is a five-line pointer to it.
+- `run-plan` opens a run with `start-run.mjs`, which finds the plan, writes the `run-plan.active` marker and excludes scratch, and closes it with `finish-run.mjs`, which picks the reviewer from the merge-base and removes the marker.
+- `ship.mjs --routes` prints the allowed finish menu from origin, the default branch, `gh auth status` and the `ship` setting, and `--verdict-current <patch-id>` says whether a recorded verdict is still current.
+- `lib/size-facts.mjs` prints changed files, changed lines, an added dependency and `small` or `large`; `pick-reviewer.mjs` counts through it.
+
+### Changed
+
+- `land-task.mjs` refuses with exit 1 when the diff holds a path outside the task's `Files:`, replacing the hand check in `agents/run-unit.md`.
+- `plan-check.mjs` fails a `Modify:` path that does not exist and a `Files:` path two tasks share without a `Depends on` chain; `task-list.md` rules 1 and 4 are shorter.
+- `route-skills` moves Right-sizing to `references/ladder.md` and Context to `references/context.md`; `agents/build-task.md` and the README point to `ladder.md`, and the injected budgets are lowered.
+- `security.md`, `data-migration.md` and `test-design.md` open with their own read-when line, and the shared "Retain project knowledge" rule lives in `build-change/references/project-knowledge.md`.
+- `define-scope`, `run-plan`, `build-change`, `find-cause` and `ship` keep only frontmatter, numbered steps, the References table and a closing `Report:` line, calling the new scripts instead of hand-run steps.
+- The verifier holds those five skills to the slim shape and locks each body at its trimmed size, so growth fails.
+
 ## 0.53.0 - 2026-09-26
 
 ### Added
