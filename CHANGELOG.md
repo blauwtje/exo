@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.51.0 - 2026-09-26
+
 ### Highlights
 
 - **exo has no separate plan stage anymore: `define-scope` writes the brief with a task list and continues into `run-plan` in the same session.**
