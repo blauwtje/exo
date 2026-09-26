@@ -7,12 +7,25 @@
 //   node ship.mjs --route push|open-pr|pr-merge [--title <subject>]
 //                 [--body <file>] [--issue <n>] [--method squash|merge|rebase]
 //   node ship.mjs --merge <number> <number> ...
+//   node ship.mjs --routes
+//   node ship.mjs --verdict-current <patch-id>
 //
 // open-pr and pr-merge need --title and --body, and refuse to run on the
 // default branch. --merge does not combine with --route or its flags. Each
 // step prints `ship: <step> [#<n>]` on stderr as it starts; stdout carries
 // only the one result line a route ends on, or, for --merge, one line per
 // pull request.
+//
+// --routes prints the route question's menu the way ship's SKILL.md derives
+// it from origin, the default branch, `gh auth status` and the `ship` exo
+// setting: one line naming why when a fact rules out every route, one line
+// naming the set route when it can run without a question, and otherwise the
+// menu, preceded by one line naming why a set route did not apply.
+//
+// --verdict-current <patch-id> compares it against the current branch's own
+// patch-id, computed the way SKILL.md's route step 2 does: `git diff
+// <default>...HEAD | git patch-id --stable`. Prints `current` on a match,
+// else `stale`.
 //
 // Steps run in order, stopping at the first that fails: body check, push,
 // create, wait, gate, merge, confirm. Once a pull request is known, a stop
@@ -28,9 +41,11 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { UsageError, parseFlags } from '#script-flags';
+import { settingValue } from '#settings-store';
 
 export const USAGE_EXIT = 2;
 export const DIRTY_EXIT = 4;
@@ -60,6 +75,16 @@ function announce(step, number) {
 // for, so those tokens are taken off before the rest is parsed; anything
 // else on the line means it was combined with a route flag, which is usage.
 function readFlags(argv) {
+  if (argv.includes('--routes')) {
+    if (argv.length !== 1) throw new UsageError('--routes takes no other arguments');
+    return { routes: true };
+  }
+  const verdictAt = argv.indexOf('--verdict-current');
+  if (verdictAt !== -1) {
+    const patchId = argv[verdictAt + 1];
+    if (argv.length !== 2 || !patchId) throw new UsageError('--verdict-current needs one patch-id');
+    return { verdictCurrent: patchId };
+  }
   const mergeAt = argv.indexOf('--merge');
   if (mergeAt !== -1) {
     const numbers = argv.slice(mergeAt + 1);
@@ -91,6 +116,77 @@ function defaultBranch() {
 
 function currentBranch() {
   return execFileSync('git', ['branch', '--show-current'], { encoding: 'utf8' }).trim();
+}
+
+/** True when a remote named `origin` exists. */
+function hasOrigin() {
+  return runGit(['remote', 'get-url', 'origin']).ok;
+}
+
+/** True in a linked worktree, where `--git-dir` sits under the main checkout's `--git-common-dir` rather than equalling it. */
+function inWorktree() {
+  const gitDir = runGit(['rev-parse', '--git-dir']);
+  const commonDir = runGit(['rev-parse', '--git-common-dir']);
+  if (!gitDir.ok || !commonDir.ok) return false;
+  return path.resolve(gitDir.stdout.trim()) !== path.resolve(commonDir.stdout.trim());
+}
+
+/** True when `gh auth status` succeeds. */
+function ghAuthOk() {
+  return runGh(['auth', 'status']).ok;
+}
+
+const MENU_FULL = [
+  '1. **PR + merge (Recommended)**: push, open a pull request, merge it once checks pass',
+  '2. **Open PR**: push and open a pull request, leave it open',
+  '3. **Push**: push the branch, no pull request',
+  '4. **Keep local**: nothing leaves this machine'
+];
+const MENU_PUSH_ONLY = ['1. **Push (Recommended)**: push the commits to origin', '2. **Keep local**: nothing leaves this machine'];
+
+/** Why a set `ship` route other than `push` cannot run yet, or null when it can. */
+function setRouteBlocked(onDefault, ghOk) {
+  if (onDefault) return 'on the default branch';
+  if (!ghOk) return 'gh auth status failed';
+  return null;
+}
+
+/** Prints the route question's menu, or the one line SKILL.md's rules reduce it to, from origin, the default branch, `gh auth status` and the `ship` setting. */
+function printRoutes() {
+  const setting = settingValue('ship');
+  if (setting === 'local') {
+    console.log('route: local (set)');
+    return;
+  }
+  if (!hasOrigin()) {
+    console.log('no origin remote; no route can run');
+    return;
+  }
+  const base = defaultBranch();
+  if (base === null) {
+    console.log('default-branch=unknown; no route can run');
+    return;
+  }
+  const onDefault = currentBranch() === base && !inWorktree();
+  const ghOk = ghAuthOk();
+  if (setting !== 'ask') {
+    const blocked = setting === 'push' ? null : setRouteBlocked(onDefault, ghOk);
+    if (blocked === null) {
+      console.log(`route: ${setting} (set)`);
+      return;
+    }
+    console.log(`ship=${setting} cannot run: ${blocked}`);
+  }
+  for (const line of !onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY) console.log(line);
+}
+
+/** The current branch's patch-id against the default branch, `git diff <base>...HEAD | git patch-id --stable`, matching SKILL.md's verdict rule; null when the default branch cannot be read. */
+function currentPatchId() {
+  const base = defaultBranch();
+  if (base === null) return null;
+  const diff = execFileSync('git', ['diff', `${base}...HEAD`], { encoding: 'utf8' });
+  const patchId = execFileSync('git', ['patch-id', '--stable'], { encoding: 'utf8', input: diff });
+  return patchId.trim().split(/\s+/)[0] || null;
 }
 
 function firstLine(text) {
@@ -266,8 +362,18 @@ function main() {
     flags = readFlags(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
-    console.error(`usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...>: ${error.message}`);
+    console.error(`usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes | --verdict-current <patch-id>: ${error.message}`);
     process.exitCode = USAGE_EXIT;
+    return;
+  }
+
+  if (flags.routes) {
+    printRoutes();
+    return;
+  }
+
+  if (flags.verdictCurrent) {
+    console.log(currentPatchId() === flags.verdictCurrent ? 'current' : 'stale');
     return;
   }
 
