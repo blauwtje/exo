@@ -21,6 +21,7 @@
   "skills/start": { "model": null, "effort": null },
   "skills/try-idea": { "model": null, "effort": null },
   "skills/tune-metric": { "model": null, "effort": null },
+  "skills/verify": { "model": null, "effort": "high" },
   "skills/write-docs": { "model": null, "effort": null },
   "agents/build-task": { "model": "sonnet", "effort": "high" },
   "agents/build-ui": { "model": "sonnet", "effort": "high" },

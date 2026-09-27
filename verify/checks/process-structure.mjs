@@ -11,6 +11,7 @@ const SLIM_SKILLS = [
   'skills/spec/SKILL.md',
   'skills/find-cause/SKILL.md',
   'skills/build/SKILL.md',
+  'skills/verify/SKILL.md',
   'skills/ship/SKILL.md'
 ];
 const POINTER_REFERENCES = ['skills/build/references/workspace.md'];
