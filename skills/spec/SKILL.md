@@ -8,35 +8,24 @@ argument-hint: <outcome to shape>
 
 ## Steps
 
-1. **Gate.** Zero open decisions means leave this skill and write no brief; hand the goal to `build`.
-   An open decision is one the user would notice that neither request nor code settles.
-   A change of at most two files with no open decision also goes straight to `build`, unasked.
-   The exception is two or more order dependencies, B unable to build, test or keep its data before A lands: write the brief unasked, from step 4 on.
-   Asked for options, give directions, recommended first, and write no file.
-   New wishes for briefed work reopen that brief, since two briefs for one outcome drift apart.
-2. **Sort each open point.** Ask only what is costly or irreversible, the root other decisions hang on first.
-   Costly means stored data format, a public interface, a paid service, a deletion, or access rights and security.
-   A point answerable by running something: run it yourself and record the outcome as a decision.
-   Decide the routine, a visible but cheap point included, and list it as an assumption.
-   A decision the user left undecided stays open whatever the code suggests.
-   Name the owning layer and any smaller alternative.
-3. **Ask once.** Read `references/question-shape.md`, then bundle all costly questions and assumptions into one message in its shape.
-   With assumptions but no costly question, write the brief unasked; with neither, step 1 applies.
-   After a compaction, list the decisions so far before the next message.
-4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`, plan mode included, and read the file at the path it prints.
-   Discovery beyond the map goes to the `exo:locate-code` agent, quoting the range around each file, symbol and call site the tasks will name.
-   Read at most eight ranges here, never through `cat`, `head` or `sed`, since each read rides in every later turn.
-5. **List tasks** in the grammar `references/task-list.md` sets.
-   A task crossing a security boundary names the security reference in its heading or `Data:` segment, so the builder reads it first.
-   Plan mode runs only commands that leave the working tree unchanged; a proof needing an edit makes that edit the first task.
-6. **Store it.** Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
-   The exception is plan mode: the brief goes into the plan file the harness names.
-   `docs` writes `docs/specs/<topic>.md`; `issues` and `both` follow `references/brief-in-an-issue.md`.
-   `issues` also writes the brief to the path `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` prints, the copy `build` runs.
-7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>` and repair each line it prints.
-   Then repair any Acceptance item that reaches no task heading, `Data:` segment, Success criterion or `## Manual checks` line, because the builder cannot.
-8. **Hand off.** Load `exo:build` on that file with the Skill tool, in this turn and unasked, because the context watch reads a plan run from that load.
-   The exception is a read-only planning mode: end on the output of `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path, or #<n> for an issue>`.
+1. **Gate.** No open decision, unsettled and user-noticeable — hand off to `build` unasked, no brief; ≤2 files.
+   Exception: order-dependent tasks (B needs A) — write it unasked, from step 4.
+   Asked for options: list them, recommend one, no file.
+   New wishes for briefed work reopen that brief.
+2. **Sort each point.** Costly/irreversible first: data format, a public interface, a paid service, a deletion, access or security.
+   Answerable by running: run it, record it.
+   Routine or cheap-but-visible: decide, list as an assumption; undecided stays open regardless of code.
+   Name the owning layer and a smaller alternative.
+3. **Ask once.** Per `references/question-shape.md`, bundle every costly question and assumption in one message.
+   Assumptions only: write the brief unasked; neither: step 1 applies.
+   After a compaction: list decisions first.
+4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
+5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`. Plan mode: tree-unchanged commands only — an edit-needing proof is the first task.
+6. **Store it** per the session's `exo settings:` `specs` value, `docs` when absent (plan mode: the harness's plan file); name its location.
+   `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`; `issues` also writes the `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` path, for `build`.
+7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines; add any missing heading, `Data:`, Success criterion or `## Manual checks`.
+8. **Hand off.** Load `exo:build` on it via the Skill tool, unasked, this turn.
+   Exception: plan mode ends on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output.
 
 ## References
 
