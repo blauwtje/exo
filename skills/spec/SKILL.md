@@ -10,12 +10,13 @@ argument-hint: <outcome to shape>
 
 1. **Gate.** Zero open decisions means leave this skill and write no brief; hand the goal to `build`.
    An open decision is one the user would notice that neither request nor code settles.
+   A change of at most two files with no open decision also goes straight to `build`, unasked.
    The exception is two or more order dependencies, B unable to build, test or keep its data before A lands: write the brief unasked, from step 4 on.
    Asked for options, give directions, recommended first, and write no file.
    New wishes for briefed work reopen that brief, since two briefs for one outcome drift apart.
 2. **Sort each open point.** Ask only what is costly or irreversible, the root other decisions hang on first.
    Costly means stored data format, a public interface, a paid service, a deletion, or access rights and security.
-   A point answerable by running something goes to `try-idea` and returns as a decision.
+   A point answerable by running something: run it yourself and record the outcome as a decision.
    Decide the routine, a visible but cheap point included, and list it as an assumption.
    A decision the user left undecided stays open whatever the code suggests.
    Name the owning layer and any smaller alternative.
