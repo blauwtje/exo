@@ -1,12 +1,12 @@
 # Question shape
 
-Put the costly questions and the assumptions in one message the user answers at a glance. The enemy is a message in the code's vocabulary. The overcorrection is so much context that the choice gets lost.
+Put the costly or irreversible questions and the assumptions in one message the user answers at a glance. The enemy is a message in the code's vocabulary. The overcorrection is so much context that the choice gets lost.
 
 ## Question shape
 
 The user never saw the code, so no name from it appears in any message, assumption lines included: no path, class, field, setting, role, status code or technical term, only what it means for the user.
 
-- The message opens with each costly question in turn, short and in everyday words, numbered when more than one.
+- The message opens with each costly or irreversible question in turn, short and in everyday words, numbered when more than one.
   The exception is one context line above a question, when it needs it; earlier answers and code findings wait for the brief.
 - Two or three one-line options per question, holding only what the user gets, lettered when the question is numbered.
 - Recommended first, with the active output style's marker for a recommended choice; only without one, `(recommended)`.
