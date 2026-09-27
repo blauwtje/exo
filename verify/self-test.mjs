@@ -56,6 +56,14 @@ const SCENARIOS = [
     read(root, 'skills/spec/SKILL.md').replace(/^name: spec$/gm, 'name: [spec')) },
   { name: 'missing-judgment', mutate: (root) =>
     replaceText(root, 'skills/check-docs/SKILL.md', '## Judgment', '## Verdict') },
+  // A step reference carries neither check, so stripping both from one leaves
+  // the file valid; only SKILL.md still needs them (see missing-judgment above).
+  { name: 'step-reference-without-stance-or-judgment', expect: 'accept', mutate: (root) => {
+    replaceText(root, 'skills/build/references/critique.md',
+      'Judge the delivered diff against the request before judging its internal elegance. The enemy is author anchoring: the diff matches the reasoning that produced it while drifting from the request. The overcorrection is context-free review that rejects settled decisions or invents new scope.',
+      'Judge the delivered diff against the request before judging its internal elegance.');
+    replaceText(root, 'skills/build/references/critique.md', '## Judgment', '## Wrap-up');
+  } },
   // build's body sits at its SLIM_BODY_TOKENS lock, so the stance paragraph
   // added here also trims two References descriptions by more bytes than it
   // costs: the mutation reaches the slim-shape check instead of the lock.

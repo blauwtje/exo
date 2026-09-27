@@ -3,6 +3,8 @@
 // runs straight into numbered steps, keeps a References table, and ends on one
 // `Report:` line. A pointer reference names the script that owns its rule and
 // carries no process, so it holds neither shape; the text checks still read it.
+// A step reference under references/ keeps the H1 but needs neither the
+// stance opening nor a closing Judgment section; only SKILL.md keeps both.
 
 import path from 'node:path';
 import { markdownBody } from '../markdown.mjs';
@@ -89,8 +91,12 @@ export function checkProcessStructure(report, repository) {
       continue;
     }
     const afterHeading = body.slice(heading.index + heading[0].length).replace(/^\s+/, '');
-    const contract = SLIM_SKILLS.includes(relative) ? slimContractErrors : fullContractErrors;
-    errors.push(...contract(relative, body, afterHeading));
+    const isStepReference = path.basename(file) !== 'SKILL.md';
+    if (SLIM_SKILLS.includes(relative)) {
+      errors.push(...slimContractErrors(relative, body, afterHeading));
+    } else if (!isStepReference) {
+      errors.push(...fullContractErrors(relative, body, afterHeading));
+    }
   }
   report.assert(
     errors.length === 0,
