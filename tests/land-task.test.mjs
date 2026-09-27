@@ -7,7 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
@@ -296,6 +296,41 @@ test('trailing whitespace and CRLF line endings on the report still land', async
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+});
+
+async function fixCheckout() {
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  return root;
+}
+
+test('--fix commits every changed path, tracked or not, with the given subject', async () => {
+  const root = await fixCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  const output = fixLand({ root, subject: 'fix(app): address the branch review' });
+  assert.match(output, /^Committed: [0-9a-f]+$/m);
+  assert.equal(git(root, 'log', '-1', '--format=%s'), 'fix(app): address the branch review');
+  assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n').sort(), ['src/app.js', 'src/extra.js']);
+  assert.equal(git(root, 'status', '--porcelain'), '');
+});
+
+test('--fix on a clean checkout is refused', async () => {
+  const root = await fixCheckout();
+  assert.throws(() => fixLand({ root, subject: 'fix(app): nothing changed' }), /no changed path to commit/);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+});
+
+test('the command line --fix commits every changed path with that subject', async () => {
+  const root = await fixCheckout();
+  await editApp(root);
+  const result = await run(SCRIPT, ['--fix', 'fix(app): address the branch review', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Committed: [0-9a-f]+$/m);
+  assert.equal(git(root, 'log', '-1', '--format=%s'), 'fix(app): address the branch review');
+  assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
 test('the next report field ends the output with no blank line between them', async () => {

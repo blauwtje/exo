@@ -5,7 +5,9 @@
 // holds the task, and prints that set, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and the
-// printout carries that output.
+// printout carries that output. `--fix <subject>` bypasses all of that for a
+// review-fix or bug-fix commit: it stages every changed path and commits it
+// with the given subject, no task, plan or trailer needed.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -35,6 +37,22 @@ function deriveCommit(task, number) {
   }
   const addArgs = task.files.map((file) => shellQuote(file.path)).join(' ');
   return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m "Plan-task: ${number}"`;
+}
+
+// A review-fix or bug-fix commit names no task and touches whatever the
+// repair changed, so `--fix <subject>` skips the Files: scope check and the
+// Plan-task trailer entirely: it stages every changed path and commits it
+// with the given subject as-is, the same shape the calling skill used to
+// spell out as a bare `git add -A && git commit -m` line.
+export function fixLand({ root, subject }) {
+  const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
+  if (status.trim() === '') {
+    throw new LandingError('no changed path to commit');
+  }
+  execFileSync('git', ['-C', root, 'add', '-A'], { encoding: 'utf8' });
+  execFileSync('git', ['-C', root, 'commit', '-m', subject], { encoding: 'utf8' });
+  const sha = execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+  return `Committed: ${sha}\n`;
 }
 
 export function commitBlockOf(plan, number) {
@@ -182,12 +200,16 @@ export function landTask({ planText, number, root, reportText = null, reportPath
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value' });
+  const root = flags.root ?? process.cwd();
+  if (flags.fix !== undefined) {
+    process.stdout.write(fixLand({ root, subject: flags.fix }));
+    return;
+  }
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  const root = flags.root ?? process.cwd();
   // The implementer prompt's `Report to:` path, so a wave's per-task worktree
   // finds its own report with no extra flag.
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
