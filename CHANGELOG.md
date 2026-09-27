@@ -7,6 +7,29 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Plan a change with `spec` and build it with `build`, which replace `define-scope`, `run-plan` and `build-change`.**
+
+### Added
+
+- `skills/edit-skills/scripts/rename-skill.mjs` moves a skill folder, its docs page and its pressure cases to a new name, then rewrites every word-bounded mention of the old name outside `CHANGELOG.md` and `benchmarks/results/`.
+- `skills/verify/scripts/verify.mjs` runs each landed task's `Proof:` command, the plan's success criterion and a check for changed paths outside the `Files:` a task named. It ends on `REVIEWER: sonnet` or `REVIEWER: opus`, picked by the size of the diff.
+- `plan-check.mjs` fails a plan whose `## Acceptance` item names no task number, `Data:` segment, success criterion or manual check.
+
+### Changed
+
+- `define-scope` is renamed `spec`, and `run-plan` is renamed `build`.
+- `build-change` is folded into `build`, which runs a decided change with no plan file through its own No spec steps.
+
+### Removed
+
+- `skills/build/scripts/finish-run.mjs` and its test. `verify.mjs` prints the reviewer instead.
+
+### Fixed
+
+- `lib/size-facts.mjs` reads a renamed path in `git diff --numstat` output as its old and new path.
+
 ## 0.56.0 - 2026-09-28
 
 ### Added
