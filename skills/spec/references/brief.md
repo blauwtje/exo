@@ -29,4 +29,4 @@ The brief holds these sections, in this order:
 ## Judgment
 
 - `Visual direction` keeps that exact name, because the design-ui skill reads the brief's `## Visual direction`.
-- A brief whose `## Visual direction` names an existing `contract-selected.json` hands the frontend-design skill a decided direction; it resumes at Build and repeats no variant choice.
+- A brief whose `## Visual direction` names an existing `contract-selected.json` hands `design-ui` a decided direction; it resumes at Build and repeats no variant choice.
