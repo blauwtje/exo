@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { nextTaskReport } from '../skills/build/scripts/next-task.mjs';
+import { frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/next-task.mjs', import.meta.url));
@@ -147,6 +147,25 @@ test('the command line reads the plan and the checkout, and refuses a missing pl
   assert.equal(missing.code, 2);
   assert.equal(missing.stdout, '');
   assert.match(missing.stderr, /no plan at/);
+});
+
+test('--frame prints the plan frame\'s header sections and no task or wave', async () => {
+  const report = frameOnlyReport(PLAN);
+  assert.match(report, /^Goal: The fixture proves the plan reader\.$/m);
+  assert.match(report, /^Non-goals touching these paths:$/m);
+  assert.match(report, /^Context for these paths and symbols:$/m);
+  assert.match(report, /^Visual direction:\nDesign skill: design-ui$/m);
+  assert.doesNotMatch(report, /^Wave:/m);
+  assert.doesNotMatch(report, /^### Task \d+:/m);
+});
+
+test('the command line prints the frame report under --frame and writes no brief', async () => {
+  const { root, planPath } = await checkout();
+  const result = await run(SCRIPT, ['--plan', planPath, '--root', root, '--frame'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Goal: The fixture proves the plan reader\.$/m);
+  assert.doesNotMatch(result.stdout, /^Wave:/m);
+  await assert.rejects(fs.access(briefPath(root, 1)), { code: 'ENOENT' });
 });
 
 test('a plan whose open tasks cannot be ordered stops with exit 1 and names the tasks, never "every task landed"', async () => {

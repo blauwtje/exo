@@ -85,6 +85,21 @@ function successCriterionLines(frame) {
   return frame.successCriterion === null ? [] : [`Success criterion: ${frame.successCriterion}`];
 }
 
+// `--frame` prints the plan frame's header sections verbatim, the fields
+// frameOf reads off the plan, so a plan's Goal, Non-goals, Context and
+// Visual direction reach a caller without it retyping them as prose.
+function frameReport(frame) {
+  return `${[
+    `Goal: ${frame.goal}`,
+    ...successCriterionLines(frame),
+    'Non-goals touching these paths:',
+    ...bulletLines(frame.nonGoals),
+    'Context for these paths and symbols:',
+    ...bulletLines(frame.context),
+    ...(frame.visualDirection === null ? ['Visual direction: none'] : ['Visual direction:', frame.visualDirection])
+  ].join('\n')}\n`;
+}
+
 function taskBrief(task, frame, root) {
   return [
     `Goal: ${frame.goal}`,
@@ -131,6 +146,12 @@ function taskLines(task, frame, root, briefDirectory) {
   ];
 }
 
+// Reads only the plan's frame and prints its header sections; `main` reaches
+// this under `--frame`, before a plan holds a task worth a wave.
+export function frameOnlyReport(planText) {
+  return frameReport(frameOf(parsePlan(planText).frame));
+}
+
 // Writes a brief file for each task of the next wave and returns the report
 // that names them.
 export function nextTaskReport({ planPath, planText, root }) {
@@ -153,10 +174,15 @@ export function nextTaskReport({ planPath, planText, root }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value' });
+  const frame = argv.includes('--frame');
+  const flags = parseFlags(argv.filter((arg) => arg !== '--frame'), { plan: 'value', root: 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
+  if (frame) {
+    process.stdout.write(frameOnlyReport(planText));
+    return;
+  }
   process.stdout.write(nextTaskReport({ planPath: flags.plan, planText, root: flags.root ?? process.cwd() }));
 }
 
