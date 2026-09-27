@@ -17,7 +17,7 @@ The brief holds these sections, in this order:
 - **Checkpoint:** the four points `Blocks first:`, `Parallel:`, `Shared state:` and `Smallest safe split:`, each naming tasks, a shared target or `none`.
 - **Tasks:** last, because a `## ` heading after a task ends that task; the task template and its per-task rules follow the skill's References row for it.
 
-`docs` writes `docs/specs/<topic>.md` in these section names.
+Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message. `docs` writes `docs/specs/<topic>.md` in these section names.
 
 ## The task list
 

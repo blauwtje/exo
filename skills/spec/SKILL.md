@@ -8,7 +8,9 @@ argument-hint: <outcome to shape>
 
 ## Steps
 
-1. **Gate.** No open decision, unsettled and user-noticeable — hand off to `build` unasked, no brief; ≤2 files.
+1. **Gate.** Zero open decisions means leave this skill and write no brief; hand the goal to `build`.
+   An open decision is one the user would notice that neither request nor code settles.
+   No open decision, unsettled and user-noticeable — hand off to `build` unasked, no brief; ≤2 files.
    Exception: order-dependent tasks (B needs A) — write it unasked, from step 4.
    Asked for options: list them, recommend one, no file.
    New wishes for briefed work reopen that brief.

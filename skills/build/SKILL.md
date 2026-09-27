@@ -15,7 +15,7 @@ Read `references/run-loop.md` for steps 1-6: finding the plan, reading the frame
 
 ## No spec
 
-A decided change with no plan file runs the eight steps in `references/no-spec.md` instead of the loop above.
+A decided change with no plan file runs the eight steps in `references/no-spec.md` instead of the loop above. Its Gate step: Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file. After a compaction, rebuild what landed from the working-tree diff, not memory. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
 
 ## References
 

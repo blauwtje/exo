@@ -25,8 +25,10 @@ const PINNED_SENTENCES = {
   'skills/spec/SKILL.md': [
     'Zero open decisions means leave this skill and write no brief',
     'An open decision is one the user would notice that neither request nor code settles.',
-    'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
     'Not for a clear goal, a failure, or visual-only work.',
+  ],
+  'skills/spec/references/brief.md': [
+    'Store the brief where `specs` in the session\'s `exo settings:` line says, `docs` when that line is absent, and name its location in the same message',
   ],
   'skills/find-cause/SKILL.md': [
     'when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary',
@@ -36,6 +38,8 @@ const PINNED_SENTENCES = {
     'Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.',
     'After a compaction, rebuild what landed from the working-tree diff, not memory.',
     'When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.',
+  ],
+  'skills/build/references/fresh-eyes.md': [
     ...REVIEW_THRESHOLD,
   ],
   'skills/audit-architecture/SKILL.md': [
