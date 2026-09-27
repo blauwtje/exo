@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
-import { FILE_LIMIT, LINE_LIMIT } from '../../skills/build/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT } from '../../skills/verify/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { CHARACTERS_PER_TOKEN, DEFAULT_GUARD_LINES, SESSION_RETENTION_DAYS } from '../../skills/show-savings/scripts/record.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
