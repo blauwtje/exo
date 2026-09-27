@@ -33,6 +33,15 @@ test('every general-purpose delegate dispatch names its model', () => {
   assert.deepEqual(unnamed, []);
 });
 
+test('every review-branch dispatch names the model override the printed reviewer picks', () => {
+  for (const relativePath of ['build/SKILL.md', 'verify/SKILL.md']) {
+    const text = fs.readFileSync(path.join(skillsRoot, relativePath), 'utf8');
+    const dispatch = text.match(/^.*`exo:review-branch` agent.*$/m)?.[0];
+    assert.ok(dispatch, `${relativePath} does not dispatch \`exo:review-branch\``);
+    assert.match(dispatch, /`sonnet`.+`opus`|`opus`.+`sonnet`/, `${relativePath} does not name both models for the override`);
+  }
+});
+
 test('every build goes to the implementer agent, and a design build with a named direction loads design-ui in-session', () => {
   const unit = fs.readFileSync(path.join(skillsRoot, '..', 'agents', 'run-unit.md'), 'utf8');
   const dispatchStep = unit.match(/^3\. \*\*Dispatch the build\.\*\*.+$/m)[0];

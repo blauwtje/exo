@@ -144,18 +144,14 @@ test('the inputs the design critic expects are the ones design-ui hands it', () 
   }
 });
 
-test('the two branch reviewers share one body and differ only in effort', () => {
+test('review-branch is one agent, sized for a model override at dispatch', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch-deep');
-  assert.ok(deepReviewer, 'agents/review-branch-deep.md exists');
-  assert.equal(reviewer.frontmatter.effort, 'medium');
-  assert.equal(deepReviewer.frontmatter.effort, 'high');
-  assert.equal(deepReviewer.body, reviewer.body, 'the two bodies differ');
-  assert.deepEqual(Object.keys(deepReviewer.frontmatter).sort(), Object.keys(reviewer.frontmatter).sort());
-  const sharedKeys = Object.keys(reviewer.frontmatter).filter((key) => !['name', 'description', 'effort'].includes(key));
-  for (const key of sharedKeys) {
-    assert.equal(deepReviewer.frontmatter[key], reviewer.frontmatter[key], `${key} differs between the two reviewers`);
-  }
+  assert.equal(deepReviewer, undefined, 'agents/review-branch-deep.md still exists after the merge');
+  assert.equal(reviewer.frontmatter.model, 'sonnet');
+  assert.equal(reviewer.frontmatter.effort, 'high');
+  assert.ok(reviewer.body.includes('a model override of `sonnet` or `opus`'), 'the dispatch names a model override');
+  assert.ok(reviewer.body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
 });
 
 test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
