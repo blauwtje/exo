@@ -1,4 +1,4 @@
-// Guards build-change's *Done* verdict: a green test suite must never stand
+// Guards build's *Done* verdict: a green test suite must never stand
 // in for running the product on real input (see SKILL.md step 5). Blocks the
 // turn once, at Stop, when the session's final report claims Done without a
 // `Proof: <command> -> <output>` line the transcript backs up, or an
@@ -6,7 +6,7 @@
 //
 //   node proof-check.mjs stop   Stop hook: stdin is the hook JSON
 //
-// Silent outside a session that called the exo:build-change skill, and on
+// Silent outside a session that called the exo:build skill, and on
 // stop_hook_active, so this never loops or fires for unrelated work. A hook
 // failure never blocks the turn.
 
@@ -15,7 +15,7 @@ import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 
-const BUILD_CHANGE_SKILL = /(^|:)build-change$/i;
+const BUILD_SKILL = /(^|:)build$/i;
 const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
 const PROOF_LINE = /^Proof:\s*(.+?)\s*->\s*(.+)$/m;
 const UNVERIFIED_LINE = /^Unverified:\s*(.+)$/m;
@@ -51,10 +51,10 @@ function textOf(entry) {
     .join('\n');
 }
 
-function isBuildChangeCall(block) {
+function isBuildCall(block) {
   if (block?.type !== 'tool_use' || block.name !== 'Skill') return false;
   const skill = typeof block.input?.skill === 'string' ? block.input.skill : '';
-  return BUILD_CHANGE_SKILL.test(skill);
+  return BUILD_SKILL.test(skill);
 }
 
 function normalizeCommand(command) {
@@ -70,7 +70,7 @@ function resultTextOf(block) {
   return '';
 }
 
-// Bash commands the session ran after the build-change call, normalized
+// Bash commands the session ran after the build call, normalized
 // command -> its tool_result text (later calls to the same command overwrite).
 function bashOutputsAfter(rows, startIndex) {
   const resultsByToolUseId = new Map();
@@ -110,7 +110,7 @@ function bashDestinationPaths(command) {
   return destinations.map((destination) => destination.replace(/^['"]|['"]$/g, ''));
 }
 
-// Paths the session itself wrote after the build-change Skill call: a Write,
+// Paths the session itself wrote after the build Skill call: a Write,
 // Edit, MultiEdit or NotebookEdit target, or a Bash redirection/copy
 // destination. Each carries the cwd of the entry that produced it (when the
 // transcript has one) so a relative path can be resolved to absolute later.
@@ -181,7 +181,7 @@ function verify(text, bashOutputs, writtenPaths) {
 export function stopOutput(input) {
   if (input.stop_hook_active === true) return '';
   const rows = entries(input.transcript_path);
-  const skillIndex = rows.findIndex((entry) => contentBlocks(entry).some(isBuildChangeCall));
+  const skillIndex = rows.findIndex((entry) => contentBlocks(entry).some(isBuildCall));
   if (skillIndex === -1) return '';
 
   let lastAssistantText = '';

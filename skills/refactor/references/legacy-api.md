@@ -5,7 +5,7 @@ When a refactor reshapes an internal API, its callers move to the new form and t
 ## Scope
 
 - Covers a function, module path, class, route or type whose every caller lives in this repository.
-- Does not cover persisted data, a stored or wire format, a published package or an endpoint another deployment calls; those keep compatibility on purpose, and `build-change` migrates them in phases.
+- Does not cover persisted data, a stored or wire format, a published package or an endpoint another deployment calls; those keep compatibility on purpose, and `build` migrates them in phases.
 - A private package inside a monorepo counts as internal when the same change can update every consumer.
 
 ## Inventory the callers

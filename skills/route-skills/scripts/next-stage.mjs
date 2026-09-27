@@ -25,13 +25,13 @@ import { hotSessionFile, isSessionId } from '#session-record-path';
 const NEXT_STAGE = {
   'spec': { stage: 'build', label: 'Run-plan', does: 'runs the plan' },
   'audit-architecture': { stage: 'spec', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
-  'find-cause': { stage: 'build-change', label: 'Build-change', does: 'builds the edits the proof left' }
+  'find-cause': { stage: 'build-no-spec', label: 'Build', does: 'builds the edits the proof left' }
 };
 
 function commandFor(stage, artifact) {
   if (stage === 'spec') return `/exo:spec ${artifact}`;
   if (stage === 'build') return `/exo:build ${artifact}`;
-  if (stage === 'build-change') return '/exo:build-change';
+  if (stage === 'build-no-spec') return '/exo:build';
   throw new UsageError(`no command known for next stage '${stage}'`);
 }
 
@@ -50,7 +50,7 @@ function designPending(planPath) {
 // stage the question opens next; `null` when that stage names no row, which
 // leaves the session's own model and effort unnamed under the options.
 function modelLineFor(stage, artifact) {
-  if (stage === 'build-change') {
+  if (stage === 'build-no-spec') {
     return 'Next stage runs on `opus` at `high`, because it decides the change while building it.';
   }
   if (stage === 'build') {

@@ -4,7 +4,7 @@ Improves one measured metric in an unattended loop: each change is measured agai
 
 ## When it fires
 
-Only when you invoke it. Claude never starts it, because only you can name the metric, the target and how long the run may go. A single decided change belongs to build-change, a failure with an unproven cause to find-cause, and finding what to improve to audit-architecture.
+Only when you invoke it. Claude never starts it, because only you can name the metric, the target and how long the run may go. A single decided change belongs to build, a failure with an unproven cause to find-cause, and finding what to improve to audit-architecture.
 
 ## What you get
 

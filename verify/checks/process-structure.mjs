@@ -8,7 +8,6 @@ import path from 'node:path';
 import { markdownBody } from '../markdown.mjs';
 
 const SLIM_SKILLS = [
-  'skills/build-change/SKILL.md',
   'skills/spec/SKILL.md',
   'skills/find-cause/SKILL.md',
   'skills/build/SKILL.md',

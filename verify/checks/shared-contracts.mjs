@@ -30,12 +30,11 @@ const PINNED_SENTENCES = {
   ],
   'skills/find-cause/SKILL.md': [
     'when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary',
-    'Until the cause is proven this skill outranks `spec` and `build-change`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1.',
+    'Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1.',
   ],
-  'skills/build-change/SKILL.md': [
+  'skills/build/SKILL.md': [
     'Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.',
     'After a compaction, rebuild what landed from the working-tree diff, not memory.',
-    'Not for a plan file, another change of at most two files, a version bump, or an unproven failure.',
     'When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.',
     ...REVIEW_THRESHOLD,
   ],
@@ -48,7 +47,7 @@ const PINNED_SENTENCES = {
   'skills/design-ui/SKILL.md': [
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive',
-    'This skill owns visual decisions only. When a `spec`, `build`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
+    'This skill owns visual decisions only. When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
   ],

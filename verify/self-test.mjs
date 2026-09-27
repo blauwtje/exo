@@ -67,12 +67,12 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       'Never here: `exo:run-unit` reads it.', 'Never here.');
   } },
-  // build-change's body sits at its SLIM_BODY_TOKENS lock; trimming one
+  // build's body sits at its SLIM_BODY_TOKENS lock; trimming one
   // References description offsets the added Judgment section's bytes.
   { name: 'slim-skill-judgment-section', mutate: (root) => {
-    replaceText(root, 'skills/build-change/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       '\n## References\n', '\n## Judgment\n\n- Stop.\n\n## References\n');
-    replaceText(root, 'skills/build-change/SKILL.md',
+    replaceText(root, 'skills/build/SKILL.md',
       'Before asking the user to pick among numbered options.', 'Before asking.');
   } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/spec/SKILL.md',
@@ -108,25 +108,25 @@ const SCENARIOS = [
   { name: 'oversized-skill-body', mutate: (root) =>
     append(root, 'skills/configure/SKILL.md', `\n${'- A line no body has room for.\n'.repeat(500)}`) },
   { name: 'broken-reference', mutate: (root) =>
-    replaceText(root, 'skills/build-change/SKILL.md', 'references/critique.md', 'references/missing.md') },
+    replaceText(root, 'skills/build/SKILL.md', 'references/critique.md', 'references/missing.md') },
   { name: 'broken-prompt-link', mutate: (root) =>
     replaceText(root, 'skills/build/SKILL.md', 'implementer-prompt.md', 'implementer-brief.md') },
   { name: 'removed-required-owner-row', mutate: (root) =>
-    dropLines(root, 'skills/find-cause/SKILL.md', '| `../build-change/references/security.md` |') },
+    dropLines(root, 'skills/find-cause/SKILL.md', '| `../build/references/security.md` |') },
   { name: 'dropped-security-ordering-window', mutate: (root) => replaceText(root,
-    'skills/build-change/references/security.md',
+    'skills/build/references/security.md',
     'and before ordering tasks, the first affected test, or the first production edit ',
     '') },
   { name: 'dropped-data-migration-ordering-window', mutate: (root) => replaceText(root,
-    'skills/build-change/references/data-migration.md',
+    'skills/build/references/data-migration.md',
     'and before ordering tasks or the first edit ',
     '') },
   { name: 'dropped-test-design-plan-mode-clause', mutate: (root) => replaceText(root,
-    'skills/build-change/references/test-design.md',
+    'skills/build/references/test-design.md',
     '; or before writing the first task of any task list, to sort tasks into risky and routine so the risky ones write their test first',
     '') },
   { name: 'dropped-test-design-report-mode-exclusion', mutate: (root) => replaceText(root,
-    'skills/build-change/references/test-design.md',
+    'skills/build/references/test-design.md',
     ', and report mode never loads it', '') },
   { name: 'extra-ui-reference', mutate: (root) =>
     write(root, 'skills/design-ui/references/extra.md',
@@ -140,9 +140,9 @@ const SCENARIOS = [
     fs.mkdirSync(nested);
     fs.renameSync(path.join(root, 'skills/spec/SKILL.md'), path.join(nested, 'SKILL.md'));
   } },
-  { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
+  { name: 'drifted-size-fact', mutate: (root) => replaceText(root, 'skills/build/SKILL.md',
     'over two source, test or config files change', 'over one source, test or config file changes') },
-  { name: 'drifted-record-rule', mutate: (root) => replaceText(root, 'skills/build-change/SKILL.md',
+  { name: 'drifted-record-rule', mutate: (root) => replaceText(root, 'skills/build/SKILL.md',
     'rebuild what landed from the working-tree diff, not memory.', 'rebuild what landed from memory.') },
   { name: 'drifted-floor-number', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'verify a ratio of at least 4.5:1', 'verify a ratio of at least 4:1') },
@@ -227,7 +227,7 @@ const SCENARIOS = [
   { name: 'broken-skill-script', mutate: (root) =>
     append(root, 'skills/design-ui/scripts/capture.mjs', '\nexport function broken( {\n') },
   { name: 'copied-data-migration', mutate: (root) => write(root, 'skills/spec/references/data-migration.md',
-    read(root, 'skills/build-change/references/data-migration.md')) },
+    read(root, 'skills/build/references/data-migration.md')) },
   { name: 'uncapped-delegate-report', mutate: (root) =>
     replaceText(root, 'agents/fetch-docs.md', 'at most 25 lines', 'a short report') },
   { name: 'body-over-token-ceiling', mutate: (root) =>

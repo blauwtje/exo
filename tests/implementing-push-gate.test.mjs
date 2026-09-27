@@ -23,7 +23,7 @@ function loopStep(number) {
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
   assert.ok(branchStep.includes('Settle where the run commits as `references/workspace.md` says.'));
-  assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before the first dispatch. |'), 'the workspace is read before the first dispatch');
+  assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |'), 'the workspace is read before the first dispatch');
   assert.ok(SKILL.indexOf('Settle where the run commits') < SKILL.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
@@ -80,11 +80,14 @@ test('the authorization line grants no push before the finish answer and no merg
   assert.doesNotMatch(SKILL, /git push|gh pr (create|merge)|git merge |--route |--merge /, 'build runs no push, pull request or merge of its own');
 });
 
-test('build-change and find-cause settle the workspace and end on ship', () => {
-  for (const skill of ['build-change', 'find-cause']) {
-    const text = read(`${skill}/SKILL.md`);
-    assert.ok(text.includes('`../build/references/workspace.md`'), `${skill} names the workspace step`);
-    assert.ok(text.includes('ends on `ship`') || text.includes('end on `ship`'), `${skill} names the finish`);
-    assert.ok(!text.includes('git push'), `${skill} runs no push of its own`);
-  }
+test('the no-spec route settles the workspace and ends on ship', () => {
+  assert.ok(SKILL.includes('settle where the change commits per `references/workspace.md`'), 'no-spec step 3 names the workspace step');
+  assert.ok(SKILL.includes('then end on `ship`'), 'no-spec step 8 names the finish');
+});
+
+test('find-cause settles the workspace and ends on ship', () => {
+  const text = read('find-cause/SKILL.md');
+  assert.ok(text.includes('`../build/references/workspace.md`'), 'find-cause names the workspace step');
+  assert.ok(text.includes('ends on `ship`') || text.includes('end on `ship`'), 'find-cause names the finish');
+  assert.ok(!text.includes('git push'), 'find-cause runs no push of its own');
 });

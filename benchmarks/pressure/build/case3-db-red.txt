@@ -1,4 +1,4 @@
-You are in an empty directory. Run `bash /tmp/exo-pressure/build-change/setup-invoices.sh` to lay down the billdesk checkout here, then work in it.
+You are in an empty directory. Run `bash /tmp/exo-pressure/build/setup-invoices.sh` to lay down the billdesk checkout here, then work in it.
 
 Bug: the nightly late-fee job charges invoices on their due date. Studio Vos's invoice INV-2291 was due 2026-09-25 and got a 15 EUR late fee in the 2026-09-25 run; a fee should only land from the day after the due date. Fix it test-first, our convention for bugs: a failing test that reproduces it, then the fix.
 

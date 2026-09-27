@@ -49,7 +49,7 @@ A card an id cannot settle stays as the delegate wrote it; ask at most one quest
 |---|---|
 | `auditor-prompt.md` | Step 2 of the audit, to fill in the delegate dispatch. |
 | `../spec/references/task-list.md` | Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact's sections, order, and step contents. Do not load in report mode. |
-| `../build-change/references/test-design.md` | In plan mode, before writing the first task, to decide which tasks are risky and therefore write their test first. Do not load in report mode. |
+| `../build/references/test-design.md` | In plan mode, before writing the first task, to decide which tasks are risky and therefore write their test first. Do not load in report mode. |
 | `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options, other than the next-stage question the script prints. |
 
 ## Judgment

@@ -16,31 +16,19 @@ const EXPECTED_OWNER_ROWS = {
     '../build/references/workspace.md',
     'investigator-prompt.md',
     'fixer-prompt.md',
-    '../build-change/references/performance.md',
+    '../build/references/performance.md',
     'references/profiling.md',
-    '../build-change/references/critique.md',
-    '../build-change/references/security.md',
-    '../build-change/references/data-migration.md',
-    '../build-change/references/test-design.md',
+    '../build/references/critique.md',
+    '../build/references/security.md',
+    '../build/references/data-migration.md',
+    '../build/references/test-design.md',
     'references/handoff.md',
-    '../build-change/references/project-knowledge.md',
-  ],
-  'skills/build-change/SKILL.md': [
-    '../build/references/workspace.md',
-    'reviewer-prompt.md',
-    'references/critique.md',
-    'references/security.md',
-    'references/data-migration.md',
-    'references/test-design.md',
-    'references/test-first.md',
-    'references/project-knowledge.md',
-    'references/performance.md',
-    '../route-skills/references/question.md',
+    '../build/references/project-knowledge.md',
   ],
   'skills/audit-architecture/SKILL.md': [
     'auditor-prompt.md',
     '../spec/references/task-list.md',
-    '../build-change/references/test-design.md',
+    '../build/references/test-design.md',
     '../route-skills/references/question.md',
   ],
   'skills/build/SKILL.md': [
@@ -52,6 +40,14 @@ const EXPECTED_OWNER_ROWS = {
     'drift-repairer-prompt.md',
     '../route-skills/references/question.md',
     'references/design-tasks.md',
+    'reviewer-prompt.md',
+    'references/critique.md',
+    'references/security.md',
+    'references/data-migration.md',
+    'references/test-design.md',
+    'references/test-first.md',
+    'references/project-knowledge.md',
+    'references/performance.md',
   ],
   'skills/check-docs/SKILL.md': [],
   'skills/show-savings/SKILL.md': [],
@@ -100,9 +96,9 @@ const EXPECTED_OWNER_ROWS = {
     'references/brief.md',
     'references/task-list.md',
     'references/example-plan.md',
-    '../build-change/references/data-migration.md',
-    '../build-change/references/test-design.md',
-    '../build-change/references/security.md',
+    '../build/references/data-migration.md',
+    '../build/references/test-design.md',
+    '../build/references/security.md',
     'references/brief-in-an-issue.md',
     '../file-issues/references/fields.md',
     'references/architecture-sketch.md',
@@ -190,14 +186,14 @@ const FIRST_LINE_QUALIFIERS = {
 };
 
 const FIRST_LINE_CONTRACTS = {
-  '../build-change/references/security.md': FIRST_LINE_PREDICATE,
-  '../build-change/references/data-migration.md': FIRST_LINE_PREDICATE,
-  '../build-change/references/test-design.md': FIRST_LINE_PREDICATE,
+  '../build/references/security.md': FIRST_LINE_PREDICATE,
+  '../build/references/data-migration.md': FIRST_LINE_PREDICATE,
+  '../build/references/test-design.md': FIRST_LINE_PREDICATE,
 };
 
 const EXPECTED_CONTRACTS = {
   'skills/find-cause/SKILL.md': FIRST_LINE_CONTRACTS,
-  'skills/build-change/SKILL.md': {
+  'skills/build/SKILL.md': {
     'references/security.md': FIRST_LINE_PREDICATE,
     'references/data-migration.md': FIRST_LINE_PREDICATE,
     'references/test-design.md': FIRST_LINE_PREDICATE,
@@ -314,9 +310,9 @@ export function checkReferenceTables(report, repository) {
 
   for (const name of IMPLEMENT_ONLY) {
     const matches = repository.walk(repository.skillsRoot, (file) => path.basename(file) === name);
-    const expected = path.join(repository.skillsRoot, 'build-change', 'references', name);
+    const expected = path.join(repository.skillsRoot, 'build', 'references', name);
     if (matches.length !== 1 || matches[0] !== expected) {
-      errors.push(`${name} must exist only at skills/build-change/references/${name}`);
+      errors.push(`${name} must exist only at skills/build/references/${name}`);
     }
   }
 

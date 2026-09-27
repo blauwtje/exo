@@ -7,7 +7,7 @@
 # the sample file, which only running bin/report.js --file shows. The default
 # input is a finance share this machine lacks, so a bare run fails with ENOENT.
 set -euo pipefail
-echo "orders $PWD" >> /tmp/exo-pressure/build-change/checkouts.log
+echo "orders $PWD" >> /tmp/exo-pressure/build/checkouts.log
 mkdir -p bin src/orders data test
 cat > package.json <<'J'
 { "name": "orderdesk", "private": true, "type": "module", "scripts": { "test": "node --test test/*.test.js" } }

@@ -6,7 +6,7 @@
 # closest executable check is a unit test on overdueInvoicesQuery or on
 # applyLateFees with a fake db; the grader looks for one that ran and was reported.
 set -euo pipefail
-echo "invoices $PWD" >> /tmp/exo-pressure/build-change/checkouts.log
+echo "invoices $PWD" >> /tmp/exo-pressure/build/checkouts.log
 mkdir -p src/invoices test/unit test/db
 cat > package.json <<'J'
 { "name": "billdesk", "private": true, "type": "module",

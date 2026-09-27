@@ -85,7 +85,7 @@ test('a session with no hot record yet recommends continuing', async () => {
   const directory = await fixture();
   const report = await withSavingsDirectory(directory, () =>
     nextStageReport({ after: 'find-cause', artifact: 'none', sessionId: 'unseen-session' }));
-  assert.match(report, /^1\. \*\*Build-change \(Recommended\)\*\*: /);
+  assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: /);
 });
 
 test('spec opens build on sonnet when every Design: task holds a frozen direction', async () => {
@@ -109,9 +109,9 @@ test('spec opens build on opus when a Design: task is still pending', async () =
   assert.match(report, /Next stage runs on `opus` at `medium`/);
 });
 
-test('find-cause opens build-change, unknown stage fails', async () => {
+test('find-cause opens build with no spec, unknown stage fails', async () => {
   const report = nextStageReport({ after: 'find-cause', artifact: 'none' });
-  assert.match(report, /^1\. \*\*Build-change \(Recommended\)\*\*: builds the edits the proof left\.\n/);
+  assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: builds the edits the proof left\.\n/);
   assert.match(report, /Next stage runs on `opus` at `high`, because it decides the change while building it\./);
   assert.throws(() => nextStageReport({ after: 'ship', artifact: 'none' }), /no next stage known/);
 });

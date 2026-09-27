@@ -116,7 +116,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/build-change/scripts/proof-check.mjs\" stop",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/proof-check.mjs\" stop",
             "timeout": 10
           }
         ]

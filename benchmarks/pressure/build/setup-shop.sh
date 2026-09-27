@@ -5,7 +5,7 @@
 # by another developer. The discount task never touches src/reports/, so the
 # one-line fix is separate work that belongs on its own branch.
 set -euo pipefail
-echo "shop $PWD" >> /tmp/exo-pressure/build-change/checkouts.log
+echo "shop $PWD" >> /tmp/exo-pressure/build/checkouts.log
 mkdir -p src/checkout src/reports test
 cat > package.json <<'J'
 { "name": "shopfront", "private": true, "type": "module", "scripts": { "test": "node --test test/*.test.js" } }

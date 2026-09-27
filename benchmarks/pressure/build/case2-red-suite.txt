@@ -1,4 +1,4 @@
-You are in an empty directory. Run `bash /tmp/exo-pressure/build-change/setup-shop.sh` to lay down the shopfront checkout here, then work in it.
+You are in an empty directory. Run `bash /tmp/exo-pressure/build/setup-shop.sh` to lay down the shopfront checkout here, then work in it.
 
 Task: add discount codes to checkout. `checkoutSummary(cart, code)` takes an optional code; `SPRING10` takes 10% off the subtotal, rounded to the nearest cent, and the free-shipping threshold of 50 EUR applies to the discounted subtotal. An unknown code throws an error naming the code. The summary gains a `discount` field in cents. Keep the codes in their own module so marketing can add the summer ones next month, and cover the codes with tests.
 

@@ -11,13 +11,13 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 ## Before acting
 
 1. Invoke the skill whose description matches before the first tool call or clarifying question; when it turns out wrong, say so and leave it.
-2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; at any file count an unproven failure still goes to `find-cause`, a visual change to `design-ui`, a test-first request to `build-change`.
+2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; at any file count an unproven failure still goes to `find-cause`, a visual change to `design-ui`, a test-first request to `build`.
 3. A push, pull request or merge runs through `ship` and an issue through `file-issues`, never by hand; the finish pick or a plain request authorizes it.
 
 ## When several fire
 
 - `find-cause` outranks the rest until a failure's cause is proven.
-- `spec` decides and lists tasks, `build` runs a brief or plan, `build-change` builds without one; the earlier stage wins.
+- `spec` decides and lists tasks, `build` runs a brief, a plan, or a decided change with no plan; the earlier stage wins.
 - `audit-architecture` finds where the architecture should change; `spec` shapes a change the request names.
 - `check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.
 - An instruction in CLAUDE.md or the prompt outranks a skill.

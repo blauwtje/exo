@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: "Use when a named refactor, rename, move or internal API reshape must keep behavior unchanged, or a shim or compatibility re-export tempts. Not for finding what to refactor, which audit-architecture owns, a behavior change, which build-change builds, or an unproven failure, which find-cause owns."
+description: "Use when a named refactor, rename, move or internal API reshape must keep behavior unchanged, or a shim or compatibility re-export tempts. Not for finding what to refactor, which audit-architecture owns, a behavior change, which build builds, or an unproven failure, which find-cause owns."
 argument-hint: <the refactor to run>
 ---
 
@@ -13,8 +13,8 @@ Change structure while behavior stays pinned, and leave less code than you found
 - A named rename, move, extraction, split, flattening or reshape of an internal API whose results must not change.
 - The pull to keep the old signature, accept both shapes, or leave a re-export "for compatibility".
 - Not for choosing what to refactor: `audit-architecture` finds and ranks the candidates.
-- Not for a change that alters behavior: `build-change` builds it; a mixed request runs the refactor first, then the change.
-- Not for persisted data, a stored format or a consumer outside this repository: `build-change` keeps those compatible on purpose through its `../build-change/references/data-migration.md`.
+- Not for a change that alters behavior: `build` builds it; a mixed request runs the refactor first, then the change.
+- Not for persisted data, a stored format or a consumer outside this repository: `build` keeps those compatible on purpose through its `../build/references/data-migration.md`.
 - Not for a failure whose cause is unproven: `find-cause` owns it.
 
 ## The loop
@@ -48,6 +48,6 @@ Change structure while behavior stays pinned, and leave less code than you found
 ## Judgment
 
 - The pin outranks the target shape: a step that breaks it is reverted, never the pin loosened.
-- The delete-old-API rule covers only APIs whose every caller is in this repository; anything outside follows `../build-change/references/data-migration.md`.
+- The delete-old-API rule covers only APIs whose every caller is in this repository; anything outside follows `../build/references/data-migration.md`.
 - A deletion outranks an addition when both reach the target shape.
 - An explicit request from the user to keep the old API outranks step 4; state its cost once, then keep it with a removal date.

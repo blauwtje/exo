@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { stopOutput } from '../skills/build-change/scripts/proof-check.mjs';
+import { stopOutput } from '../skills/build/scripts/proof-check.mjs';
 
 function transcript(entries) {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'proof-check-')), 'transcript.jsonl');
@@ -11,7 +11,7 @@ function transcript(entries) {
   return file;
 }
 
-const SKILL_CALL = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Skill', id: 'toolu_skill', input: { skill: 'build-change' } }] } };
+const SKILL_CALL = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Skill', id: 'toolu_skill', input: { skill: 'build' } }] } };
 
 function bashCall(id, command, cwd) {
   return { type: 'assistant', cwd, message: { content: [{ type: 'tool_use', name: 'Bash', id, input: { command } }] } };
@@ -83,7 +83,7 @@ test('passes an Unverified line that makes no Done claim', () => {
   assert.equal(stopOutput({ transcript_path: file }), '');
 });
 
-test('stays silent when build-change was never called', () => {
+test('stays silent when build was never called', () => {
   const file = transcript([
     bashCall('toolu_bash1', 'npm test'),
     bashResult('toolu_bash1', '# pass 5'),

@@ -9,8 +9,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 | `start` **type it** | Shows this table, or picks the one skill for a stated goal | Type `/exo:start` when no skill name comes to mind |
 | `edit-skills` | Writes or improves a skill or agent | "fix skill X", "make an agent that ..." |
 | `design-ui` | Designs or improves how a screen looks | "make this page nicer", "new component" |
-| `build-change` | Builds a decided change, test-first where it can | "build X", "fix this bug, here's how to reproduce it" |
-| `build` | Runs a plan file, with helpers and review | "run the plan at docs/...", or after `/clear`: "carry on" |
+| `build` | Runs a plan file, with helpers and review, or with no plan file, builds a decided change test-first where it can | "run the plan at docs/...", or after `/clear`: "carry on", or "build X", "fix this bug, here's how to reproduce it" |
 | `ship` | Pushes, opens or merges a pull request, fixes its checks or review comments | "push this", "merge the PR", "fix the checks" |
 | `spec` | Decides what "done" means, when that is still open | "I want something for X but I'm not sure what exactly" |
 | `spec` then `build` | Writes the brief with its task list and goes straight on to building it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |

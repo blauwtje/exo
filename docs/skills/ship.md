@@ -4,7 +4,7 @@ Ends a code-changing run by carrying its commits as far as you pick: kept local,
 
 ## When it fires
 
-When `build`, `build-change` or `find-cause` has committed a change, and when you ask to push, open a pull request, or merge open pull requests.
+When `build` or `find-cause` has committed a change, and when you ask to push, open a pull request, or merge open pull requests.
 
 ## What you get
 

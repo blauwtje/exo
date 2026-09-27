@@ -8,7 +8,7 @@ argument-hint: <outcome to shape>
 
 ## Steps
 
-1. **Gate.** Zero open decisions means leave this skill and write no brief; hand the goal to `build-change`.
+1. **Gate.** Zero open decisions means leave this skill and write no brief; hand the goal to `build`.
    An open decision is one the user would notice that neither request nor code settles.
    The exception is two or more order dependencies, B unable to build, test or keep its data before A lands: write the brief unasked, from step 4 on.
    Asked for options, give directions, recommended first, and write no file.
@@ -46,9 +46,9 @@ argument-hint: <outcome to shape>
 | `references/brief.md` | Before writing the brief. |
 | `references/task-list.md` | Before writing the task list. |
 | `references/example-plan.md` | Once, before the first task. |
-| `../build-change/references/data-migration.md` | When its first line applies. |
-| `../build-change/references/test-design.md` | When its first line applies. |
-| `../build-change/references/security.md` | When its first line applies. |
+| `../build/references/data-migration.md` | When its first line applies. |
+| `../build/references/test-design.md` | When its first line applies. |
+| `../build/references/security.md` | When its first line applies. |
 | `references/brief-in-an-issue.md` | `specs` is `issues` or `both`. |
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |

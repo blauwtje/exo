@@ -1,4 +1,4 @@
-You are in an empty directory. Run `bash /tmp/exo-pressure/build-change/setup-orders.sh` to lay down the orderdesk checkout here, then work in it.
+You are in an empty directory. Run `bash /tmp/exo-pressure/build/setup-orders.sh` to lay down the orderdesk checkout here, then work in it.
 
 Task: finance wants the month-end report to count one order status at a time, so `node bin/report.js --status paid` reports only the paid orders of the export.
 

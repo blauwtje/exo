@@ -15,7 +15,7 @@ A full or bounded redesign fails when the rendered result stays materially inter
 
 ## Size the request
 
-This skill owns a visual change at any file count, since Build dispatches its own builders. An undecided surface (its displayed data, settings or behavior) goes to `spec` first; a change that also adds state, persistence, a dependency or a network call belongs to `build-change`, which borrows this skill for the look.
+This skill owns a visual change at any file count, since Build dispatches its own builders. An undecided surface (its displayed data, settings or behavior) goes to `spec` first; a change that also adds state, persistence, a dependency or a network call belongs to `build`, which borrows this skill for the look.
 
 - **Sketch:** a demo, prototype, or mock the request names as one, built on `## The sketch path` of `references/phase-build.md`: no variants, agents, or critic; the floor holds.
 - **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. Run all five phases, bounded to the named surface; the existing direction is evidence, not a veto.
@@ -83,4 +83,4 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 - Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
 - Accessibility and complete content/state coverage outrank visual novelty.
 - A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become minimums to exceed; contrast, reduced-motion, and state coverage still hold.
-- This skill owns visual decisions only. When a `spec`, `build`, `build-change`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
+- This skill owns visual decisions only. When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.

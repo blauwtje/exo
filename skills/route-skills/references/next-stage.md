@@ -16,7 +16,7 @@ A stage skill (`spec`, `audit-architecture`, `find-cause`) whose work leaves a n
 |---|---|---|
 | `build`, plan with a `Design:` task whose `## Visual direction` is pending or absent | `opus` at `medium` | that task builds in the session, and the skill pins `medium`. |
 | `build`, any other plan | `sonnet` at `medium` | each task names its files, data and proof, and the build-task agent keeps `high`. |
-| `build-change` | `opus` at `high` | it decides the change while building it. |
+| `build`, no plan (a decided change) | `opus` at `high` | it decides the change while building it. |
 
 ## Judgment
 

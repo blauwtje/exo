@@ -1,6 +1,5 @@
 {
   "skills/audit-architecture": { "model": null, "effort": null },
-  "skills/build-change": { "model": null, "effort": null },
   "skills/check-docs": { "model": null, "effort": "high" },
   "skills/check-impact": { "model": null, "effort": null },
   "skills/compare-renders": { "model": null, "effort": null },

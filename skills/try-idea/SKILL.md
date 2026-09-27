@@ -1,6 +1,6 @@
 ---
 name: try-idea
-description: "Use when a logic or data-flow decision needs running code first: a state model, an algorithm, an untried integration, a prototype, throwaway or proof of concept, or the urge to build it for real to find out. Not for a decided change, which build-change builds, or a look, which design-ui owns."
+description: "Use when a logic or data-flow decision needs running code first: a state model, an algorithm, an untried integration, a prototype, throwaway or proof of concept, or the urge to build it for real to find out. Not for a decided change, which build builds, or a look, which design-ui owns."
 argument-hint: <the open question to try>
 ---
 
@@ -13,7 +13,7 @@ Answer one open question with code built to be deleted, and keep the answer. The
 - A decision waits on running code: a state model, an algorithm, a data flow, or an integration nobody has tried.
 - The request says prototype, throwaway or proof of concept, or asks to try something before committing to it.
 - Not for a look or a layout to choose: `design-ui` renders directions side by side and owns that choice.
-- Not for a change already decided: `build-change` builds it.
+- Not for a change already decided: `build` builds it.
 - Not for a failure with an unproven cause: `find-cause` owns it.
 
 ## The loop
