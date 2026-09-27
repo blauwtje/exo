@@ -11,20 +11,23 @@ import { DEFAULT_MINUTES } from '../skills/ship/scripts/wait-checks.mjs';
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const SKILL = read('build/SKILL.md');
+const RUN_LOOP = read('build/references/run-loop.md');
+const TAIL = read('build/references/tail.md');
+const NO_SPEC = read('build/references/no-spec.md');
 const WORKSPACE = read('build/references/workspace.md');
 const SHIPPING = read('ship/SKILL.md');
 
-function loopStep(number) {
-  const step = SKILL.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
+function loopStep(number, text = RUN_LOOP) {
+  const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];
 }
 
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes('Settle where the run commits as `references/workspace.md` says.'));
+  assert.ok(branchStep.includes('Settle where the run commits as `workspace.md` says.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |'), 'the workspace is read before the first dispatch');
-  assert.ok(SKILL.indexOf('Settle where the run commits') < SKILL.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
+  assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
@@ -50,7 +53,7 @@ test('a green task commits and pushes nothing', () => {
 });
 
 test('the tail pushes only through the finish question', () => {
-  const tailStep = loopStep(7);
+  const tailStep = loopStep(7, TAIL);
   assert.ok(tailStep.includes('then end on `ship`'));
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit.');
@@ -78,11 +81,12 @@ test('the authorization line grants no push before the finish answer and no merg
   assert.ok(authorization[0].includes("a push or pull request waits for the user's answer to `ship`"));
   assert.ok(!authorization[0].includes('merge'), 'build grants no merge');
   assert.doesNotMatch(SKILL, /git push|gh pr (create|merge)|git merge |--route |--merge /, 'build runs no push, pull request or merge of its own');
+  assert.doesNotMatch(RUN_LOOP, /git push|gh pr (create|merge)|git merge |--route |--merge /, 'the loop runs no push, pull request or merge of its own');
 });
 
 test('the no-spec route settles the workspace and ends on ship', () => {
-  assert.ok(SKILL.includes('settle where the change commits per `references/workspace.md`'), 'no-spec step 3 names the workspace step');
-  assert.ok(SKILL.includes('then end on `ship`'), 'no-spec step 8 names the finish');
+  assert.ok(NO_SPEC.includes('settle where the change commits per `workspace.md`'), 'no-spec step 3 names the workspace step');
+  assert.ok(NO_SPEC.includes('then end on `ship`'), 'no-spec step 8 names the finish');
 });
 
 test('find-cause settles the workspace and ends on ship', () => {

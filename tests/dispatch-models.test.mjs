@@ -34,7 +34,7 @@ test('every general-purpose delegate dispatch names its model', () => {
 });
 
 test('every review-branch dispatch names the model override the printed reviewer picks', () => {
-  for (const relativePath of ['build/SKILL.md', 'verify/SKILL.md']) {
+  for (const relativePath of ['build/references/tail.md', 'verify/SKILL.md']) {
     const text = fs.readFileSync(path.join(skillsRoot, relativePath), 'utf8');
     const dispatch = text.match(/^.*`exo:review-branch` agent.*$/m)?.[0];
     assert.ok(dispatch, `${relativePath} does not dispatch \`exo:review-branch\``);

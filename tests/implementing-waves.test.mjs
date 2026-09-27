@@ -42,10 +42,10 @@ test('the implementer brief carries only the task fields, and the agent still wr
   assert.ok(!IMPLEMENTER_BRIEF.includes('Your brief:'), 'the brief is named by path, never pasted');
 });
 
-const SKILL = read('build/SKILL.md');
+const RUN_LOOP = read('build/references/run-loop.md');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 
-function loopStep(number, text = SKILL) {
+function loopStep(number, text = RUN_LOOP) {
   const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];

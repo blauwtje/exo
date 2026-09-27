@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const SKILL = fs.readFileSync(new URL('../skills/build/SKILL.md', import.meta.url), 'utf8');
+const RUN_LOOP = fs.readFileSync(new URL('../skills/build/references/run-loop.md', import.meta.url), 'utf8');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../skills/show-savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
 
@@ -51,22 +51,22 @@ test('each former OPEN case in the unit becomes a BLOCKED line', () => {
 });
 
 test('build forms no block around an unlanded dependency outside it', () => {
-  assert.ok(loopStep(4, SKILL).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
+  assert.ok(loopStep(4, RUN_LOOP).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
 });
 
 test('build dispatches the unit in the foreground and waits on its return, never a poll', () => {
-  const dispatchStep = loopStep(5, SKILL);
+  const dispatchStep = loopStep(5, RUN_LOOP);
   assert.ok(dispatchStep.includes('Send each block to the `exo:run-unit` agent with `run_in_background: false`'));
   assert.ok(dispatchStep.includes('Wait on its return, never a poll or Monitor.'));
-  const routeStep = loopStep(6, SKILL);
+  const routeStep = loopStep(6, RUN_LOOP);
   for (const line of ['`LANDED`', '`BUDGET:`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
-  assert.doesNotMatch(SKILL, /`OPEN`/);
+  assert.doesNotMatch(RUN_LOOP, /`OPEN`/);
 });
 
 test('build reads a BUDGET return as unfinished and asks the branch what landed', () => {
-  const routeStep = loopStep(6, SKILL);
+  const routeStep = loopStep(6, RUN_LOOP);
   assert.ok(routeStep.includes('`BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.'));
-  const askStep = loopStep(3, SKILL);
+  const askStep = loopStep(3, RUN_LOOP);
   assert.ok(askStep.includes('**Ask the branch what landed.**'));
   assert.ok(askStep.includes('Only a `Plan-task:` commit decides what landed, never memory'));
   assert.ok(routeStep.includes('`BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait`'));

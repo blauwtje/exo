@@ -34,11 +34,13 @@ test('reviewer-prompt.md exists and dispatches a review delegate', () => {
 });
 
 const SKILL_PATH = new URL('../skills/build/SKILL.md', import.meta.url);
+const FRESH_EYES_PATH = new URL('../skills/build/references/fresh-eyes.md', import.meta.url);
 
 test('SKILL.md No spec step 7 dispatches the reviewer prompt and names the fix scope', () => {
   const skill = fs.readFileSync(SKILL_PATH, 'utf8');
-  const stepSeven = skill.match(/^7\. \*\*Fresh eyes\.\*\*.+$/m);
-  assert.ok(stepSeven, 'SKILL.md has a No spec step 7 line starting "7. **Fresh eyes.**"');
+  const freshEyes = fs.readFileSync(FRESH_EYES_PATH, 'utf8');
+  const stepSeven = freshEyes.match(/^7\. \*\*Fresh eyes\.\*\*.+$/m);
+  assert.ok(stepSeven, 'references/fresh-eyes.md has a No spec step 7 line starting "7. **Fresh eyes.**"');
   const line = stepSeven[0];
 
   for (const needle of [
