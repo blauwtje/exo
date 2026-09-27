@@ -97,8 +97,11 @@ function compactTasks(count) {
   }));
 }
 
+const ACCEPTANCE_BULLET = '- An overdue task shows a badge in the warning tone.';
+const ACCEPTANCE_BULLET_WITH_CITATION = `${ACCEPTANCE_BULLET} (Task 1)`;
+
 test('plan-check prints ok for a 60-line brief with tasks, past the old 30-line compact cap', () => {
-  const brief = briefFixture({ tasks: compactTasks(15) });
+  const brief = briefFixture({ tasks: compactTasks(15) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
   assert.equal(brief.split('\n').length, 60);
   const report = planCheckReport(brief);
   assert.equal(report.ok, true);
@@ -120,7 +123,7 @@ test('plan-check fails a compact task whose field line lacks Proof:', () => {
 });
 
 test('plan-check prints ok for a brief whose Decisions, Assumptions and Acceptance sit ahead of a compact task list', () => {
-  const report = planCheckReport(briefFixture({ tasks: compactTasks(8) }));
+  const report = planCheckReport(briefFixture({ tasks: compactTasks(8) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION));
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok, 8 tasks/);
 });
@@ -131,6 +134,7 @@ test('plan-check passes a brief with a Manual checks list, and parsePlan reads n
     '- Sign in to the payment dashboard and confirm the test charge shows.'
   ];
   const brief = briefFixture({ tasks: compactTasks(2) })
+    .replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION)
     .replace('## Plan basis', ['## Manual checks', ...manualChecks, '', '## Plan basis'].join('\n'));
   const report = planCheckReport(brief);
   assert.equal(report.ok, true);
@@ -220,4 +224,17 @@ test('plan-check fails a compact plan missing Goal, Success criterion or a Check
   const missingPoint = planCheckReport(compactPlanFixture({ tasks: compactTasks(1) })
     .replace('- Shared state: none.\n', ''));
   assert.ok(missingPoint.lines.some((line) => line.includes("no 'Shared state:' point")));
+});
+
+test('plan-check passes an Acceptance bullet that cites a task number', () => {
+  const brief = briefFixture({ tasks: compactTasks(1) })
+    .replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
+  const report = planCheckReport(brief);
+  assert.equal(report.ok, true);
+});
+
+test('plan-check fails an Acceptance bullet that names no task number, Data:, Success criterion or Manual checks line', () => {
+  const report = planCheckReport(briefFixture({ tasks: compactTasks(1) }));
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) => line.includes("the plan's '## Acceptance' item") && line.includes(ACCEPTANCE_BULLET.slice(2))));
 });

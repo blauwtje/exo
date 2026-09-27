@@ -172,6 +172,27 @@ function checkPlanBasis(frame) {
   return problems;
 }
 
+// A brief's '## Acceptance' bullet earns its place by pointing somewhere
+// checkable: the task that builds it, the Data: line proving what it holds,
+// the plan's Success criterion, or a Manual checks line. A bullet with none
+// of those anchors names no way to confirm it, so plan-check fails it here.
+const TASK_CITATION = /\bTasks?\s+\d/;
+
+function checkAcceptanceCitations(frame) {
+  const acceptance = frame.Acceptance ?? '';
+  const problems = [];
+  for (const line of acceptance.split('\n')) {
+    const bullet = line.trim();
+    if (!bullet.startsWith('- ')) continue;
+    const item = bullet.slice(2);
+    const anchored = TASK_CITATION.test(item) || item.includes('Data:') || item.includes('Success criterion') || item.includes('Manual checks');
+    if (!anchored) {
+      problems.push(`the plan's '## Acceptance' item "${item}" names no task number, 'Data:' segment, Success criterion or Manual checks line`);
+    }
+  }
+  return problems;
+}
+
 function checkFrame(frame) {
   const problems = [];
   if ((frame.Goal ?? '').trim() === '') problems.push("the plan has no '## Goal'");
@@ -213,6 +234,7 @@ export function planCheckReport(planText, { root } = {}) {
       ? [
           ...checkFrame(plan.frame),
           ...checkPlanBasis(plan.frame),
+          ...checkAcceptanceCitations(plan.frame),
           ...plan.tasks.flatMap((task) => checkCompactFields(task))
         ]
       : plan.tasks.flatMap((task) => [
