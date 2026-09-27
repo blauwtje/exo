@@ -1,4 +1,4 @@
-// Picks the branch-review agent by the size of the change (--base/--reviewer),
+// Picks the review model by the size of the change (--base/--reviewer),
 // or the review effort for an uncommitted fix (--effort), so a remark about
 // budget, a deadline or how the diff reads never moves either pick: only a
 // reviewer the caller names with --reviewer, or the numbers themselves, do.
@@ -12,7 +12,7 @@ import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
 export const LINE_LIMIT = 200;
-const REVIEWERS = ['exo:review-branch', 'exo:review-branch-deep'];
+const REVIEWERS = ['sonnet', 'opus'];
 const EFFORT_SKIP_FILE_LIMIT = 2;
 export { parseNumstat };
 
@@ -35,7 +35,7 @@ export function parseShortstat(output) {
 }
 
 export function pickReviewer({ files, changedLines }) {
-  return files <= FILE_LIMIT && changedLines <= LINE_LIMIT ? 'exo:review-branch' : 'exo:review-branch-deep';
+  return files <= FILE_LIMIT && changedLines <= LINE_LIMIT ? 'sonnet' : 'opus';
 }
 
 /** Effort for the uncommitted fix against HEAD: tracked changes plus untracked new files. */
