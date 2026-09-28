@@ -15,9 +15,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 | `spec` | Decides what "done" means, when that is still open | "I want something for X but I'm not sure what exactly" |
 | `spec` then `build` | Writes the brief with its task list and goes straight on to building it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |
 | `write-docs` | Writes a README, docs page, PR or commit text | "write the README", "PR description" |
-| `check-impact` | Says what a change could break, with evidence | "is this safe to merge?", "what does this break?" |
 | `find-cause` | Finds the real cause of a failure before fixing it | "this doesn't work", "why does X crash?" |
-| `explain-code` | Explains how or why code works the way it does | "how does X work?", "why is this built this way?" |
 | `refactor` | Restructures code without changing its behavior | "rename X", "move Y", "split this module" |
 | `save-session` **type it** | Saves where a session is, for a fresh one after `/clear` | Type `/exo:save-session`, then `/clear` |
 | `show-savings` | Shows how many tokens exo saved | "what did exo save?" |
@@ -32,11 +30,7 @@ Skills for a case most sessions never hit; still worth knowing about.
 | Skill | What it does | Just say instead |
 |---|---|---|
 | `check-docs` | Checks how a pinned library, API or service actually behaves | "does this still hold for version X of Y?" |
-| `try-idea` | Builds a throwaway prototype to find out | "try whether ...", "proof of concept" |
 | `audit-architecture` | Finds where the architecture should change | "where's the tech debt?" |
-| `compare-renders` **type it** | Proves screens stayed pixel-identical after a refactor | Type `/exo:compare-renders` |
-| `run-parallel` **type it** | Hands one job to parallel helpers | Type `/exo:run-parallel` |
-| `tune-metric` **type it** | Pushes one metric up in a loop that reverts itself | Type `/exo:tune-metric` |
 
 ## Judgment
 

@@ -62,18 +62,16 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 | `ship [numbers]` | Pushes, opens or merges a pull request, fixes its checks or review comments. | "push this", "merge the PR", "fix the checks" |
 | `find-cause <symptom>` | Finds the real cause of a failure before fixing it. | "this doesn't work", "why does X crash?" |
 | `design-ui <surface>` | Designs or improves how a screen looks. | "make this page nicer", "new component" |
-| `explain-code <how, why or teach, and the code in question>` | Explains how or why code works the way it does. | "how does X work?", "why is this built this way?" |
 | `file-issues <scope>` | Files GitHub issues. | "turn this into issues" |
 | `refactor <the refactor to run>` | Restructures code without changing its behavior. | "rename X", "move Y", "split this module" |
 | `edit-skills <skill>` | Writes or improves a skill or agent. | "fix skill X", "make an agent that ..." |
-| `check-impact <the diff, branch or claim to check>` | Says what a change could break, with evidence. | "is this safe to merge?", "what does this break?" |
 | `write-docs <the document or text to write or edit>` | Writes a README, docs page, PR or commit text. | "write the README", "PR description" |
 | `show-savings` | Shows how many tokens exo saved. | "what did exo save?" |
 | `configure [key value scope]` | Shows or changes an exo setting. | "set context to 120" |
 
 ### User-invoked
 
-These carry `disable-model-invocation: true`, so Claude never starts one itself: `start` shows the skills when you ask, and `save-session` and `remember` write a record only you should approve. The flag also keeps `route-skills` and the three long runs under Rarely needed (`compare-renders`, `run-parallel`, `tune-metric`) for you to start.
+These carry `disable-model-invocation: true`, so Claude never starts one itself: `start` shows the skills when you ask, and `save-session` and `remember` write a record only you should approve. The flag also keeps `route-skills` for you to start.
 
 | Skill | What it does | Just say |
 |---|---|---|
@@ -88,11 +86,7 @@ Skills for a case most sessions never hit; still worth knowing about.
 | Skill | What it does | Just say |
 |---|---|---|
 | `check-docs <library, version, question>` | Checks how a pinned library, API or service actually behaves. | "does this still hold for version X of Y?" |
-| `try-idea <question>` | Builds a throwaway prototype to find out. | "try whether ...", "proof of concept" |
 | `audit-architecture [path]` | Finds where the architecture should change. | "where's the tech debt?" |
-| `compare-renders <surfaces and the URL that renders them>` | Proves screens stayed pixel-identical after a refactor. | Type `/exo:compare-renders` |
-| `run-parallel <coverage, race, gauntlet or contest> <done predicate or artifact> [N]` | Hands one job to parallel helpers. | Type `/exo:run-parallel` |
-| `tune-metric <metric and direction> <target and attempt floor>` | Pushes one metric up in a loop that reverts itself. | Type `/exo:tune-metric` |
 
 `route-skills` holds the routing rules every other skill follows. The session hook injects it at every start, resume, clear and compaction, so it is never picked; type `/exo:route-skills` to read it.
 

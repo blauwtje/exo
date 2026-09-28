@@ -77,19 +77,11 @@ const EXPECTED_OWNER_ROWS = {
     '../route-skills/references/question.md',
     '../edit-skills/references/where-a-fix-lives.md',
   ],
-  'skills/try-idea/SKILL.md': [
-    'references/exhaust-the-design-space.md',
-  ],
   'skills/save-session/SKILL.md': [
     'references/reconstructing-without-a-note.md',
   ],
   'skills/file-issues/SKILL.md': [
     'references/fields.md',
-  ],
-  'skills/explain-code/SKILL.md': [
-    'references/history.md',
-    'references/confidence.md',
-    'references/answer-shapes.md',
   ],
   'skills/refactor/SKILL.md': [
     'references/behavior-pin.md',
@@ -141,23 +133,8 @@ const EXPECTED_OWNER_ROWS = {
     'references/performance-budget.md',
     'references/internationalization.md',
   ],
-  'skills/check-impact/SKILL.md': [
-    'references/hand-back.md',
-  ],
   'skills/write-docs/SKILL.md': [
     'references/ai-tics.md',
-  ],
-  'skills/run-parallel/SKILL.md': [
-    'worker-prompt.md',
-    'judge-prompt.md',
-  ],
-  'skills/tune-metric/SKILL.md': [
-    'references/decision-log.md',
-    'attempt-prompt.md',
-    'auditor-prompt.md',
-  ],
-  'skills/compare-renders/SKILL.md': [
-    'references/capture-harness.md',
   ],
 };
 

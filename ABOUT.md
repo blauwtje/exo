@@ -25,4 +25,3 @@ because two words for one thing turn into two things.
 | direction | theme, style, look | `design-ui` picks one visual direction, freezes it, and builds against that one |
 | observable boundary | test surface, hook point | `build`'s test-first route agrees the observable boundaries its tests read before the first test, the word the test-design reference already uses |
 | decision map | question list, backlog | `spec` keeps every decision on one map with what it waits on and who closed it, and the brief stores that map so later wishes reopen only what they touch |
-| throwaway | proof of concept, demo | `try-idea` builds throwaway code, parks it on its own branch and keeps only the decision it settled |
