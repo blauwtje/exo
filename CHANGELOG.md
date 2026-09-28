@@ -10,24 +10,41 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Highlights
 
 - **Plan a change with `spec` and build it with `build`, which replace `define-scope`, `run-plan` and `build-change`.**
+- **Seven skills are removed: `tune-metric`, `try-idea`, `run-parallel`, `explain-code`, `compare-renders`, `check-impact` and `audit-architecture`.**
 
 ### Added
 
 - `skills/edit-skills/scripts/rename-skill.mjs` moves a skill folder, its docs page and its pressure cases to a new name, then rewrites every word-bounded mention of the old name outside `CHANGELOG.md` and `benchmarks/results/`.
-- `skills/verify/scripts/verify.mjs` runs each landed task's `Proof:` command, the plan's success criterion and a check for changed paths outside the `Files:` a task named. It ends on `REVIEWER: sonnet` or `REVIEWER: opus`, picked by the size of the diff.
+- `skills/verify/scripts/verify.mjs` runs each landed task's `Proof:` command, the plan's `Land gate:` command and a check for changed paths outside the `Files:` a task named, all measured against the branch base. It ends on `REVIEWER: sonnet` or `REVIEWER: opus`, picked by the size of the diff.
+- `land-task.mjs` runs the plan's `Land gate:` command before it commits, and its `--fix` mode commits the branch review fix. `next-task.mjs --frame` prints the plan frame.
+- `spec` writes a `Land gate:` line when `package.json` has a `validate` or `check` script, and `plan-check.mjs` flags a plan that leaves it out.
+- `npm run check` caps the stage-path skill bodies, every agent body except `build-ui`, `survey-ui` and `critique-ui`, and the references and prompts those stages load at 750 tokens. A file above the cap is locked at its measured size and may only shrink.
+- `skills/build/scripts/remove-worktree.mjs` copies a worktree's `.exo/` files into the run's `.exo/` before it removes the worktree.
+- `benchmarks/results/2026-09-28-lean.md` records the pressure scores of `spec`, `build`, `find-cause` and `ship` beside the previous scores.
 - `plan-check.mjs` fails a plan whose `## Acceptance` item names no task number, `Data:` segment, success criterion or manual check.
 
 ### Changed
 
 - `define-scope` is renamed `spec`, and `run-plan` is renamed `build`.
 - `build-change` is folded into `build`, which runs a decided change with no plan file through its own No spec steps.
+- `build` dispatches one `build-task` per task for a plan of at most eight tasks, and one `run-unit` per block of eight above that.
+- `review-branch-deep` is merged into `review-branch`, which runs on `sonnet` or `opus` as `verify.mjs` prints.
+- The `spec`, `build`, `find-cause` and `ship` skills and the `build-task`, `run-unit`, `review-branch`, `locate-code` and `fetch-docs` agents are shorter. `run-unit` runs at effort medium.
+- `ship` runs `verify` instead of its own verifier prompt.
+- The routing context injected at session start describes the three stages.
+- The next-step menu labels the build option `Build`.
 
 ### Removed
 
+- `tune-metric`, `try-idea`, `run-parallel`, `explain-code`, `compare-renders`, `check-impact` and `audit-architecture`, with their docs pages, tests and pressure cases.
 - `skills/build/scripts/finish-run.mjs` and its test. `verify.mjs` prints the reviewer instead.
 
 ### Fixed
 
+- `land-task.mjs` refuses a checkout whose top level differs from `--root`.
+- `rename-skill.mjs` no longer rewrites a name inside a longer hyphenated name, such as `build` inside `build-task`.
+- `run-unit` no longer lands a task on a build report it wrote itself.
+- `verify.mjs` no longer hands a prose `Proof:` line to a shell.
 - `lib/size-facts.mjs` reads a renamed path in `git diff --numstat` output as its old and new path.
 
 ## 0.56.0 - 2026-09-28
