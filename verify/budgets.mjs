@@ -19,7 +19,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // route-skills body and cuts the tail of that body before it passes the cap, so the
 // next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 5170, measured: '2026-09-25' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 3561, measured: '2026-09-28' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2046, measured: '2026-09-28' };
 
 // The periodic restatement, locked the same way. It is sent again every
@@ -72,14 +72,3 @@ export const REFERENCE_TOKEN_LOCKS = {
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;
-
-// Skills over a ceiling above on 2026-09-23. A listed skill is held to the
-// older ceilings here and named in the PASS detail; its trim step deletes its
-// name, and a listed skill already within the new ceiling fails, so no entry
-// outlives its trim. The step that empties every list deletes this object.
-export const PENDING_TRIM = {
-  ceilings: { fileBytes: 15000, descriptionChars: 400 },
-  body: [],
-  description: [],
-  references: [],
-};

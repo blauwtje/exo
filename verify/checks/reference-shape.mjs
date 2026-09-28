@@ -3,15 +3,14 @@
 // longer than REFERENCE_CONTENTS_LINES opens with a contents list linking
 // each of its sections, so a partial read still finds its place. No SKILL.md
 // table row leaves "Read it when" empty; the reference tables check owns
-// whether every reference has a row. A skill in PENDING_TRIM.references skips
-// the first two rules until its trim and fails once it already meets them.
+// whether every reference has a row.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 import { referenceTableEntries } from './reference-tables.mjs';
-import { PENDING_TRIM, REFERENCE_CONTENTS_LINES, BYTES_PER_TOKEN, STAGE_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../budgets.mjs';
+import { REFERENCE_CONTENTS_LINES, BYTES_PER_TOKEN, STAGE_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../budgets.mjs';
 
 const FENCE = /^\s*(`{3,}|~{3,})/;
 const REFERENCE_TOKEN_CEILING = 750;
@@ -93,7 +92,6 @@ function namedReferences(file, text) {
 
 export function checkReferenceShape(report, repository) {
   const failures = [];
-  const pending = [];
   let count = 0;
   for (const skillFile of repository.everySkillFile()) {
     const skillDirectory = path.dirname(skillFile);
@@ -129,17 +127,12 @@ export function checkReferenceShape(report, repository) {
         if (sizeIssue !== null) shapeProblems.push(sizeIssue);
       }
     }
-    if (PENDING_TRIM.references.includes(skill)) {
-      if (shapeProblems.length === 0) failures.push(`${skill} meets the reference shape: remove it from PENDING_TRIM.references in verify/budgets.mjs`);
-      else pending.push(skill);
-      continue;
-    }
     failures.push(...shapeProblems);
   }
   report.assert(
     failures.length === 0,
     'reference shape',
-    `${count} references name no other reference and open with contents past ${REFERENCE_CONTENTS_LINES} lines, and every table row says when to read it; pending trim: ${pending.join(', ') || 'none'}`,
+    `${count} references name no other reference and open with contents past ${REFERENCE_CONTENTS_LINES} lines, and every table row says when to read it`,
     failures.join('; ')
   );
 }
