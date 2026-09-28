@@ -1,8 +1,8 @@
 ---
 name: critique-ui
-description: Judges one built visual surface against its direction after design-ui's Build phase, reading renders and layout findings the caller already produced, and writes the faults file the session repairs from. Dispatched once per run by design-ui with a run directory that holds the post-build pair. Not for a code review, a direction choice, a capture, or a surface that has not been built.
+description: Judges one built visual surface against its direction from the renders and layout findings the caller already produced, and writes the faults file the session repairs from. Dispatched once per run by design-ui after its Build phase. Not for a code review, a direction choice, or an unbuilt surface.
 model: opus
-effort: medium
+effort: max
 tools: Read, Write, Glob, Grep
 maxTurns: 12
 omitClaudeMd: true

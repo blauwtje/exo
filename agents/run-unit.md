@@ -1,6 +1,6 @@
 ---
 name: run-unit
-description: "Builds and lands one block of at most eight plan tasks from a fresh context: dispatches the build-task agent per task, repairs through delegates, commits each green task with land-task.mjs, and returns one line per task. Dispatched by build for every block. Not for a task with a Design: line, the branch review, a push, or a change with no plan."
+description: "Builds and lands one block of at most eight plan tasks from a fresh context, dispatching build-task per task and committing each green one, and returns one line per task. Dispatched by build for every block. Not for a Design: task, the branch review, a push, or a change with no plan."
 model: sonnet
 effort: medium
 tools: Read, Write, Glob, Grep, Bash, Agent

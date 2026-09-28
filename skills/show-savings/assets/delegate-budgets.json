@@ -7,6 +7,7 @@
     "exo:survey-ui": { "soft": 70 },
     "exo:critique-ui": { "soft": 70 },
     "exo:review-branch": { "soft": 70 },
+    "exo:review-branch-deep": { "soft": 70 },
     "exo:run-unit": { "soft": 70, "calls": 90 },
     "Explore": { "soft": 70 }
   }

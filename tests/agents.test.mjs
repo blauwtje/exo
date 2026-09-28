@@ -38,6 +38,8 @@ function readAgent(fileName) {
   return { fileName, frontmatter, body };
 }
 
+const kindTable = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'lib', 'model-kinds.json'), 'utf8'));
+
 const agents = fs.readdirSync(agentsRoot)
   .filter((fileName) => fileName.endsWith('.md'))
   .map(readAgent);
@@ -130,7 +132,10 @@ test('every reference file an agent reads exists', () => {
 
 test('every agent a skill dispatches has a file, and every agent file is dispatched', () => {
   const dispatched = new Set([...skillMarkdown().matchAll(/`exo:([a-z-]+)` agent/g)].map((match) => match[1]));
-  const defined = new Set(agents.map((agent) => agent.frontmatter.name));
+  const generatedTwins = Object.keys(kindTable.agents)
+    .filter((file) => kindTable.agents[file].generatedFrom !== undefined)
+    .map((file) => path.basename(file, '.md'));
+  const defined = new Set(agents.map((agent) => agent.frontmatter.name).filter((name) => !generatedTwins.includes(name)));
   assert.deepEqual([...dispatched].filter((name) => !defined.has(name)), [], 'a skill dispatches an agent with no file');
   assert.deepEqual([...defined].filter((name) => !dispatched.has(name)), [], 'an agent file no skill dispatches');
 });
@@ -144,13 +149,16 @@ test('the inputs the design critic expects are the ones design-ui hands it', () 
   }
 });
 
-test('review-branch is one agent, sized for a model override at dispatch', () => {
+test('review-branch-deep is review-branch\'s generated twin on opus at max, with one body', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch-deep');
-  assert.equal(deepReviewer, undefined, 'agents/review-branch-deep.md still exists after the merge');
+  assert.ok(deepReviewer, 'agents/review-branch-deep.md is missing');
   assert.equal(reviewer.frontmatter.model, 'sonnet');
   assert.equal(reviewer.frontmatter.effort, 'high');
-  assert.ok(reviewer.body.includes('a model override of `sonnet` or `opus`'), 'the dispatch names a model override');
+  assert.equal(deepReviewer.frontmatter.model, 'opus');
+  assert.equal(deepReviewer.frontmatter.effort, 'max');
+  assert.equal(deepReviewer.body, reviewer.body);
+  assert.equal(deepReviewer.frontmatter.tools, reviewer.frontmatter.tools);
   assert.ok(reviewer.body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
 });
 

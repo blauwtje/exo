@@ -18,10 +18,11 @@
   "skills/write-docs": { "model": null, "effort": null },
   "agents/build-task": { "model": "sonnet", "effort": "high" },
   "agents/build-ui": { "model": "sonnet", "effort": "high" },
-  "agents/critique-ui": { "model": "opus", "effort": "medium" },
-  "agents/fetch-docs": { "model": "sonnet", "effort": null },
+  "agents/critique-ui": { "model": "opus", "effort": "max" },
+  "agents/fetch-docs": { "model": "sonnet", "effort": "medium" },
   "agents/locate-code": { "model": "haiku", "effort": null },
   "agents/review-branch": { "model": "sonnet", "effort": "high" },
+  "agents/review-branch-deep": { "model": "opus", "effort": "max" },
   "agents/run-unit": { "model": "sonnet", "effort": "medium" },
   "agents/survey-ui": { "model": "sonnet", "effort": "high" }
 }

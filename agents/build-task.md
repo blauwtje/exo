@@ -1,8 +1,9 @@
 ---
 name: build-task
-description: "Builds one decided plan task in the checkout its dispatch names, from the brief file holding its frame and task section, and reports GREEN or what stopped it. Dispatched by build for every build. Not for a plan repair, a failed Run: with no causal line, a review, a task with a Design: line, or a change with no plan task."
+description: "Builds one decided plan task in the checkout its dispatch names, from its brief file, and reports GREEN or what stopped it. Dispatched by build for every build. Not for a plan repair, a review, a task with a Design: line, or a change with no plan task."
 model: sonnet
 effort: high
+tools: Read, Edit, Write, Glob, Grep, Bash
 ---
 
 ## Scope
