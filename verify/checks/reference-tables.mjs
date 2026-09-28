@@ -61,7 +61,6 @@ const EXPECTED_OWNER_ROWS = {
     '../file-issues/references/fields.md',
     '../route-skills/references/question.md',
     'references/pr-prep.md',
-    'verifier-prompt.md',
     'references/fix-ci.md',
     'references/merge-conflicts.md',
     'references/pr-comments.md',
