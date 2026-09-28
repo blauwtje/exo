@@ -11,11 +11,12 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK, AGENT_BODY_TOKENS } from '../verify/budgets.mjs';
+import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../verify/budgets.mjs';
 import { checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
 import { checkRestatement } from '../verify/checks/restatement.mjs';
 import { checkBodyBudgets } from '../verify/checks/body-budgets.mjs';
+import { checkReferenceShape } from '../verify/checks/reference-shape.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const USING_EXO = 'skills/route-skills/SKILL.md';
@@ -237,4 +238,42 @@ test('shrinking the same agent body back below the ceiling passes again', (t) =>
   const run = verdict(root, checkBodyBudgets);
 
   assert.equal(run.counts.PASS, 1, run.detail);
+});
+
+// REFERENCE_TOKEN_LOCKS is a two-way lock like DESCRIPTION_TOTAL_LOCK, not a
+// plain ceiling: a locked file must land on its lock exactly, so growth past
+// it and an unannounced shrink below it both fail.
+const LOCKED_REFERENCE = 'skills/build/references/critique.md';
+
+test('a locked reference at its exact lock passes', (t) => {
+  const root = skillsFixture(t);
+
+  const run = verdict(root, checkReferenceShape);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
+});
+
+test('growth past a reference lock fails and names the lock', (t) => {
+  const root = skillsFixture(t);
+  const file = path.join(root, LOCKED_REFERENCE);
+  fs.appendFileSync(file, '- A line no locked reference has room for.\n', 'utf8');
+
+  const run = verdict(root, checkReferenceShape);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  const lock = REFERENCE_TOKEN_LOCKS[LOCKED_REFERENCE];
+  assert.match(run.detail, new RegExp(`${LOCKED_REFERENCE.replace(/\//g, '\\/')} is \\d+ tokens, over its ${lock}-token lock`));
+});
+
+test('an unannounced shrink below a reference lock also fails', (t) => {
+  const root = skillsFixture(t);
+  const file = path.join(root, LOCKED_REFERENCE);
+  const text = fs.readFileSync(file, 'utf8');
+  fs.writeFileSync(file, text.slice(0, text.length - 40), 'utf8');
+
+  const run = verdict(root, checkReferenceShape);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  const lock = REFERENCE_TOKEN_LOCKS[LOCKED_REFERENCE];
+  assert.match(run.detail, new RegExp(`${LOCKED_REFERENCE.replace(/\//g, '\\/')} is \\d+ tokens, under its ${lock}-token lock`));
 });

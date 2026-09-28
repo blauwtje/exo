@@ -59,10 +59,18 @@ const SCENARIOS = [
   // A step reference carries neither check, so stripping both from one leaves
   // the file valid; only SKILL.md still needs them (see missing-judgment above).
   { name: 'step-reference-without-stance-or-judgment', expect: 'accept', mutate: (root) => {
-    replaceText(root, 'skills/build/references/critique.md',
+    const file = 'skills/build/references/critique.md';
+    const before = read(root, file);
+    replaceText(root, file,
       'Judge the delivered diff against the request before judging its internal elegance. The enemy is author anchoring: the diff matches the reasoning that produced it while drifting from the request. The overcorrection is context-free review that rejects settled decisions or invents new scope.',
       'Judge the delivered diff against the request before judging its internal elegance.');
-    replaceText(root, 'skills/build/references/critique.md', '## Judgment', '## Wrap-up');
+    replaceText(root, file, '## Judgment', '## Wrap-up');
+    // critique.md sits at its REFERENCE_TOKEN_LOCKS lock; pad the bytes the
+    // two edits above removed back onto the file so the mutation reaches the
+    // structure check instead of tripping the lock as an unannounced shrink.
+    const shrunk = Buffer.byteLength(before, 'utf8') - Buffer.byteLength(read(root, file), 'utf8');
+    const padding = 'x'.repeat(Math.max(shrunk - 2, 0));
+    write(root, file, `${read(root, file)}\n${padding}\n`);
   } },
   // build's body sits at its STAGE_BODY_TOKENS lock, so the stance paragraph
   // added here also trims two References descriptions by more bytes than it
@@ -240,6 +248,10 @@ const SCENARIOS = [
     append(root, 'skills/configure/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
   { name: 'agent-body-over-token-ceiling', mutate: (root) =>
     append(root, 'agents/locate-code.md', '- A line no agent body has room for.\n'.repeat(150)) },
+  // critique.md sits at its REFERENCE_TOKEN_LOCKS lock, so any growth pushes
+  // it over: the mutation reaches the lock instead of the general ceiling.
+  { name: 'reference-over-token-lock', mutate: (root) =>
+    append(root, 'skills/build/references/critique.md', '- A line no locked reference has room for.\n') },
   { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/check-docs/SKILL.md',
     read(root, 'skills/check-docs/SKILL.md').replace('description: ', `description: ${'padding '.repeat(15)}`)) },
   { name: 'reference-chain', mutate: (root) =>

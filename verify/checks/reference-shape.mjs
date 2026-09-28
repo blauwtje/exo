@@ -8,11 +8,14 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { Buffer } from 'node:buffer';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 import { referenceTableEntries } from './reference-tables.mjs';
-import { PENDING_TRIM, REFERENCE_CONTENTS_LINES } from '../budgets.mjs';
+import { PENDING_TRIM, REFERENCE_CONTENTS_LINES, BYTES_PER_TOKEN, STAGE_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../budgets.mjs';
 
 const FENCE = /^\s*(`{3,}|~{3,})/;
+const REFERENCE_TOKEN_CEILING = 750;
+const STAGE_SKILLS = Object.keys(STAGE_BODY_TOKENS);
 
 function referenceFiles(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -57,6 +60,27 @@ function contentsProblem(lines) {
     : null;
 }
 
+function tokensOf(repository, file) {
+  return Math.round(Buffer.byteLength(repository.text(file), 'utf8') / BYTES_PER_TOKEN);
+}
+
+// A locked file must land on its lock exactly: over fails as growth, under
+// fails as an unrecorded shrink, and one that would now pass at or under the
+// general ceiling has outgrown the lock entirely. An unlocked file fails only
+// past the general ceiling.
+function sizeProblem(relative, tokens) {
+  const lock = REFERENCE_TOKEN_LOCKS[relative];
+  if (lock !== undefined) {
+    if (tokens > lock) return `${relative} is ${tokens} tokens, over its ${lock}-token lock`;
+    if (tokens < lock) return `${relative} is ${tokens} tokens, under its ${lock}-token lock: update REFERENCE_TOKEN_LOCKS in verify/budgets.mjs`;
+    if (tokens <= REFERENCE_TOKEN_CEILING) return `${relative} is ${tokens} tokens, at or under ${REFERENCE_TOKEN_CEILING}: remove it from REFERENCE_TOKEN_LOCKS in verify/budgets.mjs`;
+    return null;
+  }
+  return tokens > REFERENCE_TOKEN_CEILING
+    ? `${relative} is ${tokens} tokens, over the ${REFERENCE_TOKEN_CEILING}-token ceiling`
+    : null;
+}
+
 function namedReferences(file, text) {
   return markdownTargets(text).filter((target) => {
     const resolved = resolveMarkdownTarget(file, target);
@@ -79,6 +103,7 @@ export function checkReferenceShape(report, repository) {
     for (const row of rows) {
       if (row.readWhen === '') failures.push(`${skillRelative}: the row for ${row.path} leaves "Read it when" empty`);
     }
+    const isStageSkill = STAGE_SKILLS.includes(skill);
     const shapeProblems = [];
     for (const file of referenceFiles(path.join(skillDirectory, 'references'))) {
       count += 1;
@@ -90,6 +115,19 @@ export function checkReferenceShape(report, repository) {
       }
       const named = namedReferences(file, repository.text(file));
       if (named.length > 0) shapeProblems.push(`${relative} names ${named.join(', ')}: link each reference from SKILL.md instead`);
+      if (isStageSkill) {
+        const sizeIssue = sizeProblem(relative, tokensOf(repository, file));
+        if (sizeIssue !== null) shapeProblems.push(sizeIssue);
+      }
+    }
+    if (isStageSkill) {
+      for (const row of rows) {
+        const resolved = path.resolve(skillDirectory, row.path);
+        if (!fs.existsSync(resolved) || path.basename(path.dirname(resolved)) === 'references') continue;
+        const relative = repository.relative(resolved);
+        const sizeIssue = sizeProblem(relative, tokensOf(repository, resolved));
+        if (sizeIssue !== null) shapeProblems.push(sizeIssue);
+      }
     }
     if (PENDING_TRIM.references.includes(skill)) {
       if (shapeProblems.length === 0) failures.push(`${skill} meets the reference shape: remove it from PENDING_TRIM.references in verify/budgets.mjs`);

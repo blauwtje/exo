@@ -50,6 +50,25 @@ export const STAGE_BODY_TOKENS = {
 // ceiling. build-ui, survey-ui and critique-ui carry visual-direction context
 // no other agent needs, so they are exempt by exact name, never by pattern.
 export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui'] };
+// Every stage-path reference and every prompt a stage skill's own table names
+// (a row whose target is not under references/) stays within 750 tokens,
+// unless it is locked here at its measured size. A lock fails a file that
+// grows past it and a file that shrinks without the lock following, so a
+// lock only ever moves down; a locked file that drops to 750 tokens or under
+// leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
+export const REFERENCE_TOKEN_LOCKS = {
+  'skills/spec/references/task-list.md': 768,
+  'skills/build/references/critique.md': 841,
+  'skills/build/references/data-migration.md': 901,
+  'skills/build/references/run-loop.md': 952,
+  'skills/build/references/security.md': 1061,
+  'skills/build/references/test-design.md': 906,
+  'skills/build/references/wave-worktrees.md': 1038,
+  'skills/find-cause/references/profiling.md': 854,
+  'skills/ship/references/pr-prep.md': 1029,
+  'skills/build/bug-fixer-prompt.md': 900,
+  'skills/find-cause/fixer-prompt.md': 827,
+};
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;
