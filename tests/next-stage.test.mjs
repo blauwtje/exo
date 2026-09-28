@@ -46,7 +46,7 @@ test('with no session named, spec recommends continuing into build, Stop second'
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
   assert.equal(report, [
-    '1. **Run-plan (Recommended)**: runs the plan.',
+    '1. **Build (Recommended)**: runs the plan.',
     `2. **Stop**: run \`/exo:build ${planPath}\` after a context clear.`,
     RUN_PLAN_SONNET_LINE
   ].join('\n') + '\n');
@@ -61,7 +61,7 @@ test('a session the context watch has not warned recommends continuing', async (
   const directory = await savingsDirectory('quiet-session', false);
   const report = await withSavingsDirectory(directory, () =>
     nextStageReport({ after: 'spec', artifact: planPath, sessionId: 'quiet-session' }));
-  assert.match(report, /^1\. \*\*Run-plan \(Recommended\)\*\*: /);
+  assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: /);
   assert.ok(report.includes(`2. **Stop**: run \`/exo:build ${planPath}\` after a context clear.\n`));
 });
 
@@ -76,7 +76,7 @@ test('a session the context watch has warned recommends stopping with the comman
     nextStageReport({ after: 'spec', artifact: planPath, sessionId: 'warned-session' }));
   assert.equal(report, [
     `1. **Stop (Recommended)**: run \`/exo:build ${planPath}\` after a context clear.`,
-    '2. **Run-plan**: runs the plan.',
+    '2. **Build**: runs the plan.',
     RUN_PLAN_SONNET_LINE
   ].join('\n') + '\n');
 });
@@ -95,7 +95,7 @@ test('spec opens build on sonnet when every Design: task holds a frozen directio
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.match(report, /^1\. \*\*Run-plan \(Recommended\)\*\*: runs the plan\.\n/);
+  assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: runs the plan\.\n/);
   assert.match(report, /Next stage runs on `sonnet` at `medium`/);
 });
 
@@ -126,7 +126,7 @@ test('CLI prints the report for the flags given', async () => {
   const env = { EXO_SAVINGS_DIR: directory, CLAUDE_CODE_SESSION_ID: '' };
   const unnamed = await run(SCRIPT, ['--after', 'spec', '--artifact', planPath], { env });
   assert.equal(unnamed.code, 0, unnamed.stderr);
-  assert.match(unnamed.stdout, /^1\. \*\*Run-plan \(Recommended\)\*\*: runs the plan\.\n2\. \*\*Stop\*\*: run `\/exo:build/);
+  assert.match(unnamed.stdout, /^1\. \*\*Build \(Recommended\)\*\*: runs the plan\.\n2\. \*\*Stop\*\*: run `\/exo:build/);
   const flagged = await run(SCRIPT, ['--after', 'spec', '--artifact', planPath, '--session', 'warned-session'], { env });
   assert.equal(flagged.code, 0, flagged.stderr);
   assert.match(flagged.stdout, /^1\. \*\*Stop \(Recommended\)\*\*: run `\/exo:build/);

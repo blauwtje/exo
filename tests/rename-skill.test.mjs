@@ -72,7 +72,7 @@ test('only replaces a whole word, never a mention inside a longer hyphenated nam
   await fs.writeFile(path.join(root, 'NOTES.md'), 'old-name and old-name-extra and re-old-name both stay put where unbounded.\n');
   renameSkill({ root, from: 'old-name', to: 'new-name' });
   const notes = await fs.readFile(path.join(root, 'NOTES.md'), 'utf8');
-  assert.match(notes, /^new-name and /);
+  assert.equal(notes, 'new-name and old-name-extra and re-old-name both stay put where unbounded.\n');
 });
 
 test('refuses when the skill folder does not exist', async () => {

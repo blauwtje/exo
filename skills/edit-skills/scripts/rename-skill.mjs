@@ -77,7 +77,8 @@ export function renameSkill({ root, from, to }) {
   moveIfPresent(root, path.join('docs', 'skills', `${from}.md`), path.join('docs', 'skills', `${to}.md`));
   moveIfPresent(root, path.join('benchmarks', 'pressure', from), path.join('benchmarks', 'pressure', to));
 
-  const mention = new RegExp(`\\b${from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+  const escaped = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const mention = new RegExp(`(?<![a-z0-9-])${escaped}(?![a-z0-9-])`, 'g');
   const rows = [];
   for (const relative of listFiles(root)) {
     const full = path.join(root, relative);

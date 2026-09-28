@@ -23,7 +23,7 @@ import { hotSessionFile, isSessionId } from '#session-record-path';
 // `label` and `does` follow `references/question.md`'s shape: a one-to-three-word
 // bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
-  'spec': { stage: 'build', label: 'Run-plan', does: 'runs the plan' },
+  'spec': { stage: 'build', label: 'Build', does: 'runs the plan' },
   'find-cause': { stage: 'build-no-spec', label: 'Build', does: 'builds the edits the proof left' }
 };
 

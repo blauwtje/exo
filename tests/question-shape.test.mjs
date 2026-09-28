@@ -27,7 +27,7 @@ test('the route-skills body keeps the core of the question shape', () => {
 });
 
 test('the next stage recommends continuing, and stopping once a context notice fired', () => {
-  assert.ok(NEXT_STAGE.includes('After `spec`: 1. Run-plan, 2. Stop.'));
+  assert.ok(NEXT_STAGE.includes('After `spec`: 1. Build, 2. Stop.'));
   assert.ok(NEXT_STAGE.includes('**Continuing is recommended**'));
   assert.ok(NEXT_STAGE.includes('**After a context notice, stopping is recommended.**'));
   assert.ok(NEXT_STAGE.includes('a clear loses nothing the next stage reads'));

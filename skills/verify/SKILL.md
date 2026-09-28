@@ -9,9 +9,9 @@ effort: high
 
 ## The loop
 
-1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path>`. It runs each landed task's own Proof command, the plan's `## Success criterion` (or `## Final verification`), and the stray-path check, then prints one `REVIEWER: sonnet` or `REVIEWER: opus` line. A `FAIL` or `STRAY` line ends the turn with the script's own report; nothing here reruns its checks.
+1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`. It runs each landed task's own Proof command, the plan's `Land gate:` (`npm run check` when the plan names none), and the stray-path check against `base`, then prints one `REVIEWER: sonnet` or `REVIEWER: opus` line. A `FAIL` or `STRAY` line ends the turn with the script's own report; nothing here reruns its checks.
 2. **Review the branch.** Dispatch the `exo:review-branch` agent on the printed `sonnet` or `opus` with the plan path, branch, checkout, base, the code standard path and `<checkout>/.exo/branch-review.md` as the findings path. `BLOCKED` ends the turn with its report.
-3. **Repair the findings.** A `FINDINGS` verdict goes to a `general-purpose` delegate on `sonnet` from `../build/review-fixer-prompt.md` with the report path. Commit what `git status --porcelain` lists as `fix(<scope>): address the branch review`.
+3. **Repair the findings.** A `FINDINGS` verdict goes to a `general-purpose` delegate on `sonnet` from `../build/review-fixer-prompt.md` with the report path. Then run `node "${CLAUDE_SKILL_DIR}/../build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --root <checkout>` to commit every changed path.
 4. **Offer the finish.** End on `ship`.
 
 ## References
