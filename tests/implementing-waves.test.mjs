@@ -21,7 +21,7 @@ test('the run creates, lands and removes every wave worktree itself', () => {
   assert.ok(section.includes('`Worktree setup:`'));
   assert.ok(section.includes('git cherry-pick <sha>'));
   assert.ok(section.includes('git cherry-pick --abort'));
-  assert.ok(section.includes('git worktree remove "<root>-task-<n>"'));
+  assert.ok(section.includes('remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>'));
   assert.ok(section.includes('git worktree list'));
   assert.ok(section.includes('Never dispatch a build with the dispatch tool\'s worktree isolation'), 'a wave builds only in folders the run makes');
   assert.ok(!section.includes('isolated delegate returned'), 'no wave task lands from an isolated delegate');
