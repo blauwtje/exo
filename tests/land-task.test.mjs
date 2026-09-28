@@ -77,6 +77,38 @@ test('a task whose changes match every Files: path lands clean', async () => {
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
+// planFixture carries no Land gate line; this inserts one into the same
+// Plan basis frame so the gate tests exercise the real grammar, not a
+// hand-rolled plan shape.
+function withLandGate(command) {
+  return PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
+}
+
+test('a passing Land gate lets a green task land', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const output = landTask({ planText: withLandGate('true'), number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: 1$/m);
+});
+
+test('a failing Land gate is refused before anything commits, naming the command and its output', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  assert.throws(
+    () => landTask({ planText: withLandGate('echo gate broke && exit 1'), number: 1, root }),
+    /Land gate "echo gate broke && exit 1" failed:\ngate broke/
+  );
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+});
+
+test('a plan with no Land gate line lands as before', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const output = landTask({ planText: PLAN, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
 test('an untracked plan inside the checkout is never a stray, and the task lands', async () => {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
   git(root, 'config', 'user.name', 'exo-test');

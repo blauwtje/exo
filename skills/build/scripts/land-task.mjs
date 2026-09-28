@@ -15,7 +15,7 @@ import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { landedTasks, parsePlan, PlanError } from '#plan-tasks';
+import { frameOf, landedTasks, parsePlan, PlanError } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -182,6 +182,19 @@ function strayPaths(task, root, planPath) {
   return changedPaths(root, planPath).filter((changed) => !allowed.has(changed));
 }
 
+// A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
+// right before the commit, so a check spec wrote against the plan's own
+// layout still holds on whatever the build left; a plan without the line
+// gates on nothing, as land-task always has.
+function runLandGate(landGate, root) {
+  if (landGate === null) return;
+  const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8' });
+  if (gate.status !== 0) {
+    const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${gate.error?.message ?? ''}`.trim();
+    throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
+  }
+}
+
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
@@ -192,6 +205,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
     throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
+  runLandGate(frameOf(plan.frame).landGate, root);
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
