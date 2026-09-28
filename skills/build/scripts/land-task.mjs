@@ -39,12 +39,26 @@ function deriveCommit(task, number) {
   return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m "Plan-task: ${number}"`;
 }
 
+// A `--root` naming a subdirectory of the checkout, or a copy under another
+// name, would stage and commit paths outside the checkout the plan and its
+// Files: lines describe. This runs before any command that stages or
+// commits, so a mismatch never touches the checkout's git state.
+function refuseMismatchedToplevel(root) {
+  const resolvedRoot = realpathSync(root);
+  const toplevel = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  const resolvedToplevel = realpathSync(toplevel);
+  if (resolvedToplevel !== resolvedRoot) {
+    throw new LandingError(`--root '${root}' is not the checkout toplevel: git rev-parse --show-toplevel there prints '${toplevel}'`);
+  }
+}
+
 // A review-fix or bug-fix commit names no task and touches whatever the
 // repair changed, so `--fix <subject>` skips the Files: scope check and the
 // Plan-task trailer entirely: it stages every changed path and commits it
 // with the given subject as-is, the same shape the calling skill used to
 // spell out as a bare `git add -A && git commit -m` line.
 export function fixLand({ root, subject }) {
+  refuseMismatchedToplevel(root);
   const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
   if (status.trim() === '') {
     throw new LandingError('no changed path to commit');
@@ -169,6 +183,7 @@ function strayPaths(task, root, planPath) {
 }
 
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
+  refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
   const block = commitBlockOf(plan, number);
   const task = plan.tasks.find((entry) => entry.number === number);

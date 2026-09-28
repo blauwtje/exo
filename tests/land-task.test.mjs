@@ -341,3 +341,24 @@ test('the next report field ends the output with no blank line between them', as
   assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
   assert.doesNotMatch(result.stdout, /Unresolved/);
 });
+
+test('a --root whose toplevel matches the checkout lands clean', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const output = landTask({ planText: PLAN, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
+test('a --root that is a subdirectory of the checkout is refused before anything stages or commits', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const subdirectory = path.join(root, 'src');
+  assert.throws(
+    () => landTask({ planText: PLAN, number: 1, root: subdirectory }),
+    (error) => error instanceof LandingError
+      && error.message.includes(subdirectory)
+      && error.message.includes(root)
+      && error.message.includes('is not the checkout toplevel')
+  );
+  assert.equal(git(root, 'status', '--porcelain').trim(), 'M src/app.js');
+});
