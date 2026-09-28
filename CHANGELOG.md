@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.56.0 - 2026-09-28
+
 ### Added
 
 - The README opens with the social preview image, stored at `assets/social-preview.jpg`.
