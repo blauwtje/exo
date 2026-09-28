@@ -41,11 +41,15 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 512 };
-// Skills trimmed to the slim shape, locked at their measured size so growth fails.
-// find-cause's lock includes the restored missing-infrastructure, unread-file and one-reading rules.
-export const SLIM_BODY_TOKENS = {
-  'spec': 1051, 'build': 1058, 'find-cause': 1289, 'ship': 1086,
+// The six stage-path skills, capped at 750 tokens each. spec sits above the
+// cap because its pinned gate sentences hold it at its measured 795.
+export const STAGE_BODY_TOKENS = {
+  'start': 750, 'spec': 795, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
+// Every plugin agent's body, stripped of its own frontmatter, stays within this
+// ceiling. build-ui, survey-ui and critique-ui carry visual-direction context
+// no other agent needs, so they are exempt by exact name, never by pattern.
+export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui'] };
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;

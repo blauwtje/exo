@@ -64,7 +64,7 @@ const SCENARIOS = [
       'Judge the delivered diff against the request before judging its internal elegance.');
     replaceText(root, 'skills/build/references/critique.md', '## Judgment', '## Wrap-up');
   } },
-  // build's body sits at its SLIM_BODY_TOKENS lock, so the stance paragraph
+  // build's body sits at its STAGE_BODY_TOKENS lock, so the stance paragraph
   // added here also trims two References descriptions by more bytes than it
   // costs: the mutation reaches the slim-shape check instead of the lock.
   { name: 'slim-skill-stance-paragraph', mutate: (root) => {
@@ -75,7 +75,7 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       'Never here: `exo:run-unit` reads it.', 'Never here.');
   } },
-  // build's body sits at its SLIM_BODY_TOKENS lock; trimming one
+  // build's body sits at its STAGE_BODY_TOKENS lock; trimming one
   // References description offsets the added Judgment section's bytes.
   { name: 'slim-skill-judgment-section', mutate: (root) => {
     replaceText(root, 'skills/build/SKILL.md',
@@ -85,7 +85,7 @@ const SCENARIOS = [
   } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/spec/SKILL.md',
     read(root, 'skills/spec/SKILL.md').replace(/^\d+\. /gm, '- ')) },
-  // build's body sits at its SLIM_BODY_TOKENS lock; the two trims below pay
+  // build's body sits at its STAGE_BODY_TOKENS lock; the two trims below pay
   // for the inserted paragraph, so the mutation reaches the opening-heading
   // check instead of the byte lock.
   { name: 'slim-skill-heading-opens-on-paragraph', mutate: (root) => {
@@ -98,7 +98,7 @@ const SCENARIOS = [
   } },
   { name: 'slim-skill-without-references-table', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', '## References', '## Sources') },
-  // ship's body sits at its SLIM_BODY_TOKENS lock; trimming one References
+  // ship's body sits at its STAGE_BODY_TOKENS lock; trimming one References
   // description offsets the added closing line's bytes.
   { name: 'slim-skill-report-not-last', mutate: (root) => {
     append(root, 'skills/ship/SKILL.md', '\nA closing line after the report.\n');
@@ -238,6 +238,8 @@ const SCENARIOS = [
     replaceText(root, 'agents/fetch-docs.md', 'at most 25 lines', 'a short report') },
   { name: 'body-over-token-ceiling', mutate: (root) =>
     append(root, 'skills/configure/SKILL.md', '- A line no body has room for.\n'.repeat(250)) },
+  { name: 'agent-body-over-token-ceiling', mutate: (root) =>
+    append(root, 'agents/locate-code.md', '- A line no agent body has room for.\n'.repeat(150)) },
   { name: 'description-over-ceiling', mutate: (root) => write(root, 'skills/check-docs/SKILL.md',
     read(root, 'skills/check-docs/SKILL.md').replace('description: ', `description: ${'padding '.repeat(15)}`)) },
   { name: 'reference-chain', mutate: (root) =>

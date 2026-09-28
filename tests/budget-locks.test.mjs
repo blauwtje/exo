@@ -11,10 +11,11 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK } from '../verify/budgets.mjs';
+import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK, AGENT_BODY_TOKENS } from '../verify/budgets.mjs';
 import { checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
 import { checkRestatement } from '../verify/checks/restatement.mjs';
+import { checkBodyBudgets } from '../verify/checks/body-budgets.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const USING_EXO = 'skills/route-skills/SKILL.md';
@@ -26,6 +27,13 @@ function skillsFixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-budget-lock-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.cpSync(path.join(REPOSITORY_ROOT, 'skills'), path.join(root, 'skills'), { recursive: true });
+  return root;
+}
+
+// checkBodyBudgets also reads agents/, so its fixture copies both.
+function corpusFixture(t) {
+  const root = skillsFixture(t);
+  fs.cpSync(path.join(REPOSITORY_ROOT, 'agents'), path.join(root, 'agents'), { recursive: true });
   return root;
 }
 
@@ -190,4 +198,43 @@ test('a renamed restated heading fails and names the heading', (t) => {
 
   assert.equal(run.counts.FAIL, 1, run.detail);
   assert.match(run.detail, /has no "## When several fire" heading/);
+});
+
+// AGENT_BODY_TOKENS is a plain ceiling, not a two-way lock like
+// DESCRIPTION_TOTAL_LOCK: a body under it passes at any distance and only
+// growth past it fails, so these cases grow a non-exempt agent past the
+// ceiling and shrink it back rather than measuring an exact locked value.
+const NON_EXEMPT_AGENT = 'agents/locate-code.md';
+
+test("an untouched agent body sits at or under AGENT_BODY_TOKENS.ceiling", (t) => {
+  const root = corpusFixture(t);
+
+  const run = verdict(root, checkBodyBudgets);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
+});
+
+test('filler pushed past AGENT_BODY_TOKENS.ceiling fails and names the ceiling', (t) => {
+  const root = corpusFixture(t);
+  const padding = '- A line no agent body has room for.\n'.repeat(150);
+  fs.appendFileSync(path.join(root, NON_EXEMPT_AGENT), padding, 'utf8');
+
+  const run = verdict(root, checkBodyBudgets);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.match(run.detail, new RegExp(`${NON_EXEMPT_AGENT} body is \\d+ tokens, over its ${AGENT_BODY_TOKENS.ceiling}-token ceiling`));
+});
+
+test('shrinking the same agent body back below the ceiling passes again', (t) => {
+  const root = corpusFixture(t);
+  const padding = '- A line no agent body has room for.\n'.repeat(150);
+  const file = path.join(root, NON_EXEMPT_AGENT);
+  fs.appendFileSync(file, padding, 'utf8');
+  assert.equal(verdict(root, checkBodyBudgets).counts.FAIL, 1, 'setup did not grow the body past the ceiling');
+  const grown = fs.readFileSync(file, 'utf8');
+  fs.writeFileSync(file, grown.slice(0, grown.length - padding.length), 'utf8');
+
+  const run = verdict(root, checkBodyBudgets);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
 });
