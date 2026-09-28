@@ -12,6 +12,7 @@ A skill or agent is created, changed, or judged too long. It is not for a one-of
 - Bulk moved out of the body into `references/`, with the moment to open each one named.
 - Several runs of the same prompt without the skill and with it, each full answer kept in its own file with the skills the run called, so a rule exists only where the runs without it failed.
 - A green `node verify.mjs`, which enforces the shape rather than describing it.
+- A skill moved to a new name in one pass, with its docs page, pressure folder and every mention rewritten.
 
 ## Where its rules live
 

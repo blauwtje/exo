@@ -41,7 +41,7 @@ It prints the savings report, which says nothing was refused yet until the read 
 
 ## How exo works
 
-- **Steps.** A request is shaped, built and reviewed in that order, and a failure is diagnosed before anything is fixed. Each step ends by asking which step runs next and on which model.
+- **Stages.** `/exo:start` shows the skills or picks one for a stated goal. A feature then runs through three stages in order: `spec` decides what "done" means when that is still open, `build` runs the plan or a decided change test-first, and `verify` runs the gate, the branch review and the repair before a pull request. A reported failure is diagnosed before anything is fixed. Each stage ends by asking which stage runs next and on which model.
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:locate-code` agent on Haiku, the discovery of a redesign in the `exo:survey-ui` agent on Sonnet at high effort, the final branch review in the `exo:review-branch` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:review-branch-deep` at high effort above that, the post-build design critique in the `exo:critique-ui` agent on Opus at medium effort, and documentation research in the `exo:fetch-docs` agent on Sonnet with web and read tools only; all six live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below links to the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
@@ -59,6 +59,7 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 |---|---|---|
 | `spec <outcome>` | Decides what "done" means, when that is still open: the result, the data, the architecture. | "I want something for X but I'm not sure what exactly" |
 | `build [plan]` | Runs a plan file, with helpers and review, or with no plan file, builds a decided change test-first where it can. | "run the plan at docs/...", or after `/clear`: "carry on", or "build X", "fix this bug, here's how to reproduce it" |
+| `verify [plan]` | Runs the gate before a pull request: the scripted checks, the branch review and repairing what it finds. | "verify this branch", "is this ready to ship?" |
 | `ship [numbers]` | Pushes, opens or merges a pull request, fixes its checks or review comments. | "push this", "merge the PR", "fix the checks" |
 | `find-cause <symptom>` | Finds the real cause of a failure before fixing it. | "this doesn't work", "why does X crash?" |
 | `design-ui <surface>` | Designs or improves how a screen looks. | "make this page nicer", "new component" |

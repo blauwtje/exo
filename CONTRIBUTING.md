@@ -33,6 +33,8 @@ A skill whose work leaves the machine, a push, a pull request, a merge or an iss
 
 A new skill needs all of: the folder at `skills/<name>/`, the name joining `EXPECTED_SKILLS` in `verify/budgets.mjs`, a reference contract in `verify/checks/reference-tables.mjs`, its description paid for in `DESCRIPTION_TOTAL_LOCK` and `DESCRIPTION_TOTAL_WARN`, and a page under `docs/skills/`. A skill is written from a discipline that has been read, never from a one-line description.
 
+Renaming a skill runs `node skills/edit-skills/scripts/rename-skill.mjs --from <old> --to <new>`: it moves the skill's folder, its `docs/skills/` page and its pressure folder, then rewrites every word-bounded mention of the old name outside `CHANGELOG.md` and `benchmarks/results/`, so a rename never leaves a stale reference behind.
+
 A `SKILL.md` body after its frontmatter stays within `SKILL_BODY_TOKENS.ceiling` in `verify/budgets.mjs`, `INJECTED_BODY_TOKENS` for `route-skills`, at bytes / `BYTES_PER_TOKEN`; the `skill body budgets` check enforces it, because a body is paid for on every run of its skill, so bulk lives in `references/` and the body names the step that opens it. A reference longer than `REFERENCE_CONTENTS_LINES` opens with a contents list linking each `##` section and names no other reference, which the `reference shape` check enforces; `PENDING_TRIM` lists the skills not yet trimmed to these. A skill is split into two only when the halves fire at different moments, because a second skill adds its trigger to every session's listing.
 
 ## Adding a setting
