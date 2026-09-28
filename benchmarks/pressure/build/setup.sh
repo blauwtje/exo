@@ -134,7 +134,7 @@ cat > scripts/proof-cases.json <<'EOF'
   "is-palindrome": { "export": "isPalindrome", "cases": [
     [["A man, a plan, a canal: Panama"], true], [["abc"], false], [[""], true], [["No lemon, no melon"], true]
   ] },
-  "truncate": { "export": "truncate", "cases": [
+  "shorten": { "export": "shorten", "cases": [
     [["hello", 10], "hello"], [["hello", 5], "hello"], [["hello world", 8], "hello w…"], [["abc", 1], "…"]
   ] },
   "slugify": { "export": "slugify", "cases": [
@@ -198,7 +198,7 @@ throws on the inputs below. `scripts/proof-cases.json` holds the cases each
    whole.
 3. `isPalindrome(text)`: compares lower-cased letters and digits only
    (`/[a-z0-9]/`), ignoring every other character; `''` is a palindrome.
-4. `truncate(text, max)`: returns `text` when its length is at most `max`;
+4. `shorten(text, max)`: returns `text` when its length is at most `max`;
    otherwise the first `max - 1` characters followed by `…` (U+2026), so the
    result is exactly `max` characters long.
 5. `slugify(text)`: lower-cases, replaces every run of characters outside
@@ -246,9 +246,9 @@ Depends on: none | Files: `src/reverse.js`, `test/reverse.test.js` | Data: an ar
 
 Depends on: none | Files: `src/is-palindrome.js`, `test/is-palindrome.test.js` | Data: a normalized string compared with its reverse | Proof: node scripts/prove.mjs is-palindrome
 
-### Task 4: feat(strings): add truncate
+### Task 4: feat(strings): add shorten
 
-Depends on: none | Files: `src/truncate.js`, `test/truncate.test.js` | Data: returns a new string | Proof: node scripts/prove.mjs truncate
+Depends on: none | Files: `src/shorten.js`, `test/shorten.test.js` | Data: returns a new string | Proof: node scripts/prove.mjs shorten
 
 ### Task 5: feat(strings): add slugify
 
