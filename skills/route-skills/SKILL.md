@@ -17,7 +17,7 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 ## When several fire
 
 - `find-cause` outranks the rest until a failure's cause is proven.
-- `spec` decides and lists tasks, `build` runs a brief, a plan, or a decided change with no plan; the earlier stage wins.
+- `spec` decides and lists tasks, `build` runs a brief, a plan, or a decided change with no plan, `verify` checks a branch already built; the earliest stage wins.
 - `check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.
 - An instruction in CLAUDE.md or the prompt outranks a skill.
 

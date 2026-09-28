@@ -20,7 +20,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 5170, measured: '2026-09-25' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 2141, measured: '2026-09-26' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2046, measured: '2026-09-28' };
 
 // The periodic restatement, locked the same way. It is sent again every
 // RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
@@ -40,7 +40,7 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 // ceiling because hooks/session-start.sh injects its body into every session.
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
-export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 563 };
+export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 512 };
 // Skills trimmed to the slim shape, locked at their measured size so growth fails.
 // find-cause's lock includes the restored missing-infrastructure, unread-file and one-reading rules.
 export const SLIM_BODY_TOKENS = {
