@@ -41,9 +41,13 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 - Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail`, its last output lines indented under it, never a summary, because build lands a compact task only on that line and output.
 - A task is done only once committed on proof from the real product: a test, a command or the running app, not a reading of the code.
 - A check that was skipped or gave no clear outcome is not done: write it as it ran, never as `pass`.
-- Return it only on a failed test or unfinished work.
-- A green task returns only:
+- Without `Return: one line` in the dispatch, return it only on a failed test or unfinished work; a green task returns only:
 
 Task <n>: GREEN
 <each test, `Proof:` or `Run:` command>: pass
 Report: <the `Report to:` path>
+
+- With `Return: one line`, also write `implementer-<n>.diff`, each `Files:` path's diff (`git diff -- <path>`, or `git diff --no-index -- /dev/null <path>` for one `git status --porcelain` marks `??`), and `implementer-<n>.log`, the output already captured above; return only:
+
+Task <n>: GREEN | diff: <diff path> | log: <log path>
+Task <n>: <BLOCKED, PLAN DRIFT or FAIL> <what stopped, one clause> | diff: <diff path> | log: <log path>

@@ -14,4 +14,6 @@ Read your brief at <brief path>.
 Report to: <report directory>/implementer-<n>.md
 ```
 
+The build session's own dispatch (`references/run-loop.md` step 5, a plan of at most eight tasks) appends one further line, `Return: one line`, so the agent returns a one-line pointer instead of pasting the report; `exo:run-unit`'s dispatch of a larger plan adds no such line and keeps the agent's report-pasting return.
+
 The brief holds the plan's fields verbatim: `Files:` bounds the edit, each step's code is what to write, `Run:` and `Expected:` decide green, and a compact task's `Proof:` command decides it alone. The `Commit:` block is the caller's, never the agent's.
