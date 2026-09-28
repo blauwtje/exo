@@ -29,6 +29,6 @@
   "agents/fetch-docs": { "model": "sonnet", "effort": null },
   "agents/locate-code": { "model": "haiku", "effort": null },
   "agents/review-branch": { "model": "sonnet", "effort": "high" },
-  "agents/run-unit": { "model": "sonnet", "effort": "high" },
+  "agents/run-unit": { "model": "sonnet", "effort": "medium" },
   "agents/survey-ui": { "model": "sonnet", "effort": "high" }
 }
