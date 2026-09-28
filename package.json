@@ -9,6 +9,7 @@
     "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#memory-store": "./lib/memory-store.mjs",
+    "#model-kinds": "./lib/model-kinds.mjs",
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#restatement": "./lib/restatement.mjs",

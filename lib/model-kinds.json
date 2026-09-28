@@ -1,0 +1,45 @@
+{
+  "kinds": {
+    "build": { "model": "sonnet", "effort": "high" },
+    "hardest": { "model": "opus", "effort": "max" },
+    "review": { "model": "sonnet", "effort": "high" },
+    "review-deep": { "model": "opus", "effort": "max" },
+    "investigate": { "model": "sonnet", "effort": "high" },
+    "coordinate": { "model": "sonnet", "effort": "medium" },
+    "research": { "model": "sonnet", "effort": "medium" },
+    "lookup": { "model": "haiku", "effort": null },
+    "prose": { "model": "opus", "effort": "high" },
+    "chore": { "model": "sonnet", "effort": "low" }
+  },
+  "agents": {
+    "agents/build-task.md": { "kind": "build" },
+    "agents/build-ui.md": { "kind": "build" },
+    "agents/critique-ui.md": { "kind": "review-deep" },
+    "agents/fetch-docs.md": { "kind": "research" },
+    "agents/locate-code.md": { "kind": "lookup" },
+    "agents/review-branch.md": { "kind": "review" },
+    "agents/review-branch-deep.md": { "kind": "review-deep", "generatedFrom": "agents/review-branch.md" },
+    "agents/run-unit.md": { "kind": "coordinate" },
+    "agents/survey-ui.md": { "kind": "investigate" }
+  },
+  "skills": {
+    "skills/build/SKILL.md": { "kind": "coordinate", "fields": ["effort"] },
+    "skills/check-docs/SKILL.md": { "kind": "investigate", "fields": ["effort"] },
+    "skills/configure/SKILL.md": { "kind": "chore", "fields": ["model"] },
+    "skills/design-ui/SKILL.md": { "kind": "build", "fields": ["effort"] },
+    "skills/file-issues/SKILL.md": { "kind": "prose", "fields": ["model", "effort"] },
+    "skills/show-savings/SKILL.md": { "kind": "lookup", "fields": ["model"] },
+    "skills/verify/SKILL.md": { "kind": "review", "fields": ["effort"] }
+  },
+  "dispatches": [
+    { "file": "skills/build/bug-fixer-prompt.md", "match": "delegate on `opus` for a failed", "kind": "hardest" },
+    { "file": "skills/build/drift-repairer-prompt.md", "match": "delegate on `opus` for a task that reported", "kind": "hardest" },
+    { "file": "skills/build/review-fixer-prompt.md", "match": "delegate on `sonnet` when the branch review", "kind": "build" },
+    { "file": "agents/run-unit.md", "match": "goes to an `opus` delegate", "kind": "hardest" },
+    { "file": "skills/find-cause/SKILL.md", "match": "on `opus` from `investigator-prompt.md`", "kind": "hardest" },
+    { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` from `fixer-prompt.md`", "kind": "build" },
+    { "file": "skills/find-cause/investigator-prompt.md", "match": "delegate on `opus` for phase (b)", "kind": "hardest" },
+    { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" },
+    { "file": "skills/verify/SKILL.md", "match": "delegate on `sonnet` from `../build/review-fixer-prompt.md`", "kind": "build" }
+  ]
+}
