@@ -86,7 +86,6 @@ Skills for a case most sessions never hit; still worth knowing about.
 | Skill | What it does | Just say |
 |---|---|---|
 | `check-docs <library, version, question>` | Checks how a pinned library, API or service actually behaves. | "does this still hold for version X of Y?" |
-| `audit-architecture [path]` | Finds where the architecture should change. | "where's the tech debt?" |
 
 `route-skills` holds the routing rules every other skill follows. The session hook injects it at every start, resume, clear and compaction, so it is never picked; type `/exo:route-skills` to read it.
 

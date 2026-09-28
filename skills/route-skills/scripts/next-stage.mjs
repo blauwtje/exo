@@ -1,7 +1,7 @@
 // Prints the next-stage option block and, when the next stage's model or
 // effort differs from the session's, the one model line `references/
 // next-stage.md` allows under it. A stage skill whose work leaves a next
-// stage open (`spec`, `audit-architecture`, `find-cause`) runs this at its
+// stage open (`spec`, `find-cause`) runs this at its
 // final message instead of reading `references/next-stage.md` and
 // `references/question.md` itself.
 //
@@ -24,7 +24,6 @@ import { hotSessionFile, isSessionId } from '#session-record-path';
 // bold label, then a few words on what happens, never why.
 const NEXT_STAGE = {
   'spec': { stage: 'build', label: 'Run-plan', does: 'runs the plan' },
-  'audit-architecture': { stage: 'spec', label: 'Define-scope', does: 'turns the top card into a confirmed brief' },
   'find-cause': { stage: 'build-no-spec', label: 'Build', does: 'builds the edits the proof left' }
 };
 

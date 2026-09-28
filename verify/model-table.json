@@ -1,5 +1,4 @@
 {
-  "skills/audit-architecture": { "model": null, "effort": null },
   "skills/check-docs": { "model": null, "effort": "high" },
   "skills/configure": { "model": "sonnet", "effort": null },
   "skills/spec": { "model": null, "effort": null },

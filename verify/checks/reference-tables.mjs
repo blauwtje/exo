@@ -25,12 +25,6 @@ const EXPECTED_OWNER_ROWS = {
     'references/handoff.md',
     '../build/references/project-knowledge.md',
   ],
-  'skills/audit-architecture/SKILL.md': [
-    'auditor-prompt.md',
-    '../spec/references/task-list.md',
-    '../build/references/test-design.md',
-    '../route-skills/references/question.md',
-  ],
   'skills/build/SKILL.md': [
     'references/run-loop.md',
     'references/tail.md',
@@ -181,10 +175,6 @@ const EXPECTED_CONTRACTS = {
     'references/test-design.md': FIRST_LINE_PREDICATE,
   },
   'skills/spec/SKILL.md': FIRST_LINE_CONTRACTS,
-  'skills/audit-architecture/SKILL.md': {
-    '../spec/references/task-list.md':
-      'Before writing the plan deliverable — a planning-mode turn or an explicitly requested plan; that file alone defines the artifact\'s sections, order, and step contents. Do not load in report mode.',
-  },
 };
 
 // Get-ReferenceTableEntries: the `path` | `read it when` rows of a skill's table.

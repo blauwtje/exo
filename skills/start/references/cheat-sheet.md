@@ -30,7 +30,6 @@ Skills for a case most sessions never hit; still worth knowing about.
 | Skill | What it does | Just say instead |
 |---|---|---|
 | `check-docs` | Checks how a pinned library, API or service actually behaves | "does this still hold for version X of Y?" |
-| `audit-architecture` | Finds where the architecture should change | "where's the tech debt?" |
 
 ## Judgment
 

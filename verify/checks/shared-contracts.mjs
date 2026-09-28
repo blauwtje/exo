@@ -42,9 +42,6 @@ const PINNED_SENTENCES = {
   'skills/build/references/fresh-eyes.md': [
     ...REVIEW_THRESHOLD,
   ],
-  'skills/audit-architecture/SKILL.md': [
-    'While a read-only planning mode is active and the request is an architecture audit, this skill owns the turn and writes the plan artifact `spec` defines; every other planning turn belongs to `spec`.',
-  ],
   'skills/check-docs/SKILL.md': [
     'Never end a turn on a research pass alone.',
   ],

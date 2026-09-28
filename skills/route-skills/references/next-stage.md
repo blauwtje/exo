@@ -4,9 +4,9 @@ A stage skill reads this file at its final message when its work leaves a next s
 
 ## The next stage
 
-A stage skill (`spec`, `audit-architecture`, `find-cause`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
+A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
 
-1. **Two options.** The options follow the question shape: the next stage and Stop. After `spec`: 1. Run-plan, 2. Stop. After `audit-architecture`: 1. Define-scope, 2. Stop. Picking a stage runs its command, such as `/exo:build <brief path>`, in this session.
+1. **Two options.** The options follow the question shape: the next stage and Stop. After `spec`: 1. Run-plan, 2. Stop. Picking a stage runs its command, such as `/exo:build <brief path>`, in this session.
 2. **Continuing is recommended**, as `1. **<Stage> (Recommended)**`, because this session holds the facts the next stage needs and a clear pays off only once the context is large. Stop is number 2, and its text names the command to run after a context clear, such as `/exo:build <brief path>`.
 3. **After a context notice, stopping is recommended.** Once an `exo: context` notice fired this session, Stop moves to `1. **Stop (Recommended)**` and the stage to number 2, because the brief and branch are on disk, so a clear loses nothing the next stage reads. `scripts/next-stage.mjs` reads that notice from the session record, so its printed order is the one shown.
 4. **One model line.** When the next stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause.

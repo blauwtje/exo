@@ -184,10 +184,8 @@ const SCENARIOS = [
     'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call', 'A read-only planning mode runs the same calls') },
   { name: 'dropped-single-cycle-ceiling', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-detail.md',
     'its repair is a new direction, not another polish pass, so the cycle ends there', 'its repair is a return to Phase 2') },
-  { name: 'drifted-audit-precedence', mutate: (root) => replaceText(root, 'skills/audit-architecture/SKILL.md',
-    'every other planning turn belongs to', 'planning turns belong to') },
   { name: 'effort-absent', expect: 'accept', mutate: (root) => {
-    for (const skill of ['find-cause', 'audit-architecture']) dropLines(root, `skills/${skill}/SKILL.md`, 'effort:');
+    for (const skill of ['find-cause']) dropLines(root, `skills/${skill}/SKILL.md`, 'effort:');
   } },
   { name: 'effort-low', expect: 'accept', mutate: (root) => {
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low');

@@ -39,7 +39,7 @@ test('a renamed heading throws and names it', () => {
 test('no tracked file but the skill holds a restated sentence', () => {
   const lines = restatementText(SKILL_TEXT).split('\n').slice(1);
   const sentences = lines.filter((line) => line.length >= SENTENCE_LENGTH);
-  assert.ok(sentences.length >= 10, `${sentences.length} sentences`);
+  assert.ok(sentences.length >= 9, `${sentences.length} sentences`);
   for (const sentence of sentences) {
     const holders = execFileSync('git', ['grep', '-lF', '-e', sentence], { cwd: REPOSITORY, encoding: 'utf8' }).trim().split('\n');
     assert.deepEqual(holders, [RESTATED_SKILL], sentence);
