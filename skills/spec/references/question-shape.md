@@ -1,17 +1,20 @@
 # Question shape
 
-Put the costly or irreversible questions and the assumptions in one message the user answers at a glance. The enemy is a message in the code's vocabulary. The overcorrection is so much context that the choice gets lost.
+Put the costly or irreversible questions and the assumptions in one message the user answers at a glance. The enemy is a message in a developer's vocabulary. The overcorrection is so much context that the choice gets lost.
 
 ## Question shape
 
-The user never saw the code, so no name from it appears in any message, assumption lines included: no path, class, field, setting, role, status code or technical term, only what it means for the user.
+The user never saw the code, so no line holds a name from it, assumption lines included.
+Nor does it hold a technical term, even a common one like environment variable or flag.
+Say what the user does or gets instead, as in "the key is set up like the Claude key".
 
 - The message opens with each costly or irreversible question in turn, short and in everyday words, numbered when more than one.
   The exception is one context line above a question, when it needs it; earlier answers and code findings wait for the brief.
 - Two or three one-line options per question, holding only what the user gets, lettered when the question is numbered.
 - Recommended first, with the active output style's marker for a recommended choice; only without one, `(recommended)`.
-- Under each question's options, one short unlabelled line says why, because a reason inside an option blurs the choice.
-- After the questions, every assumption as one plain line each, in what the user gets, under an "Assuming" line.
+- Under each question's options, one unlabelled sentence under 20 words says why the recommendation wins, because a reason inside an option blurs the choice.
+- After the questions, under an "Assuming" line, one plain line per routine point, in what the user gets.
+  Each default in the result that neither request nor code fixes gets a line, like a file's name, page size or part order.
 - Close with one reply line naming how to answer each question and that `ok` or `go` takes every recommendation and assumption.
 
 ```text
