@@ -226,6 +226,38 @@ test('plan-check fails a compact plan missing Goal, Success criterion or a Check
   assert.ok(missingPoint.lines.some((line) => line.includes("no 'Shared state:' point")));
 });
 
+test('plan-check fails a compact plan whose package.json has a validate script and no Land gate: line', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { validate: 'echo ok' } }) });
+  const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) => line.includes("no 'Land gate:' line") && line.includes('npm run validate')));
+});
+
+test('plan-check fails a compact plan whose package.json has a check script and no Land gate: line', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { check: 'echo ok' } }) });
+  const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) => line.includes("no 'Land gate:' line") && line.includes('npm run check')));
+});
+
+test('plan-check prints ok for a compact plan whose package.json has neither a validate nor a check script', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { test: 'echo ok' } }) });
+  const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, true);
+});
+
+test('plan-check accepts Land gate: none as a deliberate opt-out', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { validate: 'echo ok' } }) });
+  const plan = compactPlanFixture({ tasks: compactTasks(1) })
+    .replace('Repository: /tmp/fixture', `Repository: ${root}`)
+    .replace('Branch: feat/fixture', 'Branch: feat/fixture\nLand gate: none');
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, true);
+});
+
 test('plan-check passes an Acceptance bullet that cites a task number', () => {
   const brief = briefFixture({ tasks: compactTasks(1) })
     .replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);

@@ -184,10 +184,10 @@ function strayPaths(task, root, planPath) {
 
 // A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
 // right before the commit, so a check spec wrote against the plan's own
-// layout still holds on whatever the build left; a plan without the line
-// gates on nothing, as land-task always has.
+// layout still holds on whatever the build left; a plan without the line, or
+// with `Land gate: none`, gates on nothing, as land-task always has.
 function runLandGate(landGate, root) {
-  if (landGate === null) return;
+  if (landGate === null || landGate === 'none') return;
   const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8' });
   if (gate.status !== 0) {
     const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${gate.error?.message ?? ''}`.trim();

@@ -1,19 +1,19 @@
 # Specification of the task list
 
 The task list closing a brief names the goal, the basis, the proof and one
-line per task, nothing more: no implicit file or shape, no step's code
-spelled out either, since the compact grammar leaves that to each builder.
-`node <skill>/scripts/plan-check.mjs --plan <path>` enforces every rule
-below; run it before ending the turn and repair each line it prints.
+line per task: no implicit file or shape, no step's code spelled out, since
+the compact grammar leaves that to each builder. `node
+<skill>/scripts/plan-check.mjs --plan <path>` enforces every rule below; run
+it before ending the turn and repair each line it prints.
 
-Write for a reader with zero context. A fact planning could not settle is
-asked before the plan is written; a choice the user would not notice is made
-in the plan, in a task's `Data:` field or heading.
+Write for a reader with zero context: a fact planning could not settle is
+asked before writing; a choice the user would not notice goes in the plan, a
+task's `Data:` field or heading.
 
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the result.
-2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; for a folder not yet a git repository, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner. When two tasks share no `Depends on:` chain, the basis adds `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
+2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner. When two tasks share no `Depends on:` chain, the basis adds `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time. The basis adds `Land gate: npm run validate` for root's package.json `validate` script, else `npm run check` for `check`, else `none`.
 3. `## Success criterion`: the one command proving every task landed, no
    interpretation step, no user-only check (that goes to `## Manual checks`).
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`,

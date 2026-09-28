@@ -109,6 +109,13 @@ test('a plan with no Land gate line lands as before', async () => {
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
+test('Land gate: none opts out and lands as before', async () => {
+  const { root } = await landingCheckout();
+  await editApp(root);
+  const output = landTask({ planText: withLandGate('none'), number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
 test('an untracked plan inside the checkout is never a stray, and the task lands', async () => {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
   git(root, 'config', 'user.name', 'exo-test');
