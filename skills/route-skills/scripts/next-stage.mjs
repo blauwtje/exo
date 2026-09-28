@@ -15,6 +15,7 @@ import { realpathSync } from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
+import { readKindTable } from '#model-kinds';
 import { frameOf, parsePlan } from '#plan-tasks';
 import { hotSessionFile, isSessionId } from '#session-record-path';
 
@@ -45,19 +46,27 @@ function designPending(planPath) {
   return visualDirection === null || /^Direction: pending at rung \d+$/m.test(visualDirection);
 }
 
+// The kind in `lib/model-kinds.json` whose model and effort each next stage
+// runs on, with the reason clause that follows them. The design-pending build
+// row names no kind: it pins `opus` at `medium` by the skill's own setting.
+const STAGE_KIND = {
+  'build-no-spec': { kind: 'hardest', because: 'it decides the change while building it' },
+  'build': { kind: 'coordinate', because: (buildEffort) => `the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps \`${buildEffort}\`` }
+};
+
 // The one model-line row `references/next-stage.md`'s table names for the
 // stage the question opens next; `null` when that stage names no row, which
 // leaves the session's own model and effort unnamed under the options.
 function modelLineFor(stage, artifact) {
-  if (stage === 'build-no-spec') {
-    return 'Next stage runs on `opus` at `high`, because it decides the change while building it.';
+  if (stage === 'build' && designPending(artifact)) {
+    return 'Next stage runs on `opus` at `medium`, because that task builds in the session, and the skill pins `medium`.';
   }
-  if (stage === 'build') {
-    return designPending(artifact)
-      ? 'Next stage runs on `opus` at `medium`, because that task builds in the session, and the skill pins `medium`.'
-      : "Next stage runs on `sonnet` at `medium`, because the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps `high`.";
-  }
-  return null;
+  const row = STAGE_KIND[stage];
+  if (row === undefined) return null;
+  const { kinds } = readKindTable();
+  const { model, effort } = kinds[row.kind];
+  const because = typeof row.because === 'function' ? row.because(kinds.build.effort) : row.because;
+  return `Next stage runs on \`${model}\` at \`${effort}\`, because ${because}.`;
 }
 
 // True once show-savings' context-watch.mjs has sent its `exo: context` notice

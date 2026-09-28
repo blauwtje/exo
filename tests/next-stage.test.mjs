@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { readKindTable } from '#model-kinds';
 import { nextStageReport } from '../skills/route-skills/scripts/next-stage.mjs';
 import { hotFile } from '../skills/show-savings/scripts/record.mjs';
 import { fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
@@ -112,7 +113,7 @@ test('spec opens build on opus when a Design: task is still pending', async () =
 test('find-cause opens build with no spec, unknown stage fails', async () => {
   const report = nextStageReport({ after: 'find-cause', artifact: 'none' });
   assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: builds the edits the proof left\.\n/);
-  assert.match(report, /Next stage runs on `opus` at `high`, because it decides the change while building it\./);
+  assert.match(report, /Next stage runs on `opus` at `max`, because it decides the change while building it\./);
   assert.throws(() => nextStageReport({ after: 'ship', artifact: 'none' }), /no next stage known/);
 });
 
@@ -146,4 +147,10 @@ test('CLI fails with a usage error when --after is missing', async () => {
   const result = await run(SCRIPT, ['--artifact', 'none']);
   assert.equal(result.code, 2);
   assert.match(result.stderr, /--after/);
+});
+
+test('the no-plan model line takes its model and effort from the hardest kind', () => {
+  const { hardest } = readKindTable().kinds;
+  const modelLine = nextStageReport({ after: 'find-cause', artifact: 'none' }).split('\n')[2];
+  assert.ok(modelLine.startsWith(`Next stage runs on \`${hardest.model}\` at \`${hardest.effort}\`, because `));
 });
