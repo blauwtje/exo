@@ -5,37 +5,33 @@ argument-hint: <symptom, failing command or error>
 ---
 # Debug
 
-## Phases
+a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`; no symbol: dispatch `exo:locate-code`.
+b. **Investigate.** Proven needs a causal line and a mechanism predicting it; else it must hold in the source. Write `Status: proven`; else dispatch `general-purpose` on `opus` from `investigator-prompt.md`.
+c. **Fix.** Settle where it commits per `../build/references/workspace.md`; else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` on `sonnet` from `fixer-prompt.md`; resume `failed` via SendMessage.
+d. **Report.** Read only the status lines and Report's fields, not `Log` or `Ranges`. After compaction, re-run `Repro`.
 
-a. **Locate.** The session runs these phases and Step 7; a delegate dispatches nothing. Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Before the first dispatch run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`. When the symptom names no file or symbol, dispatch `exo:locate-code`.
-b. **Investigate.** A cause is proven only when observed evidence names one causal line and a mechanism predicting the symptom; a diagnostic or user-stated cause counts only when the source holds what it describes. Proven: write the handoff's investigate part, `Status: proven`. Otherwise dispatch a `general-purpose` delegate on `opus` from `investigator-prompt.md`.
-c. **Fix.** Settle where the fix commits per `../build/references/workspace.md`, because a delegate cannot ask; for another checkout, copy the handoff into its `.exo/debug/`. Dispatch a `general-purpose` delegate on `sonnet` from `fixer-prompt.md`; on `failed`, resume it with SendMessage, because its transcript holds the attempts.
-d. **Report.** Read only the status lines and the handoff fields the Report line names, never its `Log` or `Ranges` paths. After a compaction, re-run the handoff's `Repro` before dispatching, because memory cannot say the symptom persists.
-
-## The loop
-
-1. **Reproduce.** Capture a failing test, command or input as one command; with no trigger, deliver evidence, not a production edit. Send long output to `<scratch>/debug-repro.log`, `<scratch>` being what `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug` prints, and read it with `tail -n 40`, because a pasted log rides in every later turn. When missing infrastructure blocks it, name it and reproduce at the first repository-owned function below the code needing it, never by calling that code with it stubbed, because that is not the path either. Any verification line names that function as what ran and claims no sign-off for the missing path, because a team agreement counting a test as sign-off changes no fact.
-2. **Instrument.** Keep two hypotheses the reproduction leaves standing and add one observation separating them at their first divergent boundary.
-3. **Isolate.** Remove inputs or branches until one more removal makes the symptom vanish, copying any shared file. Two rounds leaving both hypotheses standing end the loop, because a third round is guessing.
-4. **Predict, then fix.** Before any production edit, state the causal line, the output that will change, and why; then make only the change the prediction requires; drop an earlier patch on the symptom rather than keep it as a backstop, because it masks the next wrong cause.
-5. **Prove.** Re-run the reproduction, the isolated case and the required suite under Step 1's output rule; a skipped run proves nothing. Return to Step 1 instead of patching when the repair reaches a second owner, an old route and its replacement both run, supporting code grows while behavior stays the same, or the path from input to symptom cannot be followed in one reading, because the cause was wrong.
-6. **Retain project knowledge.** Follow `../build/references/project-knowledge.md`.
-7. **Fresh eyes.** Unless the caller says a pull-request review follows, run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at the effort `node "${CLAUDE_SKILL_DIR}/../verify/scripts/pick-reviewer.mjs" --effort` prints (`skip`, `low` or `medium`), `low` for `skip`. A fix needing a file the investigation did not read at first also gets that review. Fix each confirmed correctness finding under Step 5's proof. Then commit the `Tests` files alone as `test(<scope>): reproduce <symptom>`, then the fix, because a test committed with its fix never shows it failed. Edits beyond the prediction end the turn on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output; otherwise it ends on `ship`.
+1. **Reproduce.** One command reproduces it; else deliver evidence, no fix. Send long output to `<scratch>/debug-repro.log`, `<scratch>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`; read with `tail -n 40`. Missing infrastructure: reproduce at the first owning function below it, unstubbed; no sign-off.
+2. **Instrument.** Keep two hypotheses; add one observation at their first divergent boundary.
+3. **Isolate.** Remove inputs or branches until one more removal clears the symptom; two rounds standing end it.
+4. **Predict, then fix.** State the causal line, changed output and why; change only that; drop earlier patches.
+5. **Prove.** Re-run the reproduction, isolated case and required suite per Step 1. Return to Step 1 when the repair reaches a second owner or the path resists one reading.
+6. **Retain project knowledge.** Per `../build/references/project-knowledge.md`.
+7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at what `node "${CLAUDE_SKILL_DIR}/../verify/scripts/pick-reviewer.mjs" --effort` gives (`skip`, `low` or `medium`); fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output; else end on `ship`.
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `references/handoff.md` | Writing or reading a handoff. |
-| `../build/references/workspace.md` | Phase (c). |
-| `investigator-prompt.md` | Phase (b). |
-| `fixer-prompt.md` | Phase (c). |
-| `../build/references/performance.md` | Speed is the only symptom. |
-| `references/profiling.md` | A slowdown, memory growth, or a profile or trace. |
-| `../build/references/critique.md` | Step 7, when `code-review` is absent. |
+| `references/handoff.md` | D1 |
+| `../build/references/workspace.md` | c |
+| `investigator-prompt.md` | b |
+| `fixer-prompt.md` | c |
+| `../build/references/performance.md` | Speed |
+| `references/profiling.md` | Trace |
+| `../build/references/critique.md` | No review |
 | `../build/references/security.md` | When its first line applies. |
 | `../build/references/data-migration.md` | When its first line applies. |
 | `../build/references/test-design.md` | When its first line applies. |
-| `../build/references/project-knowledge.md` | Step 6. |
+| `../build/references/project-knowledge.md` | 6 |
 
-Report: the mechanism, at most ten proof lines and the log path, and the test and fix SHAs; unproven, the `Repro`, `Expected`, `Actual` and `Hypotheses`.
+Report: the mechanism, up to ten proof lines, log path, test and fix SHAs; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.
