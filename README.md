@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/social-preview.jpg" alt="exo: plugin for AI coding agents. Decide, build, review.">
+</p>
+
 # exo
 
 [![quality](https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg)](https://github.com/blauwtje/exo/actions/workflows/quality.yml)
