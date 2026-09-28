@@ -34,7 +34,7 @@
     "budget": {
       "type": "string",
       "title": "Agent model budget",
-      "description": "normal: every agent dispatches on the model verify/model-table.json names. lean: an opus agent dispatches on sonnet instead. Not sure? Keep normal. A project overrides this in .claude/exo.json.",
+      "description": "normal: every agent dispatches on the model its kind names in lib/model-kinds.json. lean: an opus agent dispatches on sonnet instead. Not sure? Keep normal. A project overrides this in .claude/exo.json.",
       "options": ["normal", "lean"],
       "default": "normal"
     },
