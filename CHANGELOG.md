@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.57.0 - 2026-09-28
+
 ### Highlights
 
 - **Plan a change with `spec` and build it with `build`, which replace `define-scope`, `run-plan` and `build-change`.**
