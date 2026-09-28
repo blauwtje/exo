@@ -14,11 +14,13 @@ argument-hint: <outcome to shape>
    Exception: order-dependent tasks (B needs A) — write it unasked, from step 4.
    Asked for options: list them, recommend one, no file.
    New wishes for briefed work reopen that brief.
-2. **Sort each point.** Costly/irreversible first: data format, a public interface, a paid service, a deletion, access or security.
+2. **Sort each point.** Ask only what is costly or irreversible, the root other decisions hang on first.
+   Costly means stored data format, a public interface, a paid service, a deletion, or access rights and security.
    Answerable by running: run it, record it.
-   Routine or cheap-but-visible: decide, list as an assumption; undecided stays open regardless of code.
+   Decide the routine, a visible but cheap point included, and list it as an assumption.
+   A decision the user left undecided stays open whatever the code suggests.
    Name the owning layer and a smaller alternative.
-3. **Ask once.** Per `references/question-shape.md`, bundle every costly question and assumption in one message.
+3. **Ask once.** Read `references/question-shape.md`, then bundle all costly questions and assumptions into one message in its shape.
    Assumptions only: write the brief unasked; neither: step 1 applies.
    After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
