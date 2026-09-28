@@ -9,13 +9,24 @@ effort: medium
 
 ## The loop
 
-Read `references/run-loop.md` for steps 1-6: finding the plan, reading the frame, asking the branch what landed, forming the block, dispatching the unit and routing the return. Its step 3 sends a `Next: none` result here for step 7.
-
-7. **The tail.** Read `references/tail.md`: it reviews the branch, runs the plan's final verification and closes on `ship`.
+1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
+2. **Read the frame.**
+3. **Ask the branch what landed.** A `Next: none` result goes to step 7.
+4. **Form the block.**
+5. **Dispatch the unit.**
+6. **Route the return.**
+7. **The tail.** Read `references/tail.md`: it ends this loop on `verify`.
 
 ## No spec
 
-A decided change with no plan file runs the eight steps in `references/no-spec.md` instead of the loop above. Its Gate step: Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file. After a compaction, rebuild what landed from the working-tree diff, not memory. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
+1. **Orient.** A decided change with no plan file reads `references/no-spec.md` for steps 1-8 instead of the loop above.
+2. **Gate.** Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file. After a compaction, rebuild what landed from the working-tree diff, not memory. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
+3. **Workspace, then baseline.**
+4. **Build.**
+5. **Prove.**
+6. **Project knowledge.**
+7. **Fresh eyes.**
+8. **Commit.**
 
 ## References
 
@@ -34,9 +45,9 @@ A decided change with no plan file runs the eight steps in `references/no-spec.m
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
 | `references/critique.md` | No spec step 7's last fallback. |
-| `references/security.md` | No spec, when its first line applies. |
-| `references/data-migration.md` | No spec, when its first line applies. |
-| `references/test-design.md` | No spec step 5. |
+| `references/security.md` | When its first line applies. |
+| `references/data-migration.md` | When its first line applies. |
+| `references/test-design.md` | When its first line applies. |
 | `references/test-first.md` | No spec, test-first work, before naming the first boundary. |
 | `references/project-knowledge.md` | No spec step 6, when its first line applies. |
 | `references/performance.md` | No spec, speed-only work, before measuring. |

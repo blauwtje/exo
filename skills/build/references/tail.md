@@ -1,5 +1,5 @@
 # The loop, step 7: the tail
 
-Read this once `run-loop.md` step 3 reports `Next: none`.
+Read this once step 3 reports `Next: none`.
 
-7. **The tail.** Run `node "${CLAUDE_SKILL_DIR}/scripts/finish-run.mjs"` (`--reviewer <name>` when the user names one); it prints the reviewer and `base=<sha>`, or a failure that ends the turn. Dispatch the `exo:review-branch` agent on the printed `sonnet` or `opus` with the plan path, branch, checkout, base, code standard path and `.exo/branch-review.md` as the findings path; `BLOCKED` ends the turn with its report, and `FINDINGS` goes to a `general-purpose` delegate on `sonnet` from `../review-fixer-prompt.md` with the report path. Then run the plan's `## Final verification`, or `## Success criterion` for a compact plan. A failed, skipped or unclear command goes to a `general-purpose` delegate on `opus` from `../bug-fixer-prompt.md`, then reruns once; a second failure ends the turn with both outputs. Commit what `git status --porcelain` lists as `fix(<scope>): address the branch review`, run `finish-run.mjs --done`, then end on `ship`, with `Closes #<n>` when `## Goal` names issue `#<n>`.
+7. **The tail.** End this loop on `verify`.
