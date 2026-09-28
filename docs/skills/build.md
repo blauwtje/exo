@@ -12,9 +12,8 @@ With no plan file, it fires when the change is decided and inspection shows it m
 
 - One commit per task, carrying the task number, so a resumed session knows what has landed.
 - Independent tasks built together in worktrees of their own; a plan of three tasks or fewer built in the session instead.
-- One branch review at the end, against the plan and the written code standard: at `medium` effort on a branch of at most five changed files and 200 changed lines, at `high` above either number.
 - A final report that ends with the brief's `## Manual checks`, the checks only you can make, listed once.
-- The finish question `ship` asks, whose pick is carried out to its end.
+- The loop ends by handing to `verify`, which reviews the branch against the plan and the written code standard at `medium` effort on at most five changed files and 200 changed lines, `high` above either number, repairs its findings, then asks the finish question `ship` carries out to its end.
 
 With no plan file:
 

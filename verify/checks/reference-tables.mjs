@@ -32,6 +32,9 @@ const EXPECTED_OWNER_ROWS = {
     '../route-skills/references/question.md',
   ],
   'skills/build/SKILL.md': [
+    'references/run-loop.md',
+    'references/tail.md',
+    'references/no-spec.md',
     'references/workspace.md',
     'references/wave-worktrees.md',
     'implementer-prompt.md',
@@ -41,6 +44,7 @@ const EXPECTED_OWNER_ROWS = {
     '../route-skills/references/question.md',
     'references/design-tasks.md',
     'reviewer-prompt.md',
+    'references/fresh-eyes.md',
     'references/critique.md',
     'references/security.md',
     'references/data-migration.md',

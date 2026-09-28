@@ -170,8 +170,8 @@ test('build sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.m
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
   assert.match(fixerPrompt, /`general-purpose` delegate on `sonnet`/);
   const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
-  const tail = fs.readFileSync(path.join(skillsRoot, 'build', 'references', 'tail.md'), 'utf8');
-  assert.match(tail, /`FINDINGS`[^\n]*`\.\.\/review-fixer-prompt\.md`/);
+  const verifying = fs.readFileSync(path.join(skillsRoot, 'verify', 'SKILL.md'), 'utf8');
+  assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
 });
 

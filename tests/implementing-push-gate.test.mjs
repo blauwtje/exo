@@ -16,6 +16,7 @@ const TAIL = read('build/references/tail.md');
 const NO_SPEC = read('build/references/no-spec.md');
 const WORKSPACE = read('build/references/workspace.md');
 const SHIPPING = read('ship/SKILL.md');
+const VERIFY = read('verify/SKILL.md');
 
 function loopStep(number, text = RUN_LOOP) {
   const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
@@ -25,7 +26,7 @@ function loopStep(number, text = RUN_LOOP) {
 
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
-  assert.ok(branchStep.includes('Settle where the run commits as `workspace.md` says.'));
+  assert.ok(branchStep.includes('Settle where the run commits.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |'), 'the workspace is read before the first dispatch');
   assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
@@ -54,7 +55,8 @@ test('a green task commits and pushes nothing', () => {
 
 test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7, TAIL);
-  assert.ok(tailStep.includes('then end on `ship`'));
+  assert.ok(tailStep.includes('End this loop on `verify`'));
+  assert.ok(VERIFY.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit.');
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
@@ -85,7 +87,7 @@ test('the authorization line grants no push before the finish answer and no merg
 });
 
 test('the no-spec route settles the workspace and ends on ship', () => {
-  assert.ok(NO_SPEC.includes('settle where the change commits per `workspace.md`'), 'no-spec step 3 names the workspace step');
+  assert.ok(NO_SPEC.includes('settle where the change commits'), 'no-spec step 3 names the workspace step');
   assert.ok(NO_SPEC.includes('then end on `ship`'), 'no-spec step 8 names the finish');
 });
 
