@@ -23,7 +23,7 @@ effort: medium
 2. **Gate.** Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file. After a compaction, rebuild what landed from the working-tree diff, not memory. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
 3. **Workspace, then baseline.**
 4. **Build.**
-5. **Prove.**
+5. **Prove.** A risky change reads `references/test-design.md` first.
 6. **Project knowledge.**
 7. **Fresh eyes.**
 8. **Commit.**
