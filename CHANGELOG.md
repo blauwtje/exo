@@ -33,6 +33,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `ship` runs `verify` instead of its own verifier prompt.
 - The routing context injected at session start describes the three stages.
 - The next-step menu labels the build option `Build`.
+- `spec` scores below the old `define-scope` on pressure case A, 29/33 checks against 33/33 over three runs: a run repeats the user's answer before it writes the brief, names a technical term in a question, or puts context above the first question. Case D scores 33/36 on both.
 
 ### Removed
 
