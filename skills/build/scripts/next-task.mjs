@@ -152,30 +152,34 @@ export function frameOnlyReport(planText) {
   return frameReport(frameOf(parsePlan(planText).frame));
 }
 
-// Writes a brief file for each task of the next wave and returns the report
-// that names them.
-export function nextTaskReport({ planPath, planText, root }) {
+// Writes a brief file for each reported task and returns the report that
+// names them. `one` keeps only the wave's first task, so the direct path in
+// run-loop.md step 5 never builds a printed wave's tasks together in one
+// checkout; waveLine already prints a single task as `Next:`, never `Wave:`.
+export function nextTaskReport({ planPath, planText, root, one = false }) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root);
   const wave = nextWave(plan.tasks, landed, frame.worktreeSetup);
+  const reported = one ? wave.slice(0, 1) : wave;
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
-    waveLine(wave)
+    waveLine(reported)
   ];
-  if (wave.length === 0) return `${lines.join('\n')}\n`;
+  if (reported.length === 0) return `${lines.join('\n')}\n`;
   const briefDirectory = scratchPath(root, 'briefs');
-  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
+  for (const task of reported) lines.push('', ...taskLines(task, frame, root, briefDirectory));
   return `${lines.join('\n')}\n`;
 }
 
 function main(argv) {
   const frame = argv.includes('--frame');
-  const flags = parseFlags(argv.filter((arg) => arg !== '--frame'), { plan: 'value', root: 'value' });
+  const one = argv.includes('--one');
+  const flags = parseFlags(argv.filter((arg) => arg !== '--frame' && arg !== '--one'), { plan: 'value', root: 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
@@ -183,7 +187,7 @@ function main(argv) {
     process.stdout.write(frameOnlyReport(planText));
     return;
   }
-  process.stdout.write(nextTaskReport({ planPath: flags.plan, planText, root: flags.root ?? process.cwd() }));
+  process.stdout.write(nextTaskReport({ planPath: flags.plan, planText, root: flags.root ?? process.cwd(), one }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
