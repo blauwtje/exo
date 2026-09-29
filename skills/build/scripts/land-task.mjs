@@ -5,7 +5,8 @@
 // holds the task, and prints that set, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and the
-// printout carries that output. `--fix <subject>` bypasses all of that for a
+// printout carries that output. Above eight tasks each `Choice:` line of the
+// report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
 // with the given subject, no task, plan or trailer needed.
 
@@ -15,7 +16,7 @@ import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
-import { frameOf, landedTasks, parsePlan, PlanError } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, frameOf, landedTasks, parsePlan, PlanError } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -154,6 +155,25 @@ export function proofOf(task, reportText, reportPath) {
   return [`${command}: pass`, ...output].join('\n');
 }
 
+// `<plan stem>-decisions.md` beside the plan.
+function decisionsPathOf(planPath) {
+  const { dir, name } = path.parse(planPath);
+  return path.join(dir, `${name}-decisions.md`);
+}
+
+const CHOICE_LINE = /^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
+
+// Above BLOCK_TASK_LIMIT tasks each `Choice:` line of the build report
+// becomes one `Task <n> <short sha>: <choice>` line of the decision log.
+function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
+  if (planPath === undefined || reportText === null || taskCount <= BLOCK_TASK_LIMIT) return;
+  const choices = reportText.replace(/\r\n/g, '\n').split('\n').flatMap((line) => {
+    const match = line.match(CHOICE_LINE);
+    return match === null ? [] : [`Task ${number} ${sha}: ${match[1]}\n`];
+  });
+  if (choices.length > 0) fs.appendFileSync(decisionsPathOf(planPath), choices.join(''));
+}
+
 // Every path the checkout has changed or added since HEAD, tracked or not: a
 // `Commit:` block's own `git add` (the derived Files: list for a compact
 // task, or a plan-written `git add .`) stages an untracked path alongside the
@@ -164,14 +184,16 @@ export function proofOf(task, reportText, reportPath) {
 // rather than trusted to `--exclude-standard`. Likewise the plan file itself,
 // when `planPath` sits inside `root`: spec hands its brief straight
 // to build without committing it, so the plan the run is landing from can
-// still be untracked in the very checkout it lands into.
+// still be untracked in the very checkout it lands into. The decision log
+// beside the plan is exempt for the same reason: land-task writes it after
+// the commit and never commits it.
 function changedPaths(root, planPath) {
   const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
   const untracked = execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' });
   const scratchPrefix = `${SCRATCH_FOLDER}/`;
-  const planRelative = planPath === undefined ? null : path.relative(path.resolve(root), path.resolve(planPath));
+  const exempt = planPath === undefined ? [] : [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
   return [...new Set([...tracked.split('\n'), ...untracked.split('\n')])]
-    .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && line !== planRelative);
+    .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
 // A task lands only the paths its `Files:` lines name: a build that also
@@ -224,6 +246,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (!landed.includes(number)) {
     throw new LandingError(`HEAD ${sha} carries "Plan-task: ${number}", yet next-task does not count Task ${number} as landed: the commit's subject reads "${subject}" and the Commit: block gives "${task.commitSubject}"`);
   }
+  appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
   return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n`;
 }

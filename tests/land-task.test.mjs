@@ -401,3 +401,50 @@ test('a --root that is a subdirectory of the checkout is refused before anything
   );
   assert.equal(git(root, 'status', '--porcelain').trim(), 'M src/app.js');
 });
+
+// Above eight tasks the report's `Choice:` lines become the decision log
+// beside the plan; at eight or fewer nothing is written.
+function planOfTasks(count) {
+  const tasks = Array.from({ length: count }, (_, index) => compactTask({
+    number: index + 1,
+    title: `feat(app): step ${index + 1}`,
+    files: index === 0 ? ['src/app.js'] : [`src/step-${index + 1}.js`],
+    proof: 'node --test tests/app.test.mjs'
+  }));
+  return compactPlanFixture({ tasks });
+}
+
+const CHOICE_REPORT = PASS_REPORT.replace('Unresolved: none', 'Choice: kept the default timeout\n- Choice: used a plain object\nUnresolved: none');
+
+test('above eight tasks each Choice: line is appended to the decision log beside the plan', async () => {
+  const plan = planOfTasks(9);
+  const { root, planPath } = await compactCheckout(plan);
+  const output = landTask({ planText: plan, number: 1, root, reportText: CHOICE_REPORT, planPath });
+  const sha = git(root, 'rev-parse', '--short', 'HEAD');
+  assert.match(output, /^Landed: 1$/m);
+  const log = await fs.readFile(path.join(root, 'docs/plans/compact-decisions.md'), 'utf8');
+  assert.equal(log, `Task 1 ${sha}: kept the default timeout\nTask 1 ${sha}: used a plain object\n`);
+});
+
+test('the decision log is no stray for the next task', async () => {
+  const plan = planOfTasks(9);
+  const { root, planPath } = await compactCheckout(plan);
+  landTask({ planText: plan, number: 1, root, reportText: CHOICE_REPORT, planPath });
+  await fs.writeFile(path.join(root, 'src/step-2.js'), 'export const step = 2;\n');
+  const output = landTask({ planText: plan, number: 2, root, reportText: PASS_REPORT, planPath });
+  assert.match(output, /^Landed: 1, 2$/m);
+});
+
+test('at eight tasks or fewer the Choice: lines write no decision log', async () => {
+  const plan = planOfTasks(8);
+  const { root, planPath } = await compactCheckout(plan);
+  landTask({ planText: plan, number: 1, root, reportText: CHOICE_REPORT, planPath });
+  await assert.rejects(fs.access(path.join(root, 'docs/plans/compact-decisions.md')));
+});
+
+test('above eight tasks a report with no Choice: line writes no decision log', async () => {
+  const plan = planOfTasks(9);
+  const { root, planPath } = await compactCheckout(plan);
+  landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
+  await assert.rejects(fs.access(path.join(root, 'docs/plans/compact-decisions.md')));
+});
