@@ -1,5 +1,5 @@
 // next-stage.mjs prints the next-stage question's options, continuing first
-// even in a session context-watch.mjs marked warned, and, for the stages
+// even in a session context-watch.mjs already notified, and, for the stages
 // `references/next-stage.md`'s table names, the one model line under them, reading a plan's `Design:` tasks and `## Visual
 // direction` to pick the build row.
 
@@ -24,7 +24,7 @@ function noSpecStageKind() {
 }
 
 // A savings directory holding the hot record of a session context-watch.mjs
-// already warned, at the path record.mjs keeps it.
+// already notified, at the path record.mjs keeps it.
 async function warnedSavingsDirectory(sessionId) {
   const directory = await fixture();
   const previous = process.env.EXO_SAVINGS_DIR;
@@ -33,7 +33,7 @@ async function warnedSavingsDirectory(sessionId) {
   if (previous === undefined) delete process.env.EXO_SAVINGS_DIR;
   else process.env.EXO_SAVINGS_DIR = previous;
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify({ contextWatch: { notifiedStep: 100, warned: true } })}\n`);
+  await fs.writeFile(file, `${JSON.stringify({ contextWatch: { notifiedStep: 100 } })}\n`);
   return directory;
 }
 

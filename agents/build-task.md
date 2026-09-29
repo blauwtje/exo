@@ -28,7 +28,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 - Never delete, skip or loosen a test to pass it: fix the code or report the failure.
 - Read a non-obvious behavior's call sites before changing it.
 - Give a shell wait loop a round counter that exits with an error.
-- Run only the brief's `Proof:` or `Run:`, never `npm run check`; background a command over 1 min with a sized timeout.
+- Run only the brief's `Proof:` or `Run:`, never `npm run check`; background a command over 1 min, timeout sized.
 
 ## Git
 
@@ -37,10 +37,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 ## Stop
 
 - Never delete files, data or branches to get past a blocked state; report two or three options.
-- Start no background session or delegate; ask nothing.
+- Start no background session or delegate; ask the user nothing.
 - Send output over forty lines to a log beside `Report to:`.
 - Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
-- Stop before a choice the user would notice that the brief does not settle, and report it BLOCKED with the options: the run asks the user.
+- Stop before a choice the user would notice that the brief does not settle, and report it BLOCKED with the options.
 
 ## Report
 
@@ -48,7 +48,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 - Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail`, its last output lines indented, never a summary: build lands a compact task on that line and output.
 - Done means committed on proof from the real product (test, command or running app), not a reading of the code.
 - A skipped or unclear check is not done: write it as it ran, never `pass`.
-- Without `Return: one line`, return it only on a failure or unfinished work; a green task returns only:
+- Without `Return: one line` in the dispatch, return it only on a failed test or unfinished work; a green task returns only:
 
 Task <n>: GREEN
 <each test, `Proof:` or `Run:` command>: pass

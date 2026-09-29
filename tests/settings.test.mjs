@@ -210,15 +210,33 @@ test('show lists context with its layer and no options line', async () => {
   assert.match(result.stdout, /^3\. context = 100 {2}\(local\)$/m);
 });
 
+// A copy of the plugin files settings.mjs imports, with the provider's tiers
+// replaced, so a test can change a tier without touching the live table.
+async function pluginWithTiers(tiers) {
+  const copy = await fixture();
+  const source = fileURLToPath(new URL('..', import.meta.url));
+  await fs.cp(path.join(source, 'package.json'), path.join(copy, 'package.json'));
+  await fs.cp(path.join(source, 'lib'), path.join(copy, 'lib'), { recursive: true });
+  await fs.cp(path.join(source, 'skills', 'configure'), path.join(copy, 'skills', 'configure'), { recursive: true });
+  const tablePath = path.join(copy, 'lib', 'model-kinds.json');
+  const table = JSON.parse(readFileSync(tablePath, 'utf8'));
+  const provider = table.providers[table.provider];
+  provider.models = [...provider.models, ...Object.values(tiers)];
+  Object.assign(provider.tiers, tiers);
+  await writeJson(tablePath, table);
+  return path.join(copy, 'skills', 'configure', 'scripts', 'settings.mjs');
+}
+
 test('the lean rule names the provider models the kind table maps, and carries no placeholder', async () => {
   const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
-  const { tiers } = table.providers[table.provider];
   const [[fromTier, toTier]] = Object.entries(table.budgets.lean);
-  const result = await settings(await workspace({ project: { budget: 'lean' } }), ['context']);
+  const script = await pluginWithTiers({ [fromTier]: 'model-from', [toTier]: 'model-to' });
+  const space = await workspace({ project: { budget: 'lean' } });
+  const result = await run(script, ['context'], { cwd: space.root, env: space.env });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /budget=lean \(project\)/);
-  assert.ok(result.stdout.includes(`resolves to model ${tiers[fromTier]} (`), result.stdout);
-  assert.ok(result.stdout.includes(`pass ${tiers[toTier]} as the Task call's own model parameter`), result.stdout);
+  assert.ok(result.stdout.includes('resolves to model model-from ('), result.stdout);
+  assert.ok(result.stdout.includes("pass model-to as the Task call's own model parameter"), result.stdout);
   assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
 });
 
