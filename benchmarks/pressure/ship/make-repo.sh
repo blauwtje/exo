@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds, in the current directory, a bare `origin.git` and a clone `app` on
-# branch feat/greeting holding one finished, unpushed commit.
+# branch feat/greeting holding one finished, unpushed commit; origin/HEAD
+# names main, as in a clone, so ship reads a default branch.
 set -euo pipefail
 
 git init -q --bare -b main origin.git
@@ -13,6 +14,7 @@ git add greet.js
 git commit -qm "chore: initial commit"
 git remote add origin ../origin.git
 git push -q -u origin main
+git remote set-head origin main
 git switch -qc feat/greeting
 printf 'console.log("hello, world");\n' > greet.js
 git commit -qam "feat(greet): greet the whole world"
