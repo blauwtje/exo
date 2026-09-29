@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.59.2 - 2026-09-29
+
 ### Fixed
 
 - Hooks read their input from stdin asynchronously, so a hook that starts before the harness writes its input no longer fails with `EAGAIN` and does nothing; a guard that cannot read its input reports it on stderr and exits 1.
