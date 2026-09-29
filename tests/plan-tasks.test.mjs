@@ -130,7 +130,7 @@ test('a wave admits only the tasks the Checkpoint Parallel: line names', () => {
   assert.deepEqual(named.parallel, [1, 3]);
   assert.equal(frameOf(parallelOf('- Parallel: every task.')).parallel, null);
   assert.deepEqual(frameOf(parallelOf('- Parallel: none.')).parallel, []);
-  assert.equal(frameOf(parsePlan(planFixture({ tasks: [bare(1, 'none')] })).frame).parallel, null);
+  assert.deepEqual(frameOf(parsePlan(planFixture({ tasks: [bare(1, 'none')] })).frame).parallel, [], 'no Parallel: line means every task serial');
   const { tasks } = parsePlan(compactPlanFixture({ tasks: [1, 2, 3, 4].map((number) => bare(number, 'none')) }));
   const numbers = (parallel) => nextWave(tasks, [], 'none', parallel).map((task) => task.number);
   assert.deepEqual(numbers(null), [1, 2, 3, 4]);

@@ -194,8 +194,10 @@ export function briefFixture({ tasks }) {
   ].join('\n');
 }
 
-/** A whole plan around `tasks`, with a `Worktree setup:` line only when `worktreeSetup` is given. */
-export function planFixture({ worktreeSetup = null, tasks }) {
+/** A whole plan around `tasks`, with a `Worktree setup:` line only when
+ * `worktreeSetup` is given and a `## Checkpoint` whose `Parallel:` point reads
+ * `parallel` only when `parallel` is given. */
+export function planFixture({ worktreeSetup = null, parallel = null, tasks }) {
   return [
     '# Plan: fixture',
     '',
@@ -218,6 +220,7 @@ export function planFixture({ worktreeSetup = null, tasks }) {
     '- `src/app.js` exports `greet`.',
     '- `src/other.js` is untouched.',
     '',
+    ...(parallel === null ? [] : ['## Checkpoint', '', `- Parallel: ${parallel}`, '']),
     '## Visual direction',
     '',
     'Design skill: design-ui',

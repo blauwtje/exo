@@ -14,7 +14,7 @@ import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSe
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/next-task.mjs', import.meta.url));
 
-const PLAN = planFixture({ worktreeSetup: 'none', tasks: [
+const PLAN = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
   taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], code: 'export function greet() {\n  return "hello";\n}', subject: 'feat(app): greet' }),
   taskSection({ number: 2, title: 'Style', dependsOn: 'Task 1', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' }),
   taskSection({ number: 3, title: 'Wave', files: ['- Create: `src/wave.js`'], subject: 'feat(app): wave' }),
@@ -57,12 +57,28 @@ function plannedTasks(count) {
 test('the route follows the plan\'s task count against BLOCK_TASK_LIMIT, never the wave size', async () => {
   const { root, planPath } = await checkout();
   assert.match(nextTaskReport({ planPath, planText: PLAN, root }), /^Route: direct$/m);
-  const atLimit = planFixture({ worktreeSetup: 'none', tasks: plannedTasks(BLOCK_TASK_LIMIT) });
+  const atLimit = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(BLOCK_TASK_LIMIT) });
   assert.match(nextTaskReport({ planPath, planText: atLimit, root }), /^Route: direct$/m);
-  const aboveLimit = planFixture({ worktreeSetup: 'none', tasks: plannedTasks(BLOCK_TASK_LIMIT + 4) });
+  const aboveLimit = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(BLOCK_TASK_LIMIT + 4) });
   const report = nextTaskReport({ planPath, planText: aboveLimit, root });
   assert.match(report, /^Route: unit$/m);
   assert.match(report, /^Wave: Task 1, Task 2, Task 3, Task 4$/m, 'a wave still prints above the limit');
+});
+
+test('the wave admits only the tasks the Checkpoint Parallel: line names', async () => {
+  const { root } = await checkout();
+  const planPath = path.join(root, 'docs/plans/named.md');
+  await fs.writeFile(planPath, planFixture({ worktreeSetup: 'none', parallel: '1, 3.', tasks: plannedTasks(4) }));
+  const named = await run(SCRIPT, ['--plan', planPath, '--root', root], { cwd: root });
+  assert.equal(named.code, 0, named.stderr);
+  assert.match(named.stdout, /^Wave: Task 1, Task 3$/m);
+});
+
+test('a plan with no Parallel: line builds every task serially', async () => {
+  const { root, planPath } = await checkout();
+  const report = nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: plannedTasks(4) }), root });
+  assert.match(report, /^Next: Task 1$/m);
+  assert.doesNotMatch(report, /^Wave: /m);
 });
 
 test('the brief file holds the frame and the task section, and the report holds neither', async () => {

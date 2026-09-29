@@ -166,7 +166,7 @@ export function nextTaskReport({ planPath, planText, root }) {
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root);
-  const wave = nextWave(plan.tasks, landed, frame.worktreeSetup);
+  const wave = nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel);
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,
