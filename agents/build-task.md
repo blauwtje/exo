@@ -10,7 +10,7 @@ tools: Read, Edit, Write, Grep, Bash
 
 - Read the brief first.
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`. `land-task.mjs` refuses a commit from any other checkout.
-- Give Edit and Write absolute paths inside `<checkout>`.
+- Edit and Write take absolute paths inside `<checkout>`.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Edit only the `Files:` paths; report any other.
 
@@ -37,7 +37,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 ## Stop
 
 - Never delete files, data or branches to get past a blocked state; report 2-3 options.
-- Start no background session or delegate; ask nothing.
+- Start no background session or delegate, ask nothing.
 - Send output over forty lines to a log beside `Report to:`.
 - Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
 - Stop before a user-noticeable choice the brief does not settle; report it BLOCKED with options.
@@ -45,8 +45,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before eve
 ## Report
 
 - Write at most 25 lines to `Report to:`: Landed, Proof, Unresolved (or `none`).
-- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail`, its last output lines indented, never a summary: build lands a compact task on that line and output.
-- Done means committed on proof from the real product (test, command, running app), not a code reading.
+- One `Choice: <one clause>` line per choice the task's fields leave open, in those 25 lines.
+- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail` with its last output lines indented, never a summary: build lands a compact task on them.
+- Done is proof from the real product, not a code reading.
 - A skipped or unclear check is not done: write it as it ran, never `pass`.
 - Without `Return: one line`, return it only on a failed test or unfinished work; a green task returns only:
 
