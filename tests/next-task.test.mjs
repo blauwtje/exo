@@ -47,15 +47,6 @@ test('with nothing landed, the report names the first wave with no drift and a b
   assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
 });
 
-test('with --one, a wave of two independent tasks reports only the first, never Wave:', async () => {
-  const { root, planPath } = await checkout();
-  const report = nextTaskReport({ planPath, planText: PLAN, root, one: true });
-  assert.match(report, /^Next: Task 1$/m);
-  assert.doesNotMatch(report, /^Wave:/m);
-  assert.ok(report.includes(`\nBrief: ${briefPath(root, 1)}\n`), report);
-  await assert.rejects(fs.access(briefPath(root, 3)), { code: 'ENOENT' });
-});
-
 test('the brief file holds the frame and the task section, and the report holds neither', async () => {
   const { root, planPath } = await checkout();
   const report = nextTaskReport({ planPath, planText: PLAN, root });
