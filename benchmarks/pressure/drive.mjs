@@ -26,12 +26,13 @@ const PROMPTS = {
   C: "Let people share their shopping lists with family. Shape this with me before building.",
   D: "Add a way to export a note to PDF. Shape this with me before building.",
   E: fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'spec/e-report-proof.txt'), 'utf8').trim(),
+  F: fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'spec/f-two-shapes.txt'), 'utf8').trim(),
 };
 const id = `${scenario}-${model}-${arm}${flags.label ? `-${flags.label}` : ''}`;
 const dir = path.join(S, 'runs', id);
 const cwd = path.join(dir, 'work');
 fs.mkdirSync(cwd, { recursive: true });
-fs.cpSync(path.join('/tmp/exo-pressure/spec', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export',E:'fx-visit-report'}[scenario]), cwd, { recursive: true });
+fs.cpSync(path.join('/tmp/exo-pressure/spec', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export',E:'fx-visit-report',F:'fx-booking-reminders'}[scenario]), cwd, { recursive: true });
 const armFlags = arm === 'with' ? ['--plugin-dir', PLUGIN]
   : ['--settings', JSON.stringify({ enabledPlugins: { 'exo@blauwtje': false } })];
 const log = (m) => { const l = `[${new Date().toISOString().slice(11,19)}] ${id}: ${m}`; console.log(l); fs.appendFileSync(path.join(dir, 'progress.log'), l + '\n'); };
@@ -59,7 +60,7 @@ function turn(prompt, sessionId, n) {
 }
 const isQuestion = (t) => /\?|Reply /i.test(t ?? '');
 const isCheckpoint = (t) => /write the brief/i.test(t ?? '');
-const replies = { B: ["I don't know", "I don't know", '1', '1'], C: ['2', 'go'], D: ['ok'], E: ['ok', 'go'] }[scenario];
+const replies = { B: ["I don't know", "I don't know", '1', '1'], C: ['2', 'go'], D: ['ok'], E: ['ok', 'go'], F: ['ok', 'go'] }[scenario];
 let aOnes = 0, aOk = false;
 const maxTurns = Number(maxTurnsArg || 99);
 let prompt = PROMPTS[scenario], sid, n = 1;

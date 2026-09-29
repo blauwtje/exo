@@ -1,0 +1,1 @@
+Add appointment reminders to this app: either keep them inside the appointments module or give them a module of their own. Shape this with me before building.

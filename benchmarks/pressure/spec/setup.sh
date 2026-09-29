@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the spec fixture projects under /tmp/exo-pressure/spec/:
 # fx-deepseek-worker, fx-tide-export, fx-shopping-share, fx-notes-export and
-# fx-visit-report, one per case prompt.
+# fx-visit-report and fx-booking-reminders, one per case prompt.
 # Each case runs from its fixture directory; the fixtures hold no git history.
 set -euo pipefail
 
@@ -211,5 +211,53 @@ test('parses one visit per line', () => {
 });
 EOF
 printf 'date,clinic,status\r\n2026-03-02,north,done\r\n2026-03-03,south,missed\r\n2026-03-04,north,done\r\n' > "$dir/data/sample-visits.csv"
+
+# Case F: a booking app whose appointments module stores a start time as a private
+# slot count, so a separate reminders module would have to decode that count. Two
+# structural shapes compete and one leaks the representation into a second module.
+dir="$root/fx-booking-reminders"
+mkdir -p "$dir/src/appointments"
+cat > "$dir/README.md" <<'EOF'
+# bookly
+Booking app for a small dental practice. Appointments live in src/appointments/.
+Patients are emailed a confirmation when they book; nothing is sent afterwards.
+EOF
+cat > "$dir/package.json" <<'EOF'
+{ "name": "bookly", "version": "0.2.0", "type": "module", "scripts": { "test": "node --test" } }
+EOF
+cat > "$dir/src/appointments/appointment-store.mjs" <<'EOF'
+// A start time is stored as a slot number: 15-minute slots counted from Monday 00:00
+// of the ISO week in the clinic's local time; the week is stored beside it.
+const appointments = [];
+
+export function bookAppointment({ patientEmail, week, slot }) {
+  const appointment = { id: appointments.length + 1, patientEmail, week, slot };
+  appointments.push(appointment);
+  return appointment;
+}
+
+export function listAppointments() {
+  return [...appointments];
+}
+EOF
+cat > "$dir/src/appointments/appointment-store.test.mjs" <<'EOF'
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { bookAppointment, listAppointments } from './appointment-store.mjs';
+
+test('a booked appointment is listed', () => {
+  bookAppointment({ patientEmail: 'ana@example.com', week: '2026-W14', slot: 41 });
+  assert.equal(listAppointments().length, 1);
+});
+EOF
+cat > "$dir/src/send-confirmation.mjs" <<'EOF'
+import { bookAppointment } from './appointments/appointment-store.mjs';
+
+export function confirmBooking(request) {
+  const appointment = bookAppointment(request);
+  console.log(`to ${appointment.patientEmail}: your appointment is booked`);
+  return appointment;
+}
+EOF
 
 echo "spec fixtures ready under $root"
