@@ -1,0 +1,6 @@
+find-cause	the invoice total is a cent off on some orders, sort it out
+design-ui	the settings page looks boring, make it nicer
+refactor	rename getUser to fetchUser everywhere, nothing else changes
+write-docs	write the README for this project
+spec	let people export their notes as PDF
+ask:refactor,spec	tidy up the notes export
