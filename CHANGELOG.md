@@ -7,9 +7,27 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`ship` now pushes a non-default branch to its remote without asking, never forced; a merge, a default-branch push, a release, a delete, a pull request, an issue or a comment still asks, and the `ship` setting overrides both.**
+
 ### Added
 
 - On a plan above eight tasks, `build` logs each choice a builder made that the plan left open, in a file beside the plan.
+- `/exo:start <goal>` routes a one-line goal to the right stage and chains spec, build, verify and ship with no further command.
+- A plan task whose change shows at runtime proves it by running the artifact with a re-runnable script, not only its unit tests.
+- On a plan of eight tasks or fewer, `build` runs independent tasks in parallel waves, limited by the plan's `Parallel:` line.
+- `land-task` refuses a task whose changed exported function would break a caller outside its files, and routes it to drift repair.
+- The pressure runner takes `--main-dir` to compare against exo at main, `--setting-sources` to isolate user settings, and flags a run that loaded the wrong exo copy.
+
+### Changed
+
+- A plan without a `Parallel:` line builds its tasks one at a time.
+
+### Fixed
+
+- `land-task` refuses a task whose build report lists a failing command under Proof.
+- The pressure runner resolves `--plugin-dir` to an absolute path, so a relative path no longer loads the installed exo instead.
 
 ## 0.59.2 - 2026-09-29
 
