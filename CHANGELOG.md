@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Once the context passes the `context` setting, exo hands the rest of the task to a fresh agent and keeps working, without asking you to save, clear or stop.**
+
+### Added
+
+- `lib/model-kinds.json` lists every model a provider offers (`fable` included), accepts `inherit` for the session's own model, and adds `xhigh` to the effort ladder.
+
+### Changed
+
+- Past the `context` threshold, the context notice reaches only the model and tells it to hand the task over to a fresh delegate, not to ask for `/exo:save-session` and `/clear`.
+- The next-stage question keeps the next stage first after a context notice.
+- `budget: lean` resolves its models from the kind table, so no model name is written into the setting's text.
+- A task delegate runs only its proof, and the lead runs `npm run check` once at landing, in the background.
+
 ## 0.58.0 - 2026-09-29
 
 ### Highlights
