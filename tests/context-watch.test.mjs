@@ -1,10 +1,11 @@
 // The context watch measures the main session after every tool call. From the
-// `context` setting it sends one notice per 25k step, to the session and the
-// user, advising a handoff or, in a plan skill, to keep working; inside a delegate and on any fault it stays silent, and it
-// never decides a permission.
+// `context` setting it sends one notice per 25k step, to the session only,
+// advising a handover to a fresh delegate or, in a plan skill, to keep working;
+// inside a delegate and on any fault it stays silent, and it never decides a
+// permission.
 
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -13,7 +14,8 @@ import { fixture } from './harness.mjs';
 
 const WATCH = fileURLToPath(new URL('../skills/show-savings/scripts/context-watch.mjs', import.meta.url));
 const PLAN_ADVICE = 'keep working; the state lives in the plan file and the commits';
-const ADVICE = 'finish the current step, then tell the user to run `/exo:save-session` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
+const handoverAdvice = (handoverPath) =>
+  `finish the current step, write the task state to ${handoverPath}, dispatch a fresh \`general-purpose\` delegate with \`model\` omitted to read it and continue the task; from then on only dispatch, check reports and relay`;
 
 function runWatch(hookInput, env) {
   return new Promise((resolve) => {
@@ -34,7 +36,8 @@ function assistantLine(promptTokens, { sidechain = false } = {}) {
 }
 
 async function watchFixture(lines, project) {
-  const root = await fixture();
+  const root = await fs.realpath(await fixture());
+  execFileSync('git', ['init', '--quiet', root]);
   const configDirectory = await fixture();
   if (project) {
     await fs.mkdir(path.join(root, '.claude'), { recursive: true });
@@ -46,11 +49,12 @@ async function watchFixture(lines, project) {
   const hookInput = {
     session_id: 's1',
     transcript_path: transcript,
+    cwd: root,
     hook_event_name: 'PostToolUse',
     tool_name: 'Bash',
     tool_input: { command: 'ls' }
   };
-  return { env, hookInput, transcript };
+  return { env, hookInput, transcript, handover: path.join(root, '.exo', 'handover.md') };
 }
 
 // The notice text the watch sends, or null when it prints nothing.
@@ -70,11 +74,21 @@ test('any tool call under the threshold prints nothing', async () => {
   assert.equal(await notice(hookInput, env), null);
 });
 
-test('a tool call at the default 100k sends the handoff notice to the session and the user, and no permission decision', async () => {
-  const { env, hookInput } = await watchFixture([assistantLine(100_000)]);
+test('a tool call at the default 100k sends the handover notice to the session only, and no permission decision', async () => {
+  const { env, hookInput, handover } = await watchFixture([assistantLine(100_000)]);
   const output = await notice(hookInput, env);
-  assert.equal(output.hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
-  assert.equal(output.systemMessage, output.hookSpecificOutput.additionalContext);
+  const context = output.hookSpecificOutput.additionalContext;
+  assert.equal(context, `exo: context 100k tokens, past 100k: ${handoverAdvice(handover)}`);
+  assert.equal(output.systemMessage, undefined);
+  assert.match(context, /general-purpose/);
+  assert.doesNotMatch(context, /save-session|\/clear/);
+});
+
+test('outside a git working tree the notice names the relative handover file', async () => {
+  const { env, hookInput } = await watchFixture([assistantLine(100_000)]);
+  const outside = await fs.realpath(await fixture());
+  const output = await notice({ ...hookInput, cwd: outside }, env);
+  assert.equal(output.hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${handoverAdvice('.exo/handover.md')}`);
 });
 
 const skillCall = (skill) => JSON.stringify({ type: 'assistant', message: { id: `msg-${skill}`, content: [{ type: 'tool_use', id: 'toolu_1', name: 'Skill', input: { skill } }] } });
@@ -88,12 +102,12 @@ test('while a plan skill is the last exo skill loaded, the notice advises to kee
   }
 });
 
-test('another skill loaded after the plan skill, or one loaded in a delegate, keeps the handoff advice', async () => {
+test('another skill loaded after the plan skill, or one loaded in a delegate, keeps the handover advice', async () => {
   const later = await watchFixture([slashCommand('exo:build'), skillCall('exo:build-change'), assistantLine(100_000)]);
-  assert.equal((await notice(later.hookInput, later.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
+  assert.equal((await notice(later.hookInput, later.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${handoverAdvice(later.handover)}`);
   const sidechain = JSON.stringify({ ...JSON.parse(skillCall('exo:build')), isSidechain: true });
   const delegated = await watchFixture([sidechain, assistantLine(100_000)]);
-  assert.equal((await notice(delegated.hookInput, delegated.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${ADVICE}`);
+  assert.equal((await notice(delegated.hookInput, delegated.env)).hookSpecificOutput.additionalContext, `exo: context 100k tokens, past 100k: ${handoverAdvice(delegated.handover)}`);
 });
 
 test('the notice repeats once per 25k step and again after the figure falls back', async () => {
@@ -111,27 +125,26 @@ test('the notice repeats once per 25k step and again after the figure falls back
   assert.equal(await fired(102_000), true, 'first step again after the reset');
 });
 
-test('the session stays marked warned after the figure falls back below the threshold', async () => {
+test('the stored watch record keeps only the notified step, and clears it after the figure falls back', async () => {
   const { env, hookInput, transcript } = await watchFixture([assistantLine(60_000)]);
   const hotFile = path.join(env.CLAUDE_CONFIG_DIR, 'exo', 'savings', 'sessions', `${hookInput.session_id}.json`);
-  const warned = async (tokens) => {
+  const stored = async (tokens) => {
     await fs.writeFile(transcript, `${assistantLine(tokens)}\n`);
     await notice(hookInput, env);
-    const stored = await fs.readFile(hotFile, 'utf8').catch(() => null);
-    return stored === null ? null : JSON.parse(stored).contextWatch.warned;
+    const text = await fs.readFile(hotFile, 'utf8').catch(() => null);
+    return text === null ? null : JSON.parse(text).contextWatch;
   };
-  assert.equal(await warned(60_000), null, 'under the threshold, nothing is stored yet');
-  assert.equal(await warned(101_000), true, 'the first notice marks the session');
-  assert.equal(await warned(60_000), true, 'a compaction keeps the mark');
+  assert.equal(await stored(60_000), null, 'under the threshold, nothing is stored yet');
+  assert.deepEqual(await stored(101_000), { notifiedStep: 100 });
+  assert.deepEqual(await stored(60_000), { notifiedStep: null });
 });
 
-test('the user notice follows the context setting', async () => {
+test('the notice follows the context setting', async () => {
   const below = await watchFixture([assistantLine(59_000)], { context: 60 });
   assert.equal(await notice(below.hookInput, below.env), null);
   const at = await watchFixture([assistantLine(60_000)], { context: 60 });
   const output = await notice(at.hookInput, at.env);
-  assert.equal(output.systemMessage, `exo: context 60k tokens, past 60k: ${ADVICE}`);
-  assert.equal(output.hookSpecificOutput.additionalContext, output.systemMessage);
+  assert.equal(output.hookSpecificOutput.additionalContext, `exo: context 60k tokens, past 60k: ${handoverAdvice(at.handover)}`);
 });
 
 test('the context setting moves the threshold, and an invalid value reads as 100', async () => {

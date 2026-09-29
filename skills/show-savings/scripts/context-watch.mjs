@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Tells the main session and the user when its context has reached the
-// `context` setting, because the model gets no token count. Before every tool
+// Tells the main session when its context has reached the `context` setting,
+// because the model gets no token count. Before every tool
 // call it reads the input, cache read and cache creation tokens of the last main-thread
 // assistant turn; the notice goes out once per step, the threshold and each
 // further STEP_THOUSANDS above it, and again after the figure falls back below
 // the last notified step, as a compaction or /clear makes it. While the last exo
-// skill the main thread loaded is a plan skill, the advice is to keep working. A
+// skill the main thread loaded is a plan skill, the advice is to keep working;
+// otherwise it is to hand the rest of the task to a fresh delegate. A
 // delegate carries `agent_id` and holds a context of its own, so it is never
 // measured.
 //
@@ -21,6 +22,8 @@
 import fs, { realpathSync } from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { INHERIT, readKindTable } from '#model-kinds';
+import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { SCHEMA, settingValue } from '#settings-store';
 import { readHotSession, updateHotSession } from './record.mjs';
 import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
@@ -42,8 +45,24 @@ function thresholdThousands() {
   }
 }
 
-// Handoff is user-invoked, and the session hook points the fresh session at its file.
-const HANDOFF_ADVICE = 'finish the current step, then tell the user to run `/exo:save-session` followed by `/clear`; an orchestrating run whose state lives in its own run file writes that file first and names it to the user';
+const HANDOVER_FILE = 'handover.md';
+
+// The main thread only dispatches, checks reports and relays once it has handed over.
+function handoverAdvice(handoverPath) {
+  const { model } = readKindTable().kinds.handover;
+  const modelClause = model === INHERIT ? 'with `model` omitted' : `on \`${model}\``;
+  return `finish the current step, write the task state to ${handoverPath}, dispatch a fresh \`general-purpose\` delegate ${modelClause} to read it and continue the task; from then on only dispatch, check reports and relay`;
+}
+
+// A missing git working tree leaves the checkout's own scratch folder unresolved.
+function handoverPath(hookInput) {
+  try {
+    return scratchPath(hookInput.cwd ?? process.cwd(), HANDOVER_FILE);
+  } catch {
+    return `${SCRATCH_FOLDER}/${HANDOVER_FILE}`;
+  }
+}
+
 // A plan run keeps its state in the plan file and the commits, so a compaction loses nothing.
 const PLAN_ADVICE = 'keep working; the state lives in the plan file and the commits';
 const PLAN_SKILLS = new Set(['exo:build']);
@@ -104,16 +123,14 @@ function reachedStep(tokens, threshold) {
 }
 
 // True when this call is the first to reach `step`. The stored step follows the
-// figure down as well as up, so a figure under it resets the watch; `warned`
-// never resets, because route-skills' next-stage.mjs reads it as "a notice fired
-// this session" to recommend stopping. The unlocked read keeps an unchanged
-// step, the case on nearly every call, off the lock.
+// figure down as well as up, so a figure under it resets the watch. The unlocked
+// read keeps an unchanged step, the case on nearly every call, off the lock.
 function claimStep(sessionId, step) {
   if ((readHotSession(sessionId)?.contextWatch?.notifiedStep ?? null) === step) return false;
   let claimed = false;
   updateHotSession(sessionId, (session) => {
     if ((session.contextWatch?.notifiedStep ?? null) === step) return false;
-    session.contextWatch = { notifiedStep: step, warned: session.contextWatch?.warned === true || step !== null };
+    session.contextWatch = { notifiedStep: step };
     claimed = step !== null;
     return true;
   });
@@ -127,9 +144,9 @@ export function watch(hookInput) {
   if (tokens === null) return;
   const threshold = thresholdThousands();
   if (!claimStep(hookInput.session_id, reachedStep(tokens, threshold))) return;
-  const advice = PLAN_SKILLS.has(activeSkill(hookInput.transcript_path)) ? PLAN_ADVICE : HANDOFF_ADVICE;
+  const advice = PLAN_SKILLS.has(activeSkill(hookInput.transcript_path)) ? PLAN_ADVICE : handoverAdvice(handoverPath(hookInput));
   const notice = `exo: context ${Math.round(tokens / 1000)}k tokens, past ${threshold}k: ${advice}`;
-  const output = { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: notice }, systemMessage: notice };
+  const output = { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: notice } };
   process.stdout.write(`${JSON.stringify(output)}\n`);
 }
 

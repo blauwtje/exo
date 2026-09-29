@@ -20,7 +20,7 @@ function withEnv(name, value, work) {
 }
 
 test('isSessionId accepts word characters and hyphens only', () => {
-  assert.equal(isSessionId('warned-session'), true);
+  assert.equal(isSessionId('notified-session'), true);
   assert.equal(isSessionId('abc_123'), true);
   assert.equal(isSessionId('../x'), false);
   assert.equal(isSessionId('with space'), false);
@@ -39,7 +39,7 @@ test('savingsDirectory follows EXO_SAVINGS_DIR, then the config directory', () =
 
 test('hotSessionFile joins the savings directory, sessions, and the id as a file name', () => {
   withEnv('EXO_SAVINGS_DIR', '/tmp/exo-savings-fixture', () => {
-    assert.equal(hotSessionFile('warned-session'), path.join('/tmp/exo-savings-fixture', 'sessions', 'warned-session.json'));
+    assert.equal(hotSessionFile('notified-session'), path.join('/tmp/exo-savings-fixture', 'sessions', 'notified-session.json'));
   });
 });
 
