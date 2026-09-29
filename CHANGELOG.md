@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.61.1 - 2026-09-29
+
 ### Fixed
 
 - `build` no longer asks the lead for `run_in_background: false`, which the harness overrides. After a dispatch the lead ends its turn, resumes on each completion notification, never polls with `ScheduleWakeup`, `ListAgents`, `Monitor` or `sleep`, and lands a wave only after every sibling returned.
