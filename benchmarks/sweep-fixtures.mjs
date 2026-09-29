@@ -98,7 +98,7 @@ export const FLOW_HELPERS = [
     code: [
       'export function truncate(text, max) {',
       '  if (text.length <= max) return text;',
-      '  return `${text.slice(0, max - 3)}...`;',
+      "  return text.slice(0, max - 3).padEnd(max, '.');",
       '}'
     ],
     testCode: [
@@ -276,6 +276,7 @@ export function flowPlanText(repository) {
     `Repository: ${repository}`,
     `Branch: ${FLOW_BRANCH}`,
     'Worktree setup: none',
+    'Land gate: npm test',
     '',
     'Planned against the seed commit on `main`. `npm test` runs `node --test`, which finds every `*.test.js` file. Executor loads the `build` skill on this plan before the first task.',
     '',
@@ -288,6 +289,13 @@ export function flowPlanText(repository) {
     '',
     '- Every module is an ES module with one named export; its test sits beside it and uses `node:test` and `node:assert/strict`, as `src/words.test.js` does.',
     '- The four tasks are independent: no module imports another.',
+    '',
+    '## Checkpoint',
+    '',
+    '- Blocks first: none.',
+    '- Parallel: every task.',
+    '- Shared state: none.',
+    '- Smallest safe split: one task per helper, each with its own module and test.',
     '',
     '## Tasks',
     '',
