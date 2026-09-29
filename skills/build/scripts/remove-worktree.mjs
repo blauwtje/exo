@@ -6,6 +6,10 @@
 // worktree's `.exo/` into the run's `.exo/`, then removes the worktree; it
 // refuses and removes nothing when a copy fails or when the worktree's
 // ignored files still list a `.exo/` path this run did not copy.
+// `--kept` copies into `<run>/.exo/kept/<worktree basename>/` instead, so
+// many worktrees removed into one checkout keep their same-named files apart
+// and leave the run's own `.exo/` alone; it refuses and removes nothing when
+// that folder already exists.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -14,7 +18,7 @@ import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 
-/** A copy into the run's `.exo/` failed, or the worktree still holds an uncopied `.exo/` file: nothing was removed. */
+/** A copy into the run's `.exo/` failed, the `--kept` folder already exists, or the worktree still holds an uncopied `.exo/` file: nothing was removed. */
 export class RemoveWorktreeError extends Error {}
 
 // Every regular file under `<root>/.exo/`, as a path relative to `.exo/`
@@ -51,17 +55,22 @@ function ignoredExoFiles(worktree) {
     .map((entry) => entry.slice('.exo/'.length));
 }
 
-export function removeWorktree({ worktree, run, force = false }) {
+export function removeWorktree({ worktree, run, force = false, kept = false }) {
+  const destinationRoot = kept ? path.join(run, '.exo', 'kept', path.basename(worktree)) : path.join(run, '.exo');
+  if (kept && fs.existsSync(destinationRoot)) {
+    throw new RemoveWorktreeError(`'${destinationRoot}/' already exists; refusing to overwrite it, removed nothing`);
+  }
   const copied = [];
   try {
     for (const relative of exoFiles(worktree)) {
-      const destination = path.join(run, '.exo', relative);
+      const destination = path.join(destinationRoot, relative);
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.copyFileSync(path.join(worktree, '.exo', relative), destination);
       copied.push(relative);
     }
   } catch (error) {
-    throw new RemoveWorktreeError(`copying '${worktree}/.exo/' to '${run}/.exo/' failed: ${error.message}`);
+    const target = kept ? `${destinationRoot}/` : `${run}/.exo/`;
+    throw new RemoveWorktreeError(`copying '${worktree}/.exo/' to '${target}' failed: ${error.message}`);
   }
   const copiedSet = new Set(copied);
   const missed = ignoredExoFiles(worktree).filter((relative) => !copiedSet.has(relative));
@@ -70,14 +79,15 @@ export function removeWorktree({ worktree, run, force = false }) {
   }
   const args = ['-C', run, 'worktree', 'remove', ...(force ? ['--force'] : []), worktree];
   execFileSync('git', args, { encoding: 'utf8' });
-  return `Copied ${copied.length} .exo/ file(s) from '${worktree}' to '${run}'; removed '${worktree}'\n`;
+  const target = kept ? `${destinationRoot}/` : run;
+  return `Copied ${copied.length} .exo/ file(s) from '${worktree}' to '${target}'; removed '${worktree}'\n`;
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { worktree: 'value', run: 'value', force: 'boolean' });
+  const flags = parseFlags(argv, { worktree: 'value', run: 'value', force: 'boolean', kept: 'boolean' });
   if (flags.worktree === undefined) throw new UsageError("flag '--worktree' names the worktree to remove");
   if (flags.run === undefined) throw new UsageError("flag '--run' names the run's checkout");
-  process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, force: flags.force ?? false }));
+  process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, force: flags.force ?? false, kept: flags.kept ?? false }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
