@@ -135,6 +135,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `spec` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
 | `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note for the model, once per further 25k: to finish the current step, write the task state to a handover file and hand the rest of the task to a fresh delegate, so the session keeps going without asking you to save, clear or stop, or, while `exo:build` is the last exo skill loaded, to keep working because the plan file and the commits hold the state. A stored value that is not a whole number of at least 1 reads as the default. |
+| `budget` | `normal`, `lean` | `normal` | Which model each agent runs on. `normal` uses each agent's own model. `lean` dispatches an agent whose tier is listed under `budgets` in `lib/model-kinds.json` on that tier's replacement tier instead; today `strong` becomes `standard`. |
 
 ## Develop
 
