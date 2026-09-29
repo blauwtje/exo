@@ -7,9 +7,9 @@ A skill reads this file before a message of its asks the user to pick; the core 
 ## The options
 
 1. **Plain lines, no tool.** The options are lines in the reply that end the turn; a structured question tool, a form or a picker is never used.
-2. **One option per line**, numbered `1.`, `2.`, `3.` and written `<n>. **<Label>**: <what it does>`, the recommended one as `1. **<Label> (Recommended)**: <what it does>`: a bold label of one to three words, then a few words saying what happens, never why, and never a command, a model or an effort.
+2. **At most three options, one per line**, because a fourth is read past; numbered `1.`, `2.`, `3.` and written `<n>. **<Label>**: <what it does>`, the recommended one as `1. **<Label> (Recommended)**: <what it does>`: a bold label of one to three words, then a few words saying what happens, never why, and never a command, a model or an effort.
 3. **The recommended option is number 1** in every question; stopping or keeping things as they are comes last unless it is the recommended one. Label, marker and clause are in the reply's language, as the language rule under `# Context` in route-skills sets.
-4. **Nothing follows the options** except the one model line `## The next stage` allows.
+4. **One line above the options says what happens without an answer**, such as `Without an answer, nothing changes.` Nothing follows the options except the one model line `## The next stage` allows.
 5. **A digit is the answer.** A reply of `1` carries out option 1 at once, with no confirmation question in between.
 6. **One question a turn**, or one round of up to four in `spec`. Nothing is written, edited or run until the answer arrives, because work done first is work the answer undoes.
 

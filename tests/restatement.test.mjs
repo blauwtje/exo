@@ -18,7 +18,7 @@ const SENTENCE_LENGTH = 60;
 test('the restatement carries each named section whole and nothing else of the body', () => {
   const text = restatementText(SKILL_TEXT);
   for (const heading of RESTATED_HEADINGS) assert.ok(text.includes(`\n\n${heading}\n`), heading);
-  assert.ok(text.trimEnd().endsWith('a reply of `1` carries out option 1 at once.'), 'the closing ends the text');
+  assert.ok(text.trimEnd().endsWith('nothing done first; `1` runs option 1.'), 'the closing ends the text');
   assert.ok(!text.includes('## The ladder'));
   assert.ok(!text.includes('## The ending'));
   assert.deepEqual(text.match(/\n# .+/g), ['\n# Closing'], 'no level-one section but the closing');

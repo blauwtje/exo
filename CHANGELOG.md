@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- A question offers at most three options under one line saying what happens without an answer; ship's finish menu drops Push, which the `ship=push` setting still reaches.
+
 ## 0.59.0 - 2026-09-29
 
 ### Highlights

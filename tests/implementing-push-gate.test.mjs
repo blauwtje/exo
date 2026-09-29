@@ -62,7 +62,7 @@ test('the tail pushes only through the finish question', () => {
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
   const firstMerge = SHIPPING.indexOf('scripts/ship.mjs" --merge ');
   assert.ok(question !== -1 && firstRoute > question && firstMerge > question, 'the commands that push or merge are named only after the question');
-  // The four routes and their order come from `ship.mjs --routes`, run against
+  // The routes and their order come from `ship.mjs --routes`, run against
   // real repositories in tests/ship-routes.test.mjs ('--routes: a feature
   // branch with gh auth ok offers the full menu').
 });

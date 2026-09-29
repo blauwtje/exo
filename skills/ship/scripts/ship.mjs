@@ -136,13 +136,16 @@ function ghAuthOk() {
   return runGh(['auth', 'status']).ok;
 }
 
+// The question shape allows three options; a plain push stays reachable
+// through the `ship=push` setting.
+const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
 const MENU_FULL = [
+  NO_ANSWER,
   '1. **PR + merge (Recommended)**: push, open a pull request, merge it once checks pass',
   '2. **Open PR**: push and open a pull request, leave it open',
-  '3. **Push**: push the branch, no pull request',
-  '4. **Keep local**: nothing leaves this machine'
+  '3. **Keep local**: nothing leaves this machine'
 ];
-const MENU_PUSH_ONLY = ['1. **Push (Recommended)**: push the commits to origin', '2. **Keep local**: nothing leaves this machine'];
+const MENU_PUSH_ONLY = [NO_ANSWER, '1. **Push (Recommended)**: push the commits to origin', '2. **Keep local**: nothing leaves this machine'];
 
 /** Why a set `ship` route other than `push` cannot run yet, or null when it can. */
 function setRouteBlocked(onDefault, ghOk) {

@@ -50,13 +50,14 @@ async function shipRoutes(workDir, { ghOk = true } = {}) {
   return run(SHIP, ['--routes'], { cwd: workDir, env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` } });
 }
 
+const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
 const MENU_FULL = [
+  NO_ANSWER,
   '1. **PR + merge (Recommended)**: push, open a pull request, merge it once checks pass',
   '2. **Open PR**: push and open a pull request, leave it open',
-  '3. **Push**: push the branch, no pull request',
-  '4. **Keep local**: nothing leaves this machine'
+  '3. **Keep local**: nothing leaves this machine'
 ].join('\n') + '\n';
-const MENU_PUSH_ONLY = ['1. **Push (Recommended)**: push the commits to origin', '2. **Keep local**: nothing leaves this machine'].join('\n') + '\n';
+const MENU_PUSH_ONLY = [NO_ANSWER, '1. **Push (Recommended)**: push the commits to origin', '2. **Keep local**: nothing leaves this machine'].join('\n') + '\n';
 
 test('--routes: no origin remote rules out every route', async () => {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });

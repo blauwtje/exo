@@ -22,8 +22,8 @@ test('the question reference states one shape with the recommended option first'
 });
 
 test('the route-skills body keeps the core of the question shape', () => {
-  assert.ok(USING_EXO.includes('recommended first, no question tool'));
-  assert.ok(USING_EXO.includes('a reply of `1` carries out option 1 at once'));
+  assert.ok(USING_EXO.includes('max three numbered lines, recommended first, under one on what silence does; no question tool'));
+  assert.ok(USING_EXO.includes('nothing done first; `1` runs option 1.'));
 });
 
 test('the next stage recommends continuing, and a context notice leaves the order alone', () => {
