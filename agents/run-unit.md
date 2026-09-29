@@ -10,7 +10,6 @@ The dispatch names the plan path, branch, checkout, `<skill>` (the build skill),
 
 ## Before the first task
 
-- With no tool to dispatch an agent, return only `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`.
 - Read the plan's frame as build step 2 does, never the whole plan.
 
 ## The loop
@@ -22,11 +21,11 @@ The dispatch names the plan path, branch, checkout, `<skill>` (the build skill),
 
 ## Stop
 
-- Delete no data or branch, never `git stash`: give options in a `BLOCKED` line.
+- Delete no data or branch, never `git stash`: give options in `BLOCKED`.
 - Ask the user nothing: a noticeable choice or a build agent's `BLOCKED` returns that task `BLOCKED`, with question and options.
 - Return only when `git worktree list` shows no wave worktree of yours.
-- Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line, except with the `BUDGET:` line below.
-- Only the hard message, `past the limit of`, ends the loop: finish the task in flight, then return `BUDGET: done <list or none>; open <list>; next <sentence>`.
+- Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
+- Only the hard message, `past the limit of`, ends the loop: finish the task in flight, then return `BUDGET:`.
 
 ## Return
 
@@ -34,5 +33,7 @@ At most ten lines, one per block task:
 
 - `LANDED <n> <sha>` for a task committed on its proof.
 - `BLOCKED <n> <reason or question for the user>` for a task that needs the user or waits on one that does.
+- `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`, alone, when no tool dispatches an agent.
+- `BUDGET: done <list or none>; open <list>; next <sentence>` after the hard budget message.
 
 With every block task landed or blocked, return these lines, never a `BUDGET:` line.

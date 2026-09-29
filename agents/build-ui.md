@@ -59,4 +59,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 - Invent nothing: read the file or run the command before a factual claim, and name what stays unknown.
 - Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
 - Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`, and no `gh` command at all. Read-only git is yours.
-- Return two lines: the report path and the count of paths written. No code, no diff, no summary prose.
+
+**Return.**
+
+Return two lines: the report path and the count of paths written. No code, no diff, no summary prose.
