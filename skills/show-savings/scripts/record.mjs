@@ -31,8 +31,8 @@ function hotSessionsDirectory() {
 }
 
 // A hook already catches a throw here (an invalid session id) and exits 0;
-// #session-record-path is also route-skills' next-stage.mjs's only source for
-// this path, so the two never drift apart.
+// #session-record-path is the only source of this path, so the writer and
+// every reader never drift apart.
 export function hotFile(sessionId) {
   return hotSessionFile(sessionId);
 }

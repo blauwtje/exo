@@ -8,7 +8,7 @@ A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on
 
 1. **Two options.** The options follow the question shape: the next stage and Stop. After `spec`: 1. Build, 2. Stop. Picking a stage runs its command, such as `/exo:build <brief path>`, in this session.
 2. **Continuing is recommended**, as `1. **<Stage> (Recommended)**`, because this session holds the facts the next stage needs and a clear pays off only once the context is large. Stop is number 2, and its text names the command to run after a context clear, such as `/exo:build <brief path>`.
-3. **After a context notice, stopping is recommended.** Once an `exo: context` notice fired this session, Stop moves to `1. **Stop (Recommended)**` and the stage to number 2, because the brief and branch are on disk, so a clear loses nothing the next stage reads. `scripts/next-stage.mjs` reads that notice from the session record, so its printed order is the one shown.
+3. **A context notice changes nothing here.** Past an `exo: context` notice the session keeps the order above and hands the work on through a fresh delegate, so Build stays `1.` and Stop stays `2.`.
 4. **One model line.** When the next stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause. `scripts/next-stage.mjs` reads the model and effort of the last two rows from the `coordinate` and `hardest` kinds in `lib/model-kinds.json`; the first row stays literal.
 5. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
 
@@ -20,5 +20,5 @@ A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on
 
 ## Judgment
 
-- The session's held facts outrank a clear until the context is large: continuing leads, and an `exo: context` notice this session puts stopping first, even after a later compaction.
+- The session's held facts outrank a clear until the context is large: continuing leads, even past an `exo: context` notice.
 - The caller that borrowed a stage outranks the question: control returns to it.

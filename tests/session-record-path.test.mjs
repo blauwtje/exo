@@ -1,6 +1,6 @@
 // #session-record-path owns the hot session record's path and the session id
-// shape that becomes its file name, so record.mjs and route-skills'
-// next-stage.mjs read the same file for the same id.
+// shape that becomes its file name, so every reader and record.mjs use the
+// same file for the same id.
 
 import assert from 'node:assert/strict';
 import path from 'node:path';

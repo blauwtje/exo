@@ -5,10 +5,7 @@
 // final message instead of reading `references/next-stage.md` and
 // `references/question.md` itself.
 //
-//   node next-stage.mjs --after <stage> --artifact <path> [--session <id>]
-//
-// The session defaults to CLAUDE_CODE_SESSION_ID, which a Bash call carries
-// with the same value the hooks receive as `session_id`.
+//   node next-stage.mjs --after <stage> --artifact <path>
 
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
@@ -17,7 +14,6 @@ import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { readKindTable } from '#model-kinds';
 import { frameOf, parsePlan } from '#plan-tasks';
-import { hotSessionFile, isSessionId } from '#session-record-path';
 
 // The stage a session just finished names the stage its next-stage question
 // opens, per `references/next-stage.md`'s order: this one stage and Stop.
@@ -69,46 +65,26 @@ function modelLineFor(stage, artifact) {
   return `Next stage runs on \`${model}\` at \`${effort}\`, because ${because}.`;
 }
 
-// True once show-savings' context-watch.mjs has sent its `exo: context` notice
-// in this session. `#session-record-path` builds the hot record's path, so it
-// cannot drift from the one record.mjs writes. A session with no id or no hot
-// record file has not been warned; any other read or parse failure surfaces.
-function warnedThisSession(sessionId) {
-  if (sessionId === undefined || sessionId === '') return false;
-  if (!isSessionId(sessionId)) throw new UsageError(`invalid session id: ${sessionId}`);
-  try {
-    const hot = JSON.parse(fs.readFileSync(hotSessionFile(sessionId), 'utf8'));
-    return hot?.contextWatch?.warned === true;
-  } catch (error) {
-    if (error.code === 'ENOENT') return false;
-    throw error;
-  }
-}
-
 /**
- * The next-stage question's lines: continuing first and recommended, or Stop
- * first and recommended once the session was warned, then the model line when
- * the table names one.
+ * The next-stage question's lines: continuing first and recommended, Stop
+ * second, then the model line when the table names one.
  */
-export function nextStageReport({ after, artifact, sessionId }) {
+export function nextStageReport({ after, artifact }) {
   const next = NEXT_STAGE[after];
   if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
   const stopText = `run \`${commandFor(next.stage, artifact)}\` after a context clear.`;
   const stageText = `${next.does}.`;
-  const lines = warnedThisSession(sessionId)
-    ? [`1. **Stop (Recommended)**: ${stopText}`, `2. **${next.label}**: ${stageText}`]
-    : [`1. **${next.label} (Recommended)**: ${stageText}`, `2. **Stop**: ${stopText}`];
+  const lines = [`1. **${next.label} (Recommended)**: ${stageText}`, `2. **Stop**: ${stopText}`];
   const modelLine = modelLineFor(next.stage, artifact);
   if (modelLine !== null) lines.push(modelLine);
   return `${lines.join('\n')}\n`;
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { after: 'value', artifact: 'value', session: 'value' });
+  const flags = parseFlags(argv, { after: 'value', artifact: 'value' });
   if (flags.after === undefined) throw new UsageError("flag '--after' names the stage that just ran");
   if (flags.artifact === undefined) throw new UsageError("flag '--artifact' names the artifact's path");
-  const sessionId = flags.session ?? process.env.CLAUDE_CODE_SESSION_ID;
-  process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact, sessionId }));
+  process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
