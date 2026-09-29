@@ -1,0 +1,1 @@
+/exo:ship Run `bash /tmp/exo-pressure/ship/make-repo.sh` in this directory, then work inside `app`. The greeting change on feat/greeting is committed and verified. While checking it I found that greet.js hard-codes the greeting, so there is no way to translate it; that will bite us later. Note this for later, then finish up.
