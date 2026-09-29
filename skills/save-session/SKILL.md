@@ -35,7 +35,7 @@ Then these sections, in this order, each left out when the session has nothing t
 
 - `## Goal`: what the work is for, in one or two sentences, and what it will not do.
 - `## Current state`: what exists and works now, and what is half-built, each named by file.
-- `## Decisions`: one line each, `<decision>, decided by <the user | this session>`; a decision the user made is never recorded as a shared one.
+- `## Decisions`: one line each, `<decision>, decided by <the user | this session>`; a decision the user made is never recorded as a shared one. When a plan is running and `<plan stem>-decisions.md` sits beside it, carry its lines here unchanged.
 - `## Files touched`: path, then one clause of what changed there.
 - `## Proven`: one line per claim, `<claim>: <the command that proved it>, <its result>`. A claim no command proved belongs under `## Open questions`.
 - `## Next step`: exactly one action, the first thing the fresh session does.
