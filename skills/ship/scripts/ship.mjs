@@ -154,8 +154,22 @@ function setRouteBlocked(onDefault, ghOk) {
   return null;
 }
 
-/** Prints the route question's menu, or the one line SKILL.md's rules reduce it to, from origin, the default branch, `gh auth status` and the `ship` setting. */
+/** `Unasked: push` when the `ship` setting is `ask` and origin exists and a non-default branch is checked out, else `Unasked: none`. */
+function unaskedLine() {
+  if (settingValue('ship') !== 'ask' || !hasOrigin()) return 'Unasked: none';
+  const base = defaultBranch();
+  const branch = currentBranch();
+  return base !== null && branch !== '' && branch !== base ? 'Unasked: push' : 'Unasked: none';
+}
+
+/** Prints the route question's menu, or the one line SKILL.md's rules reduce it to, then the `Unasked:` line. */
 function printRoutes() {
+  printRouteMenu();
+  console.log(unaskedLine());
+}
+
+/** Prints the route question's menu, or the one line SKILL.md's rules reduce it to, from origin, the default branch, `gh auth status` and the `ship` setting. */
+function printRouteMenu() {
   const setting = settingValue('ship');
   if (setting === 'local') {
     console.log('route: local (set)');

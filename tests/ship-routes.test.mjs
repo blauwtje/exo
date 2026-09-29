@@ -47,7 +47,15 @@ async function setShipSetting(workDir, value) {
 
 async function shipRoutes(workDir, { ghOk = true } = {}) {
   const bin = await ghBin(ghOk);
-  return run(SHIP, ['--routes'], { cwd: workDir, env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` } });
+  const outcome = await run(SHIP, ['--routes'], { cwd: workDir, env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` } });
+  const lines = outcome.stdout.split('\n');
+  const unasked = lines.splice(lines.length - 2, 1)[0];
+  return { ...outcome, stdout: lines.join('\n'), unasked };
+}
+
+async function featureBranch(workDir) {
+  git(workDir, 'checkout', '-q', '-b', 'feat/x');
+  await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
 }
 
 const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
@@ -203,4 +211,43 @@ test('--verdict-current: a usage error when the patch-id is missing', async () =
   const outcome = await run(SHIP, ['--verdict-current'], { cwd: workDir });
   assert.equal(outcome.code, 2, outcome.stderr);
   assert.equal(outcome.stdout, '');
+});
+
+test('--routes: an ask setting on a feature branch with origin marks the push unasked', async () => {
+  const { workDir } = await shipRepository();
+  await featureBranch(workDir);
+  const outcome = await shipRoutes(workDir, { ghOk: true });
+  assert.equal(outcome.unasked, 'Unasked: push');
+  assert.equal(outcome.stdout, MENU_FULL);
+});
+
+test('--routes: the unasked push holds with gh auth failing', async () => {
+  const { workDir } = await shipRepository();
+  await featureBranch(workDir);
+  const outcome = await shipRoutes(workDir, { ghOk: false });
+  assert.equal(outcome.unasked, 'Unasked: push');
+});
+
+test('--routes: the default branch, an unknown default, no origin and a detached head leave nothing unasked', async () => {
+  const { workDir } = await shipRepository();
+  assert.equal((await shipRoutes(workDir)).unasked, 'Unasked: none');
+  const seed = await gitRepository({ 'README.md': '# fixture\n' });
+  assert.equal((await shipRoutes(seed)).unasked, 'Unasked: none');
+  await featureBranch(workDir);
+  git(workDir, 'checkout', '-q', '--detach');
+  assert.equal((await shipRoutes(workDir)).unasked, 'Unasked: none');
+  git(workDir, 'checkout', '-q', 'feat/x');
+  git(workDir, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+  assert.equal((await shipRoutes(workDir)).unasked, 'Unasked: none');
+});
+
+test('--routes: every non-ask setting leaves nothing unasked and keeps its route', async () => {
+  for (const setting of ['local', 'push', 'open-pr', 'pr-merge']) {
+    const { workDir } = await shipRepository();
+    await featureBranch(workDir);
+    await setShipSetting(workDir, setting);
+    const outcome = await shipRoutes(workDir, { ghOk: true });
+    assert.equal(outcome.unasked, 'Unasked: none', setting);
+    assert.equal(outcome.stdout, `route: ${setting} (set)\n`, setting);
+  }
 });
