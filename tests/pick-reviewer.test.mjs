@@ -1,4 +1,4 @@
-// pick-reviewer.mjs picks the review model by the size of the change,
+// pick-reviewer.mjs picks the review agent by the size of the change,
 // and only a named --reviewer override moves the pick off that reading.
 
 import assert from 'node:assert/strict';
@@ -8,9 +8,12 @@ import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { FILE_LIMIT, LINE_LIMIT, parseNumstat, parseShortstat, pickEffort, pickReviewer, resolveReviewer } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, parseShortstat, pickEffort, pickReviewer, resolveReviewer } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
 import { gitRepository, run } from './harness.mjs';
+
+const { light, deep } = REVIEWER_AGENTS;
+const AGENTS_DIRECTORY = fileURLToPath(new URL('../agents/', import.meta.url));
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/pick-reviewer.mjs', import.meta.url));
 
@@ -20,23 +23,34 @@ test('parses files, insertions and deletions out of a shortstat line', () => {
   assert.deepEqual(parseShortstat(''), { files: 0, changedLines: 0 });
 });
 
-test('picks the plain reviewer at or under both limits', () => {
-  assert.equal(pickReviewer({ files: FILE_LIMIT, changedLines: LINE_LIMIT }), 'sonnet');
-  assert.equal(pickReviewer({ files: 1, changedLines: 1 }), 'sonnet');
+test('picks the plain reviewer agent at or under both limits', () => {
+  assert.equal(pickReviewer({ files: FILE_LIMIT, changedLines: LINE_LIMIT }), light);
+  assert.equal(pickReviewer({ files: 1, changedLines: 1 }), light);
 });
 
-test('picks the deep reviewer above either limit', () => {
-  assert.equal(pickReviewer({ files: FILE_LIMIT + 1, changedLines: 1 }), 'opus');
-  assert.equal(pickReviewer({ files: 1, changedLines: LINE_LIMIT + 1 }), 'opus');
+test('picks the deep reviewer agent above either limit', () => {
+  assert.equal(pickReviewer({ files: FILE_LIMIT + 1, changedLines: 1 }), deep);
+  assert.equal(pickReviewer({ files: 1, changedLines: LINE_LIMIT + 1 }), deep);
 });
 
 test('a named override wins over the diff reading', () => {
-  assert.equal(resolveReviewer({ reviewer: 'sonnet', shortstatOutput: ' 16 files changed, 384 insertions(+)' }), 'sonnet');
-  assert.equal(resolveReviewer({ reviewer: 'opus', shortstatOutput: ' 1 file changed, 1 insertion(+)' }), 'opus');
+  assert.equal(resolveReviewer({ reviewer: light, shortstatOutput: ' 16 files changed, 384 insertions(+)' }), light);
+  assert.equal(resolveReviewer({ reviewer: deep, shortstatOutput: ' 1 file changed, 1 insertion(+)' }), deep);
 });
 
 test('an unnamed reviewer in the override is rejected', () => {
   assert.throws(() => resolveReviewer({ reviewer: 'budget is tight', shortstatOutput: '' }), UsageError);
+});
+
+test('the pair is two distinct agents that exist as files', async () => {
+  assert.notEqual(light, deep);
+  for (const name of [light, deep]) {
+    await fs.access(path.join(AGENTS_DIRECTORY, `${name}.md`));
+  }
+});
+
+test('a model word is not a reviewer name', () => {
+  assert.throws(() => resolveReviewer({ reviewer: 'sonnet', shortstatOutput: '' }), UsageError);
 });
 
 test('an empty base is rejected, not read as a change of no size', () => {
@@ -47,8 +61,8 @@ test('an empty base is rejected, not read as a change of no size', () => {
 });
 
 test('with no override, the diff reading decides', () => {
-  assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 3 files changed, 9 insertions(+), 1 deletion(-)' }), 'sonnet');
-  assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 16 files changed, 384 insertions(+)' }), 'opus');
+  assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 3 files changed, 9 insertions(+), 1 deletion(-)' }), light);
+  assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 16 files changed, 384 insertions(+)' }), deep);
 });
 
 test('parseNumstat sums numstat lines and treats a binary marker as zero', () => {

@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { findStrayPaths, runnableProof, successCriterionPasses } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
@@ -41,7 +42,7 @@ test('successCriterionPasses reads the clean SUMMARY line', () => {
 const CLEAN_CHECK = "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n";
 const FAILING_CHECK = "console.log('check failed'); process.exit(1);\n";
 
-test('a landed task, a clean check and no stray paths print PASS lines and REVIEWER: sonnet', async () => {
+test('a landed task, a clean check and no stray paths print PASS lines and the light reviewer agent', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
     'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
@@ -51,7 +52,7 @@ test('a landed task, a clean check and no stray paths print PASS lines and REVIE
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'REVIEWER: sonnet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`]);
 });
 
 test('a landed task whose Proof fails prints FAIL and exits 1', async () => {
@@ -102,7 +103,7 @@ test('a failing check-command prints FAIL success-criterion', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion', 'PASS stray-paths', 'REVIEWER: sonnet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`]);
 });
 
 test("the plan's own Land gate runs when --check-command is not given", async () => {
@@ -163,7 +164,7 @@ test('--root points the gate at another checkout, not the caller\'s own cwd', as
     { cwd: path.dirname(root) }
   );
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'REVIEWER: sonnet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`]);
 });
 
 test('missing --plan is rejected', async () => {

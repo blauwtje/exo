@@ -2,8 +2,8 @@
 // Runs a lean-workflow plan's gate: each landed task's own Proof command,
 // the plan's Land gate (or `npm run check` when the plan names none), and a
 // stray-path check that the diff touched nothing outside a task's declared
-// Files. Ends on one REVIEWER: sonnet or REVIEWER: opus line, picked from
-// the size of the diff against base, so a caller knows which model reviews
+// Files. Ends on one REVIEWER: <agent name> line, picked from
+// the size of the diff against base, so a caller knows which agent reviews
 // the change without asking. Reads the plan through #plan-tasks, the same
 // module land-task.mjs uses, so both agree on which task actually landed.
 //

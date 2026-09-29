@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
+import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { fileURLToPath } from 'node:url';
 
 const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
@@ -33,12 +34,15 @@ test('every general-purpose delegate dispatch names its model', () => {
   assert.deepEqual(unnamed, []);
 });
 
-test('every review-branch dispatch names the model override the printed reviewer picks', () => {
+test('every review dispatch names the agents the printed reviewer picks and no model override', () => {
   for (const relativePath of ['verify/SKILL.md']) {
     const text = fs.readFileSync(path.join(skillsRoot, relativePath), 'utf8');
     const dispatch = text.match(/^.*`exo:review-branch` agent.*$/m)?.[0];
     assert.ok(dispatch, `${relativePath} does not dispatch \`exo:review-branch\``);
-    assert.match(dispatch, /`sonnet`.+`opus`|`opus`.+`sonnet`/, `${relativePath} does not name both models for the override`);
+    for (const name of Object.values(REVIEWER_AGENTS)) {
+      assert.ok(dispatch.includes(`\`exo:${name}\``), `${relativePath} does not name exo:${name}`);
+    }
+    assert.match(dispatch, /no model override/, `${relativePath} does not rule out a model override`);
   }
 });
 

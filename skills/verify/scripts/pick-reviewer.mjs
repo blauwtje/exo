@@ -1,4 +1,4 @@
-// Picks the review model by the size of the change (--base/--reviewer),
+// Picks the review agent by the size of the change (--base/--reviewer),
 // or the review effort for an uncommitted fix (--effort), so a remark about
 // budget, a deadline or how the diff reads never moves either pick: only a
 // reviewer the caller names with --reviewer, or the numbers themselves, do.
@@ -7,12 +7,23 @@ import { execFileSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { readKindTable } from '#model-kinds';
 import { parseFlags, UsageError } from '#script-flags';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
 export const LINE_LIMIT = 200;
-const REVIEWERS = ['sonnet', 'opus'];
+
+// The branch reviewer and its generated twin are the one agent pair the kind
+// table links by `generatedFrom`; each agent's name is its file's basename.
+function reviewerAgents() {
+  const [deepFile, deepEntry] = Object.entries(readKindTable().agents)
+    .find(([, entry]) => entry.generatedFrom !== undefined);
+  const agentName = (file) => basename(file, '.md');
+  return { light: agentName(deepEntry.generatedFrom), deep: agentName(deepFile) };
+}
+
+export const REVIEWER_AGENTS = reviewerAgents();
 const EFFORT_SKIP_FILE_LIMIT = 2;
 export { parseNumstat };
 
@@ -35,7 +46,7 @@ export function parseShortstat(output) {
 }
 
 export function pickReviewer({ files, changedLines }) {
-  return files <= FILE_LIMIT && changedLines <= LINE_LIMIT ? 'sonnet' : 'opus';
+  return files <= FILE_LIMIT && changedLines <= LINE_LIMIT ? REVIEWER_AGENTS.light : REVIEWER_AGENTS.deep;
 }
 
 /** Effort for the uncommitted fix against HEAD: tracked changes plus untracked new files. */
@@ -58,7 +69,7 @@ function measureEffort() {
 
 export function resolveReviewer({ reviewer, shortstatOutput }) {
   if (reviewer !== undefined) {
-    if (!REVIEWERS.includes(reviewer)) throw new UsageError(`unknown reviewer '${reviewer}'`);
+    if (!Object.values(REVIEWER_AGENTS).includes(reviewer)) throw new UsageError(`unknown reviewer '${reviewer}'`);
     return reviewer;
   }
   return pickReviewer(parseShortstat(shortstatOutput));
