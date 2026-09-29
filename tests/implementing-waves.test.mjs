@@ -77,14 +77,19 @@ test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four 
   assert.deepEqual(nextWave(shared, [], 'npm ci').map((t) => t.number), [1, 3, 4], 'a task sharing a `Files:` path stays out');
 });
 
-test('a wave builds in worktrees and lands in plan order or not at all', () => {
+test('a unit wave builds in worktrees and keeps each green task per wave-worktrees.md', () => {
   const dispatchStep = loopStep(3, UNIT_AGENT);
-  assert.ok(dispatchStep.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
+  assert.ok(dispatchStep.includes('a wave builds per `<skill>/references/wave-worktrees.md`'), 'the reference owns the wave');
+  assert.ok(WAVE_WORKTREES.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(dispatchStep.includes('in one message'));
   const commitStep = loopStep(4, UNIT_AGENT);
-  assert.ok(commitStep.includes('only when every report in it is green'));
-  assert.ok(commitStep.includes('`git cherry-pick <sha>` brings the commits onto the branch in plan order'));
-  assert.ok(commitStep.includes('no task of it commits'));
+  assert.ok(commitStep.includes("A wave lands and removes its worktrees per that reference's steps 3 and 4"));
+  assert.ok(commitStep.includes('its failed task goes back through step 3'));
+  assert.ok(!commitStep.includes('only when every report in it is green'), 'no unit wave waits on every report');
+  assert.ok(!commitStep.includes('no task of it commits'), 'a failed sibling costs no green task');
+  assert.ok(!UNIT_AGENT.includes('git cherry-pick'), 'the landing command has one owner');
+  assert.ok(WAVE_WORKTREES.includes('a failed sibling never discards a green task: for each green task in plan order'));
+  assert.ok(WAVE_WORKTREES.includes('on the run branch `git cherry-pick <sha>`'));
   const authorization = loopStep(1).match(/Invoking build authorizes [^.]+\./);
   assert.ok(authorization[0].includes("a wave's worktrees beside it"));
 });
@@ -131,9 +136,10 @@ test('the at-most-eight route builds a printed wave per wave-worktrees.md and ke
   assert.ok(dispatchStep.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
   assert.ok(dispatchStep.includes('one message'), 'the wave builds in parallel');
   assert.ok(dispatchStep.includes('a failed sibling never discards a green task'));
-  assert.ok(dispatchStep.includes('git add -A && git diff --cached > <checkout>/.exo/task-<n>.patch'), 'the diff is saved before the worktree goes');
-  assert.ok(dispatchStep.includes('non-empty'));
-  assert.ok(dispatchStep.includes('never `--force` remove an unsaved worktree'));
+  assert.ok(dispatchStep.includes("Each worktree's diff is saved and the worktree removed per that reference's step 4"), 'the diff is saved before the worktree goes');
+  assert.ok(!RUN_LOOP.includes('diff --cached'), 'the save command has one owner');
+  assert.ok(WAVE_WORKTREES.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'));
+  assert.ok(WAVE_WORKTREES.includes('a folder whose diff is unsaved is never force-removed'));
 });
 
 test('the build table names the loop as the wave reference\'s reader, and run-loop.md\'s lock follows it down', async () => {
@@ -144,5 +150,5 @@ test('the build table names the loop as the wave reference\'s reader, and run-lo
   const { REFERENCE_TOKEN_LOCKS } = await import('#budgets');
   const tokens = Math.round(Buffer.byteLength(RUN_LOOP) / 4);
   assert.equal(REFERENCE_TOKEN_LOCKS['skills/build/references/run-loop.md'], tokens);
-  assert.ok(tokens <= 952, 'the lock never rises');
+  assert.ok(tokens <= 925, 'the lock never rises');
 });
