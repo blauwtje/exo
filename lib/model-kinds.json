@@ -2,8 +2,9 @@
   "provider": "claude",
   "providers": {
     "claude": {
+      "models": ["fable", "opus", "sonnet", "haiku"],
       "tiers": { "strong": "opus", "standard": "sonnet", "fast": "haiku" },
-      "efforts": { "low": "low", "medium": "medium", "high": "high", "max": "max" }
+      "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" }
     }
   },
   "kinds": {
@@ -16,7 +17,8 @@
     "research": { "tier": "standard", "effort": "medium" },
     "lookup": { "tier": "fast", "effort": null },
     "prose": { "tier": "strong", "effort": "high" },
-    "chore": { "tier": "standard", "effort": "low" }
+    "chore": { "tier": "standard", "effort": "low" },
+    "handover": { "tier": "inherit", "effort": null }
   },
   "stages": {
     "build-no-spec": { "kind": "hardest" },

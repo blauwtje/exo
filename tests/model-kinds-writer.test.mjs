@@ -147,3 +147,12 @@ test('an entry description is written into its file, and a hand edit of it is dr
   const [record] = findKindDrift(root, table);
   assert.deepEqual(record, { file: 'agents/reviewer-deep.md', field: 'description', expected: '"Reviews a large branch."', actual: '"Reviews anything."' });
 });
+
+test('a kind on inherit and xhigh is written into an agent file as those values', () => {
+  const table = structuredClone(TABLE);
+  table.kinds.review = { model: 'inherit', effort: 'xhigh' };
+  const root = makeRoot();
+  writeKinds(root, table);
+  assert.match(read(root, 'agents/reviewer.md'), /^---\nname: reviewer\nmodel: inherit\neffort: xhigh\n/);
+  assert.deepEqual(findKindDrift(root, table), []);
+});
