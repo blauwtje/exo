@@ -8,6 +8,7 @@
   "imports": {
     "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
+    "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",
     "#memory-store": "./lib/memory-store.mjs",
     "#model-kinds": "./lib/model-kinds.mjs",
@@ -16,6 +17,7 @@
     "#plugin-copy": "./lib/plugin-copy.mjs",
     "#restatement": "./lib/restatement.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
+    "#script-extensions": "./lib/script-extensions.mjs",
     "#script-flags": "./lib/script-flags.mjs",
     "#session-record-path": "./lib/session-record-path.mjs",
     "#settings-store": "./lib/settings-store.mjs",
