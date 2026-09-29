@@ -34,6 +34,7 @@ The driver sends these replies in order after the first user turn, stopping when
 - `b-tide-export.txt`: `I don't know`, `I don't know`, then `1` up to twice.
 - `c-shopping-share.txt`: `2`, then `go`.
 - `d-notes-export.txt`: `ok`, sent once, after the single bundled message.
+- `e-report-proof.txt`: `ok`, then `go`, each sent only while the reply is a question.
 
 ## Case d: one costly point, three routine points
 
@@ -41,3 +42,7 @@ The driver sends these replies in order after the first user turn, stopping when
 
 - The first assistant message holds exactly one question and lists the three routine points as assumption lines, none of them asked.
 - The reply `ok` produces the brief directly, with no second question round.
+
+## Case e: a flaw only running shows
+
+`e-report-proof.txt` runs in `fx-visit-report`, whose tests feed LF strings while `data/sample-visits.csv` has CRLF line endings, so the tests pass and the flaw shows only when the CLI runs on the sample file. The `with` arm passes when the plan's `Proof:` for the CLI task runs the CLI on the sample file.

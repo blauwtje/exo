@@ -1,0 +1,1 @@
+Add a report command to this CLI that counts the clinic visits by status from the sample file. Shape this with me, then write the plan for building it.
