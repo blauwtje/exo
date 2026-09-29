@@ -258,9 +258,17 @@ function outsideCallers(root, name, inFiles) {
   return found.stdout.split('\n').filter((file) => file !== '' && !inFiles.has(file));
 }
 
-// An exported function whose parameter list the task changed breaks every
-// caller the task did not also edit, even when its proof and suite stay green,
-// so such a caller outside `Files:` sends the task back to the plan.
+// A call written against the old list fails against the new one when it must
+// now pass more arguments, or passes more than the list now holds; a rename,
+// an added default or an added rest parameter breaks no call.
+function breaksCallers(before, after) {
+  return after.required > before.required || after.total < before.total || (before.hasRest && !after.hasRest);
+}
+
+// An exported function whose parameter list the task changed so that it
+// breaks callers the task did not also edit, even when its proof and suite
+// stay green, sends the task back to the plan when such a caller sits
+// outside `Files:`.
 function refuseSignatureDrift(task, root) {
   const inFiles = new Set(task.files.map((file) => file.path));
   const drifts = [];
@@ -272,10 +280,10 @@ function refuseSignatureDrift(task, root) {
     const after = exportSignatures(fs.readFileSync(workingPath, 'utf8'));
     for (const [name, oldParameters] of exportSignatures(before)) {
       const newParameters = after.get(name);
-      if (newParameters === undefined || newParameters === oldParameters) continue;
+      if (newParameters === undefined || !breaksCallers(oldParameters, newParameters)) continue;
       const callers = outsideCallers(root, name, inFiles);
       if (callers.length === 0) continue;
-      drifts.push(`PLAN DRIFT: Task ${task.number}: ${file}:${name}(${oldParameters}) -> (${newParameters}); callers outside Files: ${callers.join(', ')}`);
+      drifts.push(`PLAN DRIFT: Task ${task.number}: ${file}:${name}(${oldParameters.text}) -> (${newParameters.text}); callers outside Files: ${callers.join(', ')}`);
     }
   }
   if (drifts.length > 0) throw new PlanDriftError(drifts.join('\n'));

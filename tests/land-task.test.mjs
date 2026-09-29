@@ -517,6 +517,41 @@ test('a changed export signature with every caller inside Files: lands', async (
   assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\n$/);
 });
 
+// Only a change a caller can feel refuses: more required parameters, fewer
+// parameters in total, or a rest parameter taken away.
+const CALLER_SAFE_SIGNATURES = {
+  'a renamed parameter': '(entryId, description, amount)',
+  'an added default parameter': "(id, description, amount, bookedOn = '')",
+  'an added optional typed parameter': '(id, description, amount, bookedOn?)',
+  'an added rest parameter': '(id, description, amount, ...notes)'
+};
+
+for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
+  test(`${change} on an export with an outside caller lands`, async () => {
+    const { root } = await signatureCheckout();
+    await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), `export function createEntry${parameters} {\n  return {};\n}\n`);
+    const output = landTask({ planText: SIGNATURE_PLAN, number: 1, root });
+    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\n$/);
+  });
+}
+
+const CALLER_BREAKING_SIGNATURES = {
+  'a dropped parameter': ['(id, description, amount)', '(id, description)'],
+  'a default turned required': ["(id, description, amount = 0)", '(id, description, amount)'],
+  'a rest parameter taken away': ['(id, ...parts)', '(id, parts)']
+};
+
+for (const [change, [before, after]] of Object.entries(CALLER_BREAKING_SIGNATURES)) {
+  test(`${change} on an export with an outside caller is refused as PLAN DRIFT`, async () => {
+    const { root } = await signatureCheckout();
+    const file = path.join(root, 'src/ledger/create-entry.js');
+    await fs.writeFile(file, `export function createEntry${before} {}\n`);
+    git(root, 'commit', '-q', '-am', 'set up the old signature');
+    await fs.writeFile(file, `export function createEntry${after} {}\n`);
+    assert.throws(() => landTask({ planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && /^PLAN DRIFT: Task 1: src\/ledger\/create-entry\.js:createEntry\(/.test(error.message));
+  });
+}
+
 test('a body-only change to an export with an outside caller lands and prints nothing extra', async () => {
   const { root } = await signatureCheckout();
   await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
