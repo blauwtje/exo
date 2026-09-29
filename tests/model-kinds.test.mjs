@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { readKindTable } from '#model-kinds';
+import { readKindTable, TABLE_PATH } from '#model-kinds';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const MODEL_WORD = /`(opus|sonnet|haiku)`/g;
@@ -24,25 +24,49 @@ function frontmatterField(file, field) {
 }
 
 function readTableWith(change) {
-  const copy = structuredClone(table);
+  const copy = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
   change(copy);
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'table.json');
   fs.writeFileSync(file, JSON.stringify(copy));
   return () => readKindTable(file);
 }
 
-test('every kind holds a known model and an effort or null', () => {
+test('every kind resolves through the claude block to a model and an effort or null', () => {
   assert.deepEqual(Object.keys(table.kinds).sort(), [
     'build', 'chore', 'coordinate', 'hardest', 'investigate',
     'lookup', 'prose', 'research', 'review', 'review-deep'
   ]);
   assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'max' });
   assert.deepEqual(table.kinds.build, { model: 'sonnet', effort: 'high' });
-  assert.equal(table.kinds.lookup.effort, null);
+  assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: null });
 });
 
-test('the reader rejects an unknown model, effort, kind or skill field', () => {
-  assert.throws(readTableWith((copy) => { copy.kinds.build.model = 'gpt'; }), /kind build: unknown model gpt/);
+test('the raw table names a tier and a neutral effort per kind, and the claude block maps them', () => {
+  const raw = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
+  assert.equal(raw.provider, 'claude');
+  assert.deepEqual(raw.providers.claude.tiers, { strong: 'opus', standard: 'sonnet', fast: 'haiku' });
+  assert.deepEqual(Object.keys(raw.providers.claude.efforts), ['low', 'medium', 'high', 'max']);
+  assert.deepEqual(raw.kinds.hardest, { tier: 'strong', effort: 'max' });
+  assert.deepEqual(raw.kinds.lookup, { tier: 'fast', effort: null });
+});
+
+test('the reader resolves a kind through whichever provider block is active', () => {
+  const resolved = readTableWith((copy) => {
+    copy.provider = 'other';
+    copy.providers.other = {
+      tiers: { strong: 'big', standard: 'mid', fast: 'small' },
+      efforts: { low: 'l', medium: 'm', high: 'h', max: 'x' }
+    };
+  })();
+  assert.deepEqual(resolved.kinds.hardest, { model: 'big', effort: 'x' });
+  assert.deepEqual(resolved.kinds.lookup, { model: 'small', effort: null });
+});
+
+test('the reader rejects an unknown provider, tier, effort, kind or skill field, and an unmapped tier or effort', () => {
+  assert.throws(readTableWith((copy) => { copy.provider = 'gpt'; }), /unknown provider gpt/);
+  assert.throws(readTableWith((copy) => { delete copy.providers.claude.tiers.fast; }), /provider claude: no model for tier fast/);
+  assert.throws(readTableWith((copy) => { delete copy.providers.claude.efforts.max; }), /provider claude: no value for effort max/);
+  assert.throws(readTableWith((copy) => { copy.kinds.build.tier = 'huge'; }), /kind build: unknown tier huge/);
   assert.throws(readTableWith((copy) => { copy.kinds.build.effort = 'huge'; }), /kind build: unknown effort huge/);
   assert.throws(readTableWith((copy) => { copy.agents['agents/build-ui.md'].kind = 'nope'; }), /agents\/build-ui\.md: unknown kind nope/);
   assert.throws(readTableWith((copy) => { copy.dispatches[0].kind = 'nope'; }), /unknown kind nope/);

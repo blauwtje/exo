@@ -1,15 +1,22 @@
 {
+  "provider": "claude",
+  "providers": {
+    "claude": {
+      "tiers": { "strong": "opus", "standard": "sonnet", "fast": "haiku" },
+      "efforts": { "low": "low", "medium": "medium", "high": "high", "max": "max" }
+    }
+  },
   "kinds": {
-    "build": { "model": "sonnet", "effort": "high" },
-    "hardest": { "model": "opus", "effort": "max" },
-    "review": { "model": "sonnet", "effort": "high" },
-    "review-deep": { "model": "opus", "effort": "max" },
-    "investigate": { "model": "sonnet", "effort": "high" },
-    "coordinate": { "model": "sonnet", "effort": "medium" },
-    "research": { "model": "sonnet", "effort": "medium" },
-    "lookup": { "model": "haiku", "effort": null },
-    "prose": { "model": "opus", "effort": "high" },
-    "chore": { "model": "sonnet", "effort": "low" }
+    "build": { "tier": "standard", "effort": "high" },
+    "hardest": { "tier": "strong", "effort": "max" },
+    "review": { "tier": "standard", "effort": "high" },
+    "review-deep": { "tier": "strong", "effort": "max" },
+    "investigate": { "tier": "standard", "effort": "high" },
+    "coordinate": { "tier": "standard", "effort": "medium" },
+    "research": { "tier": "standard", "effort": "medium" },
+    "lookup": { "tier": "fast", "effort": null },
+    "prose": { "tier": "strong", "effort": "high" },
+    "chore": { "tier": "standard", "effort": "low" }
   },
   "agents": {
     "agents/build-task.md": { "kind": "build" },
