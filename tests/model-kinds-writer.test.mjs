@@ -156,3 +156,35 @@ test('a kind on inherit and xhigh is written into an agent file as those values'
   assert.match(read(root, 'agents/reviewer.md'), /^---\nname: reviewer\nmodel: inherit\neffort: xhigh\n/);
   assert.deepEqual(findKindDrift(root, table), []);
 });
+
+test('a dispatch on a kind resolving to inherit reads with `model` omitted, and a kind moving off it reads on its model again', () => {
+  const table = structuredClone(TABLE);
+  table.kinds.handover = { model: 'inherit', effort: null };
+  table.dispatches.push({ file: 'skills/beta/SKILL.md', match: 'hand over on `opus` to a delegate', kind: 'handover' });
+  const beta = '---\nname: beta\nmodel: haiku\n---\n\nThen hand over on `opus` to a delegate.\n';
+  const root = makeRoot({ ...FILES, 'skills/beta/SKILL.md': beta });
+  writeKinds(root, table);
+  assert.match(read(root, 'skills/beta/SKILL.md'), /Then hand over with `model` omitted to a delegate\./);
+  assert.deepEqual(findKindDrift(root, table), []);
+  table.kinds.handover = { model: 'sonnet', effort: null };
+  const [record] = findKindDrift(root, table);
+  assert.deepEqual(record, { file: 'skills/beta/SKILL.md', field: 'model', expected: 'sonnet', actual: 'inherit' });
+  writeKinds(root, table);
+  assert.match(read(root, 'skills/beta/SKILL.md'), /Then hand over on `sonnet` to a delegate\./);
+});
+
+test('a dispatch line with no on clause fails loudly when its kind resolves to inherit', () => {
+  const table = structuredClone(TABLE);
+  table.kinds.build = { model: 'inherit', effort: 'high' };
+  assert.throws(() => findKindDrift(makeRoot(), table), /then `sonnet` for the rest.*cannot omit `model`/);
+});
+
+test('a dispatch on a model the provider lists but no tier maps is written and found again', () => {
+  const table = structuredClone(TABLE);
+  table.providers.claude.models = ['fable', 'opus', 'sonnet', 'haiku'];
+  table.kinds.hardest = { model: 'fable', effort: 'max' };
+  const root = makeRoot();
+  writeKinds(root, table);
+  assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `fable` for a fix/);
+  assert.deepEqual(findKindDrift(root, table), []);
+});

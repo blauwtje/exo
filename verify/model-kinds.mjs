@@ -14,7 +14,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { readKindTable } from '../lib/model-kinds.mjs';
+import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
 
@@ -49,17 +49,40 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// A dispatch line may hold the model word of any provider block, so a table
-// that switches provider still finds and rewrites it.
-function dispatchPattern(file, match, table) {
-  const words = Object.values(table.providers).flatMap((provider) => Object.values(provider.tiers));
-  const alternatives = words.map(escapeRegExp).join('|');
-  const escaped = escapeRegExp(match);
-  const modelWord = new RegExp(`\\b(${alternatives})\\b`);
-  if (!modelWord.test(escaped)) {
+// A dispatch on `inherit` omits the Agent `model`, so its line reads this
+// clause where a dispatch on a model reads "on `<model>`".
+const INHERIT_CLAUSE = 'with `model` omitted';
+
+// A dispatch line may hold any model a provider block lists or a tier maps, or
+// `inherit`, so a table that switches provider or kind still finds and
+// rewrites it. The slot is the clause "on `<model>`" or INHERIT_CLAUSE when the
+// match holds one, else the bare model word, which cannot say `inherit`.
+// `render` turns the kind's model into the slot's text.
+function dispatchSlot(file, match, table) {
+  const listed = Object.values(table.providers).flatMap((provider) => [...(provider.models ?? []), ...Object.values(provider.tiers)]);
+  const alternatives = [...new Set([...listed, INHERIT])].map(escapeRegExp).join('|');
+  const clause = new RegExp(`\\bon \`(?:${alternatives})\`|${escapeRegExp(INHERIT_CLAUSE)}`);
+  const bare = new RegExp(`\\b(?:${alternatives})\\b`);
+  const slot = clause.test(match) ? clause : bare;
+  const found = slot.exec(match);
+  if (found === null) {
     throw new Error(`${file}: "${match}" holds no model word`);
   }
-  return new RegExp(escaped.replace(modelWord, () => `(?<model>${alternatives})`), 'd');
+  const before = escapeRegExp(match.slice(0, found.index));
+  const after = escapeRegExp(match.slice(found.index + found[0].length));
+  const pattern = new RegExp(`${before}(?<model>${slot.source})${after}`, 'd');
+  function render(model) {
+    if (slot === clause) return model === INHERIT ? INHERIT_CLAUSE : `on \`${model}\``;
+    if (model === INHERIT) {
+      throw new Error(`${file}: "${match}" cannot omit \`model\`; phrase its model as on \`<model>\``);
+    }
+    return model;
+  }
+  return { pattern, render };
+}
+
+function slotModel(text) {
+  return text === INHERIT_CLAUSE ? INHERIT : text.replace(/^on `|`$/g, '');
 }
 
 function planKindWrites(root, table) {
@@ -109,7 +132,7 @@ function planKindWrites(root, table) {
 
   for (const { file, match, kind } of table.dispatches) {
     const plan = open(file);
-    const pattern = dispatchPattern(file, match, table);
+    const { pattern, render } = dispatchSlot(file, match, table);
     const lines = plan.after.split('\n');
     const hits = lines.flatMap((line, index) => (pattern.test(line) ? [index] : []));
     if (hits.length !== 1) {
@@ -118,9 +141,9 @@ function planKindWrites(root, table) {
     const found = pattern.exec(lines[hits[0]]);
     const [start, end] = found.indices.groups.model;
     const expected = table.kinds[kind].model;
-    const actual = lines[hits[0]].slice(start, end);
+    const actual = slotModel(found.groups.model);
     if (actual !== expected) plan.drift.push({ file, field: 'model', expected, actual });
-    lines[hits[0]] = lines[hits[0]].slice(0, start) + expected + lines[hits[0]].slice(end);
+    lines[hits[0]] = lines[hits[0]].slice(0, start) + render(expected) + lines[hits[0]].slice(end);
     plan.after = lines.join('\n');
   }
 
