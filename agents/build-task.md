@@ -21,14 +21,14 @@ tools: Read, Edit, Write, Grep, Bash
 - Without one, write or pick one test for the brief's `Success criterion:` and run only that test; its report line comes first under Proof, because build lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code: it holds the rungs, their tie-break, and what no rung shortens.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code.
 
 ## Standard
 
 - Never delete, skip or loosen a test to pass it: fix the code or report the failure.
 - Read a non-obvious behavior's call sites before changing it.
 - Give a shell wait loop a round counter that exits with an error.
-- Run only the brief's `Proof:` or `Run:`, never `npm run check`; background a command over 1 min, timeout sized.
+- Run only the brief's `Proof:` or `Run:`, never the full gate (the plan's `Land gate:`); background a command over 1 min, timeout sized.
 
 ## Git
 
