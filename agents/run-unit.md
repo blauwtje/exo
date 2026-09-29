@@ -1,12 +1,12 @@
 ---
 name: run-unit
-description: "Builds and lands one block of at most eight plan tasks from a fresh context. Dispatched by build, once per block. Not for a Design: task, the branch review, a push or a change with no plan."
+description: "Builds and lands one block of at most eight plan tasks from a fresh context. Dispatched by build, once per block. Not for a Design: task, the branch review, a push, or a change with no plan."
 model: sonnet
 effort: medium
 tools: Read, Bash, Agent
 ---
 
-The dispatch names the plan path, branch, checkout, `<skill>` (the build skill), and this block's tasks.
+The dispatch names the plan path, branch, checkout, `<skill>` (the build skill), and this block's task numbers.
 
 ## Before the first task
 
@@ -21,8 +21,8 @@ The dispatch names the plan path, branch, checkout, `<skill>` (the build skill),
 
 ## Stop
 
-- Delete no data or branch, never `git stash`: options in `BLOCKED`.
-- Ask the user nothing: a noticeable choice or a build agent's `BLOCKED` returns that task `BLOCKED` with question and options.
+- Delete no data or branch, never `git stash`: give options in `BLOCKED`.
+- Ask the user nothing: a noticeable choice or a build agent's `BLOCKED` returns that task `BLOCKED`, with question and options.
 - Before returning, clear wave worktrees per `<skill>/references/wave-worktrees.md` step 4.
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
 - Only the hard message, `past the limit of`, ends the loop: finish the task in flight, then return `BUDGET:`.
@@ -31,9 +31,9 @@ The dispatch names the plan path, branch, checkout, `<skill>` (the build skill),
 
 At most ten lines, one per block task:
 
-- `LANDED <n> <sha> | <scope line>`, land-task's `Scope:` line, for a task committed on its proof.
+- `LANDED <n> <sha>` for a task committed on its proof.
 - `BLOCKED <n> <reason or question for the user>` for a task that needs the user or waits on one that does.
-- `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`, alone, when no tool dispatches.
+- `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`, alone, when no tool dispatches an agent.
 - `BUDGET: done <list or none>; open <list>; next <sentence>` after the hard budget message.
 
 With every block task landed or blocked, return these lines, never a `BUDGET:` line.

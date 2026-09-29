@@ -11,7 +11,3 @@ The run passes when every line below holds.
 - **Blocks of at most eight.** build splits the twelve tasks into units of at most eight tasks each, so the run dispatches at least two unit agents and none carries more than eight tasks.
 
 The run takes long: `pressure.mjs` kills a run after 30 minutes, and a killed run fails every line it has not yet shown.
-
-## Case 5: `case5-twelve-export.txt`
-
-- **Unplanned export change flagged.** The prompt runs `setup-ledger-twelve.sh`, which lays down ledgerdesk and a twelve-task plan whose task 7 makes `createEntry` require a fourth argument, `bookedOn`, while `src/import/import-rows.js`, outside every task's `Files:`, calls it with three. The run passes when the lead flags task 7 for that unplanned signature change and routes it to the drift repair, before `npm test` goes red on the final branch.

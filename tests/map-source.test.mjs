@@ -7,8 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { commitFiles, fixture, git, gitRepository } from './harness.mjs';
-import { exportedNames } from '../lib/exported-names.mjs';
-import { locateRepository, readTrackedFiles, unchangedSince } from '../skills/spec/scripts/map-source.mjs';
+import { exportedNames, locateRepository, readTrackedFiles, unchangedSince } from '../skills/spec/scripts/map-source.mjs';
 
 const EXPORT_CASES = [
   ['functions, plain, async and generator', 'export function alpha() {}\nexport async function beta() {}\nexport function* gamma() {}\nexport function *delta() {}', ['alpha', 'beta', 'gamma', 'delta']],
