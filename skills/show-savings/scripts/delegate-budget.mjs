@@ -26,12 +26,15 @@
 // the latest tool result, so a large result shows one call late.
 //
 // A fault never blocks a tool call: a missing or unreadable transcript prints
-// nothing, and any error exits 0 with nothing on stdout.
+// nothing, and any error exits 0 with nothing on stdout. A failed read of stdin
+// exits 1, a non-blocking error the harness logs and shows in verbose mode; the
+// guard never exits 2.
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { readHookText } from '#hook-input';
 import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
 
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../assets/delegate-budgets.json', import.meta.url), 'utf8'));
@@ -120,14 +123,23 @@ function guard(hookInput) {
   }
 }
 
+let inputText;
 try {
-  const hookInput = JSON.parse(fs.readFileSync(0, 'utf8'));
-  if (typeof hookInput.agent_id === 'string') {
-    guard(hookInput);
-  } else {
-    const { watch } = await import('./context-watch.mjs');
-    watch(hookInput);
-  }
+  inputText = await readHookText();
 } catch (error) {
-  console.error(`delegate-budget: ${error.message}`);
+  console.error(`delegate-budget: could not read hook input: ${error.message}`);
+  process.exitCode = 1;
+}
+if (inputText !== undefined) {
+  try {
+    const hookInput = JSON.parse(inputText);
+    if (typeof hookInput.agent_id === 'string') {
+      guard(hookInput);
+    } else {
+      const { watch } = await import('./context-watch.mjs');
+      watch(hookInput);
+    }
+  } catch (error) {
+    console.error(`delegate-budget: ${error.message}`);
+  }
 }

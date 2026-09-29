@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readHookText } from '#hook-input';
 import { RESTATED_SKILL, RESTATE_INTERVAL_BYTES, restatementText } from '#restatement';
 import { savingsEnabled, updateHotSession } from './record.mjs';
 
@@ -78,7 +79,7 @@ function restate(hookInput) {
 }
 
 try {
-  const hookInput = JSON.parse(fs.readFileSync(0, 'utf8'));
+  const hookInput = JSON.parse(await readHookText());
   if (process.argv[2] === 'reset') reset(hookInput);
   else restate(hookInput);
 } catch (error) {

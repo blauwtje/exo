@@ -19,8 +19,8 @@
 //
 // A hook failure never blocks the turn.
 
-import fs from 'node:fs';
 import process from 'node:process';
+import { readHookText } from '#hook-input';
 import {
   CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS, configFile, emptySession, guardLines, hotSessionIds, readHotSession, readJson, readRecord,
   savingsEnabled, updateSession, writeJson
@@ -93,10 +93,6 @@ function ledgerLines(withheld) {
   }
   lines.push('', `Estimated at ${CHARACTERS_PER_TOKEN} characters per token, the figure Anthropic documents; not measured or billed.`);
   return lines;
-}
-
-function readStdin() {
-  return JSON.parse(fs.readFileSync(0, 'utf8'));
 }
 
 function recordSession(hookInput) {
@@ -195,7 +191,7 @@ function report() {
 }
 
 const command = process.argv[2];
-const HOOK_COMMANDS = { record: () => recordSession(readStdin()), statusline };
+const HOOK_COMMANDS = { record: async () => recordSession(JSON.parse(await readHookText())), statusline };
 const CLI_COMMANDS = {
   report,
   status,
@@ -206,7 +202,7 @@ const CLI_COMMANDS = {
 };
 if (command in HOOK_COMMANDS) {
   try {
-    HOOK_COMMANDS[command]();
+    await HOOK_COMMANDS[command]();
   } catch (error) {
     // A counter fault must never block a turn or blank the status line.
     console.error(`savings: ${error.message}`);

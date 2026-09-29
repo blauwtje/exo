@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
+import { readHookText } from '#hook-input';
 
 const BUILD_SKILL = /(^|:)build$/i;
 const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
@@ -210,7 +211,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     process.exitCode = 2;
   } else {
     try {
-      process.stdout.write(output(JSON.parse(fs.readFileSync(0, 'utf8') || '{}')));
+      process.stdout.write(output(JSON.parse((await readHookText()) || '{}')));
     } catch {
       // A missing transcript or unreadable input leaves nothing to check.
     }

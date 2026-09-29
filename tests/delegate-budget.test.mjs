@@ -227,6 +227,9 @@ async function pluginCopy(root, budgets) {
   for (const name of ['delegate-budget.mjs', 'transcript-tail.mjs', 'token-weights.mjs']) {
     await fs.copyFile(path.join(SCRIPTS, name), path.join(scripts, name));
   }
+  await fs.mkdir(path.join(root, 'plugin', 'lib'), { recursive: true });
+  await fs.copyFile(new URL('../package.json', import.meta.url), path.join(root, 'plugin', 'package.json'));
+  await fs.copyFile(new URL('../lib/hook-input.mjs', import.meta.url), path.join(root, 'plugin', 'lib', 'hook-input.mjs'));
   await fs.writeFile(path.join(assets, 'delegate-budgets.json'), JSON.stringify(budgets));
   return path.join(scripts, 'delegate-budget.mjs');
 }

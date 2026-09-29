@@ -22,6 +22,7 @@
 import fs, { realpathSync } from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { readHookText } from '#hook-input';
 import { INHERIT, readKindTable } from '#model-kinds';
 import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { SCHEMA, settingValue } from '#settings-store';
@@ -152,7 +153,7 @@ export function watch(hookInput) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
-    watch(JSON.parse(fs.readFileSync(0, 'utf8')));
+    watch(JSON.parse(await readHookText()));
   } catch (error) {
     console.error(`context-watch: ${error.message}`);
   }

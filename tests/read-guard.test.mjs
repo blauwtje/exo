@@ -23,6 +23,7 @@ function runGuard(args, hookInput, env) {
       { env: { ...process.env, ...env }, timeout: 30_000 },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) })
     );
+    child.stdin.on('error', () => {});
     child.stdin.end(JSON.stringify(hookInput));
   });
 }

@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { readHookText } from '#hook-input';
 import { landedTasks, parsePlan, readyTasks } from '#plan-tasks';
 
 const MARKER_LIFETIME_MS = 6 * 60 * 60 * 1000;
@@ -117,7 +118,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     }
   } else {
     try {
-      process.stdout.write(output(JSON.parse(fs.readFileSync(0, 'utf8') || '{}')));
+      process.stdout.write(output(JSON.parse((await readHookText()) || '{}')));
     } catch {
       // Outside a repository, or with an unreadable plan, nothing is running.
     }

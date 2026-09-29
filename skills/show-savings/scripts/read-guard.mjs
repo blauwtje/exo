@@ -16,11 +16,13 @@
 //   node read-guard.mjs reset   SessionStart hook on clear or compact: forgets the reads
 //
 // A guard fault never blocks a turn: any error exits 0 with no output, which
-// lets the read through.
+// lets the read through. A failed read of stdin exits 1, a non-blocking error
+// the harness logs and shows in verbose mode; the guard never exits 2.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { readHookText } from '#hook-input';
 import { memoryDirectory } from '#memory-store';
 import { configFile, guardLines, readJson, savingsEnabled, updateHotSession } from './record.mjs';
 
@@ -192,11 +194,20 @@ function reset(hookInput) {
   });
 }
 
+let inputText;
 try {
-  const hookInput = JSON.parse(fs.readFileSync(0, 'utf8'));
-  if (process.argv[2] === 'reset') reset(hookInput);
-  else if (process.argv[2] === 'book') book(hookInput);
-  else guardRead(hookInput);
+  inputText = await readHookText();
 } catch (error) {
-  console.error(`read-guard: ${error.message}`);
+  console.error(`read-guard: could not read hook input: ${error.message}`);
+  process.exitCode = 1;
+}
+if (inputText !== undefined) {
+  try {
+    const hookInput = JSON.parse(inputText);
+    if (process.argv[2] === 'reset') reset(hookInput);
+    else if (process.argv[2] === 'book') book(hookInput);
+    else guardRead(hookInput);
+  } catch (error) {
+    console.error(`read-guard: ${error.message}`);
+  }
 }

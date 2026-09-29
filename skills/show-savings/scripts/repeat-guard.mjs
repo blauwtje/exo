@@ -23,11 +23,12 @@
 // lifts that.
 //
 // A guard fault never blocks a turn: any error exits 0 with no output, which
-// lets the call through.
+// lets the call through. A failed read of stdin exits 1, a non-blocking error
+// the harness logs and shows in verbose mode; the guard never exits 2.
 
 import crypto from 'node:crypto';
-import fs from 'node:fs';
 import process from 'node:process';
+import { readHookText } from '#hook-input';
 import { configFile, readJson, savingsEnabled, updateHotSession } from './record.mjs';
 
 // The first repeat passes; the attempt after it is denied.
@@ -164,11 +165,20 @@ function reset(hookInput) {
   });
 }
 
+let inputText;
 try {
-  const hookInput = JSON.parse(fs.readFileSync(0, 'utf8'));
-  if (process.argv[2] === 'reset') reset(hookInput);
-  else if (process.argv[2] === 'edited') edited(hookInput);
-  else guardCall(hookInput);
+  inputText = await readHookText();
 } catch (error) {
-  console.error(`repeat-guard: ${error.message}`);
+  console.error(`repeat-guard: could not read hook input: ${error.message}`);
+  process.exitCode = 1;
+}
+if (inputText !== undefined) {
+  try {
+    const hookInput = JSON.parse(inputText);
+    if (process.argv[2] === 'reset') reset(hookInput);
+    else if (process.argv[2] === 'edited') edited(hookInput);
+    else guardCall(hookInput);
+  } catch (error) {
+    console.error(`repeat-guard: ${error.message}`);
+  }
 }

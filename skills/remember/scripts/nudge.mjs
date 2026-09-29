@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { readHookText } from '#hook-input';
 import { appendNudgeLog, nudgeLogFile } from '#memory-store';
 
 const MEMORY_SCRIPT = fileURLToPath(new URL('./memory.mjs', import.meta.url));
@@ -153,9 +154,9 @@ try {
   if (positionals[0] === 'stats') {
     stats(values.cwd ?? process.cwd());
   } else if (positionals[0] === 'approve') {
-    approve(JSON.parse(fs.readFileSync(0, 'utf8')));
+    approve(JSON.parse(await readHookText()));
   } else {
-    nudge(JSON.parse(fs.readFileSync(0, 'utf8')));
+    nudge(JSON.parse(await readHookText()));
   }
 } catch (error) {
   console.error(`nudge: ${error.message}`);

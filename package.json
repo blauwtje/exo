@@ -8,6 +8,7 @@
   "imports": {
     "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
+    "#hook-input": "./lib/hook-input.mjs",
     "#memory-store": "./lib/memory-store.mjs",
     "#model-kinds": "./lib/model-kinds.mjs",
     "#page-chrome": "./lib/page-chrome.mjs",
