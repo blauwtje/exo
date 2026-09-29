@@ -8,8 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-
-export const SCRIPT_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']);
+import { SCRIPT_EXTENSIONS } from '#script-extensions';
 
 const MANIFEST_NAME = 'package.json';
 const MANIFEST_FIELDS = ['scripts', 'bin', 'main', 'exports'];
