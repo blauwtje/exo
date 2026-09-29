@@ -1,0 +1,12 @@
+# Lead check 2026-09-29: branch vs main
+
+Case `benchmarks/pressure/build/case5-twelve-export.txt` with `setup-ledger-twelve.sh`, graded on its `criteria.md` line. Cell `sonnet:high`, the `with` arm of `skills/edit-skills/scripts/pressure.mjs` (same `claude -p` flags, `--plugin-dir` set to the arm's checkout), one run per arm. The branch arm is `eight-behaviors` at `a87d8ef`, and the main arm is `origin/main` at `a70f0fd`. The fixture script and log path were copied to a unique `/tmp` directory so parallel runs could not collide. Lead peak and totals come from the branch's `benchmarks/cell-usage.mjs` for both arms. Raw tokens add input, cache read, cache writes and output. Weighted tokens are `weightedInput + output`, as in `score.mjs`.
+
+| arm | lead peak tokens | total tokens raw / weighted | wall-clock | flagged hunks | seeded export change caught / sent to drift repair |
+|---|---|---|---|---|---|
+| main | 32,114 | 1,505,170 / 395,820 | 160 s | none (no scope line; two `exo:run-unit` blocks, 1-8 and 9-12) | caught (the unit returned `BLOCKED 7`, since `import-rows.js` calls `createEntry` with three arguments) / no: the lead asked the user with three options |
+| branch | 38,044 | 1,958,746 / 488,204 | 226 s | 12 `Scope:` lines from two `exo:run-unit` blocks (1-8 and 9-12); 11 flag the new export of their task, task 7's reads `outside none; exports none; formats none`; 0 hunks read (`git show` never ran) | caught by the unit, not by the scope line (`createEntry` gained a required fourth parameter, which the scope line does not count as an export change) / no: the unit landed task 7, and a separate `fix(import)` commit with no `Plan-task:` trailer changed `src/import/import-rows.js` outside task 7's `Files:`; no drift repair was dispatched and the lead only reported it at the end |
+
+Rerun: the branch row comes from a second run at `a87d8ef`, because at `b9f7561` the lead built all twelve tasks itself and never dispatched `exo:run-unit`, so change 4 never ran. The main row is from the first run.
+
+Change 4 caught nothing that main missed. On task 7 the scope line read `exports none` although the exported `createEntry` signature changed, so no hunk was read and nothing went to drift repair. The caller break was fixed outside the plan without a question, while main stopped at `BLOCKED 7` and asked the user. Across the whole run the branch used +5,930 lead peak tokens (+18%), +453,576 raw tokens (+30%) and +92,384 weighted tokens (+23%), and took 66 s longer.
