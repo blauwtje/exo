@@ -1,7 +1,7 @@
 // Which plugin copy a pressure run loads: --plugin-dir resolves against the
 // caller's cwd and needs a manifest there, the comparison arm is no plugin or
 // a second copy, and a skill base directory outside the arm's copy is a wrong
-// copy. The stream lines are shaped after a recorded `claude -p` run.
+// copy only when it is a skill of the arm's plugin. The stream lines are shaped after a recorded `claude -p` run.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -20,9 +20,10 @@ const loadedLine = (skillDir) => JSON.stringify({
   message: { role: 'user', content: [{ type: 'text', text: `Base directory for this skill: ${skillDir}\n\n# Shaping\n\n## Steps\n` }] }
 });
 
-async function pluginAt(directory) {
+async function pluginAt(directory, name = 'fixture-plugin', skills = []) {
   await fs.mkdir(path.join(directory, '.claude-plugin'), { recursive: true });
-  await fs.writeFile(path.join(directory, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'fixture-plugin' }));
+  await fs.writeFile(path.join(directory, '.claude-plugin', 'plugin.json'), JSON.stringify({ name }));
+  for (const skill of skills) await fs.mkdir(path.join(directory, 'skills', skill), { recursive: true });
 }
 
 test('a relative plugin directory resolves against the given cwd, not the process cwd', async () => {
@@ -58,4 +59,32 @@ test('a skill loaded from main while the arm points at a worktree is a wrong cop
   const dirs = [`${WORKTREE}/skills/spec`, `${MAIN}/skills/spec`, `${WORKTREE}-other/skills/spec`];
   assert.deepEqual(wrongCopies(dirs, WORKTREE), [`${MAIN}/skills/spec`, `${WORKTREE}-other/skills/spec`]);
   assert.deepEqual(wrongCopies(dirs, undefined), []);
+});
+
+test('a skill of another plugin or a personal skill is not a wrong copy, even when it shares a name', async () => {
+  const root = await fixture();
+  const clone = path.join(root, 'clone');
+  await pluginAt(clone, 'exo', ['spec', 'ship']);
+  await pluginAt(path.join(root, 'other'), 'other', ['spec', 'lint']);
+  const personal = path.join(root, 'home', '.claude', 'skills', 'synced');
+  await fs.mkdir(personal, { recursive: true });
+  const dirs = [path.join(root, 'other', 'skills', 'spec'), path.join(root, 'other', 'skills', 'lint'), personal];
+  assert.deepEqual(wrongCopies(dirs, clone), []);
+});
+
+test('a skill of the same plugin loaded from the main checkout while the arm points at a clone is a wrong copy', async () => {
+  const root = await fixture();
+  const clone = path.join(root, 'clone');
+  await pluginAt(clone, 'exo', ['spec', 'ship']);
+  await pluginAt(path.join(root, 'main'), 'exo', ['spec', 'ship']);
+  const dirs = [path.join(clone, 'skills', 'spec'), path.join(root, 'main', 'skills', 'ship')];
+  assert.deepEqual(wrongCopies(dirs, clone), [path.join(root, 'main', 'skills', 'ship')]);
+});
+
+test('a removed copy with no manifest is a wrong copy when its skill name is one of the arm plugin skills', async () => {
+  const root = await fixture();
+  const clone = path.join(root, 'clone');
+  await pluginAt(clone, 'exo', ['spec']);
+  const dirs = [path.join(root, 'gone', 'skills', 'spec'), path.join(root, 'gone', 'skills', 'unrelated')];
+  assert.deepEqual(wrongCopies(dirs, clone), [path.join(root, 'gone', 'skills', 'spec')]);
 });
