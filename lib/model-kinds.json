@@ -18,6 +18,10 @@
     "prose": { "tier": "strong", "effort": "high" },
     "chore": { "tier": "standard", "effort": "low" }
   },
+  "stages": {
+    "build-no-spec": { "kind": "hardest" },
+    "build": { "kind": "coordinate" }
+  },
   "agents": {
     "agents/build-task.md": { "kind": "build" },
     "agents/build-ui.md": { "kind": "build" },

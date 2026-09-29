@@ -70,6 +70,7 @@ test('the reader rejects an unknown provider, tier, effort, kind or skill field,
   assert.throws(readTableWith((copy) => { copy.kinds.build.effort = 'huge'; }), /kind build: unknown effort huge/);
   assert.throws(readTableWith((copy) => { copy.agents['agents/build-ui.md'].kind = 'nope'; }), /agents\/build-ui\.md: unknown kind nope/);
   assert.throws(readTableWith((copy) => { copy.dispatches[0].kind = 'nope'; }), /unknown kind nope/);
+  assert.throws(readTableWith((copy) => { copy.stages.build.kind = 'nope'; }), /stage build: unknown kind nope/);
   assert.throws(readTableWith((copy) => { copy.skills['skills/verify/SKILL.md'].fields = ['tools']; }), /unknown field tools/);
 });
 
@@ -99,5 +100,19 @@ test('every dispatch match is one line holding one model word, the kind\'s', () 
     assert.equal(lines.length, 1, `${file}: "${match}" matches ${lines.length} lines`);
     const words = [...lines[0].matchAll(MODEL_WORD)].map((found) => found[1]);
     assert.deepEqual(words, [table.kinds[kind].model], `${file}: "${match}"`);
+  }
+});
+
+test('every next-stage line prints the model and effort of the kind the table gives its stage', async () => {
+  const { nextStageReport } = await import('../skills/route-skills/scripts/next-stage.mjs');
+  const { fixture, planFixture, taskSection } = await import('./harness.mjs');
+  const directory = await fixture();
+  const planPath = path.join(directory, 'plan.md');
+  const task = taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' });
+  fs.writeFileSync(planPath, planFixture({ tasks: [task] }));
+  for (const [after, stage] of [['find-cause', 'build-no-spec'], ['spec', 'build']]) {
+    const { model, effort } = table.kinds[table.stages[stage].kind];
+    const report = nextStageReport({ after, artifact: planPath });
+    assert.ok(report.includes(`Next stage runs on \`${model}\` at \`${effort}\``), `${stage}: ${report}`);
   }
 });

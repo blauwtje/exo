@@ -6,12 +6,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
+import { readKindTable } from '#model-kinds';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { fileURLToPath } from 'node:url';
 
 const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
 const DISPATCH = '`general-purpose` delegate';
-const MODEL_NAMES = ['`sonnet`', '`opus`', "the session's model", 'the model the skill under test runs on'];
+const kindModels = new Set(Object.values(readKindTable().kinds).map((kind) => `\`${kind.model}\``));
+const MODEL_NAMES = [...kindModels, "the session's model", 'the model the skill under test runs on'];
 
 function sentencesNamingDispatch(text) {
   return text

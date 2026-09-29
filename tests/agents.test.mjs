@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { readKindTable } from '#model-kinds';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const agentsRoot = path.join(repositoryRoot, 'agents');
@@ -38,7 +39,11 @@ function readAgent(fileName) {
   return { fileName, frontmatter, body };
 }
 
-const kindTable = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'lib', 'model-kinds.json'), 'utf8'));
+const kindTable = readKindTable();
+
+function agentKind(name) {
+  return kindTable.kinds[kindTable.agents[`agents/${name}.md`].kind];
+}
 
 const agents = fs.readdirSync(agentsRoot)
   .filter((fileName) => fileName.endsWith('.md'))
@@ -64,10 +69,11 @@ test('every agent is named after its file', () => {
   }
 });
 
-test('an agent on haiku pins no effort, which that model does not take', () => {
+test('every agent pins the model and effort its kind resolves to, and no effort when the kind sets none', () => {
   for (const agent of agents) {
-    if (agent.frontmatter.model !== 'haiku') continue;
-    assert.equal(agent.frontmatter.effort, undefined, `${agent.fileName} pins effort on haiku`);
+    const { model, effort } = agentKind(agent.frontmatter.name);
+    assert.equal(agent.frontmatter.model, model, `${agent.fileName} model`);
+    assert.equal(agent.frontmatter.effort, effort ?? undefined, `${agent.fileName} effort`);
   }
 });
 
@@ -149,14 +155,13 @@ test('the inputs the design critic expects are the ones design-ui hands it', () 
   }
 });
 
-test('review-branch-deep is review-branch\'s generated twin on opus at max, with one body', () => {
+test('review-branch-deep is review-branch\'s generated twin on its own kind, with one body', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch-deep');
   assert.ok(deepReviewer, 'agents/review-branch-deep.md is missing');
-  assert.equal(reviewer.frontmatter.model, 'sonnet');
-  assert.equal(reviewer.frontmatter.effort, 'high');
-  assert.equal(deepReviewer.frontmatter.model, 'opus');
-  assert.equal(deepReviewer.frontmatter.effort, 'max');
+  assert.equal(kindTable.agents['agents/review-branch-deep.md'].generatedFrom, 'agents/review-branch.md');
+  assert.equal(deepReviewer.frontmatter.model, kindTable.kinds['review-deep'].model);
+  assert.equal(deepReviewer.frontmatter.effort, kindTable.kinds['review-deep'].effort);
   assert.equal(deepReviewer.body, reviewer.body);
   assert.equal(deepReviewer.frontmatter.tools, reviewer.frontmatter.tools);
   assert.ok(reviewer.body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
@@ -171,23 +176,23 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> report=<path>`'), 'the reviewer returns one verdict line');
 });
 
-test('build sends a FINDINGS review to a sonnet fixer from review-fixer-prompt.md', () => {
+test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prompt.md', () => {
   const fixerPath = path.join(skillsRoot, 'build', 'review-fixer-prompt.md');
   assert.ok(fs.existsSync(fixerPath), 'skills/build/review-fixer-prompt.md exists');
   const fixerPrompt = fs.readFileSync(fixerPath, 'utf8');
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
-  assert.match(fixerPrompt, /`general-purpose` delegate on `sonnet`/);
+  assert.ok(fixerPrompt.includes(`\`general-purpose\` delegate on \`${kindTable.kinds.build.model}\``));
   const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
   const verifying = fs.readFileSync(path.join(skillsRoot, 'verify', 'SKILL.md'), 'utf8');
   assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
 });
 
-test('the implementer pins sonnet at high effort whatever the session runs at', () => {
+test('the implementer pins its kind\'s model and effort whatever the session runs at', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
   assert.ok(implementer, 'agents/build-task.md exists');
-  assert.equal(implementer.frontmatter.model, 'sonnet');
-  assert.equal(implementer.frontmatter.effort, 'high');
+  assert.equal(implementer.frontmatter.model, agentKind('build-task').model);
+  assert.equal(implementer.frontmatter.effort, agentKind('build-task').effort);
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
@@ -207,10 +212,10 @@ test('a Design: task with a named direction stays in the build session, not the 
   assert.match(designingSkill, /inventory\.md[^\n]*`exo:survey-ui`|`exo:survey-ui`[^\n]*inventory\.md/);
 });
 
-test('the design builder runs on sonnet with a 35-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
+test('the design builder runs with a 35-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
   const builder = agents.find((agent) => agent.frontmatter.name === 'build-ui');
   assert.ok(builder, 'agents/build-ui.md exists');
-  assert.equal(builder.frontmatter.model, 'sonnet');
+  assert.equal(builder.frontmatter.model, agentKind('build-ui').model);
   assert.equal(Number(builder.frontmatter.maxTurns), 35);
   assert.deepEqual(builder.frontmatter.tools.split(', ').filter((tool) => tool === 'Agent'), []);
   assert.match(builder.body, /`foundation`/);

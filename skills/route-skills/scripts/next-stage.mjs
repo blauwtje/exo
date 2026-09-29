@@ -46,12 +46,12 @@ function designPending(planPath) {
   return visualDirection === null || /^Direction: pending at rung \d+$/m.test(visualDirection);
 }
 
-// The kind in `lib/model-kinds.json` whose model and effort each next stage
-// runs on, with the reason clause that follows them. The design-pending build
-// row names no kind: it pins `opus` at `medium` by the skill's own setting.
-const STAGE_KIND = {
-  'build-no-spec': { kind: 'hardest', because: 'it decides the change while building it' },
-  'build': { kind: 'coordinate', because: (buildEffort) => `the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps \`${buildEffort}\`` }
+// The reason clause that follows the model and effort of each next stage; the
+// kind that sets them is `stages` in `lib/model-kinds.json`. The design-pending
+// build row names no kind: it pins `opus` at `medium` by the skill's own setting.
+const STAGE_BECAUSE = {
+  'build-no-spec': () => 'it decides the change while building it',
+  'build': (buildEffort) => `the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps \`${buildEffort}\``
 };
 
 // The one model-line row `references/next-stage.md`'s table names for the
@@ -61,11 +61,10 @@ function modelLineFor(stage, artifact) {
   if (stage === 'build' && designPending(artifact)) {
     return 'Next stage runs on `opus` at `medium`, because that task builds in the session, and the skill pins `medium`.';
   }
-  const row = STAGE_KIND[stage];
-  if (row === undefined) return null;
-  const { kinds } = readKindTable();
-  const { model, effort } = kinds[row.kind];
-  const because = typeof row.because === 'function' ? row.because(kinds.build.effort) : row.because;
+  const { kinds, stages } = readKindTable();
+  if (!(stage in stages)) return null;
+  const { model, effort } = kinds[stages[stage].kind];
+  const because = STAGE_BECAUSE[stage](kinds.build.effort);
   return `Next stage runs on \`${model}\` at \`${effort}\`, because ${because}.`;
 }
 

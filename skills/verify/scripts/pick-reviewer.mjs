@@ -14,13 +14,16 @@ import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 export const FILE_LIMIT = 5;
 export const LINE_LIMIT = 200;
 
-// The branch reviewer and its generated twin are the one agent pair the kind
-// table links by `generatedFrom`; each agent's name is its file's basename.
+// The light reviewer is the agent of kind `review`; the deep one is the agent
+// of kind `review-deep` generated from it, which sets it apart from other
+// `review-deep` agents. Each agent's name is its file's basename.
 function reviewerAgents() {
-  const [deepFile, deepEntry] = Object.entries(readKindTable().agents)
-    .find(([, entry]) => entry.generatedFrom !== undefined);
+  const { agents } = readKindTable();
   const agentName = (file) => basename(file, '.md');
-  return { light: agentName(deepEntry.generatedFrom), deep: agentName(deepFile) };
+  const [lightFile] = Object.entries(agents).find(([, entry]) => entry.kind === 'review');
+  const [deepFile] = Object.entries(agents)
+    .find(([, entry]) => entry.kind === 'review-deep' && entry.generatedFrom === lightFile);
+  return { light: agentName(lightFile), deep: agentName(deepFile) };
 }
 
 export const REVIEWER_AGENTS = reviewerAgents();
