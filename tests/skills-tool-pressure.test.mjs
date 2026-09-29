@@ -31,6 +31,7 @@ const STAND_IN = [
   "if (mode === 'edits') { console.log(JSON.stringify(assistantWithEdit)); console.log(JSON.stringify(resultLine('done, edited the file'))); process.exit(0); }",
   "if (mode === 'skills') { console.log(JSON.stringify(assistantWithSkill('exo:find-cause'))); console.log(JSON.stringify(assistantWithSkill('exo:edit-skills'))); console.log(JSON.stringify(resultLine('used two skills'))); process.exit(0); }",
   "if (mode === 'long') { console.log(JSON.stringify(resultLine('a'.repeat(400) + ' middle ' + 'b'.repeat(400) + ' the end'))); process.exit(0); }",
+  "if (mode === 'loads') { const dir = process.env.STAND_IN_BASE ?? process.argv[process.argv.indexOf('--plugin-dir') + 1] + '/skills/spec'; console.log(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'Base directory for this skill: ' + dir + '\\n\\n# Skill' }] } })); console.log(JSON.stringify(resultLine('loaded a skill'))); process.exit(0); }",
   "if (mode === 'fails') { process.stderr.write('e'.repeat(400) + ' stderr tail'); process.exit(1); }",
   'process.exit(0);'
 ].join('\n');
@@ -55,7 +56,8 @@ async function pluginClone({ omit = [] } = {}) {
   return clone;
 }
 
-async function runPressure(mode, args) {
+// `args` is a list, or a function of the runner's cwd that returns one.
+async function runPressure(mode, args, extraEnv = {}) {
   const directory = await fixture();
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
@@ -63,9 +65,10 @@ async function runPressure(mode, args) {
   const promptFile = path.join(directory, 'prompt.txt');
   await fs.writeFile(promptFile, 'a pressure scenario');
   const log = path.join(directory, 'calls.log');
-  const outcome = await run(PRESSURE, ['--prompt', promptFile, ...args], {
+  const argList = typeof args === 'function' ? args(directory) : args;
+  const outcome = await run(PRESSURE, ['--prompt', promptFile, ...argList], {
     cwd: directory,
-    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, STAND_IN_LOG: log, STAND_IN_MODE: mode }
+    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, STAND_IN_LOG: log, STAND_IN_MODE: mode, ...extraEnv }
   });
   const logged = await fs.readFile(log, 'utf8').catch(() => '');
   return { ...outcome, calls: logged.split('\n').filter((line) => line !== '') };
@@ -235,4 +238,53 @@ test('a missing plugin or marketplace manifest in the clone is a usage error nam
     assert.ok(outcome.stderr.includes(path.join(clone, '.claude-plugin', file)), outcome.stderr);
     assert.deepEqual(outcome.calls, []);
   }
+});
+
+test('a relative --plugin-dir reaches claude as the absolute path it names from the caller\'s cwd', async () => {
+  const clone = await pluginClone();
+  const out = await fixture();
+  const outcome = await runPressure('plain', (cwd) => ['--cells', 'sonnet:high', '--plugin-dir', path.relative(cwd, clone), '--out', out, '--runs', '1']);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  const withCall = outcome.calls.find((call) => call.includes('--plugin-dir'));
+  // The runner's cwd is the realpath of the fixture, such as /private/var on macOS.
+  assert.ok(withCall.endsWith(`--plugin-dir ${await fs.realpath(clone)}`), withCall);
+});
+
+test('a --plugin-dir or --main-dir with no plugin manifest is a usage error naming the absolute manifest path', async () => {
+  const clone = await pluginClone();
+  const empty = await fixture();
+  for (const args of [['--plugin-dir', empty], ['--plugin-dir', clone, '--main-dir', empty]]) {
+    const outcome = await runPressure('plain', ['--cells', 'sonnet:high', ...args]);
+    assert.equal(outcome.code, 2, outcome.stderr);
+    assert.ok(outcome.stderr.includes(path.join(empty, '.claude-plugin', 'plugin.json')), outcome.stderr);
+    assert.deepEqual(outcome.calls, []);
+  }
+});
+
+test('--main-dir turns the without arm into a main arm that loads the second copy through --plugin-dir', async () => {
+  const clone = await pluginClone();
+  const main = await pluginClone();
+  const out = await fixture();
+  const outcome = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--main-dir', main, '--out', out, '--runs', '1']);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.ok(outcome.calls.some((call) => call.includes(`--plugin-dir ${main}`)), outcome.calls.join('\n'));
+  assert.ok(outcome.calls.some((call) => call.includes(`--plugin-dir ${clone}`)), outcome.calls.join('\n'));
+  assert.ok(outcome.calls.every((call) => !call.includes('--settings')), outcome.calls.join('\n'));
+  assert.match(outcome.stdout, /^ {2}main 1: /m);
+  assert.doesNotMatch(outcome.stdout, /without/);
+});
+
+test('a skill loaded from outside the arm\'s copy prints a WRONG COPY line and exits 1', async () => {
+  const clone = await pluginClone();
+  const main = await pluginClone();
+  const out = await fixture();
+  const args = ['--cells', 'sonnet:high', '--plugin-dir', clone, '--main-dir', main, '--out', out, '--runs', '1'];
+  const wrong = await runPressure('loads', args, { STAND_IN_BASE: path.join(main, 'skills', 'spec') });
+  assert.equal(wrong.code, 1, wrong.stderr);
+  const wrongLines = wrong.stdout.split('\n').filter((line) => line.includes('WRONG COPY'));
+  assert.equal(wrongLines.length, 1, wrong.stdout);
+  assert.ok(wrongLines.includes(`  WRONG COPY with 1: ${path.join(main, 'skills', 'spec')} is not under ${clone}`), wrong.stdout);
+  const right = await runPressure('loads', args);
+  assert.equal(right.code, 0, right.stderr);
+  assert.doesNotMatch(right.stdout, /WRONG COPY/);
 });
