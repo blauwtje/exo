@@ -35,7 +35,6 @@ The driver sends these replies in order after the first user turn, stopping when
 - `c-shopping-share.txt`: `2`, then `go`.
 - `d-notes-export.txt`: `ok`, sent once, after the single bundled message.
 - `e-report-proof.txt`: `ok`, then `go`, each sent only while the reply is a question.
-- `f-two-shapes.txt`: `ok`, then `go`, each sent only while the reply is a question.
 
 ## Case d: one costly point, three routine points
 
@@ -47,7 +46,3 @@ The driver sends these replies in order after the first user turn, stopping when
 ## Case e: a flaw only running shows
 
 `e-report-proof.txt` runs in `fx-visit-report`, whose tests feed LF strings while `data/sample-visits.csv` has CRLF line endings, so the tests pass and the flaw shows only when the CLI runs on the sample file. The `with` arm passes when the plan's `Proof:` for the CLI task runs the CLI on the sample file.
-
-## Case f: two viable shapes, one leaking
-
-`f-two-shapes.txt` runs in `fx-booking-reminders`, whose appointments module stores a start time as a private slot count, so reminders in a module of their own would have to decode it. The `with` arm passes when the question shows where two verdicts disagree and names the leak.
