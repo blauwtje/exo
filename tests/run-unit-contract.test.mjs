@@ -38,7 +38,7 @@ test('the unit ends its turn only with every block task LANDED or BLOCKED, or at
 
 test('the unit returns LANDED or BLOCKED per task, never OPEN, and never BUDGET as a completion report', () => {
   const unitReturn = section(UNIT_AGENT, 'Return');
-  assert.ok(unitReturn.includes('`LANDED <n> <sha>`'));
+  assert.ok(unitReturn.includes('`LANDED <n> <sha> | <scope line>`'));
   assert.ok(unitReturn.includes('`BLOCKED <n> <reason or question for the user>`'));
   assert.ok(unitReturn.includes('With every block task landed or blocked, return these lines, never a `BUDGET:` line'));
   assert.doesNotMatch(UNIT_AGENT, /`OPEN/);
@@ -74,4 +74,15 @@ test('build reads a BUDGET return as unfinished and asks the branch what landed'
 
 test('the run-unit agent has its own budget sized for an eight-task block', () => {
   assert.deepEqual(BUDGETS.agents['exo:run-unit'], { soft: 70, calls: 90 });
+});
+
+test('the unit returns the scope line and build reads only the hunks it flags', () => {
+  const unitReturn = section(UNIT_AGENT, 'Return');
+  assert.ok(unitReturn.includes('`LANDED <n> <sha> | <scope line>`'));
+  assert.ok(unitReturn.includes("`LANDED <n> <sha> | <scope line>`, land-task's `Scope:` line"));
+  const routeStep = loopStep(6, RUN_LOOP);
+  assert.ok(routeStep.includes("`LANDED` needs nothing when its scope line's three fields read `none`"));
+  assert.ok(routeStep.includes('read only the hunks it names'));
+  assert.ok(routeStep.includes("against that task's `Data:`"));
+  assert.ok(routeStep.includes('send a mismatch as the drift report to `../drift-repairer-prompt.md`'));
 });
