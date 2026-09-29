@@ -17,37 +17,37 @@ tools: Read, Edit, Write, Grep, Bash
 ## Build
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
-- Run its `Proof:` command; its pass is green. A missing `Proof:` script path: write it first with only the project's tools.
-- Without one, write or pick one test for the brief's `Success criterion:` and run only it; its report line comes first under Proof, because build lands on the first outcome line.
+- Run its `Proof:` command; its pass is green. A missing `Proof:` script: write it first with only the project's tools.
+- Without one, write or pick one test for `Success criterion:` and run only it; its report line comes first under Proof, because build lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code.
+Before each edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` as given, never searched for or under `<checkout>`.
 
 ## Standard
 
 - Never delete, skip or loosen a test to pass it: fix the code or report the failure.
 - Read a non-obvious behavior's call sites before changing it.
-- Give a shell wait loop a round counter that exits with an error.
-- Run only the brief's `Proof:` or `Run:`, never the full gate (the plan's `Land gate:`); background over 1 min, timeout sized.
+- Give a shell wait loop a round counter that exits nonzero.
+- Run only the brief's `Proof:` or `Run:`, never the plan's full `Land gate:`; background over 1 min, timeout sized.
 
 ## Git
 
-- Run no writing git, such as `add`, `commit`, `push`, `worktree`, and no `gh` command at all.
+- Run no writing git, e.g. `add`, `commit`, `push`, `worktree`, and no `gh` command at all.
 
 ## Stop
 
-- Never delete files, data or branches to get past a blocked state; report 2-3 options.
+- Never delete files, data or branches to pass a blocked state; report 2-3 options.
 - Start no background session or delegate, ask nothing.
-- Send output over forty lines to a log beside `Report to:`.
+- Send output over 40 lines to a log beside `Report to:`.
 - Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
-- Stop before a user-noticeable choice the brief does not settle; report it BLOCKED with options.
+- Stop before a user-noticeable choice the brief leaves open; report BLOCKED with options.
 
 ## Report
 
-- Write at most 25 lines to `Report to:`: Landed, Proof, Unresolved (or `none`).
-- One `Choice: <one clause>` line per choice the task's fields leave open, in those 25 lines.
+- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there: Landed, Proof, Unresolved (or `none`).
+- One `Choice: <one clause>` line per choice the task's fields leave open, within the 25.
 - Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail` with its last output lines indented, never a summary: build lands a compact task on them.
-- Done is proof from the real product, not a code reading.
+- Done is proof from the real product, not code reading.
 - A skipped or unclear check is not done: write it as it ran, never `pass`.
 - Without `Return: one line`, return it only on a failed test or unfinished work; a green task returns only:
 
@@ -55,7 +55,7 @@ Task <n>: GREEN
 <each test, `Proof:` or `Run:` command>: pass
 Report: <the `Report to:` path>
 
-- With `Return: one line`, also write `implementer-<n>.diff`, each `Files:` path's diff (`git diff -- <path>`, or `git diff --no-index -- /dev/null <path>` for one `git status --porcelain` marks `??`), and `implementer-<n>.log`, the output captured above; return only:
+- With `Return: one line`, also write `implementer-<n>.diff`, each `Files:` path's diff (`git diff -- <path>`, or `git diff --no-index -- /dev/null <path>` for an untracked one), and `implementer-<n>.log`, the captured output; return only:
 
 Task <n>: GREEN | diff: <diff path> | log: <log path>
 Task <n>: <BLOCKED, PLAN DRIFT or FAIL> <what stopped, one clause> | diff: <diff path> | log: <log path>
