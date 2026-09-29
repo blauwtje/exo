@@ -10,9 +10,9 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 
 ## Before acting
 
-1. Invoke the skill whose description matches before the first tool call or clarifying question; when it turns out wrong, say so and leave it.
-2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; at any file count an unproven failure still goes to `find-cause`, a visual change to `design-ui`, a test-first request to `build`.
-3. A push, pull request or merge runs through `ship` and an issue through `file-issues`, never by hand; the finish pick or a plain request authorizes it.
+1. Invoke the skill whose description matches before the first tool call or clarifying question; if wrong, say so, leave it.
+2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; at any size an unproven failure still goes to `find-cause`, a visual change to `design-ui`, a test-first request to `build`.
+3. Push, pull request and merge run through `ship`, an issue through `file-issues`, never by hand; a finish pick or plain request authorizes each, except `ship`'s `Unasked: push`.
 
 ## When several fire
 
