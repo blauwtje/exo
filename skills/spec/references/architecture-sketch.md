@@ -19,6 +19,14 @@ Reject or revise a candidate that shows:
 
 Prefer the candidate that hides more behind a smaller public surface, even when its implementation is less simple. Name what each surviving candidate hides and what it still exposes to callers before recommending one.
 
+## Judge blind
+
+Two surviving candidates get a second verdict from the other tier, because one model's habits pick the same shape twice. The agent gets the sketches without the first verdict or its reasons, and returns its pick on interface depth with what each shape hides.
+
+- Session on the strong tier: delegate on `sonnet` for the blind verdict.
+- Session on the standard tier: delegate on `opus` for the blind verdict.
+- Where the two picks differ, spec's question lists each disagreement as one option, in the user's words; matching picks add no question.
+
 ## The sketch is the contract
 
 The chosen sketch ships in the brief and is what the build implements, not a prototype to throw away; a throwaway answer to one open question is a different, single-candidate model owned elsewhere.

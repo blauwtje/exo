@@ -60,6 +60,8 @@
     { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` from `fixer-prompt.md`", "kind": "build" },
     { "file": "skills/find-cause/investigator-prompt.md", "match": "delegate on `opus` for phase (b)", "kind": "hardest" },
     { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" },
-    { "file": "skills/verify/SKILL.md", "match": "delegate on `sonnet` from `../build/review-fixer-prompt.md`", "kind": "build" }
+    { "file": "skills/verify/SKILL.md", "match": "delegate on `sonnet` from `../build/review-fixer-prompt.md`", "kind": "build" },
+    { "file": "skills/spec/references/architecture-sketch.md", "match": "strong tier: delegate on `sonnet` for the blind verdict", "kind": "review" },
+    { "file": "skills/spec/references/architecture-sketch.md", "match": "standard tier: delegate on `opus` for the blind verdict", "kind": "review-deep" }
   ]
 }
