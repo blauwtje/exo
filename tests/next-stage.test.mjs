@@ -62,14 +62,16 @@ test('spec opens build on sonnet when every Design: task holds a frozen directio
   assert.match(report, /Next stage runs on `sonnet` at `medium`/);
 });
 
-test('spec opens build on opus when a Design: task is still pending', async () => {
+test('spec opens build on the session model when a Design: task is still pending', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Style', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
   ] }).replace('Quiet record.', 'Direction: pending at rung 2');
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.match(report, /Next stage runs on `opus` at `medium`/);
+  const { kinds, skills } = readKindTable();
+  const { effort } = kinds[skills['skills/build/SKILL.md'].kind];
+  assert.ok(report.includes(`Next stage runs on the session's model at \`${effort}\`, because that task builds in the session, and the skill pins \`${effort}\`.`));
 });
 
 test('find-cause opens build with no spec, unknown stage fails', async () => {

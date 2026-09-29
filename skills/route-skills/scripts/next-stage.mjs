@@ -33,8 +33,8 @@ function commandFor(stage, artifact) {
 
 // A `Design:` task whose plan carries no `## Visual direction` section, or
 // one still `Direction: pending at rung <n>`, builds that task in the next
-// stage's own session, so that stage pins `opus` at `medium` instead of
-// `sonnet`.
+// stage's own session, so that stage keeps the session's model and pins the
+// effort of the build skill's kind instead of the delegate's.
 function designPending(planPath) {
   const plan = parsePlan(fs.readFileSync(planPath, 'utf8'));
   if (!plan.tasks.some((task) => task.design)) return false;
@@ -44,7 +44,8 @@ function designPending(planPath) {
 
 // The reason clause that follows the model and effort of each next stage; the
 // kind that sets them is `stages` in `lib/model-kinds.json`. The design-pending
-// build row names no kind: it pins `opus` at `medium` by the skill's own setting.
+// build row names no stage kind: it runs on the session's model at the effort
+// of the build skill's kind.
 const STAGE_BECAUSE = {
   'build-no-spec': () => 'it decides the change while building it',
   'build': (buildEffort) => `the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps \`${buildEffort}\``
@@ -54,10 +55,11 @@ const STAGE_BECAUSE = {
 // stage the question opens next; `null` when that stage names no row, which
 // leaves the session's own model and effort unnamed under the options.
 function modelLineFor(stage, artifact) {
+  const { kinds, stages, agents, skills } = readKindTable();
   if (stage === 'build' && designPending(artifact)) {
-    return 'Next stage runs on `opus` at `medium`, because that task builds in the session, and the skill pins `medium`.';
+    const { effort } = kinds[skills['skills/build/SKILL.md'].kind];
+    return `Next stage runs on the session's model at \`${effort}\`, because that task builds in the session, and the skill pins \`${effort}\`.`;
   }
-  const { kinds, stages, agents } = readKindTable();
   if (!(stage in stages)) return null;
   const { model, effort } = kinds[stages[stage].kind];
   const builderEffort = kinds[agents['agents/build-task.md'].kind].effort;
