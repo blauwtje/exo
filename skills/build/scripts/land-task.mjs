@@ -123,6 +123,7 @@ function provedCommand(task, lines) {
 }
 
 const FAILED_OUTCOME = /^fail(?:ed|s|ing)?\b/i;
+const BARE_FAILED_OUTCOME = /^fail(?:ed)?(?:\s*\(.*\))?$/i;
 const PROOF_FIELD_LINE = /^\s*(?:[-*]\s+)?Proof:\s*(.*)$/;
 // A field line that closes the Proof section; `Choice:` lines follow it too.
 const SECTION_END_LINE = /^\s*(?:[-*]\s+)?(?:Landed|Unresolved|Report|Choice):/;
@@ -145,7 +146,11 @@ function refuseFailedCommand(task, lines) {
   for (const line of proofSectionOf(lines)) {
     const match = line.match(ANY_OUTCOME_LINE);
     const command = match?.[1] ?? match?.[2];
-    if (command === undefined || REPORT_FIELDS.has(command) || !FAILED_OUTCOME.test(match[3])) continue;
+    if (command === undefined || REPORT_FIELDS.has(command)) continue;
+    // A bare line is as likely the proof command's own output ("ok 3 - parser: fails on empty input"),
+    // so it counts only as a bare "fail" or "fail (...)"; a backticked command keeps any failing word.
+    const failing = match[1] === undefined ? BARE_FAILED_OUTCOME : FAILED_OUTCOME;
+    if (!failing.test(match[3])) continue;
     throw new LandingError(`Task ${task.number}: the build report lists "${command}: ${match[3]}" under Proof, no clear pass`);
   }
 }
