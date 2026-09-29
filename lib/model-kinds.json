@@ -29,7 +29,11 @@
     "agents/fetch-docs.md": { "kind": "research" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/review-branch.md": { "kind": "review" },
-    "agents/review-branch-deep.md": { "kind": "review-deep", "generatedFrom": "agents/review-branch.md" },
+    "agents/review-branch-deep.md": {
+      "kind": "review-deep",
+      "generatedFrom": "agents/review-branch.md",
+      "description": "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch for that size. Not for a smaller branch, a single task, a pull request or a diff without a plan."
+    },
     "agents/run-unit.md": { "kind": "coordinate" },
     "agents/survey-ui.md": { "kind": "investigate" }
   },

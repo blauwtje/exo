@@ -2,8 +2,12 @@
 // every place a file disagrees with its kind as { file, field, expected,
 // actual } records, empty when all match; `writeKinds` rewrites those places.
 //
-//   node verify/model-kinds.mjs            write the table into the files
-//   node verify/model-kinds.mjs --check    list drift and exit 1 when any
+//   node verify/model-kinds.mjs            list drift and exit 1 when any
+//   node verify/model-kinds.mjs --write    write the table into the files
+//
+// An agent entry may hold a `description`; the writer sets the file's
+// description to it, which is how a generated twin says when it is used
+// instead of its source.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +17,6 @@ import { parseArgs } from 'node:util';
 import { readKindTable } from '../lib/model-kinds.mjs';
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
-const MODEL_WORD = /\b(opus|sonnet|haiku)\b/;
 
 function readField(text, field) {
   const [, block] = FRONTMATTER.exec(text);
@@ -42,12 +45,21 @@ function bodyOf(text) {
   return text.slice(FRONTMATTER.exec(text)[0].length);
 }
 
-function dispatchPattern(file, match) {
-  const escaped = match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  if (!MODEL_WORD.test(escaped)) {
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// A dispatch line may hold the model word of any provider block, so a table
+// that switches provider still finds and rewrites it.
+function dispatchPattern(file, match, table) {
+  const words = Object.values(table.providers).flatMap((provider) => Object.values(provider.tiers));
+  const alternatives = words.map(escapeRegExp).join('|');
+  const escaped = escapeRegExp(match);
+  const modelWord = new RegExp(`\\b(${alternatives})\\b`);
+  if (!modelWord.test(escaped)) {
     throw new Error(`${file}: "${match}" holds no model word`);
   }
-  return new RegExp(escaped.replace(MODEL_WORD, '(?<model>opus|sonnet|haiku)'), 'd');
+  return new RegExp(escaped.replace(modelWord, () => `(?<model>${alternatives})`), 'd');
 }
 
 function planKindWrites(root, table) {
@@ -76,8 +88,9 @@ function planKindWrites(root, table) {
       plan.after = open(entry.generatedFrom).after;
       fields.name = path.basename(file, '.md');
     }
+    if (entry.description !== undefined) fields.description = JSON.stringify(entry.description);
     const sourceText = plan.after;
-    for (const field of ['name', 'model', 'effort']) {
+    for (const field of ['name', 'description', 'model', 'effort']) {
       if (field in fields) setField(file, plan, field, fields[field]);
     }
     if (entry.generatedFrom !== undefined && plan.before !== null) {
@@ -96,7 +109,7 @@ function planKindWrites(root, table) {
 
   for (const { file, match, kind } of table.dispatches) {
     const plan = open(file);
-    const pattern = dispatchPattern(file, match);
+    const pattern = dispatchPattern(file, match, table);
     const lines = plan.after.split('\n');
     const hits = lines.flatMap((line, index) => (pattern.test(line) ? [index] : []));
     if (hits.length !== 1) {
@@ -131,13 +144,13 @@ export function writeKinds(root, table) {
 }
 
 function main() {
-  const { values } = parseArgs({ options: { check: { type: 'boolean', default: false } } });
+  const { values } = parseArgs({ options: { write: { type: 'boolean', default: false } } });
   const root = fileURLToPath(new URL('..', import.meta.url));
-  const drift = values.check ? findKindDrift(root) : writeKinds(root);
+  const drift = values.write ? writeKinds(root) : findKindDrift(root);
   for (const record of drift) {
     console.log(`${record.file}: ${record.field} is ${record.actual}, the table says ${record.expected}`);
   }
-  if (values.check && drift.length > 0) process.exitCode = 1;
+  if (!values.write && drift.length > 0) process.exitCode = 1;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

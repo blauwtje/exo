@@ -77,6 +77,14 @@ test('every agent pins the model and effort its kind resolves to, and no effort 
   }
 });
 
+test('an agent on the fast tier pins no effort, because the fast model takes none', () => {
+  const fastModel = kindTable.providers[kindTable.provider].tiers.fast;
+  for (const agent of agents) {
+    if (agent.frontmatter.model !== fastModel) continue;
+    assert.equal(agent.frontmatter.effort, undefined, `${agent.fileName} pins effort on ${fastModel}`);
+  }
+});
+
 const NO_DELETE = 'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.';
 
 test('every agent that loads no CLAUDE.md carries the no-delete rule itself', () => {

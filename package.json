@@ -32,7 +32,7 @@
     "bump": "node bump.mjs",
     "release-pending": "node release-pending.mjs",
     "release-notes": "node release-notes.mjs",
-    "models": "node verify/model-kinds.mjs",
+    "models": "node verify/model-kinds.mjs --write",
     "overlap": "node verify/phrase-overlap.mjs"
   }
 }

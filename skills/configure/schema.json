@@ -24,9 +24,9 @@
     "type": "string",
     "options": ["normal", "lean"],
     "default": "normal",
-    "description": "normal: every agent dispatch uses the model its kind names in lib/model-kinds.json. lean: an opus agent dispatches on sonnet instead",
+    "description": "normal: every agent dispatch uses the model its kind resolves to in lib/model-kinds.json. lean: an opus agent dispatches on sonnet instead",
     "rules": {
-      "lean": "Budget is lean: when the Task tool dispatches a plugin agent whose kind in lib/model-kinds.json names model opus (the kind is the agent's entry under agents, looked up under kinds), pass sonnet as the Task call's own model parameter instead; an agent whose kind names sonnet or haiku dispatches unchanged."
+      "lean": "Budget is lean: when the Task tool dispatches a plugin agent whose kind in lib/model-kinds.json resolves to model opus (the kind is the agent's entry under agents, looked up under kinds, whose tier the provider named at the top maps to a model under providers), pass sonnet as the Task call's own model parameter instead; an agent whose kind resolves to sonnet or haiku dispatches unchanged."
     }
   },
   "ship": {

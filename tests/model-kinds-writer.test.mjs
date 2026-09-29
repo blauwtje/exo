@@ -9,6 +9,8 @@ import { test } from 'node:test';
 import { findKindDrift, writeKinds } from '../verify/model-kinds.mjs';
 
 const TABLE = {
+  provider: 'claude',
+  providers: { claude: { tiers: { strong: 'opus', standard: 'sonnet', fast: 'haiku' } } },
   kinds: {
     build: { model: 'sonnet', effort: 'high' },
     hardest: { model: 'opus', effort: 'max' },
@@ -120,4 +122,28 @@ test('a dispatch match that finds no line, or two, fails loudly', () => {
   twice.dispatches[0].match = 'delegate on `opus`';
   fs.appendFileSync(path.join(root, 'skills/alpha/SKILL.md'), 'Also delegate on `haiku` here.\n');
   assert.throws(() => findKindDrift(root, twice), /matches 2 lines/);
+});
+
+test('a dispatch line holding the model word of another provider block is found and rewritten', () => {
+  const table = structuredClone(TABLE);
+  table.providers.codex = { tiers: { strong: 'gpt-5', standard: 'gpt-5-mini', fast: 'gpt-5-nano' } };
+  const alpha = '---\nname: alpha\neffort: high\n---\n\nRun it: delegate on `gpt-5` for a fix, then `sonnet` for the rest.\n';
+  const root = makeRoot({ ...FILES, 'skills/alpha/SKILL.md': alpha });
+  writeKinds(root, table);
+  assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `opus` for a fix, then `sonnet` for the rest/);
+});
+
+test('an entry description is written into its file, and a hand edit of it is drift', () => {
+  const table = structuredClone(TABLE);
+  table.agents['agents/reviewer-deep.md'].description = 'Reviews a large branch.';
+  const source = '---\nname: reviewer\ndescription: "Reviews a small branch."\nmodel: sonnet\neffort: high\n---\n\nBody of reviewer.\n';
+  const root = makeRoot({ ...FILES, 'agents/reviewer.md': source });
+  writeKinds(root, table);
+  assert.match(read(root, 'agents/reviewer-deep.md'), /^---\nname: reviewer-deep\ndescription: "Reviews a large branch\."\nmodel: opus\n/);
+  assert.match(read(root, 'agents/reviewer.md'), /description: "Reviews a small branch\."/);
+  assert.deepEqual(findKindDrift(root, table), []);
+  const twin = path.join(root, 'agents/reviewer-deep.md');
+  fs.writeFileSync(twin, read(root, 'agents/reviewer-deep.md').replace('a large branch', 'anything'));
+  const [record] = findKindDrift(root, table);
+  assert.deepEqual(record, { file: 'agents/reviewer-deep.md', field: 'description', expected: '"Reviews a large branch."', actual: '"Reviews anything."' });
 });

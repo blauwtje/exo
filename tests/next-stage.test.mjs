@@ -16,6 +16,13 @@ import { fixture, gitRepository, planFixture, run, taskSection } from './harness
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
 const RUN_PLAN_SONNET_LINE = "Next stage runs on `sonnet` at `medium`, because the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps `high`.";
 
+// The model and effort of the kind `lib/model-kinds.json` gives the stage
+// that opens build with no spec.
+function noSpecStageKind() {
+  const { kinds, stages } = readKindTable();
+  return kinds[stages['build-no-spec'].kind];
+}
+
 // A savings directory holding one session's hot record at the path record.mjs
 // keeps it, so the path next-stage.mjs spells out cannot drift from it;
 // `warned` says whether context-watch.mjs's notice has fired.
@@ -113,7 +120,8 @@ test('spec opens build on opus when a Design: task is still pending', async () =
 test('find-cause opens build with no spec, unknown stage fails', async () => {
   const report = nextStageReport({ after: 'find-cause', artifact: 'none' });
   assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: builds the edits the proof left\.\n/);
-  assert.match(report, /Next stage runs on `opus` at `max`, because it decides the change while building it\./);
+  const { model, effort } = noSpecStageKind();
+  assert.ok(report.includes(`Next stage runs on \`${model}\` at \`${effort}\`, because it decides the change while building it.`));
   assert.throws(() => nextStageReport({ after: 'ship', artifact: 'none' }), /no next stage known/);
 });
 
@@ -149,8 +157,8 @@ test('CLI fails with a usage error when --after is missing', async () => {
   assert.match(result.stderr, /--after/);
 });
 
-test('the no-plan model line takes its model and effort from the hardest kind', () => {
-  const { hardest } = readKindTable().kinds;
+test('the no-plan model line takes its model and effort from the kind of the build-no-spec stage', () => {
+  const { model, effort } = noSpecStageKind();
   const modelLine = nextStageReport({ after: 'find-cause', artifact: 'none' }).split('\n')[2];
-  assert.ok(modelLine.startsWith(`Next stage runs on \`${hardest.model}\` at \`${hardest.effort}\`, because `));
+  assert.ok(modelLine.startsWith(`Next stage runs on \`${model}\` at \`${effort}\`, because `));
 });

@@ -61,10 +61,11 @@ function modelLineFor(stage, artifact) {
   if (stage === 'build' && designPending(artifact)) {
     return 'Next stage runs on `opus` at `medium`, because that task builds in the session, and the skill pins `medium`.';
   }
-  const { kinds, stages } = readKindTable();
+  const { kinds, stages, agents } = readKindTable();
   if (!(stage in stages)) return null;
   const { model, effort } = kinds[stages[stage].kind];
-  const because = STAGE_BECAUSE[stage](kinds.build.effort);
+  const builderEffort = kinds[agents['agents/build-task.md'].kind].effort;
+  const because = STAGE_BECAUSE[stage](builderEffort);
   return `Next stage runs on \`${model}\` at \`${effort}\`, because ${because}.`;
 }
 
