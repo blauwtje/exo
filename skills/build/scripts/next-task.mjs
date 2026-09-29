@@ -1,8 +1,9 @@
 // Prints what the next build needs, read from the plan and the checkout's
-// history instead of the session's memory: the landed set, the next task or
-// wave, and for each of its tasks its Budget:, Design:, Proof: and Run:
-// lines, the drift of its Modify: regions and the path of its brief. The
-// brief, the frame fields and the section verbatim, goes to a file under the
+// history instead of the session's memory: the landed set, the route the
+// plan's task count sets, the next task or wave, and for each of its tasks its
+// Budget:, Design:, Proof: and Run: lines, the drift of its Modify: regions
+// and the path of its brief. The brief, the frame fields and the section
+// verbatim, goes to a file under the
 // checkout's scratch directory, so the section reaches only build-task and
 // stays out of the session.
 
@@ -12,7 +13,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
 
 // The show-savings skill owns the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/100.
@@ -40,6 +41,12 @@ function budgetLine(task) {
   const soft = Math.round(DEFAULT_BUDGET.soft * scale);
   const hard = Math.round(DEFAULT_BUDGET.hard * scale);
   return `Budget: ${soft}k/${hard}k`;
+}
+
+// The build's route follows the plan's task count, never the wave size: above
+// BLOCK_TASK_LIMIT the session dispatches run-unit blocks instead of building.
+function routeLine(taskCount) {
+  return `Route: ${taskCount > BLOCK_TASK_LIMIT ? 'unit' : 'direct'}`;
 }
 
 function waveLine(wave) {
@@ -165,6 +172,7 @@ export function nextTaskReport({ planPath, planText, root }) {
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
+    routeLine(plan.tasks.length),
     waveLine(wave)
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;

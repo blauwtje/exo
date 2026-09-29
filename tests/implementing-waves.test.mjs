@@ -127,12 +127,15 @@ test('the at-most-eight route asks next-task.mjs for a wave, never one task at a
   const askStep = loopStep(3);
   assert.ok(askStep.includes(NEXT_TASK_CALL));
   assert.ok(!askStep.includes('--one'), 'a printed wave reaches step 5 whole');
+  assert.ok(askStep.includes('`Route:` picks step 5\'s route'), 'the printed route, not a Wave: line, picks the dispatch');
   assert.ok(!RUN_LOOP.includes('--one'));
 });
 
 test('the at-most-eight route builds a printed wave per wave-worktrees.md and keeps every green task', () => {
   const dispatchStep = loopStep(5);
   assert.ok(dispatchStep.includes('`Wave:` line'), 'a Wave: line is handled');
+  assert.ok(dispatchStep.indexOf('`Route: unit`: **dispatch the unit**, never build a `Wave:` here.') < dispatchStep.indexOf('`Route: direct`: a `Next:` line'), 'the unit route precedes the direct recipe');
+  assert.ok(dispatchStep.indexOf('`Route: unit`') !== -1);
   assert.ok(dispatchStep.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
   assert.ok(dispatchStep.includes('one message'), 'the wave builds in parallel');
   assert.ok(dispatchStep.includes('a failed sibling never discards a green task'));
@@ -148,6 +151,7 @@ test('the build table names the loop as the wave reference\'s reader, and run-lo
   assert.ok(row, 'the table keeps its wave row');
   assert.ok(!row.includes('Never here'), 'the wave reference is no longer unread by the loop');
   assert.ok(row.includes('run-loop.md'), 'the row names the loop as its reader');
+  assert.ok(row.includes('under `Route: direct`'), 'only the direct route reads the wave reference');
   const { REFERENCE_TOKEN_LOCKS } = await import('#budgets');
   const tokens = Math.round(Buffer.byteLength(RUN_LOOP) / 4);
   assert.equal(REFERENCE_TOKEN_LOCKS['skills/build/references/run-loop.md'], tokens);

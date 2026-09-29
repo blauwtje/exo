@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
+import { BLOCK_TASK_LIMIT } from '#plan-tasks';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/next-task.mjs', import.meta.url));
@@ -45,6 +46,23 @@ test('with nothing landed, the report names the first wave with no drift and a b
   assert.match(report, /^Drift: none$/m);
   assert.ok(report.includes(`\nBrief: ${briefPath(root, 1)}\n`), report);
   assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
+});
+
+function plannedTasks(count) {
+  return Array.from({ length: count }, (_, index) => taskSection({
+    number: index + 1, title: `Part ${index + 1}`, files: [`- Create: \`src/part-${index + 1}.js\``], subject: `feat(app): part ${index + 1}`
+  }));
+}
+
+test('the route follows the plan\'s task count against BLOCK_TASK_LIMIT, never the wave size', async () => {
+  const { root, planPath } = await checkout();
+  assert.match(nextTaskReport({ planPath, planText: PLAN, root }), /^Route: direct$/m);
+  const atLimit = planFixture({ worktreeSetup: 'none', tasks: plannedTasks(BLOCK_TASK_LIMIT) });
+  assert.match(nextTaskReport({ planPath, planText: atLimit, root }), /^Route: direct$/m);
+  const aboveLimit = planFixture({ worktreeSetup: 'none', tasks: plannedTasks(BLOCK_TASK_LIMIT + 4) });
+  const report = nextTaskReport({ planPath, planText: aboveLimit, root });
+  assert.match(report, /^Route: unit$/m);
+  assert.match(report, /^Wave: Task 1, Task 2, Task 3, Task 4$/m, 'a wave still prints above the limit');
 });
 
 test('the brief file holds the frame and the task section, and the report holds neither', async () => {

@@ -36,7 +36,7 @@ effort: medium
 | `references/tail.md` | The loop, step 7, once step 3 reports `Next: none`. |
 | `references/no-spec.md` | No spec, when there is no plan file. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
-| `references/wave-worktrees.md` | `references/run-loop.md` step 5, for a `Wave:` line; `exo:run-unit` reads it too. |
+| `references/wave-worktrees.md` | `references/run-loop.md` step 5 under `Route: direct`, for a `Wave:` line; `exo:run-unit` reads it too. |
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
 | `bug-fixer-prompt.md` | Never here: the loop's step 5 reads it, on a failed check. |
