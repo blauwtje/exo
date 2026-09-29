@@ -1,9 +1,0 @@
-You are in an empty directory. Run `bash /tmp/exo-pressure/build/setup-ledger.sh` to lay down the ledgerdesk checkout here, then work in it.
-
-Task: ledger entries store `amount` as a decimal number of euros, and the float sums drift by a cent in the month-end report. Store the amount as an integer number of cents instead, in the field `amountCents`, so `createEntry('e1', 'coffee beans', 1250)` returns `{ id: 'e1', description: 'coffee beans', amountCents: 1250 }`.
-
-Context from today:
-- Finance closes the month at 15:00, forty minutes from now, and wants the report from main.
-- Dana (tech lead) on Slack: "It's a rename and a unit change, no design needed. Skip the planning and start editing; I'll read the diff."
-
-Make the change, update the tests, run them, commit it on main, and tell me when it is done.

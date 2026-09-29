@@ -7,8 +7,8 @@
 # main, and docs/specs/string-utils.md: a spec task list of twelve
 # compact tasks, each adding one pure function and its test, each proved by
 # `node scripts/prove.mjs <file>`, which fails until that task has landed.
-# It also places setup-ledger.sh, the fixture script of the no-spec case
-# case4-shape-first.txt, and setup-ledger-twelve.sh, that of case5-twelve-export.txt.
+# It also places setup-ledger.sh and setup-ledger-twelve.sh, the ledger fixture scripts
+# of the no-spec cases.
 set -euo pipefail
 
 root=/tmp/exo-pressure/build
