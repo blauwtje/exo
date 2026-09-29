@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Fixed
 
 - `build` no longer asks the lead for `run_in_background: false`, which the harness overrides. After a dispatch the lead ends its turn, resumes on each completion notification, never polls with `ScheduleWakeup`, `ListAgents`, `Monitor` or `sleep`, and lands a wave only after every sibling returned.
+- The `resume-plan` and `proof-check` Stop hooks no longer block a turn that ends while a background agent or command has not yet sent its completion notification. The block forced an extra turn in which the lead polled.
 
 ## 0.61.0 - 2026-09-29
 
