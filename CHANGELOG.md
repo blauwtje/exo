@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.61.0 - 2026-09-29
+
 ### Added
 
 - `skills/build/scripts/remove-worktree.mjs --kept` copies a worktree's `.exo/` into `.exo/kept/<name>/` in the run's checkout. It refuses and removes nothing when that folder already exists.
