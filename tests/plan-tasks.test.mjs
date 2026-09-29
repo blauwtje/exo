@@ -123,6 +123,22 @@ test('a task with no file paths stays out of the wave', () => {
   assert.deepEqual(nextWave(plan.tasks, [], 'none').map((task) => task.number), [1, 3, 4]);
 });
 
+test('a wave admits only the tasks the Checkpoint Parallel: line names', () => {
+  const parallelOf = (line) => parsePlan(compactPlanFixture({ tasks: [1, 2, 3, 4].map((number) => bare(number, 'none')) })
+    .replace('- Parallel: every task.', line)).frame;
+  const named = frameOf(parallelOf('- Parallel: Tasks 1 and 3.'));
+  assert.deepEqual(named.parallel, [1, 3]);
+  assert.equal(frameOf(parallelOf('- Parallel: every task.')).parallel, null);
+  assert.deepEqual(frameOf(parallelOf('- Parallel: none.')).parallel, []);
+  assert.equal(frameOf(parsePlan(planFixture({ tasks: [bare(1, 'none')] })).frame).parallel, null);
+  const { tasks } = parsePlan(compactPlanFixture({ tasks: [1, 2, 3, 4].map((number) => bare(number, 'none')) }));
+  const numbers = (parallel) => nextWave(tasks, [], 'none', parallel).map((task) => task.number);
+  assert.deepEqual(numbers(null), [1, 2, 3, 4]);
+  assert.deepEqual(numbers(named.parallel), [1, 3]);
+  assert.deepEqual(numbers([]), [1]);
+  assert.deepEqual(numbers([2, 3]), [1]);
+});
+
 test('driftOf reports a Modify: region that is missing, duplicated or already changed', async () => {
   const root = await fixture();
   const target = path.join(root, 'app.js');
