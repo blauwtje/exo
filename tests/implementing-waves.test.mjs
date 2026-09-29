@@ -18,6 +18,7 @@ test('the run creates, lands and removes every wave worktree itself', () => {
   const section = WAVE_WORKTREES;
   assert.ok(section.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(section.includes('`Worktree setup:`'));
+  assert.ok(section.includes('Each dispatch sets `run_in_background: false`'), 'a wave dispatch runs in the foreground');
   assert.ok(section.includes('git cherry-pick <sha>'));
   assert.ok(section.includes('git cherry-pick --abort'));
   assert.ok(section.includes('remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>'));
@@ -139,7 +140,7 @@ test('the at-most-eight route builds a printed wave per wave-worktrees.md and ke
   assert.ok(dispatchStep.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
   assert.ok(dispatchStep.includes('one message'), 'the wave builds in parallel');
   assert.ok(dispatchStep.includes('a failed sibling never discards a green task'));
-  assert.ok(dispatchStep.includes("Each worktree's diff is saved and the worktree removed per that reference's step 4"), 'the diff is saved before the worktree goes');
+  assert.ok(dispatchStep.includes("That reference's step 4 saves each worktree's diff, then removes it"), 'the diff is saved before the worktree goes');
   assert.ok(!RUN_LOOP.includes('diff --cached'), 'the save command has one owner');
   assert.ok(WAVE_WORKTREES.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'));
   assert.ok(WAVE_WORKTREES.includes('the patch counts as written only once `test -s` finds it non-empty'), 'a saved diff is confirmed non-empty');
