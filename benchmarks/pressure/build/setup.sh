@@ -8,15 +8,17 @@
 # compact tasks, each adding one pure function and its test, each proved by
 # `node scripts/prove.mjs <file>`, which fails until that task has landed.
 # It also places setup-ledger.sh, the fixture script of the no-spec case
-# case4-shape-first.txt.
+# case4-shape-first.txt, and setup-ledger-twelve.sh, that of case5-twelve-export.txt.
 set -euo pipefail
 
 root=/tmp/exo-pressure/build
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$root"
 mkdir -p "$root"
-cp "$here/setup-ledger.sh" "$root/setup-ledger.sh"
-chmod +x "$root/setup-ledger.sh"
+for fixture in setup-ledger.sh setup-ledger-twelve.sh; do
+  cp "$here/$fixture" "$root/$fixture"
+  chmod +x "$root/$fixture"
+done
 
 cat > "$root/setup-strings.sh" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -298,4 +300,4 @@ SCRIPT
 
 mkdir -p "$root/fx-strings"
 (cd "$root/fx-strings" && bash "$root/setup-strings.sh")
-echo "build fixture ready: $root/setup-strings.sh, $root/setup-ledger.sh and $root/fx-strings"
+echo "build fixture ready: $root/setup-strings.sh, $root/setup-ledger.sh, $root/setup-ledger-twelve.sh and $root/fx-strings"
