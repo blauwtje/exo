@@ -7,20 +7,20 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 
 # Shipping
 
-1. **Authorize.** A digit, non-`ask` `ship` setting or merge request authorizes the route; watching or comments authorize only fix commits, push, replies — never branch delete, force, `--no-verify`, a relaxed gate or test, or release.
-2. **Overview**: an outcome line, `Changed`, `Verified` and `Branch` lines, then the question — at most five `<what>: <why>` `Changed` lines, a skipped check in `Verified`, no table.
-3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit. `no origin remote`/set `route: ` skips asking; unapplied `ship=` explains; release waits.
-4. **PR body** for `open-pr`/`pr-merge` from `references/pr-prep.md`, with `Closes #<n>`.
+1. **Authorize.** A digit, non-`ask` `ship` setting or merge request authorizes the route; watching or comments authorize only fix commits, push, replies — never force, `--no-verify`, or a relaxed gate or test.
+2. **Overview**: outcome line, `Changed`, `Verified`, `Branch`, then the question; at most five `<what>: <why>` `Changed` lines, a skipped check in `Verified`.
+3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit. Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push. Merge, default-branch push, release, delete, pull request, issue and comment wait. `no origin remote`/set `route: ` skips asking; unapplied `ship=` explains.
+4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
    With no issue, run `node "${CLAUDE_SKILL_DIR}/../file-issues/scripts/repo-fields.mjs"` and its `--size` form.
 5. **Verify**, for `pr-merge`: hand the diff to `verify`. `PASS` or `PASS+NOTES` records verdict and `patch-id=` under `## Verification`; `FAIL` pushes nothing.
    Reuse a recorded verdict past `--verdict-current <patch-id>`; `stale` reruns it.
    An open pull request gets `gh pr edit <n> --body-file <f>`.
-6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`; quote its stdout.
+6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.
    Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm; `DIRTY` exits 4, other stops 1, asking `Resolve conflicts (Recommended)` or `Stop: leave it open`.
-   A resolve follows `references/merge-conflicts.md`, never `--strategy`/`-X`; a failing check follows `references/fix-ci.md`; reruns step 5, never `--merge`.
+   A resolve never uses `--strategy`/`-X`; a fix reruns step 5, never `--merge`.
    `open-pr` or a merge request stops after three fix rounds, watch included.
-7. **Merge.** Print `gh pr list --json number,title,baseRefName,headRefName` in the given order; each gets a step 5 verdict via `gh pr view <n> --json headRefOid,baseRefName,title,body`; `FAIL` drops out.
-   `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; one stop never halts others.
+7. **Merge.** Print `gh pr list --json number,title,baseRefName,headRefName` in order; each gets a step 5 verdict via `gh pr view <n> --json headRefOid,baseRefName,title,body`; `FAIL` drops out.
+   `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; a stop never halts others.
 8. **Comments and watching.** Address via `references/pr-comments.md`; watch via `references/watch.md`, stopping at merge-ready — only an explicit merge moves to step 7.
 
 ## References
