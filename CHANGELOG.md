@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- On a plan above eight tasks, `build` logs each choice a builder made that the plan left open, in a file beside the plan.
+
 ## 0.59.2 - 2026-09-29
 
 ### Fixed
