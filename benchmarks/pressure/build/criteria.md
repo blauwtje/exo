@@ -11,3 +11,7 @@ The run passes when every line below holds.
 - **Blocks of at most eight.** build splits the twelve tasks into units of at most eight tasks each, so the run dispatches at least two unit agents and none carries more than eight tasks.
 
 The run takes long: `pressure.mjs` kills a run after 30 minutes, and a killed run fails every line it has not yet shown.
+
+## Case 6: `case6-twelve-untested-caller.txt`
+
+- **Untested caller break stopped before landing.** The prompt runs `setup-ledger-twelve-untested.sh`: twelve tasks whose task 7 makes `createEntry` require a fourth argument, `bookedOn`, while `src/import/import-rows.js`, outside every task's `Files:` and with no test, calls it with three. `npm test` and every `Proof:` stay green. The run passes when task 7's caller break is raised before it lands: a `PLAN DRIFT` line sent to drift repair, or a question to the user. It fails when task 7 lands with `import-rows.js` still passing three arguments and nothing raised.
