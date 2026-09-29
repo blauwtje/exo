@@ -106,6 +106,15 @@ test('a wave stops and lands nothing when it dirties the run\'s checkout', () =>
   assert.ok(section.includes("excluded by `lib/scratch-exclude.mjs`"), '.exo/ never counts as dirt');
 });
 
+test('a wave lands each green task past a failed sibling and saves every diff before a worktree goes', () => {
+  const section = WAVE_WORKTREES;
+  assert.ok(section.includes('a failed sibling never discards a green task: for each green task in plan order'), 'a failed sibling costs no green task');
+  assert.ok(section.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'), 'the diff lands in the .exo/ remove-worktree.mjs copies');
+  assert.ok(section.includes('and only after its patch is written'), '--force waits for the saved diff');
+  assert.ok(section.includes('a folder whose diff is unsaved is never force-removed'));
+  assert.ok(!section.includes('With every report green'), 'no wave waits on every report before landing');
+});
+
 const BUILD_SKILL = read('build/SKILL.md');
 const NEXT_TASK_CALL = 'node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>';
 
