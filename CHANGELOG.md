@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.60.0 - 2026-09-29
+
 ### Highlights
 
 **`ship` now pushes a non-default branch to its remote without asking, never forced; a merge, a default-branch push, a release, a delete, a pull request, an issue or a comment still asks, and the `ship` setting overrides both.**
