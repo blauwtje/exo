@@ -17,7 +17,7 @@ import process from 'node:process';
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
   'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/show-savings.md',
-  'docs/skills/build.md',
+  'docs/skills/build.md', 'lib/model-kinds.json',
 ];
 
 function read(root, relative) {
@@ -41,15 +41,6 @@ function replaceText(root, relative, from, to) {
 function dropLines(root, relative, prefix) {
   const kept = read(root, relative).split('\n').filter((line) => !line.startsWith(prefix));
   write(root, relative, kept.join('\n'));
-}
-
-// A scenario that gives find-cause a real effort value keeps the model table
-// in step, so it exercises only the frontmatter shape rule it names.
-function patchTableEffort(root, key, effort) {
-  const file = path.join(root, 'verify/model-table.json');
-  const table = JSON.parse(read(root, 'verify/model-table.json'));
-  table[key] = { ...table[key], effort };
-  fs.writeFileSync(file, `${JSON.stringify(table, null, 2)}\n`, 'utf8');
 }
 
 const SCENARIOS = [
@@ -198,19 +189,15 @@ const SCENARIOS = [
   } },
   { name: 'effort-low', expect: 'accept', mutate: (root) => {
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: low');
-    patchTableEffort(root, 'skills/find-cause', 'low');
   } },
   { name: 'effort-medium', expect: 'accept', mutate: (root) => {
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: medium');
-    patchTableEffort(root, 'skills/find-cause', 'medium');
   } },
   { name: 'effort-high', expect: 'accept', mutate: (root) => {
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: high');
-    patchTableEffort(root, 'skills/find-cause', 'high');
   } },
   { name: 'effort-max', expect: 'accept', mutate: (root) => {
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: max');
-    patchTableEffort(root, 'skills/find-cause', 'max');
   } },
   { name: 'effort-bogus', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: bogus') },
