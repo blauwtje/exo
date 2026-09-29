@@ -6,6 +6,10 @@
 // --plugin-dir and disables the installed copy of the clone's plugin
 // (`<plugin>@<marketplace>`, read from the clone's manifests) through
 // --settings, since an installed and enabled plugin otherwise loads anyway.
+// --main-dir replaces the without arm with a `main` arm that loads that
+// second copy through --plugin-dir. Both directories resolve against the
+// caller's cwd, since `claude` runs in a scratch directory and falls back
+// silently to the installed copy when --plugin-dir holds no plugin.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
 // directory outside the repository, matching pressure-scenarios.md:41; cells
 // run one after another.
@@ -18,7 +22,11 @@
 //
 //   without 1: <file> [first edit/write: Edit /x.js] [skills: exo:find-cause]
 //
-//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--runs 3] [--out <dir>]
+// A skill loaded from outside its arm's plugin directory adds a line
+// `  WRONG COPY <arm> <run>: <skill dir> is not under <plugin dir>` and
+// ends the runner with exit 1, so that run never counts as a pass.
+//
+//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--runs 3] [--out <dir>]
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -27,6 +35,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags } from '#script-flags';
 
 const TIMEOUT_MS = 1_800_000;
@@ -34,10 +43,10 @@ const DEFAULT_RUNS = 3;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
-const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--runs <n>] [--out <dir>]';
+const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', runs: 'value', out: 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', runs: 'value', out: 'value' });
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
   if (!flags['plugin-dir']) throw new UsageError('--plugin-dir needs a clone of the plugin');
@@ -49,35 +58,16 @@ function readFlags(argv) {
     if (!match) throw new UsageError(`--cells entry '${cell}' needs the shape model:effort, got '${cell}'`);
     return { model: match[1], effort: match[2] };
   });
-  const pluginDir = flags['plugin-dir'];
+  const pluginDir = resolvePluginDir('--plugin-dir', flags['plugin-dir'], process.cwd());
   return {
     promptFile: flags.prompt,
     cells,
     pluginDir,
-    pluginId: installedPluginId(pluginDir),
+    pluginId: installedPluginId(pluginDir, '--plugin-dir'),
+    mainDir: flags['main-dir'] === undefined ? undefined : resolvePluginDir('--main-dir', flags['main-dir'], process.cwd()),
     runs: flags.runs === undefined ? DEFAULT_RUNS : Number(flags.runs),
     outDir: flags.out
   };
-}
-
-function manifestName(pluginDir, file) {
-  const manifestPath = path.join(pluginDir, '.claude-plugin', file);
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  } catch (error) {
-    throw new UsageError(`--plugin-dir needs a readable '${manifestPath}': ${error.message}`);
-  }
-  if (typeof manifest?.name !== 'string' || manifest.name === '') {
-    throw new UsageError(`--plugin-dir needs a 'name' in '${manifestPath}'`);
-  }
-  return manifest.name;
-}
-
-// The id under which an installed copy of the clone's plugin sits in
-// `enabledPlugins`, such as `exo@blauwtje`.
-function installedPluginId(pluginDir) {
-  return `${manifestName(pluginDir, 'plugin.json')}@${manifestName(pluginDir, 'marketplace.json')}`;
 }
 
 function claudeArguments({ model, effort, promptText, armFlags }) {
@@ -98,11 +88,12 @@ function claudeArguments({ model, effort, promptText, armFlags }) {
 // The result of one run: the final assistant text (undefined when the run
 // never produced one, such as a timeout or a refusal), the first Edit or
 // Write tool call across the whole stream, and the `skill` input of every
-// Skill tool call, in order.
+// Skill tool call, in order, and the base directory of every skill loaded.
 function parseStream(rawStdout) {
   let finalText;
   let firstAction = null;
   const skills = [];
+  const skillDirs = [];
   for (const line of rawStdout.split('\n')) {
     if (line.trim() === '') continue;
     let event;
@@ -120,9 +111,10 @@ function parseStream(rawStdout) {
         if (toolUse.name === 'Skill') skills.push(String(toolUse.input?.skill ?? ''));
       }
     }
+    skillDirs.push(...loadedSkillDirs(event));
     if (event.type === 'result') finalText = typeof event.result === 'string' ? event.result : '';
   }
-  return { finalText, firstAction, skills };
+  return { finalText, firstAction, skills, skillDirs };
 }
 
 function runArm(args, cwd) {
@@ -159,11 +151,11 @@ function fileSafe(value) {
   return value.replace(/[^A-Za-z0-9._-]/g, '_');
 }
 
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId, runs, outDir }) {
-  const disableInstalled = JSON.stringify({ enabledPlugins: { [pluginId]: false } });
+// Runs one cell and prints its lines; true when some run loaded a wrong copy.
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, runs, outDir }) {
   const arms = [
-    { name: 'without', flags: ['--settings', disableInstalled] },
-    { name: 'with', flags: ['--plugin-dir', pluginDir] }
+    comparisonArm({ pluginId, mainDir }),
+    { name: 'with', pluginDir, flags: ['--plugin-dir', pluginDir] }
   ];
   const planned = arms.flatMap((arm) => Array.from({ length: runs }, (_, index) => ({ arm, runNumber: index + 1 })));
   const outcomes = await Promise.all(planned.map(({ arm }) => {
@@ -171,13 +163,19 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, run
     return runArm(claudeArguments({ model, effort, promptText, armFlags: arm.flags }), scratch);
   }));
   console.log(`${model}:${effort}`);
+  let loadedWrongCopy = false;
   planned.forEach(({ arm, runNumber }, index) => {
     const outcome = outcomes[index];
     const file = path.join(outDir, `${fileSafe(model)}-${fileSafe(effort)}-${arm.name}-${runNumber}.md`);
     fs.writeFileSync(file, answerText(outcome));
     const skills = outcome.skills.length > 0 ? outcome.skills.join(', ') : 'none';
     console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]`);
+    for (const dir of wrongCopies(outcome.skillDirs, arm.pluginDir)) {
+      loadedWrongCopy = true;
+      console.log(`  WRONG COPY ${arm.name} ${runNumber}: ${dir} is not under ${arm.pluginDir}`);
+    }
   });
+  return loadedWrongCopy;
 }
 
 async function main() {
@@ -211,7 +209,7 @@ async function main() {
   }
   console.log(`answers: ${outDir}`);
   for (const cell of flags.cells) {
-    await runCell(cell, promptText, { ...flags, outDir });
+    if (await runCell(cell, promptText, { ...flags, outDir })) process.exitCode = 1;
   }
 }
 
