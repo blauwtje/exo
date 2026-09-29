@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.59.0 - 2026-09-29
+
 ### Highlights
 
 - **Once the context passes the `context` setting, exo hands the rest of the task to a fresh agent and keeps working, without asking you to save, clear or stop.**
