@@ -54,6 +54,9 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 - Do not render, screenshot, or start a browser; the reviewer renders.
 - Do not run a production build, a bundler, or a type check; the reviewer renders the surface and the session runs the repository's checks after every builder has returned.
 - Do not read a reference the brief did not name.
+- Read the call sites before changing or deleting non-obvious existing behavior; remove only the dead code your own change orphaned and report the rest.
+- Give every shell wait loop such as `until <condition>; do sleep N; done` a counter that exits with an error after a set number of rounds, because an unbounded loop leaves you running forever.
+- Invent nothing: read the file or run the command before a factual claim, and name what stays unknown.
 - Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
 - Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`, and no `gh` command at all. Read-only git is yours.
 - Return two lines: the report path and the count of paths written. No code, no diff, no summary prose.

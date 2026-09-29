@@ -9,7 +9,7 @@ tools: Read, Edit, Write, Grep, Bash
 ## Scope
 
 - Read the brief first.
-- Work only in `<checkout>`: start every command with `cd <checkout> &&`. `land-task.mjs` refuses a commit whose `git rev-parse --show-toplevel` differs from `--root`, so a wrong checkout fails there rather than here.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`. `land-task.mjs` refuses a commit from any other checkout.
 - Give Edit and Write only absolute paths inside `<checkout>`.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Edit only the `Files:` paths; report any other.
@@ -21,7 +21,13 @@ tools: Read, Edit, Write, Grep, Bash
 - Without one, write or pick one test for the brief's `Success criterion:` and run only that test; its report line comes first under Proof, because build lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code: it holds the ladder's rungs, the tie-break between them, and what is never shortened on any rung.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` before every edit that adds or replaces code: it holds the rungs, their tie-break, and what no rung shortens.
+
+## Standard
+
+- Never delete, skip or loosen a test to pass it: fix the code or report the failure.
+- Read a non-obvious behavior's call sites before changing it.
+- Give a shell wait loop a round counter that exits with an error.
 
 ## Git
 

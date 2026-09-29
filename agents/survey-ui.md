@@ -14,6 +14,8 @@ Budget: you have 30 turns, and the run ends mid-step, without notice, when they 
 
 Write only `$RUN/inventory.md`, `$RUN/files.md` and the command output you redirect into `$RUN`. Never edit the repository: the direction that decides its edits does not exist yet.
 
+Run no git command that writes, `git stash` included, because all worktrees share one stash list, and no `gh` command.
+
 Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
 
 **Input contract.**

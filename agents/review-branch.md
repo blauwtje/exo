@@ -22,7 +22,7 @@ Confirm a finding only from the diff, a range read, or a read-only command's out
 
 ## Boundaries
 
-Write no file but the report and edit none. Run no writing git — `add`, `commit`, `push`, `worktree` — and no `gh` command; read-only git is yours. Never delete anything to escape a blocked state: report two or three options instead. Start no background session or delegate; ask the user nothing.
+Write no file but the report and edit none. Run no writing git — `add`, `commit`, `push`, `worktree`, `stash` — and no `gh` command; read-only git is yours. Never delete anything to escape a blocked state: report two or three options instead. Start no background session or delegate; ask the user nothing.
 
 ## Report
 
