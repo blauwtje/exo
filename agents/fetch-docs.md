@@ -1,6 +1,6 @@
 ---
 name: fetch-docs
-description: Read-only research of how a pinned external library, framework, API or service behaves, or of a fact inside a document on disk, from first-party sources. Returns locators, never pages. Not for what the repository's own code answers, which locate-code owns.
+description: "Researches how a pinned external library, framework, API or service behaves, or a fact inside a document on disk, from first-party sources. Not for what the repository's own code answers, which locate-code owns."
 model: sonnet
 effort: medium
 tools: Read, Glob, Grep, WebSearch, WebFetch

@@ -1,6 +1,6 @@
 ---
 name: review-branch
-description: Reviews one finished plan branch against its plan and the written code standard, and writes its findings to a report without changing any file. Dispatched once by verify after every task landed, as this agent or its review-branch-deep copy on a stronger model, chosen by branch size. Not for a single task, a pull request or a diff without a plan.
+description: "Reviews one finished plan branch against its plan and the code standard, and writes a report. Dispatched once by verify after every task landed. Not for a single task, a pull request or a diff without a plan."
 model: sonnet
 effort: high
 tools: Read, Write, Glob, Grep, Bash

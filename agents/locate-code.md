@@ -1,6 +1,6 @@
 ---
 name: locate-code
-description: Read-only codebase discovery for a bounded question that spans several files, or that one direct search failed to settle. Returns one line per location. Not when the request already names the file or symbol, and never for a fix or a design.
+description: "Finds where code lives for a bounded question that spans several files, or that one direct search failed to settle. Not when the request already names the file or symbol, and never for a fix or a design."
 model: haiku
 tools: Read, Glob, Grep, Bash
 maxTurns: 20
