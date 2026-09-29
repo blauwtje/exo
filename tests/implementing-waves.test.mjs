@@ -139,6 +139,7 @@ test('the at-most-eight route builds a printed wave per wave-worktrees.md and ke
   assert.ok(dispatchStep.includes("Each worktree's diff is saved and the worktree removed per that reference's step 4"), 'the diff is saved before the worktree goes');
   assert.ok(!RUN_LOOP.includes('diff --cached'), 'the save command has one owner');
   assert.ok(WAVE_WORKTREES.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'));
+  assert.ok(WAVE_WORKTREES.includes('the patch counts as written only once `test -s` finds it non-empty'), 'a saved diff is confirmed non-empty');
   assert.ok(WAVE_WORKTREES.includes('a folder whose diff is unsaved is never force-removed'));
 });
 

@@ -23,7 +23,7 @@ The dispatch names the plan path, branch, checkout, `<skill>` (the build skill),
 
 - Delete no data or branch, never `git stash`: options in `BLOCKED`.
 - Ask the user nothing: a noticeable choice or a build agent's `BLOCKED` returns that task `BLOCKED` with question and options.
-- Return only when `git worktree list` shows no wave worktree of yours.
+- Before returning, clear wave worktrees per `<skill>/references/wave-worktrees.md` step 4.
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
 - Only the hard message, `past the limit of`, ends the loop: finish the task in flight, then return `BUDGET:`.
 
