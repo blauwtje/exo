@@ -6,7 +6,10 @@
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and the
 // printout carries that output. Above eight tasks each `Choice:` line of the
-// report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
+// report is appended to `<plan stem>-decisions.md` beside the plan, and the
+// printout carries one `Scope:` line computed from the landed commit: the
+// paths outside the task's `Files:`, and the exported names and data-format
+// files its `Data:` does not name. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
 // with the given subject, no task, plan or trailer needed.
 
@@ -16,6 +19,7 @@ import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
+import { exportedNames, SCRIPT_EXTENSIONS } from '#exported-names';
 import { BLOCK_TASK_LIMIT, frameOf, landedTasks, parsePlan, PlanError } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
@@ -174,6 +178,53 @@ function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
   if (choices.length > 0) fs.appendFileSync(decisionsPathOf(planPath), choices.join(''));
 }
 
+const DATA_FORMAT_EXTENSIONS = new Set(['.json', '.yaml', '.yml', '.toml', '.csv']);
+
+// The task's `Data:` segment, or '' for a task that has none. The plan parser
+// keeps no Data: field, so this reads it from the compact field line the same
+// way: ` | `-separated segments after the depends value.
+function dataOf(task) {
+  const dependsLine = task.section.match(/^Depends on: (.+)$/m)?.[1] ?? '';
+  const segment = dependsLine.split(' | ').find((entry) => entry.startsWith('Data: '));
+  return segment === undefined ? '' : segment.slice('Data: '.length);
+}
+
+function namedIn(text, name) {
+  return new RegExp(`(?<![\\w$])${escapeRegExp(name)}(?![\\w$])`).test(text);
+}
+
+// The file's content at a revision, or '' when the file does not exist there.
+function contentAt(root, revision, file) {
+  const shown = spawnSync('git', ['-C', root, 'show', `${revision}:${file}`], { encoding: 'utf8' });
+  return shown.status === 0 ? shown.stdout : '';
+}
+
+// The names the landed commit adds to or removes from the exports of a script file.
+function changedExportNames(root, file) {
+  if (!SCRIPT_EXTENSIONS.has(path.extname(file))) return [];
+  const before = new Set(exportedNames(contentAt(root, 'HEAD~1', file)));
+  const after = new Set(exportedNames(contentAt(root, 'HEAD', file)));
+  return [...after].filter((name) => !before.has(name)).concat([...before].filter((name) => !after.has(name)));
+}
+
+// The `Scope:` line of a landed task, read from its commit: every landed path
+// outside `Files:`, every changed export whose name `Data:` does not carry, and
+// every landed data-format file whose path `Data:` does not carry.
+function scopeLine(task, root) {
+  const landedFiles = execFileSync('git', ['-C', root, 'diff-tree', '--root', '--no-commit-id', '--name-only', '-r', '--no-renames', 'HEAD'], { encoding: 'utf8' })
+    .split('\n')
+    .filter((file) => file !== '');
+  const allowed = new Set(task.files.map((file) => file.path));
+  const data = dataOf(task);
+  const outside = landedFiles.filter((file) => !allowed.has(file));
+  const exports = landedFiles.flatMap((file) => changedExportNames(root, file)
+    .filter((name) => !namedIn(data, name))
+    .map((name) => `${file}:${name}`));
+  const formats = landedFiles.filter((file) => DATA_FORMAT_EXTENSIONS.has(path.extname(file)) && !data.includes(file));
+  const list = (entries) => (entries.length === 0 ? 'none' : entries.join(', '));
+  return `Scope: outside ${list(outside)}; exports ${list(exports)}; formats ${list(formats)}\n`;
+}
+
 // Every path the checkout has changed or added since HEAD, tracked or not: a
 // `Commit:` block's own `git add` (the derived Files: list for a compact
 // task, or a plan-written `git add .`) stages an untracked path alongside the
@@ -248,7 +299,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   }
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
-  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n`;
+  const scope = plan.tasks.length > BLOCK_TASK_LIMIT ? scopeLine(task, root) : '';
+  return `Committed: ${sha} Task ${number}\n${proofLines}${scope}Landed: ${landed.join(', ')}\n`;
 }
 
 function main(argv) {

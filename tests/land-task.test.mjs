@@ -448,3 +448,55 @@ test('above eight tasks a report with no Choice: line writes no decision log', a
   landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
   await assert.rejects(fs.access(path.join(root, 'docs/plans/compact-decisions.md')));
 });
+
+// Above eight tasks the printout carries one Scope: line computed from the
+// landed commit: paths outside Files:, and the exports and data-format files
+// the task's Data: does not name.
+function scopedPlan(count, data) {
+  const tasks = Array.from({ length: count }, (_, index) => compactTask({
+    number: index + 1,
+    title: `feat(app): step ${index + 1}`,
+    files: index === 0 ? ['src/app.js', 'src/config.json'] : [`src/step-${index + 1}.js`],
+    data,
+    proof: 'node --test tests/app.test.mjs'
+  }));
+  return compactPlanFixture({ tasks });
+}
+
+async function widenApp(root) {
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {}\nexport function farewell() {}\nexport const extra = 1;\n');
+  await fs.writeFile(path.join(root, 'src/config.json'), '{}\n');
+}
+
+test('above eight tasks the printout names the exports and data formats Data: does not carry', async () => {
+  const plan = scopedPlan(9, 'a `farewell` function');
+  const { root, planPath } = await compactCheckout(plan);
+  await widenApp(root);
+  const output = landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
+  assert.match(output, /^Scope: outside none; exports src\/app\.js:extra; formats src\/config\.json$/m);
+});
+
+test('above eight tasks a Data: that names the exports and the format file leaves the Scope line at none', async () => {
+  const plan = scopedPlan(9, 'the `farewell` and `extra` exports, `src/config.json` as JSON');
+  const { root, planPath } = await compactCheckout(plan);
+  await widenApp(root);
+  const output = landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
+  assert.match(output, /^Scope: outside none; exports none; formats none$/m);
+});
+
+test('above eight tasks a removed export is named in the Scope line', async () => {
+  const plan = scopedPlan(9, 'a plain object');
+  const { root, planPath } = await compactCheckout(plan);
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export const other = 1;\n');
+  await fs.writeFile(path.join(root, 'src/config.json'), '{}\n');
+  const output = landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
+  assert.match(output, /^Scope: outside none; exports src\/app\.js:other, src\/app\.js:greet; formats src\/config\.json$/m);
+});
+
+test('at eight tasks or fewer the printout carries no Scope line', async () => {
+  const plan = scopedPlan(8, 'a plain object');
+  const { root, planPath } = await compactCheckout(plan);
+  await widenApp(root);
+  const output = landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
+  assert.doesNotMatch(output, /Scope:/);
+});
