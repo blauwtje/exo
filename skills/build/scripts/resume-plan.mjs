@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 import { landedTasks, parsePlan, readyTasks } from '#plan-tasks';
 
@@ -71,9 +72,12 @@ export function runningPlan(cwd, sessionId) {
 // Stop: `stop_hook_active` means this stop already follows one block, so the
 // session may end its turn, for a question to the user or a blocked task. A
 // pending wait mark means this stop is the one the run asked the user to
-// answer, so it is consumed once and the stop does not block either.
+// answer, so it is consumed once and the stop does not block either. A
+// background task the session launched and has not heard back from means the
+// turn ends to wait for it, so that stop does not block.
 export function stopOutput(input) {
   if (input.stop_hook_active === true || typeof input.session_id !== 'string') return '';
+  if (hasPendingBackgroundTask(input.transcript_path)) return '';
   const cwd = input.cwd || process.cwd();
   const { wait } = markerPaths(gitDirectoryOf(cwd));
   if (fs.existsSync(wait)) {

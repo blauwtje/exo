@@ -7,13 +7,15 @@
 //   node proof-check.mjs stop   Stop hook: stdin is the hook JSON
 //
 // Silent outside a session that called the exo:build skill, and on
-// stop_hook_active, so this never loops or fires for unrelated work. A hook
-// failure never blocks the turn.
+// stop_hook_active, so this never loops or fires for unrelated work. Also
+// silent while a background task the session launched has not notified, since
+// the turn then ends to wait. A hook failure never blocks the turn.
 
 import fs from 'node:fs';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
+import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 
 const BUILD_SKILL = /(^|:)build$/i;
@@ -181,6 +183,7 @@ function verify(text, bashOutputs, writtenPaths) {
 
 export function stopOutput(input) {
   if (input.stop_hook_active === true) return '';
+  if (hasPendingBackgroundTask(input.transcript_path)) return '';
   const rows = entries(input.transcript_path);
   const skillIndex = rows.findIndex((entry) => contentBlocks(entry).some(isBuildCall));
   if (skillIndex === -1) return '';
