@@ -13,14 +13,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- `lib/model-kinds.json` names ten task kinds (build, hardest, review, review-deep, investigate, coordinate, research, lookup, prose, chore), each with a model and an effort level, and `npm run check` fails when a member file drifts from it.
+- `lib/model-kinds.json` names ten task kinds (build, hardest, review, review-deep, investigate, coordinate, research, lookup, prose, chore), each with a provider-neutral tier (`strong`, `standard`, `fast`) and effort that a `claude` provider block maps to a model and effort, and `npm run check` fails when a member file drifts from it.
 - `exo:review-branch-deep` reviews a branch above the size limit on `opus` at `max`, generated from the one `review-branch` body.
 
 ### Changed
 
 - `critique-ui` runs at `max` effort, `fetch-docs` at `medium`, and the no-plan build recommendation names `opus` at `max`.
-- The `budget` setting, the reviewer pick and the next-stage model lines read their models from the kind table.
-- The eight agents follow Anthropic's subagent guidance: descriptions say when to use them, tools match what each body uses, each body restates the rules it relies on, and each return holds only what its caller reads.
+- The `budget` setting, the reviewer pick, the next-stage model lines and the agent tests read their models and agent names from the kind table.
+- The nine agents follow Anthropic's subagent guidance: descriptions say when to use them, tools match what each body uses, each body restates the rules it relies on, and each return holds only what its caller reads.
 
 ### Removed
 
