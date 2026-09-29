@@ -105,3 +105,35 @@ test('a wave stops and lands nothing when it dirties the run\'s checkout', () =>
   assert.ok(section.includes('go to step 4, which force-removes it as a discarded wave'), 'the worktrees are still removed');
   assert.ok(section.includes("excluded by `lib/scratch-exclude.mjs`"), '.exo/ never counts as dirt');
 });
+
+const BUILD_SKILL = read('build/SKILL.md');
+const NEXT_TASK_CALL = 'node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>';
+
+test('the at-most-eight route asks next-task.mjs for a wave, never one task at a time', () => {
+  const askStep = loopStep(3);
+  assert.ok(askStep.includes(NEXT_TASK_CALL));
+  assert.ok(!askStep.includes('--one'), 'a printed wave reaches step 5 whole');
+  assert.ok(!RUN_LOOP.includes('--one'));
+});
+
+test('the at-most-eight route builds a printed wave per wave-worktrees.md and keeps every green task', () => {
+  const dispatchStep = loopStep(5);
+  assert.ok(dispatchStep.includes('`Wave:` line'), 'a Wave: line is handled');
+  assert.ok(dispatchStep.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
+  assert.ok(dispatchStep.includes('one message'), 'the wave builds in parallel');
+  assert.ok(dispatchStep.includes('a failed sibling never discards a green task'));
+  assert.ok(dispatchStep.includes('git add -A && git diff --cached > <checkout>/.exo/task-<n>.patch'), 'the diff is saved before the worktree goes');
+  assert.ok(dispatchStep.includes('non-empty'));
+  assert.ok(dispatchStep.includes('never `--force` remove an unsaved worktree'));
+});
+
+test('the build table names the loop as the wave reference\'s reader, and run-loop.md\'s lock follows it down', async () => {
+  const row = BUILD_SKILL.split('\n').find((line) => line.startsWith('| `references/wave-worktrees.md`'));
+  assert.ok(row, 'the table keeps its wave row');
+  assert.ok(!row.includes('Never here'), 'the wave reference is no longer unread by the loop');
+  assert.ok(row.includes('run-loop.md'), 'the row names the loop as its reader');
+  const { REFERENCE_TOKEN_LOCKS } = await import('#budgets');
+  const tokens = Math.round(Buffer.byteLength(RUN_LOOP) / 4);
+  assert.equal(REFERENCE_TOKEN_LOCKS['skills/build/references/run-loop.md'], tokens);
+  assert.ok(tokens <= 952, 'the lock never rises');
+});
