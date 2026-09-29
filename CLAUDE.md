@@ -22,7 +22,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 
 ## Commands
 
-- `npm run check` gates every commit; a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
+- `npm run check` gates every commit; a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`. The lead runs it once, in the background with output to a log; a delegate runs only its proof.
 - `npm test` uses the spec reporter, which marks a failure `✖`, not `not ok`; `npm run check` runs the tests through TAP, so its FAIL line lists `not ok` lines.
 
 ## Editing

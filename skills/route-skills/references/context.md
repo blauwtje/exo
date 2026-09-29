@@ -2,6 +2,7 @@
 
 - **Language.** Replies, reports and questions are in the language of the user's latest message, whatever the skill's; a session opened only by a plan command writes in the plan's language. Code, commits, issues and written files keep the repository's.
 - **Command output.** Log output that may pass forty lines under `.exo/` or a temp directory outside git; read back only failing lines.
+- **Long commands.** A command that may pass one minute runs in the background with a timeout sized to it; the full gate `npm run check` runs once, by the lead, and a delegate runs only its proof.
 - **Files.** Create files with Write, not compound Bash; one simple command per Bash call.
 - **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer.
 - **Scope.** Write only the artifacts a skill names, at the length needed.
