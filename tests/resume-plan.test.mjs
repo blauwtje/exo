@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -142,3 +143,18 @@ test('the session hook on startup names no running plan', async () => {
   assert.ok(!context.includes('A plan is running'), context.slice(0, 300));
 });
 
+
+test('a stop does not block while a background launch is pending, and blocks once it has notified', async () => {
+  const { root } = await checkout({ marker: true });
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'resume-plan-'));
+  const launch = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_agent', content: 'Async agent launched successfully.' }] } };
+  const notice = { type: 'queue-operation', operation: 'enqueue', content: '<task-notification><tool-use-id>toolu_agent</tool-use-id></task-notification>' };
+  const stopWith = async (rows) => {
+    const transcriptPath = path.join(dir, `${rows.length}.jsonl`);
+    await fs.writeFile(transcriptPath, rows.map((row) => JSON.stringify(row)).join('\n') + '\n');
+    const input = { ...JSON.parse(stopInput(root, false)), transcript_path: transcriptPath };
+    return run(SCRIPT, ['stop'], { input: JSON.stringify(input) });
+  };
+  assert.equal((await stopWith([launch])).stdout, '');
+  assert.equal(JSON.parse((await stopWith([launch, notice])).stdout).decision, 'block');
+});

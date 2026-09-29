@@ -126,3 +126,11 @@ test('blocks a Proof run on a fixture a heredoc Bash call wrote', () => {
   assert.equal(result.decision, 'block');
   assert.match(result.reason, /input this session wrote/);
 });
+
+test('does not block while a background launch is pending, and blocks once it has notified', () => {
+  const launch = bashResult('toolu_agent', 'Async agent launched successfully.\nagentId: a1');
+  const notice = { type: 'queue-operation', operation: 'enqueue', content: '<task-notification><tool-use-id>toolu_agent</tool-use-id></task-notification>' };
+  const report = finalReport('**Done:** wired --status into bin/report.js.');
+  assert.equal(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, report]) }), '');
+  assert.equal(JSON.parse(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, notice, report]) })).decision, 'block');
+});
