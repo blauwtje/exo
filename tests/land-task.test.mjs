@@ -245,6 +245,26 @@ test('not done without proof: a passing Proof: beside another failing command in
   await assertRefused(root, planPath, [], /^land-task: Task 1: the build report lists "npm test: fail \(13 of 14 pass; the one failure is outside Files, see Unresolved\)" under Proof, no clear pass$/m);
 });
 
+test('not done without proof: a bare "fail" line or a backticked failing word in the Proof section is refused', async () => {
+  const { root, planPath } = await compactCheckout();
+  const passing = 'Proof:\n- `node --test tests/app.test.mjs`: pass\n  # pass 3\n';
+  await writeReport(root, `${passing}npm test: fail\n  ✖ importRows\nUnresolved: none\n`);
+  await assertRefused(root, planPath, [], /^land-task: Task 1: the build report lists "npm test: fail" under Proof, no clear pass$/m);
+  await writeReport(root, `${passing}- \`npm test\`: failing on importRows\n  ✖ importRows\nUnresolved: none\n`);
+  await assertRefused(root, planPath, [], /^land-task: Task 1: the build report lists "npm test: failing on importRows" under Proof, no clear pass$/m);
+});
+
+// A bare colon line under a passing command is as likely that command's own
+// output, so a test name holding "fail" does not refuse a green task.
+test('a passing proof whose output names a failing case still lands', async () => {
+  for (const outputLine of ['ok 3 - parser: fails on empty input', '✔ importRows: failed rows are skipped (2ms)']) {
+    const { root } = await compactCheckout();
+    const report = `Proof:\n- \`node --test tests/app.test.mjs\`: pass\n  ${outputLine}\n  # fail 0\nUnresolved: none\n`;
+    const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
+    assert.match(output, /^Landed: 1$/m, outputLine);
+  }
+});
+
 test('a Proof section whose every command passes still lands', async () => {
   const { root } = await compactCheckout();
   const report = 'Proof:\n- `node --test tests/app.test.mjs`: pass\n  # pass 3\n  # fail 0\n- `npm test`: pass\n  # fail 0\nUnresolved: none\n';
