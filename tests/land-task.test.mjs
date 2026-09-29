@@ -228,6 +228,31 @@ test('not done without proof: a pass line with no output under it is refused', a
   await assertRefused(root, planPath, [], /no output under/);
 });
 
+test('not done without proof: a passing Proof: beside another failing command in the Proof section is refused', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, [
+    'Landed: src/app.js',
+    'Proof:',
+    'node --test tests/app.test.mjs: pass',
+    '  # pass 3',
+    'npm test: fail (13 of 14 pass; the one failure is outside Files, see Unresolved)',
+    '  ✖ importRows turns each bank row into an entry',
+    '',
+    'Unresolved:',
+    '- npm test: fail until a follow-up task passes the date through importRows.',
+    ''
+  ].join('\n'));
+  await assertRefused(root, planPath, [], /^land-task: Task 1: the build report lists "npm test: fail \(13 of 14 pass; the one failure is outside Files, see Unresolved\)" under Proof, no clear pass$/m);
+});
+
+test('a Proof section whose every command passes still lands', async () => {
+  const { root } = await compactCheckout();
+  const report = 'Proof:\n- `node --test tests/app.test.mjs`: pass\n  # pass 3\n  # fail 0\n- `npm test`: pass\n  # fail 0\nUnresolved: none\n';
+  const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.match(output, /^Landed: 1$/m);
+});
+
 test('a report with a clear pass lands and records the SHA and the proof output', async () => {
   const { root, planPath } = await compactCheckout();
   await writeReport(root, PASS_REPORT);

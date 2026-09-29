@@ -4,8 +4,8 @@
 // new commit carries the `Plan-task: <n>` trailer and that the landed set now
 // holds the task, and prints that set, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
-// `Proof:` command, or with none its Success-criterion test, passed, and the
-// printout carries that output. Above eight tasks each `Choice:` line of the
+// `Proof:` command, or with none its Success-criterion test, passed, and that
+// lists no command as failing under Proof; the printout carries that output. Above eight tasks each `Choice:` line of the
 // report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
 // with the given subject, no task, plan or trailer needed.
@@ -115,6 +115,34 @@ function provedCommand(task, lines) {
   throw new LandingError(`Task ${task.number}: no Proof: command, and the build report has no "<test>: pass" line`);
 }
 
+const FAILED_OUTCOME = /^fail(?:ed|s|ing)?\b/i;
+const PROOF_FIELD_LINE = /^\s*(?:[-*]\s+)?Proof:\s*(.*)$/;
+// A field line that closes the Proof section; `Choice:` lines follow it too.
+const SECTION_END_LINE = /^\s*(?:[-*]\s+)?(?:Landed|Unresolved|Report|Choice):/;
+
+// The report's Proof section: the lines after its `Proof:` field (plus any
+// command on that line itself), or with no such field the report's opening
+// lines, up to the next field line, so `Unresolved:` prose naming a failure
+// never counts as an outcome line.
+function proofSectionOf(lines) {
+  const start = lines.findIndex((line) => PROOF_FIELD_LINE.test(line));
+  const section = start === -1 ? lines : [lines[start].match(PROOF_FIELD_LINE)[1], ...lines.slice(start + 1)];
+  const end = section.findIndex((line, index) => (start === -1 || index > 0) && SECTION_END_LINE.test(line));
+  return end === -1 ? section : section.slice(0, end);
+}
+
+// A compact task's green is its `Proof:` pass, yet a build report that lists
+// any other test or suite command as failing is a red checkout: landing it
+// would commit a task the builder itself saw break something.
+function refuseFailedCommand(task, lines) {
+  for (const line of proofSectionOf(lines)) {
+    const match = line.match(ANY_OUTCOME_LINE);
+    const command = match?.[1] ?? match?.[2];
+    if (command === undefined || REPORT_FIELDS.has(command) || !FAILED_OUTCOME.test(match[3])) continue;
+    throw new LandingError(`Task ${task.number}: the build report lists "${command}: ${match[3]}" under Proof, no clear pass`);
+  }
+}
+
 // A task is done only on proof from the real product: the report's
 // `<command>: pass` line with the command's own output under it, at any
 // indentation. Any other outcome for that command, or none, leaves the task
@@ -152,6 +180,7 @@ export function proofOf(task, reportText, reportPath) {
   if (output.length === 0) {
     throw new LandingError(`Task ${task.number}: the build report shows no output under "${command}: pass"`);
   }
+  refuseFailedCommand(task, lines);
   return [`${command}: pass`, ...output].join('\n');
 }
 
@@ -226,6 +255,9 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (stray.length > 0) {
     throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
+  // A long-format task's `Run:` steps may expect a failure (a test-first
+  // step), judged against their `Expected:` lines, which this script does not
+  // parse, so only a compact task's report is read here.
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
   runLandGate(frameOf(plan.frame).landGate, root);
   // The block runs under bash, as the plugin's hooks do; a host without bash
