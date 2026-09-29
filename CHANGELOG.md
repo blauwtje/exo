@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.58.0 - 2026-09-29
+
 ### Highlights
 
 - **One table, `lib/model-kinds.json`, now sets the model and effort for each kind of task, and `npm run models` writes it into every agent, skill and dispatch line.**
