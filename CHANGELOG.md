@@ -20,7 +20,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Past the `context` threshold, the context notice reaches only the model and tells it to hand the task over to a fresh delegate, not to ask for `/exo:save-session` and `/clear`.
 - The next-stage question keeps the next stage first after a context notice.
 - `budget: lean` resolves its models from the kind table, so no model name is written into the setting's text.
-- A task delegate runs only its proof, and the lead runs `npm run check` once at landing, in the background.
+- A task delegate runs only its proof, and the lead runs the full gate (the plan's `Land gate:`) once at landing, in the background.
+
+### Fixed
+
+- The model-kinds check finds a dispatch line on `inherit` or on a model only listed under `models`, instead of throwing on the next run.
+- The README settings table lists the `budget` setting.
 
 ## 0.58.0 - 2026-09-29
 
