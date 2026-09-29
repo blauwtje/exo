@@ -8,19 +8,26 @@
 // lists no command as failing under Proof; the printout carries that output. Above eight tasks each `Choice:` line of the
 // report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
-// with the given subject, no task, plan or trailer needed.
+// with the given subject, no task, plan or trailer needed. A task whose
+// changed exported function signature still has a caller outside its
+// `Files:` is refused with a `PLAN DRIFT` line, the one the drift repair reads.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { exportSignatures } from '#export-signatures';
 import { parseFlags, UsageError } from '#script-flags';
+import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, frameOf, landedTasks, parsePlan, PlanError } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
+
+/** A landing refusal the plan must repair: printed bare, so its line opens with `PLAN DRIFT`. */
+export class PlanDriftError extends LandingError {}
 
 // Single-quoted, with an embedded quote escaped by closing, escaping, and
 // reopening the quote, so bash takes a path or title literally even with a
@@ -233,6 +240,47 @@ function strayPaths(task, root, planPath) {
   return changedPaths(root, planPath).filter((changed) => !allowed.has(changed));
 }
 
+// The file's source at HEAD, or null when HEAD holds no such file.
+function sourceAtHead(root, file) {
+  const shown = spawnSync('git', ['-C', root, 'show', `HEAD:${file}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return shown.status === 0 ? shown.stdout : null;
+}
+
+// Tracked script files outside `inFiles` that hold `name` as a whole word; a
+// comment or a same-named local counts too, which costs one plan repair.
+function outsideCallers(root, name, inFiles) {
+  const pathspecs = [...SCRIPT_EXTENSIONS].map((extension) => `*${extension}`);
+  const found = spawnSync('git', ['-C', root, 'grep', '-l', '-w', '-F', '-e', name, '--', ...pathspecs], { encoding: 'utf8' });
+  // git grep exits 1 when nothing matches.
+  if (found.error !== undefined || found.status > 1) {
+    throw new LandingError(`git grep for callers of ${name} failed: ${found.error?.message ?? found.stderr.trim()}`);
+  }
+  return found.stdout.split('\n').filter((file) => file !== '' && !inFiles.has(file));
+}
+
+// An exported function whose parameter list the task changed breaks every
+// caller the task did not also edit, even when its proof and suite stay green,
+// so such a caller outside `Files:` sends the task back to the plan.
+function refuseSignatureDrift(task, root) {
+  const inFiles = new Set(task.files.map((file) => file.path));
+  const drifts = [];
+  for (const file of inFiles) {
+    if (!SCRIPT_EXTENSIONS.has(path.extname(file))) continue;
+    const before = sourceAtHead(root, file);
+    const workingPath = path.join(root, file);
+    if (before === null || !fs.existsSync(workingPath)) continue;
+    const after = exportSignatures(fs.readFileSync(workingPath, 'utf8'));
+    for (const [name, oldParameters] of exportSignatures(before)) {
+      const newParameters = after.get(name);
+      if (newParameters === undefined || newParameters === oldParameters) continue;
+      const callers = outsideCallers(root, name, inFiles);
+      if (callers.length === 0) continue;
+      drifts.push(`PLAN DRIFT: Task ${task.number}: ${file}:${name}(${oldParameters}) -> (${newParameters}); callers outside Files: ${callers.join(', ')}`);
+    }
+  }
+  if (drifts.length > 0) throw new PlanDriftError(drifts.join('\n'));
+}
+
 // A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
 // right before the commit, so a check spec wrote against the plan's own
 // layout still holds on whatever the build left; a plan without the line, or
@@ -255,6 +303,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (stray.length > 0) {
     throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
+  refuseSignatureDrift(task, root);
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.
@@ -308,6 +357,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     if (error instanceof UsageError) {
       process.stderr.write(`land-task: ${error.message}\n`);
       process.exitCode = 2;
+    } else if (error instanceof PlanDriftError) {
+      process.stderr.write(`${error.message}\n`);
+      process.exitCode = 1;
     } else if (error instanceof LandingError || error instanceof PlanError) {
       process.stderr.write(`land-task: ${error.message}\n`);
       process.exitCode = 1;

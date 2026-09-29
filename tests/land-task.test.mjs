@@ -473,3 +473,53 @@ test('above eight tasks a report with no Choice: line writes no decision log', a
   landTask({ planText: plan, number: 1, root, reportText: PASS_REPORT, planPath });
   await assert.rejects(fs.access(path.join(root, 'docs/plans/compact-decisions.md')));
 });
+
+// A task that changes an exported signature lands only when every caller of
+// that name sits inside its Files:, since a caller outside it breaks unseen.
+const SIGNATURE_PLAN = planFixture({ tasks: [
+  taskSection({ number: 1, title: 'Book date', files: ['- Modify: `src/ledger/create-entry.js`'], subject: 'feat(ledger): book date' }),
+  taskSection({ number: 2, title: 'Book date everywhere', files: ['- Modify: `src/ledger/create-entry.js`', '- Modify: `src/import/import-rows.js`'], subject: 'feat(ledger): book date everywhere' })
+] });
+
+async function signatureCheckout() {
+  const root = await gitRepository({
+    'src/ledger/create-entry.js': 'export function createEntry(id, description, amount) {\n  return { id, description, amount };\n}\n',
+    'src/import/import-rows.js': "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount));\n",
+    'docs/plans/fixture.md': SIGNATURE_PLAN
+  });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  return { root, planPath: path.join(root, 'docs/plans/fixture.md') };
+}
+
+async function requireBookedOn(root) {
+  await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id, description, amount, bookedOn) {\n  return { id, description, amount, bookedOn };\n}\n');
+}
+
+test('a changed export signature with a caller outside Files: is refused as PLAN DRIFT', async () => {
+  const { root, planPath } = await signatureCheckout();
+  await requireBookedOn(root);
+  const drift = 'PLAN DRIFT: Task 1: src/ledger/create-entry.js:createEntry(id, description, amount) -> (id, description, amount, bookedOn); callers outside Files: src/import/import-rows.js';
+  assert.throws(() => landTask({ planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && error.message === drift);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.equal(result.stdout, '');
+  assert.equal(result.stderr, `${drift}\n`);
+});
+
+test('a changed export signature with every caller inside Files: lands', async () => {
+  const { root } = await signatureCheckout();
+  await requireBookedOn(root);
+  await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
+  const output = landTask({ planText: SIGNATURE_PLAN, number: 2, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\n$/);
+});
+
+test('a body-only change to an export with an outside caller lands and prints nothing extra', async () => {
+  const { root } = await signatureCheckout();
+  await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
+  const output = landTask({ planText: SIGNATURE_PLAN, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\n$/);
+});
