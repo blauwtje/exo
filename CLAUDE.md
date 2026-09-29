@@ -5,7 +5,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 ## Workflow
 
 - Keep the main checkout on `main` and run every edit in a worktree, because exo loads in place from this checkout.
-- Open a run with `git pull --ff-only` on `main`, then remove every worktree and branch, local and remote, merged into `main`.
+- Open a run with `git pull --ff-only` on `main`, then remove every worktree and branch, local and remote, merged into `main`, each worktree as the removal bullet below states.
 - The tidy also runs `git fetch --prune` and deletes each local branch whose upstream is gone (`git branch -vv` shows `: gone]`), since `git branch --merged` misses squash merges.
 - The lead only orchestrates: every edit, fix and failed-check repair runs in a worktree subagent, independent parts in parallel.
 - Only the lead writes `CHANGELOG.md`, so subagent branches never conflict on it.
@@ -13,6 +13,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 - A skill or run that spans exploring, building and reviewing splits them into phases, each a fresh subagent, handing over through a file, so no context carries the whole process.
 - Land in one integration worktree under `.worktrees/`: merge the subagent branches, add the `CHANGELOG.md` lines, then fetch and rebase onto `origin/main`, keeping every line of this run under `## Unreleased`, because the release workflow pushes a `chore(release)` commit after every push.
 - Then run `npm run check` once with output to a log, read back only the `SUMMARY` and failing lines, fast-forward `main`, push `main` directly with no pull request, and after the push remove every worktree and branch the run created, local and remote.
+- Remove each worktree from the main checkout with its own `node skills/build/scripts/remove-worktree.mjs --kept --worktree .worktrees/<name> --run .`, not plain `git worktree remove`, which deletes the excluded `.exo/` with exit 0; never pipe its output away or mask its exit, and on a refusal leave that worktree and its branch in place and report 2-3 options to the user, never `--force`.
 - Delete each run branch in its own `git branch -D <name>` with the literal name, because git-guard checks that name against `main` and refuses one built through `$( )`.
 - Run those deletions in a separate command after a successful push, never in the same command as the fast-forward or push, because git-guard checks the whole command before any part runs and so finds the branch commits missing from `main`.
 - A subagent never runs `git stash`, because all worktrees share one stash list; the cleanup drops a stash made on a run branch once its content is on `main`, and leaves every other stash untouched.
