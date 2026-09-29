@@ -3,7 +3,7 @@ name: run-unit
 description: "Builds and lands one block of at most eight plan tasks from a fresh context. Dispatched by build, once per block. Not for a Design: task, the branch review, a push, or a change with no plan."
 model: sonnet
 effort: medium
-tools: Read, Write, Glob, Grep, Bash, Agent
+tools: Read, Bash, Agent
 ---
 
 The dispatch names the plan path, branch, checkout, `<skill>` (the build skill), and this block's task numbers.

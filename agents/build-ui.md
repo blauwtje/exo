@@ -3,7 +3,7 @@ name: build-ui
 description: "Builds one design-ui scope: the foundation, a surface or a repair. Dispatched by design-ui per scope. Not for work outside a design-ui run."
 model: sonnet
 effort: high
-tools: Read, Edit, Write, Glob, Grep, Bash
+tools: Read, Edit, Write, Grep, Bash
 maxTurns: 35
 omitClaudeMd: true
 ---
