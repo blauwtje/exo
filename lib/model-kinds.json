@@ -7,6 +7,9 @@
       "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" }
     }
   },
+  "budgets": {
+    "lean": { "strong": "standard" }
+  },
   "kinds": {
     "build": { "tier": "standard", "effort": "high" },
     "hardest": { "tier": "strong", "effort": "max" },

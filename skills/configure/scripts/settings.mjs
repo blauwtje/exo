@@ -14,6 +14,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { readKindTable } from '#model-kinds';
 import {
   GLOBAL_SOURCE,
   LOCAL_FILE,
@@ -31,12 +32,25 @@ import {
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
 
+// A rule's `{from}` and `{to}` are the provider's models for the two tiers of
+// each pair in the kind table's `budgets` map under the setting's value, so a
+// rule names no model itself; a rule with neither placeholder is used as written.
+function filledRule(rule, value) {
+  if (!rule.includes('{from}')) return rule;
+  const table = readKindTable();
+  const { tiers } = table.providers[table.provider];
+  return Object.entries(table.budgets[value]).map(([fromTier, toTier]) => {
+    if (!tiers[fromTier] || !tiers[toTier]) throw new Error(`budgets.${value}: ${fromTier} to ${toTier} names a tier the provider lacks`);
+    return rule.replaceAll('{from}', tiers[fromTier]).replaceAll('{to}', tiers[toTier]);
+  }).join(' ');
+}
+
 // A schema key with a `rules` map contributes its current value's rule text to
 // the injected settings line; a value with no entry there (such as budget's
 // default `normal`) adds nothing.
 function activeRules(values) {
   return Object.entries(SCHEMA)
-    .map(([key, entry]) => entry.rules?.[values[key]])
+    .map(([key, entry]) => (entry.rules?.[values[key]] ? filledRule(entry.rules[values[key]], values[key]) : ''))
     .filter(Boolean)
     .join(' ');
 }

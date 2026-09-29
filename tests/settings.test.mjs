@@ -209,3 +209,24 @@ test('show lists context with its layer and no options line', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^3\. context = 100 {2}\(local\)$/m);
 });
+
+test('the lean rule names the provider models the kind table maps, and carries no placeholder', async () => {
+  const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
+  const { tiers } = table.providers[table.provider];
+  const [[fromTier, toTier]] = Object.entries(table.budgets.lean);
+  const result = await settings(await workspace({ project: { budget: 'lean' } }), ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /budget=lean \(project\)/);
+  assert.ok(result.stdout.includes(`resolves to model ${tiers[fromTier]} (`), result.stdout);
+  assert.ok(result.stdout.includes(`pass ${tiers[toTier]} as the Task call's own model parameter`), result.stdout);
+  assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
+});
+
+test('the lean rule text holds no model name of any provider', () => {
+  const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
+  const models = Object.values(table.providers).flatMap((provider) => provider.models);
+  for (const model of models) {
+    assert.ok(!SCHEMA.budget.rules.lean.includes(model), model);
+    assert.ok(!SCHEMA.budget.description.includes(model), model);
+  }
+});
