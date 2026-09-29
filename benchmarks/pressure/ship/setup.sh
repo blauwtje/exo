@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Places the fixture script the ship prompt runs in its empty directory.
+# Places the fixture script both ship prompts run in their empty directory;
+# it builds a bare origin and a clone on feat/greeting with one unpushed commit.
 set -euo pipefail
 
 root=/tmp/exo-pressure/ship
