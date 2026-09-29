@@ -72,3 +72,27 @@ test('backfill writes usage.json with the main thread and every subagent', async
   assert.equal(written.ladder, true);
   await assert.rejects(fs.access(path.join(orphan, 'usage.json')));
 });
+
+test('backfill records the lead peak as the largest main-thread message context', async () => {
+  const configDirectory = await fixture();
+  const project = path.join(configDirectory, 'projects', '-tmp-exo-bench-t2');
+  await writeLines(path.join(project, `${SESSION_ID}.jsonl`), [
+    assistant('msg_main_1', 'claude-sonnet-5', usage(10, 500, 200, 0, 20)),
+    assistant('msg_main_2', 'claude-sonnet-5', usage(100, 2000, 0, 400, 30)),
+    assistant('msg_main_3', 'claude-sonnet-5', usage(5, 1000, 0, 0, 900))
+  ]);
+  const subagents = path.join(project, SESSION_ID, 'subagents');
+  await writeLines(path.join(subagents, 'agent-a1.jsonl'), [assistant('msg_sub_1', 'claude-sonnet-5', usage(9000, 0, 0, 0, 10))]);
+  await fs.writeFile(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'general-purpose' }));
+
+  const runs = await fixture();
+  const cell = path.join(runs, 't2', 'exo', '1');
+  await fs.mkdir(cell, { recursive: true });
+  await fs.writeFile(path.join(cell, 'result.json'), JSON.stringify({ session_id: SESSION_ID }));
+
+  const result = await runBackfill(runs, configDirectory);
+  assert.equal(result.code, 0, result.stderr);
+  const written = JSON.parse(await fs.readFile(path.join(cell, 'usage.json'), 'utf8'));
+  // Input plus cache read plus both cache writes of msg_main_2; the larger subagent message and every output count stay out.
+  assert.equal(written.leadPeakTokens, 2500);
+});

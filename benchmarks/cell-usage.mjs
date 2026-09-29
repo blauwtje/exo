@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { emptySession } from '../skills/show-savings/scripts/record.mjs';
-import { sumCounts } from '../skills/show-savings/scripts/token-weights.mjs';
+import { sumCounts, usageCounts } from '../skills/show-savings/scripts/token-weights.mjs';
 import { findTranscript, ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 
 // The session hook's context carries this heading only while exo savings are on.
@@ -51,6 +51,26 @@ function countsByModel(session) {
   return Object.fromEntries(Object.entries(grouped).map(([model, list]) => [model, sumCounts(list)]));
 }
 
+// The largest context one main-thread message read or wrote: input plus cache
+// read plus both cache writes, output left out. Subagents sit in their own
+// files, so the main transcript alone is the lead.
+function leadPeakTokens(transcriptPath) {
+  let peak = 0;
+  for (const line of fs.readFileSync(transcriptPath, 'utf8').split('\n')) {
+    if (!line.includes('"assistant"')) continue;
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (entry?.type !== 'assistant' || !entry.message?.usage) continue;
+    const counts = usageCounts(entry.message.usage);
+    peak = Math.max(peak, counts.input + counts.cacheRead + counts.cache5m + counts.cache1h);
+  }
+  return peak;
+}
+
 // Returns the written usage, or null when the session's transcript is gone.
 export function writeCellUsage(cellDirectory, sessionId) {
   const transcript = findTranscript(sessionId);
@@ -62,7 +82,8 @@ export function writeCellUsage(cellDirectory, sessionId) {
     counts: sumTokens(session),
     byModel: countsByModel(session),
     subagents: subagentTypes(transcript),
-    ladder: ladderInContext(transcript)
+    ladder: ladderInContext(transcript),
+    leadPeakTokens: leadPeakTokens(transcript)
   };
   fs.writeFileSync(path.join(cellDirectory, 'usage.json'), `${JSON.stringify(usage, null, 2)}\n`);
   return usage;
