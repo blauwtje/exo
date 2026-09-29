@@ -18,7 +18,7 @@ test('the run creates, lands and removes every wave worktree itself', () => {
   const section = WAVE_WORKTREES;
   assert.ok(section.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(section.includes('`Worktree setup:`'));
-  assert.ok(section.includes('Each dispatch sets `run_in_background: false`'), 'a wave dispatch runs in the foreground');
+  assert.ok(!section.includes('run_in_background'), 'the lead demands no foreground flag on a wave dispatch');
   assert.ok(section.includes('git cherry-pick <sha>'));
   assert.ok(section.includes('git cherry-pick --abort'));
   assert.ok(section.includes('remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>'));

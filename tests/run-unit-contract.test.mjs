@@ -54,11 +54,14 @@ test('build forms no block around an unlanded dependency outside it', () => {
   assert.ok(loopStep(4, RUN_LOOP).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
 });
 
-test('build dispatches the unit and a wave in the foreground and waits on the returns, never a poll', () => {
+test('build dispatches in the background, ends the turn, and never polls while a return is outstanding', () => {
   const dispatchStep = loopStep(5, RUN_LOOP);
-  assert.ok(dispatchStep.startsWith('5. **Dispatch.** Wait on the returns, never a poll or Monitor. `Route: unit`:'));
-  assert.ok(dispatchStep.includes('Send each block to the `exo:run-unit` agent with `run_in_background: false`'), 'the unit dispatch sentence carries the flag');
-  assert.ok(dispatchStep.includes('to `exo:build-task` with `run_in_background: false`'), 'the direct and wave dispatch sentence carries the flag');
+  assert.ok(dispatchStep.startsWith('5. **Dispatch.** After the dispatch message, end the turn; each completion notification resumes it.'), 'step 5 ends the turn on dispatch');
+  for (const tool of ['ScheduleWakeup', 'ListAgents', 'Monitor', 'sleep']) assert.ok(dispatchStep.includes(tool), `step 5 forbids ${tool}`);
+  assert.ok(dispatchStep.includes('never call'), 'the polling tools are forbidden');
+  assert.ok(dispatchStep.includes('A wave lands only after every sibling returned'), 'a wave lands after every sibling returned');
+  assert.ok(!dispatchStep.includes('run_in_background'), 'the lead demands no foreground flag');
+  assert.ok(UNIT_AGENT.includes('`run_in_background: false`'), 'run-unit still dispatches build-task in the foreground');
   assert.ok(dispatchStep.includes('a `Wave:` line each task'));
   const routeStep = loopStep(6, RUN_LOOP);
   for (const line of ['`LANDED`', '`BUDGET:`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
