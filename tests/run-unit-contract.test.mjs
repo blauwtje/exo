@@ -54,10 +54,11 @@ test('build forms no block around an unlanded dependency outside it', () => {
   assert.ok(loopStep(4, RUN_LOOP).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
 });
 
-test('build dispatches the unit in the foreground and waits on its return, never a poll', () => {
+test('build dispatches the unit and a wave in the foreground and waits on the returns, never a poll', () => {
   const dispatchStep = loopStep(5, RUN_LOOP);
-  assert.ok(dispatchStep.includes('Send each block to the `exo:run-unit` agent with `run_in_background: false`'));
-  assert.ok(dispatchStep.includes('Wait on its return, never a poll or Monitor.'));
+  assert.ok(dispatchStep.startsWith('5. **Dispatch with `run_in_background: false`.** Wait on the returns, never a poll or Monitor. `Route: unit`:'));
+  assert.ok(dispatchStep.includes('Send each block to the `exo:run-unit` agent'));
+  assert.ok(dispatchStep.includes('a `Wave:` line each task'));
   const routeStep = loopStep(6, RUN_LOOP);
   for (const line of ['`LANDED`', '`BUDGET:`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
   assert.doesNotMatch(RUN_LOOP, /`OPEN`/);
