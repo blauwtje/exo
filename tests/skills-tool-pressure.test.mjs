@@ -274,6 +274,19 @@ test('--main-dir turns the without arm into a main arm that loads the second cop
   assert.doesNotMatch(outcome.stdout, /without/);
 });
 
+test('--setting-sources reaches every run of both arms, and is absent when not given', async () => {
+  const clone = await pluginClone();
+  const main = await pluginClone();
+  const out = await fixture();
+  const given = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--main-dir', main, '--setting-sources', 'project,local', '--out', out, '--runs', '2']);
+  assert.equal(given.code, 0, given.stderr);
+  assert.equal(given.calls.length, 4, given.calls.join('\n'));
+  assert.ok(given.calls.every((call) => call.includes('--setting-sources project,local')), given.calls.join('\n'));
+  const omitted = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', await fixture(), '--runs', '1']);
+  assert.equal(omitted.code, 0, omitted.stderr);
+  assert.ok(omitted.calls.every((call) => !call.includes('--setting-sources')), omitted.calls.join('\n'));
+});
+
 test('a skill loaded from outside the arm\'s copy prints a WRONG COPY line and exits 1', async () => {
   const clone = await pluginClone();
   const main = await pluginClone();

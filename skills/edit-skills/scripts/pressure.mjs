@@ -10,6 +10,9 @@
 // second copy through --plugin-dir. Both directories resolve against the
 // caller's cwd, since `claude` runs in a scratch directory and falls back
 // silently to the installed copy when --plugin-dir holds no plugin.
+// --setting-sources passes through to every run of both arms, so a case can
+// leave out the user's settings and memory, which could decide it for reasons
+// outside the plugin.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
 // directory outside the repository, matching pressure-scenarios.md:41; cells
 // run one after another.
@@ -26,7 +29,7 @@
 // `  WRONG COPY <arm> <run>: <skill dir> is not under <plugin dir>` and
 // ends the runner with exit 1, so that run never counts as a pass.
 //
-//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--runs 3] [--out <dir>]
+//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--runs 3] [--out <dir>]
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -43,10 +46,10 @@ const DEFAULT_RUNS = 3;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
-const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--runs <n>] [--out <dir>]';
+const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', runs: 'value', out: 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', runs: 'value', out: 'value' });
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
   if (!flags['plugin-dir']) throw new UsageError('--plugin-dir needs a clone of the plugin');
@@ -65,12 +68,13 @@ function readFlags(argv) {
     pluginDir,
     pluginId: installedPluginId(pluginDir, '--plugin-dir'),
     mainDir: flags['main-dir'] === undefined ? undefined : resolvePluginDir('--main-dir', flags['main-dir'], process.cwd()),
+    settingSources: flags['setting-sources'],
     runs: flags.runs === undefined ? DEFAULT_RUNS : Number(flags.runs),
     outDir: flags.out
   };
 }
 
-function claudeArguments({ model, effort, promptText, armFlags }) {
+function claudeArguments({ model, effort, promptText, settingSources, armFlags }) {
   const args = [
     '-p', promptText,
     '--model', model,
@@ -81,6 +85,7 @@ function claudeArguments({ model, effort, promptText, armFlags }) {
     // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case.
     '--strict-mcp-config'
   ];
+  if (settingSources !== undefined) args.push('--setting-sources', settingSources);
   args.push(...armFlags);
   return args;
 }
@@ -152,7 +157,7 @@ function fileSafe(value) {
 }
 
 // Runs one cell and prints its lines; true when some run loaded a wrong copy.
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, runs, outDir }) {
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, runs, outDir }) {
   const arms = [
     comparisonArm({ pluginId, mainDir }),
     { name: 'with', pluginDir, flags: ['--plugin-dir', pluginDir] }
@@ -160,7 +165,7 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
   const planned = arms.flatMap((arm) => Array.from({ length: runs }, (_, index) => ({ arm, runNumber: index + 1 })));
   const outcomes = await Promise.all(planned.map(({ arm }) => {
     const scratch = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
-    return runArm(claudeArguments({ model, effort, promptText, armFlags: arm.flags }), scratch);
+    return runArm(claudeArguments({ model, effort, promptText, settingSources, armFlags: arm.flags }), scratch);
   }));
   console.log(`${model}:${effort}`);
   let loadedWrongCopy = false;
