@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The `terse` reply level now holds past the first reply: exo repeats a short reminder with every prompt, the rule drops its escape clause and gains an example, and a 12-turn benchmark fails when chat prose keeps its articles.
+
 ## 0.62.0 - 2026-09-30
 
 ### Highlights
