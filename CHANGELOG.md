@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.61.5 - 2026-09-30
+
 ### Fixed
 
 - The build, bug-fix and find-cause fix delegates run a long proof in the foreground or wait with a bounded `for` loop, never with `Monitor`, which a session can disable, or a leading `sleep`, which the harness blocks.
