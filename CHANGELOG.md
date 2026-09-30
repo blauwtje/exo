@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.62.0 - 2026-09-30
+
 ### Highlights
 
 - **Safety guards now ship with exo and are on by default: they deny force pushes, destructive deletes, detached processes, shell reads of protected paths, AI attribution and non-conventional commit subjects, and cap long output.** Set `guards` to `off` through `/exo:configure` to turn them all off.
