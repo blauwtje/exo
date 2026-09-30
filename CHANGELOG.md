@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.61.3 - 2026-09-30
+
 ### Changed
 
 - The deep branch review, the design critique and the hardest-fix kind run Opus at `xhigh` instead of `max`, which scores 56 against 58 on the Artificial Analysis index at about 58% of the cost per task.
