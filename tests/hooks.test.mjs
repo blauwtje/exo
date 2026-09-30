@@ -53,7 +53,12 @@ test('the repeat guard counts Edit and the web tools before the call and starts 
 
 test('the delegate budget runs before every tool call and after no call', () => {
   const budgets = hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget.mjs'));
-  assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '*']]);
+  assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '^(?!Bash$).*']]);
+  const bashDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
+  assert.match(bashDispatcher, /name: 'delegate-budget'/, 'the Bash dispatcher does not run the delegate budget');
+  const matcher = new RegExp(budgets[0].matcher);
+  assert.equal(matcher.test('Bash'), false);
+  for (const tool of ['Read', 'Edit', 'Write', 'Task', 'Agent', 'BashOutput', 'mcp__server__Bash', 'TaskUpdate']) assert.equal(matcher.test(tool), true, tool);
 });
 
 test('one Stop hook runs the dispatcher that books the turn, keeps a plan going, checks build-change proof and scores terse replies', () => {
@@ -74,7 +79,7 @@ test('one prompt hook runs the dispatcher for the restatement, the memory nudge 
   }
 });
 
-test('one Bash hook runs the dispatcher for the repeat guard, the booking approval and the six Bash guards', () => {
+test('one Bash hook runs the dispatcher for the repeat guard, the delegate budget, the booking approval and the six Bash guards', () => {
   const bash = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Bash');
   assert.equal(bash.length, 1, JSON.stringify(bash.map((entry) => entry.hook.command)));
   assert.equal(bash[0].hook.shell, 'bash');
@@ -88,10 +93,10 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
 });
 
-test('the context watch runs before every tool inside the delegate budget hook and has no hook of its own', () => {
+test('the context watch runs before every tool but Bash inside the delegate budget hook and has no hook of its own', () => {
   const watch = hookEntries().filter((entry) => entry.hook.command.includes('context-watch.mjs'));
   assert.deepEqual(watch, []);
-  const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '*');
+  const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '^(?!Bash$).*');
   assert.equal(everyTool.length, 1);
   assert.ok(everyTool[0].hook.command.endsWith('delegate-budget.mjs"'), everyTool[0].hook.command);
   const budget = fs.readFileSync(path.join(REPOSITORY, 'skills', 'show-savings', 'scripts', 'delegate-budget.mjs'), 'utf8');

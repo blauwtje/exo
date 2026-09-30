@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// PreToolUse dispatcher on Bash: runs the repeat guard, the memory-booking
-// approval and the six Bash guards inside one process, so a Bash call spawns
-// one hook process where it spawned eight. The guards run first, then the
-// bookkeeping steps unless a guard denied, each in its own try/catch, so a
+// PreToolUse dispatcher on Bash: runs the repeat guard, the delegate budget
+// with the context watch, the memory-booking approval and the six Bash guards
+// inside one process, so a Bash call spawns one hook process where it spawned
+// nine. The guards run first, then the bookkeeping steps unless a guard denied,
+// each awaited in its own try/catch, because the delegate budget is async, so a
 // fault in one lets the rest run and the command go through as it did when
 // each step was its own hook. The first deny is returned; the additional
 // contexts of the steps that ran are joined into the same output.
@@ -11,6 +12,7 @@
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { approve } from '../skills/remember/scripts/nudge.mjs';
+import { delegateBudget } from '../skills/show-savings/scripts/delegate-budget.mjs';
 import { guardCall } from '../skills/show-savings/scripts/repeat-guard.mjs';
 import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
@@ -27,8 +29,8 @@ function guardStep(denialFor) {
 
 // Each `run` takes the hook input and returns a hook output object or null.
 // The guards run first, in this order, so the first deny wins; the repeat
-// guard and the approval run after them, and only when no guard denied, so a
-// denied call is never counted.
+// guard, the delegate budget and the approval run after them, and only when
+// no guard denied, so a denied call is never counted.
 const GUARDS = [
   { name: 'git-guard', run: guardStep(gitDenial) },
   { name: 'secret-guard', run: guardStep(secretDenial) },
@@ -39,17 +41,18 @@ const GUARDS = [
 ];
 const BOOKKEEPING = [
   { name: 'repeat-guard', run: guardCall },
+  { name: 'delegate-budget', run: delegateBudget },
   { name: 'nudge-approve', run: approve }
 ];
 
 // The one output for `hookInput`, or null when no step has anything to say.
-export function dispatchBash(hookInput, guards = GUARDS, bookkeeping = BOOKKEEPING) {
+export async function dispatchBash(hookInput, guards = GUARDS, bookkeeping = BOOKKEEPING) {
   const outputs = [];
   let denied = false;
   for (const step of [...guards, ...bookkeeping]) {
     if (denied && bookkeeping.includes(step)) continue;
     try {
-      const output = step.run(hookInput);
+      const output = await step.run(hookInput);
       if (!output) continue;
       outputs.push(output.hookSpecificOutput ?? {});
       if (output.hookSpecificOutput?.permissionDecision === 'deny') denied = true;
@@ -77,7 +80,7 @@ if (isProcessEntry(import.meta.url)) {
   try {
     const text = await readHookText();
     if (text.trim() !== '') {
-      const output = dispatchBash(JSON.parse(text));
+      const output = await dispatchBash(JSON.parse(text));
       if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
     }
   } catch {
