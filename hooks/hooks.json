@@ -25,6 +25,12 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/nudge.mjs\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/configure/scripts/expand-reply.mjs\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       }
@@ -56,6 +62,52 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/nudge.mjs\" approve",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/bash-output-guard.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/detach-guard.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/destructive-guard.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/git-guard.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/secret-guard.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/writing-guard.mjs\"",
+            "shell": "bash",
             "timeout": 10
           }
         ]

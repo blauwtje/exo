@@ -97,3 +97,27 @@ test('the context watch runs before every tool inside the delegate budget hook a
   const budget = fs.readFileSync(path.join(REPOSITORY, 'skills', 'show-savings', 'scripts', 'delegate-budget.mjs'), 'utf8');
   assert.match(budget, /import\('\.\/context-watch\.mjs'\)/);
 });
+
+test('every shipped guard runs before Bash calls under bash, and the writing guard also before Edit and Write', () => {
+  const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
+  assert.deepEqual(guardFiles.sort(), [
+    'bash-output-guard.mjs', 'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'writing-guard.mjs'
+  ]);
+  for (const guardFile of guardFiles) {
+    const registered = hookEntries().filter((entry) => entry.hook.command.includes(`hooks/guards/${guardFile}"`));
+    assert.equal(registered.length, 1, `${guardFile} is registered ${registered.length} times`);
+    assert.equal(registered[0].event, 'PreToolUse', guardFile);
+    assert.equal(registered[0].hook.shell, 'bash', guardFile);
+    const expectedMatcher = guardFile === 'writing-guard.mjs' ? 'Bash|Edit|Write' : 'Bash';
+    assert.equal(registered[0].matcher, expectedMatcher, guardFile);
+  }
+});
+
+test('the reply expander runs under bash on every prompt and takes no matcher', () => {
+  const expander = hookEntries().filter((entry) => entry.hook.command.includes('expand-reply.mjs'));
+  assert.equal(expander.length, 1);
+  assert.equal(expander[0].event, 'UserPromptSubmit');
+  assert.equal(expander[0].matcher, undefined);
+  assert.equal(expander[0].hook.shell, 'bash');
+  assert.ok(expander[0].hook.command.endsWith('skills/configure/scripts/expand-reply.mjs"'), expander[0].hook.command);
+});
