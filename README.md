@@ -117,7 +117,7 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 | `edit-skills <skill>` | Writes or improves a skill or agent. | "fix skill X", "make an agent that ..." |
 | `write-docs <the document or text to write or edit>` | Writes a README, docs page, PR or commit text. | "write the README", "PR description" |
 | `show-savings` | Shows how many tokens exo saved. | "what did exo save?" |
-| `configure [key value scope]` | Shows or changes an exo setting. | "set context to 120" |
+| `configure [key value scope]` | Shows or changes an exo setting. | "set replies to standard" |
 
 ### User-invoked
 
@@ -183,7 +183,6 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `spec` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `terse`, `tight`, `standard` | `tight` | How dense replies are. `terse` also drops articles and linking verbs; `tight` drops preamble, recap and filler; `standard` writes full prose. All three keep code, paths, errors and warnings whole. See [Reply levels](#reply-levels). |
-| `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note for the model, once per further 25k: to finish the current step, write the task state to a handover file and hand the rest of the task to a fresh delegate, so the session keeps going without asking you to save, clear or stop, or, while `exo:build` is the last exo skill loaded, to keep working because the plan file and the commits hold the state. A stored value that is not a whole number of at least 1 reads as the default. |
 | `guards` | `on`, `off` | `on` | Whether the safety guards refuse the commands and edits they cover. `off` switches all of them off. See [The guards](#the-guards). |
 | `budget` | `normal`, `lean` | `normal` | Which model each agent runs on. `normal` uses each agent's own model. `lean` dispatches an agent whose tier is listed under `budgets` in `lib/model-kinds.json` on that tier's replacement tier instead; today `strong` becomes `standard`. |
 

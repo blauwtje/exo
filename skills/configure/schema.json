@@ -16,11 +16,6 @@
       "standard": "Replies are standard: full prose. The output style sets the layout; this sets how dense the words are."
     }
   },
-  "context": {
-    "type": "number",
-    "default": 100,
-    "description": "thousands of tokens a session's context may reach before the next phase of a skill moves to a fresh context"
-  },
   "budget": {
     "type": "string",
     "options": ["normal", "lean"],

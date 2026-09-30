@@ -20,7 +20,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 | `save-session` **type it** | Saves where a session is, for a fresh one after `/clear` | Type `/exo:save-session`, then `/clear` |
 | `show-savings` | Shows how many tokens exo saved | "what did exo save?" |
 | `file-issues` | Files GitHub issues | "turn this into issues" |
-| `configure` | Shows or changes an exo setting | "set context to 120" |
+| `configure` | Shows or changes an exo setting | "set replies to standard" |
 | `remember` **type it** | Books a correction about this repository | Type `/exo:remember` |
 
 ## Rarely

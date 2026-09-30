@@ -135,7 +135,7 @@ test('a Bash call inside a delegate past the hard limit is denied by the dispatc
   assert.match(decision.permissionDecisionReason, /BUDGET/);
 });
 
-// A main-session transcript at 120k prompt tokens, past the context watch's 100k.
+// A main-session transcript at 120k prompt tokens, which nothing measures.
 async function mainSessionCall(command) {
   const directory = await fs.realpath(await fixture());
   const transcript = path.join(directory, 'session.jsonl');
@@ -145,19 +145,17 @@ async function mainSessionCall(command) {
   const outcome = await run(DISPATCHER, [], {
     cwd: directory,
     input: JSON.stringify(hookInput),
-    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory, CLAUDE_PLUGIN_OPTION_CONTEXT: '', EXO_SAVINGS_DIR: path.join(directory, 'savings') }
+    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory, EXO_SAVINGS_DIR: path.join(directory, 'savings') }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;
 }
 
-test('a main-session Bash call past the context threshold gets the context watch notice', async () => {
-  const decision = await mainSessionCall('git status');
-  assert.equal(decision.permissionDecision, undefined);
-  assert.match(decision.additionalContext, /^exo: context 120k tokens, past 100k: /);
+test('a main-session Bash call at 120k tokens gets no notice', async () => {
+  assert.equal(await mainSessionCall('git status'), null);
 });
 
-test('a guard-denied main-session Bash call past the threshold prints only the deny', async () => {
+test('a guard-denied main-session Bash call at 120k tokens prints only the deny', async () => {
   const decision = await mainSessionCall('git reset --hard');
   assert.equal(decision.permissionDecision, 'deny');
   assert.equal(decision.additionalContext, undefined);

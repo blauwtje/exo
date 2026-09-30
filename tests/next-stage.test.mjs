@@ -1,5 +1,5 @@
 // next-stage.mjs prints the next-stage question's options, continuing first
-// even in a session context-watch.mjs already notified, and, for the stages
+// and, for the stages
 // `references/next-stage.md`'s table names, the one model line under them, reading a plan's `Design:` tasks and `## Visual
 // direction` to pick the build row.
 
@@ -10,7 +10,6 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
 import { nextStageReport } from '../skills/route-skills/scripts/next-stage.mjs';
-import { hotFile } from '../skills/show-savings/scripts/record.mjs';
 import { fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
@@ -21,20 +20,6 @@ const RUN_PLAN_SONNET_LINE = "Next stage runs on `sonnet` at `medium`, because t
 function noSpecStageKind() {
   const { kinds, stages } = readKindTable();
   return kinds[stages['build-no-spec'].kind];
-}
-
-// A savings directory holding the hot record of a session context-watch.mjs
-// already notified, at the path record.mjs keeps it.
-async function warnedSavingsDirectory(sessionId) {
-  const directory = await fixture();
-  const previous = process.env.EXO_SAVINGS_DIR;
-  process.env.EXO_SAVINGS_DIR = directory;
-  const file = hotFile(sessionId);
-  if (previous === undefined) delete process.env.EXO_SAVINGS_DIR;
-  else process.env.EXO_SAVINGS_DIR = previous;
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify({ contextWatch: { notifiedStep: 100 } })}\n`);
-  return directory;
 }
 
 test('spec recommends continuing into build, Stop second', async () => {
@@ -80,23 +65,6 @@ test('find-cause opens build with no spec, unknown stage fails', async () => {
   const { model, effort } = noSpecStageKind();
   assert.ok(report.includes(`Next stage runs on \`${model}\` at \`${effort}\`, because it decides the change while building it.`));
   assert.throws(() => nextStageReport({ after: 'ship', artifact: 'none' }), /no next stage known/);
-});
-
-test('CLI keeps Build first in a session the context watch has warned', async () => {
-  const plan = planFixture({ tasks: [
-    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
-  ] });
-  const root = await gitRepository({ 'docs/plans/fixture.md': plan });
-  const planPath = path.join(root, 'docs/plans/fixture.md');
-  const directory = await warnedSavingsDirectory('warned-session');
-  const env = { EXO_SAVINGS_DIR: directory, CLAUDE_CODE_SESSION_ID: 'warned-session' };
-  const result = await run(SCRIPT, ['--after', 'spec', '--artifact', planPath], { env });
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout, [
-    '1. **Build (Recommended)**: runs the plan.',
-    `2. **Stop**: run \`/exo:build ${planPath}\` after a context clear.`,
-    RUN_PLAN_SONNET_LINE
-  ].join('\n') + '\n');
 });
 
 test('CLI fails with a usage error when --after is missing', async () => {

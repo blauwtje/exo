@@ -2,7 +2,7 @@
 // Holds a delegate to a context budget, because a model cannot see its own
 // context size. Before each tool call inside a delegate it reads the input,
 // cache read and cache creation tokens of the last assistant turn in that
-// delegate's own transcript, the sum context-watch takes, and counts the call.
+// delegate's own transcript and counts the call.
 // Past the soft limit it adds one line before each call saying to read nothing
 // new and commit what is green; past the hard limit, in tokens or tool calls, it
 // denies every tool but the ones that finish a half-made edit and write the
@@ -13,10 +13,7 @@
 // the BUDGET line, because a delegate told only that a tool is denied keeps
 // retrying it instead of returning, and its caller needs the open part to hand
 // it to a fresh agent.
-// The main session carries no `agent_id` and is never measured here: its call
-// goes to the context watch in context-watch.mjs instead, imported only then, so
-// a delegate's call never loads the watch's session store or settings code; the
-// process entry prints whichever output either returns.
+// The main session carries no `agent_id` and is never measured here.
 //
 //   node delegate-budget.mjs   PreToolUse hook on every tool but Bash: stdin is the hook JSON;
 //                              a Bash call reaches delegateBudget() through hooks/dispatch-bash.mjs
@@ -125,12 +122,10 @@ function guard(hookInput) {
   }
 }
 
-// A delegate's call is measured here. The main session's call goes to the
-// context watch, whose notice or null this returns as it is.
-export async function delegateBudget(hookInput) {
+// A delegate's call is measured here; the main session's call is never measured.
+export function delegateBudget(hookInput) {
   if (typeof hookInput.agent_id === 'string') return guard(hookInput);
-  const { watch } = await import('./context-watch.mjs');
-  return watch(hookInput);
+  return null;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
@@ -143,7 +138,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process
   }
   if (inputText !== undefined) {
     try {
-      const output = await delegateBudget(JSON.parse(inputText));
+      const output = delegateBudget(JSON.parse(inputText));
       if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
     } catch (error) {
       console.error(`delegate-budget: ${error.message}`);

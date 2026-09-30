@@ -110,7 +110,6 @@ export function emptySession() {
     calls: {},
     guard: { hookMs: 0, refusals: {} },
     restate: { baseline: null },
-    contextWatch: { notifiedStep: null },
     overhead: null
   };
 }
@@ -123,8 +122,7 @@ export function emptyHotSession() {
     reads: {},
     calls: {},
     guard: { hookMs: 0, refusals: {} },
-    restate: { baseline: null },
-    contextWatch: { notifiedStep: null }
+    restate: { baseline: null }
   };
 }
 
