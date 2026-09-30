@@ -34,9 +34,23 @@ test('leaves code, quotes, urls, blockquotes, tables and questions unchanged', (
     'See https://example.com/the/path',
     '> the quoted line',
     '| the | cell |',
-    'Is the array sorted?',
+    'Do you want the array sorted?',
   ];
   for (const line of lines) assert.equal(strip(line).text, line);
+});
+
+test('filters a question that asks the user nothing and keeps one that does', () => {
+  assert.equal(strip('It needs a decision: does the call count toward the old window?').text, 'It needs decision: does call count toward old window?');
+  assert.equal(strip('The fix is in. Do you want the patch?').text, 'Fix is in. Do you want the patch?');
+});
+
+test('leaves a tilde fence unchanged', () => {
+  assert.equal(strip('~~~\nthe code runs\n~~~').text, '~~~\nthe code runs\n~~~');
+});
+
+test('returns a line that already holds the placeholder unchanged', () => {
+  const line = 'Icon \u{E000} marks the file.';
+  assert.equal(strip(line).text, line);
 });
 
 test('strips around protected spans and keeps them intact', () => {

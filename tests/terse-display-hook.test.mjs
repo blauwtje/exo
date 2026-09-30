@@ -118,7 +118,7 @@ test('a new message id starts outside a fence', async () => {
   writeState(box, { expand: false, feedback: null, display: { messageId: 'old', inFence: true } });
   const result = await runHook(flush('The hook reads the setting.', { final: false }), box);
   assert.equal(displayed(result).displayContent, 'Hook reads setting.');
-  assert.deepEqual(readState(box).display, { messageId: 'm1', inFence: false });
+  assert.equal(readState(box), null);
 });
 
 test('pending feedback survives a flush', async () => {
@@ -126,7 +126,7 @@ test('pending feedback survives a flush', async () => {
   const feedback = { rate: 6.4, sentence: 'build fails.' };
   writeState(box, { expand: false, feedback });
   await runHook(flush('The hook reads the setting.', { final: false }), box);
-  assert.deepEqual(readState(box), { expand: false, feedback, display: { messageId: 'm1', inFence: false } });
+  assert.deepEqual(readState(box), { expand: false, feedback });
   await runHook(flush('', { index: 1 }), box);
   assert.deepEqual(readState(box), { expand: false, feedback });
 });

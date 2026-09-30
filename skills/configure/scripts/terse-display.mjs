@@ -5,8 +5,9 @@
 // `last_assistant_message` keep the original text.
 //
 // The fence state of a message lives in the session's terse state as
-// `display: { messageId, inFence }`: a new `message_id` starts outside a fence
-// and the `final` flush clears it. The hook prints `displayContent` only when
+// `display: { messageId, inFence }` only while a fence stays open: a new
+// `message_id` starts outside a fence and the `final` flush clears it; a flush
+// that leaves it unchanged writes nothing. The hook prints `displayContent` only when
 // the text changed, and prints nothing for the reply to a lone `?`.
 //
 // A fault never changes the display: any error exits 0 with nothing on stdout,
@@ -26,8 +27,11 @@ try {
   if (state !== null && !state.expand) {
     const sameMessage = state.display !== null && state.display.messageId === messageId;
     const result = stripArticles(delta, sameMessage && state.display.inFence);
-    const display = final === true ? null : { messageId, inFence: result.inFence };
-    writeTerseState(sessionId, { expand: false, feedback: state.feedback, display });
+    // A new message id starts outside a fence, so the state holds `display` only while a fence is open.
+    const display = final !== true && result.inFence ? { messageId, inFence: true } : null;
+    if (JSON.stringify(display) !== JSON.stringify(state.display)) {
+      writeTerseState(sessionId, { expand: false, feedback: state.feedback, display });
+    }
     if (result.text !== delta) {
       const hookSpecificOutput = { hookEventName: 'MessageDisplay', displayContent: result.text };
       process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);

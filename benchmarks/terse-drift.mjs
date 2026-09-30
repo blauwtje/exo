@@ -19,6 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { configDirectory } from '#config-directory';
 import { scoreProse } from '#prose-density';
 import { MODELS, ROOT } from './tasks.mjs';
 
@@ -232,13 +233,14 @@ export function rawTurnTexts(jsonl) {
 function readRawTurnTexts(sessionId) {
   const nothing = TURN_PROMPTS.map(() => null);
   if (typeof sessionId !== 'string') return nothing;
-  const projects = path.join(process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), '.claude'), 'projects');
+  const projects = path.join(configDirectory(), 'projects');
   try {
     for (const slug of fs.readdirSync(projects)) {
       const file = path.join(projects, slug, `${sessionId}.jsonl`);
       if (fs.existsSync(file)) return rawTurnTexts(fs.readFileSync(file, 'utf8'));
     }
-  } catch {
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.error(`terse-drift: raw transcript not read: ${error.message}`);
     return nothing;
   }
   return nothing;
