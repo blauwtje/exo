@@ -30,19 +30,25 @@ export function isProcessEntry(moduleUrl) {
   }
 }
 
-// `denialFor(command, hookInput)` returns the deny reason, or null to allow.
+// The deny output for `hookInput` when `denialFor(command, hookInput)` returns
+// a reason, or null to allow: a call that is not a Bash command, or the
+// `guards` setting off, allows.
+export function guardDecision(hookInput, denialFor) {
+  const command = hookInput.tool_input?.command;
+  if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
+  if (!guardsOn()) return null;
+  const reason = denialFor(command, hookInput);
+  if (!reason) return null;
+  const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
+  return { hookSpecificOutput: decision };
+}
+
 export async function runBashGuard(denialFor) {
   try {
     const text = await readHookText();
     if (text.trim() === '') return;
-    const hookInput = JSON.parse(text);
-    const command = hookInput.tool_input?.command;
-    if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return;
-    if (!guardsOn()) return;
-    const reason = denialFor(command, hookInput);
-    if (!reason) return;
-    const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
-    process.stdout.write(`${JSON.stringify({ hookSpecificOutput: decision })}\n`);
+    const output = guardDecision(JSON.parse(text), denialFor);
+    if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
   } catch {
     // A guard fault lets the command through.
   }

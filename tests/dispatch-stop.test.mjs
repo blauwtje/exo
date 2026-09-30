@@ -1,9 +1,9 @@
 // The Stop dispatcher runs savings, proof-check, resume-plan and terse-check in
-// one process: every handler runs, a fault in one leaves the rest running, and
-// the first block wins, with proof-check before resume-plan.
+// one process: a fault in one handler leaves the rest running, and the first
+// block wins, with proof-check before resume-plan, which a proof-check block skips.
 
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -74,4 +74,15 @@ test('unreadable input exits 0 with nothing on stdout', async () => {
   const box = sandbox();
   const { stdout } = await dispatch(box, 'not json');
   assert.equal(stdout, '');
+});
+
+test('a proof-check block leaves the resume-plan wait marker in place', () => {
+  const box = sandbox();
+  execFileSync('git', ['init', '--quiet'], { cwd: box.project });
+  const waitMarker = path.join(box.project, '.git', 'exo', 'build.wait');
+  fs.mkdirSync(path.dirname(waitMarker), { recursive: true });
+  fs.writeFileSync(waitMarker, '');
+  const input = { session_id: 's4', cwd: box.project, transcript_path: unprovenTranscript(box.project) };
+  assert.equal(dispatchStop(input).decision, 'block');
+  assert.equal(fs.existsSync(waitMarker), true);
 });

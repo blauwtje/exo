@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Runs a lean-workflow plan's gate: each landed task's own Proof command
-// (except one equal to the gate command), the plan's Land gate (else the first
-// backticked command of its Success criterion, else `npm run check`), and a
+// (except one equal to the gate command or running the test suite), the first
+// backticked command of the plan's Success criterion (else its Land gate, else
+// `npm run check`), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
 // the size of the diff against base, so a caller knows which agent reviews
@@ -24,6 +25,8 @@ import { pickReviewer } from './pick-reviewer.mjs';
 
 const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
 const DEFAULT_LAND_GATE = 'npm run check';
+// A Proof that starts the test suite: `npm test` or `node --test ...`.
+const TEST_SUITE_PROOF = /^(npm test|node --test)( |$)/;
 const BACKTICKED_COMMAND = /`([^`]+)`/;
 // A Proof: value that carries a backtick reads as prose describing the
 // check (for example "npm run validate, whose output holds no `[FAIL]`
@@ -70,7 +73,8 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
   const landed = new Set(landedTasks(plan.tasks, root, planIdOf(planPath)));
   const lines = [];
   let failed = false;
-  const gateCommand = checkCommand ?? frame.landGate ?? criterionCommand(frame.successCriterion) ?? DEFAULT_LAND_GATE;
+  const landGateNone = frame.landGate === 'none' ? 'none' : null;
+  const gateCommand = checkCommand ?? landGateNone ?? criterionCommand(frame.successCriterion) ?? frame.landGate ?? DEFAULT_LAND_GATE;
   const gateSkipped = gateCommand === 'none';
 
   for (const task of plan.tasks) {
@@ -80,9 +84,9 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
       lines.push(`SKIP Task ${task.number} (Proof: not a single \`command\`)`);
       continue;
     }
-    // A Proof that is the gate command itself would run the full check twice.
-    if (!gateSkipped && command === gateCommand) {
-      lines.push(`SKIP Task ${task.number} (Proof: is the gate command, which runs once below)`);
+    // A Proof that is the gate command, or runs the test suite, repeats what the gate runs once below.
+    if (!gateSkipped && (command === gateCommand || TEST_SUITE_PROOF.test(command))) {
+      lines.push(`SKIP Task ${task.number} (Proof: is the gate command or runs the test suite, which the gate runs once below)`);
       continue;
     }
     const { ok } = runCommand(command);

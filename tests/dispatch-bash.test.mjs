@@ -71,13 +71,13 @@ test('the guards setting off stands the guards down', async () => {
 
 test('the first deny is returned when two guards deny', async () => {
   const decision = await output('git reset --hard & sleep 1');
-  assert.match(decision.permissionDecisionReason, /detach-guard/);
+  assert.match(decision.permissionDecisionReason, /git-guard/);
 });
 
 test('a deny wins over an allow, and contexts are joined in step order', () => {
   const allow = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'ok' } };
   const steps = [step('a', allow), step('b', context('first')), step('c', deny('no one')), step('d', deny('no two')), step('e', context('second'))];
-  assert.deepEqual(dispatchBash({}, steps), {
+  assert.deepEqual(dispatchBash({}, steps, []), {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       permissionDecision: 'deny',
@@ -89,6 +89,15 @@ test('a deny wins over an allow, and contexts are joined in step order', () => {
 
 test('a step that throws does not stop the steps after it', () => {
   const broken = { name: 'broken', run: () => { throw new Error('boom'); } };
-  assert.deepEqual(dispatchBash({}, [broken, step('after', deny('still denied'))]).hookSpecificOutput.permissionDecisionReason, 'still denied');
-  assert.equal(dispatchBash({}, [broken, step('none', null)]), null);
+  assert.deepEqual(dispatchBash({}, [broken, step('after', deny('still denied'))], []).hookSpecificOutput.permissionDecisionReason, 'still denied');
+  assert.equal(dispatchBash({}, [broken, step('none', null)], []), null);
+});
+
+test('a denied call is not booked by the bookkeeping steps', () => {
+  let booked = 0;
+  const counter = { name: 'counter', run: () => { booked += 1; return null; } };
+  assert.equal(dispatchBash({}, [step('guard', deny('no'))], [counter]).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(booked, 0);
+  assert.equal(dispatchBash({}, [step('guard', null)], [counter]), null);
+  assert.equal(booked, 1);
 });

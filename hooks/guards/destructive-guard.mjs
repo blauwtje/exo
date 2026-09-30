@@ -150,8 +150,6 @@ function denialReason(command) {
   return null;
 }
 
-export function denialFor(command) {
-  return denialReason(command);
-}
+export { denialReason as denialFor };
 
-if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialReason);

@@ -1,68 +1,61 @@
 #!/usr/bin/env node
 // PreToolUse dispatcher on Bash: runs the repeat guard, the memory-booking
 // approval and the six Bash guards inside one process, so a Bash call spawns
-// one hook process where it spawned eight. Every step runs, each in its own
-// try/catch, so a fault in one lets the rest run and the command go through
-// as it did when each step was its own hook. The first deny is returned; the
-// additional contexts of every step are joined into the same output.
+// one hook process where it spawned eight. The guards run first, then the
+// bookkeeping steps unless a guard denied, each in its own try/catch, so a
+// fault in one lets the rest run and the command go through as it did when
+// each step was its own hook. The first deny is returned; the additional
+// contexts of the steps that ran are joined into the same output.
 // A fault reading or parsing the input exits 0 with no output.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
-import { settingValue } from '#settings-store';
 import { approve } from '../skills/remember/scripts/nudge.mjs';
 import { guardCall } from '../skills/show-savings/scripts/repeat-guard.mjs';
 import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as detachDenial } from './guards/detach-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
-import { isProcessEntry } from './guards/guard-runner.mjs';
+import { guardDecision, isProcessEntry } from './guards/guard-runner.mjs';
 import { denialFor as secretDenial } from './guards/secret-guard.mjs';
 import { denialFor as writingDenial } from './guards/writing-guard.mjs';
 
-// Mirrors guard-runner: a `guards` setting that cannot be read leaves the
-// guards on, because a broken settings file must not switch a safety guard off.
-function guardsOn() {
-  try {
-    return settingValue('guards') !== 'off';
-  } catch {
-    return true;
-  }
-}
-
-// A step for a guard's `denialFor`, with the checks `runBashGuard` makes.
+// A step for a guard's `denialFor`.
 function guardStep(denialFor) {
-  return (hookInput) => {
-    const command = hookInput.tool_input?.command;
-    if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
-    if (!guardsOn()) return null;
-    const reason = denialFor(command, hookInput);
-    if (!reason) return null;
-    return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
-  };
+  return (hookInput) => guardDecision(hookInput, denialFor);
 }
 
 // Each `run` takes the hook input and returns a hook output object or null.
-const STEPS = [
-  { name: 'repeat-guard', run: guardCall },
-  { name: 'nudge-approve', run: approve },
-  { name: 'bash-output-guard', run: guardStep(outputDenial) },
-  { name: 'detach-guard', run: guardStep(detachDenial) },
-  { name: 'destructive-guard', run: guardStep(destructiveDenial) },
+// The guards run first, in this order, so the first deny wins; the repeat
+// guard and the approval run after them, and only when no guard denied, so a
+// denied call is never counted.
+const GUARDS = [
   { name: 'git-guard', run: guardStep(gitDenial) },
   { name: 'secret-guard', run: guardStep(secretDenial) },
+  { name: 'destructive-guard', run: guardStep(destructiveDenial) },
+  { name: 'detach-guard', run: guardStep(detachDenial) },
+  { name: 'bash-output-guard', run: guardStep(outputDenial) },
   { name: 'writing-guard', run: guardStep(writingDenial) }
+];
+const BOOKKEEPING = [
+  { name: 'repeat-guard', run: guardCall },
+  { name: 'nudge-approve', run: approve }
 ];
 
 // The one output for `hookInput`, or null when no step has anything to say.
-export function dispatchBash(hookInput, steps = STEPS) {
+export function dispatchBash(hookInput, guards = GUARDS, bookkeeping = BOOKKEEPING) {
   const outputs = [];
-  for (const step of steps) {
+  let denied = false;
+  for (const step of [...guards, ...bookkeeping]) {
+    if (denied && bookkeeping.includes(step)) continue;
     try {
       const output = step.run(hookInput);
-      if (output) outputs.push(output.hookSpecificOutput ?? {});
-    } catch {
+      if (!output) continue;
+      outputs.push(output.hookSpecificOutput ?? {});
+      if (output.hookSpecificOutput?.permissionDecision === 'deny') denied = true;
+    } catch (error) {
       // A step fault lets the command through, as its own hook's fault did.
+      console.error(`${step.name}: ${error.message}`);
     }
   }
   if (outputs.length === 0) return null;
