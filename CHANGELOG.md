@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- At `terse`, the next-prompt note after a reply over the limit names that reply's stray article phrases, such as `the array`.
+- The `terse` drift benchmark gates every chat turn on the text you read, not only turns 1, 10 and 11, and reports the model's raw rate beside it.
+
 ### Fixed
 
 - At `terse`, a display filter removes the stray articles a reply still carries before you read it, leaving code, quotes, paths, tables and questions as written; the transcript and the model keep the original text.
