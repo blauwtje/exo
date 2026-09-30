@@ -43,7 +43,7 @@
     "default": "on",
     "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything"
   },
-  "guard-lines": {
+  "guard_lines": {
     "type": "number",
     "default": 400,
     "description": "from how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range"

@@ -40,22 +40,22 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard-lines=400 (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard-lines=400 (default)' + TIGHT_RULE);
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard-lines=400 (default)' + TIGHT_RULE);
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard-lines=400 (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
 });
 
 test('replies is tight by default and standard when the project sets it', async () => {
@@ -113,7 +113,7 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), budget=normal \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\), guard-lines=400 \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), budget=normal \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\), guard_lines=400 \(default\); .*exo\.json is not valid JSON/);
 });
 
 test('a value the schema does not allow is named in the context line, and the default replies rule still applies', async () => {
@@ -153,7 +153,7 @@ test('menu asks for the setting, and with a key for a value other than the curre
   const space = await workspace({ project: { specs: 'issues' } });
   const settingQuestion = await settings(space, ['menu']);
   assert.equal(settingQuestion.code, 0, settingQuestion.stderr);
-  assert.ok(settingQuestion.stdout.trimEnd().endsWith('1. **specs**: change it, now issues\n2. **replies**: change it, now tight\n3. **budget**: change it, now normal\n4. **ship**: change it, now ask\n5. **workspace**: change it, now ask\n6. **guards**: change it, now on\n7. **guard-lines**: change it, now 400\n8. **Keep**: change nothing'), settingQuestion.stdout);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('1. **specs**: change it, now issues\n2. **replies**: change it, now tight\n3. **budget**: change it, now normal\n4. **ship**: change it, now ask\n5. **workspace**: change it, now ask\n6. **guards**: change it, now on\n7. **guard_lines**: change it, now 400\n8. **Keep**: change nothing'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
   assert.ok(valueQuestion.stdout.trimEnd().endsWith('1. **docs**: set specs to docs\n2. **both**: set specs to both\n3. **Keep issues**: change nothing'), valueQuestion.stdout);
   assert.doesNotMatch(valueQuestion.stdout, /replies/);

@@ -72,9 +72,9 @@ Each hook entry pins `"shell": "bash"` so a Windows host without Git Bash does n
 
 ## Guard internals
 
-- The read guard refuses an unbounded read of a file over `guard-lines` lines, 400 unless set, with a reason that asks for a located range, and a second read of a range unchanged since the first in this context window. The guards keep their reads and call counts per session in `~/.claude/exo/sessions/<id>.json`, which `EXO_SESSIONS_DIR` relocates, and prune files older than 30 days. The guard hooks `Read` only: a file read through Bash, as `cat` or `sed` reads it, is not refused.
+- The read guard refuses an unbounded read of a file over `guard_lines` lines, 400 unless set, with a reason that asks for a located range, and a second read of a range unchanged since the first in this context window. The guards keep their reads and call counts per session in `~/.claude/exo/sessions/<id>.json`, which `EXO_SESSIONS_DIR` relocates, and prune files older than 30 days. The guard hooks `Read` only: a file read through Bash, as `cat` or `sed` reads it, is not refused.
 - The repeat guard denies the third identical `Bash` command or `Edit` in one context window, and the second `WebFetch` of one URL or `WebSearch` of one query: identical is the command with its whitespace collapsed and its `.log` redirect dropped, the file path with a hash of the text the edit replaces, the trimmed URL whatever the fetch prompt, or the query with its whitespace collapsed. A successful `Edit` or `Write` clears the `Bash` counts of the reader that made it, the main thread or one `agent_id`, so a red, green and final run of one test passes; a failed edit clears nothing, because `PostToolUse` runs only after the tool succeeded. Denials are booked under `guard.denials`, apart from the read guard's refusals, so the report's read counts keep their meaning; the report gains no line for them.
-- The read guard's big-file limit is the `guard-lines` setting, a value that is not a whole number of at least 1 reads as 400. The ladder is never switched off: it rides in every session.
+- The read guard's big-file limit is the `guard_lines` setting, a value that is not a whole number of at least 1 reads as 400. The ladder is never switched off: it rides in every session.
 
 ## Releasing
 

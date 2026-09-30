@@ -52,7 +52,7 @@
       "options": ["on", "off"],
       "default": "on"
     },
-    "guard-lines": {
+    "guard_lines": {
       "type": "number",
       "title": "Read guard line limit",
       "description": "From how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range. Not sure? Keep 400. A project overrides this in .claude/exo.json.",

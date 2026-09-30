@@ -5,7 +5,7 @@
 // generated and capped where it is written, and refuses a second read of a
 // range unchanged since the first in this context window; in PostToolUse it
 // books the read that succeeded in the session store. The `guards` setting
-// off switches the guard off, and the `guard-lines` setting sets how many
+// off switches the guard off, and the `guard_lines` setting sets how many
 // lines make a file large.
 //
 //   node read-guard.mjs         PreToolUse hook on Read: stdin is the hook JSON
@@ -29,7 +29,7 @@ const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.p
 
 const MAP_NAME = 'map.md';
 
-const DEFAULT_GUARD_LINES = SCHEMA['guard-lines'].default;
+const DEFAULT_GUARD_LINES = SCHEMA['guard_lines'].default;
 
 // A path a symlink reaches is the same file, and git reports the exo directory
 // with the links resolved; a directory that cannot be resolved compares as it
@@ -65,7 +65,7 @@ function guardEnabled() {
 // broken hand edit never switches the guard off.
 function guardLines() {
   try {
-    const configured = settingValue('guard-lines');
+    const configured = settingValue('guard_lines');
     if (Number.isSafeInteger(configured) && configured >= 1) return configured;
   } catch {
     // an unreadable setting keeps the default

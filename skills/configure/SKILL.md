@@ -27,7 +27,7 @@ Take the first step whose answer the request and the digits so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a digit.
-3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, and for `guard-lines` or a key without options a whole number of at least 1, in the question shape.
+3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, and for `guard_lines` or a key without options a whole number of at least 1, in the question shape.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    1. **Project (Recommended)**: everyone, via .claude/exo.json

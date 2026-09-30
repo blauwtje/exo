@@ -1,6 +1,6 @@
 // The read guard refuses an unbounded read of a large file and a second read
 // of a range unchanged since the first, and stands down when the `guards`
-// setting is off; the `guard-lines` setting moves the limit.
+// setting is off; the `guard_lines` setting moves the limit.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -28,7 +28,7 @@ function runGuard(args, hookInput, env) {
 }
 
 // `settings` is written to the project's .claude/exo.json, where the guard
-// resolves its `guards` and `guard-lines` settings.
+// resolves its `guards` and `guard_lines` settings.
 async function guardFixture(settings = null) {
   const configDirectory = await fixture();
   const projectDirectory = path.join(configDirectory, 'project');
@@ -99,8 +99,8 @@ test('a limit above the cap is refused like an unbounded read, a limit at the ca
   assert.equal(decision(await runGuard([], readInput(file, { limit: 400 }, 'toolu_2'), env)), null);
 });
 
-test('a limit above a lowered guard-lines is refused', async () => {
-  const { env, file } = await guardFixture({ 'guard-lines': 100 });
+test('a limit above a lowered guard_lines is refused', async () => {
+  const { env, file } = await guardFixture({ guard_lines: 100 });
   const verdict = decision(await runGuard([], readInput(file, { offset: 1, limit: 200 }), env));
   assert.equal(verdict?.permissionDecision, 'deny');
   assert.equal(decision(await runGuard([], readInput(file, { offset: 1, limit: 100 }, 'toolu_2'), env)), null);
@@ -143,15 +143,18 @@ test('a file of exactly 400 lines with a final newline passes an unbounded read'
   assert.equal(decision(await runGuard([], readInput(file), env)), null);
 });
 
-test('guard-lines moves the big-file limit, and a value that is not a whole number keeps 400', async () => {
-  const raised = await guardFixture({ 'guard-lines': 800 });
+test('guard_lines moves the big-file limit, and a value that is not a whole number keeps 400', async () => {
+  const raised = await guardFixture({ guard_lines: 800 });
   assert.equal(decision(await runGuard([], readInput(raised.file), raised.env)), null);
-  const lowered = await guardFixture({ 'guard-lines': 100 });
+  const lowered = await guardFixture({ guard_lines: 100 });
   const loweredVerdict = decision(await runGuard([], readInput(lowered.file), lowered.env));
   assert.match(loweredVerdict.permissionDecisionReason, /has 600 lines and an unbounded read is capped at 100/);
-  const broken = await guardFixture({ 'guard-lines': 'lots' });
+  const broken = await guardFixture({ guard_lines: 'lots' });
   const brokenVerdict = decision(await runGuard([], readInput(broken.file), broken.env));
   assert.match(brokenVerdict.permissionDecisionReason, /is capped at 400/);
+  const fromHook = await guardFixture();
+  const fromHookVerdict = decision(await runGuard([], readInput(fromHook.file), { ...fromHook.env, CLAUDE_PLUGIN_OPTION_GUARD_LINES: '100' }));
+  assert.match(fromHookVerdict.permissionDecisionReason, /is capped at 100/);
 });
 
 // The map the generator prints, filled past the cap. The path comes from the

@@ -10,7 +10,7 @@ import { FILE_LIMIT, LINE_LIMIT } from '../../skills/verify/scripts/pick-reviewe
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { SCHEMA } from '../../lib/settings-store.mjs';
 
-const DEFAULT_GUARD_LINES = SCHEMA['guard-lines'].default;
+const DEFAULT_GUARD_LINES = SCHEMA['guard_lines'].default;
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
