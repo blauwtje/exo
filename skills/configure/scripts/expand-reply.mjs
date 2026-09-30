@@ -14,7 +14,7 @@ import { SCHEMA, settingValue } from '#settings-store';
 const EXPANSION_INSTRUCTION =
   'The user sent a lone "?": restate your last reply in full sentences, with every step, reason and term written out, and no shortened wording.';
 
-// The reminder quotes the keep-whole and exemption sentences of the schema's
+// The reminder quotes the ban, keep-whole and exemption sentences of the schema's
 // terse rule rather than restating them, so the two lists cannot drift apart.
 function terseRuleSentence(ending) {
   const sentence = SCHEMA.replies.rules.terse.match(new RegExp(`[A-Z][^."]*${ending}\\.`));
@@ -23,7 +23,7 @@ function terseRuleSentence(ending) {
 }
 
 function terseReminder() {
-  return `replies=terse: chat prose drops articles, linking verbs, filler. ${terseRuleSentence('stay whole')} ${terseRuleSentence('keep normal prose')}`;
+  return `replies=terse: ${terseRuleSentence('are fine')} ${terseRuleSentence('stay whole')} ${terseRuleSentence('keep normal prose')}`;
 }
 
 function contextFor(prompt) {

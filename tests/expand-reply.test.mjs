@@ -81,7 +81,9 @@ test('under replies=terse every other prompt prints the terse reminder', async (
     assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
     const { additionalContext } = output.hookSpecificOutput;
     assert.match(additionalContext, /replies=terse/);
-    assert.ok(additionalContext.length < 260, `reminder is ${additionalContext.length} characters`);
+    assert.ok(additionalContext.includes('never write a, an or the'), additionalContext);
+    assert.ok(additionalContext.includes('never write is, are, was or were'), additionalContext);
+    assert.ok(additionalContext.length < 360, `reminder is ${additionalContext.length} characters`);
   }
 });
 

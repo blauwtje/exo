@@ -73,7 +73,10 @@ test('replies=terse injects the terse rule in place of the tight one', async () 
   assert.ok(result.stdout.trim().endsWith(`. ${SCHEMA.replies.rules.terse}`), result.stdout);
   assert.ok(!result.stdout.includes(SCHEMA.replies.rules.tight), result.stdout);
   assert.ok(!SCHEMA.replies.rules.terse.includes('where the meaning survives'));
-  assert.ok(SCHEMA.replies.rules.terse.includes('Every chat sentence drops articles, linking verbs and filler'));
+  assert.ok(SCHEMA.replies.rules.terse.includes('never write a, an or the'));
+  assert.ok(SCHEMA.replies.rules.terse.includes('never write is, are, was or were'));
+  assert.ok(!SCHEMA.replies.rules.terse.includes('steps whose order matters'));
+  assert.match(SCHEMA.replies.rules.terse, /label such as .Warning:. on anything else does not lift the ban/);
   assert.ok(SCHEMA.replies.rules.terse.includes('Hook not reading setting → reminder never fires.'));
 });
 

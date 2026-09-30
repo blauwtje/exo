@@ -59,11 +59,11 @@ A session hook loads these rules at startup, resume, clear and compaction, so th
 |---|---|
 | `standard` | Nothing: full prose. |
 | `tight` (default) | Preamble, recap, filler and hedging. |
-| `terse` | The same, and articles, linking verbs and filler words; fragments, `→` and `=` are fine. |
+| `terse` | The same, and the words a, an, the, is, are, was and were; fragments, `→` and `=` are fine. |
 
 Switch it with `/exo:configure replies terse` (or `tight`, `standard`), or in the plugin options in `/config`; `.claude/exo.json` sets it for one repository and `.claude/exo.local.json` for one machine. The rule names what to cut, not English grammar, so `terse` works in any language you write in. Because a session rule fades over a long chat and after compaction, `terse` also adds a one-line reminder of about 45 tokens to every prompt you send; `tight` and `standard` add nothing.
 
-What every level keeps whole: code, commands, paths, identifiers, error text, numbers and every not, no, only and except. Full sentences return for a security warning and a confirmation before an irreversible action, and at `terse` also for steps whose order matters and for a question to you. Only chat prose is shortened: commit, pull request and changelog text, docs, code comments and saved files keep normal prose.
+What every level keeps whole: code, commands, paths, identifiers, error text, numbers and every not, no, only and except. Full sentences return for a security warning and a confirmation before an irreversible action, and at `terse` also for a question to you. Only chat prose is shortened: commit, pull request and changelog text, docs, code comments and saved files keep normal prose.
 
 A message of only `?` makes the next reply restate the previous one in full sentences, at every level and for that reply only.
 
