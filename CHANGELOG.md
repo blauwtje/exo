@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- At `terse`, a display filter removes the stray articles a reply still carries before you read it, leaving code, quotes, paths, tables and questions as written; the transcript and the model keep the original text.
+
 ## 0.63.0 - 2026-09-30
 
 ### Added
