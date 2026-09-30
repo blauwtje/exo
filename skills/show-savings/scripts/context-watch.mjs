@@ -10,9 +10,9 @@
 // delegate carries `agent_id` and holds a context of its own, so it is never
 // measured.
 //
-// It runs inside the delegate-budget.mjs hook, which parses the PreToolUse input
-// on every tool and calls watch() when the call carries no `agent_id`; run as a
-// file, it reads that same hook JSON from stdin:
+// Hooks call watch() when the call carries no `agent_id`; it returns the notice
+// and never writes it. Run as a file, it reads that same hook JSON from stdin
+// and prints the notice:
 //
 //   node context-watch.mjs
 //
@@ -138,22 +138,23 @@ function claimStep(sessionId, step) {
   return claimed;
 }
 
+// The hook output object carrying the notice, or null when there is none to send.
 export function watch(hookInput) {
-  if (typeof hookInput.agent_id === 'string') return;
-  if (typeof hookInput.session_id !== 'string' || typeof hookInput.transcript_path !== 'string') return;
+  if (typeof hookInput.agent_id === 'string') return null;
+  if (typeof hookInput.session_id !== 'string' || typeof hookInput.transcript_path !== 'string') return null;
   const tokens = mainSessionTokens(hookInput.transcript_path);
-  if (tokens === null) return;
+  if (tokens === null) return null;
   const threshold = thresholdThousands();
-  if (!claimStep(hookInput.session_id, reachedStep(tokens, threshold))) return;
+  if (!claimStep(hookInput.session_id, reachedStep(tokens, threshold))) return null;
   const advice = PLAN_SKILLS.has(activeSkill(hookInput.transcript_path)) ? PLAN_ADVICE : handoverAdvice(handoverPath(hookInput));
   const notice = `exo: context ${Math.round(tokens / 1000)}k tokens, past ${threshold}k: ${advice}`;
-  const output = { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: notice } };
-  process.stdout.write(`${JSON.stringify(output)}\n`);
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: notice } };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
-    watch(JSON.parse(await readHookText()));
+    const output = watch(JSON.parse(await readHookText()));
+    if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
   } catch (error) {
     console.error(`context-watch: ${error.message}`);
   }

@@ -15,9 +15,11 @@
 // it to a fresh agent.
 // The main session carries no `agent_id` and is never measured here: its call
 // goes to the context watch in context-watch.mjs instead, imported only then, so
-// a delegate's call never loads the watch's session store or settings code.
+// a delegate's call never loads the watch's session store or settings code; the
+// process entry prints whichever output either returns.
 //
-//   node delegate-budget.mjs   PreToolUse hook on every tool: stdin is the hook JSON
+//   node delegate-budget.mjs   PreToolUse hook on every tool but Bash: stdin is the hook JSON;
+//                              a Bash call reaches delegateBudget() through hooks/dispatch-bash.mjs
 //
 // Limits, in thousands of tokens and in calls: a `Budget: <soft>k/<hard>k` line
 // in the dispatch, optionally ending `/<calls> calls`, outranks the entry for the
@@ -124,12 +126,11 @@ function guard(hookInput) {
 }
 
 // A delegate's call is measured here. The main session's call goes to the
-// context watch, which writes its own output, so this returns null for it.
+// context watch, whose notice or null this returns as it is.
 export async function delegateBudget(hookInput) {
   if (typeof hookInput.agent_id === 'string') return guard(hookInput);
   const { watch } = await import('./context-watch.mjs');
-  watch(hookInput);
-  return null;
+  return watch(hookInput);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
