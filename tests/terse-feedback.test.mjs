@@ -39,23 +39,38 @@ test('the state file lives under the config directory, one per session', () => {
 });
 
 test('a session with no file reads as empty state', () => {
-  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null });
+  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display: null });
 });
 
 test('written state reads back, with feedback a { rate, sentence } object', () => {
   const feedback = { rate: 6.4, sentence: 'build fails.' };
   writeTerseState('abc-1', { expand: false, feedback });
-  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback });
+  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback, display: null });
   assert.deepEqual(JSON.parse(fs.readFileSync(terseStateFile('abc-1'), 'utf8')), {
     expand: false,
     feedback,
   });
 });
 
+test('display state reads back and is written only when set', () => {
+  const display = { messageId: 'm1', inFence: true };
+  writeTerseState('abc-1', { expand: false, feedback: null, display });
+  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display });
+  assert.deepEqual(JSON.parse(fs.readFileSync(terseStateFile('abc-1'), 'utf8')), { expand: false, feedback: null, display });
+  writeTerseState('abc-1', { expand: false, feedback: null });
+  assert.equal(fs.existsSync(terseStateFile('abc-1')), false);
+});
+
+test('a misshapen display reads as null and keeps the rest of the state', () => {
+  fs.mkdirSync(path.dirname(terseStateFile('abc-1')), { recursive: true });
+  fs.writeFileSync(terseStateFile('abc-1'), JSON.stringify({ expand: true, feedback: null, display: { messageId: 7 } }));
+  assert.deepEqual(readTerseState('abc-1'), { expand: true, feedback: null, display: null });
+});
+
 test('state with expand false and no feedback deletes the file', () => {
   writeTerseState('abc-1', { expand: true, feedback: null });
   assert.ok(fs.existsSync(terseStateFile('abc-1')));
-  writeTerseState('abc-1', { expand: false, feedback: null });
+  writeTerseState('abc-1', { expand: false, feedback: null, display: null });
   assert.equal(fs.existsSync(terseStateFile('abc-1')), false);
 });
 
@@ -69,15 +84,15 @@ test('clearTerseState on a missing file is not an error', () => {
 test('an invalid session id writes nothing and reads as empty', () => {
   writeTerseState('../escape', { expand: true, feedback: null });
   assert.equal(fs.existsSync(path.join(configDir, 'exo')), false);
-  assert.deepEqual(readTerseState('../escape'), { expand: false, feedback: null });
+  assert.deepEqual(readTerseState('../escape'), { expand: false, feedback: null, display: null });
 });
 
 test('a malformed or misshapen file reads as empty state', () => {
   fs.mkdirSync(path.dirname(terseStateFile('abc-1')), { recursive: true });
   fs.writeFileSync(terseStateFile('abc-1'), '{not json');
-  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null });
+  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display: null });
   fs.writeFileSync(terseStateFile('abc-1'), JSON.stringify({ expand: 'yes', feedback: { rate: 'x' } }));
-  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null });
+  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display: null });
 });
 
 test('tightenSentence takes the first sentence with an article and drops its articles', () => {

@@ -122,3 +122,12 @@ test('the reply expander runs under bash on every prompt and takes no matcher', 
   assert.equal(expander[0].hook.shell, 'bash');
   assert.ok(expander[0].hook.command.endsWith('skills/configure/scripts/expand-reply.mjs"'), expander[0].hook.command);
 });
+
+test('the terse display filter runs under bash on every message and takes no matcher', () => {
+  const filter = hookEntries().filter((entry) => entry.hook.command.includes('terse-display.mjs'));
+  assert.equal(filter.length, 1);
+  assert.equal(filter[0].event, 'MessageDisplay');
+  assert.equal(filter[0].matcher, undefined);
+  assert.equal(filter[0].hook.shell, 'bash');
+  assert.ok(filter[0].hook.command.endsWith('skills/configure/scripts/terse-display.mjs"'), filter[0].hook.command);
+});
