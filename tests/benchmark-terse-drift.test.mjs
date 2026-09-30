@@ -1,7 +1,7 @@
 // benchmarks/terse-drift.mjs is the live multi-turn harness for replies=terse.
 // Its pure parts run here with no network: argument parsing, the 12-turn
-// prompt list, the verdict on canned texts, and the dry run, which exits 0
-// and starts no claude process.
+// prompt list, the verdict on canned texts, the stream-json handling on a
+// canned stdout, and the dry run, which exits 0 and starts no claude process.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { scoreProse } from '../benchmarks/prose-density.mjs';
-import { TURN_PROMPTS, parseArguments, verdictFor } from '../benchmarks/terse-drift.mjs';
+import { TURN_PROMPTS, createTurnReader, isCompactionEvent, parseArguments, sessionRecords, userMessageLine, verdictFor } from '../benchmarks/terse-drift.mjs';
 import { fixture, run } from './harness.mjs';
 
 const HARNESS = fileURLToPath(new URL('../benchmarks/terse-drift.mjs', import.meta.url));
@@ -95,7 +95,91 @@ test('without --confirm the harness exits 0, prints its call count and starts no
   await fs.writeFile(path.join(bin, 'claude'), `#!/bin/sh\ntouch "${marker}"\n`, { mode: 0o755 });
   const result = await run(HARNESS, ['--runs', '2'], { env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` } });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^24 claude -p calls planned/);
+  assert.match(result.stdout, /^2 claude -p session\(s\) planned, each one process of 12 turns \(24 turns in all\)/);
   assert.match(result.stdout, /Re-run with --confirm/);
   await assert.rejects(fs.access(marker));
+});
+
+test('a user message line is one newline-terminated stream-json user event', () => {
+  const prompt = 'Explain "allow"\nstep by step.';
+  const line = userMessageLine(prompt);
+  assert.ok(line.endsWith('\n'));
+  assert.equal(line.indexOf('\n'), line.length - 1);
+  assert.deepEqual(JSON.parse(line), { type: 'user', message: { role: 'user', content: prompt } });
+});
+
+const INIT = { type: 'system', subtype: 'init', session_id: 's' };
+const COMPACT_BOUNDARY = { type: 'system', subtype: 'compact_boundary', compact_metadata: { trigger: 'manual' } };
+const resultEvent = (text) => ({ type: 'result', subtype: 'success', is_error: false, result: text });
+
+function streamOf(events) {
+  return events.map((event) => `${JSON.stringify(event)}\n`).join('');
+}
+
+function readTurns(stdout, chunkSize) {
+  const streamTurns = [];
+  const reader = createTurnReader((streamTurn) => streamTurns.push(streamTurn));
+  for (let offset = 0; offset < stdout.length; offset += chunkSize) reader.push(stdout.slice(offset, offset + chunkSize));
+  return streamTurns;
+}
+
+test('the turn reader splits a canned stream into one turn per result, across any chunk cut', () => {
+  const stdout = streamOf([
+    INIT, { type: 'assistant', message: { content: [] } }, resultEvent('first'),
+    { type: 'system', subtype: 'status', status: 'compacting' }, COMPACT_BOUNDARY, resultEvent('')
+  ]);
+  for (const chunkSize of [1, 7, stdout.length]) {
+    const streamTurns = readTurns(stdout, chunkSize);
+    assert.equal(streamTurns.length, 2, `chunk ${chunkSize}`);
+    assert.equal(streamTurns[0].result.result, 'first');
+    assert.equal(streamTurns[0].events.length, 3);
+    assert.deepEqual(streamTurns[1].events.at(-1), resultEvent(''));
+    assert.equal(streamTurns[0].events.some(isCompactionEvent), false);
+    assert.equal(streamTurns[1].events.some(isCompactionEvent), true);
+  }
+});
+
+test('the turn reader holds a trailing partial line and keeps a non-JSON line as an unparsed event', () => {
+  const streamTurns = readTurns(`not json\n${streamOf([resultEvent('done')])}{"type":"assist`, 5);
+  assert.equal(streamTurns.length, 1);
+  assert.deepEqual(streamTurns[0].events[0], { type: 'unparsed', line: 'not json' });
+});
+
+test('only a system compact_boundary event counts as a compaction', () => {
+  assert.equal(isCompactionEvent(COMPACT_BOUNDARY), true);
+  assert.equal(isCompactionEvent({ type: 'system', subtype: 'status', status: 'compacting' }), false);
+  assert.equal(isCompactionEvent({ type: 'user', subtype: 'compact_boundary' }), false);
+});
+
+function streamTurnsWith(overrides) {
+  return TURN_PROMPTS.map((_, index) => {
+    const turn = index + 1;
+    const events = turn === 7 ? [COMPACT_BOUNDARY] : [];
+    return overrides[turn] ?? { events: [...events, resultEvent(TERSE_TEXT)], result: resultEvent(TERSE_TEXT) };
+  });
+}
+
+test('a full streamed session is complete, confirms compaction at turn 7 and scores every chat turn', () => {
+  const records = sessionRecords(streamTurnsWith({}));
+  assert.equal(records.complete, true);
+  assert.equal(records.compaction, 'confirmed');
+  assert.equal(records.turns.length, 12);
+  assert.equal(records.turns[6].score, null);
+  assert.equal(records.turns[0].text, TERSE_TEXT);
+  assert.ok(records.turns[0].score.words >= 25);
+});
+
+test('a missing compaction event, a failed turn or a short stream never counts as confirmed or complete', () => {
+  const plain = { events: [resultEvent('')], result: resultEvent('') };
+  assert.equal(sessionRecords(streamTurnsWith({ 7: plain })).compaction, 'UNRUN');
+  const boundaryElsewhere = streamTurnsWith({ 7: plain, 6: { events: [COMPACT_BOUNDARY, resultEvent(TERSE_TEXT)], result: resultEvent(TERSE_TEXT) } });
+  assert.equal(sessionRecords(boundaryElsewhere).compaction, 'UNRUN');
+  const budget = { type: 'result', subtype: 'error_max_budget_usd', is_error: false };
+  const failed = sessionRecords(streamTurnsWith({ 10: { events: [budget], result: budget } }));
+  assert.equal(failed.complete, false);
+  assert.equal(failed.turns[9].text, null);
+  const short = sessionRecords(streamTurnsWith({}).slice(0, 9));
+  assert.equal(short.complete, false);
+  assert.equal(short.turns[10].score, null);
+  assert.equal(verdictFor(short.turns, null).verdict, 'UNRUN');
 });

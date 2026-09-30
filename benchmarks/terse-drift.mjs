@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // benchmarks/terse-drift.mjs
-// Multi-turn drift harness for `replies=terse`: one run is one 12-turn
-// `claude -p --resume` session in a fresh repository. It scores the article
-// density of the chat turns (turns 1, 10 and 11 gate), compacts at turn 7 and
-// asks for a commit at turn 12, whose body must keep full prose.
+// Multi-turn drift harness for `replies=terse`: one run is one 12-turn session
+// in a fresh repository, held in a single `claude -p` process with streamed
+// input, so SessionStart fires at startup as in an interactive session rather
+// than on every turn. It scores the article density of the chat turns (turns
+// 1, 10 and 11 gate), compacts at turn 7 and asks for a commit at turn 12,
+// whose body must keep full prose.
 //
-//   node benchmarks/terse-drift.mjs                        prints the call count and cap, spawns nothing
-//   node benchmarks/terse-drift.mjs --confirm              one run of 12 calls
+//   node benchmarks/terse-drift.mjs                        prints the session count and cap, spawns nothing
+//   node benchmarks/terse-drift.mjs --confirm              one run: one process of 12 turns
 //   node benchmarks/terse-drift.mjs --plugin-dir <dir> --runs 3 --out <dir> --confirm
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -18,8 +20,8 @@ import { fileURLToPath } from 'node:url';
 import { scoreProse } from './prose-density.mjs';
 import { MODELS, ROOT } from './tasks.mjs';
 
-const CALL_BUDGET_USD = '1';
-const CALL_TIMEOUT_MS = 10 * 60 * 1000;
+const SESSION_BUDGET_USD = '3';
+const SESSION_TIMEOUT_MS = 40 * 60 * 1000;
 const MIN_CHAT_WORDS = 25;
 const MAX_CHAT_RATE = 2.0;
 const MIN_COMMIT_WORDS = 20;
@@ -79,23 +81,86 @@ export function verdictFor(turns, commitText) {
 }
 
 export function dryRunLine(options) {
-  const calls = options.runs * TURN_PROMPTS.length;
-  return `${calls} claude -p calls planned (${options.runs} run(s) of ${TURN_PROMPTS.length} turns), at most $${CALL_BUDGET_USD} each; nothing started. Re-run with --confirm to spend it.`;
+  const turns = options.runs * TURN_PROMPTS.length;
+  return `${options.runs} claude -p session(s) planned, each one process of ${TURN_PROMPTS.length} turns (${turns} turns in all), at most $${SESSION_BUDGET_USD} per session; nothing started. Re-run with --confirm to spend it.`;
 }
 
-function claudeArguments(options, prompt, sessionId) {
-  const args = [
-    '-p', prompt,
+function claudeArguments(options) {
+  return [
+    '-p',
+    '--input-format', 'stream-json',
+    '--output-format', 'stream-json',
+    '--verbose',
     '--plugin-dir', options.pluginDir,
     '--model', MODELS[options.model],
-    '--output-format', 'json',
     '--setting-sources', 'project,local',
     '--strict-mcp-config',
     '--permission-mode', 'bypassPermissions',
-    '--max-budget-usd', CALL_BUDGET_USD
+    '--max-budget-usd', SESSION_BUDGET_USD
   ];
-  if (sessionId !== null) args.push('--resume', sessionId);
-  return args;
+}
+
+// One stream-json user message, newline-terminated, as `--input-format stream-json` reads it from stdin.
+export function userMessageLine(prompt) {
+  return `${JSON.stringify({ type: 'user', message: { role: 'user', content: prompt } })}\n`;
+}
+
+function parseEvent(line) {
+  try {
+    return JSON.parse(line);
+  } catch {
+    return { type: 'unparsed', line };
+  }
+}
+
+// Splits `--output-format stream-json` stdout into turns. A turn is every event up to and
+// including its `result` event; `push` takes chunks cut at any point, even inside a line.
+export function createTurnReader(onTurn) {
+  let pending = '';
+  let events = [];
+  return {
+    push(chunk) {
+      pending += chunk;
+      let newline = pending.indexOf('\n');
+      while (newline !== -1) {
+        const line = pending.slice(0, newline).trim();
+        pending = pending.slice(newline + 1);
+        if (line !== '') {
+          const event = parseEvent(line);
+          events.push(event);
+          if (event.type === 'result') {
+            onTurn({ events, result: event });
+            events = [];
+          }
+        }
+        newline = pending.indexOf('\n');
+      }
+    }
+  };
+}
+
+// `/compact` in streamed input emits this system event once the compaction lands.
+export function isCompactionEvent(event) {
+  return event.type === 'system' && event.subtype === 'compact_boundary';
+}
+
+function turnFailed(result) {
+  return result.is_error === true || result.subtype !== 'success';
+}
+
+// Maps the streamed turns onto the 12 prompts. A turn with no result or a failed one has no text;
+// compaction counts only when turn 7's own events hold the compact boundary.
+export function sessionRecords(streamTurns) {
+  const turns = TURN_PROMPTS.map((prompt, index) => {
+    const turn = index + 1;
+    const result = streamTurns[index]?.result ?? null;
+    const text = result !== null && !turnFailed(result) && typeof result.result === 'string' ? result.result : null;
+    const score = text === null || turn === COMPACT_TURN ? null : scoreProse(text);
+    return { turn, prompt, text, score };
+  });
+  const complete = TURN_PROMPTS.every((_, index) => streamTurns[index] !== undefined && !turnFailed(streamTurns[index].result));
+  const compacted = streamTurns[COMPACT_TURN - 1]?.events.some(isCompactionEvent) ?? false;
+  return { turns, complete, compaction: compacted ? 'confirmed' : 'UNRUN' };
 }
 
 function git(cwd, args) {
@@ -118,41 +183,36 @@ function prepareRepository(options, runDirectory) {
   return workdir;
 }
 
-function callClaude(options, prompt, sessionId, workdir, runDirectory) {
+// Sends one prompt, waits for its `result` event, then sends the next; stdin closes after the
+// last turn or the first failed one, which ends the process.
+function streamSession(options, workdir, runDirectory) {
   return new Promise((resolve) => {
-    let stdout = '';
-    const child = spawn('claude', claudeArguments(options, prompt, sessionId), {
+    const streamTurns = [];
+    const child = spawn('claude', claudeArguments(options), {
       cwd: workdir,
       env: { ...process.env, EXO_SAVINGS_DIR: path.join(runDirectory, 'record') },
-      stdio: ['ignore', 'pipe', 'ignore']
+      stdio: ['pipe', 'pipe', 'ignore']
     });
-    const timer = setTimeout(() => child.kill('SIGKILL'), CALL_TIMEOUT_MS);
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.on('error', () => resolve(null));
-    child.on('close', () => {
+    const sendNextTurn = () => child.stdin.write(userMessageLine(TURN_PROMPTS[streamTurns.length]));
+    const reader = createTurnReader((streamTurn) => {
+      streamTurns.push(streamTurn);
+      const last = streamTurns.length >= TURN_PROMPTS.length || turnFailed(streamTurn.result);
+      if (last) child.stdin.end();
+      else if (!child.stdin.writableEnded) sendNextTurn();
+    });
+    const timer = setTimeout(() => child.kill('SIGKILL'), SESSION_TIMEOUT_MS);
+    // A pipe closed by an exiting claude leaves turns without a result, which sessionRecords marks incomplete.
+    child.stdin.on('error', () => {});
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => reader.push(chunk));
+    const finish = () => {
       clearTimeout(timer);
-      try {
-        const result = JSON.parse(stdout);
-        resolve(result.is_error ? null : result);
-      } catch {
-        resolve(null);
-      }
-    });
+      resolve(streamTurns);
+    };
+    child.on('error', finish);
+    child.on('close', finish);
+    sendNextTurn();
   });
-}
-
-// Confirms a compaction by a compact-boundary record in a session transcript.
-function compactionConfirmed(sessionIds) {
-  const config = process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), '.claude');
-  const projects = path.join(config, 'projects');
-  if (!fs.existsSync(projects)) return false;
-  for (const project of fs.readdirSync(projects)) {
-    for (const sessionId of sessionIds) {
-      const transcript = path.join(projects, project, `${sessionId}.jsonl`);
-      if (fs.existsSync(transcript) && fs.readFileSync(transcript, 'utf8').includes('compact_boundary')) return true;
-    }
-  }
-  return false;
 }
 
 function commitBody(workdir) {
@@ -162,25 +222,12 @@ function commitBody(workdir) {
 
 async function runSession(options, runDirectory) {
   const workdir = prepareRepository(options, runDirectory);
-  const turns = [];
-  const sessionIds = [];
-  let sessionId = null;
-  let broken = false;
-  for (const [index, prompt] of TURN_PROMPTS.entries()) {
-    const turn = index + 1;
-    const result = broken ? null : await callClaude(options, prompt, sessionId, workdir, runDirectory);
-    if (result === null) broken = true;
-    const text = typeof result?.result === 'string' ? result.result : null;
-    if (typeof result?.session_id === 'string') {
-      sessionId = result.session_id;
-      sessionIds.push(sessionId);
-    }
-    const score = text === null || turn === COMPACT_TURN ? null : scoreProse(text);
-    turns.push({ turn, prompt, text, score });
-    if (result !== null) fs.writeFileSync(path.join(runDirectory, `turn-${turn}.json`), `${JSON.stringify(result, null, 2)}\n`);
+  const streamTurns = await streamSession(options, workdir, runDirectory);
+  for (const [index, { result }] of streamTurns.entries()) {
+    fs.writeFileSync(path.join(runDirectory, `turn-${index + 1}.json`), `${JSON.stringify(result, null, 2)}\n`);
   }
-  const compaction = compactionConfirmed(sessionIds) ? 'confirmed' : 'UNRUN';
-  const summary = { ...verdictFor(turns, broken ? null : commitBody(workdir)), compaction, turns };
+  const { turns, complete, compaction } = sessionRecords(streamTurns);
+  const summary = { ...verdictFor(turns, complete ? commitBody(workdir) : null), compaction, turns };
   fs.writeFileSync(path.join(runDirectory, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
   return summary;
 }
