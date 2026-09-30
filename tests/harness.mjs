@@ -27,12 +27,33 @@ after(async () => {
   }
 });
 
-export function run(file, args, options = {}) {
+// The variables through which a script finds the developer's own exo settings:
+// the project folder, and the plugin options a hook receives.
+const SETTINGS_VARIABLE = /^(CLAUDE_PROJECT_DIR|CLAUDE_PLUGIN_OPTION_.*)$/;
+
+let emptyConfigDirectory;
+
+/** One empty directory shared by every spawn of this test file, so no global settings file is read from it. */
+function emptyConfig() {
+  emptyConfigDirectory ??= fixture();
+  return emptyConfigDirectory;
+}
+
+/** The inherited environment without the developer's own exo settings, then `overrides`, so a test that names one on purpose still wins. */
+async function isolatedEnv(overrides) {
+  const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name))
+  );
+  return { ...inherited, CLAUDE_CONFIG_DIR: await emptyConfig(), ...overrides };
+}
+
+export async function run(file, args, options = {}) {
+  const env = await isolatedEnv(options.env);
   return new Promise((resolve) => {
     const child = execFile(
       process.execPath,
       [file, ...args],
-      { cwd: options.cwd ?? SCRIPTS, env: { ...process.env, ...options.env }, timeout: 120_000 },
+      { cwd: options.cwd ?? SCRIPTS, env, timeout: 120_000 },
       (error, stdout, stderr) => resolve({
         code: error ? (typeof error.code === 'number' ? error.code : 1) : 0,
         stdout: String(stdout),
