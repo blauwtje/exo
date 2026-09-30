@@ -1,8 +1,7 @@
 // The repeat guard denies the third identical Bash command and the third edit
-// replacing the same text in one file, lets the first repeat through, books
-// each denial under its tool call, forgets a reader's commands after that
+// replacing the same text in one file, lets the first repeat through, forgets a reader's commands after that
 // reader's successful edit, forgets its calls on a reset, and stands down when
-// config.json says repeatGuard: false.
+// the `guards` setting is off.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -12,8 +11,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const GUARD = fileURLToPath(new URL('../skills/show-savings/scripts/repeat-guard.mjs', import.meta.url));
-const READ_GUARD = fileURLToPath(new URL('../skills/show-savings/scripts/read-guard.mjs', import.meta.url));
+const GUARD = fileURLToPath(new URL('../hooks/guards/repeat-guard.mjs', import.meta.url));
+const READ_GUARD = fileURLToPath(new URL('../hooks/guards/read-guard.mjs', import.meta.url));
 
 function runScript(script, args, hookInput, env) {
   return new Promise((resolve) => {
@@ -31,13 +30,14 @@ function runGuard(args, hookInput, env) {
   return runScript(GUARD, args, hookInput, env);
 }
 
-async function guardFixture(config = null) {
+// `settings` is written to the project's .claude/exo.json, where the guard
+// resolves its `guards` setting.
+async function guardFixture(settings = null) {
   const configDirectory = await fixture();
-  if (config !== null) {
-    await fs.mkdir(path.join(configDirectory, 'exo', 'savings'), { recursive: true });
-    await fs.writeFile(path.join(configDirectory, 'exo', 'savings', 'config.json'), JSON.stringify(config));
-  }
-  return { env: { CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS: '' }, configDirectory };
+  const projectDirectory = path.join(configDirectory, 'project');
+  await fs.mkdir(path.join(projectDirectory, '.claude'), { recursive: true });
+  if (settings !== null) await fs.writeFile(path.join(projectDirectory, '.claude', 'exo.json'), JSON.stringify(settings));
+  return { env: { CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: projectDirectory }, configDirectory };
 }
 
 function bashInput(command, toolUseId) {
@@ -49,7 +49,7 @@ function editInput(filePath, oldString, toolUseId) {
 }
 
 async function record(configDirectory) {
-  return JSON.parse(await fs.readFile(path.join(configDirectory, 'exo', 'savings', 'sessions', 's1.json'), 'utf8'));
+  return JSON.parse(await fs.readFile(path.join(configDirectory, 'exo', 'sessions', 's1.json'), 'utf8'));
 }
 
 function decision(result) {
@@ -68,8 +68,8 @@ test('the first repeat passes and the third identical command is denied with its
   assert.equal(verdict.hookEventName, 'PreToolUse');
   assert.equal(verdict.permissionDecision, 'deny');
   assert.match(verdict.permissionDecisionReason, /has already run 2 times unchanged/);
-  const session = (await record(configDirectory));
-  assert.deepEqual(session.guard.denials, { toolu_3: { tool: 'Bash', reader: 'main', attempts: 3 } });
+  const session = await record(configDirectory);
+  assert.equal(Object.values(session.calls)[0], 3);
 });
 
 test('a log redirect that changes does not make a command a different one', async () => {
@@ -146,8 +146,8 @@ test('a reset forgets the calls of the context window that ended', async () => {
   assert.equal(decision(afterReset), null);
 });
 
-test('repeatGuard false stands this guard down while the read guard keeps refusing', async () => {
-  const { env, configDirectory } = await guardFixture({ repeatGuard: false });
+test('guards off stands the repeat guard and the read guard down together', async () => {
+  const { env, configDirectory } = await guardFixture({ guards: 'off' });
   await runGuard([], bashInput('npm test', 'toolu_1'), env);
   await runGuard([], bashInput('npm test', 'toolu_2'), env);
   const third = await runGuard([], bashInput('npm test', 'toolu_3'), env);
@@ -155,16 +155,7 @@ test('repeatGuard false stands this guard down while the read guard keeps refusi
   const big = path.join(configDirectory, 'big.ts');
   await fs.writeFile(big, Array.from({ length: 600 }, (_, index) => `line ${index + 1}`).join('\n'));
   const read = await runScript(READ_GUARD, [], { session_id: 's1', tool_name: 'Read', tool_use_id: 'toolu_4', tool_input: { file_path: big } }, env);
-  assert.match(decision(read).permissionDecisionReason, /^exo read guard:/);
-});
-
-test('EXO_SAVINGS=off denies nothing', async () => {
-  const { env } = await guardFixture();
-  const off = { ...env, EXO_SAVINGS: 'off' };
-  await runGuard([], bashInput('npm test', 'toolu_1'), off);
-  await runGuard([], bashInput('npm test', 'toolu_2'), off);
-  const third = await runGuard([], bashInput('npm test', 'toolu_3'), off);
-  assert.equal(decision(third), null);
+  assert.equal(decision(read), null);
 });
 
 function webInput(toolName, toolInput, toolUseId) {
@@ -182,8 +173,9 @@ test('a second fetch of the same URL or search for the same query by one agent i
   assert.match(decision(research)?.permissionDecisionReason ?? '', /already searched this query once/);
   const other = await runGuard([], { ...webInput('WebFetch', { url, prompt: 'mocks' }, 'toolu_5'), agent_id: 'research2' }, env);
   assert.equal(decision(other), null);
-  const session = (await record(configDirectory));
-  assert.deepEqual(session.guard.denials.toolu_2, { tool: 'WebFetch', reader: 'research1', attempts: 2 });
+  const session = await record(configDirectory);
+  const fetchKey = Object.keys(session.calls).find((key) => key.startsWith('research1:WebFetch:'));
+  assert.equal(session.calls[fetchKey], 2);
 });
 
 test('a malformed payload exits 0 with no output and does not block the call', async () => {

@@ -47,7 +47,7 @@ test('the repeat guard counts Edit and the web tools before the call and starts 
   const wiring = guards.map((entry) => [entry.event, entry.matcher.split('|').sort().join('|'), entry.hook.command.split(' ').pop()]).sort();
   assert.deepEqual(wiring, [
     ['PostToolUse', 'Edit|Write', 'edited'],
-    ['PreToolUse', 'Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/repeat-guard.mjs"']
+    ['PreToolUse', 'Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/hooks/guards/repeat-guard.mjs"']
   ]);
 });
 
@@ -100,7 +100,8 @@ test('the delegate budget is the only hook before every tool but Bash', () => {
 });
 
 test('every shipped guard is a step of the Bash dispatcher and none has a hook of its own', () => {
-  const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
+  // The read guard has its own hook, and the repeat guard its own hooks besides its dispatcher step.
+  const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs') && !['read-guard.mjs', 'repeat-guard.mjs'].includes(name));
   assert.deepEqual(guardFiles.sort(), [
     'bash-output-guard.mjs', 'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'writing-guard.mjs'
   ]);

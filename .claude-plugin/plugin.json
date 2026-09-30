@@ -51,6 +51,13 @@
       "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything. Not sure? Keep on. A project overrides this in .claude/exo.json.",
       "options": ["on", "off"],
       "default": "on"
+    },
+    "guard-lines": {
+      "type": "number",
+      "title": "Read guard line limit",
+      "description": "From how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range. Not sure? Keep 400. A project overrides this in .claude/exo.json.",
+      "default": 400,
+      "min": 1
     }
   }
 }

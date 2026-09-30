@@ -21,6 +21,7 @@
     "#script-extensions": "./lib/script-extensions.mjs",
     "#script-flags": "./lib/script-flags.mjs",
     "#session-record-path": "./lib/session-record-path.mjs",
+    "#session-store": "./lib/session-store.mjs",
     "#settings-store": "./lib/settings-store.mjs",
     "#size-facts": "./lib/size-facts.mjs",
     "#terse-display": "./lib/terse-display.mjs",

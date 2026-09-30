@@ -13,12 +13,12 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { approve } from '../skills/remember/scripts/nudge.mjs';
 import { delegateBudget } from '../skills/show-savings/scripts/delegate-budget.mjs';
-import { guardCall } from '../skills/show-savings/scripts/repeat-guard.mjs';
 import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as detachDenial } from './guards/detach-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
 import { guardDecision, isProcessEntry } from './guards/guard-runner.mjs';
+import { guardCall } from './guards/repeat-guard.mjs';
 import { denialFor as secretDenial } from './guards/secret-guard.mjs';
 import { denialFor as writingDenial } from './guards/writing-guard.mjs';
 

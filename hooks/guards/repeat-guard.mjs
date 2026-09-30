@@ -7,19 +7,15 @@
 // nothing else is compared, because a smarter match would deny a legitimate
 // retry. In PostToolUse, which runs only after the tool succeeded, an Edit or
 // Write starts that reader's command counts over, because a test run after a
-// change is a new run while a failed edit changed nothing. Each denial is
-// booked under its tool call, apart from the read
-// guard's refusals so the report's read counts keep their meaning, and each
-// run books its own time, because a hook run on Bash leaves no transcript
-// entry. `repeatGuard: false` in the savings config.json switches this guard
-// alone off, and EXO_SAVINGS=off or `enabled: false` switches everything off.
+// change is a new run while a failed edit changed nothing. The counts live in
+// the session store; the `guards` setting off switches the guard off.
 //
 //   node repeat-guard.mjs         PreToolUse hook on Bash, Edit, WebFetch and WebSearch: stdin is the hook JSON
 //   node repeat-guard.mjs edited  PostToolUse hook on Edit and Write: forgets the reader's commands
 //   node repeat-guard.mjs reset   SessionStart hook on clear or compact: forgets the calls
 //
 // The limit it accepts: a command a session legitimately runs three times in
-// one window, such as a status check, is denied too; `repeatGuard: false`
+// one window, such as a status check, is denied too; the `guards` setting off
 // lifts that.
 //
 // A guard fault never blocks a turn: any error exits 0 with no output, which
@@ -31,16 +27,20 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
-import { configFile, readJson, savingsEnabled, updateHotSession } from './record.mjs';
+import { updateSession } from '#session-store';
+import { settingValue } from '#settings-store';
 
 // The first repeat passes; the attempt after it is denied.
 const DENY_AT = 3;
 const WEB_DENY_AT = 2;
 
+// A setting that cannot be read leaves the guard on.
 function guardEnabled() {
-  if (!savingsEnabled()) return false;
-  const config = readJson(configFile(), {});
-  return config.repeatGuard !== false;
+  try {
+    return settingValue('guards') !== 'off';
+  } catch {
+    return true;
+  }
 }
 
 function denial(reason) {
@@ -112,28 +112,14 @@ function reasonFor(target, attempts) {
   return `exo repeat guard: this edit has already replaced the same text in ${target.filePath} ${attempts - 1} times in this context window; read the file as it stands before editing it again, or stop.`;
 }
 
-// performance.now() counts from the start of this Node process, so the run's
-// bootstrap, module loading and work are in; the spawn before it and the
-// record write after it are not.
-function bookRunTime(guard) {
-  guard.hookMs = (guard.hookMs ?? 0) + performance.now();
-}
-
 export function guardCall(hookInput) {
   const target = callTarget(hookInput);
   if (target === null) return null;
   let reason = null;
-  updateHotSession(hookInput.session_id, (session) => {
+  updateSession(hookInput.session_id, (session) => {
     const attempts = (session.calls[target.key] ?? 0) + 1;
     session.calls[target.key] = attempts;
-    if (attempts >= denyAt(target.tool)) {
-      reason = reasonFor(target, attempts);
-      if (typeof hookInput.tool_use_id === 'string') {
-        session.guard.denials ??= {};
-        session.guard.denials[hookInput.tool_use_id] = { tool: target.tool, reader: target.reader, attempts };
-      }
-    }
-    bookRunTime(session.guard);
+    if (attempts >= denyAt(target.tool)) reason = reasonFor(target, attempts);
     return true;
   });
   return reason === null ? null : denial(reason);
@@ -145,11 +131,10 @@ export function edited(hookInput) {
   if (!guardEnabled()) return null;
   if (typeof hookInput.session_id !== 'string') return null;
   const prefix = `${readerOf(hookInput)}:Bash:`;
-  updateHotSession(hookInput.session_id, (session) => {
+  updateSession(hookInput.session_id, (session) => {
     for (const key of Object.keys(session.calls)) {
       if (key.startsWith(prefix)) delete session.calls[key];
     }
-    bookRunTime(session.guard);
     return true;
   });
   return null;
@@ -157,9 +142,8 @@ export function edited(hookInput) {
 
 // A clear or a compaction ends the context window the counts were about.
 export function reset(hookInput) {
-  if (!savingsEnabled()) return null;
   if (typeof hookInput.session_id !== 'string') return null;
-  updateHotSession(hookInput.session_id, (session) => {
+  updateSession(hookInput.session_id, (session) => {
     session.calls = {};
     return true;
   });

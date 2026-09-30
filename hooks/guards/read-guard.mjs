@@ -4,12 +4,9 @@
 // instead, except the repository map, which is
 // generated and capped where it is written, and refuses a second read of a
 // range unchanged since the first in this context window; in PostToolUse it
-// books the read that succeeded. Each refusal is booked under its tool call
-// with the bytes it kept out of context, and each run books its own time,
-// because a hook run on Read leaves no transcript entry. `readGuard: false`
-// in the savings config.json switches the guard alone off, and
-// `readGuardLines` sets how many lines make a file large; EXO_SAVINGS=off or
-// `enabled: false` switches everything off.
+// books the read that succeeded in the session store. The `guards` setting
+// off switches the guard off, and the `guard-lines` setting sets how many
+// lines make a file large.
 //
 //   node read-guard.mjs         PreToolUse hook on Read: stdin is the hook JSON
 //   node read-guard.mjs book    PostToolUse hook on Read: stdin is the hook JSON
@@ -25,11 +22,14 @@ import process from 'node:process';
 import { HOOK_INPUT_TIMEOUT_MS, readHookText } from '#hook-input';
 import { memoryDirectory } from '#memory-store';
 import { environmentMs } from '#script-flags';
-import { configFile, guardLines, readJson, savingsEnabled, updateHotSession } from './record.mjs';
+import { updateSession } from '#session-store';
+import { SCHEMA, settingValue } from '#settings-store';
 
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.ipynb']);
 
 const MAP_NAME = 'map.md';
+
+const DEFAULT_GUARD_LINES = SCHEMA['guard-lines'].default;
 
 // A path a symlink reaches is the same file, and git reports the exo directory
 // with the links resolved; a directory that cannot be resolved compares as it
@@ -52,10 +52,25 @@ function isRepositoryMap(filePath, cwd) {
   return read === resolvedDirectory(memoryDirectory(cwd));
 }
 
+// A setting that cannot be read leaves the guard on, with the default limit.
 function guardEnabled() {
-  if (!savingsEnabled()) return false;
-  const config = readJson(configFile(), {});
-  return config.readGuard !== false;
+  try {
+    return settingValue('guards') !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+// A value that is not a whole number of at least 1 keeps the default, so a
+// broken hand edit never switches the guard off.
+function guardLines() {
+  try {
+    const configured = settingValue('guard-lines');
+    if (Number.isSafeInteger(configured) && configured >= 1) return configured;
+  } catch {
+    // an unreadable setting keeps the default
+  }
+  return DEFAULT_GUARD_LINES;
 }
 
 function deny(reason) {
@@ -104,22 +119,11 @@ function readTarget(hookInput) {
   return { input, filePath, stat, key, reader, cwd };
 }
 
-// performance.now() counts from the start of this Node process, so the run's
-// bootstrap, module loading and work are in; the spawn before it, the record
-// write after it and the exit are not.
-function bookRunTime(guard) {
-  guard.hookMs = (guard.hookMs ?? 0) + performance.now();
-}
-
-// A duplicate would have returned the earlier read's bytes again; a capped
-// read would have returned the whole file.
 function refusalOf(session, target) {
   const { input, filePath, stat, key, cwd } = target;
   const previous = session.reads[key];
   if (previous && previous.mtimeMs === stat.mtimeMs && previous.size === stat.size) {
     return {
-      kind: 'duplicate',
-      bytesWithheld: previous.bytes,
       reason: `exo read guard: ${filePath} (${describe(input)}) is unchanged since your read at ${previous.at} in this context window; use that copy, or pass a different offset and limit to read it again.`
     };
   }
@@ -132,31 +136,17 @@ function refusalOf(session, target) {
   const lines = fileLines(filePath);
   if (lines.length <= lineLimit) return null;
   return {
-    kind: 'capped',
-    bytesWithheld: Buffer.byteLength(lines.join('\n')),
     reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${lineLimit}; locate the range first, then read it with offset and a limit of at most ${lineLimit}.`
   };
 }
 
-// An allowed read writes the record too, to book the run's time: that write
-// measured 0.17 ms against a 25 ms run.
 function guardRead(hookInput) {
   const target = readTarget(hookInput);
   if (target === null) return;
   let reason = null;
-  updateHotSession(hookInput.session_id, (session) => {
-    const refusal = refusalOf(session, target);
-    if (refusal !== null) {
-      reason = refusal.reason;
-      if (typeof hookInput.tool_use_id === 'string') {
-        session.guard.refusals ??= {};
-        session.guard.refusals[hookInput.tool_use_id] = {
-          kind: refusal.kind, bytesWithheld: refusal.bytesWithheld, reader: target.reader, filePath: target.filePath, open: true
-        };
-      }
-    }
-    bookRunTime(session.guard);
-    return true;
+  updateSession(hookInput.session_id, (session) => {
+    reason = refusalOf(session, target)?.reason ?? null;
+    return false;
   });
   if (reason !== null) deny(reason);
 }
@@ -166,31 +156,21 @@ function guardRead(hookInput) {
 function book(hookInput) {
   const target = readTarget(hookInput);
   if (target === null) return;
-  const { input, filePath, stat, key, reader } = target;
+  const { input, filePath, stat, key } = target;
   const lines = fileLines(filePath);
   const { start, end } = rangeOf(input, lines.length);
   const bytes = Buffer.byteLength(lines.slice(start, end).join('\n'));
-  updateHotSession(hookInput.session_id, (session) => {
+  updateSession(hookInput.session_id, (session) => {
     session.reads[key] = { mtimeMs: stat.mtimeMs, size: stat.size, bytes, at: new Date().toISOString() };
-    // The same reader reading a capped file again, in the same context window,
-    // takes back part of what the refusal kept out, never more than all of it:
-    // overlapping reads or a re-read after an edit are the model's own work.
-    for (const refusal of Object.values(session.guard.refusals ?? {})) {
-      const sameFile = refusal.reader === reader && refusal.filePath === filePath;
-      if (refusal.open && refusal.kind === 'capped' && sameFile) refusal.bytesWithheld = Math.max(refusal.bytesWithheld - bytes, 0);
-    }
-    bookRunTime(session.guard);
     return true;
   });
 }
 
-// A clear or a compaction ends the context window every open refusal was about.
+// A clear or a compaction ends the context window the reads were about.
 function reset(hookInput) {
-  if (!savingsEnabled()) return;
   if (typeof hookInput.session_id !== 'string') return;
-  updateHotSession(hookInput.session_id, (session) => {
+  updateSession(hookInput.session_id, (session) => {
     session.reads = {};
-    for (const refusal of Object.values(session.guard.refusals ?? {})) refusal.open = false;
     return true;
   });
 }

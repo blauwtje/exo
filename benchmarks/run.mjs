@@ -130,7 +130,7 @@ function runClaude(args, workdir, cellDirectory) {
     const startedAt = Date.now();
     const child = spawn('claude', args, {
       cwd: workdir,
-      env: { ...process.env, EXO_SAVINGS_DIR: path.join(cellDirectory, 'record') },
+      env: { ...process.env, EXO_SAVINGS_DIR: path.join(cellDirectory, 'record'), EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;

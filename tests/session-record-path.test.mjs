@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
-import { hotSessionFile, isSessionId, savingsDirectory } from '../lib/session-record-path.mjs';
+import { hotSessionFile, isSessionId, savingsDirectory, sessionFile, sessionsDirectory } from '../lib/session-record-path.mjs';
 
 function withEnv(name, value, work) {
   const previous = process.env[name];
@@ -45,4 +45,22 @@ test('hotSessionFile joins the savings directory, sessions, and the id as a file
 
 test('hotSessionFile throws on a session id shaped like a path escape', () => {
   assert.throws(() => hotSessionFile('../x'), /invalid session id/);
+});
+
+test('sessionsDirectory follows EXO_SESSIONS_DIR, then the config directory', () => {
+  withEnv('EXO_SESSIONS_DIR', '/tmp/exo-sessions-fixture', () => {
+    assert.equal(sessionsDirectory(), '/tmp/exo-sessions-fixture');
+  });
+  withEnv('EXO_SESSIONS_DIR', undefined, () => {
+    withEnv('CLAUDE_CONFIG_DIR', '/tmp/exo-config-fixture', () => {
+      assert.equal(sessionsDirectory(), path.join('/tmp/exo-config-fixture', 'exo', 'sessions'));
+    });
+  });
+});
+
+test('sessionFile joins the sessions directory and the id as a file name, and rejects a path escape', () => {
+  withEnv('EXO_SESSIONS_DIR', '/tmp/exo-sessions-fixture', () => {
+    assert.equal(sessionFile('notified-session'), path.join('/tmp/exo-sessions-fixture', 'notified-session.json'));
+    assert.throws(() => sessionFile('../x'), /invalid session id/);
+  });
 });

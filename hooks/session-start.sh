@@ -23,8 +23,8 @@ source=$(printf '%s' "$input" | jq -r '.source // ""')
 running_plan=""
 case "$source" in
   clear|compact)
-    printf '%s' "$input" | node "$root/skills/show-savings/scripts/read-guard.mjs" reset >/dev/null
-    printf '%s' "$input" | node "$root/skills/show-savings/scripts/repeat-guard.mjs" reset >/dev/null
+    printf '%s' "$input" | node "$root/hooks/guards/read-guard.mjs" reset >/dev/null
+    printf '%s' "$input" | node "$root/hooks/guards/repeat-guard.mjs" reset >/dev/null
     # A plan build left open survives only as its marker, so the cleared
     # session is told to resume it instead of waiting for the user to ask.
     running_plan=$(printf '%s' "$input" | node "$root/skills/build/scripts/resume-plan.mjs" session)

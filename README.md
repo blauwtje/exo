@@ -151,7 +151,7 @@ A new skill needs all of: the folder at `skills/<name>/`, the name joining `EXPE
 
 `/exo:show-savings` prints a short ledger over every session of the last 30 days, in every project: the tokens the read guard kept out of context, split into the big-file reads and the repeated reads it refused. The figure is a local estimate from the bytes of the refused text at 3.5 characters per token, the ratio Anthropic documents; nothing in it is measured or billed, and the report prints no cost.
 
-To refuse fewer reads, raise the big-file limit, or set `"readGuard": false` in `~/.claude/exo/savings/config.json` to switch the guard off alone:
+To refuse fewer reads, raise the big-file limit, or set `guards` to `off` to stand every guard down:
 
 ```text
 /exo:configure guard-lines 800

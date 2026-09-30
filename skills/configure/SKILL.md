@@ -22,11 +22,9 @@ The values when this skill loaded, each with its layer:
 
 !`node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" show`
 
-The savings counter, then the read guard and its line limit:
+The savings counter:
 
 !`node "${CLAUDE_SKILL_DIR}/../show-savings/scripts/savings.mjs" status`
-
-!`node "${CLAUDE_SKILL_DIR}/../show-savings/scripts/savings.mjs" guard`
 
 ## One setting
 
@@ -57,8 +55,6 @@ Follow `references/setup-map.md` from its first step, asking in the chat one set
 | A key `show` lists, for this repository | `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" set <key> <value> --scope <project or local>` |
 | A key `show` lists, for every project | None: the harness owns that file. The report names the value to pick for that key under exo in `/config`. |
 | The savings counter, `counter` | `node "${CLAUDE_SKILL_DIR}/../show-savings/scripts/savings.mjs" on` or `off` |
-| The read guard, `guard` | `node "${CLAUDE_SKILL_DIR}/../show-savings/scripts/savings.mjs" guard on` or `guard off` |
-| The line limit, `guard-lines` | `node "${CLAUDE_SKILL_DIR}/../show-savings/scripts/savings.mjs" guard-lines <lines>` |
 
 ## References
 

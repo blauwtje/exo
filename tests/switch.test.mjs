@@ -68,13 +68,11 @@ test('the session hook carries the pointer to the right-sizing ladder whether ex
 
 test('a resumed session rewrites the plugin-root pointer and only a compaction resets the guards', { skip: withoutJq }, async () => {
   const configDirectory = await fixture();
-  const record = path.join(configDirectory, 'exo', 'savings', 'sessions.json');
-  const hotRecord = path.join(configDirectory, 'exo', 'savings', 'sessions', 's1.json');
+  const hotRecord = path.join(configDirectory, 'exo', 'sessions', 's1.json');
   const resumed = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'resume');
   assert.equal(resumed.code, 0, resumed.stderr);
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
-  assert.equal(await fs.access(record).catch(() => 'absent'), 'absent');
   assert.equal(await fs.access(hotRecord).catch(() => 'absent'), 'absent');
   await fs.mkdir(path.dirname(hotRecord), { recursive: true });
   await fs.writeFile(hotRecord, JSON.stringify({ reads: { 'main:/repo/a.ts:0:0': { bytes: 10 } }, calls: { 'main:Bash:abc': 2 } }));
@@ -108,7 +106,7 @@ test('the session hook leads with the settings line resolved for the project', {
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_CONTEXT: '' });
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default). Replies are tight:'), context.slice(0, 200));
+  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), budget=normal (default), ship=ask (default), workspace=ask (default), guards=on (default), guard-lines=400 (default). Replies are tight:'), context.slice(0, 200));
 });
 
 test('on a 60-character branch both pointers go first, named from the repository root', { skip: withoutJq }, async () => {

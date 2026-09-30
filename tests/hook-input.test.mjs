@@ -14,7 +14,7 @@ import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const NUDGE = path.join(REPOSITORY, 'skills', 'remember', 'scripts', 'nudge.mjs');
-const GUARD = path.join(REPOSITORY, 'skills', 'show-savings', 'scripts', 'read-guard.mjs');
+const GUARD = path.join(REPOSITORY, 'hooks', 'guards', 'read-guard.mjs');
 const READER = pathToFileURL(path.join(REPOSITORY, 'lib', 'hook-input.mjs')).href;
 const WRITE_DELAY_MS = 200;
 const OVER_CAP = Array.from({ length: 600 }, (_, index) => `line ${index + 1}`).join('\n');

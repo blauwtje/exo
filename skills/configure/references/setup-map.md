@@ -13,13 +13,13 @@ Walk every setting in the chat, one question per message, and write only what th
 
 1. **Check the issue route.** Run `git remote get-url origin` and `gh auth status`. Offer `issues` and `both` only when origin is on GitHub and both pass, because either answer fails at the first spec otherwise.
 2. **Ask each setting in its own message**, in the order `## The order` sets and in the question shape, because the user answers each with one digit. The last option of every setting but `scope` is `Keep the rest`, which keeps every setting not yet asked.
-3. **Close what the counter decides.** A counter answered `off` skips the guard and its line limit, because the counter's off switch stops the guard as well.
+3. **Close what the counter decides.** The read guard's line limit is asked on its own: the counter's switch does not reach it.
 4. **Review before writing.** List the changes, one line each, and wait for a yes; a named setting in the answer is asked again, then the review follows once more.
 5. **Write only the changes, then report.** Use the commands under `## The write commands` in the skill, and on a rejection relay it as printed and write nothing after it, because the user confirmed the set as a whole. Report one line per changed value and where it now lives.
 
 ## The order
 
-`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `counter`, `guard`, `guardLines`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship` and `guards`; the savings switches hold for this machine and take none.
+`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `counter`, `guard-lines`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship` and `guards`; the savings switches hold for this machine and take none.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -38,9 +38,8 @@ Every setting but `scope` offers its current value first, as `1. **Keep <value> 
 | `workspace` | Where should a code-changing run commit? | `ask`: the run asks each time. `branch`: a new branch. `worktree`: a separate folder. `current`: the current branch. |
 | `ship` | How should finished commits leave this machine? | `ask`: ship asks each time. `pr-merge`: a pull request, merged once checks pass. `open-pr`: a pull request left open. `push`: a push, no pull request. `local`: nothing leaves. |
 | `guards` | Should exo's safety guards refuse the commands and edits they cover? | `on` (default): they refuse. `off`: no guard refuses anything. |
-| `counter` | Should exo count what it costs? | `on`: the cost shows in the status line. `off`: no counting, no status line segment and no read guard. |
-| `guard` | Should exo refuse to read a big file whole? | `on`: it reads the part it needs. `off`: any file may be read whole. |
-| `guardLines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |
+| `counter` | Should exo count what it costs? | `on`: the cost shows in the status line. `off`: no counting, no status line segment. |
+| `guard-lines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |
 
 `issues` and `both` are left out when step 1 found no working GitHub route. A value that is the current one appears only as the keep answer.
 

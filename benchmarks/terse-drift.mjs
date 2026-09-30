@@ -290,7 +290,7 @@ function streamSession(options, workdir, runDirectory) {
     const stderr = fs.openSync(path.join(runDirectory, 'stderr.log'), 'w');
     const child = spawn('claude', claudeArguments(options), {
       cwd: workdir,
-      env: { ...process.env, EXO_SAVINGS_DIR: path.join(runDirectory, 'record') },
+      env: { ...process.env, EXO_SAVINGS_DIR: path.join(runDirectory, 'record'), EXO_SESSIONS_DIR: path.join(runDirectory, 'sessions') },
       stdio: ['pipe', 'pipe', stderr]
     });
     const sendNextTurn = () => child.stdin.write(userMessageLine(TURN_PROMPTS[streamTurns.length]));

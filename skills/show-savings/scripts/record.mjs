@@ -2,7 +2,7 @@
 // through a rename so a status line render never reads a half file, and
 // updated behind a directory lock so two hooks firing at once lose nothing.
 // Shared by savings.mjs (usage and overhead per session) and read-guard.mjs
-// (reads withheld).
+// (reads withheld). The guards themselves keep their state in lib/session-store.mjs.
 
 import fs from 'node:fs';
 import path from 'node:path';
