@@ -9,7 +9,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { fixture } from './harness.mjs';
 
 const WATCH = fileURLToPath(new URL('../skills/show-savings/scripts/context-watch.mjs', import.meta.url));
@@ -164,6 +164,16 @@ test('only the last main-thread assistant turn counts', async () => {
     assistantLine(250_000, { sidechain: true })
   ]);
   assert.equal(await notice(hookInput, env), null);
+});
+
+test('watch() returns the notice object and leaves stdout to its caller', async () => {
+  const { env, hookInput } = await watchFixture([assistantLine(100_000)]);
+  const script = `import { watch } from ${JSON.stringify(pathToFileURL(WATCH).href)}; process.stdout.write(JSON.stringify([watch(JSON.parse(process.env.WATCH_INPUT)), watch(JSON.parse(process.env.WATCH_INPUT))]));`;
+  const stdout = execFileSync(process.execPath, ['--input-type=module', '-e', script], { env: { ...process.env, ...env, WATCH_INPUT: JSON.stringify(hookInput) }, encoding: 'utf8' });
+  const [first, second] = JSON.parse(stdout);
+  assert.equal(first.hookSpecificOutput.hookEventName, 'PreToolUse');
+  assert.match(first.hookSpecificOutput.additionalContext, /^exo: context 100k tokens, past 100k: /);
+  assert.equal(second, null);
 });
 
 test('inside a subagent the watch is silent', async () => {
