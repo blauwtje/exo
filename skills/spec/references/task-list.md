@@ -26,8 +26,8 @@ a choice the user would not notice goes in `Data:` or the heading.
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>] | Proof: <one bare command>
 ```
 
-The heading is the conventional-commit subject `land-task` commits with,
-trailed by `Plan-task: <plan-id>/<n>`, the plan id its file name without `.md`; it stages `Files:`, so no `Commit:` block. `Data:` names the structure the result lives in (an object, a
+The heading is the conventional-commit subject `land-task` uses,
+trailed by `Plan-task: <plan-stem>/<n>`; it stages `Files:`; no `Commit:` block. `Data:` names the structure holding the result (an object, a
 keyed `Map`, an array), not its fields or algorithm. `Design:` names the skill
 a task loads first, only when it changes a page's look.
 `Proof:` is the one bare command showing this task alone landed. A task whose
