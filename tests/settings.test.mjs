@@ -72,6 +72,9 @@ test('replies=terse injects the terse rule in place of the tight one', async () 
   assert.match(result.stdout, /replies=terse \(project\)/);
   assert.ok(result.stdout.trim().endsWith(`. ${SCHEMA.replies.rules.terse}`), result.stdout);
   assert.ok(!result.stdout.includes(SCHEMA.replies.rules.tight), result.stdout);
+  assert.ok(!SCHEMA.replies.rules.terse.includes('where the meaning survives'));
+  assert.ok(SCHEMA.replies.rules.terse.includes('Every chat sentence drops articles, linking verbs and filler'));
+  assert.ok(SCHEMA.replies.rules.terse.includes('Hook not reading setting → reminder never fires.'));
 });
 
 test('set writes the project file and rejects a value the schema does not allow', async () => {
