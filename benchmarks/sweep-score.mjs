@@ -153,7 +153,7 @@ export function resultsMarkdown(meta, records) {
     '- Defects found means, per kind: review seeded, the seeded defect fixed; build, the fixture check failing on the built code; plan, rule breaches; flow, defects the branch review reported.',
     '- A seeded review cell counts its defect as found only when the fixture check passes after the reviewer fixed the branch; a control branch carries the reference solution, so every defect or hazard it draws counts as a false alarm.',
     '- A plan cell counts the plan-spec rules a script can check; whether its code runs is not measured.',
-    '- Tokens weigh input as the savings record does, summed over the main thread and every delegate; cost is the client-side list-price estimate.',
+    '- Tokens weigh input as token-weights.mjs does, summed over the main thread and every delegate; cost is the client-side list-price estimate.',
     ''
   ].join('\n');
 }

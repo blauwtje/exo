@@ -32,10 +32,10 @@ node benchmarks/score.mjs benchmarks/runs/<dir>   # rescore a run offline and pr
 Raw cells land in `benchmarks/runs/<date>-<mode>/`, which is git-ignored. Each cell holds:
 
 - `result.json`, the harness's own output for the call;
-- `checks.json`, the verdict of the task's checks against the diff;
+- `checks.json`, the verdict of the task's checks against the diff, with `exoLoaded`, whether the session hook handed the model exo's rules (null when the transcript is gone);
 - `usage.json`, the usage summed over every transcript of the cell, subagents included, because the result's usage block covers the main thread only. `node benchmarks/backfill-usage.mjs <run>` writes it for older cells while their transcripts still exist.
 
-`score.mjs --publish` writes `benchmarks/results/<date>.md`, or the file `--results <file>` names, with the cut it measured per metric and the standard error of that cut. The savings record never reads these files: its panel reports measured figures only.
+`score.mjs --publish` writes `benchmarks/results/<date>.md`, or the file `--results <file>` names, with the cut it measured per metric and the standard error of that cut.
 
 ## Safe tasks
 

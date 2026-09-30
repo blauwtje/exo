@@ -24,10 +24,9 @@ import { configDirectory } from '#config-directory';
 import { DEFAULT_CAP, renderMap } from '../skills/spec/scripts/map-render.mjs';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { locateRepository, readTrackedFiles } from '../skills/spec/scripts/map-source.mjs';
-import { countsCost } from '../skills/show-savings/scripts/pricing.mjs';
-import { emptySession } from '../skills/show-savings/scripts/record.mjs';
+import { transcriptCalls } from './cell-usage.mjs';
+import { countsCost } from './pricing.mjs';
 import { sumCounts } from '#token-weights';
-import { ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 import { meanAndSd } from './statistics.mjs';
 
 export const SPIKE_MARKER = '<!-- exo:map-spike -->';
@@ -114,8 +113,8 @@ function agentType(metaFile) {
   }
 }
 
-function dispatchFigures(session) {
-  const calls = Object.values(session.usageById);
+function dispatchFigures(callsById) {
+  const calls = Object.values(callsById);
   let cost = 0;
   for (const call of calls) {
     const callCost = countsCost(call, call.model);
@@ -123,7 +122,7 @@ function dispatchFigures(session) {
     cost = cost === null || callCost === null ? null : cost + callCost;
   }
   const callTotals = calls.map((call) => sumCounts([call]).raw);
-  return { tokens: sumTokens(session).raw, largestCall: Math.max(0, ...callTotals), calls: calls.length, cost };
+  return { tokens: sumCounts(calls).raw, largestCall: Math.max(0, ...callTotals), calls: calls.length, cost };
 }
 
 // One entry per exo:locate-code dispatch under the harness's projects folder.
@@ -131,10 +130,9 @@ export function explorerDispatches(projectsDirectory) {
   const dispatches = [];
   for (const metaFile of metaFiles(projectsDirectory)) {
     if (agentType(metaFile) !== EXPLORER_AGENT) continue;
-    const session = emptySession();
-    const transcript = metaFile.replace(/\.meta\.json$/, '.jsonl');
-    if (!ingestTranscript(session, transcript)) continue;
-    dispatches.push(dispatchFigures(session));
+    const calls = transcriptCalls(metaFile.replace(/\.meta\.json$/, '.jsonl'));
+    if (calls === null || Object.keys(calls).length === 0) continue;
+    dispatches.push(dispatchFigures(calls));
   }
   return dispatches;
 }

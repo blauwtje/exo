@@ -25,7 +25,7 @@ function runScore(args) {
 // The shape cell-usage.mjs writes, with no cache writes.
 function cellUsage(input, cacheRead, output, extra = {}) {
   const counts = { input, cacheRead, cache5m: 0, cache1h: 0, output, raw: input + cacheRead + output, weightedInput: input + cacheRead * 0.1 };
-  return { transcript: 'fixture.jsonl', counts, byModel: { [HAIKU]: counts }, subagents: [], ladder: false, ...extra };
+  return { transcript: 'fixture.jsonl', counts, byModel: { [HAIKU]: counts }, subagents: [], ...extra };
 }
 
 function result(cost, durationMs, modelUsage = { [HAIKU]: { costUSD: cost } }) {
@@ -47,17 +47,17 @@ async function writeMeta(root, tasks, runs, cells) {
   }));
 }
 
-const template = (loc, correct) => ({ tier: 'template', timedOut: false, resultParsed: true, loc: { added: loc, removed: 0, testAdded: 0, files: [] }, correct, correctReason: '' });
+const template = (loc, correct, exoLoaded = false) => ({ tier: 'template', exoLoaded, timedOut: false, resultParsed: true, loc: { added: loc, removed: 0, testAdded: 0, files: [] }, correct, correctReason: '' });
 const safe = (pass) => ({ tier: 'safe', timedOut: false, resultParsed: true, loc: { added: 5, removed: 0, testAdded: 0, files: [] }, safe: pass, safeReason: '' });
 
 async function runsFixture() {
   const root = await fixture();
   await writeMeta(root, ['t1', 'safe-path'], 2, 8);
-  const scouted = { subagents: ['general-purpose'], ladder: true };
+  const scouted = { subagents: ['general-purpose'] };
   await cell(root, 't1', 'baseline', 1, result(0.4, 100000), template(200, true), cellUsage(100, 1000, 500));
   await cell(root, 't1', 'baseline', 2, result(0.6, 140000), template(240, true), cellUsage(100, 1000, 700));
-  await cell(root, 't1', 'exo', 1, result(0.3, 60000, { [HAIKU]: { costUSD: 0.25 }, 'claude-sonnet-5': { costUSD: 0.05 } }), template(100, true), cellUsage(100, 1000, 300, scouted));
-  await cell(root, 't1', 'exo', 2, result(0.5, 80000), template(20, false), cellUsage(100, 1000, 400, { ladder: true }));
+  await cell(root, 't1', 'exo', 1, result(0.3, 60000, { [HAIKU]: { costUSD: 0.25 }, 'claude-sonnet-5': { costUSD: 0.05 } }), template(100, true, true), cellUsage(100, 1000, 300, scouted));
+  await cell(root, 't1', 'exo', 2, result(0.5, 80000), template(20, false, true), cellUsage(100, 1000, 400));
   await cell(root, 'safe-path', 'baseline', 1, result(0.1, 10000), safe(true));
   await cell(root, 'safe-path', 'baseline', 2, result(0.1, 10000), safe(false));
   await cell(root, 'safe-path', 'exo', 1, result(0.1, 10000), safe(true));
@@ -77,12 +77,12 @@ test('the table shows baseline absolutes, other arms as percentages, and exclude
   assert.match(scored.stdout, /\| exo \| 100 ±0 \(-55%\) \| 500 ±0 \(-37%\) \| \$0\.30 ±0\.00 \(-40%\) \| 1\.0m ±0\.0m \(-50%\) \| 100% \(2\/2\) \| 50% \(1\/2\) \|/);
 });
 
-test('a line per arm gives cost per correct cell by model, the subagents spawned and the ladder in context', async () => {
+test('a line per arm gives cost per correct cell by model, the subagents spawned and whether exo was loaded', async () => {
   const root = await runsFixture();
   const scored = await runScore([root]);
   assert.equal(scored.code, 0, scored.stderr);
-  assert.match(scored.stdout, /^- baseline: cost per correct cell claude-haiku-4-5-20251001 \$0\.500; subagents none; ladder in context 0% \(0\/2\)$/m);
-  assert.match(scored.stdout, /^- exo: cost per correct cell claude-haiku-4-5-20251001 \$0\.250, claude-sonnet-5 \$0\.050; subagents general-purpose 1\/2; ladder in context 100% \(2\/2\)$/m);
+  assert.match(scored.stdout, /^- baseline: cost per correct cell claude-haiku-4-5-20251001 \$0\.500; subagents none; exo loaded 0% \(0\/2\)$/m);
+  assert.match(scored.stdout, /^- exo: cost per correct cell claude-haiku-4-5-20251001 \$0\.250, claude-sonnet-5 \$0\.050; subagents general-purpose 1\/2; exo loaded 100% \(2\/2\)$/m);
 });
 
 test('a correct template cell without usage.json stops the score', async () => {

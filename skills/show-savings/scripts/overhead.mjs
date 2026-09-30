@@ -10,7 +10,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readJson } from './record.mjs';
-import { countsCost } from './pricing.mjs';
+import { countsCost } from '#pricing';
 import { sumCounts, usageCounts } from '#token-weights';
 
 // A row booked under another version is read again from the start.

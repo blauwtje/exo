@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // benchmarks/score.mjs
 // Rescores a runs directory offline and prints one table; never reads a
-// transcript, never calls claude. Tokens are weighted exactly as the savings
-// counter weights them (token-weights.mjs) and summed over every transcript of
+// transcript, never calls claude. Tokens are weighted as token-weights.mjs
+// weights them and summed over every transcript of
 // a cell, as its usage.json records them; cost is total_cost_usd and time
 // duration_ms as `claude -p --output-format json` reports them.
 //
@@ -12,7 +12,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { readJson } from '../skills/show-savings/scripts/record.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -24,7 +23,7 @@ const LIMITATIONS = [
   'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell, main thread and subagents, from its usage.json; cost is Claude Code\'s client-side list-price estimate over every model; time is duration_ms.',
   'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.',
   'A published ratio is 1 − E/B for arm means E and B, and its spread is its standard error √(sd_E²/n_E + (E/B)²·sd_B²/n_B) / B; a negative ratio means the exo arm used more than the baseline.',
-  'The line per arm counts the template cells whose session context carried the ladder, and the cost per correct cell per model.'
+  'The line per arm counts the template cells whose session context carried the exo rules (exoLoaded in checks.json, counted over the cells that recorded it), and the cost per correct cell per model.'
 ];
 
 function parseArguments(argv) {
@@ -48,7 +47,8 @@ function readCells(directory) {
     const checks = JSON.parse(fs.readFileSync(path.join(cellDirectory, 'checks.json'), 'utf8'));
     const resultFile = path.join(cellDirectory, 'result.json');
     const result = fs.existsSync(resultFile) ? JSON.parse(fs.readFileSync(resultFile, 'utf8')) : null;
-    const usage = readJson(path.join(cellDirectory, 'usage.json'), null);
+    const usageFile = path.join(cellDirectory, 'usage.json');
+    const usage = fs.existsSync(usageFile) ? JSON.parse(fs.readFileSync(usageFile, 'utf8')) : null;
     const [task, arm, run] = path.dirname(file).split(path.sep);
     cells.push({ task, arm, run, checks, result, usage });
   }
@@ -100,7 +100,8 @@ function summarizeArm(cells) {
   summary.safe = { pass: safe.filter((cell) => cell.checks.safe === true).length, total: safe.length };
   summary.costByModel = costByModel(measuredCells);
   summary.subagents = subagentCells(template);
-  summary.ladder = { pass: template.filter((cell) => cell.usage?.ladder === true).length, total: template.length };
+  const recorded = template.filter((cell) => typeof cell.checks.exoLoaded === 'boolean');
+  summary.exoLoaded = { pass: recorded.filter((cell) => cell.checks.exoLoaded).length, total: recorded.length };
   return summary;
 }
 
@@ -156,7 +157,7 @@ function tableLines(meta, summaries) {
 function detailLine(arm, summary) {
   const models = Object.entries(summary.costByModel).map(([model, cost]) => `${model} $${cost.toFixed(3)}`).join(', ') || '-';
   const subagents = Object.entries(summary.subagents).map(([type, count]) => `${type} ${count}/${summary.correct.total}`).join(', ') || 'none';
-  return `- ${arm}: cost per correct cell ${models}; subagents ${subagents}; ladder in context ${rate(summary.ladder)}`;
+  return `- ${arm}: cost per correct cell ${models}; subagents ${subagents}; exo loaded ${rate(summary.exoLoaded)}`;
 }
 
 function roundedCent(value) {

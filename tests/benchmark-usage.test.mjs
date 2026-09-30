@@ -69,7 +69,7 @@ test('backfill writes usage.json with the main thread and every subagent', async
   assert.deepEqual(Object.keys(written.byModel).sort(), ['claude-haiku-4-5-20251001', 'claude-sonnet-5']);
   assert.equal(written.byModel['claude-sonnet-5'].output, 40);
   assert.deepEqual(written.subagents, ['general-purpose']);
-  assert.equal(written.ladder, true);
+  assert.equal(written.ladder, undefined);
   await assert.rejects(fs.access(path.join(orphan, 'usage.json')));
 });
 

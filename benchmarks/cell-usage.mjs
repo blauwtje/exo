@@ -6,12 +6,64 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { emptySession } from '../skills/show-savings/scripts/record.mjs';
+import { configDirectory } from '#config-directory';
 import { sumCounts, usageCounts } from '#token-weights';
-import { findTranscript, ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 
-// The session hook's context carries this heading only while exo savings are on.
-const LADDER_HEADING = '## The ladder';
+const SESSION_ID = /^[\w-]+$/;
+// The session hook's context opens with this heading while exo is loaded.
+const EXO_HEADING = '# Using exo';
+
+// The harness keeps a transcript at <config dir>/projects/<project slug>/<session id>.jsonl.
+export function findTranscript(sessionId) {
+  if (!SESSION_ID.test(sessionId)) return null;
+  const projects = path.join(configDirectory(), 'projects');
+  let slugs;
+  try {
+    slugs = fs.readdirSync(projects);
+  } catch {
+    return null;
+  }
+  for (const slug of slugs) {
+    const candidate = path.join(projects, slug, `${sessionId}.jsonl`);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+function transcriptFiles(transcriptPath) {
+  const files = [transcriptPath];
+  const delegatesDirectory = path.join(transcriptPath.replace(/\.jsonl$/, ''), 'subagents');
+  if (!fs.existsSync(delegatesDirectory)) return files;
+  for (const name of fs.readdirSync(delegatesDirectory).sort()) {
+    if (name.endsWith('.jsonl')) files.push(path.join(delegatesDirectory, name));
+  }
+  return files;
+}
+
+// The usage per API call of a transcript and its subagents, keyed by message
+// id with the model beside the counts; the format is internal to the harness,
+// so a line that does not parse is skipped. One response is one line per
+// content block and a streaming response repeats its id with a growing output
+// count: the last line per id wins. Null when the transcript is missing.
+export function transcriptCalls(transcriptPath) {
+  if (!fs.existsSync(transcriptPath)) return null;
+  const calls = {};
+  for (const file of transcriptFiles(transcriptPath)) {
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (!line.includes('"assistant"')) continue;
+      let entry;
+      try {
+        entry = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const message = entry?.message;
+      if (entry?.type !== 'assistant' || !message?.id || !message.usage) continue;
+      calls[message.id] = { ...usageCounts(message.usage), model: message.model };
+    }
+  }
+  return calls;
+}
 
 function subagentTypes(transcriptPath) {
   const subagents = path.join(transcriptPath.replace(/\.jsonl$/, ''), 'subagents');
@@ -25,7 +77,10 @@ function subagentTypes(transcriptPath) {
   return types;
 }
 
-function ladderInContext(transcriptPath) {
+// Whether the session hook handed the model exo's rules in this session.
+export function exoLoaded(sessionId) {
+  const transcriptPath = findTranscript(sessionId);
+  if (transcriptPath === null) return null;
   for (const line of fs.readFileSync(transcriptPath, 'utf8').split('\n')) {
     if (!line.includes('hook_additional_context')) continue;
     let entry;
@@ -36,14 +91,14 @@ function ladderInContext(transcriptPath) {
     }
     const content = entry?.attachment?.content;
     if (!Array.isArray(content)) continue;
-    if (content.some((text) => typeof text === 'string' && text.includes(LADDER_HEADING))) return true;
+    if (content.some((text) => typeof text === 'string' && text.includes(EXO_HEADING))) return true;
   }
   return false;
 }
 
-function countsByModel(session) {
+function countsByModel(calls) {
   const grouped = {};
-  for (const counts of Object.values(session.usageById)) {
+  for (const counts of Object.values(calls)) {
     const model = counts.model ?? 'unknown';
     grouped[model] = grouped[model] ?? [];
     grouped[model].push(counts);
@@ -75,14 +130,13 @@ function leadPeakTokens(transcriptPath) {
 export function writeCellUsage(cellDirectory, sessionId) {
   const transcript = findTranscript(sessionId);
   if (transcript === null) return null;
-  const session = emptySession();
-  ingestTranscript(session, transcript);
+  const calls = transcriptCalls(transcript);
+  // sweep.mjs reads the transcript back for its flow checks, so its path rides along.
   const usage = {
     transcript,
-    counts: sumTokens(session),
-    byModel: countsByModel(session),
+    counts: sumCounts(Object.values(calls)),
+    byModel: countsByModel(calls),
     subagents: subagentTypes(transcript),
-    ladder: ladderInContext(transcript),
     leadPeakTokens: leadPeakTokens(transcript)
   };
   fs.writeFileSync(path.join(cellDirectory, 'usage.json'), `${JSON.stringify(usage, null, 2)}\n`);
