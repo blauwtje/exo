@@ -2,7 +2,7 @@
 // the checkout has changed or added a path outside the task's `Files:`,
 // else runs the task's `Commit:` block as the plan wrote it, its bare trailer
 // swapped for one naming the plan, checks that the new commit carries the `Plan-task: <plan-id>/<n>` trailer and that the landed set now
-// holds the task, and prints that set, so the session neither pastes the
+// holds the task, and prints that set and next-task's `Next:` or `Wave:` line, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and that
 // lists no command as failing under Proof; the printout carries that output. Above eight tasks each `Choice:` line of the
@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url';
 import { exportSignatures } from '#export-signatures';
 import { parseFlags, UsageError } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, frameOf, landedTasks, parsePlan, PlanError, planIdOf, planTaskTrailer } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -309,6 +309,15 @@ function runLandGate(landGate, root) {
   }
 }
 
+// The line next-task prints for the wave, spelled the same here because
+// next-task's own `waveLine` is not exported and its report writes the briefs;
+// lift the duplicate by exporting `waveLine` from next-task.mjs.
+function nextLineOf(wave) {
+  if (wave.length === 0) return 'Next: none, every task landed';
+  if (wave.length === 1) return `Next: Task ${wave[0].number}`;
+  return `Wave: ${wave.map((task) => `Task ${task.number}`).join(', ')}`;
+}
+
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
@@ -324,7 +333,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
-  runLandGate(frameOf(plan.frame).landGate, root);
+  const frame = frameOf(plan.frame);
+  runLandGate(frame.landGate, root);
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
@@ -347,7 +357,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
-  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n${nextLineOf(nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel))}\n`;
 }
 
 function main(argv) {

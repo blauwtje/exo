@@ -39,7 +39,7 @@ test('a green task lands with its trailer and the landed set grows', async () =>
   await editApp(root);
   const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(output, /^Landed: 1$/m);
+  assert.match(output, /^Landed: 1\nNext: Task 2$/m);
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
@@ -535,7 +535,7 @@ test('a changed export signature with every caller inside Files: lands', async (
   await requireBookedOn(root);
   await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 2, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\n$/);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\nNext: Task 1\n$/);
 });
 
 // Only a change a caller can feel refuses: more required parameters, fewer
@@ -552,7 +552,7 @@ for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
     const { root, planPath } = await signatureCheckout();
     await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), `export function createEntry${parameters} {\n  return {};\n}\n`);
     const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
-    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\n$/);
+    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nNext: Task 2\n$/);
   });
 }
 
@@ -577,5 +577,5 @@ test('a body-only change to an export with an outside caller lands and prints no
   const { root, planPath } = await signatureCheckout();
   await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\n$/);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nNext: Task 2\n$/);
 });
