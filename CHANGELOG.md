@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `spec`'s question rules read shorter, with one worked example, and ask the same way.
+
 ## 0.64.2 - 2026-09-30
 
 ### Changed
