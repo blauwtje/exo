@@ -75,19 +75,24 @@ export function runningPlan(cwd, sessionId) {
 // answer, so it is consumed once and the stop does not block either. A
 // background task the session launched and has not heard back from means the
 // turn ends to wait for it, so that stop does not block.
-export function stopOutput(input) {
-  if (input.stop_hook_active === true || typeof input.session_id !== 'string') return '';
-  if (hasPendingBackgroundTask(input.transcript_path)) return '';
+export function stopHook(input) {
+  if (input.stop_hook_active === true || typeof input.session_id !== 'string') return null;
+  if (hasPendingBackgroundTask(input.transcript_path)) return null;
   const cwd = input.cwd || process.cwd();
   const { wait } = markerPaths(gitDirectoryOf(cwd));
   if (fs.existsSync(wait)) {
     fs.rmSync(wait, { force: true });
-    return '';
+    return null;
   }
   const running = runningPlan(cwd, input.session_id);
-  if (running === null) return '';
+  if (running === null) return null;
   const reason = `Next: Task ${running.task.number}: ${running.task.title}. Continue exo:build on ${running.planPath} from step 3.`;
-  return `${JSON.stringify({ decision: 'block', reason })}\n`;
+  return { decision: 'block', reason };
+}
+
+export function stopOutput(input) {
+  const output = stopHook(input);
+  return output === null ? '' : `${JSON.stringify(output)}\n`;
 }
 
 // SessionStart checks only the marker's age: whether a clear keeps the

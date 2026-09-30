@@ -19,7 +19,9 @@
 //
 // A hook failure never blocks the turn.
 
+import { realpathSync } from 'node:fs';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import {
   CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS, configFile, emptySession, guardLines, hotSessionIds, readHotSession, readJson, readRecord,
@@ -95,10 +97,12 @@ function ledgerLines(withheld) {
   return lines;
 }
 
-function recordSession(hookInput) {
-  if (!savingsEnabled()) return;
-  if (typeof hookInput.session_id !== 'string') return;
+// Always null: the record is the only output; the Stop hook prints nothing.
+export function stopHook(hookInput) {
+  if (!savingsEnabled()) return null;
+  if (typeof hookInput.session_id !== 'string') return null;
   updateSession(hookInput.session_id, (session) => ingestTranscript(session, hookInput.transcript_path));
+  return null;
 }
 
 // The record only: the Stop hook already read the transcript into it, and a
@@ -190,32 +194,34 @@ function report() {
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
-const command = process.argv[2];
-const HOOK_COMMANDS = { record: async () => recordSession(JSON.parse(await readHookText())), statusline };
-const CLI_COMMANDS = {
-  report,
-  status,
-  on: () => setEnabled(true),
-  off: () => setEnabled(false),
-  'guard-lines': () => setGuardLines(process.argv[3]),
-  guard: () => setGuard(process.argv[3])
-};
-if (command in HOOK_COMMANDS) {
-  try {
-    await HOOK_COMMANDS[command]();
-  } catch (error) {
-    // A counter fault must never block a turn or blank the status line.
-    console.error(`savings: ${error.message}`);
-  }
-} else if (command in CLI_COMMANDS) {
-  try {
-    CLI_COMMANDS[command]();
-  } catch (error) {
-    // A CLI command's caller needs the failure surfaced.
-    console.error(`savings: ${error.message}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  const command = process.argv[2];
+  const HOOK_COMMANDS = { record: async () => stopHook(JSON.parse(await readHookText())), statusline };
+  const CLI_COMMANDS = {
+    report,
+    status,
+    on: () => setEnabled(true),
+    off: () => setEnabled(false),
+    'guard-lines': () => setGuardLines(process.argv[3]),
+    guard: () => setGuard(process.argv[3])
+  };
+  if (command in HOOK_COMMANDS) {
+    try {
+      await HOOK_COMMANDS[command]();
+    } catch (error) {
+      // A counter fault must never block a turn or blank the status line.
+      console.error(`savings: ${error.message}`);
+    }
+  } else if (command in CLI_COMMANDS) {
+    try {
+      CLI_COMMANDS[command]();
+    } catch (error) {
+      // A CLI command's caller needs the failure surfaced.
+      console.error(`savings: ${error.message}`);
+      process.exit(1);
+    }
+  } else {
+    console.error('usage: savings.mjs record|statusline|report|status|on|off|guard-lines <lines>|guard [on|off]');
     process.exit(1);
   }
-} else {
-  console.error('usage: savings.mjs record|statusline|report|status|on|off|guard-lines <lines>|guard [on|off]');
-  process.exit(1);
 }

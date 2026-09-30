@@ -181,12 +181,13 @@ function verify(text, bashOutputs, writtenPaths) {
   return MISSING_PROOF;
 }
 
-export function stopOutput(input) {
-  if (input.stop_hook_active === true) return '';
-  if (hasPendingBackgroundTask(input.transcript_path)) return '';
+// The Stop hook output object that blocks the turn, or null to let it end.
+export function stopHook(input) {
+  if (input.stop_hook_active === true) return null;
+  if (hasPendingBackgroundTask(input.transcript_path)) return null;
   const rows = entries(input.transcript_path);
   const skillIndex = rows.findIndex((entry) => contentBlocks(entry).some(isBuildCall));
-  if (skillIndex === -1) return '';
+  if (skillIndex === -1) return null;
 
   let lastAssistantText = '';
   for (let index = rows.length - 1; index >= 0; index -= 1) {
@@ -197,11 +198,16 @@ export function stopOutput(input) {
       break;
     }
   }
-  if (!lastAssistantText) return '';
+  if (!lastAssistantText) return null;
 
   const problem = verify(lastAssistantText, bashOutputsAfter(rows, skillIndex), sessionWrittenPaths(rows, skillIndex));
-  if (problem === null) return '';
-  return `${JSON.stringify({ decision: 'block', reason: problem + REASON_SUFFIX })}\n`;
+  if (problem === null) return null;
+  return { decision: 'block', reason: problem + REASON_SUFFIX };
+}
+
+export function stopOutput(input) {
+  const output = stopHook(input);
+  return output === null ? '' : `${JSON.stringify(output)}\n`;
 }
 
 const OUTPUTS = { stop: stopOutput };
