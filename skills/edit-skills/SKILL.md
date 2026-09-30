@@ -60,6 +60,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `scripts/rename-skill.mjs` | Renaming a skill: run `node scripts/rename-skill.mjs --from <old> --to <new>` to move its folder, docs page and pressure folder and rewrite every mention in one pass. |
 | `references/pressure-scenarios.md` | Step 1, and whenever the run without the skill passes a prompt that only asks for the rule. |
 | `references/where-a-fix-lives.md` | Step 3, before the first rule is written. |
+| `references/instruction-style.md` | Step 3, before writing or editing any instruction file, `CLAUDE.md`, rule, agent, output style or hook included. |
 | `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |
 | `references/description.md` | Step 3 for the frontmatter; step 5 when a symptom joins the description. |
 | `references/skill-shape.md` | Step 3 for a skill started from nothing; never for a change to an existing skill. |

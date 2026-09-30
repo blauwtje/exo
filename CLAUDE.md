@@ -28,7 +28,7 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 
 ## Editing
 
-- A skill, agent, rule, hook or `CLAUDE.md` edit follows `~/.claude/rules/instruction-style.md` when it exists; read it first, because its `paths` trigger misses a newly created file.
+- A skill, agent, rule, hook or `CLAUDE.md` edit follows `skills/edit-skills/references/instruction-style.md`; read it first.
 - A bare skill name inside a skill or prompt body means `exo:<name>`.
 
 ## Release

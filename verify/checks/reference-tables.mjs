@@ -96,6 +96,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/edit-skills/SKILL.md': [
     'references/pressure-scenarios.md',
     'references/where-a-fix-lives.md',
+    'references/instruction-style.md',
     'references/wording.md',
     'references/description.md',
     'references/skill-shape.md',
