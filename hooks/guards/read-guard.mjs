@@ -80,12 +80,6 @@ function deny(reason) {
   process.stdout.write(JSON.stringify(output));
 }
 
-function rangeOf(input, lineCount) {
-  const start = Math.max((input.offset ?? 1) - 1, 0);
-  const end = input.limit === undefined ? lineCount : Math.min(start + input.limit, lineCount);
-  return { start, end };
-}
-
 function describe(input) {
   if (input.offset === undefined && input.limit === undefined) return 'whole file';
   return `offset ${input.offset ?? 1}, limit ${input.limit ?? 'none'}`;
@@ -156,12 +150,9 @@ function guardRead(hookInput) {
 function book(hookInput) {
   const target = readTarget(hookInput);
   if (target === null) return;
-  const { input, filePath, stat, key } = target;
-  const lines = fileLines(filePath);
-  const { start, end } = rangeOf(input, lines.length);
-  const bytes = Buffer.byteLength(lines.slice(start, end).join('\n'));
+  const { stat, key } = target;
   updateSession(hookInput.session_id, (session) => {
-    session.reads[key] = { mtimeMs: stat.mtimeMs, size: stat.size, bytes, at: new Date().toISOString() };
+    session.reads[key] = { mtimeMs: stat.mtimeMs, size: stat.size, at: new Date().toISOString() };
     return true;
   });
 }

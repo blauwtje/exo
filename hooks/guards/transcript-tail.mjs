@@ -25,9 +25,9 @@ export function parsedEntry(line) {
   }
 }
 
-// Null when no complete assistant usage line that `counts` accepts exists, such
+// Null when no complete assistant usage line exists, such
 // as before the first turn or when the only one is still being written.
-export function contextTokens(descriptor, size, counts = () => true) {
+export function contextTokens(descriptor, size) {
   for (let want = TAIL_BYTES; ; want *= 4) {
     const start = Math.max(size - want, 0);
     const lines = readText(descriptor, start, size - start).split('\n');
@@ -36,7 +36,7 @@ export function contextTokens(descriptor, size, counts = () => true) {
     for (let index = lines.length - 1; index >= firstWhole; index -= 1) {
       if (!lines[index].includes('"usage"')) continue;
       const entry = parsedEntry(lines[index]);
-      const usage = entry?.type === 'assistant' && counts(entry) ? entry.message?.usage : null;
+      const usage = entry?.type === 'assistant' ? entry.message?.usage : null;
       if (!usage) continue;
       const tokens = usageCounts(usage);
       return tokens.input + tokens.cacheRead + tokens.cache5m + tokens.cache1h;

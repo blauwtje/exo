@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-// PreToolUse dispatcher on Bash: runs the repeat guard, the delegate budget
-// with the context watch, the memory-booking approval and the six Bash guards
+// PreToolUse dispatcher on Bash: runs the repeat guard, the delegate budget,
+// the memory-booking approval and the six Bash guards
 // inside one process, so a Bash call spawns one hook process where it spawned
 // nine. The guards run first, then the bookkeeping steps unless a guard denied,
-// each awaited in its own try/catch, because the delegate budget is async, so a
-// fault in one lets the rest run and the command go through as it did when
-// each step was its own hook. The first deny is returned; the additional
+// each in its own try/catch, so a fault in one lets the rest run and the
+// command go through as it did when each step was its own hook. The first deny is returned; the additional
 // contexts of the steps that ran are joined into the same output.
 // A fault reading or parsing the input exits 0 with no output.
 
