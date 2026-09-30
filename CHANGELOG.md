@@ -9,7 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
-- `spec` asks its costly questions one per message, headed `Question <n> of <total>` with lettered options answered by letter, and lists its assumptions only under the last question.
+- `spec` asks its costly questions one per message, headed `Question 1`, `Question 2` and so on, with lettered options answered by letter, and lists its assumptions only under the last question.
 
 ## 0.64.1 - 2026-09-30
 
