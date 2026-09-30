@@ -42,12 +42,12 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
 
-test('the repeat guard counts Bash and Edit before the call and starts over after an Edit or Write', () => {
+test('the repeat guard counts Edit and the web tools before the call and starts over after an Edit or Write', () => {
   const guards = hookEntries().filter((entry) => entry.hook.command.includes('repeat-guard.mjs'));
   const wiring = guards.map((entry) => [entry.event, entry.matcher.split('|').sort().join('|'), entry.hook.command.split(' ').pop()]).sort();
   assert.deepEqual(wiring, [
     ['PostToolUse', 'Edit|Write', 'edited'],
-    ['PreToolUse', 'Bash|Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/repeat-guard.mjs"']
+    ['PreToolUse', 'Edit|WebFetch|WebSearch', '"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/repeat-guard.mjs"']
   ]);
 });
 
@@ -56,30 +56,29 @@ test('the delegate budget runs before every tool call and after no call', () => 
   assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '*']]);
 });
 
-test('the Stop hooks book the turn, keep a running plan going, check build-change proof and score terse replies, and nothing else', () => {
+test('one Stop hook runs the dispatcher that books the turn, keeps a plan going, checks build-change proof and scores terse replies', () => {
   const stop = hookEntries().filter((entry) => entry.event === 'Stop');
-  assert.equal(stop.length, 4, JSON.stringify(stop.map((entry) => entry.hook.command)));
-  assert.ok(stop[0].hook.command.endsWith('savings.mjs" record'), stop[0].hook.command);
-  assert.ok(stop[1].hook.command.endsWith('resume-plan.mjs" stop'), stop[1].hook.command);
-  assert.ok(stop[2].hook.command.endsWith('proof-check.mjs" stop'), stop[2].hook.command);
-  assert.ok(stop[3].hook.command.endsWith('terse-check.mjs"'), stop[3].hook.command);
+  assert.equal(stop.length, 1, JSON.stringify(stop.map((entry) => entry.hook.command)));
+  assert.equal(stop[0].matcher, undefined);
+  assert.ok(stop[0].hook.command.endsWith('hooks/dispatch-stop.mjs"'), stop[0].hook.command);
 });
 
-test('the restatement runs on every prompt and takes no matcher', () => {
-  const restatement = hookEntries().filter((entry) => entry.hook.command.includes('restate.mjs'));
-  assert.equal(restatement.length, 1);
-  assert.equal(restatement[0].event, 'UserPromptSubmit');
-  assert.equal(restatement[0].matcher, undefined);
-  assert.ok(restatement[0].hook.command.endsWith('restate.mjs"'), restatement[0].hook.command);
+test('one prompt hook runs the dispatcher for the restatement, the memory nudge and the reply expander, and takes no matcher', () => {
+  const prompt = hookEntries().filter((entry) => entry.event === 'UserPromptSubmit');
+  assert.equal(prompt.length, 1, JSON.stringify(prompt.map((entry) => entry.hook.command)));
+  assert.equal(prompt[0].matcher, undefined);
+  assert.equal(prompt[0].hook.shell, 'bash');
+  assert.ok(prompt[0].hook.command.endsWith('hooks/dispatch-prompt.mjs"'), prompt[0].hook.command);
+  for (const script of ['restate.mjs', 'nudge.mjs', 'expand-reply.mjs']) {
+    assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(script)), [], script);
+  }
 });
 
-test('the memory nudge runs on every prompt and approves its own booking before a Bash call', () => {
-  const nudges = hookEntries().filter((entry) => entry.hook.command.includes('nudge.mjs'));
-  const wiring = nudges.map((entry) => [entry.event, entry.matcher ?? null, entry.hook.command.split(' ').pop()]).sort();
-  assert.deepEqual(wiring, [
-    ['PreToolUse', 'Bash', 'approve'],
-    ['UserPromptSubmit', null, '"${CLAUDE_PLUGIN_ROOT}/skills/remember/scripts/nudge.mjs"']
-  ]);
+test('one Bash hook runs the dispatcher for the repeat guard, the booking approval and the six Bash guards', () => {
+  const bash = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Bash');
+  assert.equal(bash.length, 1, JSON.stringify(bash.map((entry) => entry.hook.command)));
+  assert.equal(bash[0].hook.shell, 'bash');
+  assert.ok(bash[0].hook.command.endsWith('hooks/dispatch-bash.mjs"'), bash[0].hook.command);
 });
 
 test('the session hook points at a memory file only where one exists', () => {
@@ -99,28 +98,22 @@ test('the context watch runs before every tool inside the delegate budget hook a
   assert.match(budget, /import\('\.\/context-watch\.mjs'\)/);
 });
 
-test('every shipped guard runs before Bash calls under bash, and the writing guard also before Edit and Write', () => {
+test('every shipped guard is a step of the Bash dispatcher and none has a hook of its own', () => {
   const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
   assert.deepEqual(guardFiles.sort(), [
     'bash-output-guard.mjs', 'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'writing-guard.mjs'
   ]);
+  const dispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   for (const guardFile of guardFiles) {
-    const registered = hookEntries().filter((entry) => entry.hook.command.includes(`hooks/guards/${guardFile}"`));
-    assert.equal(registered.length, 1, `${guardFile} is registered ${registered.length} times`);
-    assert.equal(registered[0].event, 'PreToolUse', guardFile);
-    assert.equal(registered[0].hook.shell, 'bash', guardFile);
-    const expectedMatcher = guardFile === 'writing-guard.mjs' ? 'Bash|Edit|Write' : 'Bash';
-    assert.equal(registered[0].matcher, expectedMatcher, guardFile);
+    assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(guardFile)), [], guardFile);
+    assert.ok(dispatcher.includes(`./guards/${guardFile}`), `${guardFile} is not imported by the Bash dispatcher`);
   }
 });
 
-test('the reply expander runs under bash on every prompt and takes no matcher', () => {
-  const expander = hookEntries().filter((entry) => entry.hook.command.includes('expand-reply.mjs'));
-  assert.equal(expander.length, 1);
-  assert.equal(expander[0].event, 'UserPromptSubmit');
-  assert.equal(expander[0].matcher, undefined);
-  assert.equal(expander[0].hook.shell, 'bash');
-  assert.ok(expander[0].hook.command.endsWith('skills/configure/scripts/expand-reply.mjs"'), expander[0].hook.command);
+test('the plugin registers ten hook commands, each under bash', () => {
+  const entries = hookEntries();
+  assert.equal(entries.length, 10, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
 test('the terse display filter runs under bash on every message and takes no matcher', () => {

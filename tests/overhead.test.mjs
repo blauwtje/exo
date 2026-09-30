@@ -101,7 +101,7 @@ test('a call that only loads exo skills counts whole, at the usage and the wall 
   assert.deepEqual([skillCall.mixed, skillCall.start, skillCall.end], [false, '2026-09-11T10:00:02.000Z', '2026-09-11T10:00:07.000Z']);
   assert.equal(session.overhead.calls.msg_mixed.mixed, true);
   assert.equal(session.overhead.calls.msg_text, undefined);
-  assert.equal(session.overhead.hookMs, 340);
+  assert.equal(session.overhead.hookMs, 300);
   assert.equal(session.overhead.version, OVERHEAD_VERSION);
   const totals = measuredTotals(session);
   // msg_skill's usage weighs 5 + 2 × 500 + 10 = 1015, priced at Fable's $10 input, $20 1-hour write and $50 output per million.
@@ -110,7 +110,7 @@ test('a call that only loads exo skills counts whole, at the usage and the wall 
   assert.equal(totals.costKnown, true);
   assert.equal(totals.calls, 1);
   // The exo hooks, and the five seconds between the entry before the call and its last line.
-  near(totals.time, 340 + 5000);
+  near(totals.time, 300 + 5000);
 });
 
 test('a model missing from prices.mjs makes the exo cost unknown', async () => {

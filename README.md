@@ -46,7 +46,7 @@ It prints the savings report, which says nothing was refused yet until the read 
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below links to the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
 - **The reply levels and the scannable style.** The `replies` setting sets how many words a reply uses; the `exo:scannable` output style sets how a reply is laid out. Both are described below.
-- **The guards.** Hooks on `Bash`, `Edit` and `Write` refuse a destructive command, a shell read of a protected secret and a commit that names an AI as its author, each with a reason that says what to do instead.
+- **The guards.** One hook on `Bash` runs every guard and refuses a destructive command, a shell read of a protected secret and a commit that names an AI as its author, each with a reason that says what to do instead.
 - **The savings counter.** The read guard books the bytes of every read it refuses; `/exo:show-savings` prints them as an estimated token saving.
 
 A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
