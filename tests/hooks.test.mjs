@@ -3,7 +3,9 @@
 // fall back to PowerShell and a resumed session gets a current pointer.
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -125,4 +127,23 @@ test('the terse display filter runs under bash on every message and takes no mat
   assert.equal(filter[0].matcher, undefined);
   assert.equal(filter[0].hook.shell, 'bash');
   assert.ok(filter[0].hook.command.endsWith('skills/configure/scripts/terse-display.mjs"'), filter[0].hook.command);
+});
+
+test('the session hook deletes the savings folder an earlier version left and keeps the rest', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-savings-'));
+  const exoDirectory = path.join(configHome, 'exo');
+  fs.mkdirSync(path.join(exoDirectory, 'savings'), { recursive: true });
+  fs.writeFileSync(path.join(exoDirectory, 'savings', 'ledger.jsonl'), '{}\n');
+  fs.mkdirSync(path.join(exoDirectory, 'handoff'), { recursive: true });
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.sh');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  try {
+    execFileSync('bash', [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+    assert.equal(fs.existsSync(path.join(exoDirectory, 'savings')), false);
+    assert.ok(fs.existsSync(path.join(exoDirectory, 'handoff')));
+    assert.ok(fs.existsSync(path.join(exoDirectory, 'plugin-root')));
+    execFileSync('bash', [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+  } finally {
+    fs.rmSync(configHome, { recursive: true, force: true });
+  }
 });

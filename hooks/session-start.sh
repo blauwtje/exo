@@ -11,6 +11,8 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 # rots per bump; a resumed session can run a newer copy than it started on.
 config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo"
 mkdir -p "$config_dir" && printf '%s\n' "$root" > "$config_dir/plugin-root"
+# The savings ledger and counter left by earlier versions are dead weight now.
+[ -d "$config_dir/savings" ] && rm -rf "$config_dir/savings"
 # Without jq the hook can neither read the source nor write the injection; the
 # pointer above is already written, so it stops here and says why.
 if ! command -v jq >/dev/null; then
