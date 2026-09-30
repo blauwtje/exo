@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.61.4 - 2026-09-30
+
 ### Fixed
 
 - `run-unit` waits for each build's report with `wait-report.mjs` instead of `sleep`, because the Agent tool ignores `run_in_background: false` when the fork gate is on, and the harness blocks a leading `sleep`.
