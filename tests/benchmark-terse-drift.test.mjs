@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { scoreProse } from '#prose-density';
-import { TURN_PROMPTS, claudeArguments, createTurnReader, dryRunLine, isCompactionEvent, modelId, parseArguments, processCause, runReasons, sessionRecords, userMessageLine, verdictFor } from '../benchmarks/terse-drift.mjs';
+import { TURN_PROMPTS, claudeArguments, createTurnReader, dryRunLine, isCompactionEvent, modelId, parseArguments, processCause, rawTurnTexts, runReasons, sessionRecords, userMessageLine, verdictFor } from '../benchmarks/terse-drift.mjs';
 import { MODELS } from '../benchmarks/tasks.mjs';
 import { fixture, run } from './harness.mjs';
 
@@ -26,7 +26,8 @@ function turnsWith(texts) {
   });
 }
 
-const GATED_TERSE = { 1: TERSE_TEXT, 10: TERSE_TEXT, 11: TERSE_TEXT };
+const GATED_TURNS = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
+const GATED_TERSE = Object.fromEntries(GATED_TURNS.map((turn) => [turn, TERSE_TEXT]));
 
 test('arguments default to one terse sonnet run of this repository', () => {
   const options = parseArguments([]);
@@ -90,15 +91,15 @@ test('terse gated turns and a full-prose commit body pass', () => {
   assert.ok(result.commit.score.articleRate >= 3.0);
 });
 
-test('a full-prose gated turn fails, on any of turns 1, 10 and 11', () => {
-  for (const turn of [1, 10, 11]) {
+test('a full-prose gated turn fails, on every turn but the compact turn, the commit turn included', () => {
+  for (const turn of GATED_TURNS) {
     const result = verdictFor(turnsWith({ ...GATED_TERSE, [turn]: FULL_TEXT }), COMMIT_BODY);
     assert.equal(result.verdict, 'FAIL', `turn ${turn}`);
   }
 });
 
-test('a drift outside the gated turns is reported, not gated', () => {
-  const result = verdictFor(turnsWith({ ...GATED_TERSE, 5: FULL_TEXT }), COMMIT_BODY);
+test('the compact turn is not gated', () => {
+  const result = verdictFor(turnsWith({ ...GATED_TERSE, 7: FULL_TEXT }), COMMIT_BODY);
   assert.equal(result.verdict, 'PASS');
 });
 
@@ -118,7 +119,7 @@ test('a subject-only commit or a body under 20 words fails, even when a gated tu
 });
 
 test('a failed call, a short gated turn or a missing commit is UNRUN and names its cause', () => {
-  const failedCall = verdictFor(turnsWith({ 1: TERSE_TEXT, 10: TERSE_TEXT }), COMMIT_BODY);
+  const failedCall = verdictFor(turnsWith({ ...GATED_TERSE, 11: null }), COMMIT_BODY);
   assert.equal(failedCall.verdict, 'UNRUN');
   assert.deepEqual(failedCall.reasons, ['turn 11 has no reply']);
   const short = verdictFor(turnsWith({ ...GATED_TERSE, 10: 'Done.' }), COMMIT_BODY);
@@ -239,4 +240,42 @@ test('a missing compaction event, a failed turn or a short stream never counts a
   assert.equal(short.cause, 'the stream ended after 9 of 12 turns');
   assert.equal(short.turns[10].score, null);
   assert.equal(verdictFor(short.turns, null).verdict, 'UNRUN');
+});
+
+const promptEntry = (text) => ({ type: 'user', message: { role: 'user', content: text } });
+const replyEntry = (text) => ({ type: 'assistant', message: { content: [{ type: 'thinking', thinking: 'x' }, { type: 'text', text }] } });
+const toolUseEntry = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read' }] } };
+const toolResultEntry = { type: 'user', message: { content: [{ type: 'tool_result', content: 'x' }] } };
+
+function transcriptOf(turnCount) {
+  const entries = [];
+  for (let turn = 1; turn <= turnCount; turn += 1) {
+    entries.push(promptEntry(`prompt ${turn}`), toolUseEntry, toolResultEntry, replyEntry(`early ${turn}`), replyEntry(`raw ${turn}`));
+    if (turn === 7) entries.push({ type: 'user', isCompactSummary: true, message: { content: 'summary' } }, promptEntry('<local-command-stdout>ok</local-command-stdout>'));
+  }
+  return entries.map((entry) => JSON.stringify(entry)).join('\n');
+}
+
+test('raw turn texts take the last assistant text of each of 12 turns from the transcript', () => {
+  const texts = rawTurnTexts(`${transcriptOf(12)}\nnot json`);
+  assert.equal(texts.length, 12);
+  assert.equal(texts[0], 'raw 1');
+  assert.equal(texts[11], 'raw 12');
+});
+
+test('a transcript that does not split into 12 turns gives no raw text, and sessionRecords reports it as null', () => {
+  assert.deepEqual(rawTurnTexts(transcriptOf(11)), TURN_PROMPTS.map(() => null));
+  assert.deepEqual(rawTurnTexts(''), TURN_PROMPTS.map(() => null));
+  const missing = sessionRecords(streamTurnsWith({}));
+  assert.equal(missing.turns[0].raw, null);
+  assert.equal(missing.turns[0].rawScore, null);
+});
+
+test('raw text is scored beside the shown text and never gates', () => {
+  const raw = TURN_PROMPTS.map(() => FULL_TEXT);
+  const records = sessionRecords(streamTurnsWith({}), raw);
+  assert.equal(records.turns[0].raw, FULL_TEXT);
+  assert.ok(records.turns[0].rawScore.articleRate > records.turns[0].score.articleRate);
+  assert.equal(records.turns[6].rawScore, null);
+  assert.equal(verdictFor(records.turns, COMMIT_BODY).verdict, 'PASS');
 });

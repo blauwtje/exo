@@ -3,9 +3,10 @@
 // Multi-turn drift harness for `replies=terse`: one run is one 12-turn session
 // in a fresh repository, held in a single `claude -p` process with streamed
 // input, so SessionStart fires at startup as in an interactive session rather
-// than on every turn. It scores the article density of the chat turns (turns
-// 1, 10 and 11 gate), compacts at turn 7 and asks for a commit at turn 12,
-// whose body must keep full prose.
+// than on every turn. It scores the article density of the text the user reads
+// on every chat turn but the compact turn (the gate), beside the model's raw
+// text from the session transcript, compacts at turn 7 and asks for a commit
+// at turn 12, whose body must keep full prose.
 //
 //   node benchmarks/terse-drift.mjs                        prints the session count and cap, spawns nothing
 //   node benchmarks/terse-drift.mjs --confirm              one run: one process of 12 turns
@@ -27,7 +28,6 @@ const MIN_CHAT_WORDS = 25;
 const MAX_CHAT_RATE = 2.0;
 const MIN_COMMIT_WORDS = 20;
 const MIN_COMMIT_RATE = 3.0;
-const GATED_TURNS = [1, 10, 11];
 const COMPACT_TURN = 7;
 const COMMIT_TURN = 12;
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
@@ -92,7 +92,7 @@ export function verdictFor(turns, commitText) {
   const commit = { text: commitText, score: commitScore };
   const fail = [];
   const unrun = [];
-  for (const turn of turns.filter((record) => GATED_TURNS.includes(record.turn))) {
+  for (const turn of turns.filter((record) => record.turn !== COMPACT_TURN)) {
     if (turn.score === null) unrun.push(`turn ${turn.turn} has no reply`);
     else if (turn.score.words < MIN_CHAT_WORDS) unrun.push(`turn ${turn.turn} has ${turn.score.words} words, under ${MIN_CHAT_WORDS}`);
     else if (turn.score.articleRate > MAX_CHAT_RATE) fail.push(`turn ${turn.turn} rate ${turn.score.articleRate.toFixed(1)} is above ${MAX_CHAT_RATE.toFixed(1)}`);
@@ -196,15 +196,66 @@ function incompleteCause(streamTurns) {
   return null;
 }
 
+// A turn opens at a user entry that is a real prompt: not a tool result, meta note, compact
+// summary, sidechain entry or local command output.
+function opensTurn(entry) {
+  if (entry.type !== 'user' || entry.isMeta || entry.isCompactSummary || entry.isSidechain) return false;
+  const content = entry.message?.content;
+  if (typeof content === 'string') return !content.startsWith('<local-command');
+  return Array.isArray(content) && content.every((block) => block.type !== 'tool_result');
+}
+
+// The model's own text per turn from a session transcript jsonl: the text of the last assistant
+// entry that has any, for each of the 12 prompts. A transcript that does not split into 12 turns
+// gives null for every turn, since a shifted column would mislead.
+export function rawTurnTexts(jsonl) {
+  const turns = [];
+  for (const line of jsonl.split('\n')) {
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (opensTurn(entry)) {
+      turns.push(null);
+    } else if (entry.type === 'assistant' && turns.length > 0 && !entry.isSidechain && Array.isArray(entry.message?.content)) {
+      const text = entry.message.content.filter((block) => block.type === 'text').map((block) => block.text).join('\n');
+      if (text !== '') turns[turns.length - 1] = text;
+    }
+  }
+  return turns.length === TURN_PROMPTS.length ? turns : TURN_PROMPTS.map(() => null);
+}
+
+// Finds the transcript by session id under every project folder of the config dir, which spares
+// reproducing the slug claude derives from the working directory; null when it is not there.
+function readRawTurnTexts(sessionId) {
+  const nothing = TURN_PROMPTS.map(() => null);
+  if (typeof sessionId !== 'string') return nothing;
+  const projects = path.join(process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), '.claude'), 'projects');
+  try {
+    for (const slug of fs.readdirSync(projects)) {
+      const file = path.join(projects, slug, `${sessionId}.jsonl`);
+      if (fs.existsSync(file)) return rawTurnTexts(fs.readFileSync(file, 'utf8'));
+    }
+  } catch {
+    return nothing;
+  }
+  return nothing;
+}
+
 // Maps the streamed turns onto the 12 prompts. A turn with no result or a failed one has no text;
+// `text` is what the user reads, `raw` the model's own text (null without a transcript);
 // compaction counts only when turn 7's own events hold the compact boundary.
-export function sessionRecords(streamTurns) {
+export function sessionRecords(streamTurns, rawTexts = []) {
   const turns = TURN_PROMPTS.map((prompt, index) => {
     const turn = index + 1;
     const result = streamTurns[index]?.result ?? null;
     const text = result !== null && !turnFailed(result) && typeof result.result === 'string' ? result.result : null;
     const score = text === null || turn === COMPACT_TURN ? null : scoreProse(text);
-    return { turn, prompt, text, score };
+    const raw = rawTexts[index] ?? null;
+    const rawScore = raw === null || turn === COMPACT_TURN ? null : scoreProse(raw);
+    return { turn, prompt, text, score, raw, rawScore };
   });
   const cause = incompleteCause(streamTurns);
   const compacted = streamTurns[COMPACT_TURN - 1]?.events.some(isCompactionEvent) ?? false;
@@ -296,7 +347,8 @@ async function runSession(options, runDirectory) {
     for (const [index, { result }] of streamTurns.entries()) {
       fs.writeFileSync(path.join(runDirectory, `turn-${index + 1}.json`), `${JSON.stringify(result, null, 2)}\n`);
     }
-    const { turns, complete, cause, compaction } = sessionRecords(streamTurns);
+    const rawTexts = readRawTurnTexts(streamTurns[0]?.result.session_id);
+    const { turns, complete, cause, compaction } = sessionRecords(streamTurns, rawTexts);
     const verdict = verdictFor(turns, complete ? commitBody(workdir) : null);
     const summary = {
       model: modelId(options.model), effort: options.effort, level: options.level,
@@ -322,13 +374,16 @@ async function runPool(items, limit, worker) {
   await Promise.all(lanes);
 }
 
+// Prints the shown rates, which gate, then the raw rates from the transcript, which do not.
 function printTable(summaries) {
-  const rate = (turn) => (turn.score === null || turn.score.words < MIN_CHAT_WORDS ? '-' : turn.score.articleRate.toFixed(1));
+  const rateOf = (score) => (score === null || score.words < MIN_CHAT_WORDS ? '-' : score.articleRate.toFixed(1));
   console.log(['run', ...TURN_PROMPTS.map((_, index) => `t${index + 1}`), 'commit'].join('\t'));
   for (const { run, summary } of summaries) {
     const commitRate = summary.commit.score === null ? '-' : summary.commit.score.articleRate.toFixed(1);
-    console.log([run, ...summary.turns.map(rate), commitRate].join('\t'));
+    console.log([run, ...summary.turns.map((turn) => rateOf(turn.score)), commitRate].join('\t'));
   }
+  console.log(['raw', ...TURN_PROMPTS.map((_, index) => `t${index + 1}`)].join('\t'));
+  for (const { run, summary } of summaries) console.log([run, ...summary.turns.map((turn) => rateOf(turn.rawScore))].join('\t'));
 }
 
 async function main() {
