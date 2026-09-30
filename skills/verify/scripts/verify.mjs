@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Runs a lean-workflow plan's gate: each landed task's own Proof command,
-// the plan's Land gate (or `npm run check` when the plan names none), and a
+// Runs a lean-workflow plan's gate: each landed task's own Proof command
+// (except one equal to the gate command), the plan's Land gate (else the first
+// backticked command of its Success criterion, else `npm run check`), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
 // the size of the diff against base, so a caller knows which agent reviews
@@ -23,6 +24,7 @@ import { pickReviewer } from './pick-reviewer.mjs';
 
 const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
 const DEFAULT_LAND_GATE = 'npm run check';
+const BACKTICKED_COMMAND = /`([^`]+)`/;
 // A Proof: value that carries a backtick reads as prose describing the
 // check (for example "npm run validate, whose output holds no `[FAIL]`
 // line"), not a command; running it through a shell would hand the shell
@@ -46,6 +48,11 @@ export function successCriterionPasses(output) {
   return CHECK_SUMMARY.test(output);
 }
 
+/** The first backticked command in the plan's Success criterion text, or null when it has none. */
+export function criterionCommand(successCriterion) {
+  return successCriterion?.match(BACKTICKED_COMMAND)?.[1] ?? null;
+}
+
 function runCommand(command) {
   const result = spawnSync(command, { shell: true, encoding: 'utf8' });
   return { ok: result.status === 0, output: `${result.stdout ?? ''}${result.stderr ?? ''}` };
@@ -63,6 +70,8 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
   const landed = new Set(landedTasks(plan.tasks, root, planIdOf(planPath)));
   const lines = [];
   let failed = false;
+  const gateCommand = checkCommand ?? frame.landGate ?? criterionCommand(frame.successCriterion) ?? DEFAULT_LAND_GATE;
+  const gateSkipped = gateCommand === 'none';
 
   for (const task of plan.tasks) {
     if (!landed.has(task.number) || task.proof === null) continue;
@@ -71,13 +80,16 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
       lines.push(`SKIP Task ${task.number} (Proof: not a single \`command\`)`);
       continue;
     }
+    // A Proof that is the gate command itself would run the full check twice.
+    if (!gateSkipped && command === gateCommand) {
+      lines.push(`SKIP Task ${task.number} (Proof: is the gate command, which runs once below)`);
+      continue;
+    }
     const { ok } = runCommand(command);
     lines.push(`${ok ? 'PASS' : 'FAIL'} Task ${task.number}`);
     failed ||= !ok;
   }
 
-  const gateCommand = checkCommand ?? frame.landGate ?? DEFAULT_LAND_GATE;
-  const gateSkipped = gateCommand === 'none';
   const { ok: checkOk, output } = gateSkipped ? { ok: true, output: '' } : runCommand(gateCommand);
   // The SUMMARY convention binds only exo's own default gate; a plan that
   // names its own Land gate is judged on that command's exit status alone,

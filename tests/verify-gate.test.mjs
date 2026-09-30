@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { findStrayPaths, runnableProof, successCriterionPasses } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, findStrayPaths, runnableProof, successCriterionPasses } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -37,6 +37,12 @@ test('successCriterionPasses reads the clean SUMMARY line', () => {
   assert.equal(successCriterionPasses('SUMMARY FAIL=0 WARN=0 UNRUN=0\n'), true);
   assert.equal(successCriterionPasses('SUMMARY FAIL=1 WARN=0 UNRUN=0\n'), false);
   assert.equal(successCriterionPasses(''), false);
+});
+
+test('criterionCommand reads the first backticked command, or null', () => {
+  assert.equal(criterionCommand('`npm test` passes, as does `npm run lint`.'), 'npm test');
+  assert.equal(criterionCommand('the suite passes'), null);
+  assert.equal(criterionCommand(null), null);
 });
 
 const CLEAN_CHECK = "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n";
@@ -134,6 +140,24 @@ test("a plan's 'Land gate: none' skips the check", async () => {
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.ok(result.stdout.includes('PASS success-criterion'));
+});
+
+test("the Success criterion's command is the gate, and a task Proof equal to it is skipped", async () => {
+  const plan = [
+    '## Plan basis', '', 'Repository: .', 'Branch: main', '',
+    '## Success criterion', '`node check.js` passes.', '',
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node check.js',
+    ''
+  ].join('\n');
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines[0].startsWith('SKIP Task 1'));
+  assert.equal(lines[1], 'PASS success-criterion');
 });
 
 test('a change outside every declared Files prints a STRAY line and exits 1', async () => {
