@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A `terse` reply level, a lone `?` prompt that restates the last reply in full, and the `exo:scannable` output style.
+
 ## 0.61.5 - 2026-09-30
 
 ### Fixed
