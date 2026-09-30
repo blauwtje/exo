@@ -20,7 +20,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
 import { blankCommandText } from './command-text.mjs';
-import { runBashGuard } from './guard-runner.mjs';
+import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 const MAX_LINES = 300;
 const DEFAULT_MAX_BYTES = 12_000;
@@ -217,4 +217,8 @@ function outputDenial(command) {
   );
 }
 
-await runBashGuard((command, hookInput) => readDenial(command, hookInput.cwd || process.cwd()) ?? outputDenial(command));
+export function denialFor(command, hookInput = {}) {
+  return readDenial(command, hookInput.cwd || process.cwd()) ?? outputDenial(command);
+}
+
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);

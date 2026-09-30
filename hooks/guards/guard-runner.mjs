@@ -6,7 +6,9 @@
 // guard on, because a safety guard that a broken settings file switches off
 // would fail open.
 
+import fs from 'node:fs';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { readHookText } from '#hook-input';
 import { settingValue } from '#settings-store';
 
@@ -15,6 +17,16 @@ function guardsOn() {
     return settingValue('guards') !== 'off';
   } catch {
     return true;
+  }
+}
+
+// True when the module at `moduleUrl` is the process entry, so a guard file
+// imported by another module defines `denialFor` without reading stdin.
+export function isProcessEntry(moduleUrl) {
+  try {
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
   }
 }
 

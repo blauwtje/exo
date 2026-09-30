@@ -18,7 +18,7 @@
 // A fault reading the input exits 0 with no output; the guard never exits 2.
 
 import { blankCommandText } from './command-text.mjs';
-import { runBashGuard } from './guard-runner.mjs';
+import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 const SEGMENT_SEPARATOR = /[;&|\n]/g;
 const START = '(?:^|[ (])';
@@ -150,4 +150,8 @@ function denialReason(command) {
   return null;
 }
 
-await runBashGuard((command) => denialReason(command));
+export function denialFor(command) {
+  return denialReason(command);
+}
+
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);

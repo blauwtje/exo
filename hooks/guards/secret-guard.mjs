@@ -29,7 +29,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
 import { projectRoot, readLayer } from '#settings-store';
-import { runBashGuard } from './guard-runner.mjs';
+import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 const READERS = new Set([
   'cat', 'tac', 'nl', 'head', 'tail', 'less', 'more', 'bat', 'sed', 'awk', 'gawk',
@@ -183,7 +183,7 @@ function denialReason(command, directory, rules) {
   return null;
 }
 
-function denyWithNotes(command, hookInput) {
+export function denialFor(command, hookInput = {}) {
   const directory = hookInput.cwd || process.cwd();
   const notes = [];
   const rules = protectedRules(directory, projectRoot(), notes);
@@ -192,4 +192,4 @@ function denyWithNotes(command, hookInput) {
   return reason;
 }
 
-await runBashGuard(denyWithNotes);
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);

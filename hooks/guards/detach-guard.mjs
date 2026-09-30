@@ -14,7 +14,7 @@
 // A fault reading the input exits 0 with no output; the guard never exits 2.
 
 import { blankCommandText } from './command-text.mjs';
-import { runBashGuard } from './guard-runner.mjs';
+import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 const REASON = 'detach-guard: this launch would outlive the session and keep its port open. Run the command in the foreground with the Bash tool\'s run_in_background parameter instead, without & / nohup / disown / setsid.';
 // `&&`, `|&`, `>&` and `&>` are not background operators.
@@ -27,4 +27,8 @@ function detachesProcess(command) {
   return withoutOperators.includes('&') || DETACH_WORD.test(blanked);
 }
 
-await runBashGuard((command) => (detachesProcess(command) ? REASON : null));
+export function denialFor(command) {
+  return detachesProcess(command) ? REASON : null;
+}
+
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);

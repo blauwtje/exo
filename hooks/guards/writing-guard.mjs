@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { blankCommandText } from './command-text.mjs';
-import { runBashGuard } from './guard-runner.mjs';
+import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 // One list for every place attribution can land. A branch name holds no space,
 // so there the space of a phrase stands for the separators a name uses instead.
@@ -185,4 +185,8 @@ function bashDenial(command, workingDirectory) {
   return namesAttributedBranch ? BRANCH_REASON : null;
 }
 
-await runBashGuard((command, hookInput) => bashDenial(command, hookInput.cwd || '.'));
+export function denialFor(command, hookInput = {}) {
+  return bashDenial(command, hookInput.cwd || '.');
+}
+
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);

@@ -17,7 +17,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { blankCommandText } from './command-text.mjs';
-import { runBashGuard } from './guard-runner.mjs';
+import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 // A global option may repeat and appear in any order before the subcommand: `-C
 // <path>` and `-c <name>=<value>` take a separate value, every other one is a
@@ -192,4 +192,8 @@ function denialReason(command) {
   return null;
 }
 
-await runBashGuard((command) => denialReason(command));
+export function denialFor(command) {
+  return denialReason(command);
+}
+
+if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);
