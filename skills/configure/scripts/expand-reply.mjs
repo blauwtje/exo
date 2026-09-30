@@ -5,11 +5,17 @@
 // level, because the session rule fades over a long chat and after compaction.
 // With any other level, any other prompt prints nothing.
 //
+// The prompt also keeps the per-session terse state that the Stop hook reads
+// and writes: a lone `?` sets `expand` so the reply to it goes unscored, and
+// any other prompt clears `expand` and the pending feedback. Under terse that
+// feedback is appended to the reminder once, as a note naming the last score.
+//
 // A fault never blocks a prompt: any error exits 0 with nothing on stdout.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { SCHEMA, settingValue } from '#settings-store';
+import { ARTICLE_LIMIT, readTerseState, writeTerseState } from '#terse-feedback';
 
 const EXPANSION_INSTRUCTION =
   'The user sent a lone "?": restate your last reply in full sentences, with every step, reason and term written out, and no shortened wording.';
@@ -26,15 +32,26 @@ function terseReminder() {
   return `replies=terse: ${terseRuleSentence('are fine')} ${terseRuleSentence('stay whole')} ${terseRuleSentence('keep normal prose')}`;
 }
 
-function contextFor(prompt) {
-  if (prompt.trim() === '?') return EXPANSION_INSTRUCTION;
-  if (settingValue('replies') === 'terse') return terseReminder();
-  return null;
+// At most 240 characters: 60 of frame, 120 of tightened sentence.
+function terseNote({ rate, sentence }) {
+  return `Last reply: ${rate.toFixed(1)} articles/100 words, limit ${ARTICLE_LIMIT.toFixed(1)}. Tighter: "${sentence}"`;
+}
+
+function contextFor(sessionId, prompt) {
+  const state = readTerseState(sessionId);
+  if (prompt.trim() === '?') {
+    writeTerseState(sessionId, { expand: true, feedback: state.feedback });
+    return EXPANSION_INSTRUCTION;
+  }
+  writeTerseState(sessionId, { expand: false, feedback: null });
+  if (settingValue('replies') !== 'terse') return null;
+  const reminder = terseReminder();
+  return state.feedback === null ? reminder : `${reminder} ${terseNote(state.feedback)}`;
 }
 
 try {
   const hookInput = JSON.parse(await readHookText());
-  const additionalContext = typeof hookInput.prompt === 'string' ? contextFor(hookInput.prompt) : null;
+  const additionalContext = typeof hookInput.prompt === 'string' ? contextFor(hookInput.session_id, hookInput.prompt) : null;
   if (additionalContext !== null) {
     const hookSpecificOutput = { hookEventName: 'UserPromptSubmit', additionalContext };
     process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);

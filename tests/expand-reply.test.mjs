@@ -121,3 +121,58 @@ test('an unparseable project exo.json prints nothing and exits 0', async () => {
   assert.equal(result.code, 0);
   assert.equal(result.stdout, '');
 });
+
+function stateFile(sessionId) {
+  return path.join(EMPTY_DIRECTORY, 'exo', 'terse', `${sessionId}.json`);
+}
+
+function seedState(sessionId, state) {
+  fs.mkdirSync(path.dirname(stateFile(sessionId)), { recursive: true });
+  fs.writeFileSync(stateFile(sessionId), JSON.stringify(state));
+}
+
+const FEEDBACK = { rate: 6.4, sentence: 'Config lives in project file.' };
+
+test('under replies=terse the next prompt appends the note and clears the feedback', async () => {
+  const project = projectWith('terse');
+  seedState('note-once', { expand: false, feedback: FEEDBACK });
+  const first = await runExpandReply({ session_id: 'note-once', prompt: 'hello' }, project);
+  const { additionalContext } = JSON.parse(first.stdout).hookSpecificOutput;
+  assert.match(additionalContext, /^replies=terse: /);
+  const note = additionalContext.slice(additionalContext.indexOf('Last reply:'));
+  assert.equal(note, 'Last reply: 6.4 articles/100 words, limit 2.0. Tighter: "Config lives in project file."');
+  assert.ok(note.length <= 240, `note is ${note.length} characters`);
+  assert.equal(fs.existsSync(stateFile('note-once')), false);
+  const second = await runExpandReply({ session_id: 'note-once', prompt: 'hello' }, project);
+  assert.doesNotMatch(JSON.parse(second.stdout).hookSpecificOutput.additionalContext, /Last reply:/);
+});
+
+test('the note stays within 240 characters for the longest tightened sentence', async () => {
+  seedState('note-long', { expand: false, feedback: { rate: 100.55, sentence: 'x'.repeat(120) } });
+  const result = await runExpandReply({ session_id: 'note-long', prompt: 'hello' }, projectWith('terse'));
+  const { additionalContext } = JSON.parse(result.stdout).hookSpecificOutput;
+  const note = additionalContext.slice(additionalContext.indexOf('Last reply:'));
+  assert.ok(note.length <= 240, `note is ${note.length} characters`);
+});
+
+test('a lone question mark sets expand and keeps the pending feedback', async () => {
+  seedState('note-expand', { expand: false, feedback: FEEDBACK });
+  await runExpandReply({ session_id: 'note-expand', prompt: '?' }, projectWith('terse'));
+  assert.deepEqual(JSON.parse(fs.readFileSync(stateFile('note-expand'), 'utf8')), { expand: true, feedback: FEEDBACK });
+  const next = await runExpandReply({ session_id: 'note-expand', prompt: 'thanks' }, projectWith('terse'));
+  assert.match(JSON.parse(next.stdout).hookSpecificOutput.additionalContext, /Last reply: 6\.4 articles/);
+  assert.equal(fs.existsSync(stateFile('note-expand')), false);
+});
+
+test('a prompt under another level prints nothing and still clears the feedback', async () => {
+  seedState('note-standard', { expand: true, feedback: FEEDBACK });
+  const result = await runExpandReply({ session_id: 'note-standard', prompt: 'hello' }, projectWith('standard'));
+  assert.equal(result.stdout, '');
+  assert.equal(fs.existsSync(stateFile('note-standard')), false);
+});
+
+test('an invalid session id prints the reminder without a note', async () => {
+  const result = await runExpandReply({ session_id: '../escape', prompt: 'hello' }, projectWith('terse'));
+  const { additionalContext } = JSON.parse(result.stdout).hookSpecificOutput;
+  assert.doesNotMatch(additionalContext, /Last reply:/);
+});
