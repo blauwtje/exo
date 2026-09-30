@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.64.0 - 2026-09-30
+
 ### Highlights
 
 - **`/exo:show-savings` is gone, and the next session start deletes the old savings data in `<config>/exo/savings`.**
