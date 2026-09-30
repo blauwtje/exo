@@ -61,3 +61,15 @@ node benchmarks/sweep.mjs --set fixer --confirm --results <dir>             # wr
 ```
 
 A review cell runs the body of the `review-branch` agent as its own session, because the agent's frontmatter effort would override the effort under test. A seeded defect counts as found when the fixture's check passes after the review; every defect or hazard reported on a control branch counts as a false alarm. Each cell leaves `record.json` beside its raw output, and the run writes a dated `-sweep` results file under `results/` with the false-alarm rate and the winning plan cell. The run is local and opt-in: nothing starts without `--confirm`, and no CI job runs it.
+
+## Terse drift
+
+`node benchmarks/terse-drift.mjs` checks that `replies=terse` holds across a 12-turn `claude -p --resume` session in a fresh copy of `safe/rate-limit/seed`: explanatory questions on turns 1-6 and 8-11, `/compact` on turn 7, and a commit request on turn 12. `prose-density.mjs` scores each reply in articles per 100 words. Turns 1, 10 and 11 gate at 2.0 or lower with at least 25 words, and the commit body must keep full prose at 3.0 or more, so a terse rule that also thins commits fails. Every other turn's rate is reported only. A run ends `PASS`, `FAIL` or `UNRUN` (a failed call, a gated turn under 25 words, or no commit); compaction shows as `confirmed` only when the session transcript holds a compact-boundary record, otherwise `UNRUN`.
+
+```bash
+node benchmarks/terse-drift.mjs                                              # prints the 12 calls it would make and starts none
+node benchmarks/terse-drift.mjs --plugin-dir <old tree> --runs 3 --out benchmarks/runs/terse-red --confirm   # the same command against another tree, three runs
+node benchmarks/terse-drift.mjs --runs 3 --out benchmarks/runs/terse-green --confirm                          # this repository
+```
+
+Flags: `--plugin-dir`, `--level` (default `terse`), `--model` (default `sonnet`), `--runs`, `--concurrency` (default `--runs`), `--out`, `--confirm`. Each run leaves `turn-<n>.json` and `summary.json` under `<out>/<run>/`, and stdout carries one verdict line per run and a table of rates. Estimated cost: 12 sequential calls per run, 5-12 minutes and roughly $0.40-1.20 on Sonnet, so about $2.50-7 for three runs; each call is capped at $1. The run is local and opt-in: no CI job runs it.
