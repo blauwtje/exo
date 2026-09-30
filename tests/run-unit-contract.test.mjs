@@ -26,7 +26,15 @@ function section(text, heading) {
 test('the unit dispatches every build in the foreground, a wave still in one message', () => {
   const dispatchStep = loopStep(3, UNIT_AGENT);
   assert.ok(dispatchStep.includes('Each build goes to the `exo:build-task` agent with `run_in_background: false`'));
-  assert.ok(dispatchStep.includes('in one message, so they run in parallel and this agent waits for all'));
+  assert.ok(dispatchStep.includes('in one message'));
+});
+
+test('the unit waits for every dispatched report with wait-report.mjs, at most six runs, never sleep', () => {
+  const dispatchStep = loopStep(3, UNIT_AGENT);
+  assert.ok(dispatchStep.includes('date +%s'));
+  assert.ok(dispatchStep.includes('scripts/wait-report.mjs'));
+  assert.ok(dispatchStep.includes('at most six runs'));
+  assert.ok(dispatchStep.includes('never a `sleep` command'));
 });
 
 test('the unit ends its turn only with every block task LANDED or BLOCKED, or at the hard budget message', () => {
