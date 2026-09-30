@@ -16,7 +16,6 @@
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
-    "#pricing": "./benchmarks/pricing.mjs",
     "#prose-density": "./lib/prose-density.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-extensions": "./lib/script-extensions.mjs",

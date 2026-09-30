@@ -1,7 +1,7 @@
 // The corpus contract as data: which skills must exist and what frontmatter may say.
 
 export const EXPECTED_SKILLS = [
-  'find-cause', 'design-ui', 'save-session', 'build', 'verify', 'file-issues', 'remember', 'refactor', 'check-docs', 'show-savings', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start'
+  'find-cause', 'design-ui', 'save-session', 'build', 'verify', 'file-issues', 'remember', 'refactor', 'check-docs', 'configure', 'spec', 'ship', 'edit-skills', 'write-docs', 'start'
 ];
 
 export const EXPECTED_SKILL_PATHS = EXPECTED_SKILLS.map((name) => `skills/${name}/SKILL.md`);
@@ -29,8 +29,7 @@ export const INJECTED_CONTEXT_LOCK = { bytes: 2540, measured: '2026-09-30' };
 export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
-// BYTES_PER_TOKEN, the sizing convention for skill text (the savings estimate
-// uses its own ratio). The ceiling fails; realistic is the aim edit-skills
+// BYTES_PER_TOKEN, the sizing convention for skill text. The ceiling fails; realistic is the aim edit-skills
 // states and the checks name in their PASS detail. route-skills has its own
 // ceiling because hooks/session-start.sh injects its body into every session.
 export const BYTES_PER_TOKEN = 4;

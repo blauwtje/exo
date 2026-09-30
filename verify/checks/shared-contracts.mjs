@@ -9,7 +9,6 @@ import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CON
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/verify/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { SCHEMA } from '../../lib/settings-store.mjs';
-import { CHARACTERS_PER_TOKEN, SESSION_RETENTION_DAYS } from '../../skills/show-savings/scripts/record.mjs';
 
 const DEFAULT_GUARD_LINES = SCHEMA['guard-lines'].default;
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
@@ -113,19 +112,15 @@ const PINNED_SENTENCES = {
   'README.md': [
     ...REVIEW_THRESHOLD, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
     `over ${DEFAULT_GUARD_LINES} lines`,
-    `last ${SESSION_RETENTION_DAYS} days`,
-    `${CHARACTERS_PER_TOKEN} characters per token`,
   ],
   'CONTRIBUTING.md': [
     ...REVIEW_THRESHOLD,
-    `${CHARACTERS_PER_TOKEN} characters per token`,
     `lines, ${DEFAULT_GUARD_LINES} unless set`,
     `reads as ${DEFAULT_GUARD_LINES}`,
   ],
   'docs/skills/build.md': [...REVIEW_THRESHOLD],
   'skills/ship/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
   'skills/remember/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
-  'docs/skills/show-savings.md': [`last ${SESSION_RETENTION_DAYS} days`, `${CHARACTERS_PER_TOKEN} characters per token`],
   'skills/configure/references/setup-map.md': [`\`${DEFAULT_GUARD_LINES}\` (the default)`],
 };
 

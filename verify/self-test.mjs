@@ -16,7 +16,7 @@ import process from 'node:process';
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
-  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/show-savings.md',
+  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md',
   'docs/skills/build.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json',
 ];
 
@@ -142,7 +142,7 @@ const SCENARIOS = [
   { name: 'dangling-script-link', mutate: (root) =>
     replaceText(root, 'skills/design-ui/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
   { name: 'dangling-sibling-script-link', mutate: (root) =>
-    replaceText(root, 'skills/configure/SKILL.md', '../show-savings/scripts/savings.mjs', '../show-savings/scripts/absent.mjs') },
+    replaceText(root, 'skills/configure/SKILL.md', '../route-skills/references/question.md', '../route-skills/references/absent.md') },
   { name: 'noncanonical-skill-replacement', mutate: (root) => {
     const nested = path.join(root, 'skills/spec/spec');
     fs.mkdirSync(nested);

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// The one Stop hook process: runs savings, proof-check, resume-plan and
+// The one Stop hook process: runs proof-check, resume-plan and
 // terse-check in that order on the same input, each in its own try/catch so a
 // fault in one never stops the rest, and writes one hook output object. The
 // first block wins, and proof-check comes before resume-plan, which is skipped
 // once proof-check blocks, so a turn with no proof is told so and resume-plan
 // keeps its wait marker for a later turn. Every other handler runs, because
-// savings and terse-check keep state on disk. A fault reading the input exits
+// terse-check keeps state on disk. A fault reading the input exits
 // 0 with no output.
 
 import process from 'node:process';
@@ -13,11 +13,9 @@ import { readHookText } from '#hook-input';
 import { stopHook as proofCheck } from '../skills/build/scripts/proof-check.mjs';
 import { stopHook as resumePlan } from '../skills/build/scripts/resume-plan.mjs';
 import { stopHook as terseCheck } from '../skills/configure/scripts/terse-check.mjs';
-import { stopHook as savings } from '../skills/show-savings/scripts/savings.mjs';
 import { isProcessEntry } from './guards/guard-runner.mjs';
 
 const HANDLERS = [
-  ['savings', savings],
   ['proof-check', proofCheck],
   ['resume-plan', resumePlan],
   ['terse-check', terseCheck]

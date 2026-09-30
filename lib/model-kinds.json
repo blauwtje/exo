@@ -48,7 +48,6 @@
     "skills/configure/SKILL.md": { "kind": "chore", "fields": ["model"] },
     "skills/design-ui/SKILL.md": { "kind": "build", "fields": ["effort"] },
     "skills/file-issues/SKILL.md": { "kind": "prose", "fields": ["model", "effort"] },
-    "skills/show-savings/SKILL.md": { "kind": "lookup", "fields": ["model"] },
     "skills/verify/SKILL.md": { "kind": "review", "fields": ["effort"] }
   },
   "dispatches": [

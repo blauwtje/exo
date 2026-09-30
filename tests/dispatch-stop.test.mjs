@@ -1,4 +1,4 @@
-// The Stop dispatcher runs savings, proof-check, resume-plan and terse-check in
+// The Stop dispatcher runs proof-check, resume-plan and terse-check in
 // one process: a fault in one handler leaves the rest running, and the first
 // block wins, with proof-check before resume-plan, which a proof-check block skips.
 
