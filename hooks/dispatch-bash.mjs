@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+// PreToolUse dispatcher on Bash: runs the repeat guard, the memory-booking
+// approval and the six Bash guards inside one process, so a Bash call spawns
+// one hook process where it spawned eight. Every step runs, each in its own
+// try/catch, so a fault in one lets the rest run and the command go through
+// as it did when each step was its own hook. The first deny is returned; the
+// additional contexts of every step are joined into the same output.
+// A fault reading or parsing the input exits 0 with no output.
+
+import process from 'node:process';
+import { readHookText } from '#hook-input';
+import { settingValue } from '#settings-store';
+import { approve } from '../skills/remember/scripts/nudge.mjs';
+import { guardCall } from '../skills/show-savings/scripts/repeat-guard.mjs';
+import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
+import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
+import { denialFor as detachDenial } from './guards/detach-guard.mjs';
+import { denialFor as gitDenial } from './guards/git-guard.mjs';
+import { isProcessEntry } from './guards/guard-runner.mjs';
+import { denialFor as secretDenial } from './guards/secret-guard.mjs';
+import { denialFor as writingDenial } from './guards/writing-guard.mjs';
+
+// Mirrors guard-runner: a `guards` setting that cannot be read leaves the
+// guards on, because a broken settings file must not switch a safety guard off.
+function guardsOn() {
+  try {
+    return settingValue('guards') !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+// A step for a guard's `denialFor`, with the checks `runBashGuard` makes.
+function guardStep(denialFor) {
+  return (hookInput) => {
+    const command = hookInput.tool_input?.command;
+    if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
+    if (!guardsOn()) return null;
+    const reason = denialFor(command, hookInput);
+    if (!reason) return null;
+    return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
+  };
+}
+
+// Each `run` takes the hook input and returns a hook output object or null.
+const STEPS = [
+  { name: 'repeat-guard', run: guardCall },
+  { name: 'nudge-approve', run: approve },
+  { name: 'bash-output-guard', run: guardStep(outputDenial) },
+  { name: 'detach-guard', run: guardStep(detachDenial) },
+  { name: 'destructive-guard', run: guardStep(destructiveDenial) },
+  { name: 'git-guard', run: guardStep(gitDenial) },
+  { name: 'secret-guard', run: guardStep(secretDenial) },
+  { name: 'writing-guard', run: guardStep(writingDenial) }
+];
+
+// The one output for `hookInput`, or null when no step has anything to say.
+export function dispatchBash(hookInput, steps = STEPS) {
+  const outputs = [];
+  for (const step of steps) {
+    try {
+      const output = step.run(hookInput);
+      if (output) outputs.push(output.hookSpecificOutput ?? {});
+    } catch {
+      // A step fault lets the command through, as its own hook's fault did.
+    }
+  }
+  if (outputs.length === 0) return null;
+  const verdict = outputs.find((output) => output.permissionDecision === 'deny')
+    ?? outputs.find((output) => output.permissionDecision !== undefined)
+    ?? {};
+  const contexts = outputs.map((output) => output.additionalContext).filter(Boolean);
+  const merged = { hookEventName: 'PreToolUse' };
+  if (verdict.permissionDecision !== undefined) {
+    merged.permissionDecision = verdict.permissionDecision;
+    merged.permissionDecisionReason = verdict.permissionDecisionReason;
+  }
+  if (contexts.length > 0) merged.additionalContext = contexts.join('\n');
+  if (Object.keys(merged).length === 1) return null;
+  return { hookSpecificOutput: merged };
+}
+
+if (isProcessEntry(import.meta.url)) {
+  try {
+    const text = await readHookText();
+    if (text.trim() !== '') {
+      const output = dispatchBash(JSON.parse(text));
+      if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
+    }
+  } catch {
+    // An unreadable input lets the command through.
+  }
+}
