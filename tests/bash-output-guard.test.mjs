@@ -20,7 +20,7 @@ function runGuard(hookInput, { directory, environment = {} }) {
       [GUARD],
       {
         cwd: directory,
-        env: { ...process.env, CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, ...environment },
+        env: { ...process.env, CLAUDE_CONFIG_DIR: `${directory}-config`, CLAUDE_PROJECT_DIR: directory, ...environment },
         timeout: 30_000
       },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) })
@@ -133,12 +133,23 @@ test('a quoted path with a space is read as one file', async () => {
   assert.equal((await verdict("cat 'big file.log'", { directory })).denied, true);
 });
 
-test('a path under .claude is exempt', async () => {
+test('a path under the config directory is exempt, a project .claude path is not', async () => {
   const directory = await bigFileFixture();
-  const exempt = path.join(directory, '.claude');
-  await fs.mkdir(exempt);
-  await fs.writeFile(path.join(exempt, 'notes.md'), BIG);
-  assert.equal((await verdict('cat .claude/notes.md', { directory })).denied, false);
+  const configuration = await fs.realpath(await fixture());
+  await fs.writeFile(path.join(configuration, 'notes.md'), BIG);
+  const environment = { CLAUDE_CONFIG_DIR: configuration };
+  assert.equal((await verdict(`cat ${path.join(configuration, 'notes.md')}`, { directory, environment })).denied, false);
+  await fs.mkdir(path.join(directory, '.claude'));
+  await fs.writeFile(path.join(directory, '.claude', 'notes.md'), BIG);
+  assert.equal((await verdict('cat .claude/notes.md', { directory, environment })).denied, true);
+});
+
+test('a path under the plugin root is exempt', async () => {
+  const directory = await bigFileFixture();
+  const pluginRoot = await fs.realpath(await fixture());
+  await fs.writeFile(path.join(pluginRoot, 'skill.md'), BIG);
+  const environment = { CLAUDE_PLUGIN_ROOT: pluginRoot };
+  assert.equal((await verdict(`cat ${path.join(pluginRoot, 'skill.md')}`, { directory, environment })).denied, false);
 });
 
 test('a command with an unterminated quote passes', async () => {

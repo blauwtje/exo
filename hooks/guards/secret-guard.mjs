@@ -20,16 +20,16 @@
 // command name or path assembled from variables other than a leading `$HOME`
 // reads as written, and a reader behind `xargs`, `find -exec` or `sh -c` is not
 // seen, and a `$(...)` in single quotes reads as a run; list the command in the deny rules of the settings file to cover it.
-// A settings file that cannot be read is skipped and named on stderr, exit 1, when
-// no other file yields a denial. A failed read of stdin exits 1, a non-blocking
-// error; the guard never exits 2.
+// A settings file that cannot be read is skipped and named on stderr when no other
+// file yields a denial. A fault reading the input exits 0 with no output; the
+// guard never exits 2.
 
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
-import { readHookText } from '#hook-input';
-import { projectRoot, readLayer, settingValue } from '#settings-store';
+import { projectRoot, readLayer } from '#settings-store';
+import { runBashGuard } from './guard-runner.mjs';
 
 const READERS = new Set([
   'cat', 'tac', 'nl', 'head', 'tail', 'less', 'more', 'bat', 'sed', 'awk', 'gawk',
@@ -183,43 +183,13 @@ function denialReason(command, directory, rules) {
   return null;
 }
 
-// A setting that cannot be read leaves the guard on, because a safety guard that
-// a broken settings file switches off would fail open.
-function guardsOn() {
-  try {
-    return settingValue('guards') !== 'off';
-  } catch {
-    return true;
-  }
-}
-
-async function main() {
-  let hookInput;
-  try {
-    const text = await readHookText();
-    if (text.trim() === '') return;
-    hookInput = JSON.parse(text);
-  } catch (error) {
-    process.stderr.write(`secret-guard: cannot read the hook input: ${error.message}\n`);
-    process.exitCode = 1;
-    return;
-  }
-  const command = hookInput.tool_input?.command;
-  if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return;
-  if (!guardsOn()) return;
+function denyWithNotes(command, hookInput) {
   const directory = hookInput.cwd || process.cwd();
   const notes = [];
   const rules = protectedRules(directory, projectRoot(), notes);
   const reason = denialReason(command, directory, rules);
-  if (reason) {
-    const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
-    process.stdout.write(`${JSON.stringify({ hookSpecificOutput: decision })}\n`);
-    return;
-  }
-  if (notes.length > 0) {
-    process.stderr.write(`${notes.join('\n')}\n`);
-    process.exitCode = 1;
-  }
+  if (!reason && notes.length > 0) process.stderr.write(`${notes.join('\n')}\n`);
+  return reason;
 }
 
-await main();
+await runBashGuard(denyWithNotes);

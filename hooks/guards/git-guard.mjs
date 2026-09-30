@@ -13,13 +13,11 @@
 // path is still an argument.
 // Ceiling: the command string is matched, not parsed, so a command assembled from
 // variables at run time reads as written.
-// A failed read of stdin exits 1, a non-blocking error; the guard never exits 2.
+// A fault reading the input exits 0 with no output; the guard never exits 2.
 
 import { execFileSync } from 'node:child_process';
-import process from 'node:process';
-import { readHookText } from '#hook-input';
-import { settingValue } from '#settings-store';
 import { blankCommandText } from './command-text.mjs';
+import { runBashGuard } from './guard-runner.mjs';
 
 // A global option may repeat and appear in any order before the subcommand: `-C
 // <path>` and `-c <name>=<value>` take a separate value, every other one is a
@@ -194,34 +192,4 @@ function denialReason(command) {
   return null;
 }
 
-// A setting that cannot be read leaves the guard on, because a safety guard that
-// a broken settings file switches off would fail open.
-function guardsOn() {
-  try {
-    return settingValue('guards') !== 'off';
-  } catch {
-    return true;
-  }
-}
-
-async function main() {
-  let hookInput;
-  try {
-    const text = await readHookText();
-    if (text.trim() === '') return;
-    hookInput = JSON.parse(text);
-  } catch (error) {
-    process.stderr.write(`git-guard: cannot read the hook input: ${error.message}\n`);
-    process.exitCode = 1;
-    return;
-  }
-  const command = hookInput.tool_input?.command;
-  if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return;
-  if (!guardsOn()) return;
-  const reason = denialReason(command);
-  if (!reason) return;
-  const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
-  process.stdout.write(`${JSON.stringify({ hookSpecificOutput: decision })}\n`);
-}
-
-await main();
+await runBashGuard((command) => denialReason(command));

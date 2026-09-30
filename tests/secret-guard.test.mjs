@@ -165,16 +165,14 @@ test('a broken settings file is named on stderr, and another file still denies',
   const place = await workspace({ user: ['Read(~/.ssh/**)'] });
   await fs.writeFile(path.join(place.projectDirectory, '.claude', 'settings.json'), '{ broken');
   const quiet = await guard({ tool_name: 'Bash', tool_input: { command: 'cat README.md' } }, place);
-  assert.equal(quiet.code, 1);
+  assert.equal(quiet.code, 0);
   assert.match(quiet.stderr, /secret-guard: cannot read the deny rules in .*settings\.json/);
   assert.equal(quiet.stdout, '');
   assert.match(await reason('cat ~/.ssh/id_rsa', place), /secret-guard/);
 });
 
-test('input that is not JSON is a non-blocking error with no decision', async () => {
+test('input that is not JSON exits 0 with no output', async () => {
   const place = await workspace();
   const broken = await guard(null, place, { input: '{ not json' });
-  assert.equal(broken.code, 1);
-  assert.match(broken.stderr, /secret-guard: cannot read the hook input/);
-  assert.equal(broken.stdout, '');
+  assert.deepEqual([broken.code, broken.stdout, broken.stderr], [0, '', '']);
 });

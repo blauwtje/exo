@@ -168,10 +168,9 @@ test('an unreadable settings file leaves the guard on', async () => {
   assert.match(outcome.stdout, /Conventional Commits/);
 });
 
-test('empty input passes and input that is not JSON is a non-blocking error', async () => {
+test('empty input passes and input that is not JSON exits 0 with no output', async () => {
   const empty = await guard(null, { input: '' });
   assert.deepEqual([empty.code, empty.stdout], [0, '']);
   const broken = await guard(null, { input: '{ not json' });
-  assert.equal(broken.code, 1);
-  assert.match(broken.stderr, /cannot read the hook input/);
+  assert.deepEqual([broken.code, broken.stdout, broken.stderr], [0, '', '']);
 });

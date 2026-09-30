@@ -20,7 +20,7 @@
     "replies": {
       "type": "string",
       "title": "How replies are written",
-      "description": "terse: chat prose without articles or linking verbs. tight: no preamble, recap or filler; code, paths, errors and warnings stay whole. standard: full prose. An output style outranks this. A project overrides this in .claude/exo.json.",
+      "description": "terse: chat prose without articles or linking verbs. tight: no preamble, recap or filler; code, paths, errors and warnings stay whole. standard: full prose. The output style sets the layout; this sets how dense the words are. A project overrides this in .claude/exo.json.",
       "options": ["terse", "tight", "standard"],
       "default": "tight"
     },

@@ -19,15 +19,13 @@
 // working directory of the tool call only, so one that git would find through `cd`
 // or `git -C` is denied as unreadable; an absolute path lifts it. A branch made
 // another way (`git worktree add -b`, a push to a new ref) is not read.
-// A failed read of stdin exits 1, a non-blocking error; the guard never exits 2.
+// A fault reading the input exits 0 with no output; the guard never exits 2.
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import process from 'node:process';
-import { readHookText } from '#hook-input';
-import { settingValue } from '#settings-store';
 import { blankCommandText } from './command-text.mjs';
+import { runBashGuard } from './guard-runner.mjs';
 
 // One list for every place attribution can land. A branch name holds no space,
 // so there the space of a phrase stands for the separators a name uses instead.
@@ -187,34 +185,4 @@ function bashDenial(command, workingDirectory) {
   return namesAttributedBranch ? BRANCH_REASON : null;
 }
 
-// A setting that cannot be read leaves the guard on, because a safety guard that
-// a broken settings file switches off would fail open.
-function guardsOn() {
-  try {
-    return settingValue('guards') !== 'off';
-  } catch {
-    return true;
-  }
-}
-
-async function main() {
-  let hookInput;
-  try {
-    const text = await readHookText();
-    if (text.trim() === '') return;
-    hookInput = JSON.parse(text);
-  } catch (error) {
-    process.stderr.write(`writing-guard: cannot read the hook input: ${error.message}\n`);
-    process.exitCode = 1;
-    return;
-  }
-  const command = hookInput.tool_input?.command;
-  if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return;
-  if (!guardsOn()) return;
-  const reason = bashDenial(command, hookInput.cwd || '.');
-  if (reason === null) return;
-  const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
-  process.stdout.write(`${JSON.stringify({ hookSpecificOutput: decision })}\n`);
-}
-
-await main();
+await runBashGuard((command, hookInput) => bashDenial(command, hookInput.cwd || '.'));

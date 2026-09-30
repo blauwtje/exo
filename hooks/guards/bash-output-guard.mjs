@@ -7,8 +7,8 @@
 //   2. A whole-file read through the shell (`cat FILE`, `sed` without a range
 //      under 300 lines, `head` past 300 lines) of a file over the byte cap,
 //      the Bash counterpart of the Read guard; `READ_GUARD_MAX_BYTES` sets the
-//      cap (default 12000). Paths under /.claude/ and in an exo skill or agent
-//      tree are exempt, and so is a pipeline whose later stage bounds the
+//      cap (default 12000). Paths under `${CLAUDE_PLUGIN_ROOT}` and the config
+//      directory (`~/.claude`) are exempt, and so is a pipeline whose later stage bounds the
 //      output (head, tail, wc, grep and the checksum tools).
 // The guard only denies and never rewrites a command. `guards: off` switches
 // it off. A fault, or a command it cannot tokenise, lets the command through.
@@ -18,9 +18,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { readHookText } from '#hook-input';
-import { settingValue } from '#settings-store';
+import { configDirectory } from '#config-directory';
 import { blankCommandText } from './command-text.mjs';
+import { runBashGuard } from './guard-runner.mjs';
 
 const MAX_LINES = 300;
 const DEFAULT_MAX_BYTES = 12_000;
@@ -30,7 +30,6 @@ const BOUNDING_STAGES = new Set(['head', 'tail', 'wc', 'grep', 'rg', 'shasum', '
 const SEPARATORS = new Set(['|', '||', '&&', ';', '&']);
 const PUNCTUATION = '();<>|&';
 const RANGE_SCRIPT = /^(\d+),(\d+|\$)p$/;
-const EXEMPT_PATH = /\/\.claude\/|\/exo\/(?:skills|agents)\//;
 
 // The patterns match on prefix, so every runner form is spelled out: a bare
 // `pytest` and `uv run pytest` are different strings, and `git -C <dir> log`
@@ -110,8 +109,14 @@ function splitSegments(command) {
   return segments;
 }
 
+// The plugin's own files and the harness config directory are read whole.
+function isExempt(file) {
+  const roots = [configDirectory(), process.env.CLAUDE_PLUGIN_ROOT].filter(Boolean);
+  return roots.some((root) => file.startsWith(path.resolve(root) + path.sep));
+}
+
 function maxBytesFor(file) {
-  if (EXEMPT_PATH.test(file)) return 0;
+  if (isExempt(file)) return 0;
   return Number(process.env.READ_GUARD_MAX_BYTES ?? DEFAULT_MAX_BYTES);
 }
 
@@ -212,23 +217,4 @@ function outputDenial(command) {
   );
 }
 
-function deny(reason) {
-  const decision = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
-  process.stdout.write(`${JSON.stringify(decision)}\n`);
-}
-
-async function main() {
-  const input = JSON.parse(await readHookText());
-  const command = input?.tool_input?.command;
-  if (typeof command !== 'string' || command === '') return;
-  if (settingValue('guards') === 'off') return;
-  const startDirectory = input.cwd || process.cwd();
-  const reason = readDenial(command, startDirectory) ?? outputDenial(command);
-  if (reason) deny(reason);
-}
-
-try {
-  await main();
-} catch {
-  // A guard fault lets the command through.
-}
+await runBashGuard((command, hookInput) => readDenial(command, hookInput.cwd || process.cwd()) ?? outputDenial(command));

@@ -28,9 +28,11 @@ Unchosen alternatives, unasked side notes, benefits to me, evidence for passing 
 
 ## Wording
 
-- Front-load sentences; keep articles and prepositions.
+- Front-load sentences; word density follows the exo `replies` level.
+- One idea per sentence, about 20 words.
+- Numbered lines for ordered steps.
 - Plainest exact word; jargon only as identifier or error string.
-- Bold only block labels and option labels.
+- Bold only block labels and option labels; bold is the only emphasis, and never bold the start of words (no bionic-style bolding).
 - Inline code only for what I copy or run.
 - No em dashes.
 
