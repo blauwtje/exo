@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `build` names the plan in its commit trailer (`Plan-task: <plan-id>/<n>`), so a branch that stacks several plans no longer counts an earlier plan's tasks as landed for a later one. A legacy bare `Plan-task: <n>` still counts when the commit subject matches the task's.
+
 ## 0.61.1 - 2026-09-29
 
 ### Fixed
