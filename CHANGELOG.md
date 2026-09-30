@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- A Bash call now spawns one hook process instead of two: the delegate budget and the context watch run inside the Bash dispatcher, after the guards, so a denied call is never counted.
+
+### Fixed
+
+- The read-guard pipe, savings-lock and sketch-tab server waits in the tests take under a second each, through `EXO_READ_GUARD_INPUT_MS`, `EXO_RECORD_LOCK_WAIT_MS` and `EXO_SKETCH_TAB_SERVER_GRACE_MS`; the defaults stay the same.
+
 ## 0.63.2 - 2026-09-30
 
 ### Changed
