@@ -3,7 +3,7 @@
 The task list names the goal, the basis, the proof and one
 line per task, with no implicit file or shape and no step's code. `node
 <skill>/scripts/plan-check.mjs --plan <path>` enforces every rule below; run
-it before the turn ends and repair each line.
+it before the turn ends; repair each line.
 
 Write for a zero-context reader: ask a fact planning could not settle;
 a choice the user would not notice goes in `Data:` or the heading.
@@ -11,7 +11,7 @@ a choice the user would not notice goes in `Data:` or the heading.
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the result.
-2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner. When two tasks share no `Depends on:` chain, the basis adds `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time. The basis adds `Land gate: npm run validate` for root's package.json `validate` script, else `npm run check` for `check`, else `none`.
+2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner. When two tasks share no `Depends on:` chain, the basis adds `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time. It adds `Land gate: npm test` for root's package.json `test` script, else `none`; the owner names a slower `validate` or `check` there.
 3. `## Success criterion`: the one command proving every task landed, no
    interpretation step, no user-only check (`## Manual checks`).
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`,

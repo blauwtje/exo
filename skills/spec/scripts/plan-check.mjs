@@ -194,7 +194,7 @@ function checkAcceptanceCitations(frame) {
 }
 
 // task-list.md's '## Plan basis' item 2 asks for a 'Land gate:' line by
-// default when the target repository's package.json names a script that can
+// default when the target repository's package.json has a test script to
 // gate the land: plan-check fails a compact plan that leaves the line out,
 // while 'Land gate: none' still passes as a deliberate opt-out.
 function checkLandGate(frame, root) {
@@ -204,9 +204,8 @@ function checkLandGate(frame, root) {
   const basis = frame['Plan basis'] ?? '';
   if (/^Land gate: .+$/m.test(basis)) return [];
   const scripts = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).scripts ?? {};
-  const gate = scripts.validate !== undefined ? 'npm run validate' : scripts.check !== undefined ? 'npm run check' : null;
-  if (gate === null) return [];
-  return [`the plan's '## Plan basis' has no 'Land gate:' line, though the target repository's package.json has a script to gate on: add 'Land gate: ${gate}' or 'Land gate: none' to opt out`];
+  if (scripts.test === undefined) return [];
+  return ["the plan's '## Plan basis' has no 'Land gate:' line, though the target repository's package.json has a test script to gate on: add 'Land gate: npm test' or 'Land gate: none' to opt out"];
 }
 
 function checkFrame(frame) {
