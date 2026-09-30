@@ -8,6 +8,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { HOOK_INPUT_TIMEOUT_MS } from '../lib/hook-input.mjs';
+import { environmentMs } from '../lib/script-flags.mjs';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
@@ -83,17 +85,32 @@ test('the reader rejects near timeoutMs when the pipe never ends, and the proces
   assert.ok(Date.now() - started < 5000);
 });
 
+test('a hook waits 10 s for its input by default, which only a positive integer override shortens', () => {
+  assert.equal(HOOK_INPUT_TIMEOUT_MS, 10_000);
+  assert.equal(environmentMs('EXO_TEST_UNSET_WAIT_MS', HOOK_INPUT_TIMEOUT_MS), HOOK_INPUT_TIMEOUT_MS);
+  try {
+    for (const text of ['', 'abc', '0', '-5', '1.5', '500ms']) {
+      process.env.EXO_TEST_WAIT_MS = text;
+      assert.equal(environmentMs('EXO_TEST_WAIT_MS', HOOK_INPUT_TIMEOUT_MS), HOOK_INPUT_TIMEOUT_MS, text);
+    }
+    process.env.EXO_TEST_WAIT_MS = '500';
+    assert.equal(environmentMs('EXO_TEST_WAIT_MS', HOOK_INPUT_TIMEOUT_MS), 500);
+  } finally {
+    delete process.env.EXO_TEST_WAIT_MS;
+  }
+});
+
 test('a guard given a pipe that never ends exits 1 with the read failure on stderr', async () => {
   const directory = await fixture();
   const child = spawn(process.execPath, [GUARD], {
-    env: { ...process.env, CLAUDE_CONFIG_DIR: directory },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: directory, EXO_READ_GUARD_INPUT_MS: '500' },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   let stderr = '';
   child.stderr.on('data', (chunk) => { stderr += chunk; });
   const code = await new Promise((resolve) => child.on('close', resolve));
   assert.equal(code, 1);
-  assert.match(stderr, /^read-guard: could not read hook input: no end of hook input on stdin within 10000 ms/);
+  assert.match(stderr, /^read-guard: could not read hook input: no end of hook input on stdin within 500 ms/);
 });
 
 // The isTTY branch (return '' without waiting) is not exercised: a terminal

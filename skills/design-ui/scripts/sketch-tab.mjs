@@ -35,7 +35,7 @@ import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { CapabilityError, parseFlags, UsageError } from './capture.mjs';
+import { CapabilityError, environmentMs, parseFlags, UsageError } from './capture.mjs';
 import {
   askedOfLoopback, CHROME_TOKENS, compDocument, escapeHtml, headlessReason, openSystemBrowser,
   readLabels, requireTimeout, resolveAsset, send, sentByOwnPage
@@ -46,7 +46,8 @@ const FOLDER_SCAN_MS = 300;
 const ANSWER_POLL_MS = 250;
 // --wait and --serve may start in the same message, so a missing server is
 // only a finding once it has had this long to write its tab file.
-const SERVER_START_GRACE_MS = 5000;
+// EXO_SKETCH_TAB_SERVER_GRACE_MS overrides it for a test.
+export const SERVER_START_GRACE_MS = 5000;
 // A browser that is still starting has no tab connected yet, and a sketch
 // landing in that gap must not open a second one.
 const BROWSER_START_GRACE_MS = 8000;
@@ -535,10 +536,11 @@ async function recordedAnswer(directory, sketchName) {
 async function waitForAnswer(directory, sketchName, timeoutSeconds) {
   const startedAt = Date.now();
   const deadline = startedAt + timeoutSeconds * 1000;
+  const serverGraceMs = environmentMs('EXO_SKETCH_TAB_SERVER_GRACE_MS', SERVER_START_GRACE_MS);
   for (;;) {
     const answer = await recordedAnswer(directory, sketchName);
     if (answer) return answer;
-    const serverHadTime = Date.now() - startedAt > SERVER_START_GRACE_MS;
+    const serverHadTime = Date.now() - startedAt > serverGraceMs;
     if (serverHadTime && !(await runningTab(directory))) {
       throw new CapabilityError('sketch tab: no tab server runs for this folder; the recommended option stands');
     }

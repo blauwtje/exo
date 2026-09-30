@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fixture, jsonFixture, run, script, SCRIPTS } from './harness.mjs';
-import { optionName, tabPage } from '../skills/design-ui/scripts/sketch-tab.mjs';
+import { optionName, SERVER_START_GRACE_MS, tabPage } from '../skills/design-ui/scripts/sketch-tab.mjs';
 
 const SKETCH_TAB = script('sketch-tab.mjs');
 const PALETTE = `<title>Welke kleuren passen bij de haven?</title>
@@ -367,6 +367,10 @@ describe('sketch-tab.mjs', () => {
     }
   });
 
+  it('gives a server 5 s to start before --wait reports none by default', () => {
+    assert.equal(SERVER_START_GRACE_MS, 5000);
+  });
+
   it('exits 3 from --wait when no answer arrives, and when no server runs at all', async () => {
     const served = await fixture();
     const tab = startTab(served);
@@ -382,7 +386,9 @@ describe('sketch-tab.mjs', () => {
     }
 
     const unserved = await fixture();
-    const alone = await run(SKETCH_TAB, ['--wait', unserved, '--sketch', '001-palette.html', '--timeout', '30']);
+    const alone = await run(SKETCH_TAB, ['--wait', unserved, '--sketch', '001-palette.html', '--timeout', '30'], {
+      env: { EXO_SKETCH_TAB_SERVER_GRACE_MS: '800' }
+    });
     assert.equal(alone.code, 3);
     assert.match(alone.stderr, /no tab server runs for this folder/);
   });

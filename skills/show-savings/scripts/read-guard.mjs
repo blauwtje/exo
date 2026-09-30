@@ -22,8 +22,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { readHookText } from '#hook-input';
+import { HOOK_INPUT_TIMEOUT_MS, readHookText } from '#hook-input';
 import { memoryDirectory } from '#memory-store';
+import { environmentMs } from '#script-flags';
 import { configFile, guardLines, readJson, savingsEnabled, updateHotSession } from './record.mjs';
 
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.ipynb']);
@@ -196,7 +197,8 @@ function reset(hookInput) {
 
 let inputText;
 try {
-  inputText = await readHookText();
+  // EXO_READ_GUARD_INPUT_MS shortens the stdin wait for a test.
+  inputText = await readHookText({ timeoutMs: environmentMs('EXO_READ_GUARD_INPUT_MS', HOOK_INPUT_TIMEOUT_MS) });
 } catch (error) {
   console.error(`read-guard: could not read hook input: ${error.message}`);
   process.exitCode = 1;

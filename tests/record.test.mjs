@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { LOCK_WAIT_MS } from '../skills/show-savings/scripts/record.mjs';
 import { fixture } from './harness.mjs';
 
 const RECORD = fileURLToPath(new URL('../skills/show-savings/scripts/record.mjs', import.meta.url));
@@ -95,12 +96,16 @@ test('a lock older than the stale threshold is taken over', async () => {
   assert.deepEqual(Object.keys(sessions), ['s1']);
 });
 
+test('a waiter gives up on a live lock after 8 s by default', () => {
+  assert.equal(LOCK_WAIT_MS, 8000);
+});
+
 test('a live lock makes the waiter give up without writing', async () => {
   const directory = await fixture();
   await fs.mkdir(path.join(directory, 'sessions.json.lock'));
-  const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory });
+  const result = await runModule(`${IMPORT} updateSession('s1', () => true);`, { EXO_SAVINGS_DIR: directory, EXO_RECORD_LOCK_WAIT_MS: '400' });
   assert.notEqual(result.code, 0);
-  assert.match(result.stderr, /savings counter locked by another hook for over 8000 ms/);
+  assert.match(result.stderr, /savings counter locked by another hook for over 400 ms/);
   assert.equal(await fs.access(path.join(directory, 'sessions.json')).catch(() => 'absent'), 'absent');
 });
 

@@ -7,12 +7,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { environmentMs } from '#script-flags';
 import { hotSessionFile, savingsDirectory } from '#session-record-path';
 
 // Every hook in hooks/hooks.json times out after 10 s, so a lock older than
 // LOCK_STALE_MS outlived any hook and belongs to one that died, and a waiter
 // gives up before its own hook's timeout kills it mid-write.
-const LOCK_WAIT_MS = 8000;
+// EXO_RECORD_LOCK_WAIT_MS overrides the wait for a test.
+export const LOCK_WAIT_MS = 8000;
 const LOCK_STALE_MS = 15000;
 export const SESSION_RETENTION_DAYS = 30;
 const SESSION_RETENTION_MS = SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -151,7 +153,8 @@ function removeStaleLock(lock, staleMtimeMs) {
 function withLock(file, work) {
   const lock = `${file}.lock`;
   fs.mkdirSync(path.dirname(lock), { recursive: true });
-  const deadline = Date.now() + LOCK_WAIT_MS;
+  const waitMs = environmentMs('EXO_RECORD_LOCK_WAIT_MS', LOCK_WAIT_MS);
+  const deadline = Date.now() + waitMs;
   for (;;) {
     try {
       fs.mkdirSync(lock);
@@ -169,7 +172,7 @@ function withLock(file, work) {
       removeStaleLock(lock, found.mtimeMs);
       continue;
     }
-    if (Date.now() > deadline) throw new Error(`savings counter locked by another hook for over ${LOCK_WAIT_MS} ms`);
+    if (Date.now() > deadline) throw new Error(`savings counter locked by another hook for over ${waitMs} ms`);
     sleep(20);
   }
   try {

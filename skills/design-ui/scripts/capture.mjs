@@ -22,7 +22,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { constants as fsConstants, readFileSync, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#script-flags';
+import { environmentMs, parseFlags, UsageError } from '#script-flags';
 
 export const DISCOVERY_DISABLED_ENV = 'UI_DESIGN_TEST_DISABLE_BROWSER_DISCOVERY';
 
@@ -60,7 +60,7 @@ const OBSCURA_STOP_GRACE_MS = 2_000;
 
 // The flag grammar lives in `#script-flags`; this skill's scripts read it here,
 // beside the other CLI helpers they import.
-export { parseFlags, UsageError };
+export { environmentMs, parseFlags, UsageError };
 
 /** A required capability is missing: the caller gets exit 3. */
 export class CapabilityError extends Error {
