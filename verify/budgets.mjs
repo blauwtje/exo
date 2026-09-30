@@ -22,11 +22,6 @@ export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 3561, measured: '2026-09-28' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2540, measured: '2026-09-30' };
 
-// The periodic restatement, locked the same way. It is sent again every
-// RESTATE_INTERVAL_BYTES of transcript growth, so a long session pays its size
-// several times over.
-export const RESTATEMENT_LOCK = { bytes: 2215, measured: '2026-09-30' };
-
 // The rendered project-memory file, which a session opens by path. It is a
 // ceiling the writer enforces before it writes, not a lock the verifier reads:
 // a file that only grows costs more to read than it saves, and one irrelevant

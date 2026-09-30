@@ -1,4 +1,4 @@
-// The prompt dispatcher runs the restate, nudge and expand-reply handlers in
+// The prompt dispatcher runs the nudge and expand-reply handlers in
 // one process and joins their additionalContext strings in that order; a
 // fault in one handler costs only its own string.
 
@@ -8,7 +8,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { RESTATED_SKILL, RESTATE_INTERVAL_BYTES, restatementText } from '#restatement';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
@@ -68,17 +67,12 @@ test('one speaking handler prints its string alone', async () => {
   assert.doesNotMatch(context, /book --claim/);
 });
 
-test('restate, nudge and expand-reply strings join in that order', async () => {
-  const { env, transcript, prompt } = await dispatchFixture(JSON.stringify({ replies: 'terse' }));
-  await runDispatch(prompt('hello'), env);
-  await fs.writeFile(transcript, 'x'.repeat(START_BYTES + RESTATE_INTERVAL_BYTES));
+test('nudge and expand-reply strings join in that order', async () => {
+  const { env, prompt } = await dispatchFixture(JSON.stringify({ replies: 'terse' }));
   const context = contextOf(await runDispatch(prompt('no, that is wrong'), env));
-  const skillText = await fs.readFile(path.join(REPOSITORY, RESTATED_SKILL), 'utf8');
-  const restated = restatementText(skillText);
-  assert.ok(context.startsWith(`${restated}\n\n`));
   const nudgeAt = context.indexOf('exo: this prompt may correct a repository fact');
   const expandAt = context.indexOf('replies=terse:');
-  assert.ok(nudgeAt > restated.length, 'the nudge follows the restatement');
+  assert.ok(nudgeAt >= 0, 'the nudge speaks');
   assert.ok(expandAt > nudgeAt, 'the reminder follows the nudge');
 });
 

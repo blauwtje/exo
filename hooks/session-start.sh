@@ -30,9 +30,6 @@ case "$source" in
     running_plan=$(printf '%s' "$input" | node "$root/skills/build/scripts/resume-plan.mjs" session)
     ;;
 esac
-# Every source ends with the whole body injected below, so the restatement
-# measures transcript growth from this point.
-printf '%s' "$input" | node "$root/skills/show-savings/scripts/restate.mjs" reset >/dev/null
 skill="$root/skills/route-skills/SKILL.md"
 [ -f "$skill" ] || exit 0
 body=$(awk 'BEGIN { fence = 0 } /^---$/ { fence++; next } fence >= 2 { print }' "$skill")

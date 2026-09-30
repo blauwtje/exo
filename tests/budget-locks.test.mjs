@@ -11,10 +11,9 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, RESTATEMENT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../verify/budgets.mjs';
+import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../verify/budgets.mjs';
 import { checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
-import { checkRestatement } from '../verify/checks/restatement.mjs';
 import { checkBodyBudgets } from '../verify/checks/body-budgets.mjs';
 import { checkReferenceShape } from '../verify/checks/reference-shape.mjs';
 
@@ -140,65 +139,6 @@ test('a paragraph below the route-skills frontmatter fails the injected lock', (
   assert.equal(run.counts.FAIL, 1, run.detail);
   assert.match(run.detail, new RegExp(`${INJECTED_CONTEXT_LOCK.bytes} locked`));
   assert.equal(injectedBytes(run.detail), baseline + paragraph.length, run.detail);
-});
-
-function restatedBytes(detail) {
-  const measured = detail.match(/restates (\d+) bytes/);
-  assert.ok(measured, `no restated byte count in: ${detail}`);
-  return Number(measured[1]);
-}
-
-function editUsingExo(root, rewrite) {
-  const file = path.join(root, USING_EXO);
-  const text = fs.readFileSync(file, 'utf8');
-  const edited = rewrite(text);
-  assert.notEqual(edited, text, `${USING_EXO} did not change`);
-  fs.writeFileSync(file, edited, 'utf8');
-}
-
-test('the untouched restatement sits at or under its lock', (t) => {
-  const root = skillsFixture(t);
-
-  const run = verdict(root, checkRestatement);
-
-  assert.equal(run.counts.PASS, 1, run.detail);
-  assert.match(run.detail, new RegExp(`${RESTATEMENT_LOCK.bytes} locked`));
-});
-
-test('a sentence added to a restated section fails the restatement lock', (t) => {
-  const root = skillsFixture(t);
-  const baseline = restatedBytes(verdict(root, checkRestatement).detail);
-  const padding = 'x'.repeat(RESTATEMENT_LOCK.bytes - baseline);
-  const paragraph = `${padding}Every reply names the skill it followed.\n\n`;
-  editUsingExo(root, (text) => text.replace('## When several fire\n\n', `## When several fire\n\n${paragraph}`));
-
-  const run = verdict(root, checkRestatement);
-
-  assert.equal(run.counts.FAIL, 1, run.detail);
-  assert.match(run.detail, new RegExp(`${RESTATEMENT_LOCK.bytes} locked`));
-  assert.equal(restatedBytes(run.detail), baseline + paragraph.length, run.detail);
-});
-
-test('a sentence added outside the restated sections leaves the restatement lock alone', (t) => {
-  const root = skillsFixture(t);
-  const baseline = restatedBytes(verdict(root, checkRestatement).detail);
-  editUsingExo(root, (text) => text.replace('## References\n\n', '## References\n\nEvery reply names the skill it followed.\n\n'));
-
-  const run = verdict(root, checkRestatement);
-
-  assert.equal(run.counts.PASS, 1, run.detail);
-  assert.equal(restatedBytes(run.detail), baseline, run.detail);
-});
-
-test('a renamed restated heading fails and names the heading', (t) => {
-  const root = skillsFixture(t);
-  // Only the heading line is renamed, so the check has to name the heading it lost.
-  editUsingExo(root, (text) => text.replace('\n## When several fire\n', '\n## Several fire\n'));
-
-  const run = verdict(root, checkRestatement);
-
-  assert.equal(run.counts.FAIL, 1, run.detail);
-  assert.match(run.detail, /has no "## When several fire" heading/);
 });
 
 // AGENT_BODY_TOKENS is a plain ceiling, not a two-way lock like

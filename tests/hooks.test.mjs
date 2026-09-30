@@ -68,13 +68,13 @@ test('one Stop hook runs the dispatcher that books the turn, keeps a plan going,
   assert.ok(stop[0].hook.command.endsWith('hooks/dispatch-stop.mjs"'), stop[0].hook.command);
 });
 
-test('one prompt hook runs the dispatcher for the restatement, the memory nudge and the reply expander, and takes no matcher', () => {
+test('one prompt hook runs the dispatcher for the memory nudge and the reply expander, and takes no matcher', () => {
   const prompt = hookEntries().filter((entry) => entry.event === 'UserPromptSubmit');
   assert.equal(prompt.length, 1, JSON.stringify(prompt.map((entry) => entry.hook.command)));
   assert.equal(prompt[0].matcher, undefined);
   assert.equal(prompt[0].hook.shell, 'bash');
   assert.ok(prompt[0].hook.command.endsWith('hooks/dispatch-prompt.mjs"'), prompt[0].hook.command);
-  for (const script of ['restate.mjs', 'nudge.mjs', 'expand-reply.mjs']) {
+  for (const script of ['nudge.mjs', 'expand-reply.mjs']) {
     assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(script)), [], script);
   }
 });
