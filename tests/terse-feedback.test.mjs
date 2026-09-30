@@ -13,6 +13,7 @@ import {
   clearTerseState,
   feedbackFor,
   readTerseState,
+  strayPhrases,
   terseStateFile,
   tightenSentence,
   writeTerseState,
@@ -125,6 +126,26 @@ test('feedbackFor returns the rate and sentence over the limit', () => {
     feedback.sentence,
     'build is broken because parser reads wrong file and cache holds stale copy of output.',
   );
+});
+
+test('feedbackFor carries the stray article phrases', () => {
+  const text = 'The build is broken because the parser reads the wrong file and the cache holds a stale copy of the output.';
+  assert.deepEqual(feedbackFor(text).phrases, ['the build', 'the parser', 'the wrong', 'the cache', 'a stale']);
+});
+
+test('strayPhrases keeps the next word with its apostrophe, skips repeats and quoted text, and stops at five', () => {
+  assert.deepEqual(strayPhrases("Check the other's array, then The other's array. See \"the docs\" and `the code`."), ["the other's"]);
+  assert.deepEqual(strayPhrases('A cat, an owl, the dog, a fox, the bee, an ant, a gnu.'), ['a cat', 'an owl', 'the dog', 'a fox', 'the bee']);
+  assert.deepEqual(strayPhrases('Fix parser. Rerun tests.'), []);
+  assert.deepEqual(strayPhrases('Ends with the'), []);
+});
+
+test('phrases read back, and feedback without phrases or with misshapen phrases is handled', () => {
+  const feedback = { rate: 6.4, sentence: 'build fails.', phrases: ['the build'] };
+  writeTerseState('abc-1', { expand: false, feedback });
+  assert.deepEqual(readTerseState('abc-1').feedback, feedback);
+  fs.writeFileSync(terseStateFile('abc-1'), JSON.stringify({ expand: false, feedback: { ...feedback, phrases: [7] } }));
+  assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display: null });
 });
 
 test('feedbackFor returns null at or under the limit', () => {

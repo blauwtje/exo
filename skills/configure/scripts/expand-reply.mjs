@@ -32,9 +32,12 @@ function terseReminder() {
   return `replies=terse: ${terseRuleSentence('are fine')} ${terseRuleSentence('stay whole')} ${terseRuleSentence('keep normal prose')}`;
 }
 
-// At most 240 characters: 60 of frame, 120 of tightened sentence.
-function terseNote({ rate, sentence }) {
-  return `Last reply: ${rate.toFixed(1)} articles/100 words, limit ${ARTICLE_LIMIT.toFixed(1)}. Tighter: "${sentence}"`;
+// A phrase is cut to 20 characters, so the note is at most 360 characters: 60
+// of frame, 120 of tightened sentence, 160 of stray phrases.
+function terseNote({ rate, sentence, phrases = [] }) {
+  const score = `Last reply: ${rate.toFixed(1)} articles/100 words, limit ${ARTICLE_LIMIT.toFixed(1)}.`;
+  const stray = phrases.length === 0 ? '' : ` Stray: ${phrases.map((phrase) => phrase.slice(0, 20)).join(', ')}.`;
+  return `${score}${stray} Tighter: "${sentence}"`;
 }
 
 // A state-write failure must not drop the instruction or the reminder.
@@ -49,10 +52,10 @@ function saveState(sessionId, state) {
 function contextFor(sessionId, prompt) {
   const state = readTerseState(sessionId);
   if (prompt.trim() === '?') {
-    saveState(sessionId, { expand: true, feedback: state.feedback });
+    saveState(sessionId, { expand: true, feedback: state.feedback, display: state.display });
     return EXPANSION_INSTRUCTION;
   }
-  saveState(sessionId, { expand: false, feedback: null });
+  saveState(sessionId, { expand: false, feedback: null, display: state.display });
   if (settingValue('replies') !== 'terse') return null;
   const reminder = terseReminder();
   return state.feedback === null ? reminder : `${reminder} ${terseNote(state.feedback)}`;

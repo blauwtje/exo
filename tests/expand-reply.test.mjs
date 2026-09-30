@@ -155,6 +155,30 @@ test('the note stays within 240 characters for the longest tightened sentence', 
   assert.ok(note.length <= 240, `note is ${note.length} characters`);
 });
 
+test('the note names the stray phrases after the score and stays within 360 characters', async () => {
+  const phrases = ['the array', "the other's", 'a supercalifragilisticexpialidocious', 'an owl', 'the dog'];
+  seedState('note-phrases', { expand: false, feedback: { ...FEEDBACK, phrases } });
+  const result = await runExpandReply({ session_id: 'note-phrases', prompt: 'hello' }, projectWith('terse'));
+  const { additionalContext } = JSON.parse(result.stdout).hookSpecificOutput;
+  const note = additionalContext.slice(additionalContext.indexOf('Last reply:'));
+  assert.equal(
+    note,
+    'Last reply: 6.4 articles/100 words, limit 2.0. Stray: the array, the other\'s, a supercalifragilist, an owl, the dog. Tighter: "Config lives in project file."'
+  );
+  const longest = { rate: 100.55, sentence: 'x'.repeat(120), phrases: Array(5).fill('y'.repeat(40)) };
+  seedState('note-phrases-long', { expand: false, feedback: longest });
+  const long = await runExpandReply({ session_id: 'note-phrases-long', prompt: 'hello' }, projectWith('terse'));
+  const longContext = JSON.parse(long.stdout).hookSpecificOutput.additionalContext;
+  assert.ok(longContext.slice(longContext.indexOf('Last reply:')).length <= 360);
+});
+
+test('the prompt keeps the display state while it clears the feedback', async () => {
+  const display = { messageId: 'm1', inFence: true };
+  seedState('note-display', { expand: false, feedback: FEEDBACK, display });
+  await runExpandReply({ session_id: 'note-display', prompt: 'hello' }, projectWith('terse'));
+  assert.deepEqual(JSON.parse(fs.readFileSync(stateFile('note-display'), 'utf8')), { expand: false, feedback: null, display });
+});
+
 test('a lone question mark sets expand and keeps the pending feedback', async () => {
   seedState('note-expand', { expand: false, feedback: FEEDBACK });
   await runExpandReply({ session_id: 'note-expand', prompt: '?' }, projectWith('terse'));
