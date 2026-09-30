@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange } from '#plan-tasks';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
@@ -54,11 +54,40 @@ test('a task lands with its trailer and its own commit subject, never with an ea
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),
     taskSection({ number: 2, title: 'Wave', dependsOn: 'Task 1', files: ['- Create: `src/wave.js`'], subject: 'feat(app): wave' })
   ] }));
-  assert.deepEqual(landedTasks(tasks, root), []);
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(old): an earlier plan', '-m', 'Plan-task: 2');
-  assert.deepEqual(landedTasks(tasks, root), []);
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
-  assert.deepEqual(landedTasks(tasks, root), [1]);
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), [1]);
+});
+
+test('planIdOf names a plan by its file basename without .md', () => {
+  assert.equal(planIdOf('docs/specs/visual-quality.md'), 'visual-quality');
+});
+
+test('a Plan-task: <plan-id>/<n> trailer lands only the task of the plan it names', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  const { tasks } = parsePlan(planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Create: `a.js`'], subject: 'feat(app): greet' }),
+    taskSection({ number: 2, title: 'feat(app): wave', files: ['- Create: `b.js`'], commit: false })
+  ] }));
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(other): something else', '-m', 'Plan-task: other-plan/1');
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(other): more', '-m', 'Plan-task: other-plan/2');
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): a subject the plan does not give', '-m', 'Plan-task: fixture/2');
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), [2]);
+});
+
+test('a legacy bare Plan-task: <n> lands a compact task only beside its heading subject', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  const { tasks } = parsePlan(planFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['a.js'] }),
+    compactTask({ number: 2, title: 'feat(app): wave', files: ['b.js'] })
+  ] }));
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(old): an earlier plan\'s task 1', '-m', 'Plan-task: 1');
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), []);
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): wave', '-m', 'Plan-task: 2');
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), [2]);
 });
 
 test('the wave is the current task plus every further ready task without Design: whose files are disjoint from the wave, up to four, only when the plan allows one', () => {
@@ -188,16 +217,16 @@ test('landed counts only commits on this branch since it left the default branch
   ] }));
   for (const remote of [true, false]) {
     const root = await gitRepository({ 'a.txt': 'a\n' });
-    git(root, 'commit', '-q', '--allow-empty', '-m', 'chore: older plan', '-m', 'Plan-task: 2');
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'chore: older plan', '-m', 'Plan-task: fixture/2');
     git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
     if (remote) {
       git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
       git(root, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
     }
     git(root, 'switch', '-q', '-c', 'feat/fixture');
-    assert.deepEqual(landedTasks(tasks, root), [], `remote: ${remote}`);
-    git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): bare', '-m', 'Plan-task: 2');
-    assert.deepEqual(landedTasks(tasks, root), [2], `remote: ${remote}`);
+    assert.deepEqual(landedTasks(tasks, root, 'fixture'), [], `remote: ${remote}`);
+    git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): bare', '-m', 'Plan-task: fixture/2');
+    assert.deepEqual(landedTasks(tasks, root, 'fixture'), [2], `remote: ${remote}`);
   }
 });
 
@@ -209,7 +238,7 @@ test('a run on the default branch itself keeps the tasks it already pushed', asy
   git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: 1');
   git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
   git(root, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
-  assert.deepEqual(landedTasks(tasks, root), [1]);
+  assert.deepEqual(landedTasks(tasks, root, 'fixture'), [1]);
 });
 
 test('driftOf finds a region declared as a method, getter, type or in another language', async () => {

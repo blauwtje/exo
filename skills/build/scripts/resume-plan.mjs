@@ -21,7 +21,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
-import { landedTasks, parsePlan, readyTasks } from '#plan-tasks';
+import { landedTasks, parsePlan, planIdOf, readyTasks } from '#plan-tasks';
 
 const MARKER_LIFETIME_MS = 6 * 60 * 60 * 1000;
 
@@ -57,7 +57,7 @@ function liveMarker(gitDirectory, sessionId) {
 function firstOpenTask(planPath, root) {
   if (!fs.existsSync(planPath)) return null;
   const tasks = parsePlan(fs.readFileSync(planPath, 'utf8')).tasks;
-  const [next] = readyTasks(tasks, landedTasks(tasks, root));
+  const [next] = readyTasks(tasks, landedTasks(tasks, root, planIdOf(planPath)));
   return next === undefined ? null : { planPath, task: next };
 }
 

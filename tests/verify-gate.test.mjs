@@ -2,7 +2,7 @@
 // gate (or npm run check) and a stray-path check, then prints the REVIEWER
 // line pick-reviewer.mjs's size facts pick. "Landed" comes from #plan-tasks'
 // own landedTasks(), the same read land-task.mjs uses, so a task with no
-// `Plan-task: <n>` commit never runs its Proof here either.
+// `Plan-task: <plan-id>/<n>` commit never runs its Proof here either.
 
 import assert from 'node:assert/strict';
 import path from 'node:path';
@@ -15,7 +15,7 @@ import { git, gitRepository, run } from './harness.mjs';
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
 
 function landTask(root, number) {
-  git(root, 'commit', '--allow-empty', '-m', `chore: land task ${number}`, '-m', `Plan-task: ${number}`);
+  git(root, 'commit', '--allow-empty', '-m', `chore: land task ${number}`, '-m', `Plan-task: plan/${number}`);
 }
 
 test('findStrayPaths keeps only paths no task declared', () => {

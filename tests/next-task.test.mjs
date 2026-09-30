@@ -48,6 +48,16 @@ test('with nothing landed, the report names the first wave with no drift and a b
   assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
 });
 
+test('a stacked branch counts only the trailers that name this plan\'s file', async () => {
+  const { root, planPath } = await checkout();
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: earlier-plan/1');
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): something else', '-m', 'Plan-task: 3');
+  assert.match(nextTaskReport({ planPath, planText: PLAN, root }), /^Landed: none$/m);
+  git(root, 'commit', '-q', '--allow-empty', '-m', 'feat(app): greet', '-m', 'Plan-task: fixture/1');
+  land(root, 3, 'feat(app): wave');
+  assert.match(nextTaskReport({ planPath, planText: PLAN, root }), /^Landed: 1, 3$/m);
+});
+
 function plannedTasks(count) {
   return Array.from({ length: count }, (_, index) => taskSection({
     number: index + 1, title: `Part ${index + 1}`, files: [`- Create: \`src/part-${index + 1}.js\``], subject: `feat(app): part ${index + 1}`

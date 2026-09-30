@@ -27,7 +27,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 ```
 
 The heading is the conventional-commit subject `land-task` commits with,
-trailed by `Plan-task: <n>`; it stages `Files:`, so no `Commit:` block. `Data:` names the structure the result lives in (an object, a
+trailed by `Plan-task: <plan-id>/<n>`, the plan id its file name without `.md`; it stages `Files:`, so no `Commit:` block. `Data:` names the structure the result lives in (an object, a
 keyed `Map`, an array), not its fields or algorithm. `Design:` names the skill
 a task loads first, only when it changes a page's look.
 `Proof:` is the one bare command showing this task alone landed. A task whose

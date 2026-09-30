@@ -17,7 +17,7 @@ import fs, { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 import { parseFlags, UsageError } from '#script-flags';
-import { frameOf, landedTasks, parsePlan } from '#plan-tasks';
+import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
 import { changedPaths, measureSizeFacts } from '#size-facts';
 import { pickReviewer } from './pick-reviewer.mjs';
 
@@ -53,13 +53,14 @@ function runCommand(command) {
 
 /**
  * The plan's checks, one PASS/FAIL/SKIP/STRAY line each, then the REVIEWER
- * line. `root` names the checkout the gate reads landed commits and runs
+ * line. `planPath` names the plan whose id its landed trailers carry; `root`
+ * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
  */
-export function runGate(planText, { checkCommand, root = process.cwd(), base } = {}) {
+export function runGate(planText, { planPath, checkCommand, root = process.cwd(), base } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
-  const landed = new Set(landedTasks(plan.tasks, root));
+  const landed = new Set(landedTasks(plan.tasks, root, planIdOf(planPath)));
   const lines = [];
   let failed = false;
 
@@ -102,7 +103,7 @@ function main(argv) {
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
   const planText = fs.readFileSync(flags.plan, 'utf8');
   if (flags.root !== undefined) process.chdir(flags.root);
-  const { lines, failed } = runGate(planText, { checkCommand: flags['check-command'], root: flags.root, base: flags.base });
+  const { lines, failed } = runGate(planText, { planPath: flags.plan, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
   process.stdout.write(`${lines.join('\n')}\n`);
   if (failed) process.exitCode = 1;
 }

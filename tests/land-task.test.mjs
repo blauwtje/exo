@@ -1,5 +1,6 @@
-// land-task.mjs runs a task's Commit: block as the plan wrote it, checks the
-// Plan-task trailer on the new commit and prints the landed set; a compact task
+// land-task.mjs runs a task's Commit: block as the plan wrote it, its trailer
+// naming the plan, checks the Plan-task: <plan-id>/<n> trailer on the new
+// commit and prints the landed set; a compact task
 // lands only on a build report whose Proof: command passed.
 
 import assert from 'node:assert/strict';
@@ -34,45 +35,45 @@ async function editApp(root) {
 }
 
 test('a green task lands with its trailer and the landed set grows', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planText: PLAN, number: 1, root });
+  const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1$/m);
-  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: 1$/m);
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
 test('a block without the trailer is refused before it runs', async () => {
-  const { root } = await landingCheckout();
-  assert.throws(() => landTask({ planText: PLAN, number: 2, root }), LandingError);
+  const { root, planPath } = await landingCheckout();
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 2, root }), LandingError);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
 test('a task without a Commit: block is refused', async () => {
-  const { root } = await landingCheckout();
-  assert.throws(() => landTask({ planText: PLAN, number: 3, root }), /has no Commit: block/);
+  const { root, planPath } = await landingCheckout();
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 3, root }), /has no Commit: block/);
 });
 
 test('a failing block reports the failure', async () => {
-  const { root } = await landingCheckout();
-  assert.throws(() => landTask({ planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
+  const { root, planPath } = await landingCheckout();
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
 });
 
 test('a stray path outside Files: is refused before anything stages or commits', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
-  assert.throws(() => landTask({ planText: PLAN, number: 1, root }), /Task 1 changed a path outside Files: `src\/extra\.js`/);
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Task 1 changed a path outside Files: `src\/extra\.js`/);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
   assert.match(git(root, 'status', '--porcelain'), /extra\.js/);
 });
 
 test('a task whose changes match every Files: path lands clean', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
-  const output = landTask({ planText: PLAN, number: 4, root });
+  const output = landTask({ planPath, planText: PLAN, number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
@@ -85,34 +86,34 @@ function withLandGate(command) {
 }
 
 test('a passing Land gate lets a green task land', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planText: withLandGate('true'), number: 1, root });
+  const output = landTask({ planPath, planText: withLandGate('true'), number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: 1$/m);
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
 });
 
 test('a failing Land gate is refused before anything commits, naming the command and its output', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
   assert.throws(
-    () => landTask({ planText: withLandGate('echo gate broke && exit 1'), number: 1, root }),
+    () => landTask({ planPath, planText: withLandGate('echo gate broke && exit 1'), number: 1, root }),
     /Land gate "echo gate broke && exit 1" failed:\ngate broke/
   );
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
 test('a plan with no Land gate line lands as before', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planText: PLAN, number: 1, root });
+  const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
 test('Land gate: none opts out and lands as before', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planText: withLandGate('none'), number: 1, root });
+  const output = landTask({ planPath, planText: withLandGate('none'), number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
@@ -175,12 +176,12 @@ async function writeReport(root, text) {
 }
 
 test('a compact task with no Commit: block lands on a derived commit and trailer', async () => {
-  const { root } = await compactCheckout();
-  const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT });
+  const { root, planPath } = await compactCheckout();
+  const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1$/m);
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
-  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: 1$/m);
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: compact\/1$/m);
   assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), ['src/app.js']);
 });
 
@@ -258,17 +259,17 @@ test('not done without proof: a bare "fail" line or a backticked failing word in
 // output, so a test name holding "fail" does not refuse a green task.
 test('a passing proof whose output names a failing case still lands', async () => {
   for (const outputLine of ['ok 3 - parser: fails on empty input', '✔ importRows: failed rows are skipped (2ms)']) {
-    const { root } = await compactCheckout();
+    const { root, planPath } = await compactCheckout();
     const report = `Proof:\n- \`node --test tests/app.test.mjs\`: pass\n  ${outputLine}\n  # fail 0\nUnresolved: none\n`;
-    const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
+    const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: report });
     assert.match(output, /^Landed: 1$/m, outputLine);
   }
 });
 
 test('a Proof section whose every command passes still lands', async () => {
-  const { root } = await compactCheckout();
+  const { root, planPath } = await compactCheckout();
   const report = 'Proof:\n- `node --test tests/app.test.mjs`: pass\n  # pass 3\n  # fail 0\n- `npm test`: pass\n  # fail 0\nUnresolved: none\n';
-  const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
+  const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: report });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1$/m);
 });
@@ -295,11 +296,11 @@ test('--report names a report outside the default path', async () => {
   assert.match(result.stdout, /^Landed: 1$/m);
 });
 
-test('a commit the landed set does not count stops with exit 1', async () => {
+test('a commit whose subject the plan does not give stops with exit 1', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Price', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat: price in $USD' })
   ] });
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await fs.writeFile(path.join(root, 'docs/plans/price.md'), plan);
   git(root, 'add', 'docs/plans/price.md');
   git(root, 'commit', '-q', '-m', 'chore: add the price plan');
@@ -307,7 +308,7 @@ test('a commit the landed set does not count stops with exit 1', async () => {
   const result = await run(SCRIPT, ['--plan', path.join(root, 'docs/plans/price.md'), '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 1);
   assert.equal(result.stdout, '');
-  assert.match(result.stderr, /Task 1 as landed: the commit's subject reads "feat: price in" and the Commit: block gives "feat: price in \$USD"/);
+  assert.match(result.stderr, /carries "Plan-task: price\/1", yet its subject reads "feat: price in" and the plan gives "feat: price in \$USD"/);
 });
 
 // An older compact plan names no `Proof:`, so build-task writes or picks one
@@ -339,9 +340,9 @@ test('not done without proof: a compact task without Proof: and no passing test 
 });
 
 test('the proof output stops at the next outcome line in an indented Proof list', async () => {
-  const { root } = await compactCheckout();
+  const { root, planPath } = await compactCheckout();
   const report = 'Proof:\n  - `node --test tests/app.test.mjs`: pass\n    # pass 3\n  - `npm run lint`: pass\n    0 problems\n';
-  const output = landTask({ planText: COMPACT_PLAN, number: 1, root, reportText: report });
+  const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: report });
   assert.match(output, /^Proof: node --test tests\/app\.test\.mjs: pass\n {4}# pass 3\nLanded: 1$/m);
 });
 
@@ -427,18 +428,18 @@ test('the next report field ends the output with no blank line between them', as
 });
 
 test('a --root whose toplevel matches the checkout lands clean', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planText: PLAN, number: 1, root });
+  const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
 test('a --root that is a subdirectory of the checkout is refused before anything stages or commits', async () => {
-  const { root } = await landingCheckout();
+  const { root, planPath } = await landingCheckout();
   await editApp(root);
   const subdirectory = path.join(root, 'src');
   assert.throws(
-    () => landTask({ planText: PLAN, number: 1, root: subdirectory }),
+    () => landTask({ planPath, planText: PLAN, number: 1, root: subdirectory }),
     (error) => error instanceof LandingError
       && error.message.includes(subdirectory)
       && error.message.includes(root)
@@ -521,7 +522,7 @@ test('a changed export signature with a caller outside Files: is refused as PLAN
   const { root, planPath } = await signatureCheckout();
   await requireBookedOn(root);
   const drift = 'PLAN DRIFT: Task 1: src/ledger/create-entry.js:createEntry(id, description, amount) -> (id, description, amount, bookedOn); callers outside Files: src/import/import-rows.js';
-  assert.throws(() => landTask({ planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && error.message === drift);
+  assert.throws(() => landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && error.message === drift);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 1);
@@ -530,10 +531,10 @@ test('a changed export signature with a caller outside Files: is refused as PLAN
 });
 
 test('a changed export signature with every caller inside Files: lands', async () => {
-  const { root } = await signatureCheckout();
+  const { root, planPath } = await signatureCheckout();
   await requireBookedOn(root);
   await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
-  const output = landTask({ planText: SIGNATURE_PLAN, number: 2, root });
+  const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 2, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\n$/);
 });
 
@@ -548,9 +549,9 @@ const CALLER_SAFE_SIGNATURES = {
 
 for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
   test(`${change} on an export with an outside caller lands`, async () => {
-    const { root } = await signatureCheckout();
+    const { root, planPath } = await signatureCheckout();
     await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), `export function createEntry${parameters} {\n  return {};\n}\n`);
-    const output = landTask({ planText: SIGNATURE_PLAN, number: 1, root });
+    const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
     assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\n$/);
   });
 }
@@ -563,18 +564,18 @@ const CALLER_BREAKING_SIGNATURES = {
 
 for (const [change, [before, after]] of Object.entries(CALLER_BREAKING_SIGNATURES)) {
   test(`${change} on an export with an outside caller is refused as PLAN DRIFT`, async () => {
-    const { root } = await signatureCheckout();
+    const { root, planPath } = await signatureCheckout();
     const file = path.join(root, 'src/ledger/create-entry.js');
     await fs.writeFile(file, `export function createEntry${before} {}\n`);
     git(root, 'commit', '-q', '-am', 'set up the old signature');
     await fs.writeFile(file, `export function createEntry${after} {}\n`);
-    assert.throws(() => landTask({ planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && /^PLAN DRIFT: Task 1: src\/ledger\/create-entry\.js:createEntry\(/.test(error.message));
+    assert.throws(() => landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && /^PLAN DRIFT: Task 1: src\/ledger\/create-entry\.js:createEntry\(/.test(error.message));
   });
 }
 
 test('a body-only change to an export with an outside caller lands and prints nothing extra', async () => {
-  const { root } = await signatureCheckout();
+  const { root, planPath } = await signatureCheckout();
   await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
-  const output = landTask({ planText: SIGNATURE_PLAN, number: 1, root });
+  const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\n$/);
 });

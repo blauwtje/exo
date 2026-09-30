@@ -13,7 +13,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, regionRange, taskSize } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize } from '#plan-tasks';
 
 // The show-savings skill owns the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/100.
@@ -165,7 +165,7 @@ export function nextTaskReport({ planPath, planText, root }) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
   const frame = frameOf(plan.frame);
-  const landed = landedTasks(plan.tasks, root);
+  const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   const wave = nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel);
   const lines = [
     `Plan: ${planPath}`,

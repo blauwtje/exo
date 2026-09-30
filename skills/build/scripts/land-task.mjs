@@ -1,7 +1,7 @@
 // Lands one green task: refuses before it stages or commits anything when
 // the checkout has changed or added a path outside the task's `Files:`,
-// else runs the task's `Commit:` block as the plan wrote it, checks that the
-// new commit carries the `Plan-task: <n>` trailer and that the landed set now
+// else runs the task's `Commit:` block as the plan wrote it, its bare trailer
+// swapped for one naming the plan, checks that the new commit carries the `Plan-task: <plan-id>/<n>` trailer and that the landed set now
 // holds the task, and prints that set, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and that
@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url';
 import { exportSignatures } from '#export-signatures';
 import { parseFlags, UsageError } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, frameOf, landedTasks, parsePlan, PlanError } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, frameOf, landedTasks, parsePlan, PlanError, planIdOf, planTaskTrailer } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -39,12 +39,12 @@ function shellQuote(value) {
 // A compact task carries no `Commit:` block by design: its heading title is
 // the commit subject and its `Files:` field is the `git add` list, so this
 // derives the same shape land-task would otherwise read from the plan text.
-function deriveCommit(task, number) {
+function deriveCommit(task, number, planId) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
   const addArgs = task.files.map((file) => shellQuote(file.path)).join(' ');
-  return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m "Plan-task: ${number}"`;
+  return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m ${shellQuote(planTaskTrailer(planId, number))}`;
 }
 
 // A `--root` naming a subdirectory of the checkout, or a copy under another
@@ -77,16 +77,18 @@ export function fixLand({ root, subject }) {
   return `Committed: ${sha}\n`;
 }
 
-export function commitBlockOf(plan, number) {
+// spec writes a `Commit:` block's trailer as the bare `Plan-task: <n>`, which
+// names no plan; the block runs with that trailer swapped for the one that does.
+export function commitBlockOf(plan, number, planId) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   if (task.commitBlock !== null) {
     if (!task.commitBlock.includes(`"Plan-task: ${number}"`)) {
       throw new LandingError(`the Commit: block of Task ${number} carries no "Plan-task: ${number}" trailer`);
     }
-    return task.commitBlock;
+    return task.commitBlock.replace(`"Plan-task: ${number}"`, shellQuote(planTaskTrailer(planId, number)));
   }
-  if (task.compact) return deriveCommit(task, number);
+  if (task.compact) return deriveCommit(task, number, planId);
   throw new LandingError(`Task ${number} has no Commit: block`);
 }
 
@@ -310,7 +312,8 @@ function runLandGate(landGate, root) {
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
-  const block = commitBlockOf(plan, number);
+  const planId = planIdOf(planPath);
+  const block = commitBlockOf(plan, number, planId);
   const task = plan.tasks.find((entry) => entry.number === number);
   const stray = strayPaths(task, root, planPath);
   if (stray.length > 0) {
@@ -331,15 +334,17 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   }
   const head = execFileSync('git', ['-C', root, 'log', '-1', '--format=%h%n%s%n%B'], { encoding: 'utf8' });
   const [sha, subject, ...body] = head.split('\n');
-  if (!new RegExp(`^Plan-task: ${number}$`, 'm').test(body.join('\n'))) {
-    throw new LandingError(`HEAD ${sha} carries no "Plan-task: ${number}" trailer`);
+  const trailer = planTaskTrailer(planId, number);
+  if (!body.includes(trailer)) {
+    throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
   }
   // bash expands the block, so a `$` or backquote in its subject can commit a
-  // subject the plan does not give, and next-task would build the task again.
-  const landed = landedTasks(plan.tasks, root);
-  if (!landed.includes(number)) {
-    throw new LandingError(`HEAD ${sha} carries "Plan-task: ${number}", yet next-task does not count Task ${number} as landed: the commit's subject reads "${subject}" and the Commit: block gives "${task.commitSubject}"`);
+  // subject the plan does not give.
+  const expectedSubject = task.commitSubject ?? task.title;
+  if (subject !== expectedSubject) {
+    throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   }
+  const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
   return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n`;
