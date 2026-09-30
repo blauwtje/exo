@@ -34,7 +34,7 @@ Every setting but `scope` offers its current value first, as `1. **Keep <value> 
 | Setting | Question | Values and what each gives |
 |---|---|---|
 | `specs` | Where should a spec go when exo shapes a change? | `docs`: a file under docs/specs in the repository. `issues`: a GitHub issue. `both`: a file plus a linked issue. |
-| `replies` | How should exo write its replies? | `tight`: short, no preamble, recap or filler. `standard`: full prose. |
+| `replies` | How should exo write its replies? | `terse`: chat prose without articles, linking verbs or filler. `tight`: short, no preamble, recap or filler. `standard`: full prose. |
 | `workspace` | Where should a code-changing run commit? | `ask`: the run asks each time. `branch`: a new branch. `worktree`: a separate folder. `current`: the current branch. |
 | `ship` | How should finished commits leave this machine? | `ask`: ship asks each time. `pr-merge`: a pull request, merged once checks pass. `open-pr`: a pull request left open. `push`: a push, no pull request. `local`: nothing leaves. |
 | `counter` | Should exo count what it costs? | `on`: the cost shows in the status line. `off`: no counting, no status line segment and no read guard. |

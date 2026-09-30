@@ -65,6 +65,15 @@ test('replies is tight by default and standard when the project sets it', async 
   assert.equal((await settings(project, ['get', 'replies'])).stdout.trim(), 'standard');
 });
 
+test('replies=terse injects the terse rule in place of the tight one', async () => {
+  const space = await workspace({ project: { replies: 'terse' } });
+  const result = await settings(space, ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /replies=terse \(project\)/);
+  assert.ok(result.stdout.trim().endsWith(`. ${SCHEMA.replies.rules.terse}`), result.stdout);
+  assert.ok(!result.stdout.includes(SCHEMA.replies.rules.tight), result.stdout);
+});
+
 test('set writes the project file and rejects a value the schema does not allow', async () => {
   const space = await workspace();
   const written = await settings(space, ['set', 'specs', 'issues', '--scope', 'project']);
@@ -105,7 +114,7 @@ test('a value the schema does not allow is named in the context line, and the de
   const space = await workspace({ project: { replies: 'verbose' } });
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /replies=tight \(default\).*replies=verbose is not one of tight, standard/);
+  assert.match(result.stdout, /replies=tight \(default\).*replies=verbose is not one of terse, tight, standard/);
   assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
 });
 
