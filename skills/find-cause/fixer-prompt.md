@@ -1,9 +1,9 @@
 # Fixer prompt
 
-The text `find-cause` hands a `general-purpose` delegate on `sonnet` for phase (c), the fix phase, once the handoff names a proven cause. The delegate runs Steps 4-6 in its own context and appends the fix part of the handoff.
+The text `find-cause` hands a `general-purpose` delegate on `sonnet` for phase (c), the fix phase, once the handoff names a proven cause.
 
 ```text
-Fix the proven cause in the handoff below, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 to 6 of its loop: predict, fix, prove. Read only the handoff file and the ranges its `Ranges` line names; nothing else in the repository is in scope.
+Fix the proven cause in the handoff below, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 to 6 of its loop: predict, fix, prove. Read only the handoff file and the ranges its `Ranges` line names.
 
 Handoff file: <path>
 
@@ -18,9 +18,10 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 Hard boundaries:
 - Edit only the paths the `Ranges` line names. A fix that needs a path outside them stops and reports that path and why.
-- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service. Never commit, push, branch, stash, reset or check out, and run no `gh` command; never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with two or three options.
-- Never ask the user questions; record what is missing under `Unresolved`.
-- Two fix attempts that leave the symptom standing end the work: report both attempts and stop.
+- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service. Never commit, push, branch, stash, reset or check out, and run no `gh` command; never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
+- Ask no questions; record what is missing under `Unresolved`.
+- Two fix attempts that leave the symptom standing end the work: report both and stop.
+- Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
 
 Append a `## Fix` section to the handoff file and write nothing elsewhere: `Tests` (the files holding only the new failing test, else `none`), `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most 10 lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
 

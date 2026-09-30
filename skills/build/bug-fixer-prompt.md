@@ -1,6 +1,6 @@
 # Bug fixer prompt
 
-The text `build` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line. The delegate runs `exo:find-cause` in its own context, writes the handoff file, and returns it.
+The text `build` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line.
 
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.
@@ -23,10 +23,11 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 Hard boundaries:
 - Edit only the paths in scope. A fix that needs a path outside them stops and reports that path and why.
-- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service. Never commit, push, branch, stash, reset or check out, and run no `gh` command; never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with two or three options.
-- Never ask the user questions; record what is missing under Unresolved.
-- Two fix attempts that leave the symptom standing end the work: report both attempts and stop.
+- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service. Never commit, push, branch, stash, reset or check out, and run no `gh` command; never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
+- Ask no questions; record what is missing under Unresolved.
+- Two fix attempts that leave the symptom standing end the work: report both and stop.
+- Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
 
 Handoff file: <root>/.exo/debug/task-<n>.md.
-Write both parts there with the Write tool and return the path, nothing else. The investigate part, one line per field in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (the causal line and why it produced the symptom, at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). Then a `## Fix` section: `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most ten output lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
+Write both parts there and return the path, nothing else. The investigate part, one line per field in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (the causal line and why it produced the symptom, at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). Then a `## Fix` section: `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most ten lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
 ```

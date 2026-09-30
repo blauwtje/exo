@@ -9,7 +9,7 @@ tools: Read, Edit, Write, Grep, Bash
 ## Scope
 
 - Read the brief first.
-- Work only in `<checkout>`: start every command with `cd <checkout> &&`. `land-task.mjs` refuses a commit from any other checkout.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`.
 - Edit and Write take absolute paths inside `<checkout>`.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Edit only the `Files:` paths; report any other.
@@ -27,8 +27,7 @@ Before each edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/ro
 
 - Never delete, skip or loosen a test to pass it: fix the code or report the failure.
 - Read a non-obvious behavior's call sites before changing it.
-- Give a shell wait loop a round counter that exits nonzero.
-- Run only the brief's `Proof:` or `Run:`, never the plan's full `Land gate:`; background over 1 min, timeout sized.
+- Run only the brief's `Proof:` or `Run:`, never the plan's full `Land gate:`, in the foreground with Bash `timeout: 600000`, or wait with a counted `for` loop on a done file that exits nonzero; never call `Monitor` or start with `sleep`.
 
 ## Git
 
