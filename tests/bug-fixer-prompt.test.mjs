@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
+const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', '`for` loop', 'never call `Monitor` or start with `sleep`'];
+
 const PROMPT = new URL('../skills/build/bug-fixer-prompt.md', import.meta.url);
 
 const HANDOFF_FIELDS = [
@@ -41,4 +43,9 @@ test('bug-fixer-prompt.md report fields match the D1 handoff field names', () =>
   for (const field of HANDOFF_FIELDS) {
     assert.ok(source.includes(`\`${field}\``), `report names ${field}`);
   }
+});
+
+test('bug-fixer-prompt.md waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
+  const source = fs.readFileSync(PROMPT, 'utf8');
+  assert.ok(DELEGATE_WAIT_PARTS.every((part) => source.includes(part)), 'the hard boundaries carry the wait line');
 });

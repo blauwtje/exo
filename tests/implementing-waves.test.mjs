@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import { test } from 'node:test';
 import { nextWave } from '../lib/plan-tasks.mjs';
 
+const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', '`for` loop', 'never call `Monitor` or start with `sleep`'];
+
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('build/references/workspace.md');
 const WAVE_WORKTREES = read('build/references/wave-worktrees.md');
@@ -157,4 +159,9 @@ test('the build table names the loop as the wave reference\'s reader, and run-lo
   const tokens = Math.round(Buffer.byteLength(RUN_LOOP) / 4);
   assert.equal(REFERENCE_TOKEN_LOCKS['skills/build/references/run-loop.md'], tokens);
   assert.ok(tokens <= 925, 'the lock never rises');
+});
+
+test('build-task waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
+  assert.ok(DELEGATE_WAIT_PARTS.every((part) => IMPLEMENTER_AGENT.includes(part)), 'the Standard section carries the wait line');
+  assert.ok(!IMPLEMENTER_AGENT.includes('background over 1 min'), 'no rule tells the delegate to background a proof');
 });

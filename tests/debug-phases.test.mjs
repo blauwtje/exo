@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
 
+const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', '`for` loop', 'never call `Monitor` or start with `sleep`'];
+
 const SKILL = new URL('../skills/find-cause/SKILL.md', import.meta.url);
 const INVESTIGATOR = new URL('../skills/find-cause/investigator-prompt.md', import.meta.url);
 const FIXER = new URL('../skills/find-cause/fixer-prompt.md', import.meta.url);
@@ -80,4 +82,9 @@ test('Step 7 runs pick-reviewer.mjs --effort and drops the hardcoded thresholds'
   assert.ok(source.includes('`medium`'), 'Step 7 names medium');
   assert.ok(!source.includes('five changed files'), 'Step 7 no longer hardcodes five changed files');
   assert.ok(!source.includes('200 changed lines'), 'Step 7 no longer hardcodes 200 changed lines');
+});
+
+test('find-cause fixer prompt waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
+  const source = fs.readFileSync(FIXER, 'utf8');
+  assert.ok(DELEGATE_WAIT_PARTS.every((part) => source.includes(part)), 'the hard boundaries carry the wait line');
 });
