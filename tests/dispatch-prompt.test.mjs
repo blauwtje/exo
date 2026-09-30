@@ -38,9 +38,7 @@ async function dispatchFixture(replies = null) {
   const env = {
     CLAUDE_CONFIG_DIR: directory,
     CLAUDE_PROJECT_DIR: project,
-    CLAUDE_PLUGIN_OPTION_REPLIES: '',
-    EXO_SAVINGS: '',
-    EXO_SAVINGS_DIR: ''
+    CLAUDE_PLUGIN_OPTION_REPLIES: ''
   };
   const prompt = (text) => ({ session_id: 's1', cwd: directory, transcript_path: transcript, prompt: text });
   return { env, transcript, prompt };

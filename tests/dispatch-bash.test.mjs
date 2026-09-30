@@ -145,7 +145,7 @@ async function mainSessionCall(command) {
   const outcome = await run(DISPATCHER, [], {
     cwd: directory,
     input: JSON.stringify(hookInput),
-    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory, EXO_SAVINGS_DIR: path.join(directory, 'savings') }
+    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory, EXO_SESSIONS_DIR: path.join(directory, 'sessions') }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;

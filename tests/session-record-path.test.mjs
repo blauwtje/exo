@@ -1,11 +1,11 @@
-// #session-record-path owns the hot session record's path and the session id
-// shape that becomes its file name, so every reader and record.mjs use the
-// same file for the same id.
+// #session-record-path owns the guards' session file path and the session id
+// shape that becomes its file name, so every reader and lib/session-store.mjs
+// use the same file for the same id.
 
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { test } from 'node:test';
-import { hotSessionFile, isSessionId, savingsDirectory, sessionFile, sessionsDirectory } from '../lib/session-record-path.mjs';
+import { isSessionId, sessionFile, sessionsDirectory } from '../lib/session-record-path.mjs';
 
 function withEnv(name, value, work) {
   const previous = process.env[name];
@@ -24,27 +24,6 @@ test('isSessionId accepts word characters and hyphens only', () => {
   assert.equal(isSessionId('abc_123'), true);
   assert.equal(isSessionId('../x'), false);
   assert.equal(isSessionId('with space'), false);
-});
-
-test('savingsDirectory follows EXO_SAVINGS_DIR, then the config directory', () => {
-  withEnv('EXO_SAVINGS_DIR', '/tmp/exo-savings-fixture', () => {
-    assert.equal(savingsDirectory(), '/tmp/exo-savings-fixture');
-  });
-  withEnv('EXO_SAVINGS_DIR', undefined, () => {
-    withEnv('CLAUDE_CONFIG_DIR', '/tmp/exo-config-fixture', () => {
-      assert.equal(savingsDirectory(), path.join('/tmp/exo-config-fixture', 'exo', 'savings'));
-    });
-  });
-});
-
-test('hotSessionFile joins the savings directory, sessions, and the id as a file name', () => {
-  withEnv('EXO_SAVINGS_DIR', '/tmp/exo-savings-fixture', () => {
-    assert.equal(hotSessionFile('notified-session'), path.join('/tmp/exo-savings-fixture', 'sessions', 'notified-session.json'));
-  });
-});
-
-test('hotSessionFile throws on a session id shaped like a path escape', () => {
-  assert.throws(() => hotSessionFile('../x'), /invalid session id/);
 });
 
 test('sessionsDirectory follows EXO_SESSIONS_DIR, then the config directory', () => {

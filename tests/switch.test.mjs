@@ -1,8 +1,6 @@
 // The session hook hands the model the route-skills body, the right-sizing ladder
 // and its guards included, so the ladder holds before every edit without a
-// skill call. The savings switch does not reach it: it silences the counter,
-// the status line segment and the read guard, and the ladder rides either way.
-// Every start rewrites the plugin-root pointer; only a clear or a compaction
+// skill call. Every start rewrites the plugin-root pointer; only a clear or a compaction
 // resets the read guard.
 
 import assert from 'node:assert/strict';
@@ -50,20 +48,16 @@ function jqAvailable() {
 
 const withoutJq = !(await jqAvailable()) && 'jq not on PATH';
 
-test('the session hook carries the pointer to the right-sizing ladder whether exo savings are on or off', { skip: withoutJq }, async () => {
+test('the session hook carries the pointer to the right-sizing ladder', { skip: withoutJq }, async () => {
   const configDirectory = await fixture();
-  const on = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
-  assert.equal(on.code, 0, on.stderr);
-  const off = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS: 'off' });
-  assert.equal(off.code, 0, off.stderr);
-  for (const result of [on, off]) {
-    const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-    assert.ok(context.includes('# Using exo'), context);
-    for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
-    assert.ok(context.includes('`check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.'), context);
-    // The frontmatter is dropped, so the description never reaches the context twice.
-    assert.ok(!context.includes('name: route-skills'), context);
-  }
+  const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
+  assert.equal(result.code, 0, result.stderr);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  assert.ok(context.includes('# Using exo'), context);
+  for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
+  assert.ok(context.includes('`check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.'), context);
+  // The frontmatter is dropped, so the description never reaches the context twice.
+  assert.ok(!context.includes('name: route-skills'), context);
 });
 
 test('a resumed session rewrites the plugin-root pointer and only a compaction resets the guards', { skip: withoutJq }, async () => {
@@ -119,7 +113,7 @@ test('on a 60-character branch both pointers go first, named from the repository
   await fs.mkdir(path.dirname(handoff), { recursive: true });
   await fs.writeFile(handoff, '# Handoff\n');
   await fs.writeFile(path.join(repository, '.git', 'exo', 'memory.md'), '# Project memory\n');
-  const result = await runHookIn({ CLAUDE_CONFIG_DIR: configDirectory, EXO_SAVINGS: 'off' }, repository);
+  const result = await runHookIn({ CLAUDE_CONFIG_DIR: configDirectory }, repository);
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
   const handoffPointer = `A handoff for \`${branch}\` sits at \`.git/exo/handoff/${branch}.md\` from the repository root.`;

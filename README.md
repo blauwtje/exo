@@ -34,20 +34,19 @@ exo needs a subagent spawn depth of at least 2 in `~/.claude/settings.json`; Cla
 Start a new session and run:
 
 ```text
-/exo:show-savings
+/exo:configure
 ```
 
-It prints the savings report, which says nothing was refused yet until the read guard has kept a read out of context. In a clone of this repository, `npm run check` runs every check.
+It shows every setting with its layer. In a clone of this repository, `npm run check` runs every check.
 
 ## How exo works
 
 - **Stages.** `/exo:start` shows the skills or picks one for a stated goal. A feature then runs through three stages in order: `spec` decides what "done" means when that is still open, `build` runs the plan or a decided change test-first, and `verify` runs the gate, the branch review and the repair before a pull request. A reported failure is diagnosed before anything is fixed. Each stage ends by asking which stage runs next and on which model.
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:locate-code` agent on Haiku, the discovery of a redesign in the `exo:survey-ui` agent on Sonnet at high effort, the final branch review in the `exo:review-branch` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:review-branch-deep` at high effort above that, the post-build design critique in the `exo:critique-ui` agent on Opus at medium effort, and documentation research in the `exo:fetch-docs` agent on Sonnet with web and read tools only; all six live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below links to the checks.
-- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
+- **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines 800` raises it, and `guards` set to `off` stands every guard down), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
 - **The reply levels and the scannable style.** The `replies` setting sets how many words a reply uses; the `exo:scannable` output style sets how a reply is laid out. Both are described below.
 - **The guards.** One hook on `Bash` runs every guard and refuses a destructive command, a shell read of a protected secret and a commit that names an AI as its author, each with a reason that says what to do instead.
-- **The savings counter.** The read guard books the bytes of every read it refuses; `/exo:show-savings` prints them as an estimated token saving.
 
 A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
 
@@ -68,8 +67,6 @@ What every level keeps whole: code, commands, paths, identifiers, error text, nu
 At `terse`, exo also scores each reply after it ends. A reply of 25 chat words or more that runs over 2.0 articles (a, an, the) per 100 words earns a short note on your next prompt: it names the score, lists the stray article phrases and shows one of the reply's own sentences with its articles removed, so the model tightens the following reply. The check never blocks or rewrites a reply, skips a reply that ends in a question and the reply to a lone `?`, and does nothing at `tight` or `standard`.
 
 At `terse`, a display filter also removes the articles that slip through before you read them. Its `MessageDisplay` hook rewrites each streamed chat line and leaves fenced and inline code, quoted text, URLs, paths and file names, blockquotes, table rows and a closing question that asks you something as written. The filter changes only what the screen shows: the transcript, the model's context and the score check keep the original reply, so the score still measures what the model wrote.
-
-A message of only `?` makes the next reply restate the previous one in full sentences, at every level and for that reply only.
 
 To turn it off, set `replies` to `standard`.
 
@@ -116,7 +113,6 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 | `refactor <the refactor to run>` | Restructures code without changing its behavior. | "rename X", "move Y", "split this module" |
 | `edit-skills <skill>` | Writes or improves a skill or agent. | "fix skill X", "make an agent that ..." |
 | `write-docs <the document or text to write or edit>` | Writes a README, docs page, PR or commit text. | "write the README", "PR description" |
-| `show-savings` | Shows how many tokens exo saved. | "what did exo save?" |
 | `configure [key value scope]` | Shows or changes an exo setting. | "set replies to standard" |
 
 ### User-invoked
@@ -147,34 +143,6 @@ A new skill needs all of: the folder at `skills/<name>/`, the name joining `EXPE
 
 `skills/route-skills/references/ladder.md` holds the ladder Claude takes before every edit that adds or replaces code: the rungs, the tie-break between them, and what is never shortened on any rung.
 
-## Savings
-
-`/exo:show-savings` prints a short ledger over every session of the last 30 days, in every project: the tokens the read guard kept out of context, split into the big-file reads and the repeated reads it refused. The figure is a local estimate from the bytes of the refused text at 3.5 characters per token, the ratio Anthropic documents; nothing in it is measured or billed, and the report prints no cost.
-
-To refuse fewer reads, raise the big-file limit, or set `guards` to `off` to stand every guard down:
-
-```text
-/exo:configure guard-lines 800
-```
-
-One switch turns the counter, the status line segment and the read guard off together:
-
-```bash
-node "$(cat ~/.claude/exo/plugin-root)/skills/show-savings/scripts/savings.mjs" off   # or on, status, report
-```
-
-`EXO_SAVINGS=off` in the environment outranks the file it writes. To show the running estimate in your status line, add this after your script has read stdin into `$input`:
-
-```bash
-plugin_root_file="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo/plugin-root"
-if [ -f "$plugin_root_file" ]; then
-  savings=$(printf '%s' "$input" | node "$(cat "$plugin_root_file")/skills/show-savings/scripts/savings.mjs" statusline 2>/dev/null)
-  [ -n "$savings" ] && printf ' · %s' "$savings"
-fi
-```
-
-The segment reads `exo ≈449k tokens saved`; it reads the record the Stop hook keeps and nothing from stdin.
-
 ## Settings
 
 exo reads each setting from four layers, highest first: `.claude/exo.local.json` (this machine, git-ignored), `.claude/exo.json` (the repository, committed so every collaborator shares it), the plugin's global options, then the default. The global options are asked when the plugin is enabled and change later in `/config`; `/exo:configure` shows every value with its layer and writes the two repository files.
@@ -194,7 +162,7 @@ npm run check            # the gate before any commit: verifier, self-test and s
 claude --plugin-dir .    # run the working tree instead of the installed copy
 ```
 
-`CONTRIBUTING.md` covers the checks, how skills hand work to helpers, the hooks and the savings counter. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
+`CONTRIBUTING.md` covers the checks, how skills hand work to helpers, the hooks and the guards. `benchmarks/README.md` covers the paired runs that measure exo against a session without it.
 
 A change lands under `## Unreleased` in `CHANGELOG.md` without a version change, so the installed plugin updates only on a release. `CLAUDE.md` lists the release steps.
 
