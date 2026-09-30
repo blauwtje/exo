@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.63.1 - 2026-09-30
+
 ### Changed
 
 - At `terse`, the next-prompt note after a reply over the limit names that reply's stray article phrases, such as `the array`.
