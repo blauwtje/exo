@@ -8,7 +8,7 @@ import path from 'node:path';
 import { configDirectory } from '#config-directory';
 import { emptySession, updateSessions } from './record.mjs';
 import { OVERHEAD_VERSION, bookOverhead, emptyOverhead } from './overhead.mjs';
-import { sumCounts, usageCounts } from './token-weights.mjs';
+import { sumCounts, usageCounts } from '#token-weights';
 
 const SESSION_ID = /^[\w-]+$/;
 

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { countsCost, modelPrice } from '../skills/show-savings/scripts/pricing.mjs';
 import PRICES from '../skills/show-savings/scripts/prices.mjs';
-import { COUNT_KEYS } from '../skills/show-savings/scripts/token-weights.mjs';
+import { COUNT_KEYS } from '#token-weights';
 
 test('every listed model prices exactly the usage counts', () => {
   for (const [family, price] of Object.entries(PRICES.models)) {

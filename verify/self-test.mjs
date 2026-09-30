@@ -17,7 +17,7 @@ import process from 'node:process';
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
   'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md', 'docs/skills/show-savings.md',
-  'docs/skills/build.md', 'lib/model-kinds.json',
+  'docs/skills/build.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json',
 ];
 
 function read(root, relative) {
@@ -269,7 +269,7 @@ const SCENARIOS = [
   { name: 'drifted-retention-days', mutate: (root) =>
     replaceText(root, 'README.md', 'last 30 days', 'last 60 days') },
   { name: 'unprefixed-delegate-budget-key', mutate: (root) =>
-    replaceText(root, 'skills/show-savings/assets/delegate-budgets.json', '"exo:build-ui"', '"build-ui"') },
+    replaceText(root, 'lib/delegate-budgets.json', '"exo:build-ui"', '"build-ui"') },
 ];
 
 function copyVerificationFixture(repository, destination) {

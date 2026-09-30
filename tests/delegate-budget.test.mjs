@@ -13,7 +13,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
 
-const SCRIPTS = fileURLToPath(new URL('../skills/show-savings/scripts/', import.meta.url));
+const SCRIPTS = fileURLToPath(new URL('../hooks/guards/', import.meta.url));
 const BUDGET = path.join(SCRIPTS, 'delegate-budget.mjs');
 
 function runBudget(script, hookInput, env) {
@@ -116,7 +116,7 @@ test('past the hard limit an Edit, a Write and a task update still run', async (
 test('past the hard limit a lone git add, commit, status or diff --stat still runs', async () => {
   const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const commands = [
-    'git add skills/show-savings/scripts/delegate-budget.mjs tests/delegate-budget.test.mjs',
+    'git add hooks/guards/delegate-budget.mjs tests/delegate-budget.test.mjs',
     'git add -A',
     '  git commit -m "fix(savings): let a delegate commit past the hard limit"  ',
     'git status',
@@ -203,21 +203,21 @@ test('a transcript with no complete usage line gets nothing', async () => {
   assert.equal(decisionOf(await runBudget(BUDGET, hookInput, env)), null);
 });
 
-// A copy of the scripts beside its own budgets file, so a per-type limit is
+// A copy of the guard beside its own budgets file, so a per-type limit is
 // tested without writing one into the shipped file.
 async function pluginCopy(root, budgets) {
-  const scripts = path.join(root, 'plugin', 'skills', 'show-savings', 'scripts');
-  const assets = path.join(root, 'plugin', 'skills', 'show-savings', 'assets');
-  await fs.mkdir(scripts, { recursive: true });
-  await fs.mkdir(assets, { recursive: true });
-  for (const name of ['delegate-budget.mjs', 'transcript-tail.mjs', 'token-weights.mjs']) {
-    await fs.copyFile(path.join(SCRIPTS, name), path.join(scripts, name));
+  const guards = path.join(root, 'plugin', 'hooks', 'guards');
+  const lib = path.join(root, 'plugin', 'lib');
+  await fs.mkdir(guards, { recursive: true });
+  await fs.mkdir(lib, { recursive: true });
+  for (const name of ['delegate-budget.mjs', 'transcript-tail.mjs']) {
+    await fs.copyFile(path.join(SCRIPTS, name), path.join(guards, name));
   }
-  await fs.mkdir(path.join(root, 'plugin', 'lib'), { recursive: true });
   await fs.copyFile(new URL('../package.json', import.meta.url), path.join(root, 'plugin', 'package.json'));
-  await fs.copyFile(new URL('../lib/hook-input.mjs', import.meta.url), path.join(root, 'plugin', 'lib', 'hook-input.mjs'));
-  await fs.writeFile(path.join(assets, 'delegate-budgets.json'), JSON.stringify(budgets));
-  return path.join(scripts, 'delegate-budget.mjs');
+  await fs.copyFile(new URL('../lib/hook-input.mjs', import.meta.url), path.join(lib, 'hook-input.mjs'));
+  await fs.copyFile(new URL('../lib/token-weights.mjs', import.meta.url), path.join(lib, 'token-weights.mjs'));
+  await fs.writeFile(path.join(lib, 'delegate-budgets.json'), JSON.stringify(budgets));
+  return path.join(guards, 'delegate-budget.mjs');
 }
 
 const TYPED_BUDGETS = { default: { soft: 40, hard: 70, calls: 60 }, agents: { 'exo:build-task': { soft: 20, hard: 30 } } };
@@ -239,7 +239,7 @@ test('a Budget line in the dispatch outranks the agent type limits', async () =>
 });
 
 test('the shipped budgets file gives every read-only agent type a soft limit of 70k and the default hard and call limits', async () => {
-  const budgets = JSON.parse(await fs.readFile(new URL('../skills/show-savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
+  const budgets = JSON.parse(await fs.readFile(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
   const readers = ['exo:locate-code', 'exo:fetch-docs', 'exo:survey-ui', 'exo:critique-ui', 'exo:review-branch', 'exo:review-branch-deep', 'Explore'];
   for (const agentType of readers) {
     assert.deepEqual(budgets.agents[agentType], { soft: 70 }, agentType);

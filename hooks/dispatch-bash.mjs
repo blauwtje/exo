@@ -12,7 +12,7 @@
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { approve } from '../skills/remember/scripts/nudge.mjs';
-import { delegateBudget } from '../skills/show-savings/scripts/delegate-budget.mjs';
+import { delegateBudget } from './guards/delegate-budget.mjs';
 import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as detachDenial } from './guards/detach-guard.mjs';

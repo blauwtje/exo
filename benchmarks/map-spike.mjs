@@ -26,7 +26,7 @@ import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { locateRepository, readTrackedFiles } from '../skills/spec/scripts/map-source.mjs';
 import { countsCost } from '../skills/show-savings/scripts/pricing.mjs';
 import { emptySession } from '../skills/show-savings/scripts/record.mjs';
-import { sumCounts } from '../skills/show-savings/scripts/token-weights.mjs';
+import { sumCounts } from '#token-weights';
 import { ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 import { meanAndSd } from './statistics.mjs';
 

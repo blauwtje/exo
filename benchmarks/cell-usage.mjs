@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { emptySession } from '../skills/show-savings/scripts/record.mjs';
-import { sumCounts, usageCounts } from '../skills/show-savings/scripts/token-weights.mjs';
+import { sumCounts, usageCounts } from '#token-weights';
 import { findTranscript, ingestTranscript, sumTokens } from '../skills/show-savings/scripts/transcript.mjs';
 
 // The session hook's context carries this heading only while exo savings are on.

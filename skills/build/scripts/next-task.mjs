@@ -15,10 +15,10 @@ import { parseFlags, UsageError } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize } from '#plan-tasks';
 
-// The show-savings skill owns the delegate's default budget; reading it here keeps
+// lib/delegate-budgets.json holds the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/100.
 const DEFAULT_BUDGET = JSON.parse(
-  fs.readFileSync(new URL('../../show-savings/assets/delegate-budgets.json', import.meta.url), 'utf8')
+  fs.readFileSync(new URL('../../../lib/delegate-budgets.json', import.meta.url), 'utf8')
 ).default;
 // plan-check.mjs requires a split past 250 code lines or 4 files, so a task at
 // that threshold is as large as a task ever gets: its share of the threshold,

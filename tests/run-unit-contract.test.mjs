@@ -8,7 +8,7 @@ import test from 'node:test';
 
 const RUN_LOOP = fs.readFileSync(new URL('../skills/build/references/run-loop.md', import.meta.url), 'utf8');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
-const BUDGETS = JSON.parse(fs.readFileSync(new URL('../skills/show-savings/assets/delegate-budgets.json', import.meta.url), 'utf8'));
+const BUDGETS = JSON.parse(fs.readFileSync(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
 
 function loopStep(number, text) {
   const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));

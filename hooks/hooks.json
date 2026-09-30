@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/show-savings/scripts/delegate-budget.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/delegate-budget.mjs\"",
             "shell": "bash",
             "timeout": 10
           }

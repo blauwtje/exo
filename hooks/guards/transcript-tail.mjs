@@ -1,10 +1,10 @@
 // The tail reader of a transcript: the context size of its last assistant turn,
 // the input, cache read and cache creation tokens, because a model cannot see
-// its own context size. Shared by context-watch.mjs (the main session) and
+// its own context size. Used by
 // delegate-budget.mjs (one delegate), which runs its guard on import.
 
 import fs from 'node:fs';
-import { usageCounts } from './token-weights.mjs';
+import { usageCounts } from '#token-weights';
 
 // One assistant line is small unless it carries a large tool input, so the tail
 // read widens only when it holds no complete usage line.

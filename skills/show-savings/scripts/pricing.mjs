@@ -3,7 +3,7 @@
 // every model.
 
 import PRICES from './prices.mjs';
-import { COUNT_KEYS } from './token-weights.mjs';
+import { COUNT_KEYS } from '#token-weights';
 
 const TOKENS_PER_PRICE_UNIT = 1e6;
 

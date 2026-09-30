@@ -20,7 +20,7 @@
 //
 // Limits, in thousands of tokens and in calls: a `Budget: <soft>k/<hard>k` line
 // in the dispatch, optionally ending `/<calls> calls`, outranks the entry for the
-// hook's `agent_type` in ../assets/delegate-budgets.json, which outranks its
+// hook's `agent_type` in ../../lib/delegate-budgets.json, which outranks its
 // `default`. The limit it accepts: the usage figure covers the prompt before
 // the latest tool result, so a large result shows one call late.
 //
@@ -37,7 +37,7 @@ import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
 
-const BUDGETS = JSON.parse(fs.readFileSync(new URL('../assets/delegate-budgets.json', import.meta.url), 'utf8'));
+const BUDGETS = JSON.parse(fs.readFileSync(new URL('../../lib/delegate-budgets.json', import.meta.url), 'utf8'));
 const PLAIN_ID = /^[\w-]+$/;
 const DISPATCH_BYTES = 64 * 1024;
 const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;

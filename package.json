@@ -25,7 +25,8 @@
     "#settings-store": "./lib/settings-store.mjs",
     "#size-facts": "./lib/size-facts.mjs",
     "#terse-display": "./lib/terse-display.mjs",
-    "#terse-feedback": "./lib/terse-feedback.mjs"
+    "#terse-feedback": "./lib/terse-feedback.mjs",
+    "#token-weights": "./lib/token-weights.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {

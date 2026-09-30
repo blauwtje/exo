@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { sumCounts, usageCounts } from '../skills/show-savings/scripts/token-weights.mjs';
+import { sumCounts, usageCounts } from '#token-weights';
 
 const USAGE = 'usage: design-run.mjs --transcript <session .jsonl> --run <run directory>';
 
