@@ -65,6 +65,8 @@ Switch it with `/exo:configure replies terse` (or `tight`, `standard`), or in th
 
 What every level keeps whole: code, commands, paths, identifiers, error text, numbers and every not, no, only and except. Full sentences return for a security warning and a confirmation before an irreversible action, and at `terse` also for a question to you. Only chat prose is shortened: commit, pull request and changelog text, docs, code comments and saved files keep normal prose.
 
+At `terse`, exo also scores each reply after it ends. A reply of 25 chat words or more that runs over 2.0 articles (a, an, the) per 100 words earns a short note on your next prompt: it names the score and shows one of the reply's own sentences with its articles removed, so the model tightens the following reply. The check never blocks or rewrites a reply, skips a reply that ends in a question and the reply to a lone `?`, and does nothing at `tight` or `standard`.
+
 A message of only `?` makes the next reply restate the previous one in full sentences, at every level and for that reply only.
 
 To turn it off, set `replies` to `standard`.
