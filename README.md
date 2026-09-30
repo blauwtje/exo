@@ -45,9 +45,54 @@ It prints the savings report, which says nothing was refused yet until the read 
 - **Helpers.** Searches, builds and reviews run in a helper: a separate Claude context with its own instructions and a named model, so its file dumps never reach your session. Code search runs in the `exo:locate-code` agent on Haiku, the discovery of a redesign in the `exo:survey-ui` agent on Sonnet at high effort, the final branch review in the `exo:review-branch` agent on Opus at medium effort for a branch of at most five changed files and 200 changed lines and in `exo:review-branch-deep` at high effort above that, the post-build design critique in the `exo:critique-ui` agent on Opus at medium effort, and documentation research in the `exo:fetch-docs` agent on Sonnet with web and read tools only; all six live under `agents/`.
 - **The ladder.** Before every edit that adds code, Claude checks whether the code is needed and whether something already does it; the ladder below links to the checks.
 - **The read guard.** A hook on `Read` refuses to read a file of over 400 lines in one go (the default; `/exo:configure guard-lines <lines>` changes it), and refuses to read lines again that have not changed since the last read. It hooks `Read` only: file content read through Bash, as `cat` or `sed` reads it, is neither refused nor counted.
+- **The reply levels and the scannable style.** The `replies` setting sets how many words a reply uses; the `exo:scannable` output style sets how a reply is laid out. Both are described below.
+- **The guards.** Hooks on `Bash`, `Edit` and `Write` refuse a destructive command, a shell read of a protected secret and a commit that names an AI as its author, each with a reason that says what to do instead.
 - **The savings counter.** The read guard books the bytes of every read it refuses; `/exo:show-savings` prints them as an estimated token saving.
 
 A session hook loads these rules at startup, resume, clear and compaction, so they hold without calling a skill.
+
+## Reply levels
+
+`replies` sets how dense the words of a chat reply are:
+
+| Level | What it drops |
+|---|---|
+| `standard` | Nothing: full prose. |
+| `tight` (default) | Preamble, recap, filler and hedging. |
+| `terse` | The same, and articles and linking verbs where the meaning survives; fragments, `→` and `=` are fine. |
+
+Switch it with `/exo:configure replies terse` (or `tight`, `standard`), or in the plugin options in `/config`; `.claude/exo.json` sets it for one repository and `.claude/exo.local.json` for one machine. The rule names what to cut, not English grammar, so `terse` works in any language you write in.
+
+What every level keeps whole: code, commands, paths, identifiers, error text, numbers and every not, no, only and except. Full sentences return for a security warning and a confirmation before an irreversible action, and at `terse` also for steps whose order matters and for a question to you. Only chat prose is shortened: commit, pull request and changelog text, docs, code comments and saved files keep normal prose.
+
+A message of only `?` makes the next reply restate the previous one in full sentences, at every level and for that reply only.
+
+To turn it off, set `replies` to `standard`.
+
+## The scannable style
+
+`exo:scannable` is an output style for a reader who scans: the answer comes first in one sentence, the reply has at most three labelled blocks and at most eight lines above one closing line, and that line holds the single next action. It is opt-in; exo never selects it. Switch it on with `/output-style` and pick `exo:scannable`, or set `"outputStyle": "exo:scannable"` in your own settings.
+
+It keeps whole: a warning before an irreversible or security-relevant action, a failed or unrun check, every not, no, only and except, code, diffs and exact error output. When a reply is too long it cuts whole points from the bottom of a fixed order, starting with what only informs you, and the closing line may offer what it cut.
+
+The style sets the layout and `replies` sets the word density; both apply and neither outranks the other. To turn it off, pick another style in `/output-style`.
+
+## The guards
+
+A guard is a `PreToolUse` hook that refuses a call before it runs and tells Claude why. It never rewrites a command. Every guard is on by default:
+
+| Guard | Refuses |
+|---|---|
+| Output | A known-verbose build, test or log command that prints all its output, and a whole-file shell read over the byte cap; the reason gives the bounded form. |
+| Detach | A process launched with `&`, `nohup`, `disown` or `setsid`, which outlives the session; use the Bash tool's `run_in_background`. |
+| Destructive | A command that deletes a container, volume, database or credential. |
+| Git | A force push, `reset --hard`, `clean -f`, a force-delete of a branch with unlanded commits, a stash drop or clear, and a checkout or restore of the whole tree. |
+| Secrets | A shell read of a path your `Read(...)` deny entries protect. |
+| Writing | AI attribution in a commit message, pull request text or new branch name, and a commit subject that is not a Conventional Commit. |
+
+Each guard matches the words that run, so a word inside a commit message or a heredoc body refuses nothing. The command string is matched, not parsed, so a command assembled from variables at run time reads as written. A guard that hits a fault lets the call through.
+
+To turn them all off, run `/exo:configure guards off`; `.claude/exo.json` does it for one repository. There is no switch for a single guard.
 
 ## Skills
 
@@ -133,8 +178,9 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 | Key | Values | Default | Effect |
 |---|---|---|---|
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `spec` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
-| `replies` | `tight`, `standard` | `tight` | How replies are written. `tight` drops preamble, recap and filler and keeps code, paths, errors and warnings whole; `standard` writes full prose. An output style outranks it. |
+| `replies` | `terse`, `tight`, `standard` | `tight` | How dense replies are. `terse` also drops articles and linking verbs; `tight` drops preamble, recap and filler; `standard` writes full prose. All three keep code, paths, errors and warnings whole. See [Reply levels](#reply-levels). |
 | `context` | a whole number of at least 1 | `100` | Thousands of tokens the main session's context may reach. From it, a tool call adds a note for the model, once per further 25k: to finish the current step, write the task state to a handover file and hand the rest of the task to a fresh delegate, so the session keeps going without asking you to save, clear or stop, or, while `exo:build` is the last exo skill loaded, to keep working because the plan file and the commits hold the state. A stored value that is not a whole number of at least 1 reads as the default. |
+| `guards` | `on`, `off` | `on` | Whether the safety guards refuse the commands and edits they cover. `off` switches all of them off. See [The guards](#the-guards). |
 | `budget` | `normal`, `lean` | `normal` | Which model each agent runs on. `normal` uses each agent's own model. `lean` dispatches an agent whose tier is listed under `budgets` in `lib/model-kinds.json` on that tier's replacement tier instead; today `strong` becomes `standard`. |
 
 ## Develop
