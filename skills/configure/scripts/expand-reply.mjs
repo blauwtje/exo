@@ -9,17 +9,26 @@
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
-import { settingValue } from '#settings-store';
+import { SCHEMA, settingValue } from '#settings-store';
 
 const EXPANSION_INSTRUCTION =
   'The user sent a lone "?": restate your last reply in full sentences, with every step, reason and term written out, and no shortened wording.';
 
-const TERSE_REMINDER =
-  'replies=terse: chat prose drops articles, linking verbs, filler. Code, commands, paths, error text, numbers, every not/no/only/except stay whole. Commits, PR text, docs, code comments: full prose.';
+// The reminder quotes the keep-whole and exemption sentences of the schema's
+// terse rule rather than restating them, so the two lists cannot drift apart.
+function terseRuleSentence(ending) {
+  const sentence = SCHEMA.replies.rules.terse.match(new RegExp(`[A-Z][^."]*${ending}\\.`));
+  if (sentence === null) throw new Error(`the terse rule has no sentence ending "${ending}."`);
+  return sentence[0];
+}
+
+function terseReminder() {
+  return `replies=terse: chat prose drops articles, linking verbs, filler. ${terseRuleSentence('stay whole')} ${terseRuleSentence('keep normal prose')}`;
+}
 
 function contextFor(prompt) {
   if (prompt.trim() === '?') return EXPANSION_INSTRUCTION;
-  if (settingValue('replies') === 'terse') return TERSE_REMINDER;
+  if (settingValue('replies') === 'terse') return terseReminder();
   return null;
 }
 

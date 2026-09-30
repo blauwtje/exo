@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const EXPAND_REPLY = path.join(REPOSITORY, 'skills', 'configure', 'scripts', 'expand-reply.mjs');
+const TERSE_RULE = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'skills', 'configure', 'schema.json'), 'utf8')).replies.rules.terse;
 
 // An empty project and config directory keep the caller's own settings out of the run.
 const EMPTY_DIRECTORY = fs.mkdtempSync(path.join(os.tmpdir(), 'expand-reply-'));
@@ -80,8 +81,18 @@ test('under replies=terse every other prompt prints the terse reminder', async (
     assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
     const { additionalContext } = output.hookSpecificOutput;
     assert.match(additionalContext, /replies=terse/);
-    assert.match(additionalContext, /Commits/);
-    assert.ok(additionalContext.length < 200, `reminder is ${additionalContext.length} characters`);
+    assert.ok(additionalContext.length < 260, `reminder is ${additionalContext.length} characters`);
+  }
+});
+
+test('the terse reminder names every keep-whole item and exemption of the schema terse rule', async () => {
+  const keepWhole = 'Code, commands, paths, identifiers, error text, numbers and every not, no, only and except stay whole.';
+  const exemptions = 'Commits, PR text, docs, code comments and saved files keep normal prose.';
+  const result = await runExpandReply({ prompt: 'hello' }, projectWith('terse'));
+  const { additionalContext } = JSON.parse(result.stdout).hookSpecificOutput;
+  for (const sentence of [keepWhole, exemptions]) {
+    assert.ok(TERSE_RULE.includes(sentence), `the schema terse rule lacks: ${sentence}`);
+    assert.ok(additionalContext.includes(sentence), `the reminder lacks: ${sentence}`);
   }
 });
 
