@@ -26,6 +26,8 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 | File | Read it when |
 |---|---|
 | `references/ladder.md` | Before every edit adding or replacing code. |
+| `references/code-standard.md` | Before every code edit. |
+| `references/project-structure.md` | Before creating or moving a file. |
 | `references/context.md` | Running a skill or dispatching a delegate. |
 
 # Closing
