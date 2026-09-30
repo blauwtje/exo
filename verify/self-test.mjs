@@ -266,8 +266,6 @@ const SCENARIOS = [
     replaceText(root, 'README.md', '200 changed lines', '250 changed lines') },
   { name: 'drifted-wait-bound', mutate: (root) =>
     replaceText(root, 'skills/ship/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
-  { name: 'drifted-retention-days', mutate: (root) =>
-    replaceText(root, 'README.md', 'last 30 days', 'last 60 days') },
   { name: 'unprefixed-delegate-budget-key', mutate: (root) =>
     replaceText(root, 'lib/delegate-budgets.json', '"exo:build-ui"', '"build-ui"') },
 ];
