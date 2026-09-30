@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- exo registers 10 hook commands instead of 21: the Bash guards and bookkeeping, the prompt hooks and the Stop hooks each run in one process per event, with the same checks and messages.
+- A build task lands on its own proof and `npm test`; the full `npm run check` runs once, in `verify`, before the review.
+- `npm run check` runs its verifier self-test scenarios in parallel and parses only the scripts a scenario changes, cutting the check from about 219 s to about 30 s.
+- `land-task` prints the next task after each land, so the build loop takes one call per task.
+- exo's shared instructions teach command shapes that pass the harness's worktree isolation check: quoted runtime values, separate plain commands, and background waits instead of `sleep`.
+
+### Fixed
+
+- Tests that waited on real-time timeouts use short ones, and CI runs the verifier self-test on one Node version.
+
 ## 0.63.1 - 2026-09-30
 
 ### Changed
