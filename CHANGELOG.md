@@ -17,7 +17,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- Tests that waited on real-time timeouts use short ones, and CI runs the verifier self-test on one Node version.
+- The lock-wait test uses a shorter write delay, and CI runs the verifier self-test on one Node version.
 
 ## 0.63.1 - 2026-09-30
 
