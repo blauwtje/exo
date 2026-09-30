@@ -18,7 +18,8 @@
 // a delegate's call never loads the watch's session store or settings code; the
 // process entry prints whichever output either returns.
 //
-//   node delegate-budget.mjs   PreToolUse hook on every tool: stdin is the hook JSON
+//   node delegate-budget.mjs   PreToolUse hook on every tool but Bash: stdin is the hook JSON;
+//                              a Bash call reaches delegateBudget() through hooks/dispatch-bash.mjs
 //
 // Limits, in thousands of tokens and in calls: a `Budget: <soft>k/<hard>k` line
 // in the dispatch, optionally ending `/<calls> calls`, outranks the entry for the
