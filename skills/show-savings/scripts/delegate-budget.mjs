@@ -34,6 +34,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
 
@@ -105,41 +106,46 @@ function decision(toolName, toolInput, tokens, calls, limits, agentType) {
 
 function guard(hookInput) {
   const transcript = delegateTranscript(hookInput);
-  if (transcript === null || !fs.existsSync(transcript)) return;
+  if (transcript === null || !fs.existsSync(transcript)) return null;
   const descriptor = fs.openSync(transcript, 'r');
   try {
     const size = fs.fstatSync(descriptor).size;
     const tokens = contextTokens(descriptor, size);
-    if (tokens === null) return;
+    if (tokens === null) return null;
     const calls = countCall(hookInput.agent_id);
     const agentBudget = BUDGETS.agents[hookInput.agent_type] ?? {};
     const limits = { ...BUDGETS.default, ...agentBudget, ...dispatchBudget(descriptor, size) };
     const verdict = decision(hookInput.tool_name, hookInput.tool_input, tokens, calls, limits, hookInput.agent_type);
-    if (verdict === null) return;
-    const hookSpecificOutput = { hookEventName: 'PreToolUse', ...verdict };
-    process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
+    if (verdict === null) return null;
+    return { hookSpecificOutput: { hookEventName: 'PreToolUse', ...verdict } };
   } finally {
     fs.closeSync(descriptor);
   }
 }
 
-let inputText;
-try {
-  inputText = await readHookText();
-} catch (error) {
-  console.error(`delegate-budget: could not read hook input: ${error.message}`);
-  process.exitCode = 1;
+// A delegate's call is measured here. The main session's call goes to the
+// context watch, which writes its own output, so this returns null for it.
+export async function delegateBudget(hookInput) {
+  if (typeof hookInput.agent_id === 'string') return guard(hookInput);
+  const { watch } = await import('./context-watch.mjs');
+  watch(hookInput);
+  return null;
 }
-if (inputText !== undefined) {
+
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+  let inputText;
   try {
-    const hookInput = JSON.parse(inputText);
-    if (typeof hookInput.agent_id === 'string') {
-      guard(hookInput);
-    } else {
-      const { watch } = await import('./context-watch.mjs');
-      watch(hookInput);
-    }
+    inputText = await readHookText();
   } catch (error) {
-    console.error(`delegate-budget: ${error.message}`);
+    console.error(`delegate-budget: could not read hook input: ${error.message}`);
+    process.exitCode = 1;
+  }
+  if (inputText !== undefined) {
+    try {
+      const output = await delegateBudget(JSON.parse(inputText));
+      if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
+    } catch (error) {
+      console.error(`delegate-budget: ${error.message}`);
+    }
   }
 }

@@ -27,7 +27,9 @@
 // the harness logs and shows in verbose mode; the guard never exits 2.
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { configFile, readJson, savingsEnabled, updateHotSession } from './record.mjs';
 
@@ -41,11 +43,8 @@ function guardEnabled() {
   return config.repeatGuard !== false;
 }
 
-function deny(reason) {
-  const output = {
-    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason }
-  };
-  process.stdout.write(JSON.stringify(output));
+function denial(reason) {
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
 }
 
 // A log file is the one part of a command a session is expected to vary while
@@ -120,9 +119,9 @@ function bookRunTime(guard) {
   guard.hookMs = (guard.hookMs ?? 0) + performance.now();
 }
 
-function guardCall(hookInput) {
+export function guardCall(hookInput) {
   const target = callTarget(hookInput);
-  if (target === null) return;
+  if (target === null) return null;
   let reason = null;
   updateHotSession(hookInput.session_id, (session) => {
     const attempts = (session.calls[target.key] ?? 0) + 1;
@@ -137,14 +136,14 @@ function guardCall(hookInput) {
     bookRunTime(session.guard);
     return true;
   });
-  if (reason !== null) deny(reason);
+  return reason === null ? null : denial(reason);
 }
 
 // Only the reader that changed a file forgets its commands: another agent's
 // runs saw none of that change.
-function edited(hookInput) {
-  if (!guardEnabled()) return;
-  if (typeof hookInput.session_id !== 'string') return;
+export function edited(hookInput) {
+  if (!guardEnabled()) return null;
+  if (typeof hookInput.session_id !== 'string') return null;
   const prefix = `${readerOf(hookInput)}:Bash:`;
   updateHotSession(hookInput.session_id, (session) => {
     for (const key of Object.keys(session.calls)) {
@@ -153,32 +152,36 @@ function edited(hookInput) {
     bookRunTime(session.guard);
     return true;
   });
+  return null;
 }
 
 // A clear or a compaction ends the context window the counts were about.
-function reset(hookInput) {
-  if (!savingsEnabled()) return;
-  if (typeof hookInput.session_id !== 'string') return;
+export function reset(hookInput) {
+  if (!savingsEnabled()) return null;
+  if (typeof hookInput.session_id !== 'string') return null;
   updateHotSession(hookInput.session_id, (session) => {
     session.calls = {};
     return true;
   });
+  return null;
 }
 
-let inputText;
-try {
-  inputText = await readHookText();
-} catch (error) {
-  console.error(`repeat-guard: could not read hook input: ${error.message}`);
-  process.exitCode = 1;
-}
-if (inputText !== undefined) {
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+  let inputText;
   try {
-    const hookInput = JSON.parse(inputText);
-    if (process.argv[2] === 'reset') reset(hookInput);
-    else if (process.argv[2] === 'edited') edited(hookInput);
-    else guardCall(hookInput);
+    inputText = await readHookText();
   } catch (error) {
-    console.error(`repeat-guard: ${error.message}`);
+    console.error(`repeat-guard: could not read hook input: ${error.message}`);
+    process.exitCode = 1;
+  }
+  if (inputText !== undefined) {
+    try {
+      const hookInput = JSON.parse(inputText);
+      const handlers = { reset, edited };
+      const output = (handlers[process.argv[2]] ?? guardCall)(hookInput);
+      if (output !== null) process.stdout.write(JSON.stringify(output));
+    } catch (error) {
+      console.error(`repeat-guard: ${error.message}`);
+    }
   }
 }

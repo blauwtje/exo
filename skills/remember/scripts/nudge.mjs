@@ -20,7 +20,7 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { appendNudgeLog, nudgeLogFile } from '#memory-store';
 
@@ -73,16 +73,16 @@ function firedMarker(prompt) {
 // no fact this session stated, so the markers never run against it.
 const HARNESS_NOTIFICATION = /\[SYSTEM NOTIFICATION - NOT USER INPUT\]|<task-notification>/;
 
-function nudge(hookInput) {
+export function nudge(hookInput) {
   // A delegate shares the session id while holding a context of its own, so it
   // cannot book the session's correction; only the main thread is nudged.
-  if (typeof hookInput.agent_id === 'string') return;
-  if (typeof hookInput.prompt !== 'string') return;
-  if (HARNESS_NOTIFICATION.test(hookInput.prompt)) return;
+  if (typeof hookInput.agent_id === 'string') return null;
+  if (typeof hookInput.prompt !== 'string') return null;
+  if (HARNESS_NOTIFICATION.test(hookInput.prompt)) return null;
   const session = typeof hookInput.session_id === 'string' ? hookInput.session_id : '';
   const cwd = typeof hookInput.cwd === 'string' && hookInput.cwd !== '' ? hookInput.cwd : process.cwd();
   const marker = firedMarker(hookInput.prompt);
-  if (marker === null) return;
+  if (marker === null) return null;
   appendNudgeLog(cwd, {
     event: 'nudged',
     session,
@@ -91,23 +91,23 @@ function nudge(hookInput) {
   });
   const command = `${BOOK_COMMAND} --claim "<one sentence>" --quote "<the user's words, verbatim>" --session "${session}"`;
   const additionalContext = `exo: this prompt may correct a repository fact. When it does, book it with \`${command}\`, quoting no password, token or key. When it corrects no repository fact, ignore this line and write nothing about it.`;
-  const hookSpecificOutput = { hookEventName: 'UserPromptSubmit', additionalContext };
-  process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
+  return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext } };
 }
 
-function approve(hookInput) {
-  if (hookInput.tool_name !== 'Bash') return;
+export function approve(hookInput) {
+  if (hookInput.tool_name !== 'Bash') return null;
   const command = hookInput.tool_input?.command;
-  if (typeof command !== 'string') return;
-  if (!command.startsWith(BOOK_COMMAND)) return;
+  if (typeof command !== 'string') return null;
+  if (!command.startsWith(BOOK_COMMAND)) return null;
   const bookArguments = command.slice(BOOK_COMMAND.length);
-  if (!BOOK_ARGUMENTS.test(bookArguments)) return;
-  const hookSpecificOutput = {
-    hookEventName: 'PreToolUse',
-    permissionDecision: 'allow',
-    permissionDecisionReason: 'exo: books a correction into this repository\'s memory'
+  if (!BOOK_ARGUMENTS.test(bookArguments)) return null;
+  return {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'allow',
+      permissionDecisionReason: 'exo: books a correction into this repository\'s memory'
+    }
   };
-  process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
 }
 
 function readLog(cwd) {
@@ -149,15 +149,17 @@ function stats(cwd) {
   for (const [marker, count] of ranked) console.log(`  ${marker}: ${count}`);
 }
 
-try {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { cwd: { type: 'string' } } });
-  if (positionals[0] === 'stats') {
-    stats(values.cwd ?? process.cwd());
-  } else if (positionals[0] === 'approve') {
-    approve(JSON.parse(await readHookText()));
-  } else {
-    nudge(JSON.parse(await readHookText()));
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+  try {
+    const { values, positionals } = parseArgs({ allowPositionals: true, options: { cwd: { type: 'string' } } });
+    if (positionals[0] === 'stats') {
+      stats(values.cwd ?? process.cwd());
+    } else {
+      const handler = positionals[0] === 'approve' ? approve : nudge;
+      const output = handler(JSON.parse(await readHookText()));
+      if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
+    }
+  } catch (error) {
+    console.error(`nudge: ${error.message}`);
   }
-} catch (error) {
-  console.error(`nudge: ${error.message}`);
 }

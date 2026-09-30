@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { RESTATED_SKILL, RESTATE_INTERVAL_BYTES, restatementText } from '#restatement';
 import { savingsEnabled, updateHotSession } from './record.mjs';
@@ -44,19 +44,20 @@ function transcriptBytes(transcriptPath) {
   }
 }
 
-function reset(hookInput) {
+export function reset(hookInput) {
   const sessionId = measuredSession(hookInput);
-  if (sessionId === null) return;
+  if (sessionId === null) return null;
   const bytes = transcriptBytes(hookInput.transcript_path);
   updateHotSession(sessionId, (session) => {
     session.restate.baseline = bytes;
     return true;
   });
+  return null;
 }
 
-function restate(hookInput) {
+export function restate(hookInput) {
   const sessionId = measuredSession(hookInput);
-  if (sessionId === null) return;
+  if (sessionId === null) return null;
   const bytes = transcriptBytes(hookInput.transcript_path);
   let due = false;
   updateHotSession(sessionId, (session) => {
@@ -72,16 +73,17 @@ function restate(hookInput) {
     due = true;
     return true;
   });
-  if (!due) return;
+  if (!due) return null;
   const skillText = fs.readFileSync(path.join(PLUGIN_ROOT, RESTATED_SKILL), 'utf8');
-  const hookSpecificOutput = { hookEventName: 'UserPromptSubmit', additionalContext: restatementText(skillText) };
-  process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
+  return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: restatementText(skillText) } };
 }
 
-try {
-  const hookInput = JSON.parse(await readHookText());
-  if (process.argv[2] === 'reset') reset(hookInput);
-  else restate(hookInput);
-} catch (error) {
-  console.error(`restate: ${error.message}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+  try {
+    const hookInput = JSON.parse(await readHookText());
+    const output = process.argv[2] === 'reset' ? reset(hookInput) : restate(hookInput);
+    if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
+  } catch (error) {
+    console.error(`restate: ${error.message}`);
+  }
 }

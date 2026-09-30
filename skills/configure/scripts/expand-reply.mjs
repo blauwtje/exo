@@ -12,7 +12,9 @@
 //
 // A fault never blocks a prompt: any error exits 0 with nothing on stdout.
 
+import fs from 'node:fs';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { SCHEMA, settingValue } from '#settings-store';
 import { ARTICLE_LIMIT, readTerseState, writeTerseState } from '#terse-feedback';
@@ -61,13 +63,18 @@ function contextFor(sessionId, prompt) {
   return state.feedback === null ? reminder : `${reminder} ${terseNote(state.feedback)}`;
 }
 
-try {
-  const hookInput = JSON.parse(await readHookText());
-  const additionalContext = typeof hookInput.prompt === 'string' ? contextFor(hookInput.session_id, hookInput.prompt) : null;
-  if (additionalContext !== null) {
-    const hookSpecificOutput = { hookEventName: 'UserPromptSubmit', additionalContext };
-    process.stdout.write(`${JSON.stringify({ hookSpecificOutput })}\n`);
+export function expandReply(hookInput) {
+  if (typeof hookInput.prompt !== 'string') return null;
+  const additionalContext = contextFor(hookInput.session_id, hookInput.prompt);
+  if (additionalContext === null) return null;
+  return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext } };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+  try {
+    const output = expandReply(JSON.parse(await readHookText()));
+    if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);
+  } catch (error) {
+    console.error(`expand-reply: ${error.message}`);
   }
-} catch (error) {
-  console.error(`expand-reply: ${error.message}`);
 }
