@@ -7,9 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Safety guards now ship with exo and are on by default: they deny force pushes, destructive deletes, detached processes, shell reads of protected paths, AI attribution and non-conventional commit subjects, and cap long output.** Set `guards` to `off` through `/exo:configure` to turn them all off.
+
 ### Added
 
 - A `terse` reply level, a lone `?` prompt that restates the last reply in full, and the `exo:scannable` output style.
+- Six PreToolUse guards under `hooks/guards/`, switched by one `guards` setting, which take their protected read paths from your own `permissions.deny` entries.
+- The code standard and project structure as `route-skills` references read before an edit, and the instruction style as an `edit-skills` reference.
+- One benchmark arm per reply level, and a README section on the reply levels, the scannable style and the guards.
+
+### Changed
+
+- The branch review falls back to exo's own code standard when the repository names none.
+- The generic session rules (read-only questions, a delete that would unblock reports options, progress lines, stop after two failed attempts, the delegate brief shape) now live in `route-skills` and its references.
+- Under `replies=terse`, a dispatch asks the delegate for a terse return.
 
 ## 0.61.5 - 2026-09-30
 
