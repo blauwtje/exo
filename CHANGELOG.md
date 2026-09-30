@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.63.3 - 2026-09-30
+
 ### Changed
 
 - A Bash call now spawns one hook process instead of two: the delegate budget and the context watch run inside the Bash dispatcher, after the guards, so a denied call is never counted.
