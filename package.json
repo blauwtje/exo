@@ -23,7 +23,8 @@
     "#script-flags": "./lib/script-flags.mjs",
     "#session-record-path": "./lib/session-record-path.mjs",
     "#settings-store": "./lib/settings-store.mjs",
-    "#size-facts": "./lib/size-facts.mjs"
+    "#size-facts": "./lib/size-facts.mjs",
+    "#terse-feedback": "./lib/terse-feedback.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {
