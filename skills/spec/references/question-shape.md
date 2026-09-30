@@ -6,7 +6,7 @@ Ask the costly questions as an interview, one per message. The enemy is develope
 
 No name from the code appears in any message, assumptions included: no path, field, setting, role or technical term, only what it means for the user.
 
-- First line `Question <n> of <total>`, counting the costly questions open now.
+- First line `Question <n>`, rising by one each question turn.
 - The question in everyday words; one context line above it only when it needs one.
 - Two or three one-line options `a.` `b.` `c.`, holding only what the user gets.
 - Recommended first, with the output style's recommended marker; only without one, `(recommended)`.
@@ -16,7 +16,7 @@ No name from the code appears in any message, assumptions included: no path, fie
 - The final question alone adds an `Assuming:` list above its hint: one plain line per user-visible default neither request nor code fixes.
 
 ```text
-Question 1 of 2
+Question 1
 
 How should harbour masters get their tide alerts out of the app?
 a. Download their harbour's alerts as a spreadsheet. (recommended)
@@ -27,7 +27,7 @@ Reply a, b, your own words, or ok for the recommendation.
 ```
 
 ```text
-Question 2 of 2
+Question 2
 
 Who may download the alerts?
 a. Harbour masters, for their own harbour. (recommended)
@@ -46,7 +46,7 @@ Reply a, b, your own words, or ok to take this and every assumption.
 - A letter or own words answer the current question; the next follows alone in the next turn.
 - `ok` or `go` takes this and every remaining recommendation and assumption; an unanswered question takes its recommendation.
 - The final answer confirms: the brief follows with no confirmation round.
-- A reply opening a new costly point adds one question and raises the total.
+- A reply opening a new costly point adds one question to the queue.
 - "I don't know" gets two everyday sentences on the difference, with one example, then the question again; a second takes the recommendation, credited to exo.
 
 ## Judgment

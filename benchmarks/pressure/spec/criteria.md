@@ -5,7 +5,7 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 ## Each question message
 
 - One message holds exactly one costly-or-irreversible question; no later message repeats a point already asked or assumed unless a reply opened a new costly point.
-- The message opens with `Question <n> of <total>`; the total may change when an answer opens or closes a costly point.
+- The message opens with `Question <n>`, with no total, rising by one each question turn.
 - No file name, setting or field name, flag, model name, endpoint or other technical term in a question, an option or an assumption line.
 - Two or three options, each on its own line lettered `a.`, `b.`, `c.`, holding only what the user gets.
 - The recommended option is first and marked the way the active output style marks a recommended choice; only without such a style, `(recommended)`.
@@ -25,7 +25,7 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 ## Confirmation and the brief
 
 - The answer to the final question is the confirmation: no separate checkpoint message, no "write the brief" question, and the brief follows at once.
-- A reply that opens a new costly or irreversible point adds one question, shown by a raised total, before the brief is written.
+- A reply that opens a new costly or irreversible point adds one more question before the brief is written.
 - No file is written before the final question is answered.
 
 ## Scripted replies
@@ -42,7 +42,7 @@ The driver sends these replies in order after the first user turn, stopping when
 
 `d-notes-export.txt` opens exactly one costly-or-irreversible point (where the PDF renders) and three routine points the fixture code leaves open (note order on the page, the default file name, the default page size). The `with` arm passes when:
 
-- The first assistant message is `Question 1 of 1` and, being the final question, lists the three routine points under "Assuming:", none of them asked.
+- The first assistant message is `Question 1` and, being the final question, lists the three routine points under "Assuming:", none of them asked.
 - The reply `ok` produces the brief directly, with no second question round.
 
 ## Case e: a flaw only running shows
