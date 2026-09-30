@@ -37,13 +37,22 @@ function terseNote({ rate, sentence }) {
   return `Last reply: ${rate.toFixed(1)} articles/100 words, limit ${ARTICLE_LIMIT.toFixed(1)}. Tighter: "${sentence}"`;
 }
 
+// A state-write failure must not drop the instruction or the reminder.
+function saveState(sessionId, state) {
+  try {
+    writeTerseState(sessionId, state);
+  } catch (error) {
+    console.error(`expand-reply: ${error.message}`);
+  }
+}
+
 function contextFor(sessionId, prompt) {
   const state = readTerseState(sessionId);
   if (prompt.trim() === '?') {
-    writeTerseState(sessionId, { expand: true, feedback: state.feedback });
+    saveState(sessionId, { expand: true, feedback: state.feedback });
     return EXPANSION_INSTRUCTION;
   }
-  writeTerseState(sessionId, { expand: false, feedback: null });
+  saveState(sessionId, { expand: false, feedback: null });
   if (settingValue('replies') !== 'terse') return null;
   const reminder = terseReminder();
   return state.feedback === null ? reminder : `${reminder} ${terseNote(state.feedback)}`;

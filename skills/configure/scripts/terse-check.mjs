@@ -20,7 +20,7 @@ import { feedbackFor, readTerseState, writeTerseState } from '#terse-feedback';
 const MIN_WORDS = 25;
 
 function isExempt(reply) {
-  return scoreProse(reply).words < MIN_WORDS || chatProse(reply).trim().endsWith('?');
+  return scoreProse(reply).words < MIN_WORDS || reply.trim().endsWith('?') || chatProse(reply).trim().endsWith('?');
 }
 
 try {
