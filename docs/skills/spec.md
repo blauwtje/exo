@@ -13,8 +13,8 @@ The first thing spec checks is whether a decision is open at all. A request that
 ## What you get
 
 - Costly or irreversible points — a data format, a public interface, a paid service, a deletion, access or security — are asked about, always. A point answerable by running something, spec runs it and records the answer instead of asking. Everything routine or cheap-but-visible, spec decides itself and lists as an assumption you can overrule; an undecided point stays open no matter what the code shows.
-- An interview in chat, one plain question per message, with two or three options and the recommended one first. Reply with a digit, your own words, or `go` to take every recommended answer.
-- A checkpoint listing every decision and who made it: you, the code with its path, or exo. Nothing is written before you say yes.
+- An interview in chat, one plain question per message headed `Question 2 of 4`, with two or three lettered options and the recommended one first. Reply with a letter, your own words, or `ok` to take every remaining recommendation.
+- The last question also lists what exo assumes, such as a date format; your answer to it confirms everything, and the brief follows with no extra round.
 - One brief, stored where the `specs` setting points: a file under `docs/specs/`, a GitHub issue, or both.
 - Checks only you can make, such as clicking through a screen or acting in an outside account, go to the brief's short `## Manual checks` list, never into the task list; the run's final report ends with them.
 - New wishes reopen the brief you already have and edit it where it stands.

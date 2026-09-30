@@ -20,7 +20,7 @@ argument-hint: <outcome to shape>
    Decide the routine, a visible but cheap point included, and list it as an assumption.
    A decision the user left undecided stays open whatever the code suggests.
    Name the owning layer and a smaller alternative.
-3. **Ask once.** Read `references/question-shape.md`, then bundle all costly questions and assumptions into one message in its shape.
+3. **Ask one at a time.** Read `references/question-shape.md`, then ask the costly questions one per message in its shape.
    Assumptions only: write the brief unasked; neither: step 1 applies.
    After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
@@ -47,4 +47,4 @@ argument-hint: <outcome to shape>
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
 
-Report: the brief's location and the next stage, or the bundled questions and assumptions.
+Report: the brief's location and the next stage, or the current question.
