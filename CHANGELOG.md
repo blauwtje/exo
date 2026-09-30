@@ -7,9 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A 12-turn `terse` drift benchmark that scores the article density of chat prose per turn and fails a turn over 2.0 articles per 100 words.
+
+### Changed
+
+- The `terse` rule bans the exact words it drops (a, an, the, is, are, was, were), loses its escape clause, gains an example, and repeats as a one-line reminder with every prompt.
+- At `terse`, a Stop hook scores each reply, and when one runs over 2.0 articles per 100 words the next prompt's reminder names that score and shows one of its sentences with the articles removed. In a 12-turn Opus 5.5 run at `high`, chat prose over turns 1-11 fell to 1.0 articles per 100 words, from 4.5 with the reworded rule alone and 9.6 before; 1 of 3 runs passed, and the other two failed only turn 11.
+
 ### Fixed
 
-- The `terse` reply level now holds past the first reply: exo repeats a short reminder with every prompt, the rule drops its escape clause and gains an example, and a 12-turn benchmark fails when chat prose keeps its articles.
+- Tests keep the developer's own exo settings out of the scripts they spawn.
 
 ## 0.62.0 - 2026-09-30
 
