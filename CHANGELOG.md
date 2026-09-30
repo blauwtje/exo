@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The read guard's line limit setting is `guard_lines`, not `guard-lines`, so Claude Code loads the manifest again; a stored `guard-lines` value is ignored.
+
 ## 0.64.0 - 2026-09-30
 
 ### Highlights
