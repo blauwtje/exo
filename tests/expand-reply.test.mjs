@@ -78,7 +78,10 @@ test('under replies=terse every other prompt prints the terse reminder', async (
     assert.equal(result.code, 0);
     const output = JSON.parse(result.stdout);
     assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
-    assert.match(output.hookSpecificOutput.additionalContext, /Reply level terse/);
+    const { additionalContext } = output.hookSpecificOutput;
+    assert.match(additionalContext, /replies=terse/);
+    assert.match(additionalContext, /Commits/);
+    assert.ok(additionalContext.length < 200, `reminder is ${additionalContext.length} characters`);
   }
 });
 
@@ -86,7 +89,7 @@ test('under replies=terse a lone question mark still prints the expansion, not t
   const result = await runExpandReply({ prompt: '?' }, projectWith('terse'));
   const { additionalContext } = JSON.parse(result.stdout).hookSpecificOutput;
   assert.match(additionalContext, /last reply in full/);
-  assert.doesNotMatch(additionalContext, /Reply level terse/);
+  assert.doesNotMatch(additionalContext, /replies=terse/);
 });
 
 test('under replies=tight and replies=standard a prompt prints nothing', async () => {
@@ -95,4 +98,13 @@ test('under replies=tight and replies=standard a prompt prints nothing', async (
     assert.equal(result.code, 0);
     assert.equal(result.stdout, '');
   }
+});
+
+test('an unparseable project exo.json prints nothing and exits 0', async () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'expand-reply-project-'));
+  fs.mkdirSync(path.join(project, '.claude'));
+  fs.writeFileSync(path.join(project, '.claude', 'exo.json'), '{ not json');
+  const result = await runExpandReply({ prompt: 'hello' }, project);
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, '');
 });

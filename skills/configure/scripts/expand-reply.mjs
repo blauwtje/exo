@@ -15,7 +15,7 @@ const EXPANSION_INSTRUCTION =
   'The user sent a lone "?": restate your last reply in full sentences, with every step, reason and term written out, and no shortened wording.';
 
 const TERSE_REMINDER =
-  'Reply level terse: chat prose drops articles, linking verbs and filler; code, commands, paths, error text, numbers and every not, no, only and except stay whole. Commits, PR text, docs and code comments keep full prose.';
+  'replies=terse: chat prose drops articles, linking verbs, filler. Code, commands, paths, error text, numbers, every not/no/only/except stay whole. Commits, PR text, docs, code comments: full prose.';
 
 function contextFor(prompt) {
   if (prompt.trim() === '?') return EXPANSION_INSTRUCTION;
