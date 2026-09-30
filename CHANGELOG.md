@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.64.2 - 2026-09-30
+
 ### Changed
 
 - `spec` asks its costly questions one per message, headed `Question 1`, `Question 2` and so on, with lettered options answered by letter, and lists its assumptions only under the last question.
