@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.63.2 - 2026-09-30
+
 ### Changed
 
 - exo registers 10 hook commands instead of 21: the Bash guards and bookkeeping, the prompt hooks and the Stop hooks each run in one process per event, with the same checks and messages.
