@@ -10,6 +10,8 @@ Every cell is one `claude -p --output-format json` call on a fresh checkout of `
 |---|---|
 | `baseline` | No plugin and no extra prompt. |
 | `terse` | exo's terse-prose control prompt in `arms/terse.md`: short replies, with nothing said about code size. |
+| `replies-tight` | The `tight` reply rule from `skills/configure/schema.json` as the prompt. |
+| `replies-terse` | The `terse` reply rule from `skills/configure/schema.json` as the prompt. |
 | `yagni-oneliner` | One sentence asking for YAGNI and one-liners. |
 | `exo` | This plugin, loaded from the working tree. |
 

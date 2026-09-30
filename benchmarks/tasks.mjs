@@ -29,11 +29,17 @@ export const NO_RUN = 'Make the change in code, with tests if a change of this k
 // terse cell shows what brevity alone saves next to the exo cell.
 const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url), 'utf8').trim();
 
+// The replies-* arms carry the rule text the configure schema injects for each
+// reply level, so a cell measures the level exactly as a session receives it.
+const REPLY_RULES = JSON.parse(fs.readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8')).replies.rules;
+
 // baseline gets NO_RUN alone; a prompt arm appends its text to the system
 // prompt; the plugin arm loads exactly one plugin from this repository.
 export const ARMS = {
   baseline: { prompt: null, pluginDir: null },
   terse: { prompt: TERSE_PROMPT, pluginDir: null },
+  'replies-tight': { prompt: REPLY_RULES.tight, pluginDir: null },
+  'replies-terse': { prompt: REPLY_RULES.terse, pluginDir: null },
   'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDir: null },
   exo: { prompt: null, pluginDir: ROOT }
 };
