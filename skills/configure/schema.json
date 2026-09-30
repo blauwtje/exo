@@ -41,5 +41,11 @@
     "options": ["ask", "branch", "worktree", "current"],
     "default": "ask",
     "description": "where a code-changing run commits without asking: ask puts the question; branch, worktree or current take that place"
+  },
+  "guards": {
+    "type": "string",
+    "options": ["on", "off"],
+    "default": "on",
+    "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything"
   }
 }

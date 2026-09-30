@@ -51,6 +51,13 @@
       "description": "ask: the run puts the question. branch: a new branch in this checkout. worktree: a new git worktree. current: the branch already checked out. Not sure? Keep ask. A project overrides this in .claude/exo.json.",
       "options": ["ask", "branch", "worktree", "current"],
       "default": "ask"
+    },
+    "guards": {
+      "type": "string",
+      "title": "Safety guards",
+      "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything. Not sure? Keep on. A project overrides this in .claude/exo.json.",
+      "options": ["on", "off"],
+      "default": "on"
     }
   }
 }
