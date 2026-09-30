@@ -26,4 +26,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci
-      - run: npm run check
+      # The full self-test runs once, on the current Node; the floor runs only the validator.
+      - if: matrix.node == 24
+        run: npm run check
+      - if: matrix.node != 24
+        run: npm run validate
