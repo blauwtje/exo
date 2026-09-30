@@ -1,8 +1,11 @@
-// The expand-reply hook restates the last reply in full on a lone `?` prompt
-// and stays silent on every other prompt or malformed input.
+// The expand-reply hook restates the last reply in full on a lone `?` prompt,
+// reminds the terse level on every other prompt under `replies=terse`, and
+// stays silent otherwise or on malformed input.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -10,12 +13,23 @@ import { fileURLToPath } from 'node:url';
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const EXPAND_REPLY = path.join(REPOSITORY, 'skills', 'configure', 'scripts', 'expand-reply.mjs');
 
-function runExpandReply(input) {
+// An empty project and config directory keep the caller's own settings out of the run.
+const EMPTY_DIRECTORY = fs.mkdtempSync(path.join(os.tmpdir(), 'expand-reply-'));
+
+function projectWith(replies) {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'expand-reply-project-'));
+  fs.mkdirSync(path.join(project, '.claude'));
+  fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ replies }));
+  return project;
+}
+
+function runExpandReply(input, project = EMPTY_DIRECTORY) {
+  const env = { ...process.env, CLAUDE_PROJECT_DIR: project, CLAUDE_CONFIG_DIR: EMPTY_DIRECTORY, CLAUDE_PLUGIN_OPTION_REPLIES: '' };
   return new Promise((resolve) => {
     const child = execFile(
       process.execPath,
       [EXPAND_REPLY],
-      { timeout: 30_000 },
+      { timeout: 30_000, env },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) })
     );
     child.stdin.on('error', () => {});
@@ -55,4 +69,30 @@ test('malformed input exits 0 with nothing on stdout', async () => {
   const result = await runExpandReply('not json');
   assert.equal(result.code, 0);
   assert.equal(result.stdout, '');
+});
+
+test('under replies=terse every other prompt prints the terse reminder', async () => {
+  const project = projectWith('terse');
+  for (const prompt of ['hello', 'why?', '']) {
+    const result = await runExpandReply({ prompt }, project);
+    assert.equal(result.code, 0);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.match(output.hookSpecificOutput.additionalContext, /Reply level terse/);
+  }
+});
+
+test('under replies=terse a lone question mark still prints the expansion, not the reminder', async () => {
+  const result = await runExpandReply({ prompt: '?' }, projectWith('terse'));
+  const { additionalContext } = JSON.parse(result.stdout).hookSpecificOutput;
+  assert.match(additionalContext, /last reply in full/);
+  assert.doesNotMatch(additionalContext, /Reply level terse/);
+});
+
+test('under replies=tight and replies=standard a prompt prints nothing', async () => {
+  for (const replies of ['tight', 'standard']) {
+    const result = await runExpandReply({ prompt: 'hello' }, projectWith(replies));
+    assert.equal(result.code, 0);
+    assert.equal(result.stdout, '');
+  }
 });
