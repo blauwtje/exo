@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`/exo:show-savings` is gone, and the next session start deletes the old savings data in `<config>/exo/savings`.**
+
+### Changed
+
+- The read and repeat guards switch on the `guards` setting and keep their per-session state in `<config>/exo/sessions/`, relocated by `EXO_SESSIONS_DIR`; the read guard's line limit is the `guard-lines` setting (default 400), so a limit set in the old savings config resets to 400.
+- The read, repeat and delegate-budget guards live in `hooks/guards/`, and the paired benchmarks own the transcript usage and pricing helpers.
+
+### Removed
+
+- The `/exo:show-savings` skill, its ledger, report, status line segment, the savings counter switch and `EXO_SAVINGS`; the paired benchmarks stay the only token-savings measurement.
+- The long-session restatement.
+- The context warning and its `context` setting; a stored `context` value is ignored.
+
 ## 0.63.3 - 2026-09-30
 
 ### Changed
