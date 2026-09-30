@@ -18,7 +18,8 @@ function scriptFolders(repository) {
     .filter((folder) => fs.existsSync(folder) && fs.statSync(folder).isDirectory());
 }
 
-export function checkSkillScripts(report, repository) {
+// changedScripts is a Set of absolute paths that limits the parse, or null for every script.
+export function checkSkillScripts(report, repository, changedScripts = null) {
   const folders = scriptFolders(repository);
   if (folders.length === 0) {
     report.result('UNRUN', 'skill scripts', 'no skill ships a scripts/ folder');
@@ -48,6 +49,7 @@ export function checkSkillScripts(report, repository) {
       if (MACHINE_PATH.test(content)) {
         problems.push(`${relative} hard-codes an absolute machine path`);
       }
+      if (changedScripts && !changedScripts.has(file)) continue;
       const parse = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
       if (parse.status !== 0) {
         const message = `${parse.stdout ?? ''}${parse.stderr ?? ''}`.split('\n').join(' ').trim();

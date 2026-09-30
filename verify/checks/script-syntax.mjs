@@ -10,9 +10,11 @@ function scripts(repository, extension) {
     && !repository.relative(file).split('/').some((segment) => segment.startsWith('.')));
 }
 
-export function checkScriptSyntax(report, repository) {
+// changedScripts is a Set of absolute paths that limits the parse, or null for every script.
+export function checkScriptSyntax(report, repository, changedScripts = null) {
   const javascriptErrors = [];
   for (const file of scripts(repository, '.mjs')) {
+    if (changedScripts && !changedScripts.has(file)) continue;
     const parse = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
     if (parse.status !== 0) {
       const message = `${parse.stdout ?? ''}${parse.stderr ?? ''}`.split('\n').join(' ').trim();

@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import process from 'node:process';
 
 // A fixture holds everything a check reads plus the verifier itself, so the
@@ -279,31 +279,68 @@ function copyVerificationFixture(repository, destination) {
   }
 }
 
-export function runSelfTest(report, repository) {
+// The scripts a scenario changed, so the verifier run inside its fixture parses
+// only those: every other script is a byte-for-byte copy the parent run already parsed.
+function changedScripts(repository, caseRoot) {
+  const changed = [];
+  for (const file of repository.walk(caseRoot, (full) => full.endsWith('.mjs'))) {
+    const relative = path.relative(caseRoot, file);
+    const original = path.join(repository.root, relative);
+    if (!fs.existsSync(original) || fs.readFileSync(original, 'utf8') !== fs.readFileSync(file, 'utf8')) {
+      changed.push(relative);
+    }
+  }
+  return changed;
+}
+
+function runVerifier(verifier, caseRoot, changed) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [verifier, '--repository-root', caseRoot, `--changed-scripts=${changed.join('\n')}`]);
+    let output = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => { output += chunk; });
+    child.stderr.on('data', (chunk) => { output += chunk; });
+    child.on('error', reject);
+    child.on('close', (status) => resolve({ status, output }));
+  });
+}
+
+// Returns the failure text for one scenario, or null when it behaved as expected.
+async function runScenario(scenario, verifier, repository, selfRoot) {
+  const caseRoot = path.join(selfRoot, scenario.name);
+  copyVerificationFixture(repository, caseRoot);
+  scenario.mutate(caseRoot);
+  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot));
+  const expect = scenario.expect ?? 'reject';
+  if (expect === 'reject' && run.status === 0) return `${scenario.name} was not rejected`;
+  if (expect === 'accept' && run.status !== 0) {
+    return `${scenario.name} was rejected: ${run.output.split('\n').join(' ').trim()}`;
+  }
+  return null;
+}
+
+export async function runSelfTest(report, repository) {
   const verifier = path.resolve(import.meta.dirname, '..', 'verify.mjs');
   const selfRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-skills-selftest-'));
-  const failures = [];
-  try {
-    for (const scenario of SCENARIOS) {
-      const caseRoot = path.join(selfRoot, scenario.name);
-      copyVerificationFixture(repository, caseRoot);
-      scenario.mutate(caseRoot);
-      const run = spawnSync(process.execPath, [verifier, '--repository-root', caseRoot], {
-        encoding: 'utf8'
-      });
-      const expect = scenario.expect ?? 'reject';
-      if (expect === 'reject' && run.status === 0) {
-        failures.push(`${scenario.name} was not rejected`);
-      } else if (expect === 'accept' && run.status !== 0) {
-        const output = `${run.stdout ?? ''}${run.stderr ?? ''}`.split('\n').join(' ').trim();
-        failures.push(`${scenario.name} was rejected: ${output}`);
-      }
+  // One slot per scenario keeps the results in scenario order however the runs finish.
+  const outcomes = new Array(SCENARIOS.length).fill(null);
+  let next = 0;
+  async function worker() {
+    while (next < SCENARIOS.length) {
+      const index = next;
+      next += 1;
+      outcomes[index] = await runScenario(SCENARIOS[index], verifier, repository, selfRoot);
     }
+  }
+  try {
+    await Promise.all(Array.from({ length: os.availableParallelism() }, worker));
   } finally {
     // mkdtempSync created this directory, so the recursive removal cannot reach
     // anything the run did not make.
     fs.rmSync(selfRoot, { recursive: true, force: true });
   }
+  const failures = outcomes.filter((outcome) => outcome !== null);
   report.assert(
     failures.length === 0,
     'verifier self-test',

@@ -37,7 +37,10 @@ const MINIMUM_NODE_MAJOR = 22;
 const { values } = parseArgs({
   options: {
     'repository-root': { type: 'string' },
-    'self-test': { type: 'boolean', default: false }
+    'self-test': { type: 'boolean', default: false },
+    // Newline-separated script paths relative to the root; only these are parsed.
+    // Absent means every script is parsed.
+    'changed-scripts': { type: 'string' }
   }
 });
 
@@ -55,6 +58,9 @@ if (!fs.existsSync(path.join(root, 'skills'))) {
 
 const report = createReport();
 const repository = createRepository(root);
+const changedScripts = values['changed-scripts'] === undefined
+  ? null
+  : new Set(values['changed-scripts'].split('\n').filter((entry) => entry !== '').map((entry) => path.join(root, entry)));
 
 checkSkillFrontmatter(report, repository);
 checkProcessStructure(report, repository);
@@ -69,15 +75,15 @@ checkReferenceTables(report, repository);
 checkReferenceShape(report, repository);
 checkSharedContracts(report, repository);
 checkReturnCaps(report, repository);
-checkScriptSyntax(report, repository);
-checkSkillScripts(report, repository);
+checkScriptSyntax(report, repository, changedScripts);
+checkSkillScripts(report, repository, changedScripts);
 checkSkillScriptBehavior(report, repository);
 checkGitWhitespace(report, repository);
 checkPluginVersion(report, repository);
 checkDelegateBudgetKeys(report, repository);
 checkModelKinds(report, repository);
 
-if (values['self-test']) runSelfTest(report, repository);
+if (values['self-test']) await runSelfTest(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);
