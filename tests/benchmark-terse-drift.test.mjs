@@ -9,7 +9,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { scoreProse } from '../benchmarks/prose-density.mjs';
-import { TURN_PROMPTS, createTurnReader, isCompactionEvent, parseArguments, sessionRecords, userMessageLine, verdictFor } from '../benchmarks/terse-drift.mjs';
+import { TURN_PROMPTS, claudeArguments, createTurnReader, dryRunLine, isCompactionEvent, modelId, parseArguments, processCause, runReasons, sessionRecords, userMessageLine, verdictFor } from '../benchmarks/terse-drift.mjs';
+import { MODELS } from '../benchmarks/tasks.mjs';
 import { fixture, run } from './harness.mjs';
 
 const HARNESS = fileURLToPath(new URL('../benchmarks/terse-drift.mjs', import.meta.url));
@@ -51,6 +52,31 @@ test('arguments read every flag and reject unknown ones', () => {
   assert.throws(() => parseArguments(['--runs', '0']), /--runs/);
 });
 
+test('--effort takes one of the five levels, reaches claude as --effort, and passes nothing when omitted', () => {
+  for (const effort of ['low', 'medium', 'high', 'xhigh', 'max']) {
+    const args = claudeArguments(parseArguments(['--effort', effort]));
+    assert.deepEqual(args.slice(args.indexOf('--effort'), args.indexOf('--effort') + 2), ['--effort', effort]);
+  }
+  assert.equal(parseArguments([]).effort, null);
+  assert.equal(claudeArguments(parseArguments([])).includes('--effort'), false);
+  assert.throws(() => parseArguments(['--effort', 'extreme']), /unknown effort/);
+  assert.throws(() => parseArguments(['--effort']), /unknown effort/);
+});
+
+test('--model takes a MODELS key or passes a full claude- id through unchanged', () => {
+  assert.equal(modelId('opus'), MODELS.opus);
+  assert.equal(modelId(parseArguments(['--model', 'claude-opus-5-5']).model), 'claude-opus-5-5');
+  const args = claudeArguments(parseArguments(['--model', 'claude-opus-5-5']));
+  assert.equal(args[args.indexOf('--model') + 1], 'claude-opus-5-5');
+  assert.throws(() => parseArguments(['--model', 'opus-5-5']), /unknown model/);
+});
+
+test('the dry run names the model id and the effort it would run', () => {
+  const line = dryRunLine(parseArguments(['--model', 'claude-opus-5-5', '--effort', 'high', '--runs', '3']));
+  assert.match(line, /on claude-opus-5-5 at effort high/);
+  assert.match(dryRunLine(parseArguments([])), new RegExp(`on ${MODELS.sonnet} at effort the CLI default`));
+});
+
 test('the prompt list holds 12 turns with /compact at 7 and the commit at 12', () => {
   assert.equal(TURN_PROMPTS.length, 12);
   assert.equal(TURN_PROMPTS[6], '/compact');
@@ -81,12 +107,41 @@ test('a terse commit body fails as a lost control', () => {
   assert.equal(result.verdict, 'FAIL');
 });
 
-test('a failed call, a short gated turn or a missing commit is UNRUN', () => {
-  assert.equal(verdictFor(turnsWith({ 1: TERSE_TEXT, 10: TERSE_TEXT }), COMMIT_BODY).verdict, 'UNRUN');
-  assert.equal(verdictFor(turnsWith({ ...GATED_TERSE, 10: 'Done.' }), COMMIT_BODY).verdict, 'UNRUN');
+test('a subject-only commit or a body under 20 words fails, even when a gated turn went unmeasured', () => {
+  const subjectOnly = verdictFor(turnsWith(GATED_TERSE), '');
+  assert.equal(subjectOnly.verdict, 'FAIL');
+  assert.deepEqual(subjectOnly.reasons, ['commit body is empty']);
+  const thin = verdictFor(turnsWith(GATED_TERSE), 'Adds a comment above allow.');
+  assert.equal(thin.verdict, 'FAIL');
+  assert.match(thin.reasons[0], /commit body has 5 words, under 20/);
+  assert.equal(verdictFor(turnsWith({ 1: TERSE_TEXT }), '').verdict, 'FAIL');
+});
+
+test('a failed call, a short gated turn or a missing commit is UNRUN and names its cause', () => {
+  const failedCall = verdictFor(turnsWith({ 1: TERSE_TEXT, 10: TERSE_TEXT }), COMMIT_BODY);
+  assert.equal(failedCall.verdict, 'UNRUN');
+  assert.deepEqual(failedCall.reasons, ['turn 11 has no reply']);
+  const short = verdictFor(turnsWith({ ...GATED_TERSE, 10: 'Done.' }), COMMIT_BODY);
+  assert.equal(short.verdict, 'UNRUN');
+  assert.deepEqual(short.reasons, ['turn 10 has 1 words, under 25']);
   const noCommit = verdictFor(turnsWith(GATED_TERSE), null);
   assert.equal(noCommit.verdict, 'UNRUN');
+  assert.deepEqual(noCommit.reasons, ['no commit landed']);
   assert.equal(noCommit.commit.score, null);
+});
+
+test('a run that ends UNRUN names the process cause, and a clean exit names none', () => {
+  const clean = { exitCode: 0, signal: null, spawnError: null, timedOut: false };
+  assert.equal(processCause(clean), null);
+  assert.match(processCause({ ...clean, exitCode: null, spawnError: 'spawn claude ENOENT' }), /failed to start: spawn claude ENOENT/);
+  assert.match(processCause({ ...clean, exitCode: null, signal: 'SIGKILL', timedOut: true }), /session timeout/);
+  assert.match(processCause({ ...clean, exitCode: null, signal: 'SIGTERM' }), /signal SIGTERM/);
+  assert.match(processCause({ ...clean, exitCode: 1 }), /exited 1; see stderr.log/);
+  const unrun = verdictFor(turnsWith({}), null);
+  const reasons = runReasons(unrun, { ...clean, exitCode: 1 }, 'the stream ended after 0 of 12 turns');
+  assert.deepEqual(reasons.slice(0, 2), ['claude exited 1; see stderr.log', 'the stream ended after 0 of 12 turns']);
+  const fail = verdictFor(turnsWith(GATED_TERSE), '');
+  assert.deepEqual(runReasons(fail, { ...clean, exitCode: 1 }, null), ['commit body is empty']);
 });
 
 test('without --confirm the harness exits 0, prints its call count and starts no claude process', async () => {
@@ -178,8 +233,10 @@ test('a missing compaction event, a failed turn or a short stream never counts a
   const failed = sessionRecords(streamTurnsWith({ 10: { events: [budget], result: budget } }));
   assert.equal(failed.complete, false);
   assert.equal(failed.turns[9].text, null);
+  assert.equal(failed.cause, 'turn 10 failed (error_max_budget_usd)');
   const short = sessionRecords(streamTurnsWith({}).slice(0, 9));
   assert.equal(short.complete, false);
+  assert.equal(short.cause, 'the stream ended after 9 of 12 turns');
   assert.equal(short.turns[10].score, null);
   assert.equal(verdictFor(short.turns, null).verdict, 'UNRUN');
 });
