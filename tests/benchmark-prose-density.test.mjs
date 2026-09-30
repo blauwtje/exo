@@ -1,11 +1,11 @@
-// benchmarks/prose-density.mjs scores articles per 100 words of chat prose:
+// lib/prose-density.mjs scores articles per 100 words of chat prose:
 // full prose lands above 5.0, terse prose at or below 2.0, and text inside
 // fences, inline code, paths, URLs, quotes, blockquotes and table rows is
 // left out.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { scoreProse } from '../benchmarks/prose-density.mjs';
+import { scoreProse } from '#prose-density';
 
 const FULL_PROSE = 'The limiter keeps a list of timestamps for each client. When a request arrives, the function drops the entries that are older than the window and then checks whether the count is below the limit. If it is, the request is allowed and the current time is added to the list, so the next call sees an accurate count.';
 const TERSE_PROSE = 'Limiter keeps timestamps per client. Request arrives: allow drops entries older than window, checks count against limit. Under limit: allow request, append current time. Next call sees accurate count. Clock skew shows as negative ages; entries never expire.';

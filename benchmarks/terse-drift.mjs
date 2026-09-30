@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { scoreProse } from './prose-density.mjs';
+import { scoreProse } from '#prose-density';
 import { MODELS, ROOT } from './tasks.mjs';
 
 const SESSION_BUDGET_USD = '3';

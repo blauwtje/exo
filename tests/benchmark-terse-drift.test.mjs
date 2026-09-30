@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { scoreProse } from '../benchmarks/prose-density.mjs';
+import { scoreProse } from '#prose-density';
 import { TURN_PROMPTS, claudeArguments, createTurnReader, dryRunLine, isCompactionEvent, modelId, parseArguments, processCause, runReasons, sessionRecords, userMessageLine, verdictFor } from '../benchmarks/terse-drift.mjs';
 import { MODELS } from '../benchmarks/tasks.mjs';
 import { fixture, run } from './harness.mjs';
