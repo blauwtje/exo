@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.63.0 - 2026-09-30
+
 ### Added
 
 - A 12-turn `terse` drift benchmark that scores the article density of chat prose per turn and fails a turn over 2.0 articles per 100 words.
