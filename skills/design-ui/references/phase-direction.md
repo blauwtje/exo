@@ -2,14 +2,57 @@
 
 Settle one direction before any production code changes, from Phase 1 evidence. The enemy is a neutral middle that no region carries. The overcorrection is a picker offered for a surface whose identity is already settled.
 
-## The mechanics
+## Every rung
 
-Decide the direction, which settles composition and visual material together. Outside an existing brand or design system, commit to one bold aesthetic direction before Build: the contract names it and every region carries it; a neutral middle is not a direction. Rungs 3 and 7 of the skill's `## Route` run contract → variant → selection: derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints, deal seeded axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks, then fill only the contract this session recommends, write it as a one-contract container to `$RUN/recommended.json`, `--check` it to status ok, and write the tab's copy as `$RUN/sketch-labels.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output. Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save. Then make the offer `## Asking` of the `intake` reference defines. On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`. Every `--check` and `--select` call passes that `--space` file, plus `--candidates "$RUN/font-candidates.json"` once that file exists, because either refuses a contract whose fonts came from candidates without it. On the preview option, send one message holding the `scripts/sketch-tab.mjs --serve "$RUN/sketches" --labels "$RUN/sketch-labels.json"` start, a Write of `$RUN/sketches/001-direction.html`, and the `--wait "$RUN/sketches" --sketch 001-direction.html` start, both script calls under the Bash tool's `run_in_background`. That sketch shows every dealt direction from its axes, under the `sketch-tab` reference, and each option's `data-choice` is the contract's dealt index. The other contracts stay unfilled, because a sketch needs a direction's visible material and never its whole contract, and filling them first is the wait the sketch removes. A `steer` in the answer is a revision: write the next sketch file and wait again. A click on the recommended direction freezes `$RUN/recommended.json` as the second option does. A click on another fills that one contract, writes it as a one-contract container to `$RUN/chosen.json`, `--check`s it to status ok, and freezes it with `--select --index 0 --space "$RUN/space.json"`. An exit 3 leaves the `--recommend` contract as the selection. Full comps are built only when the user asks to see directions whole: fill the contracts of the directions still standing, write them as one container to `$RUN/finalists.json`, validate the set with `--check` to status ok before building any variant, write `$RUN/labels.json`, then send one message holding a Write for every `$RUN/variant-<n>/index.html`, each from its contract inside the comp budget the `direction-preview` reference sets, plus the `pick.mjs` start with `--comps "$RUN" --contracts "$RUN/finalists.json" --frame` at the frame the surface needs, `390x844` for a phone-first surface and `1280x800` otherwise, under the Bash tool's `run_in_background`: one message costs one round trip where a message per comp costs one each, and the picker waits for the last comp before it opens the tab, so the chooser never sees an empty card. A delegate per comp costs its brief and its report for a file this session can type, and it is this session that holds the contract. The picker prints the chosen index when the click arrives, or exits 3 and leaves the `--recommend` contract as the selection. The picker is the first render of the comps: no capture, screenshot, or repair pass runs before it opens. Freeze the selection with `--select --contracts "$RUN/finalists.json" --index <n> --space "$RUN/space.json" > "$RUN/contract-selected.json"` for Build, the critique, and QA. A run freezes the selection and starts Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines. Change no production code before a selection exists. Every other rung produces one direction, no variants, no offer, and no selection gate. The direction is decided in this session, never inside a builder delegate.
+- Decide the direction in this session, never inside a builder delegate, because this session holds the contract.
+- Change no production code before a selection exists.
+- Outside an existing brand or design system, commit to one bold aesthetic direction before Build, because a neutral middle is not a direction.
+- The direction settles composition and visual material together: the contract names it and every region carries it.
+- Every rung other than 3 and 7 produces one direction, with no variants, no offer, and no selection gate, so a session on rung 5 or 6 stops reading here.
+- Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
+
+## Rungs 3 and 7
+
+Rungs 3 and 7 of the skill's `## Route` run contract, variant, selection.
+
+- Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save.
+- Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
+- Deal three seeded axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
+- Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
+- `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
+- Make the offer `## Asking` of the `intake` reference defines.
+- On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
+- Every `--check` and `--select` call passes that `--space` file, plus `--candidates "$RUN/font-candidates.json"` once that file exists, because either refuses a contract whose fonts came from candidates without it.
+
+## The sketch answer
+
+- On the preview option, send one message holding the `sketch-tab` reference's `--serve` start, a Write of `$RUN/sketches/001-direction.html`, and its `--wait` start with `--sketch 001-direction.html`, both script calls under the Bash tool's `run_in_background`.
+- The sketch shows every dealt direction from its axes, under the `sketch-tab` reference, and each option's `data-choice` is the contract's dealt index.
+- The other contracts stay unfilled, because a sketch needs a direction's visible material and never its whole contract, and filling them first is the wait the sketch removes.
+- A `steer` in the answer is a revision: write the next sketch file and wait again.
+- A click on the recommended direction freezes `$RUN/recommended.json` as the second option does.
+- A click on another direction fills that one contract, writes it as a one-contract container to `$RUN/chosen.json`, and `--check`s it to status ok.
+- Freeze that contract with `--select --index 0 --space "$RUN/space.json"`.
+- An exit 3 leaves the `--recommend` contract as the selection.
+
+## Full comps
+
+Full comps are built only when the user asks to see directions whole.
+
+- Send one message holding a Write for every `$RUN/variant-<n>/index.html` and the `pick.mjs` start, under the Bash tool's `run_in_background`, because one message costs one round trip where a message per comp costs one each.
+- Build each variant from its contract inside the comp budget the `direction-preview` reference sets, because a delegate per comp costs its brief and its report for a file this session can type.
+- Run no capture, screenshot, or repair pass before the picker opens, as `## Before the picker` of `direction-preview` says: the picker is the first render of the comps.
+- Fill the contracts of the directions still standing and write them as one container to `$RUN/finalists.json`.
+- Next, validate the set with `--check` to status ok before building any variant, then write `$RUN/labels.json`.
+- Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json" --frame` at the frame the surface needs: `390x844` for a phone-first surface and `1280x800` otherwise.
+- The picker waits for the last comp before it opens the tab, so the chooser never sees an empty card.
+- The picker prints the chosen index when the click arrives, or exits 3 and leaves the `--recommend` contract as the selection.
+- Freeze the selection with `--select --contracts "$RUN/finalists.json" --index <n> --space "$RUN/space.json" > "$RUN/contract-selected.json"` for Build, the critique, and QA.
 
 ## A planning turn
 
 - A planning turn routes by `## Route` and makes the offer on rungs 3 and 7, because a direction frozen without it was chosen for the user.
-- On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The mechanics` says.
+- On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The sketch answer` says.
 - On option B, it freezes the contract the user's letter named the same way.
 - On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
 - Add `--candidates <file>` to that freeze when fonts came from the candidate gate.
