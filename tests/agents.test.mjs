@@ -241,6 +241,9 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*.+$/m)[0];
   const rerun = repairStep.indexOf('rerun step 1\'s `verify.mjs`');
   assert.ok(rerun !== -1 && rerun < repairStep.indexOf('land-task.mjs" --fix'), 'verify reruns the gate after the fixer and before the fix commit');
+  assert.ok(repairStep.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
+  assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');
+  assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');
 });
 
 test('the implementer pins its kind\'s model and effort whatever the session runs at', () => {
