@@ -181,11 +181,38 @@ const LINE_TELLS = [
 
 // Markup tells read over the whole file rather than one line, because the attribute
 // that is missing is often several lines below the tag that should carry it.
-const OPEN_TAG = (name) => new RegExp(`<${name}\\b[^>]*>`, 'gis');
+// The tag ends at the first `>` outside a quoted value and outside a `{...}` expression, so an
+// arrow function in a JSX attribute does not cut it short; `(?![\w-])` keeps `<svg-icon>` from
+// matching `svg`. A quote inside braces is skipped as a string, so a `}` in one does not close the
+// expression; lift that limit with a real JSX parser. An unterminated tag yields no match.
+function openTags(text, name) {
+  const tags = [];
+  const starts = new RegExp(`<${name}(?![\\w-])`, 'gi');
+  for (const start of text.matchAll(starts)) {
+    let depth = 0;
+    let quote = '';
+    for (let end = start.index + start[0].length; end < text.length; end += 1) {
+      const char = text[end];
+      if (quote) {
+        if (char === quote) quote = '';
+      } else if (char === '"' || char === "'" || (char === '`' && depth > 0)) {
+        quote = char;
+      } else if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth = Math.max(0, depth - 1);
+      } else if (char === '>' && depth === 0) {
+        tags.push({ 0: text.slice(start.index, end + 1), index: start.index });
+        break;
+      }
+    }
+  }
+  return tags;
+}
 
 function tagFindings(text, relative, starts, { tag, type, required, confidence, threshold, note }) {
   const findings = [];
-  for (const match of text.matchAll(OPEN_TAG(tag))) {
+  for (const match of openTags(text, tag)) {
     if (required.test(match[0])) continue;
     findings.push(finding({
       type,
@@ -218,7 +245,7 @@ function markupFindings(text, relative, starts) {
       note: 'an image with no reserved space shifts the layout when it arrives'
     })
   ];
-  for (const match of text.matchAll(OPEN_TAG('img'))) {
+  for (const match of openTags(text, 'img')) {
     if (!/\bsrcset\s*=/i.test(match[0]) || /\bsizes\s*=/i.test(match[0])) continue;
     if (!/\d+w[\s"',]/.test(match[0])) continue;
     findings.push(finding({

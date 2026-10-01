@@ -384,6 +384,20 @@ describe('check-ui.mjs static subset', () => {
     assert.deepEqual(separated, []);
   });
 
+  it('ends a tag outside quotes and braces and keeps svg-icon apart from svg', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'page.jsx'), [
+      '<svg onClick={() => go()} viewBox="0 0 24 24"></svg>',
+      '<svg-icon name="a"></svg-icon>',
+      '<img alt="a > b" src="a.png" />',
+      '<svg class="bare">'
+    ].join('\n'));
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const findings = JSON.parse(result.stdout).static.findings.filter((entry) => entry.type === 'svg-without-viewbox' || entry.type === 'image-without-alt');
+    assert.deepEqual(findings.map((entry) => entry.selector), ['page.jsx:4']);
+  });
+
   it('reports a centered translucent radial halo', async () => {
     const tells = await tellsFor('.halo {\n  background: radial-gradient(circle at center, rgba(96,70,240,0.3), transparent 65%);\n}\n');
     assert.deepEqual(tells.map((entry) => entry.type), ['radial-halo', 'purple-palette']);
