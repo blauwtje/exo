@@ -58,26 +58,29 @@ async function featureBranch(workDir) {
   await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
 }
 
+const CONTEXT = 'Pick how far the commits travel.';
 const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
 const TITLE = '**1 · Where should the commits go?**';
 const MENU_FULL = [
   TITLE,
-  NO_ANSWER,
+  CONTEXT,
   '',
   '- **A · PR + merge**: push, open a pull request, merge it once checks pass',
   '- **B · Open PR**: push and open a pull request, leave it open',
   '- **C · Keep local**: nothing leaves this machine',
   '',
-  '→ A. The pull request is merged only once its checks pass.'
+  '→ A. The pull request is merged only once its checks pass.',
+  NO_ANSWER
 ].join('\n') + '\n';
 const MENU_PUSH_ONLY = [
   TITLE,
-  NO_ANSWER,
+  CONTEXT,
   '',
   '- **A · Push**: push the commits to origin',
   '- **B · Keep local**: nothing leaves this machine',
   '',
-  '→ A. The commits are safe on origin.'
+  '→ A. The commits are safe on origin.',
+  NO_ANSWER
 ].join('\n') + '\n';
 
 test('--routes: no origin remote rules out every route', async () => {

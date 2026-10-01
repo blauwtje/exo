@@ -31,12 +31,14 @@ Take the first step whose answer the request and the letters so far leave open.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    **1 · Which layer?**
+   The value can apply to one repository or to every project.
 
    - **A · Project**: everyone, via .claude/exo.json
    - **B · Local**: only you, in this repository
    - **C · Global**: every project on this machine
 
-   → A. Without an answer, nothing changes.
+   → A. The whole team gets the same value.
+   Without an answer, nothing changes.
    ```
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line, because the block above predates the change. Relay a rejection as the script printed it and change nothing by hand.
 6. **Point** a global value at `/config`, where each exo option is a row, and run nothing, because the harness owns that file.

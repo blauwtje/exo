@@ -22,7 +22,7 @@ Walk every setting in the chat, one question per message, and write only what th
 
 | Option of `scope` | What it gives |
 |---|---|
-| `global`, Every project (Recommended) | The choice holds everywhere; the user confirms it once in `/config`. |
+| `global`, Every project | The choice holds everywhere; the user confirms it once in `/config`. |
 | `project`, This repository, for everyone | Everyone who clones it gets it once `.claude/exo.json` is committed. |
 | `local`, This repository, only me | Only the user, only here; the file stays out of git. |
 

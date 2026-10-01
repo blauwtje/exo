@@ -153,9 +153,9 @@ test('menu asks for the setting, and with a key for a value other than the curre
   const space = await workspace({ project: { specs: 'issues' } });
   const settingQuestion = await settings(space, ['menu']);
   assert.equal(settingQuestion.code, 0, settingQuestion.stderr);
-  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**1 · Change which setting?**\n\n- **A · Keep**: change nothing\n- **B · specs**: change it, now issues\n- **C · replies**: change it, now tight\n- **D · budget**: change it, now medium\n- **E · ship**: change it, now ask\n- **F · workspace**: change it, now ask\n- **G · guards**: change it, now on\n- **H · guard_lines**: change it, now 400\n- **I · heavy_commands**: change it, now (none)\n\n→ A. Without an answer, nothing changes.'), settingQuestion.stdout);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**1 · Change which setting?**\nEach setting has its own values and layers.\n\n- **A · Keep**: change nothing\n- **B · specs**: change it, now issues\n- **C · replies**: change it, now tight\n- **D · budget**: change it, now medium\n- **E · ship**: change it, now ask\n- **F · workspace**: change it, now ask\n- **G · guards**: change it, now on\n- **H · guard_lines**: change it, now 400\n- **I · heavy_commands**: change it, now (none)\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
-  assert.ok(valueQuestion.stdout.trimEnd().endsWith('**1 · Set specs to which value?**\n\n- **A · Keep issues**: change nothing\n- **B · docs**: set specs to docs\n- **C · both**: set specs to both\n\n→ A. Without an answer, nothing changes.'), valueQuestion.stdout);
+  assert.ok(valueQuestion.stdout.trimEnd().endsWith('**1 · Set specs to which value?**\nspecs is now issues.\n\n- **A · Keep issues**: change nothing\n- **B · docs**: set specs to docs\n- **C · both**: set specs to both\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), valueQuestion.stdout);
   assert.doesNotMatch(valueQuestion.stdout, /replies/);
   const unknown = await settings(space, ['menu', 'wiki']);
   assert.equal(unknown.code, 1);

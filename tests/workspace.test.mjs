@@ -119,6 +119,7 @@ test('ask: workspace setting "ask" on the default branch prints the menu, branch
   assert.match(lines[6], /^- \*\*C · Current branch\*\*/);
   assert.equal(lines[7], '');
   assert.match(lines[8], /^→ A\. /);
+  assert.equal(lines[9], 'Without an answer, nothing is committed.');
   assert.equal(result.stdout.includes('Recommended'), false);
 });
 

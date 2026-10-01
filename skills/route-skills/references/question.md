@@ -2,7 +2,7 @@
 
 Every question exo puts to the user has one shape, because the user answers with a letter. The enemy is a question the user cannot answer with one letter. The overcorrection is a question where the user has no real choice to make.
 
-A skill reads this file before a message of its asks anything; the core stays in the route-skills body, which every session holds.
+A skill reads this file before a message of its asks anything.
 
 ## A round of questions
 

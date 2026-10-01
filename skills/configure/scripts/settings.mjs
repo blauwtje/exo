@@ -125,9 +125,9 @@ function show(root) {
 // The overview plus the one question that moves a change forward: which setting
 // without a key, which value with one. Keep is always A, the recommended answer.
 // The option lines sit outside the fence because bold renders only there.
-function question(title, keep, picks) {
+function question(title, context, keep, picks) {
   const letters = [keep, ...picks].map((line, index) => `- **${String.fromCharCode(65 + index)} · ${line}`);
-  return [`**1 · ${title}**`, '', ...letters, '', '→ A. Without an answer, nothing changes.'];
+  return [`**1 · ${title}**`, context, '', ...letters, '', '→ A. Keeping things as they are is the safe default.', 'Without an answer, nothing changes.'];
 }
 
 function menu(root, key) {
@@ -137,14 +137,14 @@ function menu(root, key) {
       const { value } = resolve(name, stack);
       return `${name}**: change it, now ${value === '' ? '(none)' : value}`;
     });
-    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('Change which setting?', 'Keep**: change nothing', picks)].join('\n'));
+    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('Change which setting?', 'Each setting has its own values and layers.', 'Keep**: change nothing', picks)].join('\n'));
     return;
   }
   if (!Object.hasOwn(SCHEMA, key)) throw unknownKey(key);
   const current = resolve(key, stack).value;
   const others = (SCHEMA[key].options ?? []).filter((option) => option !== current);
   const picks = others.map((option) => `${option}**: set ${key} to ${option}`);
-  console.log([...overview([key], stack), '', ...question(`Set ${key} to which value?`, `Keep ${current}**: change nothing`, picks)].join('\n'));
+  console.log([...overview([key], stack), '', ...question(`Set ${key} to which value?`, `${key} is now ${current}.`, `Keep ${current}**: change nothing`, picks)].join('\n'));
 }
 
 // Appending to a file that lacks a final newline would glue the entry onto its last line.
