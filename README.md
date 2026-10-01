@@ -17,6 +17,8 @@ exo is a Claude Code plugin that gives Claude one way of working: decide what to
 
 Restart Claude Code afterwards. The session hook needs `bash` and `node` on `PATH`.
 
+On Windows, exo needs Git for Windows, whose Git Bash runs the hooks, and Node on `PATH`. Windows support is best effort: the checks run on Linux and macOS, a Windows run is reported but does not block a release, and Windows bugs are fixed as they are reported.
+
 exo needs a subagent spawn depth of at least 2 in `~/.claude/settings.json`; Claude Code 2.1.219 and later default to 3, so this entry only matters on 2.1.217, 2.1.218, or wherever something has set a lower value:
 
 ```json
