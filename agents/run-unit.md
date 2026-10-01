@@ -26,7 +26,7 @@ Read the plan's frame per build step 2.
 
 ## Return
 
-Ten lines at most, one per task:
+At most ten lines, one per task:
 
 - `LANDED <n> <sha>` for a task committed on its proof.
 - `BLOCKED <n> <reason or question for the user>` for a task needing the user or waiting on one that does.
