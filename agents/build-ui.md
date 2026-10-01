@@ -41,7 +41,9 @@ Every scope meets the floor; its state, timing, and reachability mechanics live 
 - no horizontal scroll from 360px through 1440px;
 - body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;
 - contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;
-- targets at least 24×24 CSS px — the WCAG 2.2 AA minimum, exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation — with 44×44 as the enhanced target and the default under a coarse pointer;
+- targets at least 24×24 CSS px, the WCAG 2.2 AA minimum;
+- a target is exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation;
+- 44×44 is the enhanced target and the default under a coarse pointer;
 - reduced-motion handling for every animation and semantic HTML beneath styling;
 - reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;
 - the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property; anything costlier carries the cost disclosure `$SKILL/references/performance-budget.md` defines.
