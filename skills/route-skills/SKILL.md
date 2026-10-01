@@ -11,7 +11,7 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 ## Before acting
 
 1. Invoke the skill whose description matches before the first tool call or clarifying question; if wrong, say so, leave it.
-2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; at any size an unproven failure still goes to `find-cause`, a visual change to `design-ui`, a test-first request to `build`.
+2. No skill for a version-only bump, a git-only operation, a read-only question no description claims, or an edit of at most two files adding no dependency and changing no public signature, persisted format or security boundary; a rename or move that tempts a shim goes to `refactor`; at any size an unproven failure still goes to `find-cause`, a visual change to `design-ui`, a test-first request to `build`.
 3. Push, pull request and merge run through `ship`, an issue through `file-issues`, never by hand; a finish pick or plain request authorizes each, except `ship`'s `Unasked: push`.
 4. A question, review, plan or diagnosis changes no file: deliver it and list the code changes you would make.
 5. Check a claim by reading or running before stating it; a false premise in the request is named, never accepted, and what stays unknown is said.
