@@ -75,7 +75,10 @@ test('a force push is denied and --force-with-lease is not', async () => {
     'git --no-pager push -f',
     'git -C /tmp/repo -c core.x=y push --force origin main',
     'make && git push -f',
-    'git push origin "--force"'
+    'git push origin "--force"',
+    'git push origin +main',
+    'git push origin +HEAD:main',
+    'git push origin feature +main'
   ], /force push/);
   await assertAllowed([
     'git push --force-with-lease',
@@ -89,6 +92,16 @@ test('reset --hard and clean -f are denied, their safe forms are not', async () 
   await assertDenied(['git reset --hard', 'git reset HEAD~1 --hard', 'git -C repo reset --hard origin/main', 'git reset "--hard"'], /reset --hard/);
   await assertDenied(['git clean -f', 'git clean -fd', 'git clean -xdf', 'git clean --force'], /clean -f/);
   await assertAllowed(['git reset --soft HEAD~1', 'git reset HEAD file.txt', 'git clean -n', 'git clean -nd']);
+});
+
+test('a git invoked by path or after an environment assignment is checked', async () => {
+  await assertDenied([
+    '/usr/bin/git reset --hard',
+    './git reset --hard',
+    'GIT_DIR=.git git reset --hard',
+    'ls .git; git reset --hard'
+  ], /reset --hard/);
+  await assertAllowed(['ls .git', 'GIT_DIR=.git git status']);
 });
 
 test('dropping or clearing a stash is denied, saving and popping are not', async () => {

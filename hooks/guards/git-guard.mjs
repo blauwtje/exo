@@ -22,17 +22,19 @@ import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 // A global option may repeat and appear in any order before the subcommand: `-C
 // <path>` and `-c <name>=<value>` take a separate value, every other one is a
 // single token such as `--no-pager`. Matching only a fixed pair would let
-// `git --no-pager reset --hard` through.
-const GIT_INVOCATION = /(?<![\w-])git((?: +(?:-[cC] +[^ \n]+|-[^ \n]+))*) +([a-z][a-z-]*)(?= |$|[;&|\n])/g;
+// `git --no-pager reset --hard` through. A `.` before `git` marks a word such as
+// `.git`, not a command; a `/` does not, so `/usr/bin/git` and `./git` still match.
+const GIT_INVOCATION = /(?<![\w.-])git((?: +(?:-[cC] +[^ \n]+|-[^ \n]+))*) +([a-z][a-z-]*)(?= |$|[;&|\n])/g;
 const INVOCATION_END = /[;&|\n]/;
 const GIT_TIMEOUT_MILLISECONDS = 5000;
 
 // `--force-with-lease` is allowed: the flag must end at a space or the line end.
+// A refspec with a leading `+`, such as `+main`, forces that ref like `--force`.
 // A clean bundle such as `-fd` is denied; `-n` alone is not.
 const ARGUMENT_RULES = [
   {
     subcommand: 'push',
-    arguments: /(?:^| )(?:-f|--force)(?: |$)/,
+    arguments: /(?:^| )(?:-f|--force|\+[^ ]+)(?: |$)/,
     reason: 'git-guard: force push discards remote history. Use --force-with-lease, or ask the user to run it.'
   },
   {
