@@ -9,7 +9,7 @@ effort: high
 
 Design so the result cannot be mistaken for a template: every visual choice traceable to the subject, audience, or page job, plus one evidence-backed differentiator a competitor could not justify. The enemy is the transferable default — a design that could accept another product name unchanged. The overcorrection is novelty that obscures content, removes states, or breaks accessibility.
 
-A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline, when supporting regions stay generic while one focal point carries the design, or when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
+A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design. It also fails when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
 **After a compaction notice**, see `## The run directory` of `references/intake.md`.
 
@@ -17,7 +17,7 @@ A full or bounded redesign fails when the rendered result stays materially inter
 
 Any visual change belongs here, at any file count; an undecided surface goes to `spec` first, added state, persistence, a dependency or a network call to `build`.
 
-- **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. It runs all five phases, per `## Ownership` of `references/intake.md`.
+- **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. It runs all five phases, bounded to the named surface; the existing direction is evidence, not a veto.
 - **Sketch, new piece, tweak:** `## Sizes` of `references/phase-build.md`.
 
 ## Route
@@ -38,7 +38,7 @@ A surface neither list names takes rung 6, and the report names rung 7 as the ri
 
 The references call these steps Phase 1 to 5.
 
-1. **Context.** Read `references/phase-detail.md` whole, once; its `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
+1. **Context.** Read `## Context`, `## The build floor` and `## Precedence` of `references/phase-detail.md`, once; `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
 4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, run after the build and the post-build checkpoint; the baseline pair was taken before the first edit.
@@ -46,20 +46,20 @@ The references call these steps Phase 1 to 5.
 
 ## References
 
-Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other reference over 8 KB names its sections in its row and loads by them (`grep -n '^## '`, then `sed -n` to the next heading).
+Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads by section; every other reference over 8 KB names its sections in its row and loads by them (`grep -n '^## '`, then `sed -n` to the next heading).
 
 | File | Read it when |
 |---|---|
 | `references/intake.md` | Before Phase 1: asking, the run directory, symptoms; its `## Settled identity` when Route rungs 1-4 miss. |
 | `../route-skills/references/question.md` | Phase 2 on rungs 3 and 7, before the preview offer. |
-| `references/phase-detail.md` | Whole, once, at Phase 1; later steps name its sections by heading. |
+| `references/phase-detail.md` | Phase 1: `## Context`, `## The build floor`, `## Precedence`; Phase 4 `## The critique dispatch` on a full or bounded redesign; Phase 5 `## QA`, by the QA delegate only. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
 | `references/visual-direction.md` | Phase 2, every direction decision, whole; Phase 1 `## Design context first` alone when the repository or docs/design/DESIGN.md holds a design system to extract. |
 | `references/sketch-tab.md` | Phase 2 on rungs 3 and 7, after `--check` reports ok and before the offer; elsewhere, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Phase 2, only when the user asks to see directions whole, before building the picker's comps. |
 | `references/composition.md` | Phase 1 `## Inventory before layout`; Phase 2 `## Turn subject evidence into a system`, `## Choose structures from relationships`, `## Write a composition contract`; Phase 3 `## Build density without clutter`, `## Surface obligations`, `## Responsive recomposition`. |
-| `references/typography.md` | Phases 2–3, when choosing or changing type. |
+| `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list` and `## Pairing`; Phase 3 `## Roles`, `## Scale`, `## Micro rules — the craft floor`. |
 | `references/controls.md` | Phase 3, before styling a control. |
 | `references/implementation.md` | Phase 3, before writing CSS or component code, whole. |
 | `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the recorded decision; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, and `## Continuity contract`, `## Scroll and view transitions` or `## Libraries` only when the build uses one. |
@@ -76,6 +76,9 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 
 ## Judgment
 
-- Explicit brief requirements outrank every design default and tell list, and a human selection of a rendered variant outranks this skill's own preference.
+- Explicit brief requirements outrank every design default and tell list.
+- A human selection of a rendered variant outranks this skill's own preference.
 - Accessibility and complete content/state coverage outrank visual novelty.
-- This skill owns visual decisions only. When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.
+- This skill owns visual decisions only.
+- When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting.
+- When no stage called it, execute the visual-only request and report directly.

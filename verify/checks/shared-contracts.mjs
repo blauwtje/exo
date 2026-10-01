@@ -50,7 +50,9 @@ const PINNED_SENTENCES = {
   'skills/design-ui/SKILL.md': [
     'A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline',
     'or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive',
-    'This skill owns visual decisions only. When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.',
+    'This skill owns visual decisions only.',
+    'When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting.',
+    'When no stage called it, execute the visual-only request and report directly.',
     'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
     'A component library in the manifest is not that evidence on its own',
   ],
