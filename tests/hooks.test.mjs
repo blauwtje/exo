@@ -109,6 +109,15 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
 });
 
+test('no tool name matches more than one PreToolUse entry', () => {
+  const entries = hookEntries().filter((entry) => entry.event === 'PreToolUse');
+  const toolNames = ['Bash', 'Read', 'Edit', 'Write', 'WebFetch', 'WebSearch', 'Task', 'Agent', 'Skill', 'Grep', 'Glob'];
+  for (const toolName of toolNames) {
+    const matching = entries.filter((entry) => new RegExp(`^(?:${entry.matcher ?? '.*'})$`).test(toolName));
+    assert.ok(matching.length <= 1, `${toolName}: ${JSON.stringify(matching.map((entry) => entry.hook.command))}`);
+  }
+});
+
 test('the delegate budget is the only hook before every tool no dispatcher covers', () => {
   const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '^(?!Bash$|Read$|Edit$|WebFetch$|WebSearch$).*');
   assert.equal(everyTool.length, 1);

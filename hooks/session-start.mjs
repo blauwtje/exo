@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { readHookText } from '#hook-input';
+import { reset as resetReadGuard } from './guards/read-guard.mjs';
 import { reset as resetRepeatGuard } from './guards/repeat-guard.mjs';
 import { sessionOutput } from '../skills/build/scripts/resume-plan.mjs';
 
@@ -25,9 +26,9 @@ const OUTPUT_CAP = 10000;
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
 const configDirectory = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
 
-// Runs a script of this plugin in its own process, for the two that are not
-// importable: settings.mjs and read-guard.mjs run their command at load. Lift
-// it by exporting `contextLine` and the read guard's `reset` and importing them.
+// Runs a script of this plugin in its own process, for the one that is not
+// importable: settings.mjs runs its command at load. Lift it by exporting
+// `contextLine` and importing it.
 function runScript(relativePath, argument, input) {
   return spawnSync(process.execPath, [path.join(root, relativePath), argument], { input, encoding: 'utf8' });
 }
@@ -108,16 +109,24 @@ try {
 // The installed copy lives under a versioned cache path, so the status line
 // and the skills reach the scripts through this pointer instead of a path that
 // rots per bump; a resumed session can run a newer copy than it started on.
-fs.mkdirSync(configDirectory, { recursive: true });
-fs.writeFileSync(path.join(configDirectory, 'plugin-root'), `${root}\n`);
-// The savings ledger and counter left by earlier versions are dead weight now.
-fs.rmSync(path.join(configDirectory, 'savings'), { recursive: true, force: true });
+try {
+  fs.mkdirSync(configDirectory, { recursive: true });
+  fs.writeFileSync(path.join(configDirectory, 'plugin-root'), `${root}\n`);
+  // The savings ledger and counter left by earlier versions are dead weight now.
+  fs.rmSync(path.join(configDirectory, 'savings'), { recursive: true, force: true });
+} catch (error) {
+  console.error(`exo: plugin-root pointer not written, ${error.message}`);
+}
 
 // A clear or a compaction empties the context, so the read guard forgets which
 // ranges the model still holds and the repeat guard forgets which calls it saw.
 let pointers = '';
 if (input.source === 'clear' || input.source === 'compact') {
-  runScript('hooks/guards/read-guard.mjs', 'reset', JSON.stringify(input));
+  try {
+    resetReadGuard(input);
+  } catch (error) {
+    console.error(`read-guard: ${error.message}`);
+  }
   try {
     resetRepeatGuard(input);
   } catch (error) {

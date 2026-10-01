@@ -159,7 +159,7 @@ function book(hookInput) {
 }
 
 // A clear or a compaction ends the context window the reads were about.
-function reset(hookInput) {
+export function reset(hookInput) {
   if (typeof hookInput.session_id !== 'string') return;
   updateSession(hookInput.session_id, (session) => {
     session.reads = {};

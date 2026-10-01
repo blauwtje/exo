@@ -3,7 +3,7 @@
 // form, lets a bounded or chained command through, and stands down when guards is off.
 
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -64,6 +64,14 @@ test('a bare test command runs tail-capped, with no permission decision', async 
     hookEventName: 'PreToolUse',
     updatedInput: { command: 'set -o pipefail; npm test 2>&1 | tail -n 200', description: 'run the tests' }
   });
+});
+
+test('a failing command still exits 1 after the rewrite', async () => {
+  const rewritten = await cappedTo('npm test');
+  assert.ok(rewritten.startsWith('set -o pipefail; '), rewritten);
+  const failing = rewritten.replace('npm test', 'echo failing; false');
+  const result = spawnSync('bash', ['-c', failing], { encoding: 'utf8' });
+  assert.equal(result.status, 1, failing);
 });
 
 test('each runner form on the list runs capped', async () => {
