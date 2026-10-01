@@ -82,6 +82,7 @@ test('build reads a BUDGET return as unfinished and asks the branch what landed'
   const askStep = loopStep(3, RUN_LOOP);
   assert.ok(askStep.includes('**Ask the branch what landed.**'));
   assert.ok(askStep.includes('Only a `Plan-task:` commit decides what landed, never memory'));
+  assert.ok(askStep.includes('On a restart, the first time `Landed:` names tasks, write one line in the reply language naming them; no script prints it, and later loops stay silent.'));
   assert.ok(routeStep.includes('`BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait`'));
 });
 
