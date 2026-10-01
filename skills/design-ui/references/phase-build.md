@@ -4,13 +4,37 @@ Build where the edits cost least: in this session when the direction predates th
 
 ## The mechanics
 
-A surface whose direction was decided before this run — a plan's `Contract:`, a brief's `contract-selected.json`, or the piece path's direction artifact — and an inventory of one surface on rung 5 or 6 of the skill's `## Route` build here, in this session, from that contract and the Phase 1 file ranges, because a builder brief plus its report costs more than the edits it forwards. Every other build dispatches the `exo:build-ui` agent, each call a few lines naming it: `RUN=<run dir> SCOPE=<foundation or a surface> SKILL=<skill dir> REPO=<repository root> FILES=$RUN/files.md REFERENCES=<the reference rows whose predicate its scope meets>`, where `$RUN/files.md` is the Phase 1 list of paths and line ranges this session wrote, so a builder opens no whole file. One call with `SCOPE=foundation` writes the tokens file, the base layer, and the primitives the inventory repeats, and returns foundation.md; then, including an inventory of one or two surfaces, one call per surface, all in one message, each given that same foundation.md, sent in the turn foundation.md returns with nothing read before it but that report, because every surface builder waits on each turn spent between the two. Every report is at most 20 lines; code stays on disk and this session reads the reports, not the code. When no stage called this skill, run the repository's own type-check, lint and test commands that cover the touched files before the next `scripts/check-ui.mjs` run. Run them once the last edit lands, here or after every builder has returned. A failure in a file the run did not touch is reported, not chased. When `build` or `find-cause` called this skill, that proof stays with the caller. The rest of this phase binds the builders:
+These rules bind this session and every builder:
 
 - The recorded motion decision is built; a redesign or new piece that lacks one is not finished.
 - When the subject's world names a technique, such as a canvas, an instrument or generative motion, that technique is built working and live, never faked by an image, a frozen SVG or a mock that does not move.
 - A component the design repeats stays unbuilt while any reachable entry of its state row has no styling.
 - A surface with no existing product stays unfinished while a content obligation from the inventory is missing or any region still holds placeholder material.
-- check-ui runs before the first edit as the baseline stage of `scripts/checkpoint.mjs --run "$RUN" --stage baseline --url <u> [--source <s>]`, which writes `$RUN/check-ui-baseline.json` covering both viewports; every later stage's checkpoint call finds that file itself and passes it to check-ui as `--baseline`, so its `comparison` holds the counts the report quotes.
+- check-ui runs before the first edit, as the baseline stage of `scripts/checkpoint.mjs --run "$RUN" --stage baseline --url <u> [--source <s>]`.
+- That stage writes `$RUN/check-ui-baseline.json` covering both viewports.
+- Every later stage's checkpoint call finds that file itself and passes it to check-ui as `--baseline`, so its `comparison` holds the counts the report quotes.
+
+Where the build runs:
+
+- A surface builds here, in this session, when its direction was decided before this run: a plan's `Contract:`, a brief's `contract-selected.json`, or the piece path's direction artifact.
+- An inventory of one surface on rung 5 or 6 of the skill's `## Route` also builds here, from that contract and the Phase 1 file ranges, because a builder brief plus its report costs more than the edits it forwards.
+- Every other build dispatches the `exo:build-ui` agent.
+
+How the builders run:
+
+- Each call is a few lines naming `RUN=<run dir> SCOPE=<foundation or a surface> SKILL=<skill dir> REPO=<repository root> FILES=$RUN/files.md REFERENCES=<the reference rows whose predicate its scope meets>`.
+- `$RUN/files.md` is the Phase 1 list of paths and line ranges this session wrote, so a builder opens no whole file.
+- One call with `SCOPE=foundation` writes the tokens file, the base layer, and the primitives the inventory repeats, and returns foundation.md.
+- Then, including an inventory of one or two surfaces, one call per surface goes out, all in one message, each given that same foundation.md.
+- Send those calls in the turn foundation.md returns, with nothing read before it but that report, because every surface builder waits on each turn spent between the two.
+- Every report is at most 20 lines; code stays on disk and this session reads the reports, not the code.
+
+Proof:
+
+- When no stage called this skill, run the repository's own type-check, lint and test commands that cover the touched files before the next `scripts/check-ui.mjs` run.
+- Run them once the last edit lands, here or after every builder has returned.
+- A failure in a file the run did not touch is reported, not chased.
+- When `build` or `find-cause` called this skill, that proof stays with the caller.
 
 ## Sizes
 
@@ -36,6 +60,7 @@ Without that identity, a new piece extracts the existing tokens and patterns, ru
 
 ## Judgment
 
+- A final check-ui run whose `comparison.blocking` is not empty keeps the surface unfinished.
+- A new `definite` finding, or any `content-clipped` or `element-overlap` finding, is repaired before the design is reported finished.
+- Each `potential` entry of `comparison.new` is repaired or named in the report.
 - The floor and the underdesign floor in `## The build floor` of the `phase-detail` reference bind every build, in this session and in every builder.
-- A reachable state left unstyled or a placeholder region still standing keeps the surface unfinished, whatever the checks report.
-- A final check-ui run whose `comparison.blocking` is not empty keeps the surface unfinished: a new `definite` finding, or any `content-clipped` or `element-overlap` finding, is repaired before the design is reported finished, and each `potential` entry of `comparison.new` is repaired or named in the report.
