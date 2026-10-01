@@ -317,3 +317,14 @@ test('regionRange gives the 1-based start and end of a region\'s definition bloc
   assert.deepEqual(regionRange(content, 'greet'), { start: 2, end: 4 });
   assert.equal(regionRange(content, 'missing'), null);
 });
+
+test('parsePlan reads a plan saved with CRLF line endings', () => {
+  const text = planFixture({ worktreeSetup: 'none', tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js`'], subject: 'feat(app): greet' })
+  ] });
+  const plan = parsePlan(text.replaceAll('\n', '\r\n'));
+  assert.equal(plan.tasks.length, 1);
+  assert.equal(plan.tasks[0].commitSubject, 'feat(app): greet');
+  assert.deepEqual(plan.tasks[0].files, [{ kind: 'Modify', path: 'src/app.js', region: null }]);
+  assert.equal(frameOf(plan.frame).branch, 'feat/fixture');
+});
