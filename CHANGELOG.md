@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.71.0 - 2026-10-01
+
 ### Added
 
 - The Bash guards judge each command inside a `bash -c`, `sh -c`, `zsh -c` or `eval` string like a top-level one, and deny when an inner command would be denied.
