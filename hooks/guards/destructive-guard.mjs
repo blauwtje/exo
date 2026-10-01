@@ -48,7 +48,7 @@ const SEGMENT_RULES = [
     reason: 'destructive-guard: a system or container prune removes stopped containers and unused volumes across the whole machine, including ones from other projects. Ask the user.'
   },
   {
-    command: new RegExp(`${START}(?:${ENGINE} +compose|docker-compose|podman-compose) +down(?: |$)`),
+    command: new RegExp(`${START}(?:${ENGINE} +compose|docker-compose|podman-compose)(?: +(?:-f|--file) +[^ ]+)* +down(?: |$)`),
     argument: /(?:^| )(?:-v|--volumes)(?: |$)/,
     reason: 'destructive-guard: compose down with --volumes deletes the project\'s volumes and the data in them. Run it without --volumes, or ask the user.'
   },
@@ -80,7 +80,7 @@ const SEGMENT_RULES = [
   // carries any name; a credential file matches on its whole name.
   {
     command: new RegExp(`${START}rm(?: |$)`),
-    argument: /(?:\.ssh\/|\.aws\/|\.config\/gh)/,
+    argument: /(?:\.(?:ssh|aws)(?:\/|["']?(?: |$))|\.config\/gh)/,
     reason: CREDENTIAL_REASON
   },
   {

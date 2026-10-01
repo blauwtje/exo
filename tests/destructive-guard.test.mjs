@@ -60,9 +60,11 @@ test('compose down is denied only with --volumes', async () => {
   await assertDenied([
     'docker compose down -v',
     'docker-compose down --volumes',
-    'podman-compose down -v'
+    'podman-compose down -v',
+    'docker compose -f a.yml down -v',
+    'docker compose --file a.yml -f b.yml down --volumes'
   ], /destructive-guard.*volumes/);
-  await assertAllowed(['docker compose down', 'docker stop web', 'docker rmi image', 'docker ps -a']);
+  await assertAllowed(['docker compose -f a.yml down', 'docker compose down', 'docker stop web', 'docker rmi image', 'docker ps -a']);
 });
 
 test('deleting a namespace, a claim or --all in kubectl is denied and a pod delete passes', async () => {
@@ -107,6 +109,9 @@ test('deleting a credential file, a keychain entry or a login is denied', async 
   await assertDenied([
     'rm ~/.ssh/id_rsa',
     'rm -rf ~/.aws/',
+    'rm -rf ~/.ssh',
+    'rm -rf $HOME/.aws',
+    'rm -rf "$HOME/.ssh"',
     'rm ~/.config/gh/hosts.yml',
     'rm .env',
     'rm -f .env.production',
@@ -118,7 +123,7 @@ test('deleting a credential file, a keychain entry or a login is denied', async 
   await assertDenied(['security delete-generic-password -s x', 'security delete-keychain login'], /keychain/);
   await assertDenied(['gh auth logout'], /gh auth logout/);
   await assertDenied(['chezmoi destroy ~/.zshrc', 'chezmoi forget ~/.zshrc'], /chezmoi/);
-  await assertAllowed(['cat .env', 'rm .environment-notes', 'rm keyboard.txt', 'gh auth status']);
+  await assertAllowed(['cat .env', 'rm .environment-notes', 'rm keyboard.txt', 'rm .sshconfig-notes', 'gh auth status']);
 });
 
 test('a command word in quoted text or a heredoc body is not a command', async () => {
