@@ -17,8 +17,24 @@ Any fixed list of "distinctive fonts" becomes next year's cliché, and a categor
 1. **Inspect the repository first.** Find existing `@font-face` rules, font links or imports, font packages, brand CSS, and loading conventions. Existing fonts are evidence, not a veto: inside the redesign's scope, judge whether the existing face supports the direction's type spec — extend it when it does, replace it with a verified, loadable face when it does not.
 2. **Write the type spec.** From Phase 1, name three to five observable traits: serif construction, width, stroke contrast, terminal shape, x-height, and era or tradition. Tie each trait to one subject observation.
 3. **Translate those traits into search vocabulary** in the subject's own words rather than its product category.
-4. **Run the candidate gate.** Do not name a new typeface from memory. Encode the spec as JSON — including allowed licenses and delivery modes — and run `scripts/font-candidates.mjs`, saving its successful stdout unchanged as `font-candidates.json` beside the contract files, outside the repository; a constraint the provider cannot enforce excludes candidates or restricts the run rather than warning, and the choice is made only from the returned eligible set, recording family, candidate ID, provider, and the selected load mode and source in the contract, where `--check --candidates` verifies them. When the script reports unavailable, retry with `--source fontsource`; when that also fails, the choice set is the repository's loaded faces, with the blocking constraint recorded, and a system stack is a recorded gap to replace, never a finished display choice — never a remembered family. A brand that owns a banned family passes `--allow-overused` and records that provenance in the contract.
-5. **Vet the winner:** require only the weights or axes the selected roles use, never rejecting a suitable display face for exposing fewer unused ones. Then verify separately: true italics, not slants; tabular and lining figures if it will set data; language coverage for the audience; and that it holds up at text sizes rather than display-only. Confirm the face actually loads in the build — a repository asset, the project's existing hosted-font convention, or a file this change adds; a face the page cannot load is not a choice. A platform or system face is the fallback choice only where repository, network, licensing, or delivery constraints block adding a suitable font; record the blocking constraint.
+4. **Run the candidate gate.**
+   - Do not name a new typeface from memory.
+   - Encode the spec as JSON, including allowed licenses and delivery modes, and run `scripts/font-candidates.mjs`.
+   - Save its successful stdout unchanged as `font-candidates.json` beside the contract files, outside the repository.
+   - A constraint the provider cannot enforce excludes candidates or restricts the run rather than warning.
+   - Choose only from the returned eligible set, recording family, candidate ID, provider, and the selected load mode and source in the contract, where `--check --candidates` verifies them.
+   - When the script reports unavailable, retry with `--source fontsource`.
+   - When that also fails, the choice set is the repository's loaded faces, with the blocking constraint recorded.
+   - A system stack is a recorded gap to replace, never a finished display choice, and never a remembered family.
+   - A brand that owns a banned family passes `--allow-overused` and records that provenance in the contract.
+5. **Vet the winner.**
+   - Require only the weights or axes the selected roles use, never rejecting a suitable display face for exposing fewer unused ones.
+   - Verify true italics, not slants.
+   - Verify tabular and lining figures if it will set data.
+   - Verify language coverage for the audience.
+   - Verify it holds up at text sizes rather than display-only.
+   - Confirm the face actually loads in the build: a repository asset, the project's existing hosted-font convention, or a file this change adds; a face the page cannot load is not a choice.
+   - A platform or system face is the fallback choice only where repository, network, licensing, or delivery constraints block adding a suitable font; record the blocking constraint.
 6. **Define fallback behavior.** Name a tested system fallback stack per role and a `font-display` policy consistent with repository conventions; claim metric compatibility only where measurement establishes it. In the Phase 5 render, verify from `scripts/inspect-styles.mjs` `font_render_check` that the chosen face loaded rather than its fallback — only platform-font evidence grades `definite` — and that layout survives the fallback stack; CSS declarations alone confirm nothing.
 
 A face outside the candidate set is valid only with repository or explicit-brief provenance, recorded in the contract; provenance, not motive, is what the critique checks.
