@@ -89,7 +89,7 @@ A guard is a `PreToolUse` hook that refuses a call before it runs and tells Clau
 | Output | A known-verbose build, test or log command that prints all its output, and a whole-file shell read over the byte cap; the reason gives the bounded form. |
 | Detach | A process launched with `&`, `nohup`, `disown` or `setsid`, which outlives the session; use the Bash tool's `run_in_background`. |
 | Destructive | A command that deletes a container, volume, database or credential. |
-| Git | A force push, `reset --hard`, `clean -f`, a force-delete of a branch with unlanded commits, a stash drop or clear, and a checkout or restore of the whole tree. |
+| Git | A force push, `reset --hard`, `clean -f`, a force-delete of a branch with unlanded changes, a stash drop or clear, and a checkout or restore of the whole tree. |
 | Secrets | A shell read of a path your `Read(...)` deny entries protect. |
 | Writing | AI attribution in a commit message, pull request text or new branch name, and a commit subject that is not a Conventional Commit. |
 

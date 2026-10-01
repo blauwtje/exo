@@ -66,7 +66,7 @@ const ARGUMENT_RULES = [
 
 const WHOLE_TREE_REASON = 'git-guard: checking out or restoring the whole tree discards uncommitted work. Name the files, or ask the user.';
 const BRANCH_FORCE_DELETE_REASON = 'git-guard: force-deleting a branch discards unmerged work. Report the branch and ask the user.';
-const BRANCH_UNRESOLVED_REASON = 'git-guard: force-deleting a branch discards unmerged work; only a branch whose commits are all in the branch it was cut from, or whose pull request is MERGED, may go. Report the branch and ask the user.';
+const BRANCH_UNRESOLVED_REASON = 'git-guard: force-deleting a branch discards unmerged work; only a branch whose commits are all in the branch it was cut from, whose merge into it would change nothing, or whose pull request is MERGED, may go. Report the branch and ask the user.';
 
 const WHOLE_TREE_PATH = /^(?:[ \t]+[^ \t]+)*[ \t]+(?:--[ \t]+)?[.*](?:[ \t]|$)/;
 // `git restore --staged .` only unstages. Adding `--worktree` makes the same
@@ -114,7 +114,8 @@ function branchExists(directory, branch) {
 // Returns the branch `branch` was cut from (its upstream, or `main` when it has
 // none or tracks its own push target) and its commits whose patch is not in that
 // base, one `<hash> <subject>` each. `git cherry` compares patch ids, so a commit
-// rebased before it landed counts as in. Returns null when the base does not
+// rebased before it landed counts as in, and a branch whose content landed as a
+// squash commit has none missing. Returns null when the base does not
 // resolve, as in a repository whose default branch is not `main`.
 function missingCommits(directory, branch) {
   let base;
@@ -127,9 +128,24 @@ function missingCommits(directory, branch) {
   try {
     const cherry = git(directory, 'cherry', '-v', '--abbrev=7', base, `refs/heads/${branch}`);
     const commits = cherry.split('\n').filter((line) => line.startsWith('+ ')).map((line) => line.slice(2));
+    if (commits.length > 0 && contentLanded(directory, base, branch)) return { base, commits: [] };
     return { base, commits };
   } catch {
     return null;
+  }
+}
+
+// A squash merge lands a branch's content under new patch ids, so `git cherry`
+// still lists its commits. When merging the branch into its base yields the
+// base's own tree, every change on it is already there. A conflict or a git
+// older than 2.38, which lacks `merge-tree --write-tree`, throws and counts as
+// not landed.
+function contentLanded(directory, base, branch) {
+  try {
+    const merged = git(directory, 'merge-tree', '--write-tree', base, `refs/heads/${branch}`).split('\n')[0];
+    return merged === git(directory, 'rev-parse', `${base}^{tree}`);
+  } catch {
+    return false;
   }
 }
 
@@ -167,8 +183,8 @@ function parseBranchArguments(argumentText) {
   return { deletes, forces, branches };
 }
 
-// Force-deleting a branch is allowed only when every commit on it is already in
-// the branch it was cut from, or when its pull request is MERGED. `git` and `gh`
+// Force-deleting a branch is allowed only when every commit or every change on it
+// is already in the branch it was cut from, or when its pull request is MERGED. `git` and `gh`
 // run in the `-C` directory when the invocation names one.
 function branchDeleteReason(invocation) {
   const { deletes, forces, branches } = parseBranchArguments(invocation.arguments);

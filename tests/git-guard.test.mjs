@@ -210,6 +210,27 @@ test('force-deleting a branch is allowed when its commits are in main or its pul
   assert.match(await reason(`git -C ${root} branch -D squashed`, { ghState: 'OPEN' }), /not in main yet/);
 });
 
+test('force-deleting a branch whose content landed as a squash commit is allowed, an extra or conflicting change is not', async () => {
+  const root = await repository();
+  for (const branch of ['landed', 'extra', 'conflicting']) {
+    git(root, 'switch', '-q', '-c', branch, 'main');
+    await commitFiles(root, { [`${branch}.txt`]: 'one\n' }, `add ${branch}`);
+    await commitFiles(root, { [`${branch}.txt`]: 'two\n' }, `change ${branch}`);
+  }
+  git(root, 'switch', '-q', 'main');
+  for (const branch of ['landed', 'extra', 'conflicting']) {
+    git(root, 'merge', '-q', '--squash', branch);
+    git(root, 'commit', '-q', '-m', `squash ${branch}`);
+  }
+  await commitFiles(root, { 'conflicting.txt': 'main\n' }, 'change conflicting on main');
+  git(root, 'switch', '-q', 'extra');
+  await commitFiles(root, { 'extra.txt': 'three\n' }, 'change extra again');
+  git(root, 'switch', '-q', 'main');
+  await assertAllowed([`git -C ${root} branch -D landed`]);
+  assert.match(await reason(`git -C ${root} branch -D extra`), /force-deleting extra discards commits not in main yet/);
+  assert.match(await reason(`git -C ${root} branch -D conflicting`), /force-deleting conflicting discards commits not in main yet/);
+});
+
 test('a missing branch is denied by name without asking gh, and an unresolved base still asks gh', async () => {
   const root = await repository();
   assert.match(await reason(`git -C ${root} branch -D nope`, { ghState: 'MERGED' }), /no branch named nope here/);
