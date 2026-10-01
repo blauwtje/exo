@@ -33,8 +33,8 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
 
-test('the workspace question offers a branch, a worktree and the current branch, recommended first', () => {
-  // The three-item menu and its two recommended-first orders now live in
+test('the workspace question offers a branch, a worktree and the current branch, lettered with the recommended one as A', () => {
+  // The three-item lettered menu and its two orders, A recommended, now live in
   // lib/workspace.mjs, exercised against real temporary git repositories by
   // tests/workspace.test.mjs's 'ask: workspace setting "ask" on the default
   // branch prints the menu, branch first' and 'ask: --current-recommended

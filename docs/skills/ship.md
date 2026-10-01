@@ -8,7 +8,7 @@ When `build` or `find-cause` has committed a change, and when you ask to push, o
 
 ## What you get
 
-- One overview and one question; the route you pick runs to its end with no follow-up command.
+- One overview and one lettered question with the recommended route as A, answered by its letter; the route you pick runs to its end with no follow-up command.
 - A check wait bounded at 20 minutes, then a merge only when the GitHub API reads the pull request as clean with every check passed, confirmed merged before it is reported.
 - A red check, a failed gate or a timeout leaves the pull request open, with the reason in the report.
 - No branch deletion, no forced merge and no release: those stay yours or the repository workflow's.

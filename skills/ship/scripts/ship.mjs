@@ -136,16 +136,28 @@ function ghAuthOk() {
   return runGh(['auth', 'status']).ok;
 }
 
-// The question shape allows three options; a plain push stays reachable
-// through the `ship=push` setting.
+// A single pick in the lettered shape of route-skills/references/question.md; a
+// plain push stays reachable through the `ship=push` setting.
 const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
 const MENU_FULL = [
+  '**1 · Where should the commits go?**',
   NO_ANSWER,
-  '1. **PR + merge (Recommended)**: push, open a pull request, merge it once checks pass',
-  '2. **Open PR**: push and open a pull request, leave it open',
-  '3. **Keep local**: nothing leaves this machine'
+  '',
+  '- **A · PR + merge**: push, open a pull request, merge it once checks pass',
+  '- **B · Open PR**: push and open a pull request, leave it open',
+  '- **C · Keep local**: nothing leaves this machine',
+  '',
+  '→ A. The pull request is merged only once its checks pass.'
 ];
-const MENU_PUSH_ONLY = [NO_ANSWER, '1. **Push (Recommended)**: push the commits to origin', '2. **Keep local**: nothing leaves this machine'];
+const MENU_PUSH_ONLY = [
+  '**1 · Where should the commits go?**',
+  NO_ANSWER,
+  '',
+  '- **A · Push**: push the commits to origin',
+  '- **B · Keep local**: nothing leaves this machine',
+  '',
+  '→ A. The commits are safe on origin.'
+];
 
 /** Why a set `ship` route other than `push` cannot run yet, or null when it can. */
 function setRouteBlocked(onDefault, ghOk) {

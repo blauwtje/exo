@@ -112,18 +112,24 @@ test('ask: workspace setting "ask" on the default branch prints the menu, branch
   const result = await runWorkspace(['--repository', root]);
   const lines = result.stdout.trimEnd().split('\n');
   assert.equal(lines[0], 'ask');
-  assert.match(lines[1], /^1\. \*\*Branch \(Recommended\)\*\*/);
-  assert.match(lines[2], /^2\. \*\*Worktree\*\*/);
-  assert.match(lines[3], /^3\. \*\*Current branch\*\*/);
+  assert.equal(lines[1], '**1 · Where should the commits go?**');
+  assert.equal(lines[3], '');
+  assert.match(lines[4], /^- \*\*A · Branch\*\*/);
+  assert.match(lines[5], /^- \*\*B · Worktree\*\*/);
+  assert.match(lines[6], /^- \*\*C · Current branch\*\*/);
+  assert.equal(lines[7], '');
+  assert.match(lines[8], /^→ A\. /);
+  assert.equal(result.stdout.includes('Recommended'), false);
 });
 
 test('ask: --current-recommended reorders the menu, current branch first', async () => {
   const root = await gitRepository({ 'README.md': 'root\n' });
   const result = await runWorkspace(['--repository', root, '--current-recommended']);
   const lines = result.stdout.trimEnd().split('\n');
-  assert.match(lines[1], /^1\. \*\*Current branch \(Recommended\)\*\*/);
-  assert.match(lines[2], /^2\. \*\*Branch\*\*/);
-  assert.match(lines[3], /^3\. \*\*Worktree\*\*/);
+  assert.match(lines[4], /^- \*\*A · Current branch\*\*/);
+  assert.match(lines[5], /^- \*\*B · Branch\*\*/);
+  assert.match(lines[6], /^- \*\*C · Worktree\*\*/);
+  assert.match(lines[8], /^→ A\. /);
 });
 
 test('--pick branch: switches to a new branch and reports it', async () => {
@@ -190,7 +196,7 @@ test('ask: the current-branch line names the resolved default branch, not the pl
   const root = await gitRepository({ 'README.md': 'root\n' });
   const result = await runWorkspace(['--repository', root]);
   const lines = result.stdout.trimEnd().split('\n');
-  assert.equal(lines[3], '3. **Current branch**: commit onto main');
+  assert.equal(lines[6], '- **C · Current branch**: commit onto main');
 });
 
 test('ask, not commit-here HEAD: a detached checkout is treated as no branch', async () => {
