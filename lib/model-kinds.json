@@ -12,9 +12,9 @@
   },
   "kinds": {
     "build": { "tier": "standard", "effort": "high" },
-    "hardest": { "tier": "strong", "effort": "xhigh" },
+    "hardest": { "tier": "strong", "effort": "high" },
     "review": { "tier": "standard", "effort": "high" },
-    "review-deep": { "tier": "strong", "effort": "xhigh" },
+    "review-deep": { "tier": "strong", "effort": "high" },
     "investigate": { "tier": "standard", "effort": "high" },
     "coordinate": { "tier": "standard", "effort": "medium" },
     "research": { "tier": "standard", "effort": "medium" },

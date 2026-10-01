@@ -36,7 +36,7 @@ test('every kind resolves through the claude block to a model and an effort or n
     'build', 'chore', 'coordinate', 'handover', 'hardest', 'investigate',
     'lookup', 'prose', 'research', 'review', 'review-deep'
   ]);
-  assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'xhigh' });
+  assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'high' });
   assert.deepEqual(table.kinds.build, { model: 'sonnet', effort: 'high' });
   assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: null });
   assert.deepEqual(table.kinds.handover, { model: 'inherit', effort: null });
@@ -48,7 +48,7 @@ test('the raw table names a tier and a neutral effort per kind, and the claude b
   assert.deepEqual(raw.providers.claude.tiers, { strong: 'opus', standard: 'sonnet', fast: 'haiku' });
   assert.deepEqual(raw.providers.claude.models, ['fable', 'opus', 'sonnet', 'haiku']);
   assert.deepEqual(Object.keys(raw.providers.claude.efforts), ['low', 'medium', 'high', 'xhigh', 'max']);
-  assert.deepEqual(raw.kinds.hardest, { tier: 'strong', effort: 'xhigh' });
+  assert.deepEqual(raw.kinds.hardest, { tier: 'strong', effort: 'high' });
   assert.deepEqual(raw.kinds.lookup, { tier: 'fast', effort: null });
 });
 
@@ -61,7 +61,7 @@ test('the reader resolves a kind through whichever provider block is active', ()
       efforts: { low: 'l', medium: 'm', high: 'h', xhigh: 'xh', max: 'x' }
     };
   })();
-  assert.deepEqual(resolved.kinds.hardest, { model: 'big', effort: 'xh' });
+  assert.deepEqual(resolved.kinds.hardest, { model: 'big', effort: 'h' });
   assert.deepEqual(resolved.kinds.lookup, { model: 'small', effort: null });
 });
 
