@@ -49,7 +49,6 @@ skills/build/references/wave-worktrees.md	sentence	First run `git -C <root> stat
 skills/build/references/wave-worktrees.md	bullet	4	**Remove.** For each folder the run made
 skills/build/references/workspace.md	sentence	Ask where a code-changing run commits be
 skills/build/references/workspace.md	sentence	Otherwise run `node "${CLAUDE_SKILL_DIR}
-skills/configure/SKILL.md	sentence	**Ask the value** once the setting is kn
 skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
 skills/design-ui/SKILL.md	sentence	A full or bounded redesign fails when th
 skills/design-ui/SKILL.md	bullet	3	This skill owns visual decisions only. W
@@ -86,10 +85,6 @@ skills/design-ui/references/implementation.md	sentence	Pad every screen-anchored
 skills/design-ui/references/implementation.md	sentence	When a critique tell removes decoration,
 skills/design-ui/references/implementation.md	sentence	Run `scripts/check-ui.mjs` with `--sourc
 skills/design-ui/references/intake.md	bullet	6	Rungs 3 and 7 of `## Route` offer the pr
-skills/design-ui/references/intake.md	sentence	It names the decision, which direction t
-skills/design-ui/references/intake.md	sentence	On option B, or an exit 3, no visual que
-skills/design-ui/references/intake.md	sentence	Full comps through `pick.mjs` are built
-skills/design-ui/references/intake.md	bullet	3	Scope, content, data and behavior are te
 skills/design-ui/references/intake.md	bullet	4	A planning turn routes by `## Route` and
 skills/design-ui/references/intake.md	sentence	On option A it runs the sketch tab under
 skills/design-ui/references/intake.md	sentence	The exception is a read-only planning mo
@@ -170,7 +165,6 @@ skills/route-skills/SKILL.md	sentence	No skill for a version-only bump, a git-
 skills/route-skills/references/code-standard.md	bullet	3	**Readability**: explicit data and contr
 skills/route-skills/references/code-standard.md	bullet	3	**Complete behavior**: follow convention
 skills/route-skills/references/context.md	sentence	No message between the steps of a run bu
-skills/route-skills/references/next-stage.md	bullet	4	**One lettered pick.** The question foll
 skills/route-skills/references/project-structure.md	bullet	3	Files and folders kebab-case; symbols pe
 skills/save-session/SKILL.md	sentence	On a branch other than the repository's
 skills/save-session/SKILL.md	sentence	`## Current state` separates what is sav
@@ -181,7 +175,6 @@ skills/ship/SKILL.md	bullet	4	**Route.** `node "${CLAUDE_SKILL_DIR}/sc
 skills/ship/references/pr-prep.md	bullet	6	`## Verification`: each real run path an
 skills/spec/SKILL.md	bullet	4	**Gate.** Spec always ends on a brief; w
 skills/spec/SKILL.md	bullet	5	**Sort each point.** Every open decision
-skills/spec/SKILL.md	bullet	4	**Ask in rounds.** Ask per `../route-ski
 skills/spec/references/architecture-sketch.md	sentence	Re-sketch only on a repeated pattern of
 skills/spec/references/brief-in-an-issue.md	sentence	`issues` creates one GitHub issue whose
 skills/spec/references/brief-in-an-issue.md	sentence	The setting is the authorization, so no

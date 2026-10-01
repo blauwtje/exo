@@ -17,10 +17,9 @@ argument-hint: <outcome to shape>
    A decision the user left undecided stays open whatever the code suggests.
    A point the user would not notice goes in its task's `Data:`.
    Name the owning layer and a smaller alternative.
-3. **Ask one at a time.** Ask per `../route-skills/references/question.md`: one question per message, the next only while one is still open.
-   Decide nothing silently.
+3. **Ask one at a time.** Ask per `../route-skills/references/question.md`: one question per message, the next only while one is still open, and decide nothing silently.
    Then close with one to three lines on what was agreed; the brief follows the user's yes.
-   After a compaction: list decisions first.
+   - After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
 5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`. Plan mode: tree-unchanged commands only — an edit-needing proof is the first task.
 6. **Store it** per the session's `exo settings:` `specs` value, `docs` when absent (plan mode: the harness's plan file); name its location.
