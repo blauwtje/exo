@@ -5,6 +5,8 @@
 // `Plan-task: <plan-id>/<n>` commit never runs its Proof here either.
 
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
@@ -261,4 +263,34 @@ test('the run ends on every task and the plan\'s manual checks', async () => {
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.deepEqual(result.stdout.trim().split('\n').slice(-3), ['DONE Task 1: feat(app): greet', 'OPEN Task 2: feat(app): wave', 'MANUAL Click the badge in the task list.']);
+});
+
+test('per-task Proofs overlap, at most 3 at once, and print in task order', async () => {
+  // Each Proof logs +/- around a pause, so the log's running sum is how many ran at once.
+  // The log sits outside the checkout, or the stray-path check would flag it.
+  const logPath = path.join(await mkdtemp(path.join(tmpdir(), 'verify-gate-')), 'log.txt');
+  const proof = (delay) => `node -e "const fs=require('fs');fs.appendFileSync('${logPath}','+\\\\n');setTimeout(()=>{fs.appendFileSync('${logPath}','-\\\\n')},${delay})"`;
+  const tasks = [500, 300, 300, 50, 50].flatMap((delay, index) => [
+    `### Task ${index + 1}: feat(app): step ${index + 1}`,
+    `Depends on: none | Files: \`src/app.js\` | Data: none | Proof: ${proof(delay)}`,
+    ''
+  ]);
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': ['## Plan basis', '', 'Repository: .', 'Branch: main', '', ...tasks].join('\n'),
+    'check.js': CLEAN_CHECK
+  });
+  for (let number = 1; number <= 5; number += 1) landTask(root, number);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 5), ['PASS Task 1', 'PASS Task 2', 'PASS Task 3', 'PASS Task 4', 'PASS Task 5']);
+  const events = (await readFile(logPath, 'utf8')).trim().split('\n');
+  let running = 0;
+  let peak = 0;
+  for (const event of events) {
+    running += event === '+' ? 1 : -1;
+    peak = Math.max(peak, running);
+  }
+  assert.equal(peak, 3);
 });

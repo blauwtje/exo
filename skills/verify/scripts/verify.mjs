@@ -18,7 +18,7 @@
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` prints UNRUN, not PASS,
 // and does not fail.
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs, { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import process from 'node:process';
@@ -31,6 +31,8 @@ const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
 const DEFAULT_LAND_GATE = 'npm run check';
 // A Proof that starts the test suite: `npm test` or `node --test ...`.
 const TEST_SUITE_PROOF = /^(npm test|node --test)( |$)/;
+// Per-task Proofs spawned at once; a few overlap without starving the machine.
+const PROOF_CONCURRENCY = 3;
 const BACKTICKED_COMMAND = /`([^`]+)`/;
 // A Proof: value that carries a backtick reads as prose describing the
 // check (for example "npm run validate, whose output holds no `[FAIL]`
@@ -72,8 +74,29 @@ export function manualChecks(frame) {
 }
 
 function runCommand(command) {
-  const result = spawnSync(command, { shell: true, encoding: 'utf8' });
-  return { ok: result.status === 0, output: `${result.stdout ?? ''}${result.stderr ?? ''}` };
+  return new Promise((resolve) => {
+    const child = spawn(command, { shell: true });
+    let output = '';
+    child.stdout.on('data', (chunk) => { output += chunk; });
+    child.stderr.on('data', (chunk) => { output += chunk; });
+    child.on('error', () => resolve({ ok: false, output }));
+    child.on('close', (code) => resolve({ ok: code === 0, output }));
+  });
+}
+
+/** `items` mapped through the async `work`, at most `limit` running at once, results in item order. */
+async function mapLimited(items, limit, work) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await work(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 /**
@@ -82,7 +105,7 @@ function runCommand(command) {
  * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
  */
-export function runGate(planText, { planPath, checkCommand, root = process.cwd(), base } = {}) {
+export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
   const landed = new Set(landedTasks(plan.tasks, root, planIdOf(planPath)));
@@ -92,11 +115,12 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
   const gateCommand = checkCommand ?? landGateNone ?? criterionCommand(frame.successCriterion) ?? frame.landGate ?? DEFAULT_LAND_GATE;
   const gateSkipped = gateCommand === 'none';
 
+  const proofRuns = [];
   for (const task of plan.tasks) {
     if (!landed.has(task.number) || task.proof === null) continue;
     const command = runnableProof(task.proof);
     if (command === null) {
-      lines.push(`SKIP Task ${task.number} (Proof: not a single \`command\`)`);
+      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: not a single \`command\`)` });
       continue;
     }
     // A Proof that is the gate command, or runs the test suite under the default
@@ -104,18 +128,28 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
     // custom gate may run no tests, so a suite Proof still runs under it.
     const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && TEST_SUITE_PROOF.test(command);
     if (!gateSkipped && (command === gateCommand || suiteUnderDefault)) {
-      lines.push(`SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)`);
+      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
     }
-    const { ok } = runCommand(command);
-    lines.push(`${ok ? 'PASS' : 'FAIL'} Task ${task.number}`);
-    failed ||= !ok;
+    proofRuns.push({ number: task.number, command });
   }
+
+  // Proofs run up to PROOF_CONCURRENCY at once; their lines keep task order.
+  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.skipLine ? null : runCommand(run.command)));
+  proofRuns.forEach((run, index) => {
+    if (run.skipLine) {
+      lines.push(run.skipLine);
+      return;
+    }
+    const { ok } = proofResults[index];
+    lines.push(`${ok ? 'PASS' : 'FAIL'} Task ${run.number}`);
+    failed ||= !ok;
+  });
 
   if (gateSkipped) {
     lines.push('UNRUN success-criterion (Land gate: none)');
   } else {
-    const { ok: checkOk, output } = runCommand(gateCommand);
+    const { ok: checkOk, output } = await runCommand(gateCommand);
     // The SUMMARY convention binds only exo's own default gate; a plan that
     // names its own Land gate is judged on that command's exit status alone,
     // since another project's check never prints exo's SUMMARY line.
@@ -138,19 +172,19 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
   return { lines, failed };
 }
 
-function main(argv) {
+async function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
   const planText = fs.readFileSync(flags.plan, 'utf8');
   if (flags.root !== undefined) process.chdir(flags.root);
-  const { lines, failed } = runGate(planText, { planPath: flags.plan, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
+  const { lines, failed } = await runGate(planText, { planPath: flags.plan, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
   process.stdout.write(`${lines.join('\n')}\n`);
   if (failed) process.exitCode = 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
-    main(process.argv.slice(2));
+    await main(process.argv.slice(2));
   } catch (error) {
     if (error instanceof UsageError) {
       process.stderr.write(`verify: ${error.message}\n`);
