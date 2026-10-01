@@ -11,10 +11,8 @@
 // Prints one line per rewritten file as `<path> <count>`.
 
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 
 /** The skill folder, its docs page or its pressure folder is missing or already taken. */
 export class RenameError extends Error {}
@@ -102,7 +100,7 @@ function main(argv) {
   process.stdout.write(rows.map((row) => `${row.path} ${row.count}`).join('\n') + (rows.length > 0 ? '\n' : ''));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

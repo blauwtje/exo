@@ -12,12 +12,11 @@
 //
 // A fault never blocks a prompt: any error exits 0 with nothing on stdout.
 
-import fs from 'node:fs';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { SCHEMA, settingValue } from '#settings-store';
 import { ARTICLE_LIMIT, readTerseState, writeTerseState } from '#terse-feedback';
+import { isMain } from '#script-flags';
 
 const EXPANSION_INSTRUCTION =
   'The user sent a lone "?": restate your last reply in full sentences, with every step, reason and term written out, and no shortened wording.';
@@ -70,7 +69,7 @@ export function expandReply(hookInput) {
   return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext } };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     const output = expandReply(JSON.parse(await readHookText()));
     if (output !== null) process.stdout.write(`${JSON.stringify(output)}\n`);

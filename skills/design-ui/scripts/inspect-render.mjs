@@ -18,11 +18,10 @@
 
 import fs from 'node:fs/promises';
 import process from 'node:process';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { inflateSync } from 'node:zlib';
 
 import { parseFlags, UsageError } from './capture.mjs';
+import { isMain } from '#script-flags';
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const CHANNELS = { 0: 1, 2: 3, 3: 1, 6: 4 };
@@ -823,7 +822,7 @@ async function main(argv) {
   })}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

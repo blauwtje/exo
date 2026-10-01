@@ -8,10 +8,8 @@
 // deadline; exit 1 is a bad argument.
 
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 
 const DEFAULT_TIMEOUT_SECONDS = 540;
 const POLL_INTERVAL_MS = 5000;
@@ -52,7 +50,7 @@ async function main(argv) {
   process.stdout.write(`${flags.report.join('\n')}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     await main(process.argv.slice(2));
   } catch (error) {

@@ -12,10 +12,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { readFileSync, realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
 import { isOverusedFamily, loadOverusedFonts } from './overused-fonts.mjs';
+import { isMain } from '#script-flags';
 
 const SOURCE_EXTENSIONS = new Set([
   '.css', '.scss', '.html', '.htm', '.js', '.jsx', '.mjs', '.ts', '.tsx', '.vue', '.svelte', '.astro'
@@ -1658,7 +1658,7 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

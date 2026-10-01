@@ -15,12 +15,11 @@
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 import { landedTasks, parsePlan, planIdOf, readyTasks } from '#plan-tasks';
+import { isMain } from '#script-flags';
 
 const MARKER_LIFETIME_MS = 6 * 60 * 60 * 1000;
 
@@ -104,7 +103,7 @@ export function waitOutput(input) {
 
 const OUTPUTS = { stop: stopOutput, wait: waitOutput };
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   const command = process.argv[2];
   const output = OUTPUTS[command];
   if (output === undefined) {

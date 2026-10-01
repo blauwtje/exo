@@ -20,9 +20,9 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { constants as fsConstants, readFileSync, realpathSync } from 'node:fs';
+import { constants as fsConstants, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { environmentMs, parseFlags, UsageError } from '#script-flags';
+import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 
 export const DISCOVERY_DISABLED_ENV = 'UI_DESIGN_TEST_DISABLE_BROWSER_DISCOVERY';
 
@@ -736,7 +736,7 @@ async function main(argv) {
   for (const record of records) process.stdout.write(`${JSON.stringify(record)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

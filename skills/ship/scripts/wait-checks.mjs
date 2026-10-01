@@ -15,11 +15,9 @@
 
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
-import { UsageError, parseFlags } from '#script-flags';
+import { UsageError, parseFlags, isMain } from '#script-flags';
 
 // ship's SKILL.md states these two figures; the shared contracts check pins
 // that text to these exports.
@@ -145,6 +143,6 @@ async function main() {
   process.exitCode = GH_ERROR_EXIT;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   await main();
 }

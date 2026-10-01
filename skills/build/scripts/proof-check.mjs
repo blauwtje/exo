@@ -12,11 +12,10 @@
 // the turn then ends to wait. A hook failure never blocks the turn.
 
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
+import { isMain } from '#script-flags';
 
 const BUILD_SKILL = /(^|:)build$/i;
 const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
@@ -212,7 +211,7 @@ export function stopOutput(input) {
 
 const OUTPUTS = { stop: stopOutput };
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   const command = process.argv[2];
   const output = OUTPUTS[command];
   if (output === undefined) {

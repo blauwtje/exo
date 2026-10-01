@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { readHookText } from '#hook-input';
 import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
 
@@ -141,7 +141,19 @@ export function delegateBudget(hookInput) {
   return null;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+/** True when this file is the process entry, the check `isMain` in
+ *  lib/script-flags.mjs makes. Kept local because the guard's tests run a
+ *  plugin copy that carries only the lib files it imports; importing
+ *  `#script-flags` here means adding that file to the copy. */
+function isMain(moduleUrl) {
+  try {
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain(import.meta.url)) {
   let inputText;
   try {
     inputText = await readHookText();

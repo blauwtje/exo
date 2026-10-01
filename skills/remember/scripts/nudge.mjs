@@ -20,9 +20,10 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { readHookText } from '#hook-input';
 import { appendNudgeLog, nudgeLogFile } from '#memory-store';
+import { isMain } from '#script-flags';
 
 const MEMORY_SCRIPT = fileURLToPath(new URL('./memory.mjs', import.meta.url));
 const BOOK_COMMAND = `node "${MEMORY_SCRIPT}" book`;
@@ -149,7 +150,7 @@ function stats(cwd) {
   for (const [marker, count] of ranked) console.log(`  ${marker}: ${count}`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     const { values, positionals } = parseArgs({ allowPositionals: true, options: { cwd: { type: 'string' } } });
     if (positionals[0] === 'stats') {

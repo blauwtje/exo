@@ -6,12 +6,12 @@
 //                                --url <file:// or http:// url> [--source <dir>]
 
 import { execFile } from 'node:child_process';
-import { realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { parseFlags, requireUrl, UsageError } from './capture.mjs';
+import { isMain } from '#script-flags';
 
 const STAGES = ['baseline', 'post-build', 'final'];
 const VIEWPORTS = ['390x844', '1440x900'];
@@ -229,7 +229,7 @@ async function main(argv) {
   if (result.failed.length > 0) process.exitCode = 1;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

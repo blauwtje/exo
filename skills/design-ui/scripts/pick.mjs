@@ -48,9 +48,9 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
 import { CapabilityError, parseFlags, parseViewport, readJsonFlag, UsageError } from './capture.mjs';
+import { isMain } from '#script-flags';
 
 const DEFAULT_TIMEOUT_SECONDS = 600;
 // A three-up comparison is width-bound, so the frame decides how large the
@@ -1033,7 +1033,7 @@ async function main(argv) {
   process.stdout.write(`${JSON.stringify(chosen)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

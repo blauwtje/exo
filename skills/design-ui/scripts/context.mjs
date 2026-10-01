@@ -10,9 +10,8 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from './capture.mjs';
+import { isMain } from '#script-flags';
 
 const NEED_SECTIONS = {
   product: 'Product and audience',
@@ -247,7 +246,7 @@ async function main(argv) {
   process.stdout.write(`${JSON.stringify(report)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);

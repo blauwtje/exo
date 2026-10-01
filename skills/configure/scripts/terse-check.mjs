@@ -11,13 +11,11 @@
 //
 // A fault never blocks a turn: any error exits 0 with nothing on stdout.
 
-import { realpathSync } from 'node:fs';
-import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { chatProse, scoreProse } from '#prose-density';
 import { settingValue } from '#settings-store';
 import { feedbackFor, readTerseState, writeTerseState } from '#terse-feedback';
+import { isMain } from '#script-flags';
 
 const MIN_WORDS = 25;
 
@@ -38,7 +36,7 @@ export function stopHook(hookInput) {
   return null;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     stopHook(JSON.parse(await readHookText()));
   } catch (error) {

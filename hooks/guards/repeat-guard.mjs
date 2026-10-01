@@ -23,12 +23,11 @@
 // the harness logs and shows in verbose mode; the guard never exits 2.
 
 import crypto from 'node:crypto';
-import fs from 'node:fs';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { readHookText } from '#hook-input';
 import { updateSession } from '#session-store';
 import { settingValue } from '#settings-store';
+import { isMain } from '#script-flags';
 
 // The first repeat passes; the attempt after it is denied.
 const DENY_AT = 3;
@@ -150,7 +149,7 @@ export function reset(hookInput) {
   return null;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   let inputText;
   try {
     inputText = await readHookText();

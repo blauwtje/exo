@@ -8,10 +8,8 @@
 // stays out of the session.
 
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize, waveLine } from '#plan-tasks';
 
@@ -188,7 +186,7 @@ function main(argv) {
   process.stdout.write(nextTaskReport({ planPath: flags.plan, planText, root: flags.root ?? process.cwd() }));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

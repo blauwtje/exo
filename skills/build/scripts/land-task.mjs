@@ -16,9 +16,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { exportSignatures } from '#export-signatures';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -385,7 +384,7 @@ function main(argv) {
   process.stdout.write(landTask({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan }));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

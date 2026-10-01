@@ -34,13 +34,13 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { CapabilityError, environmentMs, parseFlags, UsageError } from './capture.mjs';
 import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
 import {
   askedOfLoopback, compDocument, headlessReason, openSystemBrowser,
   readLabels, requireTimeout, resolveAsset, send, sentByOwnPage
 } from './pick.mjs';
+import { isMain } from '#script-flags';
 
 const DEFAULT_IDLE_SECONDS = 1800;
 const FOLDER_SCAN_MS = 300;
@@ -589,7 +589,7 @@ async function main(argv) {
   await serveTab(directory, words, { idleSeconds, wantsBrowser });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`sketch tab: ${error.message}\n`);

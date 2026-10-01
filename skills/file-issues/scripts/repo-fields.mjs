@@ -23,12 +23,10 @@
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { memoryDirectory } from '#memory-store';
-import { UsageError, parseFlags } from '#script-flags';
+import { UsageError, parseFlags, isMain } from '#script-flags';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -295,6 +293,6 @@ function main() {
   runRepoRead(Boolean(flags.refresh));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main();
 }

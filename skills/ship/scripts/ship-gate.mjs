@@ -15,10 +15,8 @@
 // exits 2.
 
 import { execFileSync } from 'node:child_process';
-import { realpathSync } from 'node:fs';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
-import { UsageError, parseFlags } from '#script-flags';
+import { UsageError, parseFlags, isMain } from '#script-flags';
 
 export const GH_ERROR_EXIT = 3;
 const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup';
@@ -139,6 +137,6 @@ function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main();
 }

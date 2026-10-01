@@ -32,11 +32,12 @@
 // --check names the shape and the allowed vocabulary of anything it rejects.
 
 import process from 'node:process';
-import { readFileSync, realpathSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
 import { isCream, isNearBlack, isNeon, isPurple } from './check-ui.mjs';
+import { isMain } from '#script-flags';
 
 const TOKEN = /^[a-z0-9-]+$/;
 const SEED_TOKEN = /^[A-Za-z0-9._-]+$/;
@@ -658,7 +659,7 @@ async function main(argv) {
   return selectContract(container, index, { space, candidates });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).then((report) => {
     const output = typeof report === 'string' ? report : `${JSON.stringify(report)}\n`;
     process.stdout.write(output);

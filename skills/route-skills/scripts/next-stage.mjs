@@ -8,10 +8,8 @@
 //   node next-stage.mjs --after <stage> --artifact <path>
 
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 import { readKindTable } from '#model-kinds';
 import { frameOf, parsePlan } from '#plan-tasks';
 
@@ -103,7 +101,7 @@ function main(argv) {
   process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact }));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

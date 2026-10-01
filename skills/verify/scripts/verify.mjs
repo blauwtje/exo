@@ -20,11 +20,10 @@
 // and does not fail.
 
 import { execFileSync, spawn } from 'node:child_process';
-import fs, { realpathSync } from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import process from 'node:process';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
 import { changedPaths, measureSizeFacts } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -211,7 +210,7 @@ async function main(argv) {
   if (failed) process.exitCode = 1;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     await main(process.argv.slice(2));
   } catch (error) {

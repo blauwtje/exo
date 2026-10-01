@@ -4,11 +4,9 @@
 // reviewer the caller names with --reviewer, or the numbers themselves, do.
 
 import { execFileSync } from 'node:child_process';
-import { realpathSync } from 'node:fs';
 import { basename } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { readKindTable } from '#model-kinds';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
@@ -97,7 +95,7 @@ function main(argv) {
   process.stdout.write(`${resolveReviewer({ reviewer: flags.reviewer, shortstatOutput })}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

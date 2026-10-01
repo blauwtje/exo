@@ -14,9 +14,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#script-flags';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 
 /** A copy into the run's `.exo/` failed, the `--kept` folder already exists, the worktree still holds an uncopied `.exo/` file, or git refused the removal: nothing was removed. */
 export class RemoveWorktreeError extends Error {}
@@ -99,7 +97,7 @@ function main(argv) {
   process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, force: flags.force ?? false, kept: flags.kept ?? false }));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

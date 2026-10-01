@@ -13,11 +13,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { isOverusedFamily, loadOverusedFonts } from './overused-fonts.mjs';
 import { createPrng, seededShuffle } from './seeded.mjs';
+import { isMain } from '#script-flags';
 
 const SEED_TOKEN = /^[A-Za-z0-9._-]+$/;
 const DELIVERY_MODES = ['package', 'self-hosted', 'remote-css'];
@@ -560,7 +559,7 @@ async function main(argv) {
   });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).then((report) => {
     process.stdout.write(`${JSON.stringify(report)}\n`);
   }).catch((error) => {

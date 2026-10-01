@@ -21,9 +21,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { realpathSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseFlags, UsageError } from '#script-flags';
+import { fileURLToPath } from 'node:url';
+import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, parsePlan, PlanError } from '#plan-tasks';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
@@ -110,7 +109,7 @@ function main(argv) {
   process.stdout.write(`${planPath}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

@@ -40,11 +40,10 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { UsageError, parseFlags } from '#script-flags';
+import { fileURLToPath } from 'node:url';
+import { UsageError, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
 
 export const USAGE_EXIT = 2;
@@ -446,6 +445,6 @@ function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main();
 }

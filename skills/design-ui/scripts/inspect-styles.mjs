@@ -5,9 +5,8 @@
 //   node scripts/inspect-styles.mjs --url <url> [--viewport <width>x<height>]
 
 import process from 'node:process';
-import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { BROWSER_CAPABILITIES, DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
+import { isMain } from '#script-flags';
 
 // SURVEY runs inside page.evaluate, where no CDP exists. It therefore reports
 // only the DOM-side font channels; inspect() grades them in Node afterwards.
@@ -236,7 +235,7 @@ async function main(argv) {
   process.stdout.write(`${JSON.stringify(report)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error instanceof UsageError) {
       process.stderr.write(`ui-design: ${error.message}\n`);
