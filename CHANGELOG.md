@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- Heavy runtime learning no longer learns a shell wait loop or `sleep` command, which could replay an old green result instead of waiting for CI or a log.
+- Heavy runtime learning measures a run with the tool's own `duration_ms`, so time spent on a permission prompt no longer marks a fast command as heavy.
+
+### Changed
+
+- The README and the configure skill now list every command heavy runtime learning never learns.
+
 ## 0.70.0 - 2026-10-01
 
 ### Added
