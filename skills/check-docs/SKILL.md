@@ -9,7 +9,7 @@ effort: high
 
 Confirm external behavior against the current source instead of recalling it.
 The enemy is the version-specific detail recalled with confidence, wrong in the way that compiles and fails at runtime.
-The overcorrection is researching a call the repository already makes elsewhere: working code outranks a fresh fetch.
+The overcorrection is researching a call the repository already makes elsewhere in deployed code: for what that code does today, working code outranks a fresh fetch.
 
 ## When to use
 
@@ -47,5 +47,5 @@ Write `docs/research/<library>.md` only when the user asks for a file, or a name
 ## Judgment
 
 - For what deployed code does today, the repository's working code outranks fetched docs; for code written or upgraded now, the pinned or target version's docs outrank a pattern the source marks deprecated or unsafe, and unrelated code is not modernized.
-- Never end a turn on a research pass alone. It unblocks a `spec`, `build` or `find-cause` step in progress, unless the user asked a standalone question with no code to follow.
+- Never end a turn on a research pass alone. It unblocks a `spec`, `build` or `find-cause` step in progress: hand the findings back and the step continues; a standalone question with no code to follow ends the turn on the findings, as under Output.
 - After a compaction notice, restate the facts from the delegated report or the research file, or repeat the delegated read; recollection is not research.
