@@ -15,7 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - Read, Edit, WebFetch and WebSearch calls each spawn one PreToolUse hook process, running the guards and the delegate budget together.
 - The SessionStart hook runs in Node and no longer needs `jq`.
-- The quality workflow runs on macOS and Windows as well as Linux, on the current Node.
+- The quality workflow runs on macOS as well as Linux, on the current Node.
 - The quality workflow cancels a superseded pull-request run, stops a job after 15 minutes and skips the empty `npm ci`.
 - design-ui moves body blocks into references to stay near its 2000-token aim.
 - The effort twins' descriptions shrink to one sentence naming their base agent.
