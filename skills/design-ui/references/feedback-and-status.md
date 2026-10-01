@@ -13,7 +13,26 @@ The form follows the wait the surface expects, measured under the throttling the
 - **1s to 10s** — a skeleton where the content will land, or a determinate bar where a real fraction is known. The surrounding page stays interactive unless the result invalidates it.
 - **Past 10s** — the wait needs a job of its own: progress with a changing figure, a plain statement of what is running, and a way out that leaves the data consistent. A wait past ten seconds with no exit is a trap, not a state.
 
-One rule cuts across all four. An indicator for an unpredictable wait appears no earlier than roughly 300ms, and once shown it stays for at least that long: a spinner that flashes and vanishes reads as a defect, and one that appears after the content has landed reads as a second failure. Record the threshold once per product, in a token, rather than per component.
+Three rules cut across all four durations:
+
+- An indicator for an unpredictable wait appears no earlier than roughly 300ms, and once shown it stays for at least that long.
+- A spinner that flashes and vanishes reads as a defect, and one that appears after the content has landed reads as a second failure.
+- Record the threshold once per product, in a token, rather than per component.
+
+## Provisional results
+
+A change renders before the server confirms it only when all three hold:
+
+1. The failure is recoverable in place: a rollback restores exactly the prior state, with nothing else already built on the wrong one.
+2. The result does not depend on a value only the server knows — an id, a computed total, a rank, a permission, an inventory count.
+3. The consequence of being wrong is a correction, not a loss.
+
+- Never render these as done before the response: a deletion, a payment, a transfer, a permission change, a send, or anything a regulator or an auditor would read. They wait for the response and say so while waiting.
+- Where the three conditions do not all hold, the interface waits for the response and shows that it is waiting.
+- A rolled-back change names what failed and what the value is now, in the same surface, and offers the retry (the `interaction-qa` reference owns the error wording).
+- Silent reversion teaches people to distrust every later confirmation.
+- A provisional element reads as provisional while it is in flight: reduced emphasis, a pending mark, or its action disabled. Identical treatment for "saved" and "probably saved" is what makes the rollback feel like data loss.
+- Queue provisional changes and apply them in order, because two optimistic edits resolving out of order leave the screen showing a state that never existed on either side.
 
 ## Skeletons stand in for a layout, not for content
 
@@ -22,20 +41,6 @@ One rule cuts across all four. An indicator for an unpredictable wait appears no
 - It carries no text, no fake headings, and no ellipsis. Invented placeholder words are read as content by anyone skimming, and by every screen reader.
 - Where the layout is unknown until the data arrives, use the determinate or indeterminate indicator instead: a skeleton for a shape nobody knows is a guess rendered at full opacity.
 - Under `prefers-reduced-motion: reduce` the shimmer is replaced, not deleted (the `motion` reference), because the shimmer is what distinguishes a loading block from an empty one.
-
-## Provisional results are a contract, not an optimization
-
-A change may render before the server confirms it only when all three hold:
-
-1. the failure is recoverable in place, so a rollback restores exactly the prior state with nothing else already built on the wrong one;
-2. the result does not depend on a value only the server knows — an id, a computed total, a rank, a permission, an inventory count;
-3. the consequence of being wrong is a correction, not a loss.
-
-Never provisional: a deletion, a payment, a transfer, a permission change, a send, or anything a regulator or an auditor would read. Those wait for the response and say so while waiting.
-
-- A rolled-back change names what failed and what the value is now, in the same surface, and offers the retry (the `interaction-qa` reference owns the error wording). Silent reversion teaches people to distrust every later confirmation.
-- A provisional element reads as provisional while it is in flight: reduced emphasis, a pending mark, or its action disabled. Identical treatment for "saved" and "probably saved" is what makes the rollback feel like data loss.
-- Queue provisional changes in order and apply them in order, because two optimistic edits resolving out of order leave the screen showing a state that never existed on either side.
 
 ## A transient message is a product-wide decision
 
@@ -68,4 +73,3 @@ Against the render, at Phase 5:
 - The accessibility floor outranks the visual treatment of every state here.
 - An existing repository convention for indicators and messages outranks these defaults; one convention chosen badly still beats two chosen well.
 - the `interaction-qa` reference owns which states exist; this file owns only how the reporting ones look and when they appear.
-- Waiting outranks guessing: where the three provisional conditions do not all hold, the interface waits for the response and shows that it is waiting.
