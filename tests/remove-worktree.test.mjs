@@ -95,3 +95,32 @@ test('--kept with no .exo/ files creates no folder and still removes the worktre
   assert.equal(fs.existsSync(path.join(root, '.exo', 'kept')), false);
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
+
+test('--kept turns git refusal into a RemoveWorktreeError, drops its copy and allows a retry', async () => {
+  const { root, worktree } = await runWithWorktree();
+  fs.mkdirSync(path.join(worktree, '.exo'), { recursive: true });
+  fs.writeFileSync(path.join(worktree, '.exo', 'report.md'), 'kept me\n');
+  fs.writeFileSync(path.join(worktree, 'src', 'app.js'), 'dirty\n');
+
+  assert.throws(() => removeWorktree({ worktree, run: root, kept: true }), (error) => {
+    assert.ok(error instanceof RemoveWorktreeError);
+    assert.match(error.message, /git refused to remove .*contains modified or untracked files/);
+    return true;
+  });
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'kept', path.basename(worktree))), false);
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+
+  git(worktree, 'checkout', '--', 'src/app.js');
+  removeWorktree({ worktree, run: root, kept: true });
+  assert.equal(fs.readFileSync(path.join(root, '.exo', 'kept', path.basename(worktree), 'report.md'), 'utf8'), 'kept me\n');
+});
+
+test('copies a .exo/ file whose name has a space', async () => {
+  const { root, worktree } = await runWithWorktree();
+  fs.mkdirSync(path.join(worktree, '.exo'), { recursive: true });
+  fs.writeFileSync(path.join(worktree, '.exo', 'my report.md'), 'spaced\n');
+
+  removeWorktree({ worktree, run: root });
+
+  assert.equal(fs.readFileSync(path.join(root, '.exo', 'my report.md'), 'utf8'), 'spaced\n');
+});

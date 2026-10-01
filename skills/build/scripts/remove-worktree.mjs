@@ -18,7 +18,7 @@ import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 
-/** A copy into the run's `.exo/` failed, the `--kept` folder already exists, or the worktree still holds an uncopied `.exo/` file: nothing was removed. */
+/** A copy into the run's `.exo/` failed, the `--kept` folder already exists, the worktree still holds an uncopied `.exo/` file, or git refused the removal: nothing was removed. */
 export class RemoveWorktreeError extends Error {}
 
 // Every regular file under `<root>/.exo/`, as a path relative to `.exo/`
@@ -45,11 +45,12 @@ function exoFiles(root) {
 // `--ignored=matching` lists its individual files instead of collapsing them
 // into the single `.exo/` directory entry; this reads the worktree's own
 // ignored set, the ground truth for what a plain file walk could have missed
-// (a file created mid-copy, a permission git can see but fs cannot).
+// (a file created mid-copy, a permission git can see but fs cannot). `-z`
+// keeps a name with a space or non-ASCII byte unquoted.
 function ignoredExoFiles(worktree) {
-  const status = execFileSync('git', ['-C', worktree, 'status', '--porcelain', '--ignored=matching'], { encoding: 'utf8' });
+  const status = execFileSync('git', ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=matching'], { encoding: 'utf8' });
   return status
-    .split('\n')
+    .split('\0')
     .map((line) => line.slice(3))
     .filter((entry) => entry.startsWith('.exo/') && entry !== '.exo/')
     .map((entry) => entry.slice('.exo/'.length));
@@ -78,7 +79,15 @@ export function removeWorktree({ worktree, run, force = false, kept = false }) {
     throw new RemoveWorktreeError(`'${worktree}' still holds uncopied .exo/ file(s): ${missed.join(', ')}`);
   }
   const args = ['-C', run, 'worktree', 'remove', ...(force ? ['--force'] : []), worktree];
-  execFileSync('git', args, { encoding: 'utf8' });
+  try {
+    execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    // The kept folder was created by this run (it did not exist above), so
+    // drop it: left behind it would make the retry refuse as a duplicate.
+    if (kept) fs.rmSync(destinationRoot, { recursive: true, force: true });
+    const reason = String(error.stderr ?? error.message).split('\n')[0];
+    throw new RemoveWorktreeError(`git refused to remove '${worktree}': ${reason}`);
+  }
   const target = kept ? `${destinationRoot}/` : run;
   return `Copied ${copied.length} .exo/ file(s) from '${worktree}' to '${target}'; removed '${worktree}'\n`;
 }
