@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.65.0 - 2026-10-01
+
 ### Highlights
 
 - **The default `normal` budget now runs the deep branch review, the design critique and the hardest work at `high` effort instead of `xhigh`.** Set `budget: full` to keep the previous `xhigh` setup.
