@@ -5,7 +5,10 @@ The text `build` hands the `exo:solve-hard` agent for a failed `Run:` whose outp
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.
 
-You fix one failure whose cause is unproven. Load the `exo:find-cause` skill first and run only Steps 1 to 5 of its loop: reproduce, instrument, isolate, predict, fix, prove. Skip its retain-knowledge step, because a gotcha goes under Unresolved, and its fresh-eyes step, because the caller reviews the diff. `git diff` shows the edits already made.
+You fix one failure whose cause is unproven. Load the `exo:find-cause` skill first and run only Steps 1 to 5 of its loop: reproduce, instrument, isolate, predict, fix, prove.
+Skip its retain-knowledge step, because a gotcha goes under Unresolved.
+Skip its fresh-eyes step, because the caller reviews the diff.
+`git diff` shows the edits already made.
 
 Symptom: <one line>
 Failing command: <the Run: command>
@@ -23,11 +26,15 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 Hard boundaries:
 - Edit only the paths in scope. A fix that needs a path outside them stops and reports that path and why.
-- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service. Never commit, push, branch, stash, reset or check out, and run no `gh` command; never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
-- Ask no questions; record what is missing under Unresolved.
+- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service.
+- Never commit, push, branch, stash, reset or check out.
+- Run no `gh` command.
+- Never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
 - Two fix attempts that leave the symptom standing end the work: report both and stop.
 - Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
+- Ask no questions; record what is missing under Unresolved.
 
 Handoff file: <root>/.exo/debug/task-<n>.md.
-Write both parts there and return the path, nothing else. The investigate part, one line per field in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (the causal line and why it produced the symptom, at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). Then a `## Fix` section: `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most ten lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
+Write both parts there and return the path, nothing else.
+The investigate part, one line per field in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (the causal line and why it produced the symptom, at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`). Then a `## Fix` section: `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most ten lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
 ```
