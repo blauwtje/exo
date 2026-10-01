@@ -100,9 +100,9 @@ function compactTasks(count) {
 const ACCEPTANCE_BULLET = '- An overdue task shows a badge in the warning tone.';
 const ACCEPTANCE_BULLET_WITH_CITATION = `${ACCEPTANCE_BULLET} (Task 1)`;
 
-test('plan-check prints ok for a 60-line brief with tasks, past the old 30-line compact cap', () => {
-  const brief = briefFixture({ tasks: compactTasks(15) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
-  assert.equal(brief.split('\n').length, 60);
+test('plan-check prints ok for a brief of 60 lines or more, past the old 30-line compact cap', () => {
+  const brief = briefFixture({ tasks: compactTasks(17) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
+  assert.ok(brief.split('\n').length >= 60);
   const report = planCheckReport(brief);
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok/);
@@ -122,7 +122,7 @@ test('plan-check fails a compact task whose field line lacks Proof:', () => {
   assert.ok(report.lines.some((line) => line.includes("Task 1: field line lacks 'Proof:'")));
 });
 
-test('plan-check prints ok for a brief whose Decisions, Assumptions and Acceptance sit ahead of a compact task list', () => {
+test('plan-check prints ok for a brief whose Decisions and Acceptance sit ahead of a compact task list', () => {
   const report = planCheckReport(briefFixture({ tasks: compactTasks(8) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION));
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok, 8 tasks/);

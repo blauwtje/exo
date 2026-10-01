@@ -25,7 +25,7 @@ const HANDSHAKE_SKILLS = ['spec', 'design-ui'];
 
 const PINNED_SENTENCES = {
   'skills/spec/SKILL.md': [
-    'Zero open decisions means leave this skill and write no brief',
+    'Spec always ends on a brief; with no open decision the brief still gets written.',
     'An open decision is one the user would notice that neither request nor code settles.',
     'Not for a clear goal, a failure, or visual-only work.',
   ],

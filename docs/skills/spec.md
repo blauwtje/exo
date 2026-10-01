@@ -8,17 +8,17 @@ A request names a result, or brings new wishes for work that already has a brief
 
 ## Triage before shaping anything
 
-The first thing spec checks is whether a decision is open at all. A request that settles every open, user-noticeable choice and touches at most two files goes straight to `build`, unasked, with no brief written. A request naming ordered tasks (one needs another done first) still gets a brief, because the order itself is a decision. Asked for options instead of a decision, spec lists them, recommends one, and writes nothing. New wishes for work that already has a brief, issue or plan reopen it instead of starting a second one.
+Spec always ends on a brief, even when no decision is open, and never starts `build` on its own. Asked for options instead of a decision, spec lists them, recommends one, and writes nothing. New wishes for work that already has a brief, issue or plan reopen it instead of starting a second one.
 
 ## What you get
 
-- Costly or irreversible points — a data format, a public interface, a paid service, a deletion, access or security — are asked about, always. A point answerable by running something, spec runs it and records the answer instead of asking. Everything routine or cheap-but-visible, spec decides itself and lists as an assumption you can overrule; an undecided point stays open no matter what the code shows.
-- An interview in chat, one plain question per message headed `Question 1`, `Question 2` and so on, with two or three lettered options and the recommended one first. Reply with a letter, your own words, or `ok` to take every remaining recommendation.
-- The last question also lists what exo assumes, such as a date format; your answer to it confirms everything, and the brief follows with no extra round.
+- Every choice you would notice is asked, never decided for you. A point answerable by running or reading something, spec looks up and records instead of asking; an undecided point stays open no matter what the code shows. A point you would not notice sits in its task.
+- Questions come in rounds: one message with every question that can be answered now, each with lettered options and the recommendation on A. Reply `1a 3b` to decide only those, a letter, or `ok` to take every recommendation; the open ones come back in the next round. Questions that wait on an answer come in a later round.
+- When nothing is open, spec closes with one to three lines on what was agreed, and the brief follows your yes.
 - One brief, stored where the `specs` setting points: a file under `docs/specs/`, a GitHub issue, or both.
 - Checks only you can make, such as clicking through a screen or acting in an outside account, go to the brief's short `## Manual checks` list, never into the task list; the run's final report ends with them.
 - New wishes reopen the brief you already have and edit it where it stands.
-- Once the brief is written and checked, spec hands it to `build` itself, unasked, in the same turn — no question, no separate step to ask for it. Plan mode is the exception: it ends by asking which stage comes next.
+- Once the brief is written and checked, spec ends on one pick: A adjusts the brief, B builds it in this session. Without an answer nothing starts; type `/clear` and then `/exo:build <brief>` to build in a fresh session. Plan mode ends the same way.
 
 ## Where its rules live
 

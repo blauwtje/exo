@@ -8,7 +8,6 @@ The brief holds these sections, in this order:
 
 - **Goal:** one sentence describing the observable result.
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
-- **Assumptions:** every bin-3 point as one line each, so a later correction costs one sentence.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account: one line per check, which `build` ends its final report with.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions; when the frontend-design skill returns, the path of its `contract-selected.json` with the contract's `title` and `description`.
@@ -22,7 +21,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 ## The task list
 
 - You make the split and every design choice before the list is written, because the builder runs on `sonnet` and cannot ask.
-- A choice the user would notice goes to Decisions, a routine one to Assumptions or the task's `Data:` segment.
+- A choice the user would notice goes to Decisions, a routine one the user would not notice to the task's `Data:` segment.
 - The exception is an open visual choice: its task carries `Design: design-ui`, and `build` routes it by the brief's Visual direction.
 - The heading is the commit subject the run lands the task with, so it names one concern.
 

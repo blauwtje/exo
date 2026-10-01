@@ -157,7 +157,7 @@ const SCENARIOS = [
   { name: 'spec-gate-back-to-a-file-count', mutate: (root) => replaceText(root, 'skills/spec/SKILL.md',
     'An open decision is one the user would notice that neither request nor code settles.', 'An open decision is one more file the request changes.') },
   { name: 'spec-gate-without-its-exit', mutate: (root) => replaceText(root, 'skills/spec/SKILL.md',
-    'Zero open decisions means leave this skill and write no brief', 'Zero means carry on anyway') },
+    'Spec always ends on a brief; with no open decision the brief still gets written.', 'Spec writes a brief only when a decision is open.') },
   { name: 'handshake-desync', mutate: (root) => replaceText(root, 'skills/spec/SKILL.md',
     'spec decides those first; design-ui follows for presentation',
     'spec decides these first; design-ui follows for presentation') },

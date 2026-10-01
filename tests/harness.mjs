@@ -177,7 +177,7 @@ export function compactPlanFixture({ tasks }) {
 }
 
 /** A spec brief around `tasks`: the compact frame plus the brief-only
- * `## Decisions`, `## Assumptions` and `## Acceptance` sections ahead of it,
+ * `## Decisions` and `## Acceptance` sections ahead of it,
  * per skills/spec/references/brief.md. */
 export function briefFixture({ tasks }) {
   return [
@@ -188,9 +188,6 @@ export function briefFixture({ tasks }) {
     '',
     '## Decisions',
     '- The badge tone comes from the due date alone, decided during the interview.',
-    '',
-    '## Assumptions',
-    '- No existing due-date field to reuse; the interview found none.',
     '',
     '## Acceptance',
     '- An overdue task shows a badge in the warning tone.',

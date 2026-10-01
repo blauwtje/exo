@@ -49,8 +49,7 @@ Every section is an H3, because a repository's issue form renders each of its fi
 - `### Out of scope`: what a reader would otherwise assume is included.
 - `### References`: the paths and symbols the criteria rest on, one per line.
 - `### Decided`: for a brief, one line per decision it closed, as `<decision>: <answer> (<you, code: path, or exo>)`, because later wishes reopen only the lines they touch; a brief's Decisions.
-- `### Assumptions`: one line per routine point the brief settled without asking; a brief's Assumptions.
-- A Spec no brief produced keeps `### Decided` optional, only for a constraint the user settled that the criteria do not already carry. `### Problem`, `### Proof` and `### Out of scope` are optional for every Spec, and `### Assumptions` appears only when a brief produced one.
+- A Spec no brief produced keeps `### Decided` optional, only for a constraint the user settled that the criteria do not already carry. `### Problem`, `### Proof` and `### Out of scope` are optional for every Spec.
 
 **Report**, for what needs no spec: a bug, a regression, a chore or a documentation fix.
 
