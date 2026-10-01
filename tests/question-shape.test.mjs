@@ -47,12 +47,15 @@ test('the next stage recommends continuing, and a context notice leaves the orde
   assert.ok(!NEXT_STAGE.includes('names its command, model and effort'));
 });
 
-test('design-ui offers its preview as two numbered options, the preview recommended', () => {
+test('design-ui offers its preview as a lettered single pick, the preview on A', () => {
   const intake = read('skills/design-ui/references/intake.md');
-  const preview = intake.indexOf('1. **Browser preview (Recommended)**:');
-  const decided = intake.indexOf('2. **Decide for me**:');
-  assert.ok(preview !== -1 && preview < decided, 'the preview is option 1 and deciding for the user option 2');
-  assert.ok(intake.includes('Two options in the question shape end the message'));
+  const preview = intake.indexOf('- **A · Browser preview**:');
+  const decided = intake.indexOf('- **B · Decide for me**:');
+  assert.ok(preview !== -1 && preview < decided, 'the preview is A and deciding for the user B');
+  assert.ok(!intake.includes('(Recommended)'), 'A is recommended by position, not by a tag');
+  assert.ok(intake.includes('route-skills/references/question.md'));
+  assert.ok(intake.includes('Without an answer, nothing is built.'));
+  assert.ok(!intake.includes('as assumptions, and build'), 'a one-line brief no longer builds on assumptions');
   assert.ok(intake.includes('a sketch costs about 1,000 extra tokens'), 'the offer keeps its price');
   assert.ok(intake.includes('about 3,500 extra tokens per direction'), 'full comps keep theirs');
 });
