@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// PostToolUse hook on Bash: turns the start a PreToolUse step booked into a
-// duration and keeps a test-like command that ran longer than the
+// PostToolUse hook on Bash: consumes the start a PreToolUse step booked, takes
+// the run's `duration_ms` from the hook input (time since the start without it),
+// and keeps a test-like command that ran longer than the
 // `heavy_after_seconds` setting in the runtime log (lib/runtime-log.mjs), so
 // the heavy step wraps it from the next call. 0 switches learning off. A
 // command that already matches `heavy_commands` is not recorded again. Every
@@ -18,7 +19,13 @@ function recordRuntime(hookInput) {
   if (typeof hookInput.session_id !== 'string') return;
   const thresholdSeconds = Number(settingValue('heavy_after_seconds'));
   if (!(thresholdSeconds > 0) || isListedHeavy(command)) return;
-  recordFinish({ sessionId: hookInput.session_id, command, project: projectOf(hookInput), thresholdSeconds });
+  recordFinish({
+    sessionId: hookInput.session_id,
+    command,
+    project: projectOf(hookInput),
+    thresholdSeconds,
+    durationMs: hookInput.duration_ms
+  });
 }
 
 try {

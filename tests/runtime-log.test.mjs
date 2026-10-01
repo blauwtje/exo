@@ -163,6 +163,18 @@ test('a log that does not parse is rebuilt by the next write', () => {
   });
 });
 
+test('the tool duration, not the time since the start, decides learning', () => {
+  withCache(() => {
+    const finish = (durationMs) =>
+      recordFinish({ sessionId: 's1', command: 'npm test', project: '/p', thresholdSeconds: 60, durationMs, now: T0 + 120_000 });
+    recordStart({ sessionId: 's1', command: 'npm test', now: T0 });
+    assert.equal(finish(2_000), null);
+    assert.deepEqual(learnedCommands('/p'), {});
+    recordStart({ sessionId: 's1', command: 'npm test', now: T0 });
+    assert.equal(finish(90_000).seconds, 90);
+  });
+});
+
 test('the project is CLAUDE_PROJECT_DIR, else the hook input cwd', () => {
   const saved = process.env.CLAUDE_PROJECT_DIR;
   try {
@@ -180,6 +192,38 @@ function runHook(input, cache) {
   const env = { ...process.env, EXO_HEAVY_CACHE: cache, CLAUDE_PROJECT_DIR: '/p' };
   return spawnSync('node', [HOOK], { input, env, encoding: 'utf8' });
 }
+
+// Runs the recorder on a Bash call to `npm test` whose start was booked
+// `waitedMs` ago, with `heavy_after_seconds` at 60 in a temporary project.
+function runHookAfterStart({ waitedMs, durationMs }) {
+  return withCache((cache) => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-project-'));
+    try {
+      fs.mkdirSync(path.join(project, '.claude'));
+      fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ heavy_after_seconds: 60 }));
+      recordStart({ sessionId: 's1', command: 'npm test', now: Date.now() - waitedMs });
+      const input = JSON.stringify({ tool_name: 'Bash', session_id: 's1', cwd: project, tool_input: { command: 'npm test' }, duration_ms: durationMs });
+      const env = { ...process.env, EXO_HEAVY_CACHE: cache, CLAUDE_CONFIG_DIR: project, CLAUDE_PROJECT_DIR: project };
+      const result = spawnSync('node', [HOOK], { input, env, encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      return learnedCommands(project);
+    } finally {
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+}
+
+test('the hook learns a command whose duration_ms is over the threshold', () => {
+  assert.equal(runHookAfterStart({ waitedMs: 0, durationMs: 90_000 })['npm test'].seconds, 90);
+});
+
+test('the hook leaves a permission wait before a fast run out of the duration', () => {
+  assert.deepEqual(runHookAfterStart({ waitedMs: 120_000, durationMs: 2_000 }), {});
+});
+
+test('the hook falls back to the time since the start without duration_ms', () => {
+  assert.ok(runHookAfterStart({ waitedMs: 120_000 })['npm test'].seconds >= 120);
+});
 
 test('the hook exits 0 and writes nothing on bad input or a call it ignores', () => {
   withCache((cache) => {
