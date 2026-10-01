@@ -58,7 +58,6 @@ const PINNED_SENTENCES = {
   ],
   'skills/design-ui/references/intake.md': [
     'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
-    'The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call',
   ],
   'skills/design-ui/references/phase-detail.md': [
     '- no horizontal scroll from 360px through 1440px;',
@@ -76,6 +75,7 @@ const PINNED_SENTENCES = {
   ],
   'skills/design-ui/references/phase-direction.md': [
     'validate the set with `--check` to status ok before building any variant',
+    'A read-only planning mode runs no `scripts/direction.mjs` call',
   ],
   'skills/design-ui/references/motion.md': [
     'only exercised is motion-verified',

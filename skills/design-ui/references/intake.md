@@ -4,9 +4,16 @@ Settle what the run needs before it builds: the questions worth asking, where th
 
 ## Asking
 
-Name the decision an answer changes before asking anything; a question with no named decision is not asked. Then sort it by one test: would the user answer it better by seeing it? Color, type, spacing, layout, motion, imagery and every other choice between looks is a visual choice. A visual choice is never a terminal question unless the user picked option B below, because a color named in words is not the color the user would see. It reaches the user as a sketch in the browser tab, as one plain-words question after option B, or it is decided and never asked.
-
-- Rungs 3 and 7 of `## Route` offer the preview once, and render nothing before the answer. The offer is its own message with nothing else in it, sent where the direction is the open question. It follows the question shape, and the user answers with the letter:
+- A visual choice is never a terminal question unless the user picked option B below, because a color named in words is not the color the user would see.
+- Color, type, spacing, layout, motion, imagery and every other choice between looks is a visual choice.
+- A visual choice reaches the user as a sketch in the browser tab, as one plain-words question after option B, or it is decided and never asked.
+- Name the decision an answer changes before asking anything; a question with no named decision is not asked.
+- Sort each question by one test: would the user answer it better by seeing it?
+- Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question.
+- Beyond the offer, ask one only while an unanswered fact blocks a decision the brief, the repository, and Phase 1 evidence cannot settle.
+- Name that decision inside the question.
+- Rungs 3 and 7 of `## Route` offer the preview once, sent where the direction is the open question.
+- The offer follows the question shape, and the user answers with the letter:
 
   ```text
   **How should we pick the new look?**
@@ -19,24 +26,31 @@ Name the decision an answer changes before asking anything; a question with no n
   Recommended: (A), because seeing the looks beats reading about them, and (C) skips your say.
   ```
 
-  Option A starts `scripts/sketch-tab.mjs --serve` and writes the first sketch in the same message, under the `sketch-tab` reference; the click names the contract that the `phase-direction` reference then freezes. Every later visual choice, and every revision the user asks for, is one more sketch file in that tab, with no second offer.
-- Option B is one more question whose options are the looks, each in one plain line, the recommended look as A; the letter names the contract the `phase-direction` reference freezes, as a click would. Each later visual choice is decided from the picked contract as on option C, unless the user asks to see it.
-- On option C, or an exit 3, no visual question is asked for the rest of the session, unless the user then asks to see options, which opens the tab with no second offer.
-- After option C or an exit 3, the `--recommend` contract is the selection, and each further visual choice is decided from the contract and Phase 1 evidence.
-- State each such choice in one line, the choice and what it costs if wrong and never why; apply a correction without a question back.
-- Full comps through `pick.mjs` are built only when the user asks to see a direction whole, for the directions the sketches left standing, and the message says first, in plain words, that each one takes a few minutes.
-- Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question. Beyond the offer, ask one only while an unanswered fact blocks a decision the brief, the repository, and Phase 1 evidence cannot settle, and name that decision inside the question; a visual choice is never that fact.
-- A planning turn routes by `## Route` and makes the offer on rungs 3 and 7, because a direction frozen without it was chosen for the user. On option A it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as the `phase-direction` reference says; on option B it freezes the contract the user's letter named the same way; on option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`, adding `--candidates <file>` when fonts came from the candidate gate. Either way the plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`, and that output is carried verbatim in the Edit block of the plan's first Build step, which writes that file. The exception is a read-only planning mode, which runs no `scripts/direction.mjs` call, because every mode of that script reads a file under `$RUN` and that mode refuses the write: the plan records `Direction: pending at rung <n>` under `## Visual direction` with the evidence that placed it there, and the build session runs Phase 2 from that rung before Build.
+- Option A opens the sketch tab under the `sketch-tab` reference; the click names the contract that the `phase-direction` reference then freezes.
+- Every later visual choice, and every revision the user asks for, is one more sketch file in that tab, with no second offer.
+- Option B is one more question whose options are the looks, each in one plain line.
+- The letter on option B names the contract the `phase-direction` reference freezes, as a click would.
+- After option B, each later visual choice is decided from the picked contract as on option C, unless the user asks to see it.
+- On option C, or an exit 3, the `--recommend` contract is the selection.
+- After option C or an exit 3, no visual question is asked for the rest of the session: each further visual choice is decided from the contract and Phase 1 evidence.
+- When the user then asks to see options, that opens the tab with no second offer.
+- State each such choice in one line, the choice and what it costs if wrong and never why.
+- Apply a correction without a question back.
+- Before full comps through `pick.mjs`, say in plain words that each one takes a few minutes.
 
 ## The run directory
 
-Every run past a tweak writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript. It holds `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `font-candidates.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md. Every `node scripts/*.mjs` call redirects stdout into `$RUN` and the session reads the fields it needs with `jq` or `sed -n`, never the whole file: a JSON line that reaches the transcript is carried into every turn after it. `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` is what writes it. Agents receive `$RUN` and exchange files under it; they return reports, never file contents.
+- Every run past a tweak writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript.
+- Redirect every `node scripts/*.mjs` call's stdout into `$RUN` and read the fields the session needs with `jq` or `sed -n`, never the whole file, because a JSON line that reaches the transcript is carried into every turn after it.
+- `$RUN` holds `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `font-candidates.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md.
+- `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` is what writes it.
+- Agents receive `$RUN` and exchange files under it; they return reports, never file contents.
 
 **After a compaction notice**, resume from the newest `/private/tmp/designing/*/` run directory, not the conversation: Build reopens from its `contract-selected.json`, and `renders/` shows the checkpoints reached.
 
 ## Symptoms
 
-A complaint names a fault in the words of the person who saw it, and those words are not the words the fault is written under. This table is the only step between the two: it says which file owns the symptom, and that file's own row above says when it may be read. A symptom with no row here is diagnosed in Phase 4, not guessed at.
+A complaint names a fault in the words of the person who saw it, and this table says which file owns that symptom; the file's own row in the skill's References table says when it may be read. A symptom with no row here is diagnosed in Phase 4, not guessed at.
 
 | Reported as | Owned by |
 |---|---|
@@ -49,24 +63,20 @@ A complaint names a fault in the words of the person who saw it, and those words
 | the page jumps, stalls, or feels slow to arrive | the `performance-budget` reference for the cause, the `feedback-and-status` reference for what is shown while it waits |
 | the motion distracts, or nothing seems to respond | the `motion` reference for the first, the `interaction-qa` reference for the second |
 
-## Ownership
-
-This skill owns a visual change at any file count, since Build dispatches its own builders. An undecided surface (its displayed data, settings or behavior) goes to `spec` first; a change that also adds state, persistence, a dependency or a network call belongs to `build`, which borrows this skill for the look.
-
-A full or bounded redesign runs all five phases, bounded to the named surface; the existing direction is evidence, not a veto. This session reads the `exo:survey-ui` report of at most 20 lines and asks its `## Open` questions.
-
 ## Settled identity
 
-Rung 5 of the skill's `## Route` reads any one of these as a settled identity: docs/design/DESIGN.md where `scripts/context.mjs --status` reports `design_context_status` other than `absent` and `approval_status` of `approved`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it. A `draft` `approval_status` is not settled; route past rung 5 without opening DESIGN.md's body.
+Rung 5 of the skill's `## Route` reads any one of these as a settled identity:
 
-## Open identity
+- docs/design/DESIGN.md where `scripts/context.mjs --status` reports `design_context_status` other than `absent` and `approval_status` of `approved`.
+- docs/design/direction.json.
+- A `contract-selected.json` under a run directory named for this repository.
+- A stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it.
 
-Rung 6 of the skill's `## Route` takes no offer because scanability and existing expectations outrank expression on a tool surface. A surface neither list names takes rung 6 and the report names rung 7 as the rival reading, because a picker's spent minutes do not bar a later request for directions.
+A `draft` `approval_status` is not settled.
 
-Comps earn their cost only where a chooser recognises a direction they cannot name. A component library in the manifest is no settled identity because its defaults are the template this skill exists to replace.
+- On a draft, route past rung 5 without opening DESIGN.md's body.
 
 ## Judgment
 
-- A named decision outranks a question that reads as thorough: a question with no decision behind it is not asked.
 - The complaint's own words outrank a category label when routing to a reference.
 - One run directory outranks a tidier path inside the repository: a render written into the tree is a render committed by accident.
