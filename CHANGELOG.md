@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.70.3 - 2026-10-01
+
 ### Fixed
 
 - bash-output-guard no longer loops to V8's string limit, costing about 1.7 s and 2 GB per call and failing open on a small heap, when a command ends in `(`, `)`, `;`, `<`, `>`, `|` or `&`.
