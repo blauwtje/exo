@@ -175,6 +175,26 @@ test('review-branch-deep is review-branch\'s generated twin on its own kind, wit
   assert.ok(reviewer.body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
 });
 
+test('the full twins of the deep reviewer and the design critic share their source body on the xhigh kind', () => {
+  const twins = [
+    { twin: 'review-branch-deep-full', source: 'review-branch' },
+    { twin: 'critique-ui-full', source: 'critique-ui' }
+  ];
+  for (const { twin, source } of twins) {
+    const twinAgent = agents.find((agent) => agent.frontmatter.name === twin);
+    const sourceAgent = agents.find((agent) => agent.frontmatter.name === source);
+    assert.ok(twinAgent, `agents/${twin}.md is missing`);
+    const entry = kindTable.agents[`agents/${twin}.md`];
+    assert.equal(entry.kind, 'review-deep-full');
+    assert.equal(entry.generatedFrom, `agents/${source}.md`);
+    assert.match(entry.description, /full budget/);
+    assert.equal(twinAgent.frontmatter.model, kindTable.kinds['review-deep-full'].model);
+    assert.equal(twinAgent.frontmatter.effort, 'xhigh');
+    assert.equal(twinAgent.body, sourceAgent.body);
+    assert.equal(twinAgent.frontmatter.tools, sourceAgent.frontmatter.tools);
+  }
+});
+
 test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.ok(reviewer.frontmatter.tools, 'the reviewer lists its tools');

@@ -41,9 +41,9 @@ export const STAGE_BODY_TOKENS = {
   'start': 750, 'spec': 837, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
-// ceiling. build-ui, survey-ui and critique-ui carry visual-direction context
+// ceiling. build-ui, survey-ui, critique-ui and its twin carry visual-direction context
 // no other agent needs, so they are exempt by exact name, never by pattern.
-export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui'] };
+export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui', 'critique-ui-full'] };
 // Every stage-path reference and every prompt a stage skill's own table names
 // (a row whose target is not under references/) stays within 750 tokens,
 // unless it is locked here at its measured size. A lock fails a file that

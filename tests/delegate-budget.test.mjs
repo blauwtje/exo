@@ -240,7 +240,7 @@ test('a Budget line in the dispatch outranks the agent type limits', async () =>
 
 test('the shipped budgets file gives every read-only agent type a soft limit of 70k and the default hard and call limits', async () => {
   const budgets = JSON.parse(await fs.readFile(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
-  const readers = ['exo:locate-code', 'exo:fetch-docs', 'exo:survey-ui', 'exo:critique-ui', 'exo:review-branch', 'exo:review-branch-deep', 'Explore'];
+  const readers = ['exo:locate-code', 'exo:fetch-docs', 'exo:survey-ui', 'exo:critique-ui', 'exo:critique-ui-full', 'exo:review-branch', 'exo:review-branch-deep', 'exo:review-branch-deep-full', 'Explore'];
   for (const agentType of readers) {
     assert.deepEqual(budgets.agents[agentType], { soft: 70 }, agentType);
   }
