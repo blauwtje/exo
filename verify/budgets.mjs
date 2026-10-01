@@ -56,7 +56,7 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui
 export const REFERENCE_TOKEN_LOCKS = {
   'skills/spec/references/task-list.md': 768,
   'skills/build/references/critique.md': 845,
-  'skills/build/references/data-migration.md': 901,
+  'skills/build/references/data-migration.md': 912,
   'skills/build/references/security.md': 1040,
   'skills/build/references/test-design.md': 906,
   'skills/build/references/wave-worktrees.md': 956,

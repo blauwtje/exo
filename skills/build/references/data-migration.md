@@ -1,8 +1,16 @@
-Read this when work or a fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions, once orientation, the affected paths, or the predicted change are known and before ordering tasks or the first edit — in-memory types, cache rebuilds, and version-only dependency bumps do not qualify.
+Read this when work or a fix changes a database schema, persisted-data or file format, backfill, destructive DDL, persisted-data deletion, or compatibility between concurrently deployed versions. Read it once orientation, the affected paths, or the predicted change are known, and before ordering tasks or the first edit in the run. Changed data decides it: in-memory types, cache rebuilds, and version-only dependency bumps do not qualify.
 
 # Data migration
 
 Keep every deployed reader and writer compatible until migrated data is proven. The enemy is a schema or format switch that makes one deployment green by breaking another. The overcorrection is permanent dual paths with no measured contract point. Move through four ordered phases and name the rollback boundary.
+
+## Rollback line
+
+Name both sides of the rollback line before execution:
+
+- Before contract, old code can resume only while new writers still produce a representation old readers accept or dual-write preserves the old representation.
+- After a writer emits data that cannot be represented by the old format, or contract deletes the old representation, code rollback requires a reverse transform or data restoration. Name that operation and its backup/checkpoint before crossing the line.
+- Destructive DDL or persisted-data deletion does not run until the verification evidence and restoration source are named in the same report.
 
 ## Compatibility matrix
 
@@ -27,14 +35,6 @@ Mark all eight cells. Every required cell must remain valid until the deployment
 - Name the statements inside one transaction and the maximum rows or bytes in that transaction. Do not hold one transaction across the whole backfill.
 - Name every DDL lock or application lock, the operation that acquires it, and the timeout or deployment window that bounds it.
 - Define retry behavior for a deadlock, timeout, interrupted batch, and duplicate delivery. A retry starts from the checkpoint and reuses the idempotent predicate.
-
-## Rollback line
-
-Name both sides of the rollback line before execution:
-
-- Before contract, old code can resume only while new writers still produce a representation old readers accept or dual-write preserves the old representation.
-- After a writer emits data that cannot be represented by the old format, or contract deletes the old representation, code rollback requires a reverse transform or data restoration. Name that operation and its backup/checkpoint before crossing the line.
-- Destructive DDL or persisted-data deletion does not run until the verification evidence and restoration source are named in the same report.
 
 ## Judgment
 
