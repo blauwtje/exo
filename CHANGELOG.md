@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.69.1 - 2026-10-01
+
 ### Highlights
 
 - **Every exo question now uses one lettered shape, with the recommendation always on A.** Spec asks in rounds until nothing is open, always ends on a brief, and never starts a build by itself.
