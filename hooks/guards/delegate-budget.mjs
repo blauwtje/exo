@@ -4,7 +4,7 @@
 // cache read and cache creation tokens of the last assistant turn in that
 // delegate's own transcript and counts the call.
 // Past the soft limit it adds one line before each call saying to read nothing
-// new and commit what is green; past the hard limit, in tokens or tool calls, it
+// new and commit what is green (a read-only agent type: write the report); past the hard limit, in tokens or tool calls, it
 // denies every tool but the ones that finish a half-made edit and write the
 // report, plus a Bash call of `git add`, `git commit`, `git status` or
 // `git diff --stat`, optionally after `-C <path>`, so green work still lands.
@@ -41,6 +41,19 @@ const BUDGETS = JSON.parse(fs.readFileSync(new URL('../../lib/delegate-budgets.j
 const PLAIN_ID = /^[\w-]+$/;
 const DISPATCH_BYTES = 64 * 1024;
 const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;
+// Agent types that cannot commit, so their notice says to write the report, not to commit.
+const READ_ONLY_AGENTS = new Set([
+  'exo:locate-code',
+  'exo:fetch-docs',
+  'exo:survey-ui',
+  'exo:critique-ui',
+  'exo:critique-ui-high',
+  'exo:review-branch',
+  'exo:review-branch-deep',
+  'exo:review-branch-deep-high',
+  'Explore',
+  'Plan'
+]);
 const REPORT_TOOLS = new Set(['Edit', 'Write', 'TaskUpdate', 'TodoWrite']);
 const COMMIT_COMMAND = /^git (?:-C \S+ )?(?:add|commit|status|diff --stat)(?:\s.*)?$/s;
 // Chaining, a pipe, substitution, redirection or a second line could run anything.
@@ -97,9 +110,9 @@ function decision(toolName, toolInput, tokens, calls, limits, agentType) {
     return { permissionDecision: 'deny', permissionDecisionReason };
   }
   if (tokens <= limits.soft * 1000) return null;
-  const softAdvice = agentType === 'exo:run-unit'
-    ? 'finish and land the task in flight, then continue with the next task.'
-    : 'commit what is green now, finish the current step and write your report.';
+  let softAdvice = 'commit what is green now, finish the current step and write your report.';
+  if (agentType === 'exo:run-unit') softAdvice = 'finish and land the task in flight, then continue with the next task.';
+  if (READ_ONLY_AGENTS.has(agentType)) softAdvice = 'finish the current step and write your report.';
   return { additionalContext: `exo budget: ${used} of ${limits.hard}k tokens used. Read nothing new; ${softAdvice}` };
 }
 

@@ -11,6 +11,8 @@
     "exo:review-branch-deep": { "soft": 70 },
     "exo:review-branch-deep-high": { "soft": 70 },
     "exo:run-unit": { "soft": 70, "calls": 90 },
-    "Explore": { "soft": 70 }
+    "Explore": { "soft": 70 },
+    "Plan": { "soft": 70 },
+    "general-purpose": { "soft": 70 }
   }
 }

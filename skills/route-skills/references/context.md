@@ -10,5 +10,5 @@
 - **Delegate brief.** Name the scope, acceptance criteria, stop condition, pointers (paths, ids, logs) instead of pasted content, a tool-call budget and the return shape: verdict first, a few lines, full detail in a named file.
 - **Terse return.** Under `replies=terse`, a dispatch asks for the return in terse form, because the model is its only reader; files the delegate writes keep normal prose.
 - **Scope.** Write only the artifacts a skill names, at the length needed.
-- **Reader budget.** A read-only dispatch to an agent type without its own limit, such as `general-purpose`, carries a standalone `Budget: 70k/100k` line, because the 40k default stops a reader after a few files.
+- **Reader budget.** A read-only dispatch to an agent type without its own limit carries a standalone `Budget: 70k/100k` line, because the 40k default stops a reader after a few files.
 - **Budget return.** A delegate's `BUDGET:` return is continued by a fresh agent for its open part, never finished by the main session itself, because that work would fill the context the rest of the run needs.

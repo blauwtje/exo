@@ -84,6 +84,21 @@ test('past the soft limit an exo:run-unit delegate is told to land the task in f
   assert.equal(decision.additionalContext, 'exo budget: 80k of 100k tokens used. Read nothing new; finish and land the task in flight, then continue with the next task.');
 });
 
+test('past the soft limit a read-only agent type is told to write its report, not to commit', async () => {
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(80_000), '']);
+  for (const agentType of ['Plan', 'Explore', 'exo:locate-code']) {
+    const decision = decisionOf(await runBudget(BUDGET, { ...hookInput, agent_type: agentType }, env));
+    assert.equal(decision.additionalContext, 'exo budget: 80k of 100k tokens used. Read nothing new; finish the current step and write your report.', agentType);
+  }
+});
+
+test('past the soft limit general-purpose keeps the commit advice and its 70k soft limit', async () => {
+  const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(60_000), assistantLine(80_000), '']);
+  assert.equal(decisionOf(await runBudget(BUDGET, { ...hookInput, agent_type: 'general-purpose' }, env)).additionalContext, 'exo budget: 80k of 100k tokens used. Read nothing new; commit what is green now, finish the current step and write your report.');
+  const { hookInput: under, env: underEnv } = await budgetFixture([dispatchLine('Task 1'), assistantLine(60_000), '']);
+  assert.equal(decisionOf(await runBudget(BUDGET, { ...under, agent_type: 'general-purpose' }, underEnv)), null);
+});
+
 test('past the hard limit a delegate is denied a Read and told to write its report', async () => {
   const { hookInput, env } = await budgetFixture([dispatchLine('Task 1'), assistantLine(102_000), '']);
   const decision = decisionOf(await runBudget(BUDGET, hookInput, env));
@@ -240,7 +255,7 @@ test('a Budget line in the dispatch outranks the agent type limits', async () =>
 
 test('the shipped budgets file gives every read-only agent type a soft limit of 70k and the default hard and call limits', async () => {
   const budgets = JSON.parse(await fs.readFile(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
-  const readers = ['exo:locate-code', 'exo:fetch-docs', 'exo:survey-ui', 'exo:critique-ui', 'exo:critique-ui-high', 'exo:review-branch', 'exo:review-branch-deep', 'exo:review-branch-deep-high', 'Explore'];
+  const readers = ['exo:locate-code', 'exo:fetch-docs', 'exo:survey-ui', 'exo:critique-ui', 'exo:critique-ui-high', 'exo:review-branch', 'exo:review-branch-deep', 'exo:review-branch-deep-high', 'Explore', 'Plan', 'general-purpose'];
   for (const agentType of readers) {
     assert.deepEqual(budgets.agents[agentType], { soft: 70 }, agentType);
   }
@@ -248,5 +263,5 @@ test('the shipped budgets file gives every read-only agent type a soft limit of 
 
 test('route-skills references/context.md tells the lead to give a read-only dispatch without its own limit a standalone 70k Budget line', async () => {
   const context = await fs.readFile(new URL('../skills/route-skills/references/context.md', import.meta.url), 'utf8');
-  assert.match(context, /^- \*\*Reader budget\.\*\* .*`general-purpose`.*standalone `Budget: 70k\/100k` line/m);
+  assert.match(context, /^- \*\*Reader budget\.\*\* .*standalone `Budget: 70k\/100k` line/m);
 });
