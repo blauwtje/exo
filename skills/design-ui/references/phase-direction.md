@@ -8,7 +8,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Change no production code before a selection exists.
 - Outside an existing brand or design system, commit to one bold aesthetic direction before Build, because a neutral middle is not a direction.
 - The direction settles composition and visual material together: the contract names it and every region carries it.
-- Every rung other than 3 and 7 produces one direction, with no variants, no offer, and no selection gate, so a session on rung 5 or 6 stops reading here.
+- Every rung other than 3 and 7 produces one direction, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
 
 ## Rungs 3 and 7
@@ -17,10 +17,12 @@ Rungs 3 and 7 of the skill's `## Route` run contract, variant, selection.
 
 - Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save.
 - Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
-- Deal three seeded axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
+- Deal three contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
 - Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
 - `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
+- Ask nothing but the preview offer between `--check` and the first sketch.
 - Make the offer `## Asking` of the `intake` reference defines.
+- Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 - On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
 - Every `--check` and `--select` call passes that `--space` file, plus `--candidates "$RUN/font-candidates.json"` once that file exists, because either refuses a contract whose fonts came from candidates without it.
 

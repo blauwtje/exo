@@ -38,7 +38,7 @@ A surface neither list names takes rung 6, and the report names rung 7 as the ri
 
 The references call these steps Phase 1 to 5.
 
-1. **Context.** Read `## Context`, `## The build floor` and `## Precedence` of `references/phase-detail.md`, once; `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
+1. **Context.** Read `## Context`, `## The build floor`, `## Precedence` and `## Judgment` of `references/phase-detail.md`, once; `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
 4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, run after the build and the post-build checkpoint; the baseline pair was taken before the first edit.
@@ -52,7 +52,7 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 |---|---|
 | `references/intake.md` | Before Phase 1: asking, the run directory, symptoms; its `## Settled identity` when Route rungs 1-4 miss. |
 | `../route-skills/references/question.md` | Phase 2 on rungs 3 and 7, before the preview offer. |
-| `references/phase-detail.md` | Phase 1: `## Context`, `## The build floor`, `## Precedence`; Phase 4 `## The critique dispatch` on a full or bounded redesign; Phase 5 `## QA`, by the QA delegate only. |
+| `references/phase-detail.md` | Phase 1: `## Context`, `## The build floor`, `## Precedence`, `## Judgment`, and on a full or bounded redesign `## The critique dispatch`, for the baseline pair; Phase 5 `## QA`, run by the QA delegate, while this session reads only its last two bullets, the close and the ignore entry. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
 | `references/visual-direction.md` | Phase 2, every direction decision, whole; Phase 1 `## Design context first` alone when the repository or docs/design/DESIGN.md holds a design system to extract. |

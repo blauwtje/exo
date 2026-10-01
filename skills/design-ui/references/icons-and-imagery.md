@@ -21,7 +21,7 @@ A named set is a geometry reference, never a house style. Derive the grid and th
 - Coordinates, arc centers, and endpoints align to the pixel grid.
 - **Never strip the `viewBox`**: keep SVGO's `removeViewBox` off, or the icon stops scaling and may clip.
 
-Generic affordances such as close, search and chevron may come from one consistent set. A mark carrying the subject or the brand is drawn against the subject's own grid, because that is where a set stops being a reference and starts being someone else's identity. An icon-only control owes the optical mass of its labelled sibling (the `controls` reference).
+Generic affordances such as close, search and chevron may come from one consistent set. A display or symbol exception is open where the direction names it. A mark carrying the subject or the brand is drawn against the subject's own grid, because that is where a set stops being a reference and starts being someone else's identity. An icon-only control owes the optical mass of its labelled sibling (the `controls` reference).
 
 ## Responsive images
 
