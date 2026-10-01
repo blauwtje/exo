@@ -2,7 +2,12 @@
 
 Build the selected direction with material the render can show: a ground with light in it, surfaces with edges and depth, type that carries a voice, and one authored moment of motion. The enemy is the assembled page — a flat neutral ground, one grey shadow under every card, a single family at one weight, a fade-up on every section. The overcorrection is stacking every shape below onto one surface until nothing leads.
 
-Each recipe is a shape, not a value: every color, duration, and easing below stands for a token the direction contract fixed, and a shape that no contract field, subject observation, or brief sentence names stays out. Port a shape onto a repository's existing tokens and mixins rather than beside them.
+Each recipe is a shape, not a value: every color, duration, and easing below stands for a token the direction contract fixed. A shape that no contract field, subject observation, or brief sentence names stays out. Port a shape onto the repository's existing tokens, mixins, and motion primitives, not beside them; those outrank the shapes here.
+
+## Judgment
+
+- Body-text contrast on top of a ground shape outranks the shape.
+- The contract and the job gate in the `motion` reference outrank every shape here.
 
 ## Ground
 
@@ -15,7 +20,7 @@ background: linear-gradient(168deg,
   color-mix(in oklch, var(--ground) 92%, black) 100%);
 ~~~
 
-**Mesh field** — when the contract names a gradient field: two or three off-center, low-chroma pools over the ground, none centered, none at full alpha; body text sits on a solid `--surface`, never on a pool.
+**Mesh field** — when the contract names a gradient field: two or three off-center, low-chroma pools over the ground, none centered, none at full alpha. Body text sits on a solid `--surface`, never on a pool.
 
 ~~~css
 background:
@@ -24,7 +29,7 @@ background:
   var(--ground);
 ~~~
 
-**Grain** — a subject-derived texture (paper, print, film) the contract names; the overlay is a pseudo-element, so the ground stays one declaration and the texture one opacity token, perceptible at 390px and 1440px or removed.
+**Grain** — a subject-derived texture (paper, print, film) the contract names; the overlay is a pseudo-element, so the ground stays one declaration and the texture one opacity token. The grain is perceptible at 390px and 1440px, or it is removed.
 
 ~~~css
 .ground::after {
@@ -66,7 +71,7 @@ background:
   linear-gradient(140deg, var(--accent), color-mix(in oklch, var(--accent) 30%, transparent)) border-box;
 ~~~
 
-**Hard offset** — the neobrutalist grammar: `border: 2px solid var(--ink); box-shadow: var(--offset) var(--offset) 0 var(--ink);`, and the pressed state collapses the offset to zero with a matching `translate`.
+**Hard offset** — the neobrutalist grammar: `border: 2px solid var(--ink); box-shadow: var(--offset) var(--offset) 0 var(--ink);`. The pressed state collapses the offset to zero with a matching `translate`.
 
 ## Motion
 
@@ -87,11 +92,4 @@ background:
 
 **Voice from one variable family** — display and body from one file, apart on the width or weight axis: `h1 { font-variation-settings: "wdth" 85; font-weight: 750; letter-spacing: -0.02em; text-wrap: balance; }` over body at `font-weight: 400`.
 
-**Prose that breaks well** — `p { text-wrap: pretty; max-inline-size: 65ch; hanging-punctuation: first last; }`, and `font-variant-numeric: tabular-nums` on any changing figure.
-
-## Judgment
-
-- The contract and the job gate in the `motion` reference outrank every shape here; a shape with no contract field behind it is decoration.
-- Body-text contrast on top of a ground shape outranks the shape.
-- One shape per job: two atmosphere layers doing the same job is one too many.
-- Existing repository tokens, mixins, and motion primitives outrank these shapes; port the shape onto them.
+**Prose that breaks well** — `p { text-wrap: pretty; max-inline-size: 65ch; hanging-punctuation: first last; }`. Any changing figure takes `font-variant-numeric: tabular-nums`.
