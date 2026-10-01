@@ -15,6 +15,7 @@ import {
   projectOf,
   recordFinish,
   recordStart,
+  touchLearned,
   runtimeFile
 } from '../lib/runtime-log.mjs';
 
@@ -73,12 +74,23 @@ test('a command that is not test-like is never learned', () => {
 });
 
 test('watch, ui and dev modes are never learned', () => {
-  for (const command of ['npm test --watch', 'playwright test --ui', 'playwright test --headed', 'npm run test dev', 'npm run test serve', 'npm run test start']) {
+  for (const command of ['npm test --watch', 'playwright test --ui', 'playwright test --headed', 'npm run test dev', 'npm run test serve', 'npm run test start', 'npm install -D eslint', 'git checkout main', 'npm run build && npm test', 'EXO_HEAVY_FORCE=1 npm test']) {
     assert.equal(isLearnable(command), false, command);
   }
-  for (const command of ['npm test', 'npm run e2e', 'cargo check', 'eslint .  # lint', 'make verify']) {
+  for (const command of ['npm test', 'npm run e2e', 'cargo check', 'eslint .  # lint', 'make verify', 'pytest', 'npx vitest run']) {
     assert.equal(isLearnable(command), true, command);
   }
+});
+
+test('touchLearned refreshes lastUsed of a learned command and ignores an unknown one', () => {
+  withCache(() => {
+    run('npm test', { seconds: 90 });
+    touchLearned({ project: '/p', command: 'npm test', now: T0 + 20 * DAY_MS });
+    touchLearned({ project: '/p', command: 'npm run lint', now: T0 + 20 * DAY_MS });
+    assert.deepEqual(Object.keys(learnedCommands('/p')), ['npm test']);
+    assert.equal(learnedCommands('/p')['npm test'].lastUsed, new Date(T0 + 20 * DAY_MS).toISOString());
+    assert.equal(learnedCommands('/p')['npm test'].seconds, 90);
+  });
 });
 
 test('a finish with no start record learns nothing', () => {

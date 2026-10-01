@@ -103,6 +103,10 @@ test('a learned command is wrapped, a similar or unlearned one is not', async ()
   assert.equal(await dispatch('make lint', { learned: ['make verify'] }), null);
 });
 
+test('a learned command recorded under a threshold since raised is not wrapped', async () => {
+  assert.equal(await dispatch('make verify', { learned: ['make verify'], after: 300 }), null);
+});
+
 test('a learned watch-mode command and a learned command with learning off are not wrapped', async () => {
   assert.equal(await dispatch('make verify --watch', { learned: ['make verify --watch'] }), null);
   assert.equal(await dispatch('make verify', { learned: ['make verify'], after: 0 }), null);

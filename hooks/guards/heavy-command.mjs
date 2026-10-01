@@ -17,7 +17,7 @@
 
 import { fileURLToPath } from 'node:url';
 import { settingValue } from '#settings-store';
-import { isLearnable, learnedCommands, projectOf, recordStart } from '../../lib/runtime-log.mjs';
+import { isLearnable, learnedCommands, projectOf, recordStart, touchLearned } from '../../lib/runtime-log.mjs';
 
 const WRAPPER = fileURLToPath(new URL('../heavy-run.mjs', import.meta.url));
 const SEGMENT_SEPARATOR = /&&|\|\||;|\|/;
@@ -41,17 +41,28 @@ function matches(command, prefixes) {
     .some((segment) => prefixes.some((prefix) => segment.startsWith(prefix)));
 }
 
+// True when `command` matches the `heavy_commands` setting; hooks/record-runtime.mjs
+// uses it too, so the two never drift.
+export function isListedHeavy(command) {
+  const prefixes = heavyPrefixes();
+  return prefixes.length > 0 && matches(command, prefixes);
+}
+
 // The output for `hookInput`: the command wrapped when it is heavy, else null.
 export function heavyCommandStep(hookInput) {
   const command = hookInput.tool_input?.command;
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
-  const prefixes = heavyPrefixes();
-  const listed = prefixes.length > 0 && matches(command, prefixes);
-  const learning = Number(settingValue('heavy_after_seconds')) > 0 && isLearnable(command);
-  if (!listed && !(learning && command in learnedCommands(projectOf(hookInput)))) {
+  const listed = isListedHeavy(command);
+  const thresholdSeconds = Number(settingValue('heavy_after_seconds'));
+  const learning = thresholdSeconds > 0 && isLearnable(command);
+  const project = projectOf(hookInput);
+  // An entry recorded under a threshold since raised no longer counts as heavy.
+  const learned = learning && (learnedCommands(project)[command]?.seconds ?? 0) > thresholdSeconds;
+  if (!listed && !learned) {
     if (learning && typeof hookInput.session_id === 'string') recordStart({ sessionId: hookInput.session_id, command });
     return null;
   }
+  if (!listed) touchLearned({ project, command });
   const session = hookInput.session_id ?? 'unknown';
   const wrapped = `node ${shellQuote(WRAPPER)} --session ${shellQuote(String(session))} -- ${shellQuote(command)}`;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { ...hookInput.tool_input, command: wrapped } } };
