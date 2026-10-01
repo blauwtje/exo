@@ -130,7 +130,7 @@ function refusalOf(session, target) {
   const lines = fileLines(filePath);
   if (lines.length <= lineLimit) return null;
   return {
-    reason: `exo read guard: ${filePath} has ${lines.length} lines and an unbounded read is capped at ${lineLimit}; locate the range first, then read it with offset and a limit of at most ${lineLimit}.`
+    reason: `exo read guard: ${filePath} has ${lines.length} lines and a read above ${lineLimit} lines is refused (this one asks ${input.limit ?? 'the whole file'}); locate the range first, then read it with offset and a limit of at most ${lineLimit}.`
   };
 }
 
