@@ -11,8 +11,11 @@
 // working directory, and a bare `x` with no slash matches that name at any depth.
 // `**` crosses directories, `*` and `?` stay inside one.
 //
-// A read is a word after a reader command (`cat`, `head`, `grep`, `cp` and the
-// like) or after `<`. A directory word is a read of what it holds, so a
+// A read is a word after a reader command (`cat`, `head`, `grep`, `cp`, `tar`,
+// `dd if=` and the like), a `curl` upload (`-T file`, `@file`) or after `<`. A word
+// with `*` or `?` is expanded against the working directory first, and a dotfile
+// matches only a pattern that spells its dot, as in the shell; `[...]` and `{...}`
+// are not expanded. A directory word is a read of what it holds, so a
 // recursive `grep` of a protected directory is denied.
 // Ceiling: the command string is tokenised, not run. Every operand of a reader
 // counts as a file, so `grep .env README.md` with a `Read(./.env)` rule is denied
@@ -24,6 +27,7 @@
 // file yields a denial. A fault reading the input exits 0 with no output; the
 // guard never exits 2.
 
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -34,7 +38,7 @@ import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 const READERS = new Set([
   'cat', 'tac', 'nl', 'head', 'tail', 'less', 'more', 'bat', 'sed', 'awk', 'gawk',
   'grep', 'egrep', 'fgrep', 'rg', 'ag', 'cut', 'sort', 'uniq', 'paste', 'column', 'fold', 'rev',
-  'strings', 'xxd', 'od', 'hexdump', 'base64', 'jq', 'yq', 'diff', 'cmp', 'cp', 'source', '.'
+  'strings', 'xxd', 'od', 'hexdump', 'base64', 'jq', 'yq', 'diff', 'cmp', 'cp', 'mv', 'scp', 'zip', 'tar', 'dd', 'source', '.'
 ]);
 const WRAPPERS = new Set(['sudo', 'command', 'builtin', 'exec', 'nice', 'time', 'env']);
 const READ_RULE = /^Read\((.*)\)$/;
@@ -90,8 +94,26 @@ function readWords({ words, redirected }) {
   let start = 0;
   while (start < words.length && (ASSIGNMENT.test(words[start]) || WRAPPERS.has(words[start]))) start += 1;
   const isReader = start < words.length && READERS.has(path.basename(words[start]));
-  const operands = isReader ? words.slice(start + 1).filter((word) => !word.startsWith('-')) : [];
+  const command = start < words.length ? path.basename(words[start]) : '';
+  const rest = words.slice(start + 1);
+  if (command === 'curl') return [...curlFiles(rest), ...redirected];
+  let operands = isReader ? rest.filter((word) => !word.startsWith('-')) : [];
+  if (command === 'dd') operands = operands.map((word) => word.replace(/^if=/, ''));
   return [...operands, ...redirected];
+}
+
+// The files a `curl` command sends: `-T file`, `--upload-file file`, and `@file`
+// after `-d`, `--data-binary`, `-F name=` and the like.
+function curlFiles(args) {
+  const files = [];
+  for (const [index, word] of args.entries()) {
+    const previous = args[index - 1];
+    if (previous === '-T' || previous === '--upload-file') files.push(word);
+    if (/^-T[^-]/.test(word)) files.push(word.slice(2));
+    const attached = /(?:^|=|^-[A-Za-z])@([^;]+)/.exec(word);
+    if (attached) files.push(attached[1]);
+  }
+  return files;
 }
 
 function expandHome(word) {
@@ -165,6 +187,36 @@ function protectedRules(directory, root, notes) {
   return rules;
 }
 
+// The paths a glob word names in `directory`; a word without `*` or `?` names none.
+function expandGlob(word, directory) {
+  if (!/[*?]/.test(word)) return [];
+  const absolute = path.resolve(directory, expandHome(word));
+  const { root } = path.parse(absolute);
+  let paths = [root];
+  for (const segment of absolute.slice(root.length).split(path.sep)) {
+    const next = [];
+    for (const base of paths) {
+      if (!/[*?]/.test(segment)) {
+        next.push(path.join(base, segment));
+        continue;
+      }
+      let names = [];
+      try {
+        names = fs.readdirSync(base);
+      } catch {
+        continue;
+      }
+      const pattern = globRegExp(segment);
+      const hidden = /^[*?]/.test(segment);
+      for (const name of names) {
+        if (pattern.test(name) && !(hidden && name.startsWith('.'))) next.push(path.join(base, name));
+      }
+    }
+    paths = next;
+  }
+  return paths;
+}
+
 // The first rule that protects the word's path, or what lies under it.
 function matchingRule(word, directory, rules) {
   const file = path.resolve(directory, expandHome(word));
@@ -174,7 +226,9 @@ function matchingRule(word, directory, rules) {
 function denialReason(command, directory, rules) {
   for (const segment of readSegments(command)) {
     for (const word of readWords(segment)) {
-      const rule = matchingRule(word, directory, rules);
+      const rule = [word, ...expandGlob(word, directory)]
+        .map((candidate) => matchingRule(candidate, directory, rules))
+        .find(Boolean);
       if (rule) {
         return `secret-guard: ${word} is protected by the deny rule Read(${rule.spec}), and a shell read walks around it. Do not read it; ask the user for the value or the part you need.`;
       }
