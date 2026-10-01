@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url';
 import { exportSignatures } from '#export-signatures';
 import { parseFlags, UsageError } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
@@ -309,15 +309,6 @@ function runLandGate(landGate, root) {
   }
 }
 
-// The line next-task prints for the wave, spelled the same here because
-// next-task's own `waveLine` is not exported and its report writes the briefs;
-// lift the duplicate by exporting `waveLine` from next-task.mjs.
-function nextLineOf(wave) {
-  if (wave.length === 0) return 'Next: none, every task landed';
-  if (wave.length === 1) return `Next: Task ${wave[0].number}`;
-  return `Wave: ${wave.map((task) => `Task ${task.number}`).join(', ')}`;
-}
-
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
@@ -357,7 +348,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
-  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n${nextLineOf(nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel))}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n${waveLine(nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel))}\n`;
 }
 
 function main(argv) {

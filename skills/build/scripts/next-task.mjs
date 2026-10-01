@@ -13,7 +13,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseFlags, UsageError } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize, waveLine } from '#plan-tasks';
 
 // lib/delegate-budgets.json holds the delegate's default budget; reading it here keeps
 // one source for the cap instead of a second copy of 40/100.
@@ -47,12 +47,6 @@ function budgetLine(task) {
 // BLOCK_TASK_LIMIT the session dispatches run-unit blocks instead of building.
 function routeLine(taskCount) {
   return `Route: ${taskCount > BLOCK_TASK_LIMIT ? 'unit' : 'direct'}`;
-}
-
-function waveLine(wave) {
-  if (wave.length === 0) return 'Next: none, every task landed';
-  if (wave.length === 1) return `Next: Task ${wave[0].number}`;
-  return `Wave: ${wave.map((task) => `Task ${task.number}`).join(', ')}`;
 }
 
 // The Non-goals and Context bullets that name one of the task's paths or
