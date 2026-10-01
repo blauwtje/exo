@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 // PreToolUse guard on Bash: keeps a long command output out of the context
-// window by denying two shapes and naming the bounded form to run instead.
+// window by capping one shape and denying another.
 //   1. A known-verbose build, test or log command with no pipe, redirect,
-//      chain or substitution, which prints its whole output; the deny gives
-//      the same command capped by `tail -n 200`.
+//      chain or substitution, which prints its whole output; the guard runs
+//      it as `set -o pipefail; <command> 2>&1 | tail -n 200` through
+//      `updatedInput`, with no permission decision.
 //   2. A whole-file read through the shell (`cat FILE`, `sed` without a range
 //      under 300 lines, `head` past 300 lines) of a file over the byte cap,
-//      the Bash counterpart of the Read guard; `READ_GUARD_MAX_BYTES` sets the
+//      the Bash counterpart of the Read guard, which it denies;
+//      `READ_GUARD_MAX_BYTES` sets the
 //      cap (default 12000). Paths under `${CLAUDE_PLUGIN_ROOT}` and the config
 //      directory (`~/.claude`) are exempt, and so is a pipeline whose later stage bounds the
 //      output (head, tail, wc, grep and the checksum tools).
-// The guard only denies and never rewrites a command. `guards: off` switches
-// it off. A fault, or a command it cannot tokenise, lets the command through.
+// `guards: off` switches it off. A fault, or a command it cannot tokenise, lets the command through.
 // Ceiling: `cd` is followed by its literal argument and a shell variable in a
 // path reads as written.
 
@@ -207,18 +208,15 @@ function readDenial(command, startDirectory) {
   return null;
 }
 
-function outputDenial(command) {
+function cappedCommand(command) {
   const written = blankCommandText(command).trim();
   if (CHAINED.test(written) || !VERBOSE_COMMAND.test(written)) return null;
   if (/^git\b/.test(written) && GIT_COUNT_LIMIT.test(written)) return null;
-  return (
-    `\`${command.trim()}\` can print a whole build, test or log output into the context window. ` +
-    `Run it capped, keeping its exit status: set -o pipefail; ${command.trim()} 2>&1 | tail -n ${TAIL_LINES}`
-  );
+  return { updatedCommand: `set -o pipefail; ${command.trim()} 2>&1 | tail -n ${TAIL_LINES}` };
 }
 
 export function denialFor(command, hookInput = {}) {
-  return readDenial(command, hookInput.cwd || process.cwd()) ?? outputDenial(command);
+  return readDenial(command, hookInput.cwd || process.cwd()) ?? cappedCommand(command);
 }
 
 if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);

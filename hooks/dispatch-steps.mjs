@@ -2,7 +2,8 @@
 // bookkeeping steps unless a guard denied, each in its own try/catch, so a
 // fault in one lets the rest run and the call go through as it did when each
 // step was its own hook. The first deny is returned; the additional contexts
-// of the steps that ran are joined into the same output.
+// of the steps that ran are joined into the same output, and the first
+// `updatedInput` too, unless a step denied.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
@@ -37,6 +38,8 @@ export async function runSteps(hookInput, guards, bookkeeping) {
     merged.permissionDecisionReason = verdict.permissionDecisionReason;
   }
   if (contexts.length > 0) merged.additionalContext = contexts.join('\n');
+  const rewritten = outputs.find((output) => output.updatedInput !== undefined);
+  if (rewritten && !denied) merged.updatedInput = rewritten.updatedInput;
   if (Object.keys(merged).length === 1) return null;
   return { hookSpecificOutput: merged };
 }

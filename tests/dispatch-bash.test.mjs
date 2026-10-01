@@ -56,6 +56,24 @@ test('the memory-booking command is approved', async () => {
   assert.equal(decision.permissionDecision, 'allow');
 });
 
+test('a verbose command is capped through updatedInput with no permission decision', async () => {
+  const decision = await output('npm test');
+  assert.deepEqual(decision, {
+    hookEventName: 'PreToolUse',
+    updatedInput: { command: 'set -o pipefail; npm test 2>&1 | tail -n 200' }
+  });
+});
+
+test('updatedInput passes through only when no step denied', async () => {
+  const rewrite = { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { command: 'capped' } } };
+  assert.deepEqual(await dispatchBash({}, [step('cap', rewrite), step('ctx', context('note'))], []), {
+    hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: 'note', updatedInput: { command: 'capped' } }
+  });
+  const refused = await dispatchBash({}, [step('cap', rewrite), step('no', deny('no'))], []);
+  assert.equal(refused.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(refused.hookSpecificOutput.updatedInput, undefined);
+});
+
 test('a call that is not a Bash command, and input that is not usable, produce no output', async () => {
   const other = await dispatch({ tool_name: 'Read', tool_input: { command: 'git reset --hard' } });
   assert.deepEqual([other.code, other.stdout], [0, '']);

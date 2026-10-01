@@ -1,6 +1,6 @@
-// The Bash output guard denies a known-verbose command that prints its whole
-// output and a whole-file shell read of a large file, names the bounded form,
-// lets a bounded or chained command through, and stands down when guards is off.
+// The Bash output guard caps a known-verbose command that prints its whole
+// output, denies a whole-file shell read of a large file and names the bounded
+// form, lets a bounded or chained command through, and stands down when guards is off.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -45,34 +45,46 @@ async function verdict(command, options = {}) {
   if (result.stdout === '') return { denied: false, reason: '' };
   const decision = JSON.parse(result.stdout).hookSpecificOutput;
   assert.equal(decision.hookEventName, 'PreToolUse');
-  return { denied: decision.permissionDecision === 'deny', reason: decision.permissionDecisionReason };
+  return { denied: decision.permissionDecision === 'deny', reason: decision.permissionDecisionReason, decision };
 }
 
-test('a bare test command is denied with its tail-capped form', async () => {
-  const { denied, reason } = await verdict('npm test');
-  assert.equal(denied, true);
-  assert.match(reason, /set -o pipefail; npm test 2>&1 \| tail -n 200/);
+// The verdict of a verbose command: the command it runs instead, or null.
+async function cappedTo(command) {
+  const { denied, decision } = await verdict(command);
+  assert.equal(denied, false, command);
+  assert.equal(decision?.permissionDecision, undefined, command);
+  return decision?.updatedInput?.command ?? null;
+}
+
+test('a bare test command runs tail-capped, with no permission decision', async () => {
+  const directory = await bigFileFixture();
+  const toolInput = { command: 'npm test', description: 'run the tests' };
+  const result = await runGuard({ tool_name: 'Bash', cwd: directory, tool_input: toolInput }, { directory });
+  assert.deepEqual(JSON.parse(result.stdout).hookSpecificOutput, {
+    hookEventName: 'PreToolUse',
+    updatedInput: { command: 'set -o pipefail; npm test 2>&1 | tail -n 200', description: 'run the tests' }
+  });
 });
 
-test('each runner form on the list is denied', async () => {
+test('each runner form on the list runs capped', async () => {
   for (const command of ['uv run pytest -x', 'cargo test --release', 'git -C /tmp/repo log', 'git shortlog -s', 'npx tsc --noEmit']) {
-    assert.equal((await verdict(command)).denied, true, command);
+    assert.equal(await cappedTo(command), `set -o pipefail; ${command} 2>&1 | tail -n 200`, command);
   }
 });
 
 test('a command already piped, redirected or chained passes', async () => {
   for (const command of ['npm test | tail -5', 'npm test > out.txt', 'npm test && echo done', 'npm test; echo done', 'echo $(npm test)']) {
-    assert.equal((await verdict(command)).denied, false, command);
+    assert.equal(await cappedTo(command), null, command);
   }
 });
 
 test('a pipe or ampersand inside quoted text does not count as a chain', async () => {
-  assert.equal((await verdict('git log --format="%h|%s"')).denied, true);
+  assert.equal(await cappedTo('git log --format="%h|%s"'), 'set -o pipefail; git log --format="%h|%s" 2>&1 | tail -n 200');
 });
 
 test('a git log with a count limit passes', async () => {
   for (const command of ['git log -5', 'git log -n 5', 'git log --max-count=5']) {
-    assert.equal((await verdict(command)).denied, false, command);
+    assert.equal(await cappedTo(command), null, command);
   }
 });
 
@@ -161,7 +173,7 @@ test('guards off in the project settings switches the guard off', async () => {
   await fs.mkdir(path.join(directory, '.claude'));
   await fs.writeFile(path.join(directory, '.claude', 'exo.json'), JSON.stringify({ guards: 'off' }));
   assert.equal((await verdict('cat big.log', { directory })).denied, false);
-  assert.equal((await verdict('npm test', { directory })).denied, false);
+  assert.equal((await verdict('npm test', { directory })).decision, undefined);
 });
 
 test('an empty or unparsable input passes with no output', async () => {

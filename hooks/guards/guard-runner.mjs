@@ -30,15 +30,20 @@ export function isProcessEntry(moduleUrl) {
   }
 }
 
-// The deny output for `hookInput` when `denialFor(command, hookInput)` returns
-// a reason, or null to allow: a call that is not a Bash command, or the
-// `guards` setting off, allows.
+// The output for `hookInput` when `denialFor(command, hookInput)` returns a
+// reason, which denies, or `{ updatedCommand }`, which runs that command in
+// place of the original, or null to allow: a call that is not a Bash command,
+// or the `guards` setting off, allows.
 export function guardDecision(hookInput, denialFor) {
   const command = hookInput.tool_input?.command;
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
   if (!guardsOn()) return null;
   const reason = denialFor(command, hookInput);
   if (!reason) return null;
+  if (typeof reason === 'object') {
+    const updatedInput = { ...hookInput.tool_input, command: reason.updatedCommand };
+    return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } };
+  }
   const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
   return { hookSpecificOutput: decision };
 }
