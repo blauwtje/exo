@@ -23,7 +23,7 @@ export const DESCRIPTION_TOTAL_LOCK = { chars: 3321, measured: '2026-10-01' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2540, measured: '2026-09-30' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
-export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 96, measured: '2026-10-01' };
+export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 70, measured: '2026-10-01' };
 
 // The rendered project-memory file, which a session opens by path. It is a
 // ceiling the writer enforces before it writes, not a lock the verifier reads:
