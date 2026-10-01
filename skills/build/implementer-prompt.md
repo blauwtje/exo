@@ -1,6 +1,6 @@
 # Implementer prompt
 
-The build session (a plan of at most eight tasks) or the `exo:run-unit` agent (a larger plan) dispatches the `exo:build-task` agent for one task. Fill every field below and paste nothing more: the frame and task sit in the brief file.
+The build session (a plan of at most eight tasks) or the `exo:run-unit` agent (a larger plan) dispatches the `exo:build-task` agent for one task, which writes its report, at most 25 lines, to `Report to:`. Fill every field below and paste nothing more: the frame and task sit in the brief file.
 
 - `<brief path>`: the `Brief:` line `next-task.mjs` printed for the task.
 - `<budget>`: that task's `Budget:` line, verbatim on its own line, so the delegate-budget hook uses it over the shared default.
