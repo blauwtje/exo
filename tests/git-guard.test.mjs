@@ -75,7 +75,10 @@ test('a force push is denied and --force-with-lease is not', async () => {
     'git --no-pager push -f',
     'git -C /tmp/repo -c core.x=y push --force origin main',
     'make && git push -f',
-    'git push origin "--force"'
+    'git push origin "--force"',
+    'git push origin +main',
+    'git push origin +HEAD:main',
+    'git push origin feature +main'
   ], /force push/);
   await assertAllowed([
     'git push --force-with-lease',
@@ -89,6 +92,16 @@ test('reset --hard and clean -f are denied, their safe forms are not', async () 
   await assertDenied(['git reset --hard', 'git reset HEAD~1 --hard', 'git -C repo reset --hard origin/main', 'git reset "--hard"'], /reset --hard/);
   await assertDenied(['git clean -f', 'git clean -fd', 'git clean -xdf', 'git clean --force'], /clean -f/);
   await assertAllowed(['git reset --soft HEAD~1', 'git reset HEAD file.txt', 'git clean -n', 'git clean -nd']);
+});
+
+test('a git invoked by path or after an environment assignment is checked', async () => {
+  await assertDenied([
+    '/usr/bin/git reset --hard',
+    './git reset --hard',
+    'GIT_DIR=.git git reset --hard',
+    'ls .git; git reset --hard'
+  ], /reset --hard/);
+  await assertAllowed(['ls .git', 'GIT_DIR=.git git status']);
 });
 
 test('dropping or clearing a stash is denied, saving and popping are not', async () => {
@@ -140,8 +153,8 @@ test('force-deleting a branch with no name or with unlanded commits is denied', 
   assert.match(await reason(`git -C ${root} branch -fd feature`), /not in main yet/);
   assert.match(await reason(`git -C ${root} branch -D "feature"`), /not in main yet/);
   assert.match(await reason(`git -C ${root} branch -D`), /force-deleting a branch discards unmerged work/);
-  assert.match(await reason(`git -C ${root} branch -D nope`), /only a branch whose commits are all in/);
-  assert.match(await reason(`git -C ${root} branch -D $(echo feature)`), /only a branch whose commits are all in/);
+  assert.match(await reason(`git -C ${root} branch -D nope`), /no branch named nope here/);
+  assert.match(await reason(`git -C ${root} branch -D $(echo feature)`), /no branch named \$\(echo here/);
 });
 
 test('force-deleting a branch is allowed when its commits are in main or its pull request is merged', async () => {
@@ -165,6 +178,17 @@ test('force-deleting a branch is allowed when its commits are in main or its pul
   assert.match(await reason(`git -C ${root} branch -D squashed`), /not in main yet/);
   assert.equal(await reason(`git -C ${root} branch -D squashed`, { ghState: 'MERGED' }), null);
   assert.match(await reason(`git -C ${root} branch -D squashed`, { ghState: 'OPEN' }), /not in main yet/);
+});
+
+test('a missing branch is denied by name without asking gh, and an unresolved base still asks gh', async () => {
+  const root = await repository();
+  assert.match(await reason(`git -C ${root} branch -D nope`, { ghState: 'MERGED' }), /no branch named nope here/);
+  git(root, 'branch', '-m', 'main', 'master');
+  git(root, 'switch', '-q', '-c', 'feature');
+  await commitFiles(root, { 'feature.txt': 'feature\n' }, 'add the feature');
+  git(root, 'switch', '-q', 'master');
+  assert.match(await reason(`git -C ${root} branch -D feature`), /only a branch whose commits are all in/);
+  assert.equal(await reason(`git -C ${root} branch -D feature`, { ghState: 'MERGED' }), null);
 });
 
 test('every branch of a chained or multiple delete is checked', async () => {

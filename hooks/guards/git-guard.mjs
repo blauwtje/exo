@@ -22,17 +22,19 @@ import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 // A global option may repeat and appear in any order before the subcommand: `-C
 // <path>` and `-c <name>=<value>` take a separate value, every other one is a
 // single token such as `--no-pager`. Matching only a fixed pair would let
-// `git --no-pager reset --hard` through.
-const GIT_INVOCATION = /(?<![\w-])git((?: +(?:-[cC] +[^ \n]+|-[^ \n]+))*) +([a-z][a-z-]*)(?= |$|[;&|\n])/g;
+// `git --no-pager reset --hard` through. A `.` before `git` marks a word such as
+// `.git`, not a command; a `/` does not, so `/usr/bin/git` and `./git` still match.
+const GIT_INVOCATION = /(?<![\w.-])git((?: +(?:-[cC] +[^ \n]+|-[^ \n]+))*) +([a-z][a-z-]*)(?= |$|[;&|\n])/g;
 const INVOCATION_END = /[;&|\n]/;
 const GIT_TIMEOUT_MILLISECONDS = 5000;
 
 // `--force-with-lease` is allowed: the flag must end at a space or the line end.
+// A refspec with a leading `+`, such as `+main`, forces that ref like `--force`.
 // A clean bundle such as `-fd` is denied; `-n` alone is not.
 const ARGUMENT_RULES = [
   {
     subcommand: 'push',
-    arguments: /(?:^| )(?:-f|--force)(?: |$)/,
+    arguments: /(?:^| )(?:-f|--force|\+[^ ]+)(?: |$)/,
     reason: 'git-guard: force push discards remote history. Use --force-with-lease, or ask the user to run it.'
   },
   {
@@ -90,16 +92,21 @@ function git(directory, ...gitArguments) {
   }).trim();
 }
 
+function branchExists(directory, branch) {
+  try {
+    git(directory, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Returns the branch `branch` was cut from (its upstream, or `main` when it has
 // none or tracks its own push target) and its commits whose patch is not in that
 // base, one `<hash> <subject>` each. `git cherry` compares patch ids, so a commit
-// rebased before it landed counts as in. Returns null when a ref does not resolve.
+// rebased before it landed counts as in. Returns null when the base does not
+// resolve, as in a repository whose default branch is not `main`.
 function missingCommits(directory, branch) {
-  try {
-    git(directory, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`);
-  } catch {
-    return null;
-  }
   let base;
   try {
     base = git(directory, 'rev-parse', '--abbrev-ref', `${branch}@{upstream}`);
@@ -160,6 +167,9 @@ function branchDeleteReason(invocation) {
   const directories = [...invocation.options.matchAll(/(?:^| )-C +([^ ]+)/g)];
   const directory = directories.length > 0 ? unquote(directories.at(-1)[1]) : '.';
   for (const branch of branches) {
+    // A missing or mistyped name has no commits to lose, but its deny skips the
+    // `gh` round trip, which would only find no pull request.
+    if (!branchExists(directory, branch)) return `git-guard: no branch named ${branch} here, so its commits cannot be checked; write the literal name of an existing branch (see \`git branch --list\`).`;
     const landed = missingCommits(directory, branch);
     if (landed && landed.commits.length === 0) continue;
     if (pullRequestMerged(directory, branch)) continue;
