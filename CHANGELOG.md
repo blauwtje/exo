@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.70.1 - 2026-10-01
+
 ### Fixed
 
 - Heavy runtime learning no longer learns a shell wait loop or `sleep` command, which could replay an old green result instead of waiting for CI or a log.
