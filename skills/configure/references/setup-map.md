@@ -1,6 +1,6 @@
 # Setup walk
 
-Walk every setting in the chat, one question per message, and write only what the user changed once the review confirms. The enemy is a recommended answer that changes a value, which turns a digit `1` into a change the user never read. The overcorrection is an answer the scripts would reject: offer only the values each script accepts.
+Walk every setting in the chat, one question per message, and write only what the user changed once the review confirms. The enemy is a recommended answer that changes a value, which turns the answer `a` into a change the user never read. The overcorrection is an answer the scripts would reject: offer only the values each script accepts.
 
 ## Contents
 
@@ -12,7 +12,7 @@ Walk every setting in the chat, one question per message, and write only what th
 ## The steps
 
 1. **Check the issue route.** Run `git remote get-url origin` and `gh auth status`. Offer `issues` and `both` only when origin is on GitHub and both pass, because either answer fails at the first spec otherwise.
-2. **Ask each setting in its own message**, in the order `## The order` sets and in the question shape, because the user answers each with one digit. The last option of every setting but `scope` is `Keep the rest`, which keeps every setting not yet asked.
+2. **Ask each setting in its own message**, in the order `## The order` sets and in the question shape, because the user answers each with one letter. The last option of every setting but `scope` is `Keep the rest`, which keeps every setting not yet asked.
 3. **Review before writing.** List the changes, one line each, and wait for a yes; a named setting in the answer is asked again, then the review follows once more.
 4. **Write only the changes, then report.** Use the commands under `## The write commands` in the skill, and on a rejection relay it as printed and write nothing after it, because the user confirmed the set as a whole. Report one line per changed value and where it now lives.
 
@@ -28,7 +28,7 @@ Walk every setting in the chat, one question per message, and write only what th
 
 ## Each setting
 
-Every setting but `scope` offers its current value first, as `1. **Keep <value> (Recommended)**: <what it gives>`, naming the layer the `show` block printed for it, then every other value below.
+Every setting but `scope` offers its current value first, as `- **A · Keep <value>**: <what it gives>`, naming the layer the `show` block printed for it, then every other value below.
 
 | Setting | Question | Values and what each gives |
 |---|---|---|
@@ -46,4 +46,4 @@ Every setting but `scope` offers its current value first, as `1. **Keep <value> 
 
 - The current value outranks the default as the recommended answer.
 - An answer the scripts reject is never offered, even when the user typed it: ask that setting again with the accepted values.
-- The user's typed words outrank the digit they came with.
+- The user's typed words outrank the letter they came with.

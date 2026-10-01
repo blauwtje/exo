@@ -123,25 +123,28 @@ function show(root) {
 }
 
 // The overview plus the one question that moves a change forward: which setting
-// without a key, which value with one. The option lines sit outside the fence
-// because bold renders only there.
+// without a key, which value with one. Keep is always A, the recommended answer.
+// The option lines sit outside the fence because bold renders only there.
+function question(title, keep, picks) {
+  const letters = [keep, ...picks].map((line, index) => `- **${String.fromCharCode(65 + index)} · ${line}`);
+  return [`**1 · ${title}**`, '', ...letters, '', '→ A. Without an answer, nothing changes.'];
+}
+
 function menu(root, key) {
   const stack = layers(root);
   if (key === undefined) {
-    const picks = Object.keys(SCHEMA).map((name, index) => {
+    const picks = Object.keys(SCHEMA).map((name) => {
       const { value } = resolve(name, stack);
-      return `${index + 1}. **${name}**: change it, now ${value === '' ? '(none)' : value}`;
+      return `${name}**: change it, now ${value === '' ? '(none)' : value}`;
     });
-    const keep = `${picks.length + 1}. **Keep**: change nothing`;
-    console.log([...overview(Object.keys(SCHEMA), stack), '', 'Change which setting?', '', ...picks, keep].join('\n'));
+    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('Change which setting?', 'Keep**: change nothing', picks)].join('\n'));
     return;
   }
   if (!Object.hasOwn(SCHEMA, key)) throw unknownKey(key);
   const current = resolve(key, stack).value;
   const others = (SCHEMA[key].options ?? []).filter((option) => option !== current);
-  const picks = others.map((option, index) => `${index + 1}. **${option}**: set ${key} to ${option}`);
-  const keep = `${picks.length + 1}. **Keep ${current}**: change nothing`;
-  console.log([...overview([key], stack), '', `Set ${key} to which value?`, '', ...picks, keep].join('\n'));
+  const picks = others.map((option) => `${option}**: set ${key} to ${option}`);
+  console.log([...overview([key], stack), '', ...question(`Set ${key} to which value?`, `Keep ${current}**: change nothing`, picks)].join('\n'));
 }
 
 // Appending to a file that lacks a final newline would glue the entry onto its last line.

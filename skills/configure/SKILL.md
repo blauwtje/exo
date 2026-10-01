@@ -23,16 +23,20 @@ The values when this skill loaded, each with its layer:
 
 ## One setting
 
-Take the first step whose answer the request and the digits so far leave open.
+Take the first step whose answer the request and the letters so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
-2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a digit.
+2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
 3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, for `guard_lines` a whole number of at least 1, and for `heavy_commands` command prefixes joined by `;`, empty for off, in the question shape.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
-   1. **Project (Recommended)**: everyone, via .claude/exo.json
-   2. **Local**: only you, in this repository
-   3. **Global**: every project on this machine
+   **1 · Which layer?**
+
+   - **A · Project**: everyone, via .claude/exo.json
+   - **B · Local**: only you, in this repository
+   - **C · Global**: every project on this machine
+
+   → A. Without an answer, nothing changes.
    ```
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line, because the block above predates the change. Relay a rejection as the script printed it and change nothing by hand.
 6. **Point** a global value at `/config`, where each exo option is a row, and run nothing, because the harness owns that file.
@@ -57,7 +61,7 @@ Follow `references/setup-map.md` from its first step, asking in the chat one set
 | File | Read it when |
 |---|---|
 | `references/setup-map.md` | The walk, before its first step: every step, the order, and each setting's question and answers. Not for one setting. |
-| `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options. |
+| `../route-skills/references/question.md` | Before a message that asks the user to pick among lettered options. |
 
 ## Judgment
 
