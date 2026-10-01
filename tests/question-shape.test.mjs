@@ -38,8 +38,8 @@ test('the route-skills body points at the question reference', () => {
 });
 
 test('the next stage recommends continuing, and a context notice leaves the order alone', () => {
-  assert.ok(NEXT_STAGE.includes('After `spec`: 1. Build, 2. Stop.'));
-  assert.ok(NEXT_STAGE.includes('**Continuing is recommended**'));
+  assert.ok(NEXT_STAGE.includes('After `spec`: A Adjust the brief, B Build here.'));
+  assert.ok(NEXT_STAGE.includes('**A is the recommended option**'));
   assert.ok(NEXT_STAGE.includes('**A context notice changes nothing here.**'));
   assert.ok(!NEXT_STAGE.includes('stopping is recommended'), 'a context notice no longer moves Stop first');
   assert.ok(!NEXT_STAGE.includes('stopping leads after every stage'), 'Stop no longer leads unconditionally');

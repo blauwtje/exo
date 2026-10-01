@@ -1,5 +1,5 @@
-// next-stage.mjs prints the next-stage question's options, continuing first
-// and, for the stages
+// next-stage.mjs prints the next-stage question as a lettered pick, A the
+// recommended option, and, for the stages
 // `references/next-stage.md`'s table names, the one model line under them, reading a plan's `Design:` tasks and `## Visual
 // direction` to pick the build row.
 
@@ -22,7 +22,7 @@ function noSpecStageKind() {
   return kinds[stages['build-no-spec'].kind];
 }
 
-test('spec recommends continuing into build, Stop second', async () => {
+test('spec ends on a lettered pick, adjust the brief A and build here B', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
   ] });
@@ -30,8 +30,14 @@ test('spec recommends continuing into build, Stop second', async () => {
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
   assert.equal(report, [
-    '1. **Build (Recommended)**: runs the plan.',
-    `2. **Stop**: run \`/exo:build ${planPath}\` after a context clear.`,
+    '**1 · Next step**',
+    `The brief is written at \`${planPath}\`.`,
+    '',
+    '- **A · Adjust the brief**: change it before anything is built.',
+    '- **B · Build here**: runs the brief in this session.',
+    '',
+    '→ A. nothing is built before the brief reads right.',
+    `Without an answer, nothing starts; type \`/clear\` and then \`/exo:build ${planPath}\` to build in a fresh session.`,
     RUN_PLAN_SONNET_LINE
   ].join('\n') + '\n');
 });
@@ -43,7 +49,8 @@ test('spec opens build on sonnet when every Design: task holds a frozen directio
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: runs the plan\.\n/);
+  assert.match(report, /\n- \*\*A · Adjust the brief\*\*/);
+  assert.match(report, /\n- \*\*B · Build here\*\*/);
   assert.match(report, /Next stage runs on `sonnet` at `medium`/);
 });
 
@@ -61,7 +68,8 @@ test('spec opens build on the session model when a Design: task is still pending
 
 test('find-cause opens build with no spec, unknown stage fails', async () => {
   const report = nextStageReport({ after: 'find-cause', artifact: 'none' });
-  assert.match(report, /^1\. \*\*Build \(Recommended\)\*\*: builds the edits the proof left\.\n/);
+  assert.match(report, /\n- \*\*A · Build\*\*: builds the edits the proof left\.\n- \*\*B · Stop\*\*/);
+  assert.ok(report.includes('\n→ A. '));
   const { model, effort } = noSpecStageKind();
   assert.ok(report.includes(`Next stage runs on \`${model}\` at \`${effort}\`, because it decides the change while building it.`));
   assert.throws(() => nextStageReport({ after: 'ship', artifact: 'none' }), /no next stage known/);
@@ -75,6 +83,6 @@ test('CLI fails with a usage error when --after is missing', async () => {
 
 test('the no-plan model line takes its model and effort from the kind of the build-no-spec stage', () => {
   const { model, effort } = noSpecStageKind();
-  const modelLine = nextStageReport({ after: 'find-cause', artifact: 'none' }).split('\n')[2];
+  const modelLine = nextStageReport({ after: 'find-cause', artifact: 'none' }).split('\n').at(-2);
   assert.ok(modelLine.startsWith(`Next stage runs on \`${model}\` at \`${effort}\`, because `));
 });

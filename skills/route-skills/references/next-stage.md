@@ -6,10 +6,10 @@ A stage skill reads this file at its final message when its work leaves a next s
 
 A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.
 
-1. **Two options.** The options follow the question shape: the next stage and Stop. After `spec`: 1. Build, 2. Stop. Picking a stage runs its command, such as `/exo:build <brief path>`, in this session.
-2. **Continuing is recommended**, as `1. **<Stage> (Recommended)**`, because this session holds the facts the next stage needs and a clear pays off only once the context is large. Stop is number 2, and its text names the command to run after a context clear, such as `/exo:build <brief path>`.
-3. **A context notice changes nothing here.** Past an `exo: context` notice the session keeps the order above and hands the work on through a fresh delegate, so Build stays `1.` and Stop stays `2.`.
-4. **One model line.** When the next stage runs on a model or effort other than the session's, one plain line under the options names them from this table, with the reason in one clause. `scripts/next-stage.mjs` reads the model and effort of each row from the kinds in `lib/model-kinds.json`: the first row's effort from the `build` skill's kind, the last two from the stage kinds.
+1. **One lettered pick.** The question follows the question shape as a single pick titled `**1 · Next step**`. After `spec`: A Adjust the brief, B Build here. After `find-cause`: A Build, B Stop. B after `spec` runs `/exo:build <brief path>` in this session.
+2. **A is the recommended option**, as `→ A. <reason>`, and the line for no answer follows it: nothing starts, and `/clear` then `/exo:build <brief path>` builds in a fresh session.
+3. **A context notice changes nothing here.** Past an `exo: context` notice the session keeps the letters above and hands the work on through a fresh delegate.
+4. **One model line.** When the next stage runs on a model or effort other than the session's, one plain line under the question names them from this table, with the reason in one clause. `scripts/next-stage.mjs` reads the model and effort of each row from the kinds in `lib/model-kinds.json`: the first row's effort from the `build` skill's kind, the last two from the stage kinds.
 5. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
 
 | Next stage | Model and effort | Because |

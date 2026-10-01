@@ -1,4 +1,4 @@
-// Prints the next-stage option block and, when the next stage's model or
+// Prints the next-stage question and, when the next stage's model or
 // effort differs from the session's, the one model line `references/
 // next-stage.md` allows under it. A stage skill whose work leaves a next
 // stage open (`spec`, `find-cause`) runs this at its
@@ -15,13 +15,27 @@ import { parseFlags, UsageError } from '#script-flags';
 import { readKindTable } from '#model-kinds';
 import { frameOf, parsePlan } from '#plan-tasks';
 
-// The stage a session just finished names the stage its next-stage question
-// opens, per `references/next-stage.md`'s order: this one stage and Stop.
-// `label` and `does` follow `references/question.md`'s shape: a one-to-three-word
-// bold label, then a few words on what happens, never why.
+// The stage a session just finished names the question that ends it, per
+// `references/next-stage.md`: a title, a context sentence, lettered option
+// lines with the recommended one on A, the `→ A.` reason, and the line for no
+// answer a single pick carries. `stage` is the stage whose model line follows.
+// An option is `[label, what the user gets]`, never why; its letter comes
+// from its place in the array.
 const NEXT_STAGE = {
-  'spec': { stage: 'build', label: 'Build', does: 'runs the plan' },
-  'find-cause': { stage: 'build-no-spec', label: 'Build', does: 'builds the edits the proof left' }
+  'spec': {
+    stage: 'build',
+    context: (artifact) => `The brief is written at \`${artifact}\`.`,
+    options: [['Adjust the brief', 'change it before anything is built.'], ['Build here', 'runs the brief in this session.']],
+    reason: 'nothing is built before the brief reads right.',
+    silence: (artifact) => `Without an answer, nothing starts; type \`/clear\` and then \`${commandFor('build', artifact)}\` to build in a fresh session.`
+  },
+  'find-cause': {
+    stage: 'build-no-spec',
+    context: () => 'The cause is found and the proof left edits to build.',
+    options: [['Build', 'builds the edits the proof left.'], ['Stop', 'nothing is built now.']],
+    reason: 'this session holds the facts the build needs.',
+    silence: () => `Without an answer, nothing starts; type \`/clear\` and then \`${commandFor('build-no-spec')}\` to build in a fresh session.`
+  }
 };
 
 function commandFor(stage, artifact) {
@@ -68,15 +82,15 @@ function modelLineFor(stage, artifact) {
 }
 
 /**
- * The next-stage question's lines: continuing first and recommended, Stop
- * second, then the model line when the table names one.
+ * The next-stage question: title, context, lettered options with the
+ * recommended one on A, the reason, the line for no answer, then the model
+ * line when the table names one.
  */
 export function nextStageReport({ after, artifact }) {
   const next = NEXT_STAGE[after];
   if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
-  const stopText = `run \`${commandFor(next.stage, artifact)}\` after a context clear.`;
-  const stageText = `${next.does}.`;
-  const lines = [`1. **${next.label} (Recommended)**: ${stageText}`, `2. **Stop**: ${stopText}`];
+  const options = next.options.map(([label, does], index) => `- **${String.fromCharCode(65 + index)} · ${label}**: ${does}`);
+  const lines = ['**1 · Next step**', next.context(artifact), '', ...options, '', `→ A. ${next.reason}`, next.silence(artifact)];
   const modelLine = modelLineFor(next.stage, artifact);
   if (modelLine !== null) lines.push(modelLine);
   return `${lines.join('\n')}\n`;
