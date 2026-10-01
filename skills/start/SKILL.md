@@ -13,7 +13,7 @@ One door for a user who does not remember a skill's name. The enemy is a pick ha
 
 - `/exo:start` with nothing after it: relay the cheat sheet.
 - `/exo:start <goal>`: route the goal by `route-skills`' rules and run the picked stage in the same turn.
-- `/exo:start <spec-path>`, or a spec or big wish to build: `spec`, which writes the brief with its task list and goes straight on to `build`.
+- `/exo:start <spec-path>`, or a spec or big wish to build: `spec`, which writes the brief with its task list, then offers `build`.
 - Not for a session's own routing rules: `route-skills` owns those and loads on its own; it is never itself a pick.
 
 ## No goal
@@ -23,7 +23,7 @@ Relay the two tables in `references/cheat-sheet.md` as the whole reply, rows unc
 ## With a goal
 
 1. **Match.** Read every skill's `description` for the triggers that fit the stated goal, the same match a session makes on its own under `route-skills`.
-   The exception is a path to a spec file, or a spec or big wish to build: pick `spec` with that path or wish as its argument, and add no stop after it, because it loads `build` itself once the brief is written.
+   The exception is a path to a spec file, or a spec or big wish to build: pick `spec` with that path or wish as its argument; it offers `build` once the brief is written, so start runs nothing after it.
 2. **Two routes, different work.** A goal that leaves open whether behavior stays or changes fits both a behavior-keeping and a behavior-changing skill; ask one question per `../route-skills/references/question.md` and run nothing before the answer, because the wrong pick does work the answer undoes. Two skills leading to the same work take the first.
 3. **Several fit.** Otherwise pick the one, ordering by `route-skills`' "When several fire" section rather than guessing.
 4. **None fits.** Follow `route-skills` step 2 and do the work without a skill.
