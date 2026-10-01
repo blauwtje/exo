@@ -73,7 +73,7 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       'Before asking the user to pick among options.', 'Before asking.');
     replaceText(root, 'skills/build/SKILL.md',
-      'Never here: `exo:run-unit` reads it.', 'Never here.');
+      'Never here: the unit reads it.', 'Never here.');
   } },
   // build's body sits at its STAGE_BODY_TOKENS lock; trimming one
   // References description offsets the added Judgment section's bytes.
@@ -94,7 +94,7 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       'Before asking the user to pick among options.', 'Before asking.');
     replaceText(root, 'skills/build/SKILL.md',
-      'Never here: `exo:run-unit` reads it.', 'Never here.');
+      'Never here: the unit reads it.', 'Never here.');
   } },
   { name: 'slim-skill-without-references-table', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', '## References', '## Sources') },
