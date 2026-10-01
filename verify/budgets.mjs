@@ -19,7 +19,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // route-skills body and cuts the tail of that body before it passes the cap, so the
 // next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 3561, measured: '2026-09-28' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 3321, measured: '2026-10-01' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2540, measured: '2026-09-30' };
 
 // The rendered project-memory file, which a session opens by path. It is a
