@@ -1,4 +1,4 @@
-Read this when logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner, after the baseline, orientation, or reproduction and before the first affected test or production edit; or before writing the first task of any task list, to sort tasks into risky and routine so the risky ones write their test first — style, text, and version-only changes do not qualify, and report mode never loads it.
+Read this when logic or public behavior changes, or an automated test is being added or changed, and the repository exposes an automated test runner, after the baseline, orientation, or reproduction. Read it before the first affected test or production edit; or before writing the first task of any task list, to sort tasks into risky and routine so the risky ones write their test first. (style, text, and version-only changes do not qualify, and report mode never loads it).
 
 # Test design
 
@@ -18,10 +18,6 @@ Every other change is routine and proves itself the ordinary way.
 
 A risky change takes `## Red before green` as written, quoting the failing output before the production edit and the passing output after it.
 
-## Define the proof
-
-Write one sentence before the test: `Given <public input/state>, the caller observes <output/effect> instead of <old result>.` Select the nearest repository test that can observe that result through a public function, response, event, persisted record, file, or command output.
-
 ## Red before green
 
 1. Add or change the test before production behavior.
@@ -31,6 +27,10 @@ Write one sentence before the test: `Given <public input/state>, the caller obse
 5. Run the nearest existing suite that owns the changed boundary.
 
 If the test passes before the change, it proves nothing about the change. Tighten the assertion or report that a failing-before test could not be established.
+
+## Define the proof
+
+Write one sentence before the test: `Given <public input/state>, the caller observes <output/effect> instead of <old result>.` Select the nearest repository test that can observe that result through a public function, response, event, persisted record, file, or command output.
 
 ## Assert behavior, not construction
 

@@ -58,7 +58,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/critique.md': 845,
   'skills/build/references/data-migration.md': 912,
   'skills/build/references/security.md': 1040,
-  'skills/build/references/test-design.md': 906,
+  'skills/build/references/test-design.md': 907,
   'skills/build/references/wave-worktrees.md': 956,
   'skills/find-cause/references/profiling.md': 854,
   'skills/ship/references/pr-prep.md': 1029,
