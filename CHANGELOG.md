@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.70.2 - 2026-10-01
+
 ### Fixed
 
 - Heavy runtime learning no longer learns a command that reads remote state, such as `gh pr checks 12` or `curl https://x/health-check`, and counts only the program or script name as test-like, so exo no longer replays an old green CI result for up to 24 hours.
