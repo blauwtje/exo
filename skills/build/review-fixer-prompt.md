@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The text `build` hands a `general-purpose` delegate on `sonnet` when the branch review returns `FINDINGS`. The delegate repairs from the review report alone and leaves the Final verification to the session.
+The text `verify` step 3 hands a `general-purpose` delegate on `sonnet` when the branch review returns `FINDINGS`. The delegate repairs from the review report alone and leaves the gate rerun and the commit to `verify`.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>, report <report path>.
@@ -16,7 +16,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 Edit only paths `git diff --name-only <base>...HEAD` lists; a fix that needs another path is not made and counts as reported. After the fixes, run the `Run:` command of every plan task whose `Files:` names a path you edited, found with `grep -n '^Run:\|^Files:' <plan>`, redirecting output over forty lines to a log beside the report. A fix whose command still fails after two attempts is reverted and counts as reported, with both outputs in the report.
 
-Append to each finding line in the report `fixed` or `reported: <one-clause reason>`. Run no git command that writes and commit nothing, because the session runs the Final verification and commits. Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
+Append to each finding line in the report `fixed` or `reported: <one-clause reason>`. Run no git command that writes and commit nothing, because the session reruns the gate and commits. Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
 
 Return this one line: `fixed=<n> reported=<n> report=<path>`. Only a stop at a blocked state adds a second line naming it, so a return runs to at most two lines.
 ```
