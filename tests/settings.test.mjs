@@ -153,7 +153,7 @@ test('menu asks for the setting, and with a key for a value other than the curre
   const space = await workspace({ project: { specs: 'issues' } });
   const settingQuestion = await settings(space, ['menu']);
   assert.equal(settingQuestion.code, 0, settingQuestion.stderr);
-  assert.ok(settingQuestion.stdout.trimEnd().endsWith('1. **specs**: change it, now issues\n2. **replies**: change it, now tight\n3. **budget**: change it, now medium\n4. **ship**: change it, now ask\n5. **workspace**: change it, now ask\n6. **guards**: change it, now on\n7. **guard_lines**: change it, now 400\n8. **Keep**: change nothing'), settingQuestion.stdout);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('1. **specs**: change it, now issues\n2. **replies**: change it, now tight\n3. **budget**: change it, now medium\n4. **ship**: change it, now ask\n5. **workspace**: change it, now ask\n6. **guards**: change it, now on\n7. **guard_lines**: change it, now 400\n8. **heavy_commands**: change it, now (none)\n9. **Keep**: change nothing'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
   assert.ok(valueQuestion.stdout.trimEnd().endsWith('1. **docs**: set specs to docs\n2. **both**: set specs to both\n3. **Keep issues**: change nothing'), valueQuestion.stdout);
   assert.doesNotMatch(valueQuestion.stdout, /replies/);
@@ -233,6 +233,21 @@ test('guards is on by default and off when the project sets it', async () => {
   const rejected = await settings(unset, ['set', 'guards', 'maybe', '--scope', 'project']);
   assert.notEqual(rejected.code, 0);
   assert.match(rejected.stderr, /guards=maybe is not one of on, off/);
+});
+
+test('the context line leaves heavy_commands out while empty and prints it once set', async () => {
+  const unset = await workspace();
+  assert.ok(!(await settings(unset, ['context'])).stdout.includes('heavy_commands'));
+  const project = await workspace({ project: { heavy_commands: 'npm run e2e' } });
+  assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project)'));
+  assert.ok((await settings(unset, ['menu'])).stdout.includes('**heavy_commands**: change it, now (none)'));
+});
+
+test('heavy_commands is empty by default and carries the project string whole', async () => {
+  const unset = await workspace();
+  assert.equal((await settings(unset, ['get', 'heavy_commands'])).stdout.trim(), '');
+  const project = await workspace({ project: { heavy_commands: 'npm run e2e:beeld; make e2e' } });
+  assert.equal((await settings(project, ['get', 'heavy_commands'])).stdout.trim(), 'npm run e2e:beeld; make e2e');
 });
 
 test('a stored old budget name reads as its new level', async () => {

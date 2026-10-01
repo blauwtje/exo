@@ -58,6 +58,12 @@
       "description": "From how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range. Not sure? Keep 400. A project overrides this in .claude/exo.json.",
       "default": 400,
       "min": 1
+    },
+    "heavy_commands": {
+      "type": "string",
+      "title": "Heavy commands",
+      "description": "Command prefixes separated by ;, such as npm run e2e:beeld. A Bash command starting with one runs at most once per code state across Claude sessions: a repeat on unchanged code returns the earlier green result, and a run waits for the same command already running. Leave empty to turn this off. A project overrides this in .claude/exo.json.",
+      "default": ""
     }
   }
 }

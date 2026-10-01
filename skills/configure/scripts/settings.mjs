@@ -63,12 +63,16 @@ function contextLine(root) {
     const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
     const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
-    const parts = Object.keys(SCHEMA).map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
+    // An empty value, such as heavy_commands by default, adds noise to every session, so the line leaves it out.
+    const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '');
+    const parts = printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
     const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
     return `${[`exo settings: ${parts.join(', ')}`, ...notes].join('; ')}. ${rules}`;
   } catch (error) {
     const defaults = Object.fromEntries(Object.entries(SCHEMA).map(([key, entry]) => [key, entry.default]));
-    const defaultParts = Object.entries(defaults).map(([key, value]) => `${key}=${value} (default)`);
+    const defaultParts = Object.entries(defaults)
+      .filter(([, value]) => value !== '')
+      .map(([key, value]) => `${key}=${value} (default)`);
     return `exo settings: ${defaultParts.join(', ')}; ${error.message}. ${activeRules(defaults)}`;
   }
 }
@@ -125,7 +129,8 @@ function menu(root, key) {
   const stack = layers(root);
   if (key === undefined) {
     const picks = Object.keys(SCHEMA).map((name, index) => {
-      return `${index + 1}. **${name}**: change it, now ${resolve(name, stack).value}`;
+      const { value } = resolve(name, stack);
+      return `${index + 1}. **${name}**: change it, now ${value === '' ? '(none)' : value}`;
     });
     const keep = `${picks.length + 1}. **Keep**: change nothing`;
     console.log([...overview(Object.keys(SCHEMA), stack), '', 'Change which setting?', '', ...picks, keep].join('\n'));

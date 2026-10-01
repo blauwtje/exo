@@ -18,7 +18,7 @@ Walk every setting in the chat, one question per message, and write only what th
 
 ## The order
 
-`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship`, `guards` and `guard_lines`.
+`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines` and `heavy_commands`.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -38,6 +38,7 @@ Every setting but `scope` offers its current value first, as `1. **Keep <value> 
 | `ship` | How should finished commits leave this machine? | `ask`: ship asks each time. `pr-merge`: a pull request, merged once checks pass. `open-pr`: a pull request left open. `push`: a push, no pull request. `local`: nothing leaves. |
 | `guards` | Should exo's safety guards refuse the commands and edits they cover? | `on` (default): they refuse. `off`: no guard refuses anything. |
 | `guard_lines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |
+| `heavy_commands` | Which commands should run at most once per code state? | Empty (the default): no command is held back. Typed command prefixes separated by `;`, such as `npm run e2e`: a repeat on unchanged code returns the earlier green result. Any typed string is an answer. |
 
 `issues` and `both` are left out when step 1 found no working GitHub route. A value that is the current one appears only as the keep answer.
 
