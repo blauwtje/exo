@@ -153,8 +153,8 @@ test('force-deleting a branch with no name or with unlanded commits is denied', 
   assert.match(await reason(`git -C ${root} branch -fd feature`), /not in main yet/);
   assert.match(await reason(`git -C ${root} branch -D "feature"`), /not in main yet/);
   assert.match(await reason(`git -C ${root} branch -D`), /force-deleting a branch discards unmerged work/);
-  assert.match(await reason(`git -C ${root} branch -D nope`), /only a branch whose commits are all in/);
-  assert.match(await reason(`git -C ${root} branch -D $(echo feature)`), /only a branch whose commits are all in/);
+  assert.match(await reason(`git -C ${root} branch -D nope`), /no branch named nope here/);
+  assert.match(await reason(`git -C ${root} branch -D $(echo feature)`), /no branch named \$\(echo here/);
 });
 
 test('force-deleting a branch is allowed when its commits are in main or its pull request is merged', async () => {
@@ -178,6 +178,17 @@ test('force-deleting a branch is allowed when its commits are in main or its pul
   assert.match(await reason(`git -C ${root} branch -D squashed`), /not in main yet/);
   assert.equal(await reason(`git -C ${root} branch -D squashed`, { ghState: 'MERGED' }), null);
   assert.match(await reason(`git -C ${root} branch -D squashed`, { ghState: 'OPEN' }), /not in main yet/);
+});
+
+test('a missing branch is denied by name without asking gh, and an unresolved base still asks gh', async () => {
+  const root = await repository();
+  assert.match(await reason(`git -C ${root} branch -D nope`, { ghState: 'MERGED' }), /no branch named nope here/);
+  git(root, 'branch', '-m', 'main', 'master');
+  git(root, 'switch', '-q', '-c', 'feature');
+  await commitFiles(root, { 'feature.txt': 'feature\n' }, 'add the feature');
+  git(root, 'switch', '-q', 'master');
+  assert.match(await reason(`git -C ${root} branch -D feature`), /only a branch whose commits are all in/);
+  assert.equal(await reason(`git -C ${root} branch -D feature`, { ghState: 'MERGED' }), null);
 });
 
 test('every branch of a chained or multiple delete is checked', async () => {
