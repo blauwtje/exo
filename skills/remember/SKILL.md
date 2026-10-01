@@ -20,16 +20,16 @@ Keep only what two sessions attested and the repository still supports. The enem
 
 ## What is attested twice
 
-The claims two separate sessions have already booked, waiting for approval:
+The claims two separate sessions had booked when this skill loaded, before this session's booking:
 
 !`node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" propose`
 
 ## The loop
 
 1. **Reach for the stronger fix first.** Before booking, walk the ladder in `../edit-skills/references/where-a-fix-lives.md` and propose the strongest home the mistake fits, including a skill or instruction edit, instead of a claim; book only what is left: a fact none of those can carry.
-2. **Book** the user's correction with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" book --claim "<one sentence>" --quote "<their words, verbatim>" --session "<this session id>"`. Quote no password, token or key: the quote is stored as given.
-3. **Write nothing yet** when the block above names no claim, and say which session count the booking now stands at, because a claim one session misheard is the failure this gate exists for.
-4. **Propose** each claim in the block above to the user with both dated quotes, in the question shape, and wait. Nothing is written before the answer.
+2. **Book** the user's correction with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" book --claim "<one sentence>" --quote "<their words, verbatim>" --session "<this session id>"`. Quote no password, token or key: the quote is stored as given. Then rerun `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" propose`: the block above predates the booking, so steps 3-4 use this output.
+3. **Write nothing yet** when the rerun names no claim, and say which session count the booking now stands at, because a claim one session misheard is the failure this gate exists for.
+4. **Propose** each claim in the rerun output to the user with both dated quotes, in the question shape, and wait. Nothing is written before the answer.
 5. **Write** an approved claim with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --claim "<the claim>" --refs "<path,path#symbol>"`, adding `--replaces "<the old claim>"` when it answers a question an earlier line already answered, so the file never holds two answers to one question.
 6. **Relay a refusal** exactly as the script printed it, and retire a line the refusal names with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" retire --claim "<the claim>"` before trying again. Edit neither file by hand: memory.json is the state and memory.md is rendered from it, and a hand edit makes them disagree.
 7. **Prune** with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" verify` whenever the user asks what is still true, and report every dropped line the script named.
