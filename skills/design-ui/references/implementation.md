@@ -4,6 +4,40 @@ Make the code preserve the design without hiding its structure, using platform f
 
 Tokens live as custom properties in one tokens file that component rules reference instead of raw values, and stylesheets import into the layers `reset, tokens, base, layout, components, utilities` in that order.
 
+## Contents
+
+- [One styling mechanism](#one-styling-mechanism)
+- [Banned patterns](#banned-patterns)
+- [Compatibility gate](#compatibility-gate)
+- [Where code lives](#where-code-lives)
+- [Tokens and palette derivation](#tokens-and-palette-derivation)
+- [Responsive type and layout](#responsive-type-and-layout)
+- [Selectors and cascade](#selectors-and-cascade)
+- [Enhanced transitions and native controls](#enhanced-transitions-and-native-controls)
+- [Economy — fewer statements for the same behavior](#economy--fewer-statements-for-the-same-behavior)
+- [Abstraction and readability](#abstraction-and-readability)
+- [Finish — browser surfaces](#finish--browser-surfaces)
+- [Replacing decoration](#replacing-decoration)
+- [Pre-ship sweep](#pre-ship-sweep)
+- [Judgment](#judgment)
+
+## One styling mechanism
+
+- Write the surface's styles the way one already-styled sibling file writes them, and read that file before the first declaration.
+- Add no second mechanism beside it: a stylesheet in a utility-class project, utility classes in a modules project, or a runtime style library for this surface.
+- A second mechanism renders as two spacing and color systems on one page.
+- In a Tailwind project, introduce no `@apply` when the repository has none.
+
+## Banned patterns
+
+- Float layout, except text wrapping around an image.
+- Pixel-only type scales.
+- JavaScript wheel hijacking or scroll steering.
+- A scroll library for an effect a supported CSS timeline expresses.
+- `transition: all`; name each transitioned property.
+- Inline event handlers, such as `onclick=""`.
+- Placeholder copy.
+
 ## Compatibility gate
 
 Read the project's browser targets before choosing syntax, and follow an existing build or transpile policy. A feature outside that matrix sits behind `@supports` or degrades to a complete, usable layout; no enhancement carries required content or the only available action. With no target matrix — greenfield work or a single-file demo — assume current evergreen browsers and keep the reduced-motion and degradation paths.
@@ -12,15 +46,23 @@ Read the project's browser targets before choosing syntax, and follow an existin
 
 - **Single-file deliverables** (artifacts, single HTML demos) change nothing structurally: one organized `<style>` block in `<head>` *is* the stylesheet. With no imports to carry the layers, declare `@layer reset, tokens, base, layout, components, utilities` once at the top and define the tokens in one `:root` block.
 - Mirror the layer order in stylesheet order, and let component rules follow page order, so the stylesheet reads top-to-bottom like the page.
-- Behavior lives in script files (or one `<script>` block in single-file mode). No inline `onclick=""` handlers; wire events with `addEventListener` or the framework's idiom.
-- **One styling mechanism.** Write the surface's styles the way one already-styled sibling file writes them, and read that file before the first declaration. A second mechanism beside it, a stylesheet in a utility-class project, utility classes in a modules project, or a runtime style library added for this surface, renders as two spacing and color systems on one page. In a Tailwind project, do not introduce `@apply` when the repository has none.
+- Behavior lives in script files, or one `<script>` block in single-file mode.
+- Wire events with `addEventListener` or the framework's idiom.
 
 ## Tokens and palette derivation
 
 Use `oklch()` for authored colors when the target matrix supports it, and derive related colors with `color-mix()` or relative color syntax rather than unrelated literals — `--tint: color-mix(in oklch, var(--accent) 12%, var(--ground))`.
 
-- Build the role tokens the interface actually has: `--ground` and `--surface` for the page and raised planes; `--ink` and `--ink-muted` for text, plus one inverse role only where text sits on a filled surface; `--border`, derived and never hand-picked; `--accent`, `--accent-hover`, and `--tint`; and a state color per state the interface can enter.
-- Beyond the seeds, derivation is the default: fifteen values read as one family without forcing every value onto one ramp. Derive each state color's companions — a `-tint` background, a text-safe cut — exactly as for the accent.
+Build the role tokens the interface actually has:
+
+- `--ground` and `--surface` for the page and raised planes.
+- `--ink` and `--ink-muted` for text, plus one inverse role only where text sits on a filled surface.
+- `--border`, derived and never hand-picked.
+- `--accent`, `--accent-hover`, and `--tint`.
+- A state color per state the interface can enter.
+
+- Beyond the seeds, derivation is the default: fifteen values read as one family without forcing every value onto one ramp.
+- Derive each state color's companions, a `-tint` background and a text-safe cut, exactly as for the accent.
 - **Fork the dark scheme in one place.** `color-scheme: light dark` on `:root`, every forked token declared once with `light-dark()`. Component rules never mention a scheme — if a component knows about dark mode, the tokens have failed.
 - Borders and one-pixel device alignments are the only raw pixel values inside component rules.
 
@@ -31,7 +73,8 @@ Use `oklch()` for authored colors when the target matrix supports it, and derive
 - Use grid or flex for layout, and subgrid when child rows must align across siblings.
 - Use logical properties for flow-relative spacing and inset; use physical properties only for a screen-anchored edge.
 - Use `aspect-ratio`, `gap`, `place-*`, and `inset` instead of padding-ratio, child-margin, or four-offset workarounds.
-- Pad every screen-anchored edge with `env(safe-area-inset-*)` added to its own spacing token, not instead of it: a bottom bar without it sits under the home indicator on a notched phone, and a value hard-coded for one device is wrong on the next.
+- Pad every screen-anchored edge with `env(safe-area-inset-*)` added to its own spacing token, not instead of it.
+- A bottom bar without that padding sits under the home indicator on a notched phone, and a value hard-coded for one device is wrong on the next.
 - Set a mobile text input at 16px or larger. Below that, iOS Safari zooms the viewport on focus and the layout the design was composed for is gone for the rest of the flow; this is a mechanic, not the reading floor the Phase 3 body-text rule sets.
 
 ## Selectors and cascade
@@ -63,7 +106,6 @@ Prefer semantic HTML and shipped controls — `dialog`, `popover`, `details`, na
 Theme every browser surface the page shows; these small details are what separate a crafted page from a stock one:
 
 - `::selection` in palette colors;
-- `:focus-visible` rings in the direction's accent with an offset, never the browser's default ring;
 - `accent-color` and `caret-color` on form controls;
 - `scrollbar-color` on any panel that scrolls inside the layout;
 - links with a chosen `text-underline-offset` and `text-decoration-thickness`;
@@ -71,15 +113,25 @@ Theme every browser surface the page shows; these small details are what separat
 
 ## Replacing decoration
 
-When a critique tell removes decoration, climb the ladder rather than deleting the region: a repository asset, then a subject artifact drawn with SVG, CSS, or canvas, then real data as an instrument, then a typographic or compositional treatment; omitting the region is last.
+When a critique tell removes decoration, climb this ladder rather than deleting the region:
 
-## Banned patterns
-
-Float layout, except text wrapping around an image; pixel-only type scales; JavaScript wheel hijacking or scroll steering; a scroll library for an effect a supported CSS timeline expresses; `transition: all`, so name each transitioned property; inline event handlers; and placeholder copy.
+1. A repository asset.
+2. A subject artifact drawn with SVG, CSS, or canvas.
+3. Real data as an instrument.
+4. A typographic or compositional treatment.
+5. Omitting the region, last.
 
 ## Pre-ship sweep
 
-Run `scripts/check-ui.mjs` with `--source` and `--url` instead of grepping by hand: it reports the inline-style, inline-handler, `!important`, `transition: all`, placeholder-copy, float-layout, emoji-in-markup, and raw-value tells, its own decorative-default tells (gradient text, radial halo, uniform card shadow, left-accent card, overused faces), its markup-completeness tells (`svg-without-viewbox`, `image-without-alt`, `image-without-dimensions`, `srcset-without-sizes`, `missing-lang-attribute`) and `physical-direction-property`, plus computed contrast, target size, overflow, `reflow-two-dimensional` at 320×256, and focus-indicator findings. Read each finding's `confidence` before acting, and fix the code rather than the checker.
+Run `scripts/check-ui.mjs` with `--source` and `--url` instead of grepping by hand. It reports:
+
+- the inline-style, inline-handler, `!important`, `transition: all`, placeholder-copy, float-layout, emoji-in-markup, and raw-value tells;
+- its own decorative-default tells: gradient text, radial halo, uniform card shadow, left-accent card, overused faces;
+- its markup-completeness tells: `svg-without-viewbox`, `image-without-alt`, `image-without-dimensions`, `srcset-without-sizes`, `missing-lang-attribute`;
+- `physical-direction-property`;
+- computed contrast, target size, overflow, `reflow-two-dimensional` at 320×256, and focus-indicator findings.
+
+Read each finding's `confidence` before acting, and fix the code rather than the checker.
 
 ## Judgment
 
