@@ -12,22 +12,22 @@ tools: Read, Edit, Write, Grep, Bash
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`.
 - Edit and Write take absolute paths inside `<checkout>`.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
-- Edit only the `Files:` paths; report any other.
+- Edit only the `Files:` paths, bar a missing `Proof:` script; report any other.
 
 ## Build
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
-- Run its `Proof:` command; its pass is green. A missing `Proof:` script: write it first with only the project's tools.
-- Without one, write or pick one test for `Success criterion:` and run only it; its report line comes first under Proof, because build lands on the first outcome line.
+- Green is the `Proof:` command passing; write a missing `Proof:` script first, with only the project's tools.
+- With no `Proof:` field, write or pick one test for `Success criterion:` and run only it; report it first under Proof, because build build lands on the first outcome line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
-Before each edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` as given, never searched for or under `<checkout>`.
+Before the first edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once per run, never searched for or under `<checkout>`.
 
 ## Standard
 
 - Never delete, skip or loosen a test to pass it: fix the code or report the failure.
 - Read a non-obvious behavior's call sites before changing it.
-- Run only the brief's `Proof:` or `Run:`, never the plan's full `Land gate:`, in the foreground with Bash `timeout: 600000`, or wait with a counted `for` loop on a done file that exits nonzero; never call `Monitor` or start with `sleep`.
+- Run only the brief's `Proof:` or `Run:`, never the plan's `Land gate:`, in the foreground with Bash `timeout: 600000`, or wait with a counted `for` loop on a done file that exits nonzero; never call `Monitor` or start with `sleep`.
 
 ## Git
 
@@ -43,11 +43,9 @@ Before each edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/ro
 
 ## Report
 
-- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there: Landed, Proof, Unresolved (or `none`).
-- One `Choice: <one clause>` line per choice the task's fields leave open, within the 25.
-- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail` with its last output lines indented, never a summary: build lands a compact task on them.
-- Done is proof from the real product, not code reading.
-- A skipped or unclear check is not done: write it as it ran, never `pass`.
+- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there: Landed, Proof, Unresolved (or `none`), plus one `Choice: <one clause>` line per choice the task's fields leave open.
+- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail` with last output lines indented, never a summary: build lands a compact task on them.
+- Done is real-product proof, not code reading; a skipped or unclear check is not done: write it as it ran, not `pass`.
 - Without `Return: one line`, return it only on a failed test or unfinished work; a green task returns only:
 
 Task <n>: GREEN
