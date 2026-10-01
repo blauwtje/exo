@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // SessionStart hook on startup, resume, clear and compact: builds one
-// additionalContext string, in order: a resume-plan pointer on clear or
-// compact, a handoff pointer, a project-memory pointer, the settings line,
-// then the body of the route-skills skill (frontmatter dropped), the only
-// skill invoked this way because its frontmatter blocks model invocation.
+// additionalContext string, in order: a handoff pointer, a project-memory
+// pointer, the settings line, then the body of the route-skills skill
+// (frontmatter dropped), the only skill invoked this way because its
+// frontmatter blocks model invocation.
 // It runs in Node so a host without `jq` still gets the injection.
 
 import { spawnSync } from 'node:child_process';
@@ -14,7 +14,6 @@ import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { reset as resetReadGuard } from './guards/read-guard.mjs';
 import { reset as resetRepeatGuard } from './guards/repeat-guard.mjs';
-import { sessionOutput } from '../skills/build/scripts/resume-plan.mjs';
 
 // A hook output string over this many characters reaches the model as a file
 // path and a 2,000-character preview, which would cut the rules themselves. The
@@ -131,14 +130,6 @@ if (input.source === 'clear' || input.source === 'compact') {
     resetRepeatGuard(input);
   } catch (error) {
     console.error(`repeat-guard: ${error.message}`);
-  }
-  // A plan build left open survives only as its marker, so the cleared
-  // session is told to resume it instead of waiting for the user to ask.
-  try {
-    const runningPlan = sessionOutput(input).replace(/\n+$/, '');
-    if (runningPlan) pointers += `${runningPlan}\n\n`;
-  } catch (error) {
-    console.error(`resume-plan: ${error.message}`);
   }
 }
 

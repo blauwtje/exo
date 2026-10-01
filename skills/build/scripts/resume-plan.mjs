@@ -1,12 +1,11 @@
-// Keeps a running plan going across a stop, a clear and a compaction.
+// Keeps a running plan going across a stop. A clear or a compaction starts no
+// build by itself: the user asks for it.
 // build writes `<git-dir>/exo/build.active` at its step 1 and removes it
 // at step 7. Its lines are the plan path, the run's checkout (may be empty),
 // the session id and the ISO write time; only a plan named there with an open
 // task counts as running.
 //
 //   node resume-plan.mjs stop      Stop hook: blocks once with the next task
-//   node resume-plan.mjs session   SessionStart on clear or compact: prints the
-//                                  line that sends the session back to build
 //   node resume-plan.mjs wait      Marks, once, that the running plan now waits
 //                                  on the user, so the next stop does not block
 //
@@ -95,14 +94,6 @@ export function stopOutput(input) {
   return output === null ? '' : `${JSON.stringify(output)}\n`;
 }
 
-// SessionStart checks only the marker's age: whether a clear keeps the
-// session id is undocumented, and build rewrites the marker when it resumes.
-export function sessionOutput(input) {
-  const running = runningPlan(input.cwd || process.cwd());
-  if (running === null) return '';
-  return `A plan is running: ${running.planPath}. On the next message, start the skill exo:build on this plan.\n`;
-}
-
 // Wait: mark, once, that the running plan now waits on the user. A no-op
 // without a live marker, so a run already ended never leaves a stray mark.
 export function waitOutput(input) {
@@ -111,13 +102,13 @@ export function waitOutput(input) {
   return '';
 }
 
-const OUTPUTS = { stop: stopOutput, session: sessionOutput, wait: waitOutput };
+const OUTPUTS = { stop: stopOutput, wait: waitOutput };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const command = process.argv[2];
   const output = OUTPUTS[command];
   if (output === undefined) {
-    process.stderr.write("resume-plan: the first argument is 'stop', 'session' or 'wait'\n");
+    process.stderr.write("resume-plan: the first argument is 'stop' or 'wait'\n");
     process.exitCode = 2;
   } else if (command === 'wait') {
     try {

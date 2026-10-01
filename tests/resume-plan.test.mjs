@@ -1,6 +1,5 @@
 // resume-plan.mjs blocks a stop once while the plan named in the build
-// marker has an open task, and on a clear or compaction the session hook tells
-// the fresh context to resume that plan.
+// marker has an open task; a clear or compaction starts no build by itself.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -129,20 +128,13 @@ async function sessionContext(root, source) {
   return JSON.parse(stdout).hookSpecificOutput.additionalContext;
 }
 
-for (const source of ['clear', 'compact']) {
-  test(`the session hook on ${source} sends the fresh context back to the running plan`, async () => {
-    const { root, planPath } = await checkout({ marker: true });
+for (const source of ['clear', 'compact', 'startup']) {
+  test(`the session hook on ${source} names no running plan`, async () => {
+    const { root } = await checkout({ marker: true });
     const context = await sessionContext(root, source);
-    assert.ok(context.startsWith(`A plan is running: ${planPath}. On the next message, start the skill exo:build on this plan.\n`), context.slice(0, 300));
+    assert.ok(!context.includes('A plan is running'), context.slice(0, 300));
   });
 }
-
-test('the session hook on startup names no running plan', async () => {
-  const { root } = await checkout({ marker: true });
-  const context = await sessionContext(root, 'startup');
-  assert.ok(!context.includes('A plan is running'), context.slice(0, 300));
-});
-
 
 test('a stop does not block while a background launch is pending, and blocks once it has notified', async () => {
   const { root } = await checkout({ marker: true });
