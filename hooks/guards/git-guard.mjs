@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // PreToolUse guard on Bash: denies a destructive git command before it runs: a
-// force push, `reset --hard`, `clean -f`, a force-delete of a branch with
-// commits that are not landed, a stash drop or clear, and a checkout or restore
-// of the whole tree. Deny-only, never rewrites. Stands down when the `guards`
+// force push, a remote ref delete or mirror, `reset --hard`, `clean -f`, a
+// force-delete of a branch with commits that are not landed, a stash drop or
+// clear, a forced checkout or switch, and a checkout or restore of the whole tree. Deny-only, never rewrites. Stands down when the `guards`
 // setting is `off`.
 //
 // Each `git` invocation is found in the blanked command (`blankCommandText`), so
@@ -29,13 +29,24 @@ const GIT_TIMEOUT_MILLISECONDS = 5000;
 
 // `--force-with-lease` is allowed: the flag must end at a space or the line end.
 // A refspec with a leading `+`, such as `+main`, forces that ref like `--force`.
-// A clean bundle such as `-fd` is denied; `-n` alone is not.
+// A short bundle such as `-fu`, `-uf` or `-fd` is denied when it holds the force
+// letter; `-n` alone is not. A push that deletes (`--delete`, `-d`, a `:ref`
+// refspec) or mirrors discards remote history like a force push.
+const FORCED_CHECKOUT = /(?:^|[ \t])(?:-[A-Za-z]*f[A-Za-z]*|--force|--discard-changes)(?:[ \t]|$)/;
+const FORCED_CHECKOUT_REASON = 'git-guard: a forced checkout or switch discards uncommitted work. Use git stash or ask the user to run it.';
 const ARGUMENT_RULES = [
   {
     subcommand: 'push',
-    arguments: /(?:^|[ \t])(?:-f|--force|\+[^ \t]+)(?:[ \t]|$)/,
+    arguments: /(?:^|[ \t])(?:-[A-Za-z]*f[A-Za-z]*|--force|\+[^ \t]+)(?:[ \t]|$)/,
     reason: 'git-guard: force push discards remote history. Use --force-with-lease, or ask the user to run it.'
   },
+  {
+    subcommand: 'push',
+    arguments: /(?:^|[ \t])(?:-[A-Za-z]*d[A-Za-z]*|--delete|--mirror|:[^ \t]+)(?:[ \t]|$)/,
+    reason: 'git-guard: deleting or mirroring remote refs discards remote history. Ask the user to run it.'
+  },
+  { subcommand: 'checkout', arguments: FORCED_CHECKOUT, reason: FORCED_CHECKOUT_REASON },
+  { subcommand: 'switch', arguments: FORCED_CHECKOUT, reason: FORCED_CHECKOUT_REASON },
   {
     subcommand: 'reset',
     arguments: /(?:^|[ \t])--hard/,
@@ -57,7 +68,7 @@ const WHOLE_TREE_REASON = 'git-guard: checking out or restoring the whole tree d
 const BRANCH_FORCE_DELETE_REASON = 'git-guard: force-deleting a branch discards unmerged work. Report the branch and ask the user.';
 const BRANCH_UNRESOLVED_REASON = 'git-guard: force-deleting a branch discards unmerged work; only a branch whose commits are all in the branch it was cut from, or whose pull request is MERGED, may go. Report the branch and ask the user.';
 
-const WHOLE_TREE_PATH = /^(?:[ \t]+[^ \t]+)*[ \t]+(?:--[ \t]+)?\.(?:[ \t]|$)/;
+const WHOLE_TREE_PATH = /^(?:[ \t]+[^ \t]+)*[ \t]+(?:--[ \t]+)?[.*](?:[ \t]|$)/;
 // `git restore --staged .` only unstages. Adding `--worktree` makes the same
 // command discard the working tree, so the exemption needs the staged flag
 // without the worktree flag.

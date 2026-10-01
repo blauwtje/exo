@@ -78,14 +78,42 @@ test('a force push is denied and --force-with-lease is not', async () => {
     'git push origin "--force"',
     'git push origin +main',
     'git push origin +HEAD:main',
-    'git push origin feature +main'
+    'git push origin feature +main',
+    'git push -fu origin main',
+    'git push -uf origin main',
+    'git push -fv'
   ], /force push/);
   await assertAllowed([
     'git push --force-with-lease',
+    'git push -u --force-with-lease origin main',
     'git push --force-with-lease origin main',
     'git push origin main',
     'git push -u origin feature'
   ]);
+});
+
+test('deleting or mirroring remote refs is denied, an ordinary push is not', async () => {
+  await assertDenied([
+    'git push origin :main',
+    'git push origin --delete main',
+    'git push -d origin main',
+    'git push --mirror',
+    'git push origin main :old'
+  ], /remote refs/);
+  await assertAllowed(['git push origin HEAD:main', 'git push -u origin feature', 'git push --force-with-lease=main:abc123 origin main']);
+});
+
+test('a forced checkout or switch is denied, its plain forms are not', async () => {
+  await assertDenied([
+    'git checkout -f',
+    'git checkout -f main',
+    'git checkout --force main',
+    'git checkout -fb feature',
+    'git switch -f x',
+    'git switch --force x',
+    'git switch --discard-changes x'
+  ], /forced checkout/);
+  await assertAllowed(['git checkout main', 'git checkout -b feature', 'git switch x', 'git switch -c feature', 'git switch -']);
 });
 
 test('reset --hard and clean -f are denied, their safe forms are not', async () => {
@@ -118,11 +146,14 @@ test('checking out or restoring the whole tree is denied, naming files or unstag
     'git restore .',
     'git restore --worktree .',
     'git restore --staged --worktree .',
-    'git checkout HEAD .'
+    'git checkout HEAD .',
+    'git restore *',
+    'git checkout -- *'
   ], /whole tree/);
   await assertAllowed([
     'git restore --staged .',
     'git restore -S .',
+    'git restore --staged *',
     'git checkout file.txt',
     'git checkout -b feature',
     'git restore src/app.js'
