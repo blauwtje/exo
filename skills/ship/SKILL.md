@@ -35,4 +35,4 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 | `references/pr-comments.md` | Comments. |
 | `references/watch.md` | Watching. |
 
-Report: one line per pull request: URL, merged or the stop and reason (branch for Push or Keep local), status via `gh pr view <n> --json state,isDraft`, `gh pr ready <n>` if draft, `git worktree remove <path>` if merged.
+Report: each line `ship.mjs` prints, the checkout line included (branch for Keep local), status via `gh pr view <n> --json state,isDraft`, `gh pr ready <n>` if draft, `git worktree remove <path>` if merged.

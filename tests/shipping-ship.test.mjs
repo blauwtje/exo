@@ -208,7 +208,8 @@ test('pr-merge waits, gates, merges and confirms in order', async () => {
   };
   const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
   assert.equal(outcome.code, 0, outcome.stderr);
-  assert.equal(outcome.stdout, `${OPEN_PR.url} merged\n`);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} merged\n${workDir} on main, pulled\n`);
+  assert.equal(git(workDir, 'branch', '--show-current'), 'main');
   assert.deepEqual(outcome.calls, [
     'pr view feat/x --json number,url,state',
     'pr checks 42 --watch --fail-fast',
@@ -250,7 +251,7 @@ test('BEHIND updates the branch and gates again before merging', async () => {
   };
   const outcome = await shipRun(workDir, ['--route', 'pr-merge', '--title', 'feat: x', '--body', 'body.md'], scenario);
   assert.equal(outcome.code, 0, outcome.stderr);
-  assert.equal(outcome.stdout, `${OPEN_PR.url} merged\n`);
+  assert.equal(outcome.stdout, `${OPEN_PR.url} merged\n${workDir} on main, pulled\n`);
   assert.deepEqual(outcome.calls.filter((call) => call.startsWith('pr update-branch')), ['pr update-branch 42']);
 });
 
@@ -333,12 +334,13 @@ test('a bad route, mode or missing flag is a usage error that runs no gh', async
 // so a scenario answers the order lookup (baseRefName/headRefName) as well
 // as the per-number view, gate, merge and confirm calls.
 const ORDER_FIELDS = 'number,baseRefName,headRefName';
+const VIEW_FIELDS = 'number,url,state,headRefName';
 function stacked(number, base, head) {
   return { stdout: `${JSON.stringify({ number, baseRefName: base, headRefName: head })}\n` };
 }
 function mergeScenario(number, url) {
   return {
-    [`pr view ${number} --json number,url,state`]: { stdout: `${JSON.stringify({ number, url, state: 'OPEN' })}\n` },
+    [`pr view ${number} --json ${VIEW_FIELDS}`]: { stdout: `${JSON.stringify({ number, url, state: 'OPEN', headRefName: `feat/${number}` })}\n` },
     [`pr view ${number} --json ${GATE_FIELDS}`]: { stdout: `${JSON.stringify({ number, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', reviewDecision: null, statusCheckRollup: [] })}\n` },
     [`pr merge ${number} --squash`]: { stdout: '' },
     [`pr view ${number} --json state,mergedAt,url`]: { stdout: `${JSON.stringify({ state: 'MERGED', mergedAt: '2026-01-01T00:00:00Z', url })}\n` }
@@ -357,7 +359,7 @@ test('--merge orders stacked pull requests and merges the base before the head',
   };
   const outcome = await shipRun(workDir, ['--merge', '13', '12'], scenario);
   assert.equal(outcome.code, 0, outcome.stderr);
-  assert.equal(outcome.stdout, `${url12} merged\n${url13} merged\n`);
+  assert.equal(outcome.stdout, `${url12} merged\n${url13} merged\n${workDir} on main, pulled\n`);
 });
 
 test('--merge stops the whole run on CYCLE and merges nothing', async () => {
@@ -379,13 +381,13 @@ test('--merge prints a stop for one pull request and still merges the next', asy
   const scenario = {
     [`pr view 12 --json ${ORDER_FIELDS}`]: stacked(12, 'main', 'feat/12'),
     [`pr view 13 --json ${ORDER_FIELDS}`]: stacked(13, 'feat/12', 'feat/13'),
-    [`pr view 12 --json number,url,state`]: { stdout: `${JSON.stringify({ number: 12, url: 'https://github.com/acme/widgets/pull/12', state: 'OPEN' })}\n` },
+    [`pr view 12 --json ${VIEW_FIELDS}`]: { stdout: `${JSON.stringify({ number: 12, url: 'https://github.com/acme/widgets/pull/12', state: 'OPEN', headRefName: 'feat/12' })}\n` },
     [`pr view 12 --json ${GATE_FIELDS}`]: failingGate,
     ...mergeScenario(13, url13)
   };
   const outcome = await shipRun(workDir, ['--merge', '12', '13'], scenario);
   assert.equal(outcome.code, 1, outcome.stderr);
-  assert.equal(outcome.stdout, 'https://github.com/acme/widgets/pull/12 stopped gate conclusion=FAILURE build\n' + `${url13} merged\n`);
+  assert.equal(outcome.stdout, 'https://github.com/acme/widgets/pull/12 stopped gate conclusion=FAILURE build\n' + `${url13} merged\n${workDir} on main, pulled\n`);
 });
 
 test('--merge exits 4 when one pull request gates DIRTY', async () => {
@@ -393,7 +395,7 @@ test('--merge exits 4 when one pull request gates DIRTY', async () => {
   const dirtyGate = { stdout: `${JSON.stringify({ number: 12, state: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY', reviewDecision: null, statusCheckRollup: [] })}\n` };
   const scenario = {
     [`pr view 12 --json ${ORDER_FIELDS}`]: stacked(12, 'main', 'feat/12'),
-    [`pr view 12 --json number,url,state`]: { stdout: `${JSON.stringify({ number: 12, url: 'https://github.com/acme/widgets/pull/12', state: 'OPEN' })}\n` },
+    [`pr view 12 --json ${VIEW_FIELDS}`]: { stdout: `${JSON.stringify({ number: 12, url: 'https://github.com/acme/widgets/pull/12', state: 'OPEN', headRefName: 'feat/12' })}\n` },
     [`pr view 12 --json ${GATE_FIELDS}`]: dirtyGate
   };
   const outcome = await shipRun(workDir, ['--merge', '12'], scenario);

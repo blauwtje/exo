@@ -14,7 +14,9 @@
 // default branch. --merge does not combine with --route or its flags. Each
 // step prints `ship: <step> [#<n>]` on stderr as it starts; stdout carries
 // only the one result line a route ends on, or, for --merge, one line per
-// pull request.
+// pull request. After a confirmed merge, stdout ends with the one line
+// return-to-default.mjs prints, once it has put the main checkout back on the
+// default branch and pulled it; its outcome never changes the exit code.
 //
 // --routes prints the route question's menu the way ship's SKILL.md derives
 // it from origin, the default branch, `gh auth status` and the `ship` exo
@@ -45,6 +47,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
+import { returnToDefault } from './return-to-default.mjs';
 
 export const USAGE_EXIT = 2;
 export const DIRTY_EXIT = 4;
@@ -289,9 +292,9 @@ function createPullRequest(branch, base, flags) {
   return { number, url };
 }
 
-/** Number, url and state of a pull request read directly by its number. */
+/** Number, url, state and head branch of a pull request read directly by its number. */
 function pullRequestView(number) {
-  const result = runGh(['pr', 'view', String(number), '--json', 'number,url,state']);
+  const result = runGh(['pr', 'view', String(number), '--json', 'number,url,state,headRefName']);
   if (!result.ok) throw new StepError('gate', `gh=${result.error}`);
   return JSON.parse(result.stdout);
 }
@@ -359,18 +362,21 @@ function runMergeList(numbers) {
   }
 
   let exitCode = 0;
+  const merged = [];
   for (const number of order.line.split(' ')) {
     try {
       const pullRequest = pullRequestView(number);
       runGate(number, pullRequest.url);
       mergePullRequest(number, 'squash', pullRequest.url);
       console.log(confirmMerge(number, pullRequest.url));
+      merged.push(pullRequest.headRefName);
     } catch (error) {
       if (!(error instanceof StepError)) throw error;
       console.log(`${error.subject ?? `#${number}`} stopped ${error.step} ${error.message}`);
       exitCode = Math.max(exitCode, error.code === DIRTY_EXIT ? DIRTY_EXIT : 1);
     }
   }
+  if (merged.length > 0) console.log(returnToDefault({ base: defaultBranch(), merged }).line);
   process.exitCode = exitCode;
 }
 
@@ -395,7 +401,8 @@ function run(flags, branch, base) {
   waitForChecks(pullRequest.number, pullRequest.url);
   runGate(pullRequest.number, pullRequest.url);
   mergePullRequest(pullRequest.number, method, pullRequest.url);
-  return confirmMerge(pullRequest.number, pullRequest.url);
+  const confirmed = confirmMerge(pullRequest.number, pullRequest.url);
+  return `${confirmed}\n${returnToDefault({ base, merged: [branch] }).line}`;
 }
 
 function main() {
