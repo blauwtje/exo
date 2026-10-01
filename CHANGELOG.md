@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The quality workflow runs the tests on Windows as a job that reports failures but never blocks a merge.
+- The README states that Windows support is best effort and needs Git for Windows and Node.
+
 ## 0.67.0 - 2026-10-01
 
 ### Highlights
