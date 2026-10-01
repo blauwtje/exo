@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // PreToolUse dispatcher on Bash: runs the repeat guard, the delegate budget,
-// the memory-booking approval and the six Bash guards
+// the memory-booking approval, the heavy-command wrapper and the six Bash guards
 // inside one process, so a Bash call spawns one hook process where it spawned
 // nine. The guards run first, then the bookkeeping steps unless a guard denied,
 // each in its own try/catch, so a fault in one lets the rest run and the
@@ -14,6 +14,7 @@ import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as detachDenial } from './guards/detach-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
+import { heavyCommandStep } from './guards/heavy-command.mjs';
 import { runDispatcherEntry, runSteps } from './dispatch-steps.mjs';
 import { guardDecision } from './guards/guard-runner.mjs';
 import { guardCall } from './guards/repeat-guard.mjs';
@@ -40,7 +41,9 @@ const GUARDS = [
 const BOOKKEEPING = [
   { name: 'repeat-guard', run: guardCall },
   { name: 'delegate-budget', run: delegateBudget },
-  { name: 'nudge-approve', run: approve }
+  { name: 'nudge-approve', run: approve },
+  // Last, so it wraps a command an earlier step already rewrote.
+  { name: 'heavy-command', run: heavyCommandStep }
 ];
 
 // The one output for `hookInput`, or null when no step has anything to say.
