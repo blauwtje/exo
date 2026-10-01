@@ -35,7 +35,7 @@ test('copies the worktree .exo/ files into the run and removes the worktree', as
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
-test('refuses and removes nothing when a copy fails', async () => {
+test('refuses and removes nothing when a copy fails', { skip: process.getuid?.() === 0 }, async () => {
   const { root, worktree } = await runWithWorktree();
   fs.mkdirSync(path.join(worktree, '.exo'), { recursive: true });
   fs.writeFileSync(path.join(worktree, '.exo', 'report.md'), 'blocked\n');

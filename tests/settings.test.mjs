@@ -124,7 +124,7 @@ test('a value the schema does not allow is named in the context line, and the de
   assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
 });
 
-test('an unreadable user settings file still shows the other layers and names the file', async () => {
+test('an unreadable user settings file still shows the other layers and names the file', { skip: process.getuid?.() === 0 }, async () => {
   const space = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
   const userSettings = path.join(space.env.CLAUDE_CONFIG_DIR, 'settings.json');
   await fs.chmod(userSettings, 0o000);
