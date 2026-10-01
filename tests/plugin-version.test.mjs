@@ -80,6 +80,15 @@ test('fails when one manifest lags behind the others', (t) => {
   assert.equal(verdict(root).FAIL, 1);
 });
 
+test('fails when one manifest describes the plugin differently', (t) => {
+  const root = scratchRoot(t);
+  writeManifests(root, '0.2.0');
+  const file = path.join(root, 'package.json');
+  fs.writeFileSync(file, JSON.stringify({ name: 'exo', version: '0.2.0', description: 'older words' }));
+
+  assert.equal(verdict(root).FAIL, 1);
+});
+
 test('cannot run without a base ref to compare against', (t) => {
   const root = scratchRoot(t);
   writeManifests(root, '0.2.0');

@@ -31,9 +31,9 @@ export function compareVersions(left, right) {
   return 0;
 }
 
-function marketplaceVersion(manifest, pluginName) {
-  if (!Array.isArray(manifest.plugins)) return null;
-  return manifest.plugins.find((plugin) => plugin.name === pluginName)?.version ?? null;
+function marketplaceEntry(manifest, pluginName) {
+  if (!Array.isArray(manifest.plugins)) return undefined;
+  return manifest.plugins.find((plugin) => plugin.name === pluginName);
 }
 
 // Tracked differences and new files both ship, and `git diff` sees only the first.
@@ -72,12 +72,22 @@ export function checkPluginVersion(report, repository) {
 
   const elsewhere = {
     [PACKAGE_FILE]: packageManifest.version,
-    [MARKETPLACE_FILE]: marketplaceVersion(marketplace, plugin.name)
+    [MARKETPLACE_FILE]: marketplaceEntry(marketplace, plugin.name)?.version ?? null
   };
   const disagreeing = Object.entries(elsewhere).filter(([, version]) => version !== declared);
   if (disagreeing.length > 0) {
     const lagging = disagreeing.map(([file, version]) => `${file} carries ${version ?? 'no version'}`);
     report.result('FAIL', name, `${PLUGIN_FILE} carries ${declared} but ${lagging.join(' and ')}`);
+    return;
+  }
+
+  const described = {
+    [PACKAGE_FILE]: packageManifest.description,
+    [MARKETPLACE_FILE]: marketplaceEntry(marketplace, plugin.name)?.description
+  };
+  const differing = Object.entries(described).filter(([, description]) => description !== plugin.description);
+  if (differing.length > 0) {
+    report.result('FAIL', name, `${differing.map(([file]) => file).join(' and ')} describe the plugin differently from ${PLUGIN_FILE}`);
     return;
   }
 
