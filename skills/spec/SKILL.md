@@ -20,7 +20,7 @@ argument-hint: <outcome to shape>
    Decide the routine, a visible but cheap point included, and list it as an assumption.
    A decision the user left undecided stays open whatever the code suggests.
    Name the owning layer and a smaller alternative.
-3. **Ask one at a time.** Ask the costly questions per `references/question-shape.md`.
+3. **Ask one at a time.** Ask the costly questions per `../route-skills/references/question.md`.
    Assumptions only: write the brief unasked; neither: step 1 applies.
    After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
@@ -36,7 +36,7 @@ argument-hint: <outcome to shape>
 | File | Read it when |
 |---|---|
 | `references/stored-brief.md` | The request names or extends a brief, issue or plan. |
-| `references/question-shape.md` | Step 3, and again when a reply arrives. |
+| `../route-skills/references/question.md` | Step 3, and again when a reply arrives. |
 | `references/brief.md` | Before writing the brief. |
 | `references/task-list.md` | Before writing the task list. |
 | `references/example-plan.md` | Once, before the first task. |

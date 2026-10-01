@@ -71,7 +71,7 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       '# Implementing a plan\n', '# Implementing a plan\n\nRun it. The enemy is drift. The overcorrection is stalling.\n');
     replaceText(root, 'skills/build/SKILL.md',
-      'Before asking the user to pick among numbered options.', 'Before asking.');
+      'Before asking the user to pick among options.', 'Before asking.');
     replaceText(root, 'skills/build/SKILL.md',
       'Never here: `exo:run-unit` reads it.', 'Never here.');
   } },
@@ -81,7 +81,7 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       '\n## References\n', '\n## Judgment\n\n- Stop.\n\n## References\n');
     replaceText(root, 'skills/build/SKILL.md',
-      'Before asking the user to pick among numbered options.', 'Before asking.');
+      'Before asking the user to pick among options.', 'Before asking.');
   } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/spec/SKILL.md',
     read(root, 'skills/spec/SKILL.md').replace(/^\d+\. /gm, '- ')) },
@@ -92,7 +92,7 @@ const SCENARIOS = [
     replaceText(root, 'skills/build/SKILL.md',
       '## The loop\n', '## The loop\n\nIt runs until the plan lands or a repair pass ends it.\n');
     replaceText(root, 'skills/build/SKILL.md',
-      'Before asking the user to pick among numbered options.', 'Before asking.');
+      'Before asking the user to pick among options.', 'Before asking.');
     replaceText(root, 'skills/build/SKILL.md',
       'Never here: `exo:run-unit` reads it.', 'Never here.');
   } },

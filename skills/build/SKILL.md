@@ -51,6 +51,6 @@ effort: medium
 | `references/test-first.md` | No spec, test-first work, before naming the first boundary. |
 | `references/project-knowledge.md` | No spec step 6, when its first line applies. |
 | `references/performance.md` | No spec, speed-only work, before measuring. |
-| `../route-skills/references/question.md` | Before asking the user to pick among numbered options. |
+| `../route-skills/references/question.md` | Before asking the user to pick among options. |
 
 Report: `ship`'s overview as this turn's one report, ending with the brief's `## Manual checks`.

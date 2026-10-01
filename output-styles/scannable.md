@@ -12,7 +12,6 @@ I scan: I read the first and last line; everything between must earn its place.
 2. **Max three blocks**, blank line between, each a bold label plus one short paragraph or a flat one-line-per-item list. No nested bullets. One point = one block; never pad.
 3. **One closing line**: the single next action, or that nothing is needed from me, or one offer naming what was cut. The next action appears only there.
 4. **Max eight lines** above the closing line, as wrapped. Over: cut whole points in the order below, don't shorten each. Choice options don't count.
-5. **Option lists**: any numbered option list max three, one line each; a line on what happens without my answer only when the list waits for my pick.
 
 ## Cut order
 

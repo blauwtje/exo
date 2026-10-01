@@ -1,7 +1,7 @@
-// Every exo question is plain numbered lines, `1. **Label (Recommended)**: text`
-// first, answered with a digit. The model follows the shape through the core
-// rule in the route-skills body and the question and next-stage references its
-// callers read, so this test guards the text that states it.
+// Every exo question is lettered options, `- **A · Label**: text`, with the
+// recommendation on A. The shape lives only in the question reference; the
+// route-skills body and each skill point at it, so this test guards the text
+// that states it.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,18 +12,29 @@ const USING_EXO = read('skills/route-skills/SKILL.md');
 const QUESTION = read('skills/route-skills/references/question.md');
 const NEXT_STAGE = read('skills/route-skills/references/next-stage.md');
 
-test('the question reference states one shape with the recommended option first', () => {
-  assert.ok(QUESTION.includes('`<n>. **<Label>**: <what it does>`'));
-  assert.ok(QUESTION.includes('`1. **<Label> (Recommended)**: <what it does>`'));
-  assert.ok(QUESTION.includes('**The recommended option is number 1**'));
-  assert.ok(!QUESTION.includes('(<n>)'), 'the parenthesised numbering is gone');
-  assert.ok(QUESTION.includes('a structured question tool, a form or a picker is never used'));
-  assert.ok(QUESTION.includes('A reply of `1` carries out option 1 at once'));
+test('the question reference is the one place that defines the shape, with A recommended', () => {
+  assert.ok(QUESTION.includes('`**<nr> · <title>**`'));
+  assert.ok(QUESTION.includes('`- **A · Label**: what the user gets`'));
+  assert.ok(QUESTION.includes('`→ A. <reason>`'));
+  assert.ok(QUESTION.includes('A is always the recommended option'));
+  assert.ok(QUESTION.includes('## A round of questions'));
+  assert.ok(QUESTION.includes('## A single pick'));
+  assert.ok(QUESTION.includes('a question tool, a form or a picker is never used'));
+  assert.ok(QUESTION.includes('`a` and `1a` both pick A'));
 });
 
-test('the route-skills body keeps the core of the question shape', () => {
-  assert.ok(USING_EXO.includes('max three numbered lines, recommended first, under one on what silence does; no question tool'));
-  assert.ok(USING_EXO.includes('nothing done first; `1` runs option 1.'));
+test('the example puts one blank line before and after the options', () => {
+  const example = QUESTION.match(/```text\n([\s\S]*?)```/)[1];
+  assert.ok(/\n\n- \*\*A · [^\n]*\n(- \*\*[B-C] · [^\n]*\n)*\n→ A\. /.test(example));
+  assert.ok(!example.includes('\n\n\n'));
+});
+
+test('no file keeps a second copy of the shape', () => {
+  assert.ok(!fs.existsSync(new URL('../skills/spec/references/question-shape.md', import.meta.url)));
+});
+
+test('the route-skills body points at the question reference', () => {
+  assert.ok(USING_EXO.includes('read `references/question.md` first'));
 });
 
 test('the next stage recommends continuing, and a context notice leaves the order alone', () => {

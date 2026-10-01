@@ -10,7 +10,7 @@ At every session start, resume, clear and compaction. A long session hears the r
 
 - The map of which skill owns which request, and which one wins when two of them fire.
 - The right-sizing ladder that runs before every edit adding code, and the floors that are never traded away: trust-boundary checks, failure handling, security, accessibility and anything you asked for by name.
-- One shape for how a reply, a report and a question are written, so an answer is a digit rather than a paragraph.
+- One shape for how a reply, a report and a question are written, so an answer is a letter rather than a paragraph.
 - The settings line, and a pointer to a handoff or a project memory when one exists for your branch.
 
 ## Where its rules live

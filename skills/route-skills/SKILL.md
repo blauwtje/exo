@@ -37,4 +37,4 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 
 The final message is the report: the outcome, the check proving it with its result or a read-only claim's evidence, any check not run, then one open action for the user, never a question back. A choice made for the user is one line with its cost if wrong, plus the rival reading of a request that read two ways. No reasoning for an undisputed choice, recap, undone work beyond a blocked part, or menu of commands.
 
-A question ends the turn only when the choice is the user's and the routes differ: max three numbered lines, recommended first, under one on what silence does; no question tool, one a turn, nothing done first; `1` runs option 1.
+A question ends the turn only when the choice is the user's and the routes differ; read `references/question.md` first, ask nothing else, run nothing before the answer.

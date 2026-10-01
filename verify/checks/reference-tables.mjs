@@ -81,7 +81,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/spec/SKILL.md': [
     'references/stored-brief.md',
-    'references/question-shape.md',
+    '../route-skills/references/question.md',
     'references/brief.md',
     'references/task-list.md',
     'references/example-plan.md',
