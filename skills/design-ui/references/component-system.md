@@ -40,15 +40,25 @@ A component is unbuilt while any reachable row entry is unstyled. The row is res
 
 A composite is a component made of components, and it is where a surface silently loses its state coverage. Name the ones this surface has before building any of them: table or grid with sort, selection and async loading; combobox or autocomplete; select and listbox; menu with submenus and typeahead; modal and non-modal dialog; collision-aware popover; tabs; accordion; radio group; toggle group; switch; slider; tooltip; drag-to-reorder; toast or notification queue; command or search palette; filter set; form layout with validation; pagination. Each one it has owes the state row above and the keyboard contract in the `accessibility` reference.
 
-Two carry decisions a look cannot make, and both are settled explicitly or they are settled by accident ([React Aria Table](https://react-aria.adobe.com/Table) and [ComboBox](https://react-aria.adobe.com/ComboBox), read 2026-09-07; adobe/react-spectrum 15,854★):
+Two carry decisions a look cannot make, and both are settled explicitly or they are settled by accident.
 
-- **Table** — one roving focus target with arrow-key cell navigation, focus landing on the cell or its first focusable child by choice; selection declared as a mode (none, single, multiple) plus a behavior (toggle with checkboxes, or replace), with "all" representable; disabled rows declaring whether they block selection alone or every interaction; sortable columns carrying machine-readable sort state in `aria-sort` on the header cell, because the direction chevron is visual language and not the contract; the header's own cycle written down, ascending to descending and then either back to ascending or to no sort at all, so a person who sorted by accident has a way out; loading as a first-class state for both the initial fetch and the load-more edge, never a blank grid.
-  Two of those decisions turn into correctness once the rows are paged from a server. A "select all" checkbox above a page of twenty rows out of four hundred means one of two different things, so the control says which: selecting this page names the count it selected and offers the other, and selecting every match states the total it will act on. Sorting has no such choice: a client-side sort of the page in hand reorders twenty rows and presents the result as the top of four hundred, which is a wrong answer rather than a rough one, so a paged table sorts at the source or its headers are not sortable.
-- **Combobox** — the open policy is one of three and is written down: on typing, on focus, or manual only. Selection mode is declared, the submitted value is text or key by choice, and a disabled option is unfocusable rather than merely dimmed.
+- **Table**:
+  - A paged table sorts at the source or its headers are not sortable: a client-side sort of the page in hand reorders twenty rows and presents them as the top of four hundred.
+  - A "select all" above a paged table says which of two things it does: selecting this page names the count it selected and offers the other, and selecting every match states the total it will act on.
+  - Focus is one roving target with arrow-key cell navigation, landing on the cell or its first focusable child by choice.
+  - Selection is declared as a mode (none, single, multiple) plus a behavior (toggle with checkboxes, or replace), with "all" representable.
+  - A disabled row declares whether it blocks selection alone or every interaction.
+  - A sortable column carries machine-readable sort state in `aria-sort` on the header cell, because the direction chevron is visual language and not the contract.
+  - The header's cycle is written down: ascending to descending, then back to ascending or to no sort, so a person who sorted by accident has a way out.
+  - Loading is a first-class state for the initial fetch and the load-more edge, never a blank grid.
+- **Combobox**:
+  - The open policy is one of three and is written down: on typing, on focus, or manual only.
+  - Selection mode is declared, and the submitted value is text or key by choice.
+  - A disabled option is unfocusable, not merely dimmed.
 
-**Form validation timing** — when a field validates (on blur, on submit, on change after the first error), where the message sits, and where focus goes on a failed submit — is a decision this file requires you to record. No first-party source consulted here settles it, so record the choice and hold it across the whole flow rather than citing a convention.
+Record the form validation timing: when a field validates (on blur, on submit, on change after the first error), where the message sits, and where focus goes on a failed submit. No convention settles it, so hold the one recorded across the whole flow.
 
-The headless primitive libraries are worth reading for exactly this: they ship "WAI-ARIA compliant" behavior, keyboard support, and "sensible focus management defaults" while shipping "without styles, giving you complete control over the look and feel" ([radix-ui.com/primitives](https://www.radix-ui.com/primitives), read 2026-09-07; 19,246★). Take the behavior contract. Taking the look is the failure this skill exists to prevent.
+Take the behavior contract of a headless primitive library (WAI-ARIA behavior, keyboard support, focus management) and never its look; taking the look is the failure this skill exists to prevent.
 
 ## Inventory, not kit
 
