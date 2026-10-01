@@ -24,8 +24,8 @@ effort: medium
 3. **Workspace, then baseline.**
 4. **Build.**
 5. **Prove.** A risky change reads `references/test-design.md` first.
-6. **Project knowledge.**
-7. **Fresh eyes.**
+6. **Project knowledge.** Read `references/project-knowledge.md` when its first line applies.
+7. **Fresh eyes.** Read `references/fresh-eyes.md` and run it.
 8. **Commit.**
 
 ## References

@@ -7,6 +7,6 @@ A decided change with no plan file runs these steps instead of the loop above.
 3. **Workspace, then baseline.** Before the first edit, settle where the change commits, awaiting the answer when it asks. For a multi-file change, confirm a clean working tree or name its pre-existing changed paths.
 4. **Build.** Edit in dependency order without asking between files in scope. A hand edit repeated across many files becomes one script; every mutating edit stays idempotent so retries land the same state. Report a required edit outside oriented paths before touching it. Comments state a constraint, invariant or reason, never the change's story, because they outlive the change. When a hook reports the context budget crossed, write landed and open edits to `<scratch>/implement-next.md` at a green state and report that a clear comes next.
 5. **Prove.** A risky change quotes failing output before the first production edit and passing output after. A test-first bug commits its failing test alone, because a test committed with its fix never shows it failed. Otherwise exercise the feature, else run a test that failed before, else type check and build. Run runners unpiped and without `cd &&`, which hide the failing command. *Done* needs a `Proof: <command> -> <output>` line from a real command this session ran on input it did not write, not a test runner, else `Unverified: <reason>` with no Done — a Stop hook checks it.
-6. **Project knowledge.**
-7. **Fresh eyes.**
+6. **Project knowledge.** Run the reference SKILL.md's table lists for this step, when its first line applies.
+7. **Fresh eyes.** Run the reference SKILL.md's table lists for this step.
 8. **Commit.** Commit where step 3 placed it, leaving out its pre-existing paths, then end on `ship`.
