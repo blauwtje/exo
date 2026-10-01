@@ -172,6 +172,13 @@ test('a path under the plugin root is exempt', async () => {
   assert.equal((await verdict(`cat ${path.join(pluginRoot, 'skill.md')}`, { directory, environment })).denied, false);
 });
 
+test('a whole-file read ending in each operator character is still denied', async () => {
+  for (const operator of ['(', ')', ';', '<', '>', '|', '&']) {
+    const command = `cat big.log${operator}`;
+    assert.equal((await verdict(command)).denied, true, command);
+  }
+});
+
 test('a command with an unterminated quote passes', async () => {
   assert.equal((await verdict("cat 'big.log")).denied, false);
 });

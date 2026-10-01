@@ -93,7 +93,7 @@ function splitSegments(command) {
     } else if (PUNCTUATION.includes(character)) {
       endWord();
       let operator = character;
-      while (PUNCTUATION.includes(command[position + 1] ?? '')) {
+      while (position + 1 < command.length && PUNCTUATION.includes(command[position + 1])) {
         position += 1;
         operator += command[position];
       }
