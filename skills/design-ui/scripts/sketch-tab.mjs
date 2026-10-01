@@ -36,8 +36,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { CapabilityError, environmentMs, parseFlags, UsageError } from './capture.mjs';
+import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
 import {
-  askedOfLoopback, CHROME_TOKENS, compDocument, escapeHtml, headlessReason, openSystemBrowser,
+  askedOfLoopback, compDocument, headlessReason, openSystemBrowser,
   readLabels, requireTimeout, resolveAsset, send, sentByOwnPage
 } from './pick.mjs';
 

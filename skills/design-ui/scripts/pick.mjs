@@ -414,10 +414,6 @@ export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
   return words;
 }
 
-// The chrome lives in `#page-chrome`; the sketch tab reads it here, beside the
-// other picker parts it imports.
-export { CHROME_TOKENS, escapeHtml };
-
 function page(variants, key, { words, recommended, recommendedNote }) {
   // The recommendation is expressed as the first seat rather than as a sentence
   // of chrome above the comps. Every data-* attribute keeps carrying the real
