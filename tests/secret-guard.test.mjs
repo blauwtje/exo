@@ -116,6 +116,13 @@ test('the user settings file protects paths under the home directory in every sp
   }
 });
 
+test('a doubled or dotted separator after the home prefix still matches the rule', async () => {
+  const place = await workspace({ user: ['Read(~/.ssh/**)'] });
+  for (const command of ['cat ~//.ssh/id_rsa', 'cat $HOME/./.ssh/id_rsa', 'cat ~/x/../.ssh/id_rsa']) {
+    assert.match(await reason(command, place, { env: { USERPROFILE: place.home } }), /secret-guard/, command);
+  }
+});
+
 test('the local settings file and a slash-rooted rule count, and a bare name matches at any depth', async () => {
   const place = await workspace({ local: ['Read(/config/keys.json)', 'Read(.npmrc)'] });
   assert.match(await reason('cat config/keys.json', place), /Read\(\/config\/keys\.json\)/);

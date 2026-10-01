@@ -17,6 +17,7 @@
 // path reads as written.
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
@@ -122,7 +123,7 @@ function maxBytesFor(file) {
 }
 
 function homeExpanded(word) {
-  if (word === '~' || word.startsWith('~/')) return path.join(process.env.HOME ?? '', word.slice(1));
+  if (word === '~' || word.startsWith('~/')) return path.join(os.homedir(), word.slice(1));
   return word;
 }
 

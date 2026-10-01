@@ -147,6 +147,13 @@ test('a read after cd resolves against the new directory', async () => {
   assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'deny');
 });
 
+test('a tilde path resolves against the home directory', async () => {
+  const directory = await bigFileFixture();
+  const environment = { HOME: directory, USERPROFILE: directory };
+  assert.equal((await verdict('cat ~/big.log', { directory, environment })).denied, true);
+  assert.equal((await verdict('cat ~/small.log', { directory, environment })).denied, false);
+});
+
 test('a quoted path with a space is read as one file', async () => {
   const directory = await bigFileFixture();
   await fs.writeFile(path.join(directory, 'big file.log'), BIG);

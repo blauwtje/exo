@@ -119,7 +119,13 @@ function curlFiles(args) {
 function expandHome(word) {
   const home = os.homedir();
   if (word === '~' || word === '$HOME' || word === '${HOME}') return home;
-  return word.replace(/^(?:~|\$HOME|\$\{HOME\})\//, `${home}/`);
+  const match = /^(?:~|\$HOME|\$\{HOME\})\/(.*)$/s.exec(word);
+  return match ? path.join(home, match[1]) : word;
+}
+
+// Glob matching runs on `/`; on Windows the platform separator is `\`.
+function slashed(file) {
+  return file.split(path.sep).join('/');
 }
 
 function globRegExp(glob) {
@@ -182,7 +188,7 @@ function protectedRules(directory, root, notes) {
       notes.push(`secret-guard: cannot read the deny rules in ${file}: ${error.message}`);
       continue;
     }
-    for (const spec of specs) rules.push({ spec, pattern: globRegExp(absoluteGlob(spec, directory, root)) });
+    for (const spec of specs) rules.push({ spec, pattern: globRegExp(slashed(absoluteGlob(spec, directory, root))) });
   }
   return rules;
 }
@@ -220,7 +226,8 @@ function expandGlob(word, directory) {
 // The first rule that protects the word's path, or what lies under it.
 function matchingRule(word, directory, rules) {
   const file = path.resolve(directory, expandHome(word));
-  return rules.find(({ pattern }) => pattern.test(file) || pattern.test(path.join(file, 'x')));
+  const under = slashed(path.join(file, 'x'));
+  return rules.find(({ pattern }) => pattern.test(slashed(file)) || pattern.test(under));
 }
 
 function denialReason(command, directory, rules) {
