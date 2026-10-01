@@ -8,7 +8,7 @@
     }
   },
   "budgets": {
-    "lean": { "strong": "standard" }
+    "low": { "strong": "standard" }
   },
   "kinds": {
     "build": { "tier": "standard", "effort": "high" },

@@ -47,7 +47,7 @@ function filledRule(rule, value) {
 
 // A schema key with a `rules` map contributes its current value's rule text to
 // the injected settings line; a value with no entry there (such as budget's
-// default `normal`) adds nothing.
+// default `medium`) adds nothing.
 function activeRules(values) {
   return Object.entries(SCHEMA)
     .map(([key, entry]) => (entry.rules?.[values[key]] ? filledRule(entry.rules[values[key]], values[key]) : ''))
