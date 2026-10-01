@@ -19,6 +19,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The delegate budget gives `general-purpose` and `Plan` a soft limit of 70, and read-only agents get a soft notice without the advice to commit.
 - edit-skills treats its line and step limits as aims, and a reference may link to no other reference.
 - `npm test` runs two test files at a time, so a full run no longer overheats the machine.
+- configure asks for the budget during the setup walk, ship reports fix commits as a count and a range, and design-ui's build-ui and critique-ui read only the sections they need.
+- CONTRIBUTING describes the heavy-command wrapper, the SessionStart imports and the budget overrides.
 - Scripts share one `isMain` entry check, build shares `waveLine` from plan-tasks, and sketch-tab imports page-chrome directly.
 
 ### Fixed
@@ -35,6 +37,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - ship matches closing keywords as whole words and validates `--issue`.
 - `/exo:save-session` runs `handoff.mjs` from its skill directory, so it works in projects other than exo.
 - find-cause's handoff anchor and closing rule, route-skills' refactor shim guard, start's verify row and build-task's Proof-script exception read correctly.
+- check-docs' end-of-turn rule agrees with itself, remember proposes from the booked state, design-ui orders its critique after the baseline and names reference sections, and file-issues' step 5 points at `fields.md`.
 
 ## 0.70.3 - 2026-10-01
 
