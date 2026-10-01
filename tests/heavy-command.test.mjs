@@ -1,6 +1,8 @@
 // The heavy-command step wraps a command that starts a configured prefix in
 // the heavy-run wrapper, leaves every other call alone, and carries the
-// original command through the shell quoting unchanged.
+// original command through the shell quoting unchanged. A command the runtime
+// log holds as learned for the project is wrapped too, and a test-like command
+// that is not wrapped has its start booked there.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -13,22 +15,32 @@ import { fixture, run } from './harness.mjs';
 const DISPATCHER = fileURLToPath(new URL('../hooks/dispatch-bash.mjs', import.meta.url));
 const WRAPPER = fileURLToPath(new URL('../hooks/heavy-run.mjs', import.meta.url));
 
+let lastCache;
+
 // Runs the Bash dispatcher in a project whose heavy_commands is `heavy` and
 // returns its parsed hook output, or null when it prints nothing.
-async function dispatch(command, { heavy, guards, session = 'session-1' } = {}) {
+async function dispatch(command, { heavy, guards, after, learned, session = 'session-1', cache } = {}) {
   const directory = await fixture();
+  cache ??= path.join(directory, 'cache');
   const settings = {};
   if (heavy !== undefined) settings.heavy_commands = heavy;
   if (guards !== undefined) settings.guards = guards;
+  if (after !== undefined) settings.heavy_after_seconds = after;
+  if (learned !== undefined) {
+    await fs.mkdir(cache, { recursive: true });
+    const entries = Object.fromEntries(learned.map((text) => [text, { seconds: 90, lastUsed: new Date().toISOString() }]));
+    await fs.writeFile(path.join(cache, 'runtimes.json'), JSON.stringify({ learned: { [directory]: entries }, starts: {} }));
+  }
   await fs.mkdir(path.join(directory, '.claude'));
   await fs.writeFile(path.join(directory, '.claude', 'exo.json'), JSON.stringify(settings));
   const input = JSON.stringify({ tool_name: 'Bash', session_id: session, tool_input: { command, timeout: 5000 } });
   const outcome = await run(DISPATCHER, [], {
     cwd: directory,
     input,
-    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory }
+    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, EXO_HEAVY_CACHE: cache }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
+  lastCache = cache;
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;
 }
 
@@ -82,4 +94,27 @@ test('a command with single quotes, spaces and a dollar sign runs through the wr
   const wrapped = execFileSync('bash', ['-c', output.updatedInput.command], { cwd: directory, env, encoding: 'utf8' });
   assert.equal(wrapped, direct);
   assert.match(wrapped, /it's \$HOME/);
+});
+
+test('a learned command is wrapped, a similar or unlearned one is not', async () => {
+  const output = await dispatch('make verify', { learned: ['make verify'] });
+  assert.match(output.updatedInput.command, /heavy-run\.mjs.*-- 'make verify'$/);
+  assert.equal(await dispatch('make verify X=1', { learned: ['make verify'] }), null);
+  assert.equal(await dispatch('make lint', { learned: ['make verify'] }), null);
+});
+
+test('a learned watch-mode command and a learned command with learning off are not wrapped', async () => {
+  assert.equal(await dispatch('make verify --watch', { learned: ['make verify --watch'] }), null);
+  assert.equal(await dispatch('make verify', { learned: ['make verify'], after: 0 }), null);
+});
+
+test('a test-like command that is not wrapped has its start booked, others do not', async () => {
+  await dispatch('make lint', { session: 'booked' });
+  const log = JSON.parse(await fs.readFile(path.join(lastCache, 'runtimes.json'), 'utf8'));
+  assert.deepEqual(Object.keys(log.starts), ['booked']);
+  assert.deepEqual(Object.keys(log.starts.booked), ['make lint']);
+  for (const options of [{ command: 'ls' }, { command: 'make verify --watch' }, { command: 'make lint', after: 0 }, { command: 'make lint', heavy: 'make lint' }]) {
+    await dispatch(options.command, options);
+    await assert.rejects(fs.readFile(path.join(lastCache, 'runtimes.json')), options.command);
+  }
 });

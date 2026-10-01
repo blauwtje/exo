@@ -8,11 +8,16 @@
 // command is wrapped, with no permission decision, so the harness's permission
 // check still decides the call. The step does no git and no hashing; the
 // wrapper does. A fault lets the command through unchanged.
+// A command whose last run in the project took longer than `heavy_after_seconds`
+// (the runtime log, lib/runtime-log.mjs) is wrapped too, when its text equals
+// the logged one. A test-like command that is not wrapped has its start booked
+// there for hooks/record-runtime.mjs; 0 switches both off.
 // Ceiling: the split ignores quotes, so a separator inside a quoted string
 // starts a segment there; lift it with the tokeniser in bash-output-guard.mjs.
 
 import { fileURLToPath } from 'node:url';
 import { settingValue } from '#settings-store';
+import { isLearnable, learnedCommands, projectOf, recordStart } from '../../lib/runtime-log.mjs';
 
 const WRAPPER = fileURLToPath(new URL('../heavy-run.mjs', import.meta.url));
 const SEGMENT_SEPARATOR = /&&|\|\||;|\|/;
@@ -41,7 +46,12 @@ export function heavyCommandStep(hookInput) {
   const command = hookInput.tool_input?.command;
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
   const prefixes = heavyPrefixes();
-  if (prefixes.length === 0 || !matches(command, prefixes)) return null;
+  const listed = prefixes.length > 0 && matches(command, prefixes);
+  const learning = Number(settingValue('heavy_after_seconds')) > 0 && isLearnable(command);
+  if (!listed && !(learning && command in learnedCommands(projectOf(hookInput)))) {
+    if (learning && typeof hookInput.session_id === 'string') recordStart({ sessionId: hookInput.session_id, command });
+    return null;
+  }
   const session = hookInput.session_id ?? 'unknown';
   const wrapped = `node ${shellQuote(WRAPPER)} --session ${shellQuote(String(session))} -- ${shellQuote(command)}`;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { ...hookInput.tool_input, command: wrapped } } };
