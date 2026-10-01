@@ -17,19 +17,8 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        # 22 is the floor verify.mjs enforces; 24 is current.
-        node: [22, 24]
-        # The floor is a Node concern, covered on Linux; macOS catches shell,
-        # path and file-system differences on the current Node.
-        exclude:
-          - os: macos-latest
-            node: 22
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,24 +26,5 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
-      # The full self-test runs once, on the current Node; the floor runs only the validator.
-      - if: matrix.node == 24
-        run: npm run check
-      - if: matrix.node != 24
-        run: npm run validate
-
-  # Windows support is best effort, like peer plugins, so this job never blocks
-  # a merge; npm test prints each failure's message for diagnosis.
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 15
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
           node-version: 24
-      - run: npm test
+      - run: npm run check

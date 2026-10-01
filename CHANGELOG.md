@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The quality workflow runs one check, on Ubuntu with Node 24, and drops the Windows, macOS and Node 22 jobs.
+
 ## 0.68.0 - 2026-10-01
 
 ### Added

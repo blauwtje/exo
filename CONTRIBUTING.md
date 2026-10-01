@@ -17,7 +17,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | `claude plugin validate .` | The harness's own manifest check. |
 | `node verify/skill-graph.mjs <command> [args]` | A read-only index over the skills, agents, hooks, root docs, `verify/` and `tests/`: `size`, `range`, `inbound`, `pins`, `refs`, `overlap` and `json`, each printing a compact answer instead of a whole file. |
 
-CI runs `npm run check` on Node 22 and 24 for every push to `main` and every pull request.
+CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every pull request.
 
 The `derivation` check fails the build when a name exo does not own reaches a shipped file, and when a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names are held base64-encoded inside `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids.
 
