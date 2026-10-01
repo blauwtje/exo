@@ -5,8 +5,9 @@
 //      chain or substitution, which prints its whole output; the guard runs
 //      it as `set -o pipefail; <command> 2>&1 | tail -n 200` through
 //      `updatedInput`, with no permission decision.
-//   2. A whole-file read through the shell (`cat FILE`, `sed` without a range
-//      under 300 lines, `head` past 300 lines) of a file over the byte cap,
+//   2. A whole-file read through the shell (`cat`, `tac`, `nl`, `awk 1`,
+//      `grep ""`, `sed` without a range under 300 lines, `head` or `tail`
+//      past 300 lines) of a file over the byte cap,
 //      the Bash counterpart of the Read guard, which it denies;
 //      `READ_GUARD_MAX_BYTES` sets the
 //      cap (default 12000). Paths under `${CLAUDE_PLUGIN_ROOT}` and the config
@@ -32,6 +33,8 @@ const BOUNDING_STAGES = new Set(['head', 'tail', 'wc', 'grep', 'rg', 'shasum', '
 const SEPARATORS = new Set(['|', '||', '&&', ';', '&']);
 const PUNCTUATION = '();<>|&';
 const RANGE_SCRIPT = /^(\d+),(\d+|\$)p$/;
+const WHOLE_FILE_READERS = new Set(['cat', 'tac', 'nl']);
+const AWK_PRINT_ALL = new Set(['1', '{print}', '{print $0}']);
 
 // The patterns match on prefix, so every runner form is spelled out: a bare
 // `pytest` and `uv run pytest` are different strings, and `git -C <dir> log`
@@ -146,8 +149,8 @@ function largeFile(words, directory) {
   return null;
 }
 
-// The largest line count `head` is asked for: `-n N`, `-nN` or `-N`.
-function headLines(args) {
+// The largest line count `head` or `tail` is asked for: `-n N`, `-nN` or `-N`.
+function requestedLines(args) {
   let requested = 0;
   args.forEach((word, position) => {
     if (word === '-n' && /^\d+$/.test(args[position + 1] ?? '')) requested = Number(args[position + 1]);
@@ -167,20 +170,31 @@ function hasBoundedRange(args) {
 // What a segment reads whole and how, as { file, size, cap, what }, else null.
 function wholeFileRead(words, directory) {
   const [command, ...args] = words;
-  if (command === 'cat') {
+  if (WHOLE_FILE_READERS.has(command)) {
     const hit = largeFile(args, directory);
-    return hit && { ...hit, what: 'cat' };
+    return hit && { ...hit, what: command };
+  }
+  if (command === 'awk') {
+    if (!args.some((word) => AWK_PRINT_ALL.has(word))) return null;
+    const hit = largeFile(args, directory);
+    return hit && { ...hit, what: 'awk printing every line' };
+  }
+  // The first word that is no option is the pattern; an empty one matches every line.
+  if (command === 'grep') {
+    if (args.find((word) => !word.startsWith('-')) !== '') return null;
+    const hit = largeFile(args, directory);
+    return hit && { ...hit, what: 'grep with an empty pattern' };
   }
   if (command === 'sed') {
     if (hasBoundedRange(args)) return null;
     const hit = largeFile(args, directory);
     return hit && { ...hit, what: `sed without a range under ${MAX_LINES} lines` };
   }
-  if (command === 'head') {
-    const requested = headLines(args);
+  if (command === 'head' || command === 'tail') {
+    const requested = requestedLines(args);
     if (requested <= MAX_LINES) return null;
     const hit = largeFile(args, directory);
-    return hit && { ...hit, what: `head of ${requested} lines` };
+    return hit && { ...hit, what: `${command} of ${requested} lines` };
   }
   return null;
 }

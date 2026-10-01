@@ -132,6 +132,18 @@ test('head past 300 lines is denied, up to 300 passes', async () => {
   assert.equal((await verdict('head big.log')).denied, false);
 });
 
+test('tac, nl, awk 1, grep with an empty pattern and tail past 300 lines are denied on a large file', async () => {
+  for (const command of ['tac big.log', 'nl big.log', "awk 1 big.log", "awk '{print}' big.log", 'grep -n "" big.log', 'tail -n 20000 big.log', 'tail -400 big.log']) {
+    assert.equal((await verdict(command)).denied, true, command);
+  }
+});
+
+test('the same readers pass when small, bounded or filtering', async () => {
+  for (const command of ['tac small.log', 'nl small.log', 'awk 1 small.log', 'grep -n "" small.log', "awk '/line 5/' big.log", 'grep -n line big.log', 'tail -n 50 big.log', 'tail big.log', 'tac big.log | head -5', 'nl big.log | grep 9']) {
+    assert.equal((await verdict(command)).denied, false, command);
+  }
+});
+
 test('a later stage that bounds the output lets the read through', async () => {
   assert.equal((await verdict('cat big.log | head -20')).denied, false);
   assert.equal((await verdict('cat big.log | grep line')).denied, false);
