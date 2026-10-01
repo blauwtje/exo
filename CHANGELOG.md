@@ -7,6 +7,28 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **A verbose build, test or log command now runs with its output capped to the last 200 lines instead of being denied.** The command is rewritten to `set -o pipefail; <command> 2>&1 | tail -n 200`, so a failing command still exits non-zero.
+
+### Changed
+
+- Read, Edit, WebFetch and WebSearch calls each spawn one PreToolUse hook process, running the guards and the delegate budget together.
+- The SessionStart hook runs in Node and no longer needs `jq`.
+- The quality workflow runs on macOS as well as Linux.
+- design-ui moves body blocks into references to stay near its 2000-token aim.
+- The effort twins' descriptions shrink to one sentence naming their base agent.
+- All three manifests carry one plugin description, and the plugin-version check fails when they differ.
+- Pressure cases run once on Sonnet by default, only when the skill they cover changes.
+
+### Added
+
+- Pressure cases for verify, save-session and check-docs.
+
+### Fixed
+
+- The two unreadable-file tests skip when running as root.
+
 ## 0.66.0 - 2026-10-01
 
 ### Highlights
