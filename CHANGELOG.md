@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- ship switches the main checkout to the pulled default branch after a merge, and reports a dirty or diverged checkout instead of forcing it.
+
 ## 0.72.0 - 2026-10-01
 
 ### Added
