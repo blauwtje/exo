@@ -53,6 +53,7 @@ test('the build session\'s own dispatch adds `Return: one line`, and the agent a
 });
 
 const RUN_LOOP = read('build/references/run-loop.md');
+const RUN_LOOP_DIRECT = read('build/references/run-loop-direct.md');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 
 function loopStep(number, text = RUN_LOOP) {
@@ -61,8 +62,8 @@ function loopStep(number, text = RUN_LOOP) {
   return step[0];
 }
 
-test('run-loop step 5 reads the diff itself and hands a stop\'s report to the repair delegate unread', () => {
-  const dispatchStep = loopStep(5);
+test('the direct route reads the diff itself and hands a stop\'s report to the repair delegate unread', () => {
+  const dispatchStep = RUN_LOOP_DIRECT;
   assert.ok(dispatchStep.includes('carries `Return: one line`'));
   assert.ok(dispatchStep.includes('reads itself, never the report'));
   assert.ok(dispatchStep.includes('hands its report path, unread, to a repair delegate'));
@@ -136,29 +137,31 @@ test('the at-most-eight route asks next-task.mjs for a wave, never one task at a
 
 test('the at-most-eight route builds a printed wave per wave-worktrees.md and keeps every green task', () => {
   const dispatchStep = loopStep(5);
+  const directRoute = RUN_LOOP_DIRECT;
   assert.ok(dispatchStep.includes('`Wave:` line'), 'a Wave: line is handled');
-  assert.ok(dispatchStep.indexOf('`Route: unit`: **dispatch the unit**, never build a `Wave:` here.') < dispatchStep.indexOf('`Route: direct`: a `Next:` line'), 'the unit route precedes the direct recipe');
+  assert.ok(dispatchStep.indexOf('`Route: unit`: **dispatch the unit**, never build a `Wave:` here.') < dispatchStep.indexOf('`Route: direct`: read the direct route reference'), 'the unit route precedes the direct recipe');
   assert.ok(dispatchStep.indexOf('`Route: unit`') !== -1);
-  assert.ok(dispatchStep.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
-  assert.ok(dispatchStep.includes('one message'), 'the wave builds in parallel');
-  assert.ok(dispatchStep.includes('a failed sibling never discards a green task'));
-  assert.ok(dispatchStep.includes("That reference's step 4 saves each worktree's diff, then removes it"), 'the diff is saved before the worktree goes');
+  assert.ok(directRoute.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
+  assert.ok(directRoute.includes('one message'), 'the wave builds in parallel');
+  assert.ok(directRoute.includes('a failed sibling never discards a green task'));
+  assert.ok(directRoute.includes("That reference's step 4 saves each worktree's diff, then removes it"), 'the diff is saved before the worktree goes');
   assert.ok(!RUN_LOOP.includes('diff --cached'), 'the save command has one owner');
   assert.ok(WAVE_WORKTREES.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'));
   assert.ok(WAVE_WORKTREES.includes('the patch counts as written only once `test -s` finds it non-empty'), 'a saved diff is confirmed non-empty');
   assert.ok(WAVE_WORKTREES.includes('a folder whose diff is unsaved is never force-removed'));
 });
 
-test('the build table names the loop as the wave reference\'s reader, and run-loop.md\'s lock follows it down', async () => {
+test('the build table names the direct route as the wave reference\'s reader, and run-loop.md\'s lock leaves with its size', async () => {
   const row = BUILD_SKILL.split('\n').find((line) => line.startsWith('| `references/wave-worktrees.md`'));
   assert.ok(row, 'the table keeps its wave row');
   assert.ok(!row.includes('Never here'), 'the wave reference is no longer unread by the loop');
-  assert.ok(row.includes('run-loop.md'), 'the row names the loop as its reader');
-  assert.ok(row.includes('under `Route: direct`'), 'only the direct route reads the wave reference');
+  assert.ok(row.includes('run-loop-direct.md'), 'the row names the direct route as its reader');
   const { REFERENCE_TOKEN_LOCKS } = await import('#budgets');
-  const tokens = Math.round(Buffer.byteLength(RUN_LOOP) / 4);
-  assert.equal(REFERENCE_TOKEN_LOCKS['skills/build/references/run-loop.md'], tokens);
-  assert.ok(tokens <= 925, 'the lock never rises');
+  for (const file of ['run-loop.md', 'run-loop-direct.md']) {
+    const tokens = Math.round(Buffer.byteLength(read(`build/references/${file}`)) / 4);
+    assert.ok(tokens <= 750, `${file} stays within the reference ceiling, so it needs no lock`);
+    assert.equal(REFERENCE_TOKEN_LOCKS[`skills/build/references/${file}`], undefined);
+  }
 });
 
 test('build-task waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
