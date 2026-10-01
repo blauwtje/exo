@@ -40,4 +40,4 @@ Source of the Claude Code plugin `exo`; `README.md` explains the layout, `CONTRI
 ## Environment
 
 - Keep `"shell": "bash"` in `hooks/hooks.json`, or a Windows host without Git Bash falls back to PowerShell; use shell form, not `args`, so Claude Code resolves the shell rather than `bash` on `PATH`.
-- The session hook stays `bash` with `jq`, and `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
+- The session hook is Node (`hooks/session-start.mjs`) and needs no `jq`, and `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.

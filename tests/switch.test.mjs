@@ -12,43 +12,31 @@ import { fileURLToPath } from 'node:url';
 import { HOOK_OUTPUT_CAP } from '#budgets';
 import { fixture, git, gitRepository } from './harness.mjs';
 
-const HOOK = fileURLToPath(new URL('../hooks/session-start.sh', import.meta.url));
+const HOOK = fileURLToPath(new URL('../hooks/session-start.mjs', import.meta.url));
 const PLUGIN_ROOT = path.dirname(path.dirname(HOOK));
 const LADDER_TEXTS = ['references/ladder.md', 'Before every edit adding or replacing code.'];
 
-function runHookWith(bash, env, source) {
+function runHookWith(env, source) {
   return new Promise((resolve) => {
-    const child = execFile(bash, [HOOK], { env, timeout: 30_000 },
+    const child = execFile(process.execPath, [HOOK], { env, timeout: 30_000 },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) }));
     child.stdin.end(JSON.stringify({ session_id: 's1', source }));
   });
 }
 
 function runHook(env, source = 'startup') {
-  return runHookWith('bash', { ...process.env, ...env }, source);
+  return runHookWith({ ...process.env, ...env }, source);
 }
 
 function runHookIn(env, cwd) {
   return new Promise((resolve) => {
-    const child = execFile('bash', [HOOK], { env: { ...process.env, ...env }, timeout: 30_000 },
+    const child = execFile(process.execPath, [HOOK], { env: { ...process.env, ...env }, timeout: 30_000 },
       (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) }));
     child.stdin.end(JSON.stringify({ session_id: 's1', source: 'startup', cwd }));
   });
 }
 
-function toolPath(tool) {
-  return new Promise((resolve, reject) => {
-    execFile('bash', ['-c', `command -v ${tool}`], (error, stdout) => (error ? reject(error) : resolve(String(stdout).trim())));
-  });
-}
-
-function jqAvailable() {
-  return new Promise((resolve) => execFile('jq', ['--version'], (error) => resolve(!error)));
-}
-
-const withoutJq = !(await jqAvailable()) && 'jq not on PATH';
-
-test('the session hook carries the pointer to the right-sizing ladder', { skip: withoutJq }, async () => {
+test('the session hook carries the pointer to the right-sizing ladder', async () => {
   const configDirectory = await fixture();
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
   assert.equal(result.code, 0, result.stderr);
@@ -60,7 +48,7 @@ test('the session hook carries the pointer to the right-sizing ladder', { skip: 
   assert.ok(!context.includes('name: route-skills'), context);
 });
 
-test('a resumed session rewrites the plugin-root pointer and only a compaction resets the guards', { skip: withoutJq }, async () => {
+test('a resumed session rewrites the plugin-root pointer and only a compaction resets the guards', async () => {
   const configDirectory = await fixture();
   const hotRecord = path.join(configDirectory, 'exo', 'sessions', 's1.json');
   const resumed = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'resume');
@@ -77,22 +65,18 @@ test('a resumed session rewrites the plugin-root pointer and only a compaction r
   assert.deepEqual(session.calls, {});
 });
 
-test('without jq the hook still writes the plugin-root pointer and exits 0 with a notice', async () => {
+test('with no tool on PATH the hook still injects the route-skills body and writes the plugin-root pointer', async () => {
   const configDirectory = await fixture();
-  const binDirectory = await fixture();
-  for (const tool of ['cat', 'dirname', 'mkdir']) {
-    await fs.symlink(await toolPath(tool), path.join(binDirectory, tool));
-  }
-  const bash = await toolPath('bash');
-  const result = await runHookWith(bash, { PATH: binDirectory, CLAUDE_CONFIG_DIR: configDirectory }, 'startup');
+  const emptyDirectory = await fixture();
+  const result = await runHookWith({ PATH: emptyDirectory, CLAUDE_CONFIG_DIR: configDirectory }, 'startup');
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout, '');
-  assert.match(result.stderr, /exo: jq not on PATH, route-skills not injected/);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  assert.ok(context.includes('# Using exo'), context);
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
 });
 
-test('the session hook leads with the settings line resolved for the project', { skip: withoutJq }, async () => {
+test('the session hook leads with the settings line resolved for the project', async () => {
   const configDirectory = await fixture();
   const project = await fixture();
   await fs.mkdir(path.join(project, '.claude'));
@@ -103,7 +87,7 @@ test('the session hook leads with the settings line resolved for the project', {
   assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default). Replies are tight:'), context.slice(0, 200));
 });
 
-test('on a 60-character branch both pointers go first, named from the repository root', { skip: withoutJq }, async () => {
+test('on a 60-character branch both pointers go first, named from the repository root', async () => {
   const configDirectory = await fixture();
   const repository = await gitRepository({ 'README.md': 'fixture\n' });
   const branch = `feature/${'b'.repeat(52)}`;

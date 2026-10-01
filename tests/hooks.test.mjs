@@ -103,9 +103,9 @@ test('one Bash hook runs the dispatcher for the repeat guard, the delegate budge
 });
 
 test('the session hook points at a memory file only where one exists', () => {
-  const hook = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-start.sh'), 'utf8');
+  const hook = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'session-start.mjs'), 'utf8');
   assert.match(hook, /--git-common-dir/, 'the memory pointer does not resolve the common git directory');
-  assert.match(hook, /if \[ -f "\$memory_file" \]/, 'the memory pointer is added without testing for the file');
+  assert.match(hook, /fs\.existsSync\(memoryFile\)/, 'the memory pointer is added without testing for the file');
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
 });
 
@@ -126,6 +126,12 @@ test('every shipped guard is a step of the Bash dispatcher and none has a hook o
     assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(guardFile)), [], guardFile);
     assert.ok(dispatcher.includes(`./guards/${guardFile}`), `${guardFile} is not imported by the Bash dispatcher`);
   }
+});
+
+test('the session hook runs the Node file under bash', () => {
+  const [entry] = hookEntries().filter((candidate) => candidate.event === 'SessionStart');
+  assert.equal(entry.hook.shell, 'bash');
+  assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
 test('the plugin registers ten hook commands, each under bash', () => {
@@ -149,14 +155,14 @@ test('the session hook deletes the savings folder an earlier version left and ke
   fs.mkdirSync(path.join(exoDirectory, 'savings'), { recursive: true });
   fs.writeFileSync(path.join(exoDirectory, 'savings', 'ledger.jsonl'), '{}\n');
   fs.mkdirSync(path.join(exoDirectory, 'handoff'), { recursive: true });
-  const hook = path.join(REPOSITORY, 'hooks', 'session-start.sh');
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
   try {
-    execFileSync('bash', [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+    execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
     assert.equal(fs.existsSync(path.join(exoDirectory, 'savings')), false);
     assert.ok(fs.existsSync(path.join(exoDirectory, 'handoff')));
     assert.ok(fs.existsSync(path.join(exoDirectory, 'plugin-root')));
-    execFileSync('bash', [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
+    execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) });
   } finally {
     fs.rmSync(configHome, { recursive: true, force: true });
   }

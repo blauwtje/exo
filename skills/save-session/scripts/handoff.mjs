@@ -1,6 +1,6 @@
 // Where a handoff sits: beside the branch it belongs to, inside the
 // repository's own git directory, so a linked worktree never writes another
-// worktree's handoff. hooks/session-start.sh points a resuming session at the
+// worktree's handoff. hooks/session-start.mjs points a resuming session at the
 // same file; this command is the one place both compute it, so the skill body
 // no longer restates the git commands.
 //

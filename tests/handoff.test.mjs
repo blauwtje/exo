@@ -1,4 +1,4 @@
-// Where a handoff sits, matching the location hooks/session-start.sh computes
+// Where a handoff sits, matching the location hooks/session-start.mjs computes
 // for a resuming session.
 
 import assert from 'node:assert/strict';

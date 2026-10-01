@@ -15,7 +15,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // The date records when the number was measured; nothing enforces its age.
 // First-party documentation caps one hook output string at HOOK_OUTPUT_CAP
 // characters and hands the model a 2,000-character preview of a longer one.
-// hooks/session-start.sh puts the pointers and the settings line before the
+// hooks/session-start.mjs puts the pointers and the settings line before the
 // route-skills body and cuts the tail of that body before it passes the cap, so the
 // next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
@@ -31,7 +31,7 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
 // BYTES_PER_TOKEN, the sizing convention for skill text. The ceiling fails; realistic is the aim edit-skills
 // states and the checks name in their PASS detail. route-skills has its own
-// ceiling because hooks/session-start.sh injects its body into every session.
+// ceiling because hooks/session-start.mjs injects its body into every session.
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 636 };

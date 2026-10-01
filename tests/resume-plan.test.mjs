@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/resume-plan.mjs', import.meta.url));
-const SESSION_HOOK = fileURLToPath(new URL('../hooks/session-start.sh', import.meta.url));
+const SESSION_HOOK = fileURLToPath(new URL('../hooks/session-start.mjs', import.meta.url));
 
 const PLAN = planFixture({ tasks: [
   taskSection({ number: 1, title: 'Greet', files: ['- Create: `src/app.js`'], subject: 'feat(app): greet' }),
@@ -121,7 +121,7 @@ test('a stop from another session does not block and removes the marker', async 
 
 async function sessionContext(root, source) {
   const home = await fixture();
-  const stdout = execFileSync('bash', [SESSION_HOOK], {
+  const stdout = execFileSync(process.execPath, [SESSION_HOOK], {
     input: JSON.stringify({ hook_event_name: 'SessionStart', source, cwd: root, session_id: 'resume-plan-test' }),
     env: { ...process.env, CLAUDE_CONFIG_DIR: home },
     encoding: 'utf8'

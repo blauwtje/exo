@@ -15,7 +15,7 @@ exo is a Claude Code plugin that gives Claude one way of working: decide what to
 /plugin install exo@blauwtje
 ```
 
-Restart Claude Code afterwards. The session hook needs `bash`, `jq` and `node` on `PATH`.
+Restart Claude Code afterwards. The session hook needs `bash` and `node` on `PATH`.
 
 exo needs a subagent spawn depth of at least 2 in `~/.claude/settings.json`; Claude Code 2.1.219 and later default to 3, so this entry only matters on 2.1.217, 2.1.218, or wherever something has set a lower value:
 
