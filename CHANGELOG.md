@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.71.1 - 2026-10-01
+
 ### Highlights
 
 **exo asks one plain question at a time.** Each question has a short title, at most two plain sentences, usually three or four options lettered (A), (B), (C), and ends with the recommended option and why it beats the others; you answer with one letter.
