@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // PreToolUse guard on Bash, Edit and Write: denies AI attribution in a commit
-// message, in the text of `gh pr create`, `edit` and `comment` and in the name of
-// a new branch, and a commit subject that is not a Conventional Commit. A commit,
+// message, in the text of `gh pr create|edit|comment|review`, `gh issue
+// create|comment|edit` and `gh release create|edit`, and in the name of a new
+// branch, and a commit subject that is not a Conventional Commit. A commit,
 // a pull request and a branch outlive the session and then read as a fact about
 // who wrote the code, and a subject without a type hides what the change is from
 // a reader of the log. Edit and Write carry no rule and pass.
@@ -28,9 +29,9 @@ import { blankCommandText, GIT_PREFIX_SOURCE } from './command-text.mjs';
 import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 // One list for every place attribution can land. A branch name holds no space,
-// so there the space of a phrase stands for the separators a name uses instead.
-const ATTRIBUTION_PHRASES = 'co-authored-by|generated with|claude code|robot_face';
-const BRANCH_ATTRIBUTION_PHRASES = ATTRIBUTION_PHRASES.replaceAll(' ', '[-_/]');
+// so there the whitespace of a phrase stands for the separators a name uses instead.
+const ATTRIBUTION_PHRASES = 'co-authored-by|generated\\s+with|generated\\s+by|claude\\s+code|noreply@anthropic\\.com|robot_face';
+const BRANCH_ATTRIBUTION_PHRASES = ATTRIBUTION_PHRASES.replaceAll('\\s+', '[-_/]');
 const ATTRIBUTION = new RegExp(ATTRIBUTION_PHRASES, 'i');
 
 const COMMIT_TYPES = ['build', 'chore', 'ci', 'docs', 'feat', 'fix', 'merge', 'perf', 'refactor', 'revert', 'style', 'test'];
@@ -42,7 +43,7 @@ const CONVENTIONAL_SUBJECT = new RegExp(`^(${COMMIT_TYPES.join('|')})(\\([^()]+\
 const COMMAND_START = '((?:^|[;&|( \\t`/])["\']?)';
 const GIT_PREFIX = GIT_PREFIX_SOURCE;
 const COMMIT_INVOCATION = new RegExp(`${COMMAND_START}${GIT_PREFIX}commit(?:[ \\t\\\\]|$)`, 'gm');
-const PULL_REQUEST_INVOCATION = new RegExp(`${COMMAND_START}gh +pr +(?:create|edit|comment)(?: |$)`, 'gm');
+const PULL_REQUEST_INVOCATION = new RegExp(`${COMMAND_START}gh +(?:pr +(?:create|edit|comment|review)|issue +(?:create|comment|edit)|release +(?:create|edit))(?: |$)`, 'gm');
 
 // The name a command gives a new branch: the argument after `checkout -b` or
 // `switch -c`, the first name of a creating `git branch`, the last name of a
@@ -64,7 +65,7 @@ const MESSAGE_FILE_OPTION = /(?:^| )(?:-[a-zA-Z]*F|--file)[ =]*([^ ]+)/;
 const BODY_FILE_OPTION = /(?:^| )(?:--body-file|-F)[ =]+([^ ]+)/;
 
 const COMMIT_ATTRIBUTION_REASON = 'writing-guard: a commit must not attribute the work to an AI. Remove the Co-Authored-By trailer, the "Generated with" line and every tool name from the message.';
-const PULL_REQUEST_ATTRIBUTION_REASON = 'writing-guard: a pull request must not attribute the work to an AI. Remove the Co-Authored-By trailer, the "Generated with" line and every tool name from the title, the body and the comment.';
+const PULL_REQUEST_ATTRIBUTION_REASON = 'writing-guard: a pull request must not attribute the work to an AI, nor an issue or a release. Remove the Co-Authored-By trailer, the "Generated with" line and every tool name from the title, the body and the comment.';
 const BRANCH_REASON = 'writing-guard: a branch name must not name an AI, because it shows in every pull request made from it. Drop a leading claude/, codex/ or copilot/ and every attribution phrase, and name the branch after the change only, such as fix/login-redirect.';
 const SUBJECT_REASON = `writing-guard: a commit subject follows Conventional Commits so the log can be read by type: type(scope): subject, such as feat(hooks): add the commit check. The scope is optional and the type is one of ${COMMIT_TYPES.join(', ')}.`;
 
