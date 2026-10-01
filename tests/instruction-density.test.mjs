@@ -9,8 +9,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
-  applyAllowlist, densityFindings, fileFindings, proseUnits, readAllowlist, rulesPerSkill, sentences
+  applyAllowlist, densityFindings, fileFindings, proseUnits, pruneAllowlist, readAllowlist, rulesPerSkill, sentences
 } from '../verify/instruction-density.mjs';
+import { INSTRUCTION_DENSITY_ALLOWLIST_LOCK } from '../verify/budgets.mjs';
 import { checkInstructionDensity } from '../verify/checks/instruction-density.mjs';
 import { createRepository } from '../verify/repository.mjs';
 
@@ -49,10 +50,27 @@ test('the allowlist holds no entry the tree no longer needs', () => {
   assert.deepEqual(stale, [], 'run node verify/instruction-density.mjs --prune');
 });
 
+test('the allowlist lock equals the allowlist length', () => {
+  assert.equal(readAllowlist(REPOSITORY_ROOT).length, INSTRUCTION_DENSITY_ALLOWLIST_LOCK.entries,
+    'set INSTRUCTION_DENSITY_ALLOWLIST_LOCK.entries in verify/budgets.mjs to the count --prune prints');
+});
+
 test('a list item of three sentences is a finding and one of two is not', () => {
   assert.deepEqual(kinds('- One rule. Its reason. A third.\n'), ['bullet']);
   assert.deepEqual(kinds('- One rule. Its reason.\n'), []);
   assert.deepEqual(kinds('1. **Step.** One rule. Its reason.\n'), []);
+});
+
+test('a lettered step is a list item of its own', () => {
+  assert.deepEqual(kinds('a. **Locate.** One. Two.\nb. **Fix.** One. Two.\n'), []);
+  assert.deepEqual(kinds('a. One. Two. Three.\nb. One.\n'), ['bullet']);
+});
+
+test('an indented paragraph after a blank line or a fence continues its list item', () => {
+  assert.deepEqual(kinds('- One.\n\n  Two. Three.\n'), ['bullet']);
+  assert.deepEqual(kinds('- One.\n\n  ```\n  code\n  ```\n\n  Two. Three.\n'), ['bullet']);
+  assert.deepEqual(kinds('- One.\n\nTwo. Three.\n'), []);
+  assert.deepEqual(kinds('- One.\n  - Two.\n\n  Three. Four.\n'), ['bullet']);
 });
 
 test('a paragraph of many short sentences is no finding', () => {
@@ -88,6 +106,11 @@ test('a code span, a link and an abbreviation end no sentence', () => {
   ]);
 });
 
+test('a short quoted example ends no sentence and keeps its stops', () => {
+  assert.deepEqual(sentences('**Triplets:** "Fast. Simple. Powerful." Cut it.'), ['"Fast. Simple. Powerful."', 'Cut it.']);
+  assert.deepEqual(kinds('- Avoid “Oops! Something went wrong.” Say what failed.\n'), []);
+});
+
 test('a code span counts as one word', () => {
   assert.deepEqual(kinds(`- \`${words(60)}\` runs.\n`), []);
 });
@@ -97,9 +120,36 @@ test('the allowlist matches by text, not line, and covers one finding per entry'
   const [moved] = fileFindings('skills/x/SKILL.md', '\n\n- One. Two. Three.\n');
   assert.equal(first.key, moved.key);
   const twice = fileFindings('skills/x/SKILL.md', '- One. Two. Three.\n- One. Two. Three.\n');
-  const { unlisted, stale } = applyAllowlist(twice, [first.key, 'skills/y/SKILL.md\tbullet\tgone']);
+  const { unlisted, stale } = applyAllowlist(twice, [first.key, 'skills/y/SKILL.md\tbullet\t3\tgone']);
   assert.equal(unlisted.length, 1);
-  assert.deepEqual(stale, ['skills/y/SKILL.md\tbullet\tgone']);
+  assert.deepEqual(stale, ['skills/y/SKILL.md\tbullet\t3\tgone']);
+});
+
+test('a bullet entry covers its recorded sentence count or fewer, never more', () => {
+  const opening = `${words(8)}.`;
+  const [four] = fileFindings('skills/x/SKILL.md', `- ${opening} Two. Three. Four.\n`);
+  const [three] = fileFindings('skills/x/SKILL.md', `- ${opening} Two. Three.\n`);
+  assert.equal(four.key, `skills/x/SKILL.md\tbullet\t4\t${opening.slice(0, 40)}`);
+  assert.deepEqual(applyAllowlist([three], [four.key]), { unlisted: [], stale: [] });
+  assert.deepEqual(applyAllowlist([four], [three.key]).unlisted, [four]);
+  assert.deepEqual(applyAllowlist([three, four], [three.key, four.key]), { unlisted: [], stale: [] });
+  assert.deepEqual(applyAllowlist([three], [`skills/x/SKILL.md\tbullet\t${opening.slice(0, 40)}`]).unlisted, [three]);
+});
+
+test('pruning drops one line per stale entry and keeps duplicates still in use', () => {
+  const kept = 'skills/x/SKILL.md\tbullet\t3\tOne.';
+  const gone = 'skills/x/SKILL.md\tsentence\tGone.';
+  assert.deepEqual(pruneAllowlist([kept, gone, kept, gone, kept], [gone, kept]), [kept, gone, kept]);
+  assert.deepEqual(pruneAllowlist([kept], []), [kept]);
+});
+
+test('an example artifact under a scanned directory is no instruction file', (t) => {
+  const root = fixture(t, {
+    'skills/spec/SKILL.md': 'One.\n',
+    'skills/spec/references/example-plan.md': '- One. Two. Three.\n'
+  });
+  assert.deepEqual(densityFindings(root), []);
+  assert.deepEqual(rulesPerSkill(root), [{ skill: 'spec', sentences: 1 }]);
 });
 
 test('the check fails a new offender, passes an allowlisted one and notes rules per skill', (t) => {
@@ -107,7 +157,7 @@ test('the check fails a new offender, passes an allowlisted one and notes rules 
     'skills/x/SKILL.md': '# X\n\n- One. Two. Three.\n',
     'skills/x/references/more.md': 'Four. Five.\n',
     'agents/a.md': `- ${words(45)}.\n`,
-    'verify/instruction-density-allowlist.txt': '# header\nskills/x/SKILL.md\tbullet\tOne. Two. Three.\n'
+    'verify/instruction-density-allowlist.txt': '# header\nskills/x/SKILL.md\tbullet\t3\tOne. Two. Three.\n'
   });
   const report = recordingReport();
   checkInstructionDensity(report, createRepository(root));
@@ -115,6 +165,19 @@ test('the check fails a new offender, passes an allowlisted one and notes rules 
   assert.equal(density.status, 'FAIL');
   assert.match(density.detail, /agents\/a\.md:1 sentence holds 45 words/);
   assert.doesNotMatch(density.detail, /skills\/x/);
-  assert.deepEqual(note, { status: 'INFO', name: 'rules per skill', detail: 'sentences in SKILL.md plus references: x 5' });
+  assert.equal(note.status, 'INFO');
+  assert.match(note.detail, /x 5/);
   assert.deepEqual(rulesPerSkill(root), [{ skill: 'x', sentences: 5 }]);
+});
+
+test('the check fails an allowlist longer than its lock', (t) => {
+  const entries = Array.from({ length: INSTRUCTION_DENSITY_ALLOWLIST_LOCK.entries + 1 }, (_, index) => `skills/x/SKILL.md\tsentence\tgone ${index}`);
+  const root = fixture(t, {
+    'skills/x/SKILL.md': '# X\n\nOne.\n',
+    'verify/instruction-density-allowlist.txt': `${entries.join('\n')}\n`
+  });
+  const report = recordingReport();
+  checkInstructionDensity(report, createRepository(root));
+  assert.equal(report.results[0].status, 'FAIL');
+  assert.match(report.results[0].detail, /over the \d+ locked/);
 });
