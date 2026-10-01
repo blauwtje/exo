@@ -91,6 +91,21 @@ test('a shell wait loop or sleep is never learned', () => {
   }
 });
 
+test('a command that reads remote state is never learned', () => {
+  for (const command of ['gh pr checks 12', 'curl https://x/health-check', 'curl -s https://ci/api/test-results', 'ssh host npm test', 'FOO=1 gh run watch', 'npm test && git fetch', 'kubectl rollout status deploy/check']) {
+    assert.equal(isLearnable(command), false, command);
+  }
+});
+
+test('only the program or its script or subcommand counts as test-like', () => {
+  for (const command of ['npm test', 'npm run check', 'pnpm vitest', 'pytest -x', 'go test ./...', 'cargo test', 'make lint', 'npx eslint .', 'python -m pytest', 'CI=1 npm test', 'uv run pytest', 'npm test 2>&1 | tail -5']) {
+    assert.equal(isLearnable(command), true, command);
+  }
+  for (const command of ['node scripts/test-data.mjs', 'cat tests/a.test.mjs']) {
+    assert.equal(isLearnable(command), false, command);
+  }
+});
+
 test('touchLearned refreshes lastUsed of a learned command and ignores an unknown one', () => {
   withCache(() => {
     run('npm test', { seconds: 90 });
