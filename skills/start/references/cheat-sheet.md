@@ -10,7 +10,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 | `edit-skills` | Writes or improves a skill or agent | "fix skill X", "make an agent that ..." |
 | `design-ui` | Designs or improves how a screen looks | "make this page nicer", "new component" |
 | `build` | Runs a plan file, with helpers and review, or with no plan file, builds a decided change test-first where it can | "run the plan at docs/...", or after `/clear`: "carry on", or "build X", "fix this bug, here's how to reproduce it" |
-| `verify` | Runs the scripted gate, reviews the branch and repairs its findings | "verify the plan at docs/...", "does this branch pass?" |
+| `verify` | Runs the scripted gate, reviews the branch and repairs its findings | "verify the plan at docs/...", "verify the branch for the plan at docs/..." |
 | `ship` | Pushes, opens or merges a pull request, fixes its checks or review comments | "push this", "merge the PR", "fix the checks" |
 | `spec` | Decides what "done" means, when that is still open | "I want something for X but I'm not sure what exactly" |
 | `spec` then `build` | Writes the brief with its task list, then offers to build it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |
