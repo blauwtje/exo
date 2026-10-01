@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.67.0 - 2026-10-01
+
 ### Highlights
 
 - **A verbose build, test or log command now runs with its output capped to the last 200 lines instead of being denied.** The command is rewritten to `set -o pipefail; <command> 2>&1 | tail -n 200`, so a failing command still exits non-zero.
