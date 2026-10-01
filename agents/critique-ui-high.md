@@ -1,6 +1,6 @@
 ---
-name: critique-ui-full
-description: "Judges one built visual surface against its direction and writes the faults file. Dispatched by design-ui instead of critique-ui when the full budget is set. Not for a code review, a direction choice, or an unbuilt surface."
+name: critique-ui-high
+description: "Judges one built visual surface against its direction and writes the faults file. Dispatched by design-ui instead of critique-ui when the high budget is set. Not for a code review, a direction choice, or an unbuilt surface."
 model: opus
 effort: xhigh
 tools: Read, Write, Grep

@@ -1,6 +1,6 @@
 ---
-name: review-branch-deep-full
-description: "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch-deep when the full budget is set. Not for a smaller branch, a single task, a pull request or a diff without a plan."
+name: review-branch-deep-high
+description: "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch-deep when the high budget is set. Not for a smaller branch, a single task, a pull request or a diff without a plan."
 model: opus
 effort: xhigh
 tools: Read, Write, Glob, Grep, Bash

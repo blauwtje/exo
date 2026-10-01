@@ -209,8 +209,8 @@ test('the full rule names both twins and carries no placeholder', async () => {
   const result = await run(SETTINGS, ['context'], { cwd: space.root, env: space.env });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /budget=full \(project\)/);
-  assert.ok(result.stdout.includes('exo:review-branch-deep-full'), result.stdout);
-  assert.ok(result.stdout.includes('exo:critique-ui-full'), result.stdout);
+  assert.ok(result.stdout.includes('exo:review-branch-deep-high'), result.stdout);
+  assert.ok(result.stdout.includes('exo:critique-ui-high'), result.stdout);
   assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
 });
 

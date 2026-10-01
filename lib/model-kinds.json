@@ -15,7 +15,7 @@
     "hardest": { "tier": "strong", "effort": "high" },
     "review": { "tier": "standard", "effort": "high" },
     "review-deep": { "tier": "strong", "effort": "high" },
-    "review-deep-full": { "tier": "strong", "effort": "xhigh" },
+    "review-deep-high": { "tier": "strong", "effort": "xhigh" },
     "investigate": { "tier": "standard", "effort": "high" },
     "coordinate": { "tier": "standard", "effort": "medium" },
     "research": { "tier": "standard", "effort": "medium" },
@@ -32,10 +32,10 @@
     "agents/build-task.md": { "kind": "build" },
     "agents/build-ui.md": { "kind": "build" },
     "agents/critique-ui.md": { "kind": "review-deep" },
-    "agents/critique-ui-full.md": {
-      "kind": "review-deep-full",
+    "agents/critique-ui-high.md": {
+      "kind": "review-deep-high",
       "generatedFrom": "agents/critique-ui.md",
-      "description": "Judges one built visual surface against its direction and writes the faults file. Dispatched by design-ui instead of critique-ui when the full budget is set. Not for a code review, a direction choice, or an unbuilt surface."
+      "description": "Judges one built visual surface against its direction and writes the faults file. Dispatched by design-ui instead of critique-ui when the high budget is set. Not for a code review, a direction choice, or an unbuilt surface."
     },
     "agents/fetch-docs.md": { "kind": "research" },
     "agents/locate-code.md": { "kind": "lookup" },
@@ -45,10 +45,10 @@
       "generatedFrom": "agents/review-branch.md",
       "description": "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch for that size. Not for a smaller branch, a single task, a pull request or a diff without a plan."
     },
-    "agents/review-branch-deep-full.md": {
-      "kind": "review-deep-full",
+    "agents/review-branch-deep-high.md": {
+      "kind": "review-deep-high",
       "generatedFrom": "agents/review-branch.md",
-      "description": "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch-deep when the full budget is set. Not for a smaller branch, a single task, a pull request or a diff without a plan."
+      "description": "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch-deep when the high budget is set. Not for a smaller branch, a single task, a pull request or a diff without a plan."
     },
     "agents/run-unit.md": { "kind": "coordinate" },
     "agents/survey-ui.md": { "kind": "investigate" }
