@@ -18,7 +18,7 @@ Walk every setting in the chat, one question per message, and write only what th
 
 ## The order
 
-`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`, `heavy_after_seconds`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands` and `heavy_after_seconds`.
+`scope`, `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`, `heavy_after_seconds`. `scope` decides the layer for `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands` and `heavy_after_seconds`.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -34,6 +34,7 @@ Every setting but `scope` offers its current value first, as `- **A · Keep <val
 |---|---|---|
 | `specs` | Where should a spec go when exo shapes a change? | `docs`: a file under docs/specs in the repository. `issues`: a GitHub issue. `both`: a file plus a linked issue. |
 | `replies` | How should exo write its replies? | `terse`: chat prose without articles, linking verbs or filler. `tight`: short, no preamble, recap or filler. `standard`: full prose. |
+| `budget` | Which model should each agent run on? | `high`: medium, except the deep branch review, the design critique and the hardest work run their `xhigh` twins. `medium` (default): each agent runs the model its kind resolves to. `low`: an agent on a tier with a cheaper replacement runs on that replacement, except the hardest work, which runs at medium effort. |
 | `workspace` | Where should a code-changing run commit? | `ask`: the run asks each time. `branch`: a new branch. `worktree`: a separate folder. `current`: the current branch. |
 | `ship` | How should finished commits leave this machine? | `ask`: ship asks each time. `pr-merge`: a pull request, merged once checks pass. `open-pr`: a pull request left open. `push`: a push, no pull request. `local`: nothing leaves. |
 | `guards` | Should exo's safety guards refuse the commands and edits they cover? | `on` (default): they refuse. `off`: no guard refuses anything. |
