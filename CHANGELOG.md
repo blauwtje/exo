@@ -7,6 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- bash-output-guard no longer loops to V8's string limit, costing about 1.7 s and 2 GB per call and failing open on a small heap, when a command ends in `(`, `)`, `;`, `<`, `>`, `|` or `&`.
+- verify reruns its gate after the review fixer and commits the fixes only when it passes, so a fix that breaks a test no longer reaches ship labelled verified.
+- The review fixer finds and runs each task's proof on compact plans, which put `Files:` and `Proof:` mid-line and have no `Run:`.
+- git-guard denies a force push written as a `+refspec`, such as `git push origin +main`, and a `git` command after a `.git` word, such as `GIT_DIR=.git git reset --hard`.
+- verify prints `UNRUN success-criterion` for `Land gate: none` instead of `PASS`, and runs a task's `npm test` or `node --test` proof unless the gate is the default `npm run check`.
+- find-cause's fix delegate runs Steps 4 and 5 only, and may write the new failing test it lists under `Tests`.
+- The skill description total is locked at its measured 3,321 chars, so description growth no longer passes unnoticed.
+- The README, CONTRIBUTING, start, ship, find-cause and scannable docs no longer drift from the code: the README lists the `ship`, `workspace` and `guard_lines` settings, and a skill's own report format outranks the scannable caps.
+- Fresh eyes gives its reviewer an absolute path to the critique checks, and verify tells the branch reviewers where the implementer reports are.
+- git-guard denies a force-delete of a missing branch as "no branch named X" without calling `gh`, and read-guard no longer calls a read with a limit above the cap unbounded.
+
 ## 0.70.2 - 2026-10-01
 
 ### Fixed
