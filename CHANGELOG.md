@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.70.0 - 2026-10-01
+
 ### Added
 
 - A test-like Bash command whose last run in a project took longer than the new `heavy_after_seconds` setting (default 60, 0 turns it off) runs through the heavy-run dedupe from then on, with nothing listed in `heavy_commands`.
