@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- design-ui gives each instruction bullet one rule, leads every reference with the rules most often broken, cuts rules restated across its files, and loads phase-detail by section; its 92 instruction-density allowlist entries are gone and the lock drops from 189 to 96.
+
 ## 0.72.1 - 2026-10-01
 
 ### Changed
