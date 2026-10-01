@@ -44,3 +44,7 @@ test('an Assuming: line is a finding, plain or bulleted', (t) => {
 test('a recommendation on A and the word assuming inside prose are no finding', (t) => {
   assert.deepEqual(findings(fixture(t, ['→ A. fine', 'We stop assuming: nothing here.'])), []);
 });
+
+test('a (Recommended) tag is a finding', (t) => {
+  assert.equal(findings(fixture(t, ['- **A · Branch (Recommended)**: a new branch'])).length, 1);
+});

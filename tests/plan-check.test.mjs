@@ -100,9 +100,9 @@ function compactTasks(count) {
 const ACCEPTANCE_BULLET = '- An overdue task shows a badge in the warning tone.';
 const ACCEPTANCE_BULLET_WITH_CITATION = `${ACCEPTANCE_BULLET} (Task 1)`;
 
-test('plan-check prints ok for a brief of 60 lines or more, past the old 30-line compact cap', () => {
+test('plan-check prints ok for a 61-line brief with tasks, past the old 30-line compact cap', () => {
   const brief = briefFixture({ tasks: compactTasks(17) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
-  assert.ok(brief.split('\n').length >= 60);
+  assert.equal(brief.split('\n').length, 61);
   const report = planCheckReport(brief);
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok/);

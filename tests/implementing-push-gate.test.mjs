@@ -58,7 +58,7 @@ test('the tail pushes only through the finish question', () => {
   assert.ok(tailStep.includes('End this loop on `verify`'));
   assert.ok(VERIFY.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
-  const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the digit.');
+  const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
   const firstMerge = SHIPPING.indexOf('scripts/ship.mjs" --merge ');
   assert.ok(question !== -1 && firstRoute > question && firstMerge > question, 'the commands that push or merge are named only after the question');

@@ -39,7 +39,7 @@ The claims two separate sessions have already booked, waiting for approval:
 
 | File | Read it when |
 |---|---|
-| `../route-skills/references/question.md` | Before a message that asks the user to pick among numbered options. |
+| `../route-skills/references/question.md` | Before a message that asks the user to pick among lettered options. |
 | `../edit-skills/references/where-a-fix-lives.md` | Before booking a correction, to check whether a stronger fix than a memory line exists. |
 
 ## Judgment
