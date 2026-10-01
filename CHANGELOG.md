@@ -17,7 +17,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
-- The `review-deep` and `hardest` kinds run at `high` effort instead of `xhigh`, so `exo:review-branch-deep` and `exo:critique-ui` do too.
+- The `review-deep` and `hardest` kinds run at `high` effort instead of `xhigh`, so `exo:review-branch-deep` and `exo:critique-ui` do too, under `lean` as well as `normal`.
 
 ## 0.64.3 - 2026-09-30
 
