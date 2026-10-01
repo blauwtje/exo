@@ -137,6 +137,23 @@ test('a delegate reading a range the main thread already read passes', async () 
   assert.equal(repeat.permissionDecision, 'deny');
 });
 
+test('a one-line file over 200 bytes per allowed line is refused unbounded, a bounded read and a file at the byte cap pass', async () => {
+  const { env, configDirectory } = await guardFixture();
+  const minified = path.join(configDirectory, 'bundle.min.js');
+  await fs.writeFile(minified, 'x'.repeat(80_001));
+  const verdict = decision(await runGuard([], readInput(minified), env));
+  assert.equal(verdict?.permissionDecision, 'deny');
+  assert.match(verdict.permissionDecisionReason, /has 80001 bytes and an unbounded read above 80000 bytes/);
+  assert.equal(decision(await runGuard([], readInput(minified, { offset: 1, limit: 50 }, 'toolu_2'), env)), null);
+  const atCap = path.join(configDirectory, 'at-cap.js');
+  await fs.writeFile(atCap, 'x'.repeat(80_000));
+  assert.equal(decision(await runGuard([], readInput(atCap), env)), null);
+  const lowered = await guardFixture({ guard_lines: 100 });
+  const loweredFile = path.join(lowered.configDirectory, 'bundle.min.js');
+  await fs.writeFile(loweredFile, 'x'.repeat(20_001));
+  assert.match(decision(await runGuard([], readInput(loweredFile), lowered.env)).permissionDecisionReason, /above 20000 bytes/);
+});
+
 test('a file of exactly 400 lines with a final newline passes an unbounded read', async () => {
   const { env, configDirectory } = await guardFixture();
   const file = path.join(configDirectory, 'four-hundred.ts');

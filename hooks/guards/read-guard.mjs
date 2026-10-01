@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Guard on Read: in PreToolUse it refuses an unbounded read of a large file, one
-// without a limit at or under the cap, so the model reads a located range
+// without a limit at or under the cap, by lines or by bytes (200 per allowed
+// line), so the model reads a located range
 // instead, except the repository map, which is
 // generated and capped where it is written, and refuses a second read of a
 // range unchanged since the first in this context window; in PostToolUse it
@@ -31,6 +32,10 @@ const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.p
 const MAP_NAME = 'map.md';
 
 const DEFAULT_GUARD_LINES = SCHEMA['guard_lines'].default;
+
+// Bytes allowed per allowed line, so a file under the line cap but with very
+// long lines, such as a minified bundle, is still refused unbounded.
+const BYTES_PER_LINE = 200;
 
 // A path a symlink reaches is the same file, and git reports the exo directory
 // with the links resolved; a directory that cannot be resolved compares as it
@@ -127,6 +132,14 @@ function refusalOf(session, target) {
   const bounded = input.limit !== undefined && input.limit <= lineLimit;
   if (bounded) return null;
   if (isRepositoryMap(filePath, cwd)) return null;
+  // The byte cap is checked on the stat before the file is read, so a huge or
+  // minified one-line file is refused without loading it.
+  const byteLimit = lineLimit * BYTES_PER_LINE;
+  if (stat.size > byteLimit) {
+    return {
+      reason: `exo read guard: ${filePath} has ${stat.size} bytes and an unbounded read above ${byteLimit} bytes (${lineLimit} lines of ${BYTES_PER_LINE}) is refused (this one asks ${input.limit ?? 'the whole file'}); locate the part first with a search that prints only the matching text, then read a range with offset and a limit of at most ${lineLimit}.`
+    };
+  }
   const lines = fileLines(filePath);
   if (lines.length <= lineLimit) return null;
   return {
