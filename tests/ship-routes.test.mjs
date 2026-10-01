@@ -11,6 +11,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
+import { assertQuestionShape } from './question-shape.mjs';
 
 const SHIP = fileURLToPath(new URL('../skills/ship/scripts/ship.mjs', import.meta.url));
 
@@ -58,30 +59,32 @@ async function featureBranch(workDir) {
   await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
 }
 
-const CONTEXT = 'Pick how far the commits travel.';
-const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
-const TITLE = '**1 · Where should the commits go?**';
+const CONTEXT = 'Your new commits are only on this computer.';
+const TITLE = '**Where should the commits go?**';
 const MENU_FULL = [
   TITLE,
   CONTEXT,
   '',
-  '- **A · PR + merge**: push, open a pull request, merge it once checks pass',
-  '- **B · Open PR**: push and open a pull request, leave it open',
-  '- **C · Keep local**: nothing leaves this machine',
+  '- **(A) Push and merge**: send the commits to GitHub and merge them once the automatic tests pass.',
+  '- **(B) Open PR**: send them to GitHub for review, and leave the merge to you.',
+  '- **(C) Keep local**: nothing leaves this computer.',
   '',
-  '→ A. The pull request is merged only once its checks pass.',
-  NO_ANSWER
+  'Recommended: (A), because the change lands only once the automatic tests pass, and (B) leaves the merge to you.'
 ].join('\n') + '\n';
 const MENU_PUSH_ONLY = [
   TITLE,
   CONTEXT,
   '',
-  '- **A · Push**: push the commits to origin',
-  '- **B · Keep local**: nothing leaves this machine',
+  '- **(A) Push**: send the commits to GitHub.',
+  '- **(B) Keep local**: nothing leaves this computer.',
   '',
-  '→ A. The commits are safe on origin.',
-  NO_ANSWER
+  'Recommended: (A), because the commits are then safe off this computer, and (B) keeps them only here.'
 ].join('\n') + '\n';
+
+test('both ship menus keep the question shape', () => {
+  assertQuestionShape(MENU_FULL);
+  assertQuestionShape(MENU_PUSH_ONLY);
+});
 
 test('--routes: no origin remote rules out every route', async () => {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });

@@ -13,12 +13,12 @@ Spec always ends on a brief, even when no decision is open, and never starts `bu
 ## What you get
 
 - Every choice you would notice is asked, never decided for you. A point answerable by running or reading something, spec looks up and records instead of asking; an undecided point stays open no matter what the code shows. A point you would not notice sits in its task.
-- Questions come in rounds: one message with every question that can be answered now, each with lettered options and the recommendation on A. Reply `1a 3b` to decide only those, a letter, or `ok` to take every recommendation; the open ones come back in the next round. Questions that wait on an answer come in a later round.
+- Questions come one at a time, each with usually three or four lettered options and a closing line saying which one is recommended and why. Reply with one letter, or `ok` to take the recommendation; the next question comes only while one is still open.
 - When nothing is open, spec closes with one to three lines on what was agreed, and the brief follows your yes.
 - One brief, stored where the `specs` setting points: a file under `docs/specs/`, a GitHub issue, or both.
 - Checks only you can make, such as clicking through a screen or acting in an outside account, go to the brief's short `## Manual checks` list, never into the task list; the run's final report ends with them.
 - New wishes reopen the brief you already have and edit it where it stands.
-- Once the brief is written and checked, spec ends on one pick: A adjusts the brief, B builds it in this session. Without an answer nothing starts; type `/clear` and then `/exo:build <brief>` to build in a fresh session. Plan mode ends the same way.
+- Once the brief is written and checked, spec ends on one question: A adjusts the brief, B builds it in this session, C builds it in a fresh session, and spec then gives the lines to type: `/clear`, `/exo:build <brief>` and, when a lighter model does, the `/model` switch first. Without an answer nothing starts. Plan mode ends the same way.
 
 ## Where its rules live
 

@@ -18,7 +18,7 @@ test('route-skills references/context.md states one reply-language rule for ever
 
 test('the question options point at the reply-language rule instead of stating their own', () => {
   const question = fs.readFileSync(new URL('../skills/route-skills/references/question.md', import.meta.url), 'utf8');
-  assert.ok(question.includes('as the language rule under `# Context` in route-skills sets'));
+  assert.ok(question.includes("as the language rule in route-skills' `references/context.md` sets"));
   assert.ok(!question.includes("are in the conversation's language"));
   assert.ok(!CONTEXT.includes("are in the conversation's language"));
 });

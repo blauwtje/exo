@@ -161,17 +161,30 @@ test('show marks the current option and names every layer the winner overrides',
   assert.ok(longest <= 76, `a line runs to ${longest} columns`);
 });
 
-test('menu asks for the setting, and with a key for a value other than the current one', async () => {
+test('menu asks for a topic, with a topic for its setting, and with a key for a value other than the current one', async () => {
   const space = await workspace({ project: { specs: 'issues' } });
-  const settingQuestion = await settings(space, ['menu']);
-  assert.equal(settingQuestion.code, 0, settingQuestion.stderr);
-  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**1 · Change which setting?**\nEach setting has its own values and layers.\n\n- **A · Keep**: change nothing\n- **B · specs**: change it, now issues\n- **C · replies**: change it, now tight\n- **D · budget**: change it, now medium\n- **E · ship**: change it, now ask\n- **F · workspace**: change it, now ask\n- **G · guards**: change it, now on\n- **H · guard_lines**: change it, now 400\n- **I · heavy_commands**: change it, now (none)\n- **J · heavy_after_seconds**: change it, now 60\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), settingQuestion.stdout);
+  const topicQuestion = await settings(space, ['menu']);
+  assert.equal(topicQuestion.code, 0, topicQuestion.stderr);
+  assert.ok(topicQuestion.stdout.trimEnd().endsWith('**What would you like to change?**\nPick a topic to change one setting in it; the rest stay as they are.\n\n- **(A) Keep as is**: change nothing\n- **(B) How I work**: how I write to you and how much effort tasks get\n- **(C) Where work goes**: where plans, code changes and finished work end up\n- **(D) Safety and speed**: what I block and which slow commands I skip repeating\n\nRecommended: (A), because your current settings keep working, and the others change how I behave from now on.'), topicQuestion.stdout);
+  const settingQuestion = await settings(space, ['menu', 'places']);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**Which part of where work goes?**\n\n- **(A) Keep as is**: change nothing\n- **(B) Plans**: where I save the plan for a change (now: GitHub issue)\n- **(C) Code changes**: where I put code changes (now: Ask me)\n- **(D) Finished work**: what happens once work is done (now: Ask me)\n\nRecommended: (A), because nothing changes, and the others each lead to one question about that setting.'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
-  assert.ok(valueQuestion.stdout.trimEnd().endsWith('**1 · Set specs to which value?**\nspecs is now issues.\n\n- **A · Keep issues**: change nothing\n- **B · docs**: set specs to docs\n- **C · both**: set specs to both\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), valueQuestion.stdout);
+  assert.ok(valueQuestion.stdout.trimEnd().endsWith('**Where should I save the plan for a change?**\n\n- **(A) Keep GitHub issue**: an issue on GitHub, no file\n- **(B) Docs folder**: a file in your repository\n- **(C) Both**: a file plus a matching GitHub issue\n\nRecommended: (A), because it keeps what you have now, and any other answer changes it from now on.'), valueQuestion.stdout);
   assert.doesNotMatch(valueQuestion.stdout, /replies/);
   const unknown = await settings(space, ['menu', 'wiki']);
   assert.equal(unknown.code, 1);
   assert.match(unknown.stderr, /unknown setting wiki/);
+});
+
+test('the topics hold every setting once, and every setting has plain question texts', async () => {
+  const schema = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
+  const space = await workspace();
+  const topics = (await Promise.all(['work', 'places', 'safety'].map((topic) => settings(space, ['menu', topic])))).map((result) => result.stdout).join('\n');
+  for (const [key, entry] of Object.entries(schema)) {
+    for (const field of ['label', 'about', 'question']) assert.ok(entry[field], `${key} lacks ${field}`);
+    assert.equal(topics.split(`**: ${entry.about} (now:`).length - 1, 1, `${key} sits in one topic`);
+    for (const option of entry.options ?? []) assert.ok(entry.choices?.[option], `${key} lacks a choice for ${option}`);
+  }
 });
 
 test('every schema key is a userConfig entry with the same type, options and default', async () => {
@@ -252,7 +265,7 @@ test('the context line leaves heavy_commands out while empty and prints it once 
   assert.ok(!(await settings(unset, ['context'])).stdout.includes('heavy_commands'));
   const project = await workspace({ project: { heavy_commands: 'npm run e2e' } });
   assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project), heavy_after_seconds=60 (default)'));
-  assert.ok((await settings(unset, ['menu'])).stdout.includes('- **I · heavy_commands**: change it, now (none)'));
+  assert.ok((await settings(unset, ['menu', 'safety'])).stdout.includes('- **(D) Slow commands**: commands I run only once per code change (now: None)'));
 });
 
 test('heavy_commands is empty by default and carries the project string whole', async () => {

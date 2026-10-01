@@ -17,7 +17,7 @@ argument-hint: <outcome to shape>
    A decision the user left undecided stays open whatever the code suggests.
    A point the user would not notice goes in its task's `Data:`.
    Name the owning layer and a smaller alternative.
-3. **Ask in rounds.** Ask per `../route-skills/references/question.md`: one message holds every question answerable now, a later round the ones waiting on an answer, until none is open.
+3. **Ask one at a time.** Ask per `../route-skills/references/question.md`: one question per message, the next only while one is still open.
    Decide nothing silently.
    Then close with one to three lines on what was agreed; the brief follows the user's yes.
    After a compaction: list decisions first.
@@ -26,7 +26,7 @@ argument-hint: <outcome to shape>
 6. **Store it** per the session's `exo settings:` `specs` value, `docs` when absent (plan mode: the harness's plan file); name its location.
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`; `issues` also writes the `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` path, for `build`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines; add any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; never load `exo:build` unasked.
+8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output, and on `C` reply with its `--fresh` output; never load `exo:build` unasked.
 
 ## References
 

@@ -1,32 +1,64 @@
-// Every exo question is lettered options, `- **A · Label**: text`, with the
-// recommendation on A. The shape lives only in the question reference; the
-// route-skills body and each skill point at it, so this test guards the text
-// that states it.
+// Every exo question is one question per message: a plain title, lettered
+// options `- **(A) Label**: text`, and a closing `Recommended: (A), because`
+// line. The shape lives only in the question reference; the route-skills body
+// and each skill point at it, so this test guards the text that states it.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { assertQuestionShape } from './question-shape.mjs';
 
-const read = (relative) => fs.readFileSync(new URL(`../${relative}`, import.meta.url), 'utf8');
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 const USING_EXO = read('skills/route-skills/SKILL.md');
 const QUESTION = read('skills/route-skills/references/question.md');
 const NEXT_STAGE = read('skills/route-skills/references/next-stage.md');
 
 test('the question reference is the one place that defines the shape, with A recommended', () => {
-  assert.ok(QUESTION.includes('`**<nr> · <title>**`'));
-  assert.ok(QUESTION.includes('`- **A · Label**: what the user gets`'));
-  assert.ok(QUESTION.includes('`→ A. <reason>`'));
+  assert.ok(QUESTION.includes('`**<title>**`'));
+  assert.ok(QUESTION.includes('`- **(A) Label**: what the user gets`'));
+  assert.ok(QUESTION.includes('`Recommended: (A), because <why A beats the others>`'));
   assert.ok(QUESTION.includes('A is always the recommended option'));
-  assert.ok(QUESTION.includes('## A round of questions'));
-  assert.ok(QUESTION.includes('## A single pick'));
+  assert.ok(QUESTION.includes('## One question'));
+  assert.ok(QUESTION.includes('A message asks one question, never several'));
+  assert.ok(QUESTION.includes('**Three or four options.**'));
   assert.ok(QUESTION.includes('a question tool, a form or a picker is never used'));
-  assert.ok(QUESTION.includes('`a` and `1a` both pick A'));
+  assert.ok(QUESTION.includes('`b`, `B` and `(b)` all pick B'));
+  assert.ok(!QUESTION.includes('1a'), 'no reply answers several questions');
+  assert.ok(!QUESTION.includes('Without an answer'), 'no line for a missing answer');
 });
 
-test('the example puts one blank line before and after the options', () => {
+test('the example is one short question with three options and the recommendation last', () => {
   const example = QUESTION.match(/```text\n([\s\S]*?)```/)[1];
-  assert.ok(/\n\n- \*\*A · [^\n]*\n(- \*\*[B-C] · [^\n]*\n)*\n→ A\. /.test(example));
+  assert.ok(/^\*\*[^*\n]+\?\*\*\n/.test(example), 'a plain bold title, no number');
+  assert.ok(/\n\n- \*\*\(A\) [^\n]*\n- \*\*\(B\) [^\n]*\n- \*\*\(C\) [^\n]*\n\nRecommended: \(A\), because [^\n]*\n$/.test(example));
   assert.ok(!example.includes('\n\n\n'));
+  assert.ok(!example.includes('---'));
+  const words = example.replace(/\*\*\([A-D]\) [^*]*\*\*/g, '').split(/\s+/).filter(Boolean);
+  // The reference aims under about 60 words; the slack keeps the bound on "about".
+  assert.ok(words.length <= 70, `the example runs to ${words.length} words`);
+});
+
+// The old shape: middle-dot option lines, bold or not, and titles, the arrow
+// reason, and the line for a missing answer.
+const OLD_SHAPE = [/^\s*-\s+(\*\*)?[A-J] · /m, /\*\*\d+ · /, /^\s*['"`]?→ [A-Z]\. /m, /Without an answer,/];
+
+function shippedFiles(dir) {
+  return fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((entry) => {
+    const relative = path.join(dir, entry.name);
+    if (entry.isDirectory()) return shippedFiles(relative);
+    return /\.(md|mjs|json)$/.test(entry.name) ? [relative] : [];
+  });
+}
+
+test('no skill, agent, output style, hook, library, doc or check still states or emits the old shape', () => {
+  const files = ['skills', 'agents', 'output-styles', 'hooks', 'lib', 'docs', 'verify']
+    .filter((dir) => fs.existsSync(path.join(ROOT, dir)))
+    .flatMap(shippedFiles);
+  const stale = files.filter((file) => OLD_SHAPE.some((pattern) => pattern.test(read(file))));
+  assert.deepEqual(stale, []);
 });
 
 test('no file keeps a second copy of the shape', () => {
@@ -38,24 +70,20 @@ test('the route-skills body points at the question reference', () => {
 });
 
 test('the next stage recommends continuing, and a context notice leaves the order alone', () => {
-  assert.ok(NEXT_STAGE.includes('After `spec`: A Adjust the brief, B Build here.'));
+  assert.ok(NEXT_STAGE.includes('After `spec`: A Adjust the brief, B Build here, C Build fresh.'));
   assert.ok(NEXT_STAGE.includes('**A is the recommended option**'));
   assert.ok(NEXT_STAGE.includes('**A context notice changes nothing here.**'));
   assert.ok(!NEXT_STAGE.includes('stopping is recommended'), 'a context notice no longer moves Stop first');
   assert.ok(!NEXT_STAGE.includes('stopping leads after every stage'), 'Stop no longer leads unconditionally');
-  assert.ok(NEXT_STAGE.includes('**One model line.**'));
+  assert.ok(NEXT_STAGE.includes('**Fresh-chat lines.**'));
   assert.ok(!NEXT_STAGE.includes('names its command, model and effort'));
 });
 
-test('design-ui offers its preview as a lettered single pick, the preview on A', () => {
+test('design-ui offers its preview as one plain question, showing the looks on A', () => {
   const intake = read('skills/design-ui/references/intake.md');
-  const preview = intake.indexOf('- **A · Browser preview**:');
-  const decided = intake.indexOf('- **B · Decide for me**:');
-  assert.ok(preview !== -1 && preview < decided, 'the preview is A and deciding for the user B');
-  assert.ok(!intake.includes('(Recommended)'), 'A is recommended by position, not by a tag');
-  assert.ok(intake.includes('in the question shape'));
-  assert.ok(intake.includes('Without an answer, nothing is built.'));
-  assert.ok(!intake.includes('as assumptions, and build'), 'a one-line brief no longer builds on assumptions');
-  assert.ok(intake.includes('a sketch costs about 1,000 extra tokens'), 'the offer keeps its price');
-  assert.ok(intake.includes('about 3,500 extra tokens per direction'), 'full comps keep theirs');
+  const offer = intake.match(/```text\n([\s\S]*?)```/)[1].replace(/^ {2}/gm, '');
+  assertQuestionShape(offer);
+  assert.ok(offer.indexOf('- **(A) ') < offer.indexOf('- **(B) ') && offer.indexOf('- **(B) ') < offer.indexOf('- **(C) '));
+  assert.ok(!intake.includes('(Recommended)'), 'A is recommended by its line, not by a tag');
+  assert.ok(!/\d\s*(extra )?tokens/.test(intake), 'intake names no token count to the user');
 });

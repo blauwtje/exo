@@ -136,30 +136,27 @@ function ghAuthOk() {
   return runGh(['auth', 'status']).ok;
 }
 
-// A single pick in the lettered shape of route-skills/references/question.md; a
+// One question in the lettered shape of route-skills/references/question.md; a
 // plain push stays reachable through the `ship=push` setting.
-const CONTEXT = 'Pick how far the commits travel.';
-const NO_ANSWER = 'Without an answer, nothing leaves this machine.';
+const CONTEXT = 'Your new commits are only on this computer.';
 const MENU_FULL = [
-  '**1 · Where should the commits go?**',
+  '**Where should the commits go?**',
   CONTEXT,
   '',
-  '- **A · PR + merge**: push, open a pull request, merge it once checks pass',
-  '- **B · Open PR**: push and open a pull request, leave it open',
-  '- **C · Keep local**: nothing leaves this machine',
+  '- **(A) Push and merge**: send the commits to GitHub and merge them once the automatic tests pass.',
+  '- **(B) Open PR**: send them to GitHub for review, and leave the merge to you.',
+  '- **(C) Keep local**: nothing leaves this computer.',
   '',
-  '→ A. The pull request is merged only once its checks pass.',
-  NO_ANSWER
+  'Recommended: (A), because the change lands only once the automatic tests pass, and (B) leaves the merge to you.'
 ];
 const MENU_PUSH_ONLY = [
-  '**1 · Where should the commits go?**',
+  '**Where should the commits go?**',
   CONTEXT,
   '',
-  '- **A · Push**: push the commits to origin',
-  '- **B · Keep local**: nothing leaves this machine',
+  '- **(A) Push**: send the commits to GitHub.',
+  '- **(B) Keep local**: nothing leaves this computer.',
   '',
-  '→ A. The commits are safe on origin.',
-  NO_ANSWER
+  'Recommended: (A), because the commits are then safe off this computer, and (B) keeps them only here.'
 ];
 
 /** Why a set `ship` route other than `push` cannot run yet, or null when it can. */

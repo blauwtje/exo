@@ -1,13 +1,13 @@
 // Every exo question recommends option A, and no text states an assumption in
 // place of asking. A finding is `{ path, line }`: the file and the 1-based line
-// holding a `→ <letter>.` recommendation off A, a `(Recommended)` tag, or an `Assuming:` line. Every
+// holding a `Recommended: (<letter>)` line off A, a `(Recommended)` tag, or an `Assuming:` line. Every
 // markdown and script file under skills/, agents/, output-styles/ and lib/ is read, listed skill or not, because
 // the route-skills references sit outside the listed skills.
 
 import fs from 'node:fs';
 import path from 'node:path';
 
-const RECOMMENDATION_OFF_A = /^\s*['"`]?→ (?!A\.)[A-Z]\./;
+const RECOMMENDATION_OFF_A = /^\s*['"`]?Recommended: \((?!A\))[A-Z]\)/;
 const RECOMMENDED_TAG = /\(Recommended\)/;
 const ASSUMING = /^\s*(?:[-*]\s+)?Assuming:/;
 

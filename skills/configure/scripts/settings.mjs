@@ -6,7 +6,7 @@
 //
 //   node settings.mjs context                                one line for the session context
 //   node settings.mjs show                                   every key: value, layer, options, overridden layers
-//   node settings.mjs menu [<key>]                           that overview, then the question that picks a key or a value
+//   node settings.mjs menu [<topic> | <key>]                 that overview, then the question that picks a topic, a key or a value
 //   node settings.mjs get <key>                              the effective value
 //   node settings.mjs set <key> <value> --scope project|local
 
@@ -122,29 +122,50 @@ function show(root) {
   console.log(overview(Object.keys(SCHEMA), layers(root)).join('\n'));
 }
 
-// The overview plus the one question that moves a change forward: which setting
-// without a key, which value with one. Keep is always A, the recommended answer.
-// The option lines sit outside the fence because bold renders only there.
-function question(title, context, keep, picks) {
-  const letters = [keep, ...picks].map((line, index) => `- **${String.fromCharCode(65 + index)} · ${line}`);
-  return [`**1 · ${title}**`, context, '', ...letters, '', '→ A. Keeping things as they are is the safe default.', 'Without an answer, nothing changes.'];
+// The overview plus the one question that moves a change forward: which topic
+// without an argument, which setting with a topic, which value with a key. The
+// topics keep the first answer to four letters. Keep is always A, the
+// recommended answer, and the plain texts come from the schema's `label`,
+// `about`, `question`, `typed` and `choices`. The option lines sit outside the fence
+// because bold renders only there.
+const TOPICS = {
+  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['replies', 'budget'] },
+  places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
+  safety: { label: 'Safety and speed', question: 'Which part of safety and speed?', about: 'what I block and which slow commands I skip repeating', keys: ['guards', 'guard_lines', 'heavy_commands', 'heavy_after_seconds'] }
+};
+
+function question(title, context, keep, picks, reason) {
+  const letters = [keep, ...picks].map((line, index) => `- **(${String.fromCharCode(65 + index)}) ${line}`);
+  return [`**${title}**`, ...(context ? [context] : []), '', ...letters, '', `Recommended: (A), because ${reason}`];
 }
 
-function menu(root, key) {
+function plainValue(key, value) {
+  return SCHEMA[key].choices?.[String(value)]?.label ?? (value === '' ? 'none' : String(value));
+}
+
+function menu(root, name) {
   const stack = layers(root);
-  if (key === undefined) {
-    const picks = Object.keys(SCHEMA).map((name) => {
-      const { value } = resolve(name, stack);
-      return `${name}**: change it, now ${value === '' ? '(none)' : value}`;
-    });
-    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('Change which setting?', 'Each setting has its own values and layers.', 'Keep**: change nothing', picks)].join('\n'));
+  if (name === undefined) {
+    const picks = Object.values(TOPICS).map((topic) => `${topic.label}**: ${topic.about}`);
+    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', 'Pick a topic to change one setting in it; the rest stay as they are.', 'Keep as is**: change nothing', picks, 'your current settings keep working, and the others change how I behave from now on.')].join('\n'));
     return;
   }
-  if (!Object.hasOwn(SCHEMA, key)) throw unknownKey(key);
-  const current = resolve(key, stack).value;
-  const others = (SCHEMA[key].options ?? []).filter((option) => option !== current);
-  const picks = others.map((option) => `${option}**: set ${key} to ${option}`);
-  console.log([...overview([key], stack), '', ...question(`Set ${key} to which value?`, `${key} is now ${current}.`, `Keep ${current}**: change nothing`, picks)].join('\n'));
+  if (Object.hasOwn(TOPICS, name)) {
+    const topic = TOPICS[name];
+    const picks = topic.keys.map((key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`);
+    console.log([...overview(topic.keys, stack), '', ...question(topic.question, '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
+    return;
+  }
+  if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
+  const entry = SCHEMA[name];
+  const current = resolve(name, stack).value;
+  const choices = entry.choices ?? {};
+  const kept = choices[String(current)];
+  const keep = kept ? `Keep ${kept.label}**: ${kept.gives}` : `Keep ${plainValue(name, current)}**: change nothing`;
+  const picks = Object.entries(choices)
+    .filter(([value]) => value !== String(current))
+    .map(([, choice]) => `${choice.label}**: ${choice.gives}`);
+  console.log([...overview([name], stack), '', ...question(entry.question, entry.typed, keep, picks, 'it keeps what you have now, and any other answer changes it from now on.')].join('\n'));
 }
 
 // Appending to a file that lacks a final newline would glue the entry onto its last line.
@@ -205,7 +226,7 @@ try {
   } else if (command === 'set') {
     set(root, args[0], args[1], option(args, '--scope'));
   } else {
-    throw new Error('usage: settings.mjs context | show | menu [<key>] | get <key> | set <key> <value> --scope project|local');
+    throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local');
   }
 } catch (error) {
   console.error(error.message);

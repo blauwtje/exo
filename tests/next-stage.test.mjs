@@ -1,7 +1,7 @@
-// next-stage.mjs prints the next-stage question as a lettered pick, A the
-// recommended option, and, for the stages
-// `references/next-stage.md`'s table names, the one model line under them, reading a plan's `Design:` tasks and `## Visual
-// direction` to pick the build row.
+// next-stage.mjs prints the next-stage question as one lettered question, A the
+// recommended option, with no model line; with `--fresh` it prints the lines
+// the user types after the fresh-chat route, reading a plan's `Design:` tasks
+// and `## Visual direction` to pick the model switch.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -9,20 +9,19 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
-import { nextStageReport } from '../skills/route-skills/scripts/next-stage.mjs';
+import { freshReport, nextStageReport } from '../skills/route-skills/scripts/next-stage.mjs';
 import { fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
+import { assertQuestionShape } from './question-shape.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
-const RUN_PLAN_SONNET_LINE = "Next stage runs on `sonnet` at `medium`, because the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps `high`.";
 
-// The model and effort of the kind `lib/model-kinds.json` gives the stage
-// that opens build with no spec.
-function noSpecStageKind() {
+// The model of the kind `lib/model-kinds.json` gives the build stage.
+function buildStageModel() {
   const { kinds, stages } = readKindTable();
-  return kinds[stages['build-no-spec'].kind];
+  return kinds[stages.build.kind].model;
 }
 
-test('spec ends on a lettered pick, adjust the brief A and build here B', async () => {
+test('spec ends on one question: adjust the brief A, build here B, build fresh C', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
   ] });
@@ -30,48 +29,47 @@ test('spec ends on a lettered pick, adjust the brief A and build here B', async 
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
   assert.equal(report, [
-    '**1 · Next step**',
+    '**Is the brief ready to build?**',
     `The brief is written at \`${planPath}\`.`,
     '',
-    '- **A · Adjust the brief**: change it before anything is built.',
-    '- **B · Build here**: runs the brief in this session.',
+    '- **(A) Adjust the brief**: change it before anything is built.',
+    '- **(B) Build here**: build it now in this chat.',
+    '- **(C) Build fresh**: start a clean chat and build it there.',
     '',
-    '→ A. nothing is built before the brief reads right.',
-    `Without an answer, nothing starts; type \`/clear\` and then \`/exo:build ${planPath}\` to build in a fresh session.`,
-    RUN_PLAN_SONNET_LINE
+    'Recommended: (A), because nothing gets built before the brief reads right, while (B) and (C) build it as written.'
+  ].join('\n') + '\n');
+  assertQuestionShape(report);
+  assert.equal(freshReport({ after: 'spec', artifact: planPath }), [
+    `Type \`/clear\`, then \`/exo:build ${planPath}\`.`,
+    `Before you type them, switch to a lighter model with \`/model ${buildStageModel()}\`.`
   ].join('\n') + '\n');
 });
 
-test('spec opens build on sonnet when every Design: task holds a frozen direction', async () => {
+test('the fresh-chat route switches model when every Design: task holds a frozen direction', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Style', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
   ] });
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.match(report, /\n- \*\*A · Adjust the brief\*\*/);
-  assert.match(report, /\n- \*\*B · Build here\*\*/);
-  assert.match(report, /Next stage runs on `sonnet` at `medium`/);
+  assert.ok(freshReport({ after: 'spec', artifact: planPath }).includes(`\`/model ${buildStageModel()}\``));
 });
 
-test('spec opens build on the session model when a Design: task is still pending', async () => {
+test('the fresh-chat route keeps the session model when a Design: task is still pending', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Style', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
   ] }).replace('Quiet record.', 'Direction: pending at rung 2');
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextStageReport({ after: 'spec', artifact: planPath });
-  const { kinds, skills } = readKindTable();
-  const { effort } = kinds[skills['skills/build/SKILL.md'].kind];
-  assert.ok(report.includes(`Next stage runs on the session's model at \`${effort}\`, because that task builds in the session, and the skill pins \`${effort}\`.`));
+  assert.equal(freshReport({ after: 'spec', artifact: planPath }), `Type \`/clear\`, then \`/exo:build ${planPath}\`.\n`);
 });
 
-test('find-cause opens build with no spec, unknown stage fails', async () => {
+test('find-cause asks build or stop with no fresh-chat route, unknown stage fails', async () => {
   const report = nextStageReport({ after: 'find-cause', artifact: 'none' });
-  assert.match(report, /\n- \*\*A · Build\*\*: builds the edits the proof left\.\n- \*\*B · Stop\*\*/);
-  assert.ok(report.includes('\n→ A. '));
-  const { model, effort } = noSpecStageKind();
-  assert.ok(report.includes(`Next stage runs on \`${model}\` at \`${effort}\`, because it decides the change while building it.`));
+  assert.match(report, /\n- \*\*\(A\) Build\*\*: build the fix now in this chat\.\n- \*\*\(B\) Stop\*\*/);
+  assert.ok(report.includes('\nRecommended: (A), because '));
+  assert.ok(!report.includes('Without an answer'));
+  assertQuestionShape(report);
+  assert.throws(() => freshReport({ after: 'find-cause', artifact: 'none' }), /no fresh-chat route/);
   assert.throws(() => nextStageReport({ after: 'ship', artifact: 'none' }), /no next stage known/);
 });
 
@@ -81,8 +79,12 @@ test('CLI fails with a usage error when --after is missing', async () => {
   assert.match(result.stderr, /--after/);
 });
 
-test('the no-plan model line takes its model and effort from the kind of the build-no-spec stage', () => {
-  const { model, effort } = noSpecStageKind();
-  const modelLine = nextStageReport({ after: 'find-cause', artifact: 'none' }).split('\n').at(-2);
-  assert.ok(modelLine.startsWith(`Next stage runs on \`${model}\` at \`${effort}\`, because `));
+test('CLI prints the fresh-chat lines with --fresh', async () => {
+  const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
+  ] }) });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  const result = await run(SCRIPT, ['--after', 'spec', '--artifact', planPath, '--fresh']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, freshReport({ after: 'spec', artifact: planPath }));
 });

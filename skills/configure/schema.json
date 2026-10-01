@@ -3,7 +3,15 @@
     "type": "string",
     "options": ["docs", "issues", "both"],
     "default": "docs",
-    "description": "where spec stores a spec: docs/specs files, GitHub issues, or both"
+    "description": "where spec stores a spec: docs/specs files, GitHub issues, or both",
+    "label": "Plans",
+    "about": "where I save the plan for a change",
+    "question": "Where should I save the plan for a change?",
+    "choices": {
+      "docs": { "label": "Docs folder", "gives": "a file in your repository" },
+      "issues": { "label": "GitHub issue", "gives": "an issue on GitHub, no file" },
+      "both": { "label": "Both", "gives": "a file plus a matching GitHub issue" }
+    }
   },
   "replies": {
     "type": "string",
@@ -14,6 +22,14 @@
       "terse": "Replies are terse: chat prose only, in the user's language. In chat prose, lists and numbered steps included, never write a, an or the, and never write is, are, was or were; fragments, `→` for leads to and `=` for is are fine. Example: \"The hook is not reading the setting, so the reminder never fires.\" becomes \"Hook not reading setting → reminder never fires.\" Code, commands, paths, identifiers, error text, numbers and every not, no, only and except stay whole. Full sentences return only for a security warning, a confirmation before an irreversible action and a question to the user; a label such as `Warning:` on anything else does not lift the ban. Commits, PR text, docs, code comments and saved files keep normal prose. A lone `?` from the user asks for the previous reply in full. The output style sets the layout; this sets how dense the words are.",
       "tight": "Replies are tight: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. The output style sets the layout; this sets how dense the words are.",
       "standard": "Replies are standard: full prose. The output style sets the layout; this sets how dense the words are."
+    },
+    "label": "Replies",
+    "about": "how I write to you",
+    "question": "How should I write to you?",
+    "choices": {
+      "terse": { "label": "Terse", "gives": "fewest words, short fragments without small words" },
+      "tight": { "label": "Tight", "gives": "short replies with no preamble or recap" },
+      "standard": { "label": "Standard", "gives": "normal full sentences" }
     }
   },
   "budget": {
@@ -25,40 +41,99 @@
       "high": "Budget is high: when you dispatch exo:review-branch-deep, exo:critique-ui or exo:solve-hard, dispatch exo:review-branch-deep-high, exo:critique-ui-high or exo:solve-hard-high in its place, with the same prompt; no model is replaced.",
       "low": "Budget is low: when you dispatch exo:solve-hard, dispatch exo:solve-hard-low in its place, with the same prompt, and leave its model as the agent sets it. When the Task tool dispatches any other plugin agent whose kind in lib/model-kinds.json resolves to model {from} (the kind is the agent's entry under agents, looked up under kinds, whose tier the provider named at the top maps to a model under providers), pass {to} as the Task call's own model parameter instead."
     },
-    "aliases": { "full": "high", "normal": "medium", "lean": "low" }
+    "aliases": { "full": "high", "normal": "medium", "lean": "low" },
+    "label": "Effort",
+    "about": "how much care and cost each task gets",
+    "question": "How much effort should each task get?",
+    "choices": {
+      "high": { "label": "High", "gives": "best quality, slower and costlier" },
+      "medium": { "label": "Medium", "gives": "good quality at normal cost" },
+      "low": { "label": "Low", "gives": "cheaper and faster, a little less careful" }
+    }
   },
   "ship": {
     "type": "string",
     "options": ["ask", "pr-merge", "open-pr", "push", "local"],
     "default": "ask",
-    "description": "the finish route ship takes without asking: ask puts the question; pr-merge, open-pr, push or local run that route when it can"
+    "description": "the finish route ship takes without asking: ask puts the question; pr-merge, open-pr, push or local run that route when it can",
+    "label": "Finished work",
+    "about": "what happens once work is done",
+    "question": "What should happen once work is finished?",
+    "choices": {
+      "ask": { "label": "Ask me", "gives": "I ask each time" },
+      "pr-merge": { "label": "Merge it", "gives": "a pull request, merged once checks pass" },
+      "open-pr": { "label": "Open a PR", "gives": "a pull request left open for you" },
+      "push": { "label": "Push", "gives": "pushed straight up, no pull request" },
+      "local": { "label": "Keep it here", "gives": "nothing leaves this machine" }
+    }
   },
   "workspace": {
     "type": "string",
     "options": ["ask", "branch", "worktree", "current"],
     "default": "ask",
-    "description": "where a code-changing run commits without asking: ask puts the question; branch, worktree or current take that place"
+    "description": "where a code-changing run commits without asking: ask puts the question; branch, worktree or current take that place",
+    "label": "Code changes",
+    "about": "where I put code changes",
+    "question": "Where should I put code changes?",
+    "choices": {
+      "ask": { "label": "Ask me", "gives": "I ask each time" },
+      "branch": { "label": "New branch", "gives": "a new branch in this folder" },
+      "worktree": { "label": "Separate folder", "gives": "a new branch in its own folder" },
+      "current": { "label": "Current branch", "gives": "straight onto the branch you are on" }
+    }
   },
   "guards": {
     "type": "string",
     "options": ["on", "off"],
     "default": "on",
-    "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything"
+    "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything",
+    "label": "Safety blocks",
+    "about": "whether I block risky commands and edits",
+    "question": "Should I block risky commands and edits?",
+    "choices": {
+      "on": { "label": "On", "gives": "risky commands and edits get blocked" },
+      "off": { "label": "Off", "gives": "nothing gets blocked" }
+    }
   },
   "guard_lines": {
     "type": "number",
     "default": 400,
-    "description": "from how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range"
+    "description": "from how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range",
+    "label": "Long files",
+    "about": "when I read a file in parts",
+    "question": "How long can a file get before I read it in parts?",
+    "typed": "Or type another number of lines.",
+    "choices": {
+      "200": { "label": "200 lines", "gives": "more files read in parts, so long sessions last longer" },
+      "400": { "label": "400 lines", "gives": "the middle ground between the other two" },
+      "800": { "label": "800 lines", "gives": "more files read whole, so I see more at once" }
+    }
   },
   "heavy_commands": {
     "type": "string",
     "default": "",
-    "description": "command prefixes separated by ;, such as npm run e2e:beeld; a Bash command starting with one runs at most once per code state across sessions: a repeat on unchanged code returns the earlier green result and a run waits for one already running. Empty turns this off"
+    "description": "command prefixes separated by ;, such as npm run e2e:beeld; a Bash command starting with one runs at most once per code state across sessions: a repeat on unchanged code returns the earlier green result and a run waits for one already running. Empty turns this off",
+    "label": "Slow commands",
+    "about": "commands I run only once per code change",
+    "question": "Which slow commands should I run only once per code change?",
+    "typed": "Type the commands to hold back, split by `;`, such as `npm run e2e`.",
+    "choices": {
+      "": { "label": "None", "gives": "every command runs each time" }
+    }
   },
   "heavy_after_seconds": {
     "type": "number",
     "default": 60,
     "min": 0,
-    "description": "a test-like Bash command whose last run in this project took longer than this many seconds counts as heavy and runs through the same dedupe as heavy_commands, with nothing listed. 0 turns this off"
+    "description": "a test-like Bash command whose last run in this project took longer than this many seconds counts as heavy and runs through the same dedupe as heavy_commands, with nothing listed. 0 turns this off",
+    "label": "Slow tests",
+    "about": "when I skip repeating a slow test",
+    "question": "When should I skip rerunning a slow test on unchanged code?",
+    "choices": {
+      "0": { "label": "Never", "gives": "every test reruns each time" },
+      "30": { "label": "Over half a minute", "gives": "skips the most reruns" },
+      "60": { "label": "Over a minute", "gives": "skips only clearly slow tests" },
+      "120": { "label": "Over two minutes", "gives": "skips only the slowest tests" }
+    }
   }
 }

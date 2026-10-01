@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, run } from './harness.mjs';
+import { assertQuestionShape } from './question-shape.mjs';
 import { decide } from '../lib/workspace.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../lib/workspace.mjs', import.meta.url));
@@ -112,25 +113,27 @@ test('ask: workspace setting "ask" on the default branch prints the menu, branch
   const result = await runWorkspace(['--repository', root]);
   const lines = result.stdout.trimEnd().split('\n');
   assert.equal(lines[0], 'ask');
-  assert.equal(lines[1], '**1 · Where should the commits go?**');
+  assert.equal(lines[1], '**Where should the commits go?**');
   assert.equal(lines[3], '');
-  assert.match(lines[4], /^- \*\*A · Branch\*\*/);
-  assert.match(lines[5], /^- \*\*B · Worktree\*\*/);
-  assert.match(lines[6], /^- \*\*C · Current branch\*\*/);
+  assert.match(lines[4], /^- \*\*\(A\) Branch\*\*/);
+  assert.match(lines[5], /^- \*\*\(B\) Worktree\*\*/);
+  assert.match(lines[6], /^- \*\*\(C\) Current branch\*\*/);
   assert.equal(lines[7], '');
-  assert.match(lines[8], /^→ A\. /);
-  assert.equal(lines[9], 'Without an answer, nothing is committed.');
-  assert.equal(result.stdout.includes('Recommended'), false);
+  assert.match(lines[8], /^Recommended: \(A\), because /);
+  assert.equal(lines.length, 9, 'nothing follows the recommendation');
+  assertQuestionShape(lines.slice(1).join('\n'));
+  assert.equal(result.stdout.includes('(Recommended)'), false);
 });
 
 test('ask: --current-recommended reorders the menu, current branch first', async () => {
   const root = await gitRepository({ 'README.md': 'root\n' });
   const result = await runWorkspace(['--repository', root, '--current-recommended']);
   const lines = result.stdout.trimEnd().split('\n');
-  assert.match(lines[4], /^- \*\*A · Current branch\*\*/);
-  assert.match(lines[5], /^- \*\*B · Branch\*\*/);
-  assert.match(lines[6], /^- \*\*C · Worktree\*\*/);
-  assert.match(lines[8], /^→ A\. /);
+  assert.match(lines[4], /^- \*\*\(A\) Current branch\*\*/);
+  assert.match(lines[5], /^- \*\*\(B\) Branch\*\*/);
+  assert.match(lines[6], /^- \*\*\(C\) Worktree\*\*/);
+  assert.match(lines[8], /^Recommended: \(A\), because /);
+  assertQuestionShape(lines.slice(1).join('\n'));
 });
 
 test('--pick branch: switches to a new branch and reports it', async () => {
@@ -197,7 +200,7 @@ test('ask: the current-branch line names the resolved default branch, not the pl
   const root = await gitRepository({ 'README.md': 'root\n' });
   const result = await runWorkspace(['--repository', root]);
   const lines = result.stdout.trimEnd().split('\n');
-  assert.equal(lines[6], '- **C · Current branch**: commit onto main');
+  assert.equal(lines[6], '- **(C) Current branch**: commit onto main.');
 });
 
 test('ask, not commit-here HEAD: a detached checkout is treated as no branch', async () => {

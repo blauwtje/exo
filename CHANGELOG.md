@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**exo asks one plain question at a time.** Each question has a short title, at most two plain sentences, usually three or four options lettered (A), (B), (C), and ends with the recommended option and why it beats the others; you answer with one letter.
+
+### Changed
+
+- Every exo question follows the new one-question shape: no numbered rounds, no `1a 3b` replies, no token counts, model names or commands in options, and the next-stage, ship, workspace and design-ui questions are reworded in plain words.
+- configure asks by plain topic (how I work, where work goes, safety and speed), then the setting, then its value, with plain texts kept in `schema.json`.
+
 ## 0.71.0 - 2026-10-01
 
 ### Added

@@ -28,19 +28,12 @@ Walk every setting in the chat, one question per message, and write only what th
 
 ## Each setting
 
-Every setting but `scope` offers its current value first, as `- **A · Keep <value>**: <what it gives>`, naming the layer the `show` block printed for it, then every other value below.
+Ask each setting with the plain texts its entry in `../schema.json` holds, never its key or a model, effort or file name, because the user picks from what each answer gives.
 
-| Setting | Question | Values and what each gives |
-|---|---|---|
-| `specs` | Where should a spec go when exo shapes a change? | `docs`: a file under docs/specs in the repository. `issues`: a GitHub issue. `both`: a file plus a linked issue. |
-| `replies` | How should exo write its replies? | `terse`: chat prose without articles, linking verbs or filler. `tight`: short, no preamble, recap or filler. `standard`: full prose. |
-| `budget` | Which model should each agent run on? | `high`: medium, except the deep branch review, the design critique and the hardest work run their `xhigh` twins. `medium` (default): each agent runs the model its kind resolves to. `low`: an agent on a tier with a cheaper replacement runs on that replacement, except the hardest work, which runs at medium effort. |
-| `workspace` | Where should a code-changing run commit? | `ask`: the run asks each time. `branch`: a new branch. `worktree`: a separate folder. `current`: the current branch. |
-| `ship` | How should finished commits leave this machine? | `ask`: ship asks each time. `pr-merge`: a pull request, merged once checks pass. `open-pr`: a pull request left open. `push`: a push, no pull request. `local`: nothing leaves. |
-| `guards` | Should exo's safety guards refuse the commands and edits they cover? | `on` (default): they refuse. `off`: no guard refuses anything. |
-| `guard_lines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |
-| `heavy_commands` | Which commands should run at most once per code state? | Empty (the default): no command is held back. Typed command prefixes separated by `;`, such as `npm run e2e`: a repeat on unchanged code returns the earlier green result. Any typed string is an answer. |
-| `heavy_after_seconds` | After how many seconds is a test command heavy? | `30`, `60` (the default) and `120`, each: a test-like command whose last run in this project took longer counts as heavy. `0`: off. A typed whole number of at least 0 is also an answer. |
+- The title is its `question`; a `typed` line, when present, is the context.
+- The first option is the current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a value with no entry shows as written.
+- Every other `choices` entry follows as `- **(<letter>) <label>**: <gives>`, then `Keep the rest`.
+- A typed answer also counts: for `guard_lines` a whole number of at least 1, `400` (the default) when unset; for `heavy_after_seconds` one of at least 0; for `heavy_commands` command prefixes joined by `;`.
 
 `issues` and `both` are left out when step 1 found no working GitHub route. A value that is the current one appears only as the keep answer.
 

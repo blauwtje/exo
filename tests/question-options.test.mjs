@@ -28,13 +28,13 @@ test('this repository has no recommendation off A and no Assuming: line', () => 
 });
 
 test('a recommendation on B is a finding at its line', (t) => {
-  const root = fixture(t, ['→ A. fine', '→ B. wrong']);
+  const root = fixture(t, ['Recommended: (A), because fine', 'Recommended: (B), because wrong']);
   const total = fs.readFileSync(path.join(root, REFERENCE), 'utf8').split('\n').length - 1;
   assert.deepEqual(findings(root), [{ path: REFERENCE, line: total }]);
 });
 
 test('an indented recommendation off A is a finding', (t) => {
-  assert.equal(findings(fixture(t, ['  → C. wrong'])).length, 1);
+  assert.equal(findings(fixture(t, ['  Recommended: (C), because wrong'])).length, 1);
 });
 
 test('an Assuming: line is a finding, plain or bulleted', (t) => {
@@ -42,9 +42,9 @@ test('an Assuming: line is a finding, plain or bulleted', (t) => {
 });
 
 test('a recommendation on A and the word assuming inside prose are no finding', (t) => {
-  assert.deepEqual(findings(fixture(t, ['→ A. fine', 'We stop assuming: nothing here.'])), []);
+  assert.deepEqual(findings(fixture(t, ['Recommended: (A), because fine', 'We stop assuming: nothing here.'])), []);
 });
 
 test('a (Recommended) tag is a finding', (t) => {
-  assert.equal(findings(fixture(t, ['- **A · Branch (Recommended)**: a new branch'])).length, 1);
+  assert.equal(findings(fixture(t, ['- **(A) Branch (Recommended)**: a new branch'])).length, 1);
 });

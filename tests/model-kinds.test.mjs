@@ -122,16 +122,14 @@ test('every dispatch match is one line holding one model word, the kind\'s', () 
   }
 });
 
-test('every next-stage line prints the model and effort of the kind the table gives its stage', async () => {
-  const { nextStageReport } = await import('../skills/route-skills/scripts/next-stage.mjs');
+test('the fresh-chat route names the model of the kind the table gives the build stage', async () => {
+  const { freshReport } = await import('../skills/route-skills/scripts/next-stage.mjs');
   const { fixture, planFixture, taskSection } = await import('./harness.mjs');
   const directory = await fixture();
   const planPath = path.join(directory, 'plan.md');
   const task = taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' });
   fs.writeFileSync(planPath, planFixture({ tasks: [task] }));
-  for (const [after, stage] of [['find-cause', 'build-no-spec'], ['spec', 'build']]) {
-    const { model, effort } = table.kinds[table.stages[stage].kind];
-    const report = nextStageReport({ after, artifact: planPath });
-    assert.ok(report.includes(`Next stage runs on \`${model}\` at \`${effort}\``), `${stage}: ${report}`);
-  }
+  const { model } = table.kinds[table.stages.build.kind];
+  const report = freshReport({ after: 'spec', artifact: planPath });
+  assert.ok(report.includes(`\`/model ${model}\``), report);
 });

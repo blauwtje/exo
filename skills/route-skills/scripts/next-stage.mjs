@@ -1,11 +1,9 @@
-// Prints the next-stage question and, when the next stage's model or
-// effort differs from the session's, the one model line `references/
-// next-stage.md` allows under it. A stage skill whose work leaves a next
-// stage open (`spec`, `find-cause`) runs this at its
-// final message instead of reading `references/next-stage.md` and
-// `references/question.md` itself.
+// Prints the next-stage question, or with `--fresh` the lines the user types
+// after picking the fresh-chat route. A stage skill whose work leaves a next
+// stage open (`spec`, `find-cause`) runs this at its final message instead of
+// reading `references/next-stage.md` and `references/question.md` itself.
 //
-//   node next-stage.mjs --after <stage> --artifact <path>
+//   node next-stage.mjs --after <stage> --artifact <path> [--fresh]
 
 import fs from 'node:fs';
 import process from 'node:process';
@@ -15,33 +13,29 @@ import { frameOf, parsePlan } from '#plan-tasks';
 
 // The stage a session just finished names the question that ends it, per
 // `references/next-stage.md`: a title, a context sentence, lettered option
-// lines with the recommended one on A, the `→ A.` reason, and the line for no
-// answer a single pick carries. `stage` is the stage whose model line follows.
-// An option is `[label, what the user gets]`, never why; its letter comes
-// from its place in the array.
+// lines with the recommended one on A, and the `Recommended: (A)` line saying
+// why A beats the rest. `stage` names the fresh-chat route's model row, when
+// the stage offers that route. An option is `[label, what the user gets]`; its
+// letter comes from its place in the array.
 const NEXT_STAGE = {
   'spec': {
     stage: 'build',
+    title: 'Is the brief ready to build?',
     context: (artifact) => `The brief is written at \`${artifact}\`.`,
-    options: [['Adjust the brief', 'change it before anything is built.'], ['Build here', 'runs the brief in this session.']],
-    reason: 'nothing is built before the brief reads right.',
-    silence: (artifact) => `Without an answer, nothing starts; type \`/clear\` and then \`${commandFor('build', artifact)}\` to build in a fresh session.`
+    options: [
+      ['Adjust the brief', 'change it before anything is built.'],
+      ['Build here', 'build it now in this chat.'],
+      ['Build fresh', 'start a clean chat and build it there.']
+    ],
+    reason: 'nothing gets built before the brief reads right, while (B) and (C) build it as written.'
   },
   'find-cause': {
-    stage: 'build-no-spec',
-    context: () => 'The cause is found and the proof left edits to build.',
-    options: [['Build', 'builds the edits the proof left.'], ['Stop', 'nothing is built now.']],
-    reason: 'this session holds the facts the build needs.',
-    silence: () => `Without an answer, nothing starts; type \`/clear\` and then \`${commandFor('build-no-spec')}\` to build in a fresh session.`
+    title: 'Should I build the fix?',
+    context: () => 'The cause is found and the fix is known.',
+    options: [['Build', 'build the fix now in this chat.'], ['Stop', 'nothing gets built, and the fault stays.']],
+    reason: 'this chat already knows what the fix needs, while (B) leaves the fault in place.'
   }
 };
-
-function commandFor(stage, artifact) {
-  if (stage === 'spec') return `/exo:spec ${artifact}`;
-  if (stage === 'build') return `/exo:build ${artifact}`;
-  if (stage === 'build-no-spec') return '/exo:build';
-  throw new UsageError(`no command known for next stage '${stage}'`);
-}
 
 // A `Design:` task whose plan carries no `## Visual direction` section, or
 // one still `Direction: pending at rung <n>`, builds that task in the next
@@ -54,51 +48,51 @@ function designPending(planPath) {
   return visualDirection === null || /^Direction: pending at rung \d+$/m.test(visualDirection);
 }
 
-// The reason clause that follows the model and effort of each next stage; the
-// kind that sets them is `stages` in `lib/model-kinds.json`. The design-pending
-// build row names no stage kind: it runs on the session's model at the effort
-// of the build skill's kind.
-const STAGE_BECAUSE = {
-  'build-no-spec': () => 'it decides the change while building it',
-  'build': (buildEffort) => `the plan holds every step's code, a frozen direction builds in a delegate, and the build-task agent keeps \`${buildEffort}\``
-};
-
-// The one model-line row `references/next-stage.md`'s table names for the
-// stage the question opens next; `null` when that stage names no row, which
-// leaves the session's own model and effort unnamed under the options.
-function modelLineFor(stage, artifact) {
-  const { kinds, stages, agents, skills } = readKindTable();
-  if (stage === 'build' && designPending(artifact)) {
-    const { effort } = kinds[skills['skills/build/SKILL.md'].kind];
-    return `Next stage runs on the session's model at \`${effort}\`, because that task builds in the session, and the skill pins \`${effort}\`.`;
-  }
-  if (!(stage in stages)) return null;
-  const { model, effort } = kinds[stages[stage].kind];
-  const builderEffort = kinds[agents['agents/build-task.md'].kind].effort;
-  const because = STAGE_BECAUSE[stage](builderEffort);
-  return `Next stage runs on \`${model}\` at \`${effort}\`, because ${because}.`;
+// The model switch the fresh-chat route asks for before its build command,
+// from the kind `stages` in `lib/model-kinds.json` gives the stage; `null`
+// when a pending `Design:` task builds in the session, which keeps the
+// session's model while the build skill pins its own effort.
+function modelSwitchFor(stage, artifact) {
+  if (stage === 'build' && designPending(artifact)) return null;
+  const { kinds, stages } = readKindTable();
+  return `Before you type them, switch to a lighter model with \`/model ${kinds[stages[stage].kind].model}\`.`;
 }
 
 /**
  * The next-stage question: title, context, lettered options with the
- * recommended one on A, the reason, the line for no answer, then the model
- * line when the table names one.
+ * recommended one on A, and the recommendation last.
  */
 export function nextStageReport({ after, artifact }) {
   const next = NEXT_STAGE[after];
   if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
-  const options = next.options.map(([label, does], index) => `- **${String.fromCharCode(65 + index)} · ${label}**: ${does}`);
-  const lines = ['**1 · Next step**', next.context(artifact), '', ...options, '', `→ A. ${next.reason}`, next.silence(artifact)];
-  const modelLine = modelLineFor(next.stage, artifact);
-  if (modelLine !== null) lines.push(modelLine);
+  const options = next.options.map(([label, does], index) => {
+    const text = typeof does === 'function' ? does(artifact) : does;
+    return `- **(${String.fromCharCode(65 + index)}) ${label}**: ${text}`;
+  });
+  const lines = [`**${next.title}**`, next.context(artifact), '', ...options, '', `Recommended: (A), because ${next.reason}`];
+  return `${lines.join('\n')}\n`;
+}
+
+/**
+ * The reply to a picked fresh-chat route: the two lines to type, then the
+ * model switch when the stage's row names one.
+ */
+export function freshReport({ after, artifact }) {
+  const next = NEXT_STAGE[after];
+  if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
+  if (next.stage === undefined) throw new UsageError(`no fresh-chat route after '${after}'`);
+  const lines = [`Type \`/clear\`, then \`/exo:${next.stage} ${artifact}\`.`];
+  const modelSwitch = modelSwitchFor(next.stage, artifact);
+  if (modelSwitch !== null) lines.push(modelSwitch);
   return `${lines.join('\n')}\n`;
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { after: 'value', artifact: 'value' });
+  const flags = parseFlags(argv, { after: 'value', artifact: 'value', fresh: 'boolean' });
   if (flags.after === undefined) throw new UsageError("flag '--after' names the stage that just ran");
   if (flags.artifact === undefined) throw new UsageError("flag '--artifact' names the artifact's path");
-  process.stdout.write(nextStageReport({ after: flags.after, artifact: flags.artifact }));
+  const report = flags.fresh ? freshReport : nextStageReport;
+  process.stdout.write(report({ after: flags.after, artifact: flags.artifact }));
 }
 
 if (isMain(import.meta.url)) {

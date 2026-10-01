@@ -16,7 +16,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    Reuse a recorded verdict past `--verdict-current <patch-id>`; `stale` reruns it.
    An open pull request gets `gh pr edit <n> --body-file <f>`.
 6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.
-   Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm; `DIRTY` exits 4, other stops 1, asking `A · Resolve conflicts` or `B · Stop`, leaving it open.
+   Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm; `DIRTY` exits 4, other stops 1, asking `(A) Resolve conflicts` or `(B) Stop`, leaving it open.
    A resolve never uses `--strategy`/`-X`; a fix reruns step 5, never `--merge`.
    `open-pr` or a merge request stops after three fix rounds, watch included.
 7. **Merge.** Print `gh pr list --json number,title,baseRefName,headRefName` in order; each gets a step 5 verdict via `gh pr view <n> --json headRefOid,baseRefName,title,body`; `FAIL` drops out.
