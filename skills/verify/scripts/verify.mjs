@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Runs a lean-workflow plan's gate: each landed task's own Proof command
-// (except one equal to the gate command or running the test suite), the first
+// (except one equal to the gate command, or running the test suite when the
+// gate is the default `npm run check`, which runs that suite), the first
 // backticked command of the plan's Success criterion (else its Land gate, else
 // `npm run check`), and a
 // stray-path check that the diff touched nothing outside a task's declared
@@ -11,10 +12,11 @@
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
 //
-// Prints one PASS, FAIL, SKIP or STRAY line per check, then the REVIEWER line,
+// Prints one PASS, FAIL, SKIP, UNRUN or STRAY line per check, then the REVIEWER line,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
-// Exits 1 when any check is not PASS.
+// Exits 1 on any FAIL or STRAY line; `Land gate: none` prints UNRUN, not PASS,
+// and does not fail.
 
 import { spawnSync } from 'node:child_process';
 import fs, { realpathSync } from 'node:fs';
@@ -75,7 +77,7 @@ function runCommand(command) {
 }
 
 /**
- * The plan's checks, one PASS/FAIL/SKIP/STRAY line each, then the REVIEWER
+ * The plan's checks, one PASS/FAIL/SKIP/UNRUN/STRAY line each, then the REVIEWER
  * line. `planPath` names the plan whose id its landed trailers carry; `root`
  * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
@@ -97,9 +99,12 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
       lines.push(`SKIP Task ${task.number} (Proof: not a single \`command\`)`);
       continue;
     }
-    // A Proof that is the gate command, or runs the test suite, repeats what the gate runs once below.
-    if (!gateSkipped && (command === gateCommand || TEST_SUITE_PROOF.test(command))) {
-      lines.push(`SKIP Task ${task.number} (Proof: is the gate command or runs the test suite, which the gate runs once below)`);
+    // A Proof that is the gate command, or runs the test suite under the default
+    // gate (which runs that suite), repeats what the gate runs once below. A
+    // custom gate may run no tests, so a suite Proof still runs under it.
+    const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && TEST_SUITE_PROOF.test(command);
+    if (!gateSkipped && (command === gateCommand || suiteUnderDefault)) {
+      lines.push(`SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)`);
       continue;
     }
     const { ok } = runCommand(command);
@@ -107,13 +112,17 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
     failed ||= !ok;
   }
 
-  const { ok: checkOk, output } = gateSkipped ? { ok: true, output: '' } : runCommand(gateCommand);
-  // The SUMMARY convention binds only exo's own default gate; a plan that
-  // names its own Land gate is judged on that command's exit status alone,
-  // since another project's check never prints exo's SUMMARY line.
-  const criterionOk = gateSkipped || (checkOk && (gateCommand !== DEFAULT_LAND_GATE || successCriterionPasses(output)));
-  lines.push(`${criterionOk ? 'PASS' : 'FAIL'} success-criterion`);
-  failed ||= !criterionOk;
+  if (gateSkipped) {
+    lines.push('UNRUN success-criterion (Land gate: none)');
+  } else {
+    const { ok: checkOk, output } = runCommand(gateCommand);
+    // The SUMMARY convention binds only exo's own default gate; a plan that
+    // names its own Land gate is judged on that command's exit status alone,
+    // since another project's check never prints exo's SUMMARY line.
+    const criterionOk = checkOk && (gateCommand !== DEFAULT_LAND_GATE || successCriterionPasses(output));
+    lines.push(`${criterionOk ? 'PASS' : 'FAIL'} success-criterion`);
+    failed ||= !criterionOk;
+  }
 
   const strays = findStrayPaths(plan.tasks, changedPaths({ base }));
   if (strays.length === 0) {
