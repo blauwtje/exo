@@ -64,7 +64,7 @@ test('build forms no block around an unlanded dependency outside it', () => {
 
 test('build dispatches in the background, ends the turn, and never polls while a return is outstanding', () => {
   const dispatchStep = loopStep(5, RUN_LOOP);
-  assert.ok(dispatchStep.startsWith('5. **Dispatch.** After the dispatch message, end the turn; each completion notification resumes it.'), 'step 5 ends the turn on dispatch');
+  assert.ok(dispatchStep.startsWith('5. **Dispatch.** Dispatch silently, then end the turn; each completion notification resumes it.'), 'step 5 ends the turn on dispatch');
   for (const tool of ['ScheduleWakeup', 'ListAgents', 'Monitor', 'sleep']) assert.ok(dispatchStep.includes(tool), `step 5 forbids ${tool}`);
   assert.ok(dispatchStep.includes('never call'), 'the polling tools are forbidden');
   assert.ok(dispatchStep.includes('A wave lands only after every sibling returned'), 'a wave lands after every sibling returned');

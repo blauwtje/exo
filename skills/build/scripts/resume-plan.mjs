@@ -85,7 +85,7 @@ export function stopHook(input) {
   }
   const running = runningPlan(cwd, input.session_id);
   if (running === null) return null;
-  const reason = `Next: Task ${running.task.number}: ${running.task.title}. Continue exo:build on ${running.planPath} from step 3.`;
+  const reason = `exo:build step 3 on ${running.planPath}.`;
   return { decision: 'block', reason };
 }
 

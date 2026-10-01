@@ -47,7 +47,7 @@ test('a stop with the marker and an open task blocks with the next task', async 
   assert.equal(result.code, 0, result.stderr);
   const output = JSON.parse(result.stdout);
   assert.equal(output.decision, 'block');
-  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:build on ${planPath} from step 3.`);
+  assert.equal(output.reason, `exo:build step 3 on ${planPath}.`);
 });
 
 test('wait marks the run waiting, so the next stop does not block, and the stop after that blocks again', async () => {
@@ -68,7 +68,7 @@ test('wait marks the run waiting, so the next stop does not block, and the stop 
   assert.equal(nextStop.code, 0, nextStop.stderr);
   const output = JSON.parse(nextStop.stdout);
   assert.equal(output.decision, 'block');
-  assert.equal(output.reason, `Next: Task 2: Style. Continue exo:build on ${planPath} from step 3.`);
+  assert.equal(output.reason, `exo:build step 3 on ${planPath}.`);
 });
 
 test('wait without a live marker writes nothing and leaves no mark', async () => {
