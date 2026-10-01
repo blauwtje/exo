@@ -53,10 +53,12 @@ test('investigator prompt names exo:solve-hard and Steps 1-3', () => {
   assert.ok(source.includes('Steps 1 to 3'), 'names Steps 1 to 3');
 });
 
-test('fixer prompt names sonnet, Steps 4-6 and the handoff path', () => {
+test('fixer prompt names sonnet, Steps 4-5, the Tests edit allowance and the handoff path', () => {
   const source = fs.readFileSync(FIXER, 'utf8');
   assert.ok(source.includes('sonnet'), 'names sonnet');
-  assert.ok(source.includes('Steps 4 to 6'), 'names Steps 4 to 6');
+  assert.ok(source.includes('Steps 4 and 5'), 'names Steps 4 and 5');
+  assert.ok(!source.includes('Steps 4 to 6'), 'drops Step 6, which retains knowledge');
+  assert.ok(source.includes('the new test files under `Tests`'), 'allows the Tests files in the edit boundary');
   assert.ok(source.includes('Handoff file:'), 'names the handoff path');
 });
 
