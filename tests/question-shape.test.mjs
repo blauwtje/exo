@@ -53,7 +53,7 @@ test('design-ui offers its preview as a lettered single pick, the preview on A',
   const decided = intake.indexOf('- **B · Decide for me**:');
   assert.ok(preview !== -1 && preview < decided, 'the preview is A and deciding for the user B');
   assert.ok(!intake.includes('(Recommended)'), 'A is recommended by position, not by a tag');
-  assert.ok(intake.includes('route-skills/references/question.md'));
+  assert.ok(intake.includes('in the question shape'));
   assert.ok(intake.includes('Without an answer, nothing is built.'));
   assert.ok(!intake.includes('as assumptions, and build'), 'a one-line brief no longer builds on assumptions');
   assert.ok(intake.includes('a sketch costs about 1,000 extra tokens'), 'the offer keeps its price');

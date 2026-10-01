@@ -104,6 +104,7 @@ const EXPECTED_OWNER_ROWS = {
   ],
   'skills/design-ui/SKILL.md': [
     'references/intake.md',
+    '../route-skills/references/question.md',
     'references/phase-detail.md',
     'references/phase-direction.md',
     'references/phase-build.md',
