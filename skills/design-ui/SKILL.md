@@ -41,12 +41,12 @@ The references call these steps Phase 1 to 5.
 1. **Context.** Read `references/phase-detail.md` whole, once; its `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
-4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, before the baseline capture, which precedes the first edit.
+4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, run after the build and the post-build checkpoint; the baseline pair was taken before the first edit.
 5. **Check.** A `general-purpose` delegate on `sonnet` runs `## QA` of `references/phase-detail.md`, with `RUN`, `SKILL` and `REPO`, and writes `$RUN/qa.md`; this session's close quotes qa.md.
 
 ## References
 
-Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other Phase 5 row loads by section (`grep -n '^## '`, then `sed -n` to the next heading).
+Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other reference over 8 KB names its sections in its row and loads by them (`grep -n '^## '`, then `sed -n` to the next heading).
 
 | File | Read it when |
 |---|---|
@@ -55,23 +55,23 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 | `references/phase-detail.md` | Whole, once, at Phase 1; later steps name its sections by heading. |
 | `references/phase-direction.md` | Phase 2, before deciding the direction. |
 | `references/phase-build.md` | Phase 3, before the first edit or builder dispatch. |
-| `references/visual-direction.md` | Phase 2, every direction decision; Phase 1 when the repository or docs/design/DESIGN.md holds a design system to extract. |
+| `references/visual-direction.md` | Phase 2, every direction decision, whole; Phase 1 `## Design context first` alone when the repository or docs/design/DESIGN.md holds a design system to extract. |
 | `references/sketch-tab.md` | Phase 2 on rungs 3 and 7, after `--check` reports ok and before the offer; elsewhere, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Phase 2, only when the user asks to see directions whole, before building the picker's comps. |
-| `references/composition.md` | Phase 1 inventory; Phase 2 structure; Phase 3 layout. |
+| `references/composition.md` | Phase 1 `## Inventory before layout`; Phase 2 `## Turn subject evidence into a system`, `## Choose structures from relationships`, `## Write a composition contract`; Phase 3 `## Build density without clutter`, `## Surface obligations`, `## Responsive recomposition`. |
 | `references/typography.md` | Phases 2–3, when choosing or changing type. |
 | `references/controls.md` | Phase 3, before styling a control. |
-| `references/implementation.md` | Phase 3, before writing CSS or component code. |
-| `references/motion.md` | Phase 3 for the recorded motion decision, and before any animation at every size. |
+| `references/implementation.md` | Phase 3, before writing CSS or component code, whole. |
+| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the recorded decision; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, and `## Continuity contract`, `## Scroll and view transitions` or `## Libraries` only when the build uses one. |
 | `references/interaction-qa.md` | Phase 3 for controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
 | `references/feedback-and-status.md` | Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Phase 3, the `## Slop tropes` section, before finishing a treatment; Phase 4 whole, by `exo:critique-ui` only; this session reads its faults.md. |
 | `references/craft-recipes.md` | Phase 3, before the first CSS of a ground, surface, motion, or type treatment. |
-| `references/component-system.md` | Phase 1 `## Adopt before authoring` alone, when the repository ships a component layer; Phase 3 before building a control, field, or surface the design repeats. |
-| `references/tokens.md` | Phase 2 only for a token pipeline or DTCG file, a second theme or brand, or a ramp generated against target contrast. |
+| `references/component-system.md` | Phase 1 `## Adopt before authoring` alone, when the repository ships a component layer; Phase 3 before building a control, field, or surface the design repeats: `## Anatomy`, `## The state row`, `## Scales, not values`, and `## Composite patterns` for a composite. |
+| `references/tokens.md` | Phase 2 only: `## Tiers` first, then `## The DTCG format, where a repository uses it` for a token pipeline or DTCG file, `## Naming that survives a rebrand` for a second theme or brand, `## Derive the ramp from contrast` for a ramp generated against target contrast. |
 | `references/icons-and-imagery.md` | Phase 3 only when the build draws or extends an icon set, places a raster or chart, or the inventory names imagery. |
-| `references/accessibility.md` | Phase 3 only before a composite widget; Phase 5 `## Sweep` alone. |
-| `references/performance-budget.md` | Phase 3 only when the build adds a hero raster, an unloaded font, or a persistent effect; Phase 5 `## Outcome thresholds` and `## Hard failures` alone. |
+| `references/accessibility.md` | Phase 3 only before a composite widget: `## Keyboard contracts` alone; Phase 5 `## Sweep` alone. |
+| `references/performance-budget.md` | Phase 3 only when the build adds a hero raster (`## LCP is an art-direction budget`, `## Layout reservation`), an unloaded font (`## Font cost`), or a persistent effect (`## Effect cost`); Phase 5 `## Outcome thresholds` and `## Hard failures` alone. |
 | `references/internationalization.md` | Phase 1 when the product ships more than one language, the repository carries translation machinery, or the audience reads a right-to-left or non-Latin script. |
 
 ## Judgment
