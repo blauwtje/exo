@@ -27,7 +27,7 @@ Take the first step whose answer the request and the letters so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
-3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, for `guard_lines` a whole number of at least 1, and for `heavy_commands` command prefixes joined by `;`, empty for off, in the question shape.
+3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, for `guard_lines` a whole number of at least 1, for `heavy_after_seconds` a whole number of at least 0, and for `heavy_commands` command prefixes joined by `;`, empty for off, in the question shape.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    **1 · Which layer?**
@@ -44,6 +44,8 @@ Take the first step whose answer the request and the letters so far leave open.
 6. **Point** a global value at `/config`, where each exo option is a row, and run nothing, because the harness owns that file.
 
 `heavy_commands` runs a Bash command that starts with a listed prefix once per code state across sessions: a second session waits for the first, and a green result holds 24 hours. `EXO_HEAVY_FORCE=1 <command>` forces a run.
+
+`heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command (name has `test`, `e2e`, `check`, `lint` or `verify`) as heavy once its last run in the project took longer; `--watch`, `--ui`, `--headed`, `dev`, `serve` and `start` runs are never learned.
 
 A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed. The ladder has no switch, so a request to switch it off gets that answer and runs nothing.
 
