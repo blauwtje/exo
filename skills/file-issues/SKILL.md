@@ -48,7 +48,8 @@ named.
 
 5. **Read back.** `gh issue view <n> --json number,title,labels,milestone,url`
    per created issue, and report each URL with its title and one metadata
-   line, plus everything Step 2 said this repository does not define.
+   line, plus each field the repository does not define and each `unread`
+   entry, as `references/fields.md` says.
 
 ## The body
 
