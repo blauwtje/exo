@@ -4,6 +4,12 @@ Give every control a designed anatomy: silhouette, weight, padding, edge, and la
 
 ## Tactile hierarchy
 
+- **Where the pair is the consent, accept and decline carry equal visual weight** — same tier, same size, same optical mass. This is not a matter of taste: a lighter decline is how a refusal is engineered into an acceptance.
+- **No pre-checked optional box** where the pair is the consent.
+- **No decline routed one level deeper** than the accept.
+- **Consent means** tracking, marketing, data sharing, and anything a regulator would call a choice.
+- **A destructive-action confirmation is not consent** and keeps its tiers.
+
 Three tiers, distinguishable with color removed:
 
 - **Primary** — one per region, carrying the page's action. It earns the most weight: filled surface, the heaviest label, the largest optical mass.
@@ -11,8 +17,6 @@ Three tiers, distinguishable with color removed:
 - **Destructive** — reads dangerous before it is read: the state color recut for this direction, never a stock red, and never the only signal. Pair it with placement and confirmation weight.
 
 A tertiary text action is a link, not a fourth button style. If two tiers differ only in fill percentage, one of them is not a tier.
-
-One exception, and it is not a matter of taste: where the pair **is the consent**, accept and decline carry equal visual weight — same tier, same size, same optical mass — because a lighter decline is how a refusal is engineered into an acceptance. The same rule bans the pre-checked optional box and the decline routed one level deeper than the accept. Consent means tracking, marketing, data sharing, and anything a regulator would call a choice; a destructive-action confirmation is not consent and keeps its tiers.
 
 ## Proportion and padding
 
@@ -45,7 +49,8 @@ One exception, and it is not a matter of taste: where the pair **is the consent*
 - **One verb per action, product-wide**, held through the whole flow: the button says "Publish", the progress state says "Publishing…", the toast says "Published". Every synonym for one act is a signpost pointing two directions.
 - **Length discipline:** buttons one to three words; toasts one clause; tooltips one sentence.
 - **Active voice, present tense, sentence case** unless the type direction states otherwise, and no filler — "please note that", "simply", "just", "in order to" go on sight.
-- **One job per element.** A label labels. An example demonstrates. A tooltip clarifies, and nothing essential lives only in a tooltip.
+- **One job per element:** a label labels, an example demonstrates, a tooltip clarifies.
+- **Nothing essential lives only in a tooltip.**
 
 ## Judgment
 
