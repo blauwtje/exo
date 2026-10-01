@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.66.0 - 2026-10-01
+
 ### Highlights
 
 - **The budget levels are now `high`, `medium` and `low`, with `medium` the default; a stored `full`, `normal` or `lean` still works and reads as the new name.** The hardest work (bug fixer, drift repairer, run-unit's repair, find-cause's investigator) now follows the budget too: Opus at `xhigh` under `high`, `high` under `medium` and `medium` under `low`.
