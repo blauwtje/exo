@@ -74,6 +74,23 @@ test('updatedInput passes through only when no step denied', async () => {
   assert.equal(refused.hookSpecificOutput.updatedInput, undefined);
 });
 
+test('a later step receives the tool_input of the last rewrite before it and its rewrite wins', async () => {
+  const seen = [];
+  const rewrite = (name, suffix) => ({
+    name,
+    run: (hookInput) => {
+      seen.push(hookInput.tool_input.command);
+      const updatedInput = { ...hookInput.tool_input, command: `${hookInput.tool_input.command}${suffix}` };
+      return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } };
+    }
+  });
+  const hookInput = { tool_name: 'Bash', tool_input: { command: 'a', timeout: 5 } };
+  const merged = await dispatchBash(hookInput, [rewrite('one', '+1')], [rewrite('two', '+2')]);
+  assert.deepEqual(seen, ['a', 'a+1']);
+  assert.deepEqual(merged.hookSpecificOutput.updatedInput, { command: 'a+1+2', timeout: 5 });
+  assert.equal(hookInput.tool_input.command, 'a');
+});
+
 test('a call that is not a Bash command, and input that is not usable, produce no output', async () => {
   const other = await dispatch({ tool_name: 'Read', tool_input: { command: 'git reset --hard' } });
   assert.deepEqual([other.code, other.stdout], [0, '']);

@@ -2,8 +2,9 @@
 // bookkeeping steps unless a guard denied, each in its own try/catch, so a
 // fault in one lets the rest run and the call go through as it did when each
 // step was its own hook. The first deny is returned; the additional contexts
-// of the steps that ran are joined into the same output, and the first
-// `updatedInput` too, unless a step denied.
+// of the steps that ran are joined into the same output, and the last
+// `updatedInput` too, unless a step denied. A step that rewrites the call hands
+// its `tool_input` to the steps after it, so a later rewrite builds on it.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
@@ -15,12 +16,15 @@ import { isProcessEntry } from './guards/guard-runner.mjs';
 export async function runSteps(hookInput, guards, bookkeeping) {
   const outputs = [];
   let denied = false;
+  let stepInput = hookInput;
   for (const step of [...guards, ...bookkeeping]) {
     if (denied && bookkeeping.includes(step)) continue;
     try {
-      const output = await step.run(hookInput);
+      const output = await step.run(stepInput);
       if (!output) continue;
       outputs.push(output.hookSpecificOutput ?? {});
+      const rewrite = output.hookSpecificOutput?.updatedInput;
+      if (rewrite !== undefined) stepInput = { ...stepInput, tool_input: rewrite };
       if (output.hookSpecificOutput?.permissionDecision === 'deny') denied = true;
     } catch (error) {
       // A step fault lets the call through, as its own hook's fault did.
@@ -38,7 +42,7 @@ export async function runSteps(hookInput, guards, bookkeeping) {
     merged.permissionDecisionReason = verdict.permissionDecisionReason;
   }
   if (contexts.length > 0) merged.additionalContext = contexts.join('\n');
-  const rewritten = outputs.find((output) => output.updatedInput !== undefined);
+  const rewritten = outputs.findLast((output) => output.updatedInput !== undefined);
   if (rewritten && !denied) merged.updatedInput = rewritten.updatedInput;
   if (Object.keys(merged).length === 1) return null;
   return { hookSpecificOutput: merged };
