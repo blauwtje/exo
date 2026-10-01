@@ -9,6 +9,7 @@ A plan's tasks are all landed and the branch needs the scripted checks and a rev
 ## What you get
 
 - Each landed task's own Proof command, the plan's success criterion and a stray-path check, run once and reported.
+- Every task listed as done or open, then the checks only you can make from the plan's `## Manual checks`, at the end of the gate's output.
 - One branch review, dispatched to the model the gate printed.
 - Findings repaired by a delegate and landed in one commit.
 - The finish question `ship` asks, whose pick is carried out to its end.

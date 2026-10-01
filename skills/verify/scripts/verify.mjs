@@ -11,7 +11,9 @@
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
 //
-// Prints one PASS, FAIL, SKIP or STRAY line per check, then the REVIEWER line.
+// Prints one PASS, FAIL, SKIP or STRAY line per check, then the REVIEWER line,
+// then one DONE or OPEN line per task and one MANUAL line per `## Manual
+// checks` bullet, so the run ends on every task and the checks only the user can make.
 // Exits 1 when any check is not PASS.
 
 import { spawnSync } from 'node:child_process';
@@ -54,6 +56,17 @@ export function successCriterionPasses(output) {
 /** The first backticked command in the plan's Success criterion text, or null when it has none. */
 export function criterionCommand(successCriterion) {
   return successCriterion?.match(BACKTICKED_COMMAND)?.[1] ?? null;
+}
+
+/** Every task of the plan as `{ task, done }`, done when its landed commit exists. */
+export function taskStates(tasks, landed) {
+  return tasks.map((task) => ({ task: task.number, title: task.title, done: landed.has(task.number) }));
+}
+
+/** The bullets of the plan's `## Manual checks` section, one string each. */
+export function manualChecks(frame) {
+  const section = frame['Manual checks'] ?? '';
+  return section.split('\n').filter((line) => line.trim().startsWith('- ')).map((line) => line.trim().slice(2));
 }
 
 function runCommand(command) {
@@ -111,6 +124,8 @@ export function runGate(planText, { planPath, checkCommand, root = process.cwd()
   }
 
   lines.push(`REVIEWER: ${pickReviewer(measureSizeFacts({ base }))}`);
+  for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
+  for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
   return { lines, failed };
 }
 
