@@ -38,7 +38,7 @@ A component is unbuilt while any reachable row entry is unstyled. The row is res
 
 ## Composite patterns
 
-A composite is a component made of components, and it is where a surface silently loses its state coverage. Name the ones this surface has before building any of them: table or grid with sort, selection and async loading; combobox or autocomplete; select and listbox; menu with submenus and typeahead; modal and non-modal dialog; collision-aware popover; tabs; accordion; radio group; toggle group; switch; slider; tooltip; drag-to-reorder; toast or notification queue; command or search palette; filter set; form layout with validation; pagination. Each one it has owes the state row above and the keyboard contract in the `accessibility` reference.
+A composite is a component made of components, and it is where a surface silently loses its state coverage. Name the ones this surface has before building any of them. The data and input composites are table or grid with sort, selection and async loading; combobox or autocomplete; select and listbox; radio group; toggle group; switch; slider; filter set; form layout with validation. The other composites are menu with submenus and typeahead; modal and non-modal dialog; collision-aware popover; tooltip; tabs; accordion; pagination; command or search palette; toast or notification queue; drag-to-reorder. Each one it has owes the state row above and the keyboard contract in the `accessibility` reference.
 
 Two carry decisions a look cannot make, and both are settled explicitly or they are settled by accident.
 

@@ -41,7 +41,7 @@ Name one primary job per animation; a secondary job only when it changes impleme
 4. **Signature:** the one orchestrated sequence tied to the thesis.
 5. **Atmosphere:** ambient background movement tied to the `visual-direction` reference's ground — optional, never carrying content, static under reduced motion, paused off-screen, under that file's material and blur limits.
 
-- Cut an animation with no listed job. Signature count follows the direction's spatial ambition: a workspace or a document surface earns one at most; a narrative, spatial, or instrument-led direction may orchestrate several when each is tied to the thesis and none competes with another for the same moment.
+- Cut an animation with no listed job. Signature count follows the direction's spatial ambition: a workspace or document surface earns one at most; a narrative, spatial, or instrument-led direction may orchestrate several when each is tied to the thesis and none competes for the same moment.
 - Record every planned sequence as trigger → target/state → job → timing token → repository mechanism → reduced-motion result → status.
 - Report each **exercised** when driven in a render, **code-reviewed** when only its code path was read against the thesis, **unjudged** when neither; only exercised is motion-verified.
 
@@ -82,7 +82,7 @@ Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or s
 - **Velocity carries across a handoff.** Physics springs take in the velocity of a running gesture or animation, while duration-based springs and tweens do not, so a gesture that releases into an animation needs one. Verify: per-frame delta stays continuous in sign and magnitude across the release, rather than collapsing to zero and rebuilding.
 - **Gesture-driven motion tracks the pointer 1:1** during the drag and releases into momentum in the same direction.
 - **Choreography declares its order.** An entrance sequence names its order and stagger.
-- **Shared-element continuity means one object persists**, not one element fading out while another fades in. A persistent element connects the start and end state, related content moves on a shared axis, and unrelated content fades through. Verify: one node spans both states, with no simultaneous crossfade of two boxes.
+- **Shared-element continuity means one object persists**, not one element fading out while another fades in. A persistent element connects the start and end state, related content moves on a shared axis, and unrelated content fades through; verify one node spans both states, with no simultaneous crossfade of two boxes.
 
 ## Scroll and view transitions
 

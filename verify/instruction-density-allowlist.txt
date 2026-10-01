@@ -49,10 +49,6 @@ skills/build/references/wave-worktrees.md	bullet	4	**Remove.** For each folder t
 skills/build/references/workspace.md	sentence	Ask where a code-changing run commits be
 skills/build/references/workspace.md	sentence	Otherwise run `node "${CLAUDE_SKILL_DIR}
 skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
-skills/design-ui/references/component-system.md	sentence	Name the ones this surface has before bu
-skills/design-ui/references/motion.md	sentence	Signature count follows the direction's
-skills/design-ui/references/motion.md	bullet	3	**Shared-element continuity means one ob
-skills/design-ui/references/typography.md	sentence	A ban list is the opposite instrument: `
 skills/edit-skills/SKILL.md	bullet	3	**Watch it happen.** Run `scripts/pressu
 skills/edit-skills/references/blind-eval.md	sentence	Label the two clones' `with` answers A a
 skills/edit-skills/references/blind-eval.md	sentence	Write a rubric of 3-6 concrete criteria

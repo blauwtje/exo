@@ -12,7 +12,7 @@ Two faces is one option, not a quota: a display-and-body pair, or one family car
 
 ## Source by character, not by list
 
-Any fixed list of "distinctive fonts" becomes next year's cliché, and a category-to-face recipe designs every product in a category alike. A ban list is the opposite instrument: `scripts/overused-fonts.mjs` names the families that mean the search stopped (Inter, Roboto, Arial, Fraunces, Playfair, Space Grotesk, DM Sans and their kin), the candidate gate excludes them on every route, and nothing there suggests a face. Cast from a description, never a shortlist:
+Any fixed list of "distinctive fonts" becomes next year's cliché, and a category-to-face recipe designs every product in a category alike. A ban list is the opposite instrument: `scripts/overused-fonts.mjs` names the families that mean the search stopped (Inter, Roboto, Arial, Fraunces, Playfair, Space Grotesk, DM Sans and their kin). The candidate gate excludes them on every route, and nothing there suggests a face. Cast from a description, never a shortlist:
 
 1. **Inspect the repository first.** Find existing `@font-face` rules, font links or imports, font packages, brand CSS, and loading conventions. Existing fonts are evidence, not a veto: inside the redesign's scope, judge whether the existing face supports the direction's type spec — extend it when it does, replace it with a verified, loadable face when it does not.
 2. **Write the type spec.** From Phase 1, name three to five observable traits: serif construction, width, stroke contrast, terminal shape, x-height, and era or tradition. Tie each trait to one subject observation.
