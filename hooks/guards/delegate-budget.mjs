@@ -33,8 +33,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 import { readHookText } from '#hook-input';
+import { isMain } from '#script-flags';
 import { contextTokens, parsedEntry, readText } from './transcript-tail.mjs';
 
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../../lib/delegate-budgets.json', import.meta.url), 'utf8'));
@@ -139,18 +139,6 @@ function guard(hookInput) {
 export function delegateBudget(hookInput) {
   if (typeof hookInput.agent_id === 'string') return guard(hookInput);
   return null;
-}
-
-/** True when this file is the process entry, the check `isMain` in
- *  lib/script-flags.mjs makes. Kept local because the guard's tests run a
- *  plugin copy that carries only the lib files it imports; importing
- *  `#script-flags` here means adding that file to the copy. */
-function isMain(moduleUrl) {
-  try {
-    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(moduleUrl));
-  } catch {
-    return false;
-  }
 }
 
 if (isMain(import.meta.url)) {

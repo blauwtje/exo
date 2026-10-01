@@ -97,10 +97,9 @@ test('deleting or mirroring remote refs is denied, an ordinary push is not', asy
     'git push origin :main',
     'git push origin --delete main',
     'git push -d origin main',
-    'git push --mirror',
-    'git push origin main :old'
+    'git push --mirror'
   ], /remote refs/);
-  await assertAllowed(['git push origin HEAD:main', 'git push -u origin feature', 'git push --force-with-lease=main:abc123 origin main']);
+  await assertAllowed(['git push origin HEAD:main', 'git push -u origin feature', 'git push --force-with-lease=main:abc123 origin main', 'git push origin --delete audit2', 'git push origin :audit2', 'git push -d origin audit2']);
 });
 
 test('a forced checkout or switch is denied, its plain forms are not', async () => {

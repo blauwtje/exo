@@ -231,6 +231,7 @@ async function pluginCopy(root, budgets) {
   await fs.copyFile(new URL('../package.json', import.meta.url), path.join(root, 'plugin', 'package.json'));
   await fs.copyFile(new URL('../lib/hook-input.mjs', import.meta.url), path.join(lib, 'hook-input.mjs'));
   await fs.copyFile(new URL('../lib/token-weights.mjs', import.meta.url), path.join(lib, 'token-weights.mjs'));
+  await fs.copyFile(new URL('../lib/script-flags.mjs', import.meta.url), path.join(lib, 'script-flags.mjs'));
   await fs.writeFile(path.join(lib, 'delegate-budgets.json'), JSON.stringify(budgets));
   return path.join(guards, 'delegate-budget.mjs');
 }

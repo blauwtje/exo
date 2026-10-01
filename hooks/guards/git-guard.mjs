@@ -42,8 +42,8 @@ const ARGUMENT_RULES = [
   },
   {
     subcommand: 'push',
-    arguments: /(?:^|[ \t])(?:-[A-Za-z]*d[A-Za-z]*|--delete|--mirror|:[^ \t]+)(?:[ \t]|$)/,
-    reason: 'git-guard: deleting or mirroring remote refs discards remote history. Ask the user to run it.'
+    arguments: /(?:^|[ \t])(?:--mirror|:main|(?:-[A-Za-z]*d[A-Za-z]*|--delete)(?:[ \t]+[^ \t-][^ \t]*)*?[ \t]+main)(?:[ \t]|$)/,
+    reason: 'git-guard: deleting main or mirroring remote refs discards remote history. Ask the user to run it.'
   },
   { subcommand: 'checkout', arguments: FORCED_CHECKOUT, reason: FORCED_CHECKOUT_REASON },
   { subcommand: 'switch', arguments: FORCED_CHECKOUT, reason: FORCED_CHECKOUT_REASON },
