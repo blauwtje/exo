@@ -19,7 +19,7 @@ const SHIPPING = read('ship/SKILL.md');
 const VERIFY = read('verify/SKILL.md');
 
 function loopStep(number, text = RUN_LOOP) {
-  const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
+  const step = text.match(new RegExp(`^${number}\\. \\*\\*[\\s\\S]*?(?=\\n\\d+\\. |\\n## |$(?![\\s\\S]))`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];
 }
@@ -48,7 +48,7 @@ test('the workspace question offers a branch, a worktree and the current branch,
 
 test('a green task commits and pushes nothing', () => {
   const unit = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
-  const commitStep = unit.match(/^4\. \*\*Commit a green task\.\*\*.+$/m)[0];
+  const commitStep = unit.match(/^4\. \*\*Commit a green task\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m)[0];
   assert.ok(commitStep.includes('push nothing'));
   assert.ok(!commitStep.includes('git push'), 'the unit commit step runs no push');
 });

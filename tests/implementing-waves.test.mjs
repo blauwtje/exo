@@ -57,7 +57,7 @@ const RUN_LOOP_DIRECT = read('build/references/run-loop-direct.md');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 
 function loopStep(number, text = RUN_LOOP) {
-  const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
+  const step = text.match(new RegExp(`^${number}\\. \\*\\*[\\s\\S]*?(?=\\n\\d+\\. |\\n## |$(?![\\s\\S]))`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];
 }

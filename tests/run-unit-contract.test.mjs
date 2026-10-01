@@ -11,7 +11,7 @@ const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
 
 function loopStep(number, text) {
-  const step = text.match(new RegExp(`^${number}\\. \\*\\*.+$`, 'm'));
+  const step = text.match(new RegExp(`^${number}\\. \\*\\*[\\s\\S]*?(?=\\n\\d+\\. |\\n## |$(?![\\s\\S]))`, 'm'));
   assert.ok(step, `step ${number} exists`);
   return step[0];
 }

@@ -39,7 +39,7 @@ const FRESH_EYES_PATH = new URL('../skills/build/references/fresh-eyes.md', impo
 test('SKILL.md No spec step 7 dispatches the reviewer prompt and names the fix scope', () => {
   const skill = fs.readFileSync(SKILL_PATH, 'utf8');
   const freshEyes = fs.readFileSync(FRESH_EYES_PATH, 'utf8');
-  const stepSeven = freshEyes.match(/^7\. \*\*Fresh eyes\.\*\*.+$/m);
+  const stepSeven = freshEyes.match(/^7\. \*\*Fresh eyes\.\*\*[\s\S]*?(?=\n\d+\. |\n## |$(?![\s\S]))/m);
   assert.ok(stepSeven, 'references/fresh-eyes.md has a No spec step 7 line starting "7. **Fresh eyes.**"');
   const line = stepSeven[0];
 
