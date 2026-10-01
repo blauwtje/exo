@@ -1,4 +1,4 @@
-// Every reference a skill reads holds one topic: it names no other reference,
+// Every reference a skill reads holds one topic: it links to no other reference,
 // so a reader never follows a chain past the file SKILL.md sent it to, and one
 // longer than REFERENCE_CONTENTS_LINES opens with a contents list linking
 // each of its sections, so a partial read still finds its place. No SKILL.md
@@ -132,7 +132,7 @@ export function checkReferenceShape(report, repository) {
   report.assert(
     failures.length === 0,
     'reference shape',
-    `${count} references name no other reference and open with contents past ${REFERENCE_CONTENTS_LINES} lines, and every table row says when to read it`,
+    `${count} references link to no other reference and open with contents past ${REFERENCE_CONTENTS_LINES} lines, and every table row says when to read it`,
     failures.join('; ')
   );
 }

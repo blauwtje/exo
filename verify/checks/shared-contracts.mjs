@@ -104,7 +104,7 @@ const PINNED_SENTENCES = {
   ],
   'skills/edit-skills/SKILL.md': [
     `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens, ${thousands(INJECTED_BODY_TOKENS.ceiling)} for the injected \`${INJECTED_BODY_TOKENS.skill}\`, and ${DESCRIPTION_CHARS.ceiling} characters.`,
-    `A reference holds one topic and names no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
+    `A reference holds one topic and links to no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
   ],
   'skills/edit-skills/references/description.md': [
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
