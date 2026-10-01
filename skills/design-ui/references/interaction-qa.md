@@ -2,6 +2,27 @@
 
 Design the interface's behavior as deliberately as its surface. The enemy is the ideal-state interface — populated, enabled, pointer-driven, nothing loading and nothing failing. The overcorrection is process ceremony: flows documented, states enumerated, none of them built.
 
+## The reachable-state inventory
+
+First inventory which of loading, empty, error, success, disabled, permission, and live states each region and fallible control can enter — from the repository, data model, workflow, or brief. Build every reachable state and no unreachable one.
+
+- **Loading** reserves its space, so arrival shifts no layout, and covers every asynchronous action.
+- **Empty** takes one of three forms, each written for the reason the region is empty:
+  - *First use* says what will live here and hands over the first action. ✗ "No projects found." ✓ "Projects you create will appear here." + [New project].
+  - *No results or filtered* keeps the query and filters in the sentence and offers recovery. ✓ "No projects match “atlas” in Archived." + [Clear filters].
+  - *Unavailable or restricted* names what governs access or availability, never dressed as onboarding.
+- **Error** is inline at the point of failure, in the interface's voice, without blame and without apology theater, and answers three questions:
+  - What happened — precisely, never "Something went wrong" when you know what did.
+  - Why, only when the why changes what to do.
+  - What to do next, as a recovery action in the same surface when the interface exposes one.
+  - ✗ "Oops! Something went wrong." ✓ "Couldn't save — you're offline. Changes are kept on this device and will sync when you reconnect."
+- **Success** names the outcome rather than announcing completion.
+- **Disabled** shows the reason where the reason is knowable, and exists wherever an action can be unavailable.
+- **Permission** hides a capability irrelevant or unavailable to this person, and shows it locked only when discoverability and a concrete recovery, upgrade, or admin path matter.
+- **Live** names what updates and how attention is drawn (the orientation job).
+
+Hover and active belong to every pointer control, and visible focus to every interactive control, as the floor beneath this inventory. A reachable state the build does not show is a missing region; an unreachable state built anyway is decoration.
+
 ## The task path
 
 Name the primary task, its decision points, and the path from arrival to done. The primary action sits at the decision point, not at the page bottom. Name what happens immediately after success: where the person lands, what changed, what they can do next.
@@ -12,7 +33,6 @@ Name the primary task, its decision points, and the path from arrival to done. T
 - Every action acknowledges within one transition — a state change, a result, or a progress indicator.
 - Continuity: an element that appears or moves shows where it came from (the continuity job in the `motion` reference).
 - Recovery is deterministic: undo for safely reversible actions, confirmation for irreversible or high-impact ones, never both on one action.
-- Every error surface carries its own recovery action, in the wording below.
 - State transitions run 120–200ms on hover, focus, and active, and 200–400ms on open and close, from the easing tokens (the `motion` reference).
 
 ## Progressive disclosure
@@ -24,20 +44,6 @@ Where controls filter a result field, what is currently on is visible without op
 - every active filter renders as its own removable chip beside the results, with a live count of what survives, because a filter a person cannot see is a filter they blame the data for;
 - an option that would return nothing is shown disabled with its zero count, not removed, since a list that reshuffles as you read it costs the reader their place;
 - one action clears all of them at once, and it names what it clears rather than saying "Reset".
-
-## The reachable-state inventory
-
-First inventory which of loading, empty, error, success, disabled, permission, and live states each region and fallible control can enter — from the repository, data model, workflow, or brief. Build every reachable state and no unreachable one.
-
-- **Loading** reserves its space, so arrival shifts no layout, and covers every asynchronous action.
-- **Empty** takes one of three forms, each written for the reason the region is empty. *First use* says what will live here and hands over the first action: ✗ "No projects found." ✓ "Projects you create will appear here." + [New project]. *No results or filtered* keeps the query and filters in the sentence and offers recovery: ✓ "No projects match “atlas” in Archived." + [Clear filters]. *Unavailable or restricted* names what governs access or availability, never dressed as onboarding.
-- **Error** is inline at the point of failure and answers three questions in the interface's voice, without blame and without apology theater: what happened — precisely, never "Something went wrong" when you know what did; why, only when the why changes what to do; and what to do next, as a recovery action in the same surface when the interface exposes one. ✗ "Oops! Something went wrong." ✓ "Couldn't save — you're offline. Changes are kept on this device and will sync when you reconnect."
-- **Success** names the outcome rather than announcing completion.
-- **Disabled** shows the reason where the reason is knowable, and exists wherever an action can be unavailable.
-- **Permission** hides a capability irrelevant or unavailable to this person, and shows it locked only when discoverability and a concrete recovery, upgrade, or admin path matter.
-- **Live** names what updates and how attention is drawn (the orientation job).
-
-Hover and active belong to every pointer control, and visible focus to every interactive control, as the floor beneath this inventory. A reachable state the build does not show is a missing region; an unreachable state built anyway is decoration.
 
 ## Input modality
 
