@@ -11,44 +11,42 @@ Design so the result cannot be mistaken for a template: every visual choice trac
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline, when supporting regions stay generic while one focal point carries the design, or when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
-**After a compaction notice**, resume from the newest `/private/tmp/designing/*/` run directory, not the conversation: Build reopens from its `contract-selected.json`, and `renders/` shows the checkpoints reached.
+**After a compaction notice**, see `## The run directory` of `references/intake.md`.
 
 ## Size the request
 
-This skill owns a visual change at any file count, since Build dispatches its own builders. An undecided surface (its displayed data, settings or behavior) goes to `spec` first; a change that also adds state, persistence, a dependency or a network call belongs to `build`, which borrows this skill for the look.
+Any visual change belongs here, at any file count; an undecided surface goes to `spec` first, added state, persistence, a dependency or a network call to `build`.
 
-- **Sketch:** a demo, prototype, or mock the request names as one, built on `## The sketch path` of `references/phase-build.md`: no variants, agents, or critic; the floor holds.
-- **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. Run all five phases, bounded to the named surface; the existing direction is evidence, not a veto.
-- **New piece:** a section, component, or view inheriting the existing direction, on `## The piece path` of `references/phase-build.md`. A piece that changes the page's hierarchy is a bounded redesign.
-- **Tweak:** one element or named visual property changes and no region is added. Change it, audit the touched surface, verify the floor, and stop; never expand a tweak into a redesign.
+- **Full or bounded redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. It runs all five phases, per `## Ownership` of `references/intake.md`.
+- **Sketch, new piece, tweak:** `## Sizes` of `references/phase-build.md`.
 
 ## Route
 
-Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface, naming the candidates newest first. Then stop at the first matching rung, because comps earn their cost only where a chooser recognises a direction they cannot name:
+Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface. Then stop at the first matching rung:
 
 1. **Tweak:** the tweak path.
 2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at Build (Phase 3), repeating neither Phase 1-2 nor the variant choice. When `$RUN/inventory.md` is missing and the size is a full or bounded redesign, dispatch `exo:survey-ui` for Phase 1 only before Build, never Phase 2.
 3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
-5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, read when rungs 1-4 miss, while neither the user nor the brief lets it be replaced: one direction in text, no offer. A component library in the manifest is not that evidence on its own, because its defaults are the template this skill exists to replace.
-6. **Tool surface:** an open identity on an app view, dashboard, admin or settings page, form, documentation page, internal tool, or component: one direction in text from Phase 1 evidence and the nearest sibling surface, no offer, because scanability and existing expectations outrank expression there.
+5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, read when rungs 1-4 miss, while neither the user nor the brief lets it be replaced: one direction in text, no offer. A component library in the manifest is not that evidence on its own.
+6. **Tool surface:** an open identity on an app view, dashboard, admin or settings page, form, documentation page, internal tool, or component: one direction in text from Phase 1 evidence and the nearest sibling surface, no offer.
 7. **Expression surface:** an open identity on a landing, marketing, pricing, portfolio, or launch page, whose job is a first impression on someone who has not adopted the product: the offer, as in rung 3.
 
-A surface neither list names takes rung 6, and the report names rung 7 as the rival reading, because a picker's spent minutes do not bar a later request for directions. A user who leaves the look to this skill has not asked for text: rung 7 still offers.
+A surface neither list names takes rung 6, and the report names rung 7 as the rival reading. A user who leaves the look to this skill has not asked for text: rung 7 still offers.
 
 ## The loop
 
 The references call these steps Phase 1 to 5.
 
-1. **Context.** Read `references/phase-detail.md` whole, once; its `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent; this session reads its report of at most 20 lines and asks its `## Open` questions, never the repository ranges.
+1. **Context.** Read `references/phase-detail.md` whole, once; its `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
 2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
-4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, already read at Phase 1, before the baseline capture, which precedes the first edit.
-5. **Check.** A `general-purpose` delegate on `sonnet` runs `## QA` of `references/phase-detail.md`, already read at Phase 1, with `RUN`, `SKILL` and `REPO`, and writes `$RUN/qa.md`; this session's close quotes qa.md.
+4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, before the baseline capture, which precedes the first edit.
+5. **Check.** A `general-purpose` delegate on `sonnet` runs `## QA` of `references/phase-detail.md`, with `RUN`, `SKILL` and `REPO`, and writes `$RUN/qa.md`; this session's close quotes qa.md.
 
 ## References
 
-Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other Phase 5 row loads by section (`grep -n '^## '`, then `sed -n` to the next heading). Phase 3 rows are read by the surface builder, never this session, except `references/phase-build.md`, which decides who builds.
+Load a reference only at its row's phase and predicate, never the set up front. `references/phase-detail.md` reads whole at Phase 1; every other Phase 5 row loads by section (`grep -n '^## '`, then `sed -n` to the next heading).
 
 | File | Read it when |
 |---|---|
@@ -78,9 +76,5 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 ## Judgment
 
 - Explicit brief requirements outrank every design default and tell list, and a human selection of a rendered variant outranks this skill's own preference.
-- An approved durable design decision outranks a new direction; changing one requires asking first.
-- Repository framework, naming, file-layout, and component conventions outrank this skill's code defaults; they do not preserve the visual anatomy the user asked to replace.
-- Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
 - Accessibility and complete content/state coverage outrank visual novelty.
-- A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become minimums to exceed; contrast, reduced-motion, and state coverage still hold.
 - This skill owns visual decisions only. When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting. When no stage called it, execute the visual-only request and report directly.

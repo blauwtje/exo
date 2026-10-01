@@ -12,6 +12,12 @@ A surface whose direction was decided before this run — a plan's `Contract:`, 
 - A surface with no existing product stays unfinished while a content obligation from the inventory is missing or any region still holds placeholder material.
 - check-ui runs before the first edit as the baseline stage of `scripts/checkpoint.mjs --run "$RUN" --stage baseline --url <u> [--source <s>]`, which writes `$RUN/check-ui-baseline.json` covering both viewports; every later stage's checkpoint call finds that file itself and passes it to check-ui as `--baseline`, so its `comparison` holds the counts the report quotes.
 
+## Sizes
+
+- **Sketch:** a demo, prototype, or mock the request names as one, built on `## The sketch path` below: no variants, agents, or critic; the floor holds.
+- **New piece:** a section, component, or view inheriting the existing direction, on `## The piece path` below. A piece that changes the page's hierarchy is a bounded redesign.
+- **Tweak:** one element or named visual property changes and no region is added. Change it, audit the touched surface, verify the floor, and stop; never expand a tweak into a redesign.
+
 ## The sketch path
 
 A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, run `scripts/checkpoint.mjs --run "$RUN" --stage post-build --url <u> [--source <s>]`, and repair what it shows.

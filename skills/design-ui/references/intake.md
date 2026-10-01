@@ -24,6 +24,8 @@ Name the decision an answer changes before asking anything; a question with no n
 
 Every run past a tweak writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript. It holds `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `font-candidates.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md. Every `node scripts/*.mjs` call redirects stdout into `$RUN` and the session reads the fields it needs with `jq` or `sed -n`, never the whole file: a JSON line that reaches the transcript is carried into every turn after it. `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` is what writes it. Agents receive `$RUN` and exchange files under it; they return reports, never file contents.
 
+**After a compaction notice**, resume from the newest `/private/tmp/designing/*/` run directory, not the conversation: Build reopens from its `contract-selected.json`, and `renders/` shows the checkpoints reached.
+
 ## Symptoms
 
 A complaint names a fault in the words of the person who saw it, and those words are not the words the fault is written under. This table is the only step between the two: it says which file owns the symptom, and that file's own row above says when it may be read. A symptom with no row here is diagnosed in Phase 4, not guessed at.
@@ -39,9 +41,21 @@ A complaint names a fault in the words of the person who saw it, and those words
 | the page jumps, stalls, or feels slow to arrive | the `performance-budget` reference for the cause, the `feedback-and-status` reference for what is shown while it waits |
 | the motion distracts, or nothing seems to respond | the `motion` reference for the first, the `interaction-qa` reference for the second |
 
+## Ownership
+
+This skill owns a visual change at any file count, since Build dispatches its own builders. An undecided surface (its displayed data, settings or behavior) goes to `spec` first; a change that also adds state, persistence, a dependency or a network call belongs to `build`, which borrows this skill for the look.
+
+A full or bounded redesign runs all five phases, bounded to the named surface; the existing direction is evidence, not a veto. This session reads the `exo:survey-ui` report of at most 20 lines and asks its `## Open` questions.
+
 ## Settled identity
 
 Rung 5 of the skill's `## Route` reads any one of these as a settled identity: docs/design/DESIGN.md where `scripts/context.mjs --status` reports `design_context_status` other than `absent` and `approval_status` of `approved`, docs/design/direction.json, a `contract-selected.json` under a run directory named for this repository, or a stylesheet, theme config or DTCG file that names both color and type values and has changed in at least one commit after the commit that added it. A `draft` `approval_status` is not settled; route past rung 5 without opening DESIGN.md's body.
+
+## Open identity
+
+Rung 6 of the skill's `## Route` takes no offer because scanability and existing expectations outrank expression on a tool surface. A surface neither list names takes rung 6 and the report names rung 7 as the rival reading, because a picker's spent minutes do not bar a later request for directions.
+
+Comps earn their cost only where a chooser recognises a direction they cannot name. A component library in the manifest is no settled identity because its defaults are the template this skill exists to replace.
 
 ## Judgment
 
