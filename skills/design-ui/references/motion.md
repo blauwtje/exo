@@ -2,17 +2,24 @@
 
 Choreograph motion as a concept decision, not a garnish. The enemy is unowned motion — scattered default effects and the uniform fade-up nobody chose. The overcorrection is mandated choreography, motion added to satisfy a rule rather than a job. Chosen stillness is a decision; unconsidered stillness is a default.
 
-## Contents
+## Reduced motion
 
-- [Motion thesis](#motion-thesis)
-- [Job gate](#job-gate)
-- [Materials](#materials)
-- [Timing](#timing)
-- [Continuity contract](#continuity-contract)
-- [Scroll and view transitions](#scroll-and-view-transitions)
-- [Reduced motion](#reduced-motion)
-- [Libraries](#libraries)
-- [Judgment](#judgment)
+- Put every transition and animation behind `@media (prefers-reduced-motion: no-preference)`, and never the state it leads to.
+- Declare the `:hover` offset, the `:active` press, the open panel and the selected tab outside the query. Under `reduce` each state change still happens, instantly or as an opacity or color change, and no content or feedback is lost.
+- A state change wrapped inside the query deletes feedback, and so does a blanket `* { animation: none; }` under `reduce` that stops a loading shimmer instead of replacing it with an opacity change.
+- The rule covers CSS animations, scroll timelines, view transitions and media that plays by itself.
+
+~~~css
+.row:hover .chevron { transform: translateX(2px); }
+@media (prefers-reduced-motion: no-preference) {
+  .chevron { transition: transform var(--dur-feedback) var(--ease-out); }
+}
+~~~
+
+- **Replace, do not delete.** Where the motion conveys meaning, swap it for an animation that avoids motion, such as a dissolve, a fade or a color shift. Verify under `reduce`: the state change still animates on opacity or color while translation, scale and parallax measure approximately zero.
+- Disable or change outright depth simulation, parallax, animated blur, multi-axis and spinning motion, and auto-advancing motion.
+- A mask or gradient fade that marks an edge, such as the fade at the end of a scrolling rail, is not motion and stays as it is under `reduce`. Only a mask whose position or size animates stops, and it stops at its final state.
+- **The media query is the default, not the whole answer.** Where the surface carries a signature sequence, ambient motion or autoplay, ship an in-product motion setting whose initial value is read from `prefers-reduced-motion` and which the person can override either way. The setting drives the same token or class the media query does, so there is one code path.
 
 ## Motion thesis
 
@@ -34,7 +41,9 @@ Name one primary job per animation; a secondary job only when it changes impleme
 4. **Signature:** the one orchestrated sequence tied to the thesis.
 5. **Atmosphere:** ambient background movement tied to the `visual-direction` reference's ground — optional, never carrying content, static under reduced motion, paused off-screen, under that file's material and blur limits.
 
-Cut an animation with no listed job. Signature count follows the direction's spatial ambition: a workspace or a document surface earns one at most, while a narrative, spatial, or instrument-led direction may orchestrate several when each is tied to the thesis and none competes with another for the same moment. Record every planned sequence as trigger → target/state → job → timing token → repository mechanism → reduced-motion result → status. Report each **exercised** when driven in a render, **code-reviewed** when only its code path was read against the thesis, **unjudged** when neither; only exercised is motion-verified.
+- Cut an animation with no listed job. Signature count follows the direction's spatial ambition: a workspace or a document surface earns one at most; a narrative, spatial, or instrument-led direction may orchestrate several when each is tied to the thesis and none competes with another for the same moment.
+- Record every planned sequence as trigger → target/state → job → timing token → repository mechanism → reduced-motion result → status.
+- Report each **exercised** when driven in a render, **code-reviewed** when only its code path was read against the thesis, **unjudged** when neither; only exercised is motion-verified.
 
 ## Materials
 
@@ -58,67 +67,33 @@ Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or s
 | A signature sequence or an authored focal entrance | 400–800ms |
 | The delay between siblings in a stagger | 30–80ms, with the whole sequence inside 800ms |
 
+- Keep durations and curves in tokens, and list a transition's properties instead of `all`.
 - A focus indicator appears at once; a transition may animate properties around focus, never the indicator itself.
-- Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)` as the default ease-out; a signature sequence takes its curve from how the subject physically moves, because the default curve there reads as borrowed.
-- An element that appears and disappears, such as a panel, menu, dialog or toast, exits faster than it entered and on its own curve, never the entrance played in reverse. Declare the exit on the closed or leaving state itself: the entry keeps the longer duration token and the ease-out, the exit takes a shorter duration token and an ease-in such as `cubic-bezier(.3, 0, .8, .15)`, so the element leaves faster than it arrived and speeds up as it goes. For such an element, a transition declared once on the base rule runs the same duration and curve both ways, which is the reversed entrance this rule forbids.
+- Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)` as the default ease-out. A signature sequence takes its curve from how the subject physically moves, because the default curve there reads as borrowed; a springy or elastic curve belongs only to a brief whose world truly bounces, never to a functional control.
+- An element that appears and disappears, such as a panel, menu, dialog or toast, exits faster than it entered and on its own curve, never the entrance played in reverse.
+- Declare that exit on the closed or leaving state itself: the entry keeps the longer duration token and the ease-out, and the exit takes a shorter duration token and an ease-in such as `cubic-bezier(.3, 0, .8, .15)`. A transition declared once on the base rule runs the same both ways, which is the reversed entrance the exit rule forbids.
 - Hover and press feedback may use one transition on the base rule for both directions, as the chevron example under `## Reduced motion` does, because the release undoes a nudge rather than removing an element.
-- A springy or elastic curve belongs only to a brief whose world truly bounces, and never to a functional control.
-
-~~~css
-@media (prefers-reduced-motion: no-preference) {
-  .panel { transition: transform var(--dur-panel) var(--ease-out), opacity var(--dur-panel) var(--ease-out); }
-  .panel[data-state="closed"] { transition-duration: var(--dur-feedback); transition-timing-function: var(--ease-in); }
-}
-~~~
-
-Durations and curves live in tokens, and a transition lists its properties instead of `all`.
-
-**Duration derives from distance.** Carbon states the rule the token tables hide: "the larger the change in distance… or size (scaling) of the element, the longer the animation takes" ([carbon-website `elements/motion/overview.mdx`, `main`, read 2026-09-07](https://github.com/carbon-design-system/carbon-website/blob/main/src/pages/elements/motion/overview.mdx)). A panel crossing the viewport and a chip nudging four pixels do not share one token. Verify: measure two travels of clearly different distance and confirm the longer one takes longer.
-
-**Entrance and exit are different curves**, not one curve played backwards; the same file pairs a standard, an entrance, and an exit easing per mode. This is the mechanism behind the exits-are-shorter rule above.
+- **Duration derives from distance.** The larger the change in distance or size, the longer the animation takes, so a panel crossing the viewport and a chip nudging four pixels do not share one token. Verify: measure two travels of clearly different distance and confirm the longer one takes longer.
 
 ## Continuity contract
 
-Duration and easing tokens do not describe what happens when a person interrupts. These do, and they are the difference between motion that feels like an object and motion that feels like a slideshow:
-
-- **An interrupted animation starts from the current value**, never from the origin and never by snapping to the end. Motion's docs criticise the View Transitions API on exactly this point: interrupting it "snaps the animation to the end before starting the next one. This feels very janky" ([motion.dev/docs/react-layout-animations](https://motion.dev/docs/react-layout-animations), read 2026-09-07). Verify: trigger, re-trigger at about half progress, and sample the next frame — it sits at the mid value, not at either end.
+- **An interrupted animation starts from the current value**, never from the origin and never by snapping to the end. Verify: trigger, re-trigger at about half progress, and sample the next frame — it sits at the mid value, not at either end.
 - **Reversal reverses from where it is**, with the remaining distance setting the remaining time. Verify: open then immediately close, and assert total travel is less than the full distance with no jump between consecutive frames.
-- **Velocity carries across a handoff.** Physics springs "incorporate the velocity of any existing gestures or animations for natural feedback", while duration-based springs and tweens do not ([motion.dev/docs/react-transitions](https://motion.dev/docs/react-transitions), read 2026-09-07). A gesture that releases into an animation is where this is load-bearing. Verify: per-frame delta stays continuous in sign and magnitude across the release, rather than collapsing to zero and rebuilding.
+- **Velocity carries across a handoff.** Physics springs take in the velocity of a running gesture or animation, while duration-based springs and tweens do not, so a gesture that releases into an animation needs one. Verify: per-frame delta stays continuous in sign and magnitude across the release, rather than collapsing to zero and rebuilding.
 - **Gesture-driven motion tracks the pointer 1:1** during the drag and releases into momentum in the same direction.
-- **Shared-element continuity means one object persists**, not one element fading out while another fades in. Material's transition set chooses by relationship: a persistent element connects the start and end state, related content moves on a shared axis, unrelated content fades through ([m3.material.io/styles/motion/transitions](https://m3.material.io/styles/motion/transitions), undated). Verify: one node spans both states, with no simultaneous crossfade of two boxes.
-- **Choreography declares its order.** An entrance sequence names its order and stagger; an exit is not the entrance reversed.
-
-Material's and Carbon's millisecond ladders and cubic-beziers are their visual language, not a contract: take the relationship rules and the distance rule, theme the numbers.
+- **Choreography declares its order.** An entrance sequence names its order and stagger.
+- **Shared-element continuity means one object persists**, not one element fading out while another fades in. A persistent element connects the start and end state, related content moves on a shared axis, and unrelated content fades through. Verify: one node spans both states, with no simultaneous crossfade of two boxes.
 
 ## Scroll and view transitions
 
-Use CSS scroll timelines when the browser matrix supports them and the page stays complete without them. For narrative pages: pin one or two sections at most, scrub tied to real content progression, reveals running once. Parallax moves non-text imagery by at most 10% of scroll distance; a brief demanding more names the cost. Never steer wheel or scroll position.
-
-Use view transitions only for elements persisting across a state or navigation change, naming only those. `@starting-style` plus discrete transitions handle supported dialog, popover, or display-state entry. Final open and closed states work without animation.
-
-## Reduced motion
-
-Put every transition and animation behind `@media (prefers-reduced-motion: no-preference)`, and never the state it leads to. The `:hover` offset, the `:active` press, the open panel and the selected tab are declared outside the query, so under `reduce` each state change still happens, instantly or as an opacity or color change in place of the travel, and no content or feedback is lost. A state change wrapped inside the query deletes feedback and breaks this rule; so does a blanket `* { animation: none; }` under `reduce` that stops a loading shimmer or a keyframed state change instead of replacing it with an opacity change. This covers CSS animations, scroll timelines, view transitions and media that plays by itself.
-
-~~~css
-.row:hover .chevron { transform: translateX(2px); }
-@media (prefers-reduced-motion: no-preference) {
-  .chevron { transition: transform var(--dur-feedback) var(--ease-out); }
-}
-~~~
-
-A mask or gradient fade that marks an edge, such as the fade at the end of a scrolling rail, is not motion: it stays exactly as it is under `reduce`. Only a mask whose position or size animates stops, and it stops at its final state.
-
-**The media query is the default, not the whole answer.** Where the surface carries a signature sequence, ambient motion, or autoplay, ship an in-product motion setting whose initial value is read from `prefers-reduced-motion` and which the person can then override either way. The operating-system switch is one all-or-nothing choice made far from this product, most people never find it, and someone who wants this surface still but not its parallax has nowhere else to say so. The setting drives the same token or class the media query does, so there is one code path and not two.
-
-**Replace, do not delete.** Apple's evaluation criteria are explicit: "if the motion itself conveys some meaning… don't remove the animation entirely. Instead, consider providing a new animation that avoids motion" — a dissolve, a fade, a color shift ([App Store Connect reduced-motion criteria](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/reduced-motion-evaluation-criteria), read 2026-09-07). The same page names what must be disabled or changed outright: depth simulation, parallax, animated blur, multi-axis and spinning motion, and auto-advancing motion. Verify under `reduce`: the state change still animates on opacity or color while translation, scale, and parallax measure approximately zero.
-
-## Libraries
-
-Prefer the platform; use a repository's existing animation library idiomatically. Adding one is justified for orchestration, physics, or scrubbed timelines CSS cannot express — never for one fade.
+- Use CSS scroll timelines when the browser matrix supports them and the page stays complete without them; never steer wheel or scroll position.
+- On narrative pages pin one or two sections at most, scrub tied to real content progression, and run reveals once. Parallax moves non-text imagery by at most 10% of scroll distance; a brief demanding more names the cost.
+- Use view transitions only for elements persisting across a state or navigation change, naming only those.
+- `@starting-style` plus discrete transitions handle supported dialog, popover, or display-state entry; final open and closed states work without animation.
 
 ## Judgment
 
+- Prefer the platform, and use a repository's existing animation library idiomatically; add a library only for orchestration, physics, or scrubbed timelines CSS cannot express, never for one fade.
 - Reduced-motion preference and interaction feedback outrank the thesis.
 - One authored signature outranks scattered micro-effects.
 - A brief's requested intensity outranks these caps; the accessibility floor outranks the brief.
