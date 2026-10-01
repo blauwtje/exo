@@ -2,7 +2,7 @@
 
 Prove behavior, not compliance. The enemy is the page that passes the automated scan and fails a person: zero violations, no keyboard path, no announcement, a dialog the scanner never opened. The overcorrection is audit ceremony — criteria enumerated in a report and none of them built.
 
-the `interaction-qa` reference owns the reachable-state inventory and the input-modality floor. the `visual-direction` reference owns the contrast ratios. This file owns three things they do not: what a machine can and cannot prove, the criteria that carry numbers, and the keyboard contract a composite widget owes.
+The `interaction-qa` reference owns the reachable-state inventory and the input-modality floor. The `visual-direction` reference owns the contrast ratios. This file owns three things they do not: what a machine can and cannot prove, the criteria that carry numbers, and the keyboard contract a composite widget owes.
 
 ## What automation proves, and what it never does
 

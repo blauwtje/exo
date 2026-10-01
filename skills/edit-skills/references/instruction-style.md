@@ -2,9 +2,11 @@
 
 This style applies to `CLAUDE.md`, rules, skills, agents, output styles and hooks. The enemy is the line that restates what the model does anyway. The overcorrection is a line cut so far that its boundary is lost.
 
-- Give a bullet one rule: one condition, one action, at most one reason clause; split a compound bullet.
-- Split a sentence over 25 words, unless the split loses its boundary; the verifier fails one over 40.
-- Put the rules most often broken first in a file; move what only some paths need to a reference.
+- Give a bullet one rule: one condition, one action; split a compound bullet, because the model follows a specific rule more consistently than a bundle.
+- Split a sentence that carries a second condition or action, unless the split loses its boundary.
+- The verifier fails a sentence over 40 words, and a list item of three or more sentences.
+- Put the rules most often broken first in a file, because the model recalls the start of its context best and the middle worst.
+- Move what only some paths need to a reference.
 - Keep one load path, SKILL.md plus the references that path reads, under about 150 rules, because adherence falls past it and earlier rules win.
 - Write for the model: line length, hard wraps and reading grade are human metrics, not targets.
 - Write short: drop a word where the meaning stays exact, never one that sets a boundary.

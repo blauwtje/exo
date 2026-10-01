@@ -27,7 +27,6 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 ## Form
 
-- Aim for one sentence of fewer than 25 words to a line and two lines to a bullet.
 - Bulk material, such as a template, a worked example or a checklist longer than 20 lines, lives in `references/`, and the body names the moment to open it.
 - Aim the body at 2,000 tokens (bytes after the frontmatter / 4) and the description at 300 characters; the verifier fails 2,500 tokens, 636 for the injected `route-skills`, and 375 characters.
 - A reference holds one topic and links to no other reference; over 100 lines it opens with a contents list linking each section.

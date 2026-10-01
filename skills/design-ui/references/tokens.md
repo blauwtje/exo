@@ -2,7 +2,7 @@
 
 Store the decision, not the value. The enemy is the token file that is a paint chart: `--blue-600` used for a border in one place and a button in another, so the rebrand becomes a search and replace no one finishes. The overcorrection is a three-tier pipeline with a build step for a page with eleven colors.
 
-the `visual-direction` reference decides the palette, the topology, and the commitment level. the `implementation` reference writes the CSS. This file owns the shape of the layer between them: what a token is named, what it references, and how a ramp is derived rather than picked. Every structure below is portable; **no value below is**. A ladder is architecture, a hue is a look, and importing the second is how a design starts wearing another product's identity.
+The `visual-direction` reference decides the palette, the topology, and the commitment level. The `implementation` reference writes the CSS. This file owns the shape of the layer between them: what a token is named, what it references, and how a ramp is derived rather than picked. Every structure below is portable; **no value below is**. A ladder is architecture, a hue is a look, and importing the second is how a design starts wearing another product's identity.
 
 ## Tiers
 
