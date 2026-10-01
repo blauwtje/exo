@@ -91,6 +91,18 @@ test('set writes the project file and rejects a value the schema does not allow'
   assert.match(rejected.stderr, /specs=wiki is not one of docs, issues, both/);
 });
 
+test('set writes through a per-process temp file and leaves the shared .tmp name alone', async () => {
+  const space = await workspace();
+  const directory = path.join(space.root, '.claude');
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(path.join(directory, 'exo.json.tmp'), 'another writer');
+  const written = await settings(space, ['set', 'specs', 'issues', '--scope', 'project']);
+  assert.equal(written.code, 0, written.stderr);
+  assert.equal(await fs.readFile(path.join(directory, 'exo.json.tmp'), 'utf8'), 'another writer');
+  const leftovers = (await fs.readdir(directory)).filter((name) => name.endsWith('.tmp') && name !== 'exo.json.tmp');
+  assert.deepEqual(leftovers, []);
+});
+
 test('set refuses the global scope and points at /config', async () => {
   const result = await settings(await workspace(), ['set', 'specs', 'issues', '--scope', 'global']);
   assert.equal(result.code, 1);

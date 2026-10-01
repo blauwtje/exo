@@ -170,7 +170,7 @@ function set(root, key, value, scope) {
   const values = readLayer(file);
   values[key] = typed;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temporary = `${file}.tmp`;
+  const temporary = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(values, null, 2)}\n`);
   fs.renameSync(temporary, file);
   console.log(`${key}=${typed} set in ${relative}`);
