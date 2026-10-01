@@ -11,10 +11,11 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         # 22 is the floor verify.mjs enforces; 24 is current.
         node: [22, 24]
     steps:
