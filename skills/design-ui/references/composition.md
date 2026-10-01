@@ -2,6 +2,19 @@
 
 Compose relationships before containers. The enemy is the interchangeable vertical stack. The overcorrection is compression that crowds every viewport. Full and bounded redesigns use this process, while a tweak or new piece inherits the existing composition. Density means content relationships per viewport, not smaller text; a sparse direction still carries every required claim, mechanism, action, and state.
 
+## Contents
+
+- [Inventory before layout](#inventory-before-layout)
+- [Name and substantiate the content](#name-and-substantiate-the-content)
+- [Turn subject evidence into a system](#turn-subject-evidence-into-a-system)
+- [Choose structures from relationships](#choose-structures-from-relationships)
+- [Write a composition contract](#write-a-composition-contract)
+- [Build density without clutter](#build-density-without-clutter)
+- [Surface obligations](#surface-obligations)
+- [Responsive recomposition](#responsive-recomposition)
+- [Pre-ship composition sweep](#pre-ship-composition-sweep)
+- [Judgment](#judgment)
+
 ## Inventory before layout
 
 Start with content, not sections:
@@ -28,6 +41,11 @@ These mappings are the subject system. If removing the logo, headline, and focal
 
 ## Choose structures from relationships
 
+Cards are for objects reorderable or removable without changing a neighboring object's meaning.
+
+- Do not put paragraphs forming one argument in separate cards.
+- Do not repeat one card anatomy for three or more content types.
+
 For each content cluster, name the relationship before choosing its container:
 
 - sequence or causality → a narrative track, timeline, or staged reveal;
@@ -37,8 +55,6 @@ For each content cluster, name the relationship before choosing its container:
 - changing values → a table, plot, log, meter, or subject-specific instrument;
 - filters acting on results → one workbench with controls visibly attached to the result field;
 - a browsable collection → a list, rail, gallery, or map chosen for how its objects differ.
-
-Cards are for objects reorderable or removable without changing a neighboring object's meaning. Do not put paragraphs forming one argument in separate cards, and do not repeat one card anatomy for three or more content types.
 
 A task that interrupts the page picks its container from the task's own shape, never from habit:
 
@@ -51,6 +67,12 @@ A modal that grew a second step or a scrollbar is the signal to promote it to a 
 
 ## Write a composition contract
 
+Reject the contract if any of these holds:
+
+- it is a uniform vertical stack;
+- two consecutive regions repeat the same anatomy without a content reason;
+- its labels can be replaced with “hero / features / cards / CTA” without losing meaning.
+
 Before code, record all five:
 
 1. A whole-page or whole-view desktop map, every region labeled by its content job rather than a component name.
@@ -59,21 +81,20 @@ Before code, record all five:
 4. A density rhythm: name regions showing three or more peer items, regions holding more than two prose sentences, and the one focal region.
 5. The path from arrival to the page's job, naming where evidence, mechanism, and the primary action enter that path.
 
-Reject the contract if it is a uniform vertical stack, if two consecutive regions repeat the same anatomy without a content reason, or if its labels can be replaced with “hero / features / cards / CTA” without losing meaning.
-
 ## Build density without clutter
 
+- Do not repeat one container anatomy and gap across three consecutive regions representing different relationships.
+- Texture, motion, and illustration cannot compensate for a missing proof, workflow, or decision.
 - Each screenful advances at least two of context, evidence, mechanism, comparison, decision, or action. A focal opening may advance one when the next region appears in the same viewport or behind a labeled scroll cue.
 - Give whitespace a named job: grouping, separation, pause, or staging. A gap between related items never exceeds the gap separating their group from the next.
 - Layer only related information: annotation over its artifact, controls beside their results, proof beside its claim. Decorative overlap is not density.
-- Do not repeat one container anatomy and gap across three consecutive regions representing different relationships. Texture, motion, and illustration cannot compensate for a missing proof, workflow, or decision.
 
 ## Surface obligations
 
 Each surface class owes content, hierarchy, interaction, and verification — never a visual preset:
 
 - **Marketing** — pair the opening thesis with a concrete artifact, mechanism, or proof; interleave claims with evidence instead of repeating benefit blocks; the closing adds decision-relevant information rather than only a larger CTA.
-- **Application workspace** — expose current context, place the primary work surface before summaries, put controls beside what they change, and build the states that alter the next action. A summary is that primary work surface when the page's job is monitoring or overview. Verify by walking the primary task in the render.
+- **Application workspace** — expose current context, place the primary work surface before summaries (a summary is that surface when the page's job is monitoring or overview), put controls beside what they change, and build the states that alter the next action. Verify by walking the primary task in the render.
 - **Data-dense** — align units, set changing figures tabular, and keep the relationship from sort and filter to result visible. Where the repository, workflow, or brief holds a comparison, make it the organizing act; where it holds exceptions, surface them instead of burying them; locate each in the render and invent neither to satisfy this list.
 - **Editorial or immersive** — make reading rhythm and pacing the structure, tie scroll to real content progression, and name every staging job. Verify the reading order at both widths.
 
@@ -81,7 +102,11 @@ Each surface class owes content, hierarchy, interaction, and verification — ne
 
 Mobile reduces simultaneity, not substance. Preserve every content obligation, set an explicit reading order, move secondary tools behind labeled disclosure, and keep the primary action reachable at the decision point. Tables and plots may use a labeled scroll region, pinned key columns, a changed comparison axis, or a detail view; page-level horizontal scroll is never the answer.
 
-On a touch-first surface, reachability is physical and not a metaphor: a hand holding the device sweeps the lower half of the screen with its thumb and strains for the top corners. Put the repeated primary action in the lower band, put rarely used and destructive actions in the top corners where a stray thumb cannot reach them, and never place a frequent action and a destructive one adjacent in the same band. A desktop layout that simply stacks keeps its primary action at the top of the fold, which is exactly where a thumb is not.
+On a touch-first surface, reachability is physical: a hand holding the device sweeps the lower half of the screen with its thumb and strains for the top corners.
+
+- Put the repeated primary action in the lower band, because a desktop layout that simply stacks leaves it at the top of the fold, where a thumb is not.
+- Put rarely used and destructive actions in the top corners, where a stray thumb cannot reach them.
+- Never place a frequent action and a destructive one adjacent in the same band.
 
 ## Pre-ship composition sweep
 
