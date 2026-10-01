@@ -29,6 +29,7 @@ import { checkGitWhitespace } from './verify/checks/git-whitespace.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkDelegateBudgetKeys } from './verify/checks/delegate-budget-keys.mjs';
 import { checkModelKinds } from './verify/checks/model-kinds.mjs';
+import { checkQuestionOptions } from './verify/checks/question-options.mjs';
 import { runSelfTest } from './verify/self-test.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -80,6 +81,7 @@ checkGitWhitespace(report, repository);
 checkPluginVersion(report, repository);
 checkDelegateBudgetKeys(report, repository);
 checkModelKinds(report, repository);
+checkQuestionOptions(report, repository);
 
 if (values['self-test']) await runSelfTest(report, repository);
 
