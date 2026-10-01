@@ -152,7 +152,7 @@ exo reads each setting from four layers, highest first: `.claude/exo.local.json`
 | `specs` | `docs`, `issues`, `both` | `docs` | Where `spec` stores a spec: `docs/specs/`, a GitHub issue marked as shaped, or both. Without git, a GitHub remote or a signed-in `gh`, it writes the file. |
 | `replies` | `terse`, `tight`, `standard` | `tight` | How dense replies are. `terse` also drops articles and linking verbs; `tight` drops preamble, recap and filler; `standard` writes full prose. All three keep code, paths, errors and warnings whole. See [Reply levels](#reply-levels). |
 | `guards` | `on`, `off` | `on` | Whether the safety guards refuse the commands and edits they cover. `off` switches all of them off. See [The guards](#the-guards). |
-| `budget` | `normal`, `lean` | `normal` | Which model each agent runs on. `normal` uses each agent's own model. `lean` dispatches an agent whose tier is listed under `budgets` in `lib/model-kinds.json` on that tier's replacement tier instead; today `strong` becomes `standard`. |
+| `budget` | `full`, `normal`, `lean` | `normal` | Which model each agent runs on. `full` is `normal` with the deep branch review and the design critique dispatched as their `xhigh` twins, `exo:review-branch-deep-full` and `exo:critique-ui-full`. `normal` uses each agent's own model. `lean` dispatches an agent whose tier is listed under `budgets` in `lib/model-kinds.json` on that tier's replacement tier instead; today `strong` becomes `standard`. |
 
 ## Develop
 

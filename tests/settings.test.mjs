@@ -204,6 +204,16 @@ test('the lean rule names the provider models the kind table maps, and carries n
   assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
 });
 
+test('the full rule names both twins and carries no placeholder', async () => {
+  const space = await workspace({ project: { budget: 'full' } });
+  const result = await run(SETTINGS, ['context'], { cwd: space.root, env: space.env });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /budget=full \(project\)/);
+  assert.ok(result.stdout.includes('exo:review-branch-deep-full'), result.stdout);
+  assert.ok(result.stdout.includes('exo:critique-ui-full'), result.stdout);
+  assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
+});
+
 test('the lean rule text holds no model name of any provider', () => {
   const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
   const models = Object.values(table.providers).flatMap((provider) => provider.models);
