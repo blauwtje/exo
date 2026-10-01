@@ -27,7 +27,7 @@ Take the first step whose answer the request and the digits so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a digit.
-3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, and for `guard_lines` or a key without options a whole number of at least 1, in the question shape.
+3. **Ask the value** once the setting is known but no value: for a key whose `show` row lists options, run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way; for `guards` ask `on` or `off`, for `guard_lines` a whole number of at least 1, and for `heavy_commands` command prefixes joined by `;`, empty for off, in the question shape.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    1. **Project (Recommended)**: everyone, via .claude/exo.json
@@ -36,6 +36,8 @@ Take the first step whose answer the request and the digits so far leave open.
    ```
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line, because the block above predates the change. Relay a rejection as the script printed it and change nothing by hand.
 6. **Point** a global value at `/config`, where each exo option is a row, and run nothing, because the harness owns that file.
+
+`heavy_commands` runs a Bash command that starts with a listed prefix once per code state across sessions: a second session waits for the first, and a green result holds 24 hours. `EXO_HEAVY_FORCE=1 <command>` forces a run.
 
 A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed. The ladder has no switch, so a request to switch it off gets that answer and runs nothing.
 
