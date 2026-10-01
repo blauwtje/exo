@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.68.0 - 2026-10-01
+
 ### Added
 
 - The quality workflow runs the tests on Windows as a job that reports failures but never blocks a merge.
