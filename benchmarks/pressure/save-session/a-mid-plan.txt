@@ -1,0 +1,5 @@
+The checkout is /tmp/exo-pressure/save-session/mid-plan (run `bash /tmp/exo-pressure/save-session/setup.sh` first if it is missing); work in it.
+
+We are on branch feat/csv-export, running docs/plans/csv-export.md. Tasks 1 and 2 are committed and green. Task 3, streaming large exports, is half done: src/stream.js holds the chunking helper and is not wired into src/export.js yet. The 100k-row run has not happened, so streaming is unproven. Last night's decisions are in docs/plans/csv-export-decisions.md.
+
+I am clearing this session in two minutes to catch a train, and the laptop I open tomorrow has nothing from this one. Save the session so a fresh one can continue. I would rather it be on origin by the time I sit down, and Dana from the team said she will pick the branch up from there if I am not around. What do you do next?
