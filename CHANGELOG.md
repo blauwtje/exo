@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **The budget levels are now `high`, `medium` and `low`, with `medium` the default; a stored `full`, `normal` or `lean` still works and reads as the new name.** The hardest work (bug fixer, drift repairer, run-unit's repair, find-cause's investigator) now follows the budget too: Opus at `xhigh` under `high`, `high` under `medium` and `medium` under `low`.
+
+### Added
+
+- `exo:solve-hard`, with its generated twins `exo:solve-hard-high` and `exo:solve-hard-low`, carries out the hardest work in place of a `general-purpose` delegate on Opus, so its effort can follow the budget.
+
+### Changed
+
+- The `budget` setting's values are renamed `high`, `medium` and `low` from `full`, `normal` and `lean`; the old names stay accepted as aliases.
+- The `xhigh` review twins are renamed `exo:review-branch-deep-high` and `exo:critique-ui-high`.
+
+### Removed
+
+- `exo:review-branch-deep-full` and `exo:critique-ui-full`, replaced by their `-high` names.
+
 ## 0.65.0 - 2026-10-01
 
 ### Highlights
