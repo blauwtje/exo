@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- build gives each instruction bullet one rule across its SKILL.md, references and delegate prompts, and leads each reference with the rules most often broken; its 26 instruction-density allowlist entries are gone and the lock drops from 96 to 70.
+
 ## 0.72.2 - 2026-10-01
 
 ### Changed
