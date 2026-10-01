@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `heavy_commands` setting names command prefixes, separated by `;`, that run at most once per code state across all sessions: a run on unchanged code within 24 hours returns the earlier green result at once, and a second session waits for one already running instead of starting another copy; `EXO_HEAVY_FORCE=1` before the command forces a run.
+
 ## 0.68.1 - 2026-10-01
 
 ### Changed
