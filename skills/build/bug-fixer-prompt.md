@@ -1,6 +1,6 @@
 # Bug fixer prompt
 
-The text `build` hands a `general-purpose` delegate on `opus` for a failed `Run:` whose output names no causal line.
+The text `build` hands the `exo:solve-hard` agent for a failed `Run:` whose output names no causal line.
 
 ```text
 Bug fix for task <n> of <plan path>, repository <root>.

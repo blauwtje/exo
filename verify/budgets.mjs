@@ -60,7 +60,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/wave-worktrees.md': 958,
   'skills/find-cause/references/profiling.md': 854,
   'skills/ship/references/pr-prep.md': 1029,
-  'skills/build/bug-fixer-prompt.md': 899,
+  'skills/build/bug-fixer-prompt.md': 896,
   'skills/find-cause/fixer-prompt.md': 823,
 };
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };

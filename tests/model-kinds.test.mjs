@@ -33,10 +33,12 @@ function readTableWith(change) {
 
 test('every kind resolves through the claude block to a model and an effort or null', () => {
   assert.deepEqual(Object.keys(table.kinds).sort(), [
-    'build', 'chore', 'coordinate', 'handover', 'hardest', 'investigate',
+    'build', 'chore', 'coordinate', 'handover', 'hardest', 'hardest-high', 'hardest-low', 'investigate',
     'lookup', 'prose', 'research', 'review', 'review-deep', 'review-deep-high'
   ]);
   assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'high' });
+  assert.deepEqual(table.kinds['hardest-high'], { model: 'opus', effort: 'xhigh' });
+  assert.deepEqual(table.kinds['hardest-low'], { model: 'opus', effort: 'medium' });
   assert.deepEqual(table.kinds.build, { model: 'sonnet', effort: 'high' });
   assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: null });
   assert.deepEqual(table.kinds.handover, { model: 'inherit', effort: null });

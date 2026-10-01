@@ -195,6 +195,30 @@ test('the full twins of the deep reviewer and the design critic share their sour
   }
 });
 
+test('solve-hard has a high and a low twin on opus with its one body', () => {
+  const source = agents.find((agent) => agent.frontmatter.name === 'solve-hard');
+  assert.ok(source, 'agents/solve-hard.md is missing');
+  assert.equal(kindTable.agents['agents/solve-hard.md'].kind, 'hardest');
+  assert.equal(source.frontmatter.model, 'opus');
+  assert.equal(source.frontmatter.effort, 'high');
+  const twins = [
+    { twin: 'solve-hard-high', kind: 'hardest-high', effort: 'xhigh', budget: 'high' },
+    { twin: 'solve-hard-low', kind: 'hardest-low', effort: 'medium', budget: 'low' }
+  ];
+  for (const { twin, kind, effort, budget } of twins) {
+    const twinAgent = agents.find((agent) => agent.frontmatter.name === twin);
+    assert.ok(twinAgent, `agents/${twin}.md is missing`);
+    const entry = kindTable.agents[`agents/${twin}.md`];
+    assert.equal(entry.kind, kind);
+    assert.equal(entry.generatedFrom, 'agents/solve-hard.md');
+    assert.match(entry.description, new RegExp(`${budget} budget`));
+    assert.equal(twinAgent.frontmatter.model, 'opus');
+    assert.equal(twinAgent.frontmatter.effort, effort);
+    assert.equal(twinAgent.body, source.body);
+  }
+  assert.match(source.body, /carry out the prompt you are handed/i);
+});
+
 test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.ok(reviewer.frontmatter.tools, 'the reviewer lists its tools');

@@ -6,7 +6,7 @@ argument-hint: <symptom, failing command or error>
 # Debug
 
 a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`; no symbol: dispatch `exo:locate-code`.
-b. **Investigate.** Proven needs a causal line and a mechanism predicting it; else it must hold in the source. Write `Status: proven`; else dispatch `general-purpose` on `opus` from `investigator-prompt.md`.
+b. **Investigate.** Proven needs a causal line and a mechanism predicting it; else it must hold in the source. Write `Status: proven`; else dispatch the `exo:solve-hard` agent from `investigator-prompt.md`.
 c. **Fix.** Settle where it commits per `../build/references/workspace.md`; else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` on `sonnet` from `fixer-prompt.md`; resume `failed` via SendMessage.
 d. **Report.** Read only the status lines and Report's fields, not `Log` or `Ranges`. After compaction, re-run `Repro`.
 

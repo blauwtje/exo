@@ -22,6 +22,8 @@
     "lookup": { "tier": "fast", "effort": null },
     "prose": { "tier": "strong", "effort": "high" },
     "chore": { "tier": "standard", "effort": "low" },
+    "hardest-high": { "tier": "strong", "effort": "xhigh" },
+    "hardest-low": { "tier": "strong", "effort": "medium" },
     "handover": { "tier": "inherit", "effort": null }
   },
   "stages": {
@@ -51,6 +53,17 @@
       "description": "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch-deep when the high budget is set. Not for a smaller branch, a single task, a pull request or a diff without a plan."
     },
     "agents/run-unit.md": { "kind": "coordinate" },
+    "agents/solve-hard.md": { "kind": "hardest" },
+    "agents/solve-hard-high.md": {
+      "kind": "hardest-high",
+      "generatedFrom": "agents/solve-hard.md",
+      "description": "Carries out one hard prompt the caller hands it: a failure with no proven cause, a repair after drift, a task the run unit could not land. Dispatched instead of solve-hard when the high budget is set. Not for a routine task, a review or a lookup."
+    },
+    "agents/solve-hard-low.md": {
+      "kind": "hardest-low",
+      "generatedFrom": "agents/solve-hard.md",
+      "description": "Carries out one hard prompt the caller hands it: a failure with no proven cause, a repair after drift, a task the run unit could not land. Dispatched instead of solve-hard when the low budget is set. Not for a routine task, a review or a lookup."
+    },
     "agents/survey-ui.md": { "kind": "investigate" }
   },
   "skills": {
@@ -62,13 +75,8 @@
     "skills/verify/SKILL.md": { "kind": "review", "fields": ["effort"] }
   },
   "dispatches": [
-    { "file": "skills/build/bug-fixer-prompt.md", "match": "delegate on `opus` for a failed", "kind": "hardest" },
-    { "file": "skills/build/drift-repairer-prompt.md", "match": "delegate on `opus` for a task that reported", "kind": "hardest" },
     { "file": "skills/build/review-fixer-prompt.md", "match": "delegate on `sonnet` when the branch review", "kind": "build" },
-    { "file": "agents/run-unit.md", "match": "goes to an `opus` delegate", "kind": "hardest" },
-    { "file": "skills/find-cause/SKILL.md", "match": "on `opus` from `investigator-prompt.md`", "kind": "hardest" },
     { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` from `fixer-prompt.md`", "kind": "build" },
-    { "file": "skills/find-cause/investigator-prompt.md", "match": "delegate on `opus` for phase (b)", "kind": "hardest" },
     { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" },
     { "file": "skills/verify/SKILL.md", "match": "delegate on `sonnet` from `../build/review-fixer-prompt.md`", "kind": "build" }
   ]

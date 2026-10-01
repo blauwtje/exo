@@ -1,6 +1,6 @@
 # Investigator prompt
 
-The text `find-cause` hands a `general-purpose` delegate on `opus` for phase (b), the investigate phase, when the cause is not already proven at the Activation gate. The delegate runs Steps 1-3 in its own context and writes the investigate part of the handoff.
+The text `find-cause` hands the `exo:solve-hard` agent for phase (b), the investigate phase, when the cause is not already proven at the Activation gate. The delegate runs Steps 1-3 in its own context and writes the investigate part of the handoff.
 
 ```text
 Investigate the symptom below for repository <root>. Load the `exo:find-cause` skill first and run only Steps 1 to 3 of its loop: reproduce, instrument, isolate. Search for the boundary yourself; dispatch nothing, including `exo:locate-code`.

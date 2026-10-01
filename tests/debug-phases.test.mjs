@@ -47,9 +47,9 @@ test('reference-tables.mjs owner rows list both prompt files for find-cause', ()
   assert.ok(debugRows[1].includes('fixer-prompt.md'));
 });
 
-test('investigator prompt names opus and Steps 1-3', () => {
+test('investigator prompt names exo:solve-hard and Steps 1-3', () => {
   const source = fs.readFileSync(INVESTIGATOR, 'utf8');
-  assert.ok(source.includes('opus'), 'names opus');
+  assert.ok(source.includes('exo:solve-hard'), 'names exo:solve-hard');
   assert.ok(source.includes('Steps 1 to 3'), 'names Steps 1 to 3');
 });
 
