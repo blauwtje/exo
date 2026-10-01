@@ -82,6 +82,15 @@ test('watch, ui and dev modes are never learned', () => {
   }
 });
 
+test('a shell wait loop or sleep is never learned', () => {
+  for (const command of ['until gh pr checks 12 | grep -q pass; do sleep 30; done', 'until grep -q SUMMARY /tmp/check.log; do sleep 5; done', 'while ! npm test; do :; done', 'sleep 60 && npm test']) {
+    assert.equal(isLearnable(command), false, command);
+  }
+  for (const command of ['npm test', 'pytest', 'npm run check']) {
+    assert.equal(isLearnable(command), true, command);
+  }
+});
+
 test('touchLearned refreshes lastUsed of a learned command and ignores an unknown one', () => {
   withCache(() => {
     run('npm test', { seconds: 90 });
