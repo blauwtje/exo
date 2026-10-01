@@ -1,0 +1,201 @@
+# Instruction-density offenders the tree carried when the check began: path, kind, first 40 characters, tab-separated.
+# Split an offender and delete its line; `node verify/instruction-density.mjs --prune` drops lines that match nothing.
+agents/build-ui.md	sentence	Expect: `RUN` (an absolute run directory
+agents/build-ui.md	sentence	targets at least 24×24 CSS px — the WCAG
+agents/build-ui.md	sentence	The underdesign floor: the ground is a d
+agents/build-ui.md	sentence	Borrow: otherwise take the first source
+agents/build-ui.md	bullet	Write: then write it: the fewest stateme
+agents/critique-ui-high.md	sentence	`$RUN/renders/` holds the post-build pai
+agents/critique-ui-high.md	sentence	Locate each repair in the source before
+agents/critique-ui-high.md	bullet	Write `$RUN/faults.md`: first line `disp
+agents/critique-ui.md	sentence	`$RUN/renders/` holds the post-build pai
+agents/critique-ui.md	sentence	Locate each repair in the source before
+agents/critique-ui.md	bullet	Write `$RUN/faults.md`: first line `disp
+agents/locate-code.md	sentence	A location recalled from a name, guessed
+agents/review-branch-deep-high.md	sentence	Write the report with the Write tool to
+agents/review-branch-deep.md	sentence	Write the report with the Write tool to
+agents/review-branch.md	sentence	Write the report with the Write tool to
+agents/run-unit.md	bullet	**Take the task from the script's output
+agents/run-unit.md	bullet	**Dispatch the build.** Up to three task
+agents/run-unit.md	bullet	**Commit a green task.** Done means `GRE
+agents/survey-ui.md	sentence	Expect `RUN` (an absolute run directory)
+agents/survey-ui.md	sentence	Locate the surface's markup, styles, tok
+agents/survey-ui.md	sentence	Read `$SKILL/references/visual-direction
+output-styles/scannable.md	bullet	**Max three blocks**, blank line between
+output-styles/scannable.md	bullet	**Max eight lines** above the closing li
+skills/build/SKILL.md	bullet	**Gate.** Count these facts: over two so
+skills/build/implementer-prompt.md	sentence	The build session (a plan of at most eig
+skills/build/implementer-prompt.md	sentence	The build session's own dispatch (`refer
+skills/build/references/critique.md	bullet	**Simplification.** Name duplicated logi
+skills/build/references/data-migration.md	sentence	Read this when work or a fix changes a d
+skills/build/references/design-tasks.md	bullet	**It names the chosen direction.** This
+skills/build/references/fresh-eyes.md	bullet	**Fresh eyes.** Skip when the caller say
+skills/build/references/no-spec.md	bullet	**Orient.** A main session runs `node "$
+skills/build/references/no-spec.md	bullet	**Gate.** Zero facts: edit directly, run
+skills/build/references/no-spec.md	bullet	**Build.** Edit in dependency order with
+skills/build/references/no-spec.md	bullet	**Prove.** A risky change quotes failing
+skills/build/references/performance.md	bullet	**Measure the reported path.** Use the r
+skills/build/references/run-loop.md	bullet	**Find the plan, settle the workspace, t
+skills/build/references/run-loop.md	bullet	**Ask the branch what landed.** Run `nod
+skills/build/references/run-loop.md	bullet	**Dispatch.** Dispatch silently, then en
+skills/build/references/run-loop.md	bullet	**Route the return.** `LANDED` and `GREE
+skills/build/references/security.md	sentence	Read this when changed behavior crosses
+skills/build/references/security.md	bullet	**SSRF.** When untrusted data selects a
+skills/build/references/test-design.md	sentence	Read this when logic or public behavior
+skills/build/references/test-first.md	sentence	Run the new test and quote its failing o
+skills/build/references/wave-worktrees.md	bullet	**Create.** Record `git rev-parse HEAD`
+skills/build/references/wave-worktrees.md	bullet	**Land.** First run `git -C <root> statu
+skills/build/references/wave-worktrees.md	sentence	First run `git -C <root> status --porcel
+skills/build/references/wave-worktrees.md	bullet	**Remove.** For each folder the run made
+skills/build/references/workspace.md	sentence	Ask where a code-changing run commits be
+skills/build/references/workspace.md	sentence	Otherwise run `node "${CLAUDE_SKILL_DIR}
+skills/configure/SKILL.md	sentence	**Ask the value** once the setting is kn
+skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
+skills/design-ui/SKILL.md	sentence	A full or bounded redesign fails when th
+skills/design-ui/SKILL.md	bullet	This skill owns visual decisions only. W
+skills/design-ui/references/accessibility.md	bullet	**1.4.12 Text Spacing** — the content su
+skills/design-ui/references/accessibility.md	bullet	**4.1.3 Status Messages** — a status mes
+skills/design-ui/references/accessibility.md	sentence	**4.1.3 Status Messages** — a status mes
+skills/design-ui/references/accessibility.md	bullet	**2.4.11 Focus Not Obscured (Minimum)**
+skills/design-ui/references/accessibility.md	bullet	**2.5.7 Dragging Movements** — every fun
+skills/design-ui/references/accessibility.md	bullet	**[Combobox](https://www.w3.org/WAI/ARIA
+skills/design-ui/references/accessibility.md	bullet	**[Modal dialog](https://www.w3.org/WAI/
+skills/design-ui/references/accessibility.md	bullet	**[Tabs](https://www.w3.org/WAI/ARIA/apg
+skills/design-ui/references/accessibility.md	sentence	**Roving tabindex or `aria-activedescend
+skills/design-ui/references/component-system.md	sentence	Name the ones this surface has before bu
+skills/design-ui/references/component-system.md	bullet	**Table** — one roving focus target with
+skills/design-ui/references/component-system.md	sentence	**Table** — one roving focus target with
+skills/design-ui/references/component-system.md	sentence	A "select all" checkbox above a page of
+skills/design-ui/references/component-system.md	sentence	Sorting has no such choice: a client-sid
+skills/design-ui/references/composition.md	bullet	**Application workspace** — expose curre
+skills/design-ui/references/composition.md	sentence	Put the repeated primary action in the l
+skills/design-ui/references/controls.md	sentence	One exception, and it is not a matter of
+skills/design-ui/references/controls.md	bullet	**One job per element.** A label labels.
+skills/design-ui/references/direction-preview.md	bullet	`--comps` is the directory the seats liv
+skills/design-ui/references/direction-preview.md	sentence	Fidelity scales to what the click decide
+skills/design-ui/references/direction-preview.md	bullet	A comp is a fragment, not a document: it
+skills/design-ui/references/direction-preview.md	bullet	A click in a comp shows motion and chang
+skills/design-ui/references/feedback-and-status.md	sentence	An indicator for an unpredictable wait a
+skills/design-ui/references/icons-and-imagery.md	bullet	**`sizes` is measured from this layout,
+skills/design-ui/references/icons-and-imagery.md	bullet	**`<picture media>` is for art direction
+skills/design-ui/references/icons-and-imagery.md	bullet	**Choose the placeholder from measured l
+skills/design-ui/references/icons-and-imagery.md	sentence	**Alt text branches by role**, down the
+skills/design-ui/references/implementation.md	bullet	**One styling mechanism.** Write the sur
+skills/design-ui/references/implementation.md	sentence	Build the role tokens the interface actu
+skills/design-ui/references/implementation.md	sentence	Pad every screen-anchored edge with `env
+skills/design-ui/references/implementation.md	sentence	When a critique tell removes decoration,
+skills/design-ui/references/implementation.md	sentence	Run `scripts/check-ui.mjs` with `--sourc
+skills/design-ui/references/intake.md	bullet	Rungs 3 and 7 of `## Route` offer the pr
+skills/design-ui/references/intake.md	sentence	It names the decision, which direction t
+skills/design-ui/references/intake.md	sentence	On option B, or an exit 3, no visual que
+skills/design-ui/references/intake.md	sentence	Full comps through `pick.mjs` are built
+skills/design-ui/references/intake.md	bullet	Scope, content, data and behavior are te
+skills/design-ui/references/intake.md	bullet	A planning turn routes by `## Route` and
+skills/design-ui/references/intake.md	sentence	On option A it runs the sketch tab under
+skills/design-ui/references/intake.md	sentence	The exception is a read-only planning mo
+skills/design-ui/references/intake.md	sentence	Rung 5 of the skill's `## Route` reads a
+skills/design-ui/references/interaction-qa.md	bullet	**Empty** takes one of three forms, each
+skills/design-ui/references/interaction-qa.md	bullet	**Error** is inline at the point of fail
+skills/design-ui/references/interaction-qa.md	sentence	**Error** is inline at the point of fail
+skills/design-ui/references/internationalization.md	sentence	Apply this file only when the product sh
+skills/design-ui/references/internationalization.md	bullet	**"Never use CSS to apply the base direc
+skills/design-ui/references/internationalization.md	bullet	**Runtime content declares its own direc
+skills/design-ui/references/internationalization.md	bullet	**Every interpolated value is isolated.*
+skills/design-ui/references/motion.md	sentence	Signature count follows the direction's
+skills/design-ui/references/motion.md	bullet	An element that appears and disappears,
+skills/design-ui/references/motion.md	sentence	Declare the exit on the closed or leavin
+skills/design-ui/references/motion.md	bullet	**An interrupted animation starts from t
+skills/design-ui/references/motion.md	bullet	**Velocity carries across a handoff.** P
+skills/design-ui/references/motion.md	bullet	**Shared-element continuity means one ob
+skills/design-ui/references/motion.md	sentence	The `:hover` offset, the `:active` press
+skills/design-ui/references/performance-budget.md	sentence	**Compositor properties are `transform`
+skills/design-ui/references/performance-budget.md	sentence	`will-change` everywhere (the guide abov
+skills/design-ui/references/phase-build.md	sentence	A surface whose direction was decided be
+skills/design-ui/references/phase-build.md	sentence	One call with `SCOPE=foundation` writes
+skills/design-ui/references/phase-build.md	sentence	check-ui runs before the first edit as t
+skills/design-ui/references/phase-build.md	sentence	A final check-ui run whose `comparison.b
+skills/design-ui/references/phase-detail.md	sentence	When the request does not name the surfa
+skills/design-ui/references/phase-detail.md	sentence	targets at least 24×24 CSS px — the WCAG
+skills/design-ui/references/phase-detail.md	sentence	The underdesign floor, checked before th
+skills/design-ui/references/phase-detail.md	sentence	A full or bounded redesign renders at th
+skills/design-ui/references/phase-detail.md	sentence	This session produces the evidence and t
+skills/design-ui/references/phase-detail.md	sentence	That checkpoint call costs about 20 seco
+skills/design-ui/references/phase-detail.md	sentence	One fault may name the direction itself;
+skills/design-ui/references/phase-detail.md	sentence	Send every surface with faults one `exo:
+skills/design-ui/references/phase-detail.md	sentence	A `general-purpose` delegate on `sonnet`
+skills/design-ui/references/phase-direction.md	sentence	Rungs 3 and 7 of the skill's `## Route`
+skills/design-ui/references/phase-direction.md	sentence	Full comps are built only when the user
+skills/design-ui/references/sketch-tab.md	bullet	It holds two to four options, each one e
+skills/design-ui/references/tokens.md	sentence	In a repository with a token build, keep
+skills/design-ui/references/tokens.md	sentence	Carbon's convention is `[element]-[role]
+skills/design-ui/references/tokens.md	sentence	Radix Colors publishes the clearest publ
+skills/design-ui/references/tokens.md	sentence	What the ladder gives is the discipline:
+skills/design-ui/references/tokens.md	sentence	Its parameters name the procedure: `colo
+skills/design-ui/references/tokens.md	sentence	APCA is not normative in any shipped ver
+skills/design-ui/references/tokens.md	sentence	APCA's own thresholds, for that suppleme
+skills/design-ui/references/typography.md	sentence	A ban list is the opposite instrument: `
+skills/design-ui/references/typography.md	bullet	**Run the candidate gate.** Do not name
+skills/design-ui/references/typography.md	sentence	Encode the spec as JSON — including allo
+skills/design-ui/references/typography.md	sentence	When the script reports unavailable, ret
+skills/design-ui/references/typography.md	bullet	**Vet the winner:** require only the wei
+skills/design-ui/references/visual-critique.md	sentence	Metrics describe the delta, never define
+skills/design-ui/references/visual-critique.md	sentence	A rendered pattern is a finding when no
+skills/design-ui/references/visual-critique.md	sentence	Findings the render can prove without ta
+skills/design-ui/references/visual-critique.md	sentence	One stays only when a contract field or
+skills/design-ui/references/visual-critique.md	bullet	**Staged reversal:** "This isn't a tool.
+skills/design-ui/references/visual-critique.md	bullet	**Reflexive triplets:** "Fast. Simple. P
+skills/design-ui/references/visual-direction.md	bullet	Extract the relationships across composi
+skills/design-ui/references/visual-direction.md	bullet	On the preview option, sketch every deal
+skills/design-ui/references/visual-direction.md	sentence	Only when the user asks to see direction
+skills/design-ui/references/visual-direction.md	sentence	Each variant of an open identity or cons
+skills/design-ui/references/visual-direction.md	bullet	**The dark scheme is a second design**,
+skills/design-ui/references/visual-direction.md	bullet	Name each accent use. UI chrome and text
+skills/edit-skills/SKILL.md	bullet	**Watch it happen.** Run `scripts/pressu
+skills/edit-skills/references/blind-eval.md	sentence	Label the two clones' `with` answers A a
+skills/edit-skills/references/blind-eval.md	sentence	Write a rubric of 3-6 concrete criteria
+skills/edit-skills/references/blind-eval.md	sentence	The edit is done only when the judge pic
+skills/edit-skills/references/pressure-scenarios.md	sentence	Save the case to a prompt file, then tak
+skills/edit-skills/references/pressure-scenarios.md	bullet	Run `scripts/pressure.mjs --prompt <file
+skills/edit-skills/references/pressure-scenarios.md	sentence	It writes every full final answer to its
+skills/file-issues/SKILL.md	bullet	**Intake.** Turn the request into one go
+skills/file-issues/references/fields.md	sentence	It prints one JSON line: `repo` (owner,
+skills/file-issues/references/fields.md	bullet	**The repository has its own.** A label
+skills/file-issues/references/fields.md	sentence	Use the default set, creating each missi
+skills/file-issues/references/fields.md	sentence	A Spec's `### Problem` names what goes w
+skills/file-issues/references/fields.md	bullet	A parent the brief or request names: `--
+skills/file-issues/references/fields.md	sentence	Project fields are set after creation, o
+skills/file-issues/references/fields.md	sentence	Its labels, milestone and project field
+skills/find-cause/SKILL.md	bullet	**Reproduce.** One command reproduces it
+skills/find-cause/references/handoff.md	sentence	The investigate part, at most 25 lines,
+skills/find-cause/references/handoff.md	sentence	The fix delegate appends a `## Fix` sect
+skills/remember/SKILL.md	bullet	**Book** the user's correction with `nod
+skills/route-skills/SKILL.md	sentence	No skill for a version-only bump, a git-
+skills/route-skills/references/code-standard.md	bullet	**Readability**: explicit data and contr
+skills/route-skills/references/code-standard.md	bullet	**Complete behavior**: follow convention
+skills/route-skills/references/context.md	sentence	No message between the steps of a run bu
+skills/route-skills/references/next-stage.md	bullet	**One lettered pick.** The question foll
+skills/route-skills/references/project-structure.md	bullet	Files and folders kebab-case; symbols pe
+skills/save-session/SKILL.md	sentence	On a branch other than the repository's
+skills/save-session/SKILL.md	sentence	`## Current state` separates what is sav
+skills/save-session/SKILL.md	sentence	Copy this paragraph into `## Resume` exa
+skills/ship/SKILL.md	bullet	**Ask.** Quote the stdout of `node "${CL
+skills/ship/SKILL.md	bullet	**Verify**, for `pr-merge`: hand the dif
+skills/ship/SKILL.md	bullet	**Route.** `node "${CLAUDE_SKILL_DIR}/sc
+skills/ship/references/pr-prep.md	bullet	`## Verification`: each real run path an
+skills/spec/SKILL.md	bullet	**Gate.** Spec always ends on a brief; w
+skills/spec/SKILL.md	bullet	**Sort each point.** Every open decision
+skills/spec/SKILL.md	bullet	**Ask in rounds.** Ask per `../route-ski
+skills/spec/references/architecture-sketch.md	sentence	Re-sketch only on a repeated pattern of
+skills/spec/references/brief-in-an-issue.md	sentence	`issues` creates one GitHub issue whose
+skills/spec/references/brief-in-an-issue.md	sentence	The setting is the authorization, so no
+skills/spec/references/stored-brief.md	bullet	**One match is the brief**, named in one
+skills/spec/references/stored-brief.md	bullet	**Edit in place.** A file is edited wher
+skills/spec/references/task-list.md	bullet	`## Plan basis`: `Repository: <absolute
+skills/spec/references/task-list.md	sentence	A task whose result runs (CLI, server, p
+skills/start/SKILL.md	sentence	The exception is a path to a spec file,
+skills/start/SKILL.md	sentence	Call the picked skill through the Skill
+skills/verify/SKILL.md	bullet	**Run the gate.** Run `node "${CLAUDE_SK
+skills/verify/SKILL.md	sentence	It runs each landed task's own Proof com
+skills/verify/SKILL.md	sentence	Dispatch the `exo:review-branch` agent,
+skills/verify/SKILL.md	bullet	**Repair the findings.** A `FINDINGS` ve
+skills/write-docs/SKILL.md	bullet	**Write whole sentences in plain words.*

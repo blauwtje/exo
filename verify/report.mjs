@@ -15,6 +15,10 @@ export function createReport() {
 
   return {
     result,
+    // A measurement printed for the reader, outside the tally.
+    note(name, detail) {
+      console.log(`[INFO] ${name}: ${detail}`);
+    },
     assert(condition, name, passDetail, failDetail) {
       result(condition ? 'PASS' : 'FAIL', name, condition ? passDetail : failDetail);
     },

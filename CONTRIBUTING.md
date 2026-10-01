@@ -19,6 +19,8 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 
 CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every pull request.
 
+The `instruction density` check fails a list item of three or more sentences and a sentence over 40 words in the Markdown under `skills/`, `agents/` and `output-styles/`, outside code, frontmatter and tables. `verify/instruction-density-allowlist.txt` names the offenders the tree held when the check began; split one and run `node verify/instruction-density.mjs --prune`, which drops stale lines and never adds one. The check also prints the sentences per skill as an `[INFO]` line.
+
 The `derivation` check fails the build when a name exo does not own reaches a shipped file, and when a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names are held base64-encoded inside `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids.
 
 `npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through the TAP reporter, so its failure line names each failing test as `not ok`.

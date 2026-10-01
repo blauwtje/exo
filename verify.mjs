@@ -30,6 +30,7 @@ import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkDelegateBudgetKeys } from './verify/checks/delegate-budget-keys.mjs';
 import { checkModelKinds } from './verify/checks/model-kinds.mjs';
 import { checkQuestionOptions } from './verify/checks/question-options.mjs';
+import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { runSelfTest } from './verify/self-test.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -82,6 +83,7 @@ checkPluginVersion(report, repository);
 checkDelegateBudgetKeys(report, repository);
 checkModelKinds(report, repository);
 checkQuestionOptions(report, repository);
+checkInstructionDensity(report, repository);
 
 if (values['self-test']) await runSelfTest(report, repository);
 
