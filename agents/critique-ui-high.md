@@ -22,7 +22,7 @@ Expect `RUN` (an absolute run directory) and `SKILL` (the absolute directory of 
 
 **Faults.**
 
-1. Read `$SKILL/references/visual-critique.md`, then open each post-build render once and answer its rubric; read `$RUN/contract-selected.json` for what the direction promised.
+1. Read `$SKILL/references/visual-critique.md` by section: `Grep -n '^## '` for the headings, then Read through the next heading `## Order`, `## The rubric`, `## Structural tells`, `## Slop tropes`, `## The fault contract`, `## Craft sweep, against the render` and `## Hard floor`, and skip the rest. Open each post-build render once and answer the rubric; read `$RUN/contract-selected.json` for what the direction promised.
 2. Read `$RUN/critic-evidence.json`'s `clipped` and `overlap` arrays for `content-clipped` and `element-overlap` findings, and its `renderDelta` for the baseline-to-post-build delta, whose numbers are diagnostics and never targets.
 3. Locate each repair in the source before you name it, with `Grep` against the selector, class or element the render shows: a fault whose `Target:` line you could not locate is dropped, so spend the turn on the fault you can place.
 4. Write `$RUN/faults.md`: first line `disposition: fix` or `disposition: ship` or `disposition: direction`; then one block per fault, in the five lines the fault contract in `$SKILL/references/visual-critique.md` fixes, and nothing else. Every `content-clipped` and `element-overlap` finding is a fault. `disposition: direction` means one fault names the direction itself; the caller then reports it to the user as the open action instead of re-running the direction, so say which contract field failed.

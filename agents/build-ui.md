@@ -8,11 +8,19 @@ maxTurns: 35
 omitClaudeMd: true
 ---
 
-Budget: you have 35 turns total; read the contract, the inventory slice, the foundation report, the `FILES` ranges, and the named references first, batching the reads, then write; write your report by your thirtieth turn.
+Budget: you have 35 turns total; read your scope's list under `**Reads by scope.**` first, batching the reads, then write; write your report by your thirtieth turn.
 
 **Input contract.**
 
-Expect: `RUN` (an absolute run directory), `SCOPE` (`foundation`, a surface name, or `repair:<surface>`, which a later brief defines), `FILES` (the repository paths with line ranges the session read for this scope; read each range with Read's offset and limit, which is also what an Edit to that file requires, and open no whole file the list does not name whole), `REPO` (the repository root), `SKILL` (the absolute skill directory, which the brief always names), and `REFERENCES` (the rows of the skill's reference table whose predicate this scope meets; read those files under `$SKILL/references/` and no other; `$SKILL/references/craft-recipes.md` by section, the foundation scope whole and a surface scope only the treatment it builds; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section, to check the tropes the floor below requires provenance for). `$RUN/contract-selected.json` holds the direction; `$RUN/inventory.md` holds the content inventory, and the brief names your slice; `$RUN/foundation.md` exists for a surface scope and names the tokens file, base layer, and primitives you must use instead of re-deriving. The floor below binds every scope.
+Expect: `RUN` (an absolute run directory), `SCOPE` (`foundation`, a surface name, or `repair:<surface>`, which a later brief defines), `FILES` (the repository paths with line ranges the session read for this scope; read each range with Read's offset and limit, which is also what an Edit to that file requires, and open no whole file the list does not name whole), `REPO` (the repository root), `SKILL` (the absolute skill directory, which the brief always names), and `REFERENCES` (the rows of the skill's reference table whose predicate this scope meets; read those files under `$SKILL/references/` and no other). `$RUN/contract-selected.json` holds the direction; `$RUN/inventory.md` holds the content inventory, and the brief names your slice; `$RUN/foundation.md` exists for a surface scope and names the tokens file, base layer, and primitives you must use instead of re-deriving. The floor below binds every scope.
+
+**Reads by scope.**
+
+Read these and nothing else before writing, in one batch where the files are independent. Read a section of a reference by finding its `## ` heading with `Grep -n`, then Read with offset and limit through the next heading.
+
+- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
+- Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
+- Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name. No inventory, no foundation report and no reference unless the brief names one.
 
 **Foundation scope.**
 
@@ -24,7 +32,7 @@ Build the surface from its inventory slice on top of the foundation: every conte
 
 **Repair scope (`repair:<surface>`).**
 
-Read `$RUN/faults.md` and `$RUN/critic-evidence.json` and the `FILES` ranges the faults name; edit only this surface, fixing every fault the brief lists. This scope renders nothing; the session takes the final capture. Write `$RUN/repair-<surface>.md`, at most 10 lines: one line per fault, `<fault title>: fixed|open <reason>`, then the paths written.
+Edit only this surface, fixing every fault the brief lists. This scope renders nothing; the session takes the final capture. Write `$RUN/repair-<surface>.md`, at most 10 lines: one line per fault, `<fault title>: fixed|open <reason>`, then the paths written.
 
 **The floor.**
 
@@ -53,7 +61,7 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 - Do not render, screenshot, or start a browser; the reviewer renders.
 - Do not run a production build, a bundler, or a type check; the reviewer renders the surface and the session runs the repository's checks after every builder has returned.
-- Do not read a reference the brief did not name.
+- Do not read a reference or a section your scope's list above does not name.
 - Read the call sites before changing or deleting non-obvious existing behavior; remove only the dead code your own change orphaned and report the rest.
 - Give every shell wait loop such as `until <condition>; do sleep N; done` a counter that exits with an error after a set number of rounds, because an unbounded loop leaves you running forever.
 - Invent nothing: read the file or run the command before a factual claim, and name what stays unknown.
