@@ -233,3 +233,30 @@ test('input that is not JSON exits 0 with no output', async () => {
   const broken = await guard(null, { input: '{ not json' });
   assert.deepEqual([broken.code, broken.stdout, broken.stderr], [0, '', '']);
 });
+
+test('a git invocation spelled with a tab, a continuation, quotes, .exe or a path is denied', async () => {
+  await assertDenied([
+    'git\treset --hard',
+    'git reset\t--hard',
+    'git reset \\\n --hard',
+    'git \\\nreset --hard',
+    '"git" reset --hard',
+    "'git' reset --hard",
+    'git.exe reset --hard',
+    '/usr/bin/git reset --hard',
+    '`git reset --hard`'
+  ], /reset --hard/);
+});
+
+test('global options with a separate value do not hide the subcommand', async () => {
+  await assertDenied([
+    'git --git-dir x push --force origin main',
+    'git --work-tree x --git-dir y reset --hard',
+    'git --namespace n push -f',
+    'git --git-dir=x reset --hard'
+  ], /force push|reset --hard/);
+  await assertAllowed([
+    'git --git-dir x push --force-with-lease',
+    'git --git-dir x status'
+  ]);
+});

@@ -118,3 +118,15 @@ test('the command around a commit message stays visible', () => {
 test('an empty command comes back empty', () => {
   assert.equal(blankCommandText(''), '');
 });
+
+test('a quoted git command word stays visible and a quoted git argument is blanked', () => {
+  assert.equal(blankCommandText('"git" reset --hard'), '"git" reset --hard');
+  assert.equal(blankCommandText('make && \'git.exe\' reset --hard'), 'make && \'git.exe\' reset --hard');
+  assert.equal(blankCommandText('echo "git reset"'), `echo "${blanks(9)}"`);
+});
+
+test('a message word after a git prefix with a path, a tab or a global option is blanked', () => {
+  assert.equal(blankCommandText('/usr/bin/git commit -m drop'), `/usr/bin/git commit -m ${blanks(4)}`);
+  assert.equal(blankCommandText('git\tcommit -m drop'), `git\tcommit -m ${blanks(4)}`);
+  assert.equal(blankCommandText('git --git-dir x commit -m drop'), `git --git-dir x commit -m ${blanks(4)}`);
+});

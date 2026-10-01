@@ -10,9 +10,29 @@
 
 const HEREDOC_OPERATOR = /<<(-?)[ \t]*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|\\?([A-Za-z_]\w*))/y;
 
-// `git` at the start of a command, then arguments up to a message flag, then a
-// bare word that holds no substitution, quote or separator.
-const GIT_MESSAGE_WORD = /((?:^|[;&|(\n])[ \t]*git[ \t][^;&|\n]*?[ \t](?:-[a-zA-Z]*m|--message=?)[ \t]*)([^\s;&|"'`$()<>\\]+)/g;
+// The words that start a git invocation, up to and with the whitespace before the
+// subcommand, as regular-expression source for git-guard and writing-guard to
+// share. Whitespace is a space, a tab or a `\`-newline continuation. The command
+// is `git` with an optional `.exe` and a closing quote, so a path such as
+// `/usr/bin/git` and a quoted `"git"` both count; the caller chooses what may
+// precede it. A global option may repeat and appear in any order: `-C`, `-c`,
+// `--git-dir`, `--work-tree` and `--namespace` take a separate value, every other
+// one is a single token such as `--no-pager`.
+// Ceiling: a `"git"` with a quote only counts at the start of a command, because
+// blanking removes it anywhere else.
+const SPACE = '(?:[ \\t]|\\\\\\n)';
+const OPTION = `(?:(?:-[cC]|--(?:git-dir|work-tree|namespace))${SPACE}+[^ \\t\\n]+|-[^ \\t\\n]+)`;
+export const GIT_PREFIX_SOURCE = `git(?:\\.exe)?["']?(?:${SPACE}+${OPTION})*${SPACE}+`;
+
+// A quoted `git` that is the command word, blanked as text and restored after.
+const QUOTED_GIT_COMMAND = /(?:^|[;&|(\n])[ \t]*(["'])(git(?:\.exe)?)\1/g;
+
+// A git prefix at the start of a command, then arguments up to a message flag,
+// then a bare word that holds no substitution, quote or separator.
+const GIT_MESSAGE_WORD = new RegExp(
+  `((?:^|[;&|(\`/\\n])[ \\t]*["']?${GIT_PREFIX_SOURCE}(?:[^;&|\\n]|(?<=\\\\)\\n)*?(?<=[ \\t\\n])(?:-[a-zA-Z]*m|--message=?)[ \\t]*)([^\\s;&|"'\`$()<>\\\\]+)`,
+  'g'
+);
 
 export function blankCommandText(command) {
   const characters = command.split('');
@@ -140,6 +160,12 @@ export function blankCommandText(command) {
   }
 
   scanCode(null);
+
+  for (const match of command.matchAll(QUOTED_GIT_COMMAND)) {
+    const quoteIndex = match.index + match[0].length - match[2].length - 2;
+    if (characters[quoteIndex] !== command[quoteIndex]) continue;
+    for (let index = quoteIndex + 1; index <= quoteIndex + match[2].length; index += 1) characters[index] = command[index];
+  }
 
   const quotedBlanked = characters.join('');
   return quotedBlanked.replace(GIT_MESSAGE_WORD, (match, before, word) => before + ' '.repeat(word.length));

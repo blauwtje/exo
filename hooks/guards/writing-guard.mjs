@@ -24,7 +24,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { blankCommandText } from './command-text.mjs';
+import { blankCommandText, GIT_PREFIX_SOURCE } from './command-text.mjs';
 import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 // One list for every place attribution can land. A branch name holds no space,
@@ -36,12 +36,12 @@ const ATTRIBUTION = new RegExp(ATTRIBUTION_PHRASES, 'i');
 const COMMIT_TYPES = ['build', 'chore', 'ci', 'docs', 'feat', 'fix', 'merge', 'perf', 'refactor', 'revert', 'style', 'test'];
 const CONVENTIONAL_SUBJECT = new RegExp(`^(${COMMIT_TYPES.join('|')})(\\([^()]+\\))?!?: [^ ]`);
 
-// A command opens the string or a line, or follows a separator; group 1 is that
-// opener. A global git option may repeat and may appear in any order before the
-// subcommand.
-const COMMAND_START = '(^|[;&|( ])';
-const GIT_PREFIX = 'git(?: +(?:-[cC] +[^ \\n]+|-[^ \\n]+))*';
-const COMMIT_INVOCATION = new RegExp(`${COMMAND_START}${GIT_PREFIX} +commit(?: |$)`, 'gm');
+// A command opens the string or a line, or follows a separator, a path slash or a
+// backtick, with an optional opening quote; group 1 is that opener. The git prefix
+// is shared with git-guard and ends in the whitespace before the subcommand.
+const COMMAND_START = '((?:^|[;&|( \\t`/])["\']?)';
+const GIT_PREFIX = GIT_PREFIX_SOURCE;
+const COMMIT_INVOCATION = new RegExp(`${COMMAND_START}${GIT_PREFIX}commit(?:[ \\t\\\\]|$)`, 'gm');
 const PULL_REQUEST_INVOCATION = new RegExp(`${COMMAND_START}gh +pr +(?:create|edit|comment)(?: |$)`, 'gm');
 
 // The name a command gives a new branch: the argument after `checkout -b` or
@@ -50,9 +50,9 @@ const PULL_REQUEST_INVOCATION = new RegExp(`${COMMAND_START}gh +pr +(?:create|ed
 // still be made from, or renamed away from, a tool-made one.
 const ATTRIBUTED_BRANCH_NAME = `["']?(?:(?:claude|codex|copilot)/|[^ ;&|\\n]*(?:${BRANCH_ATTRIBUTION_PHRASES}))`;
 const ATTRIBUTED_BRANCH_INVOCATIONS = [
-  `${COMMAND_START}${GIT_PREFIX} +(?:checkout|switch)(?: +[^ ;&|\\n]+)* +(?:-b|-c|--create|--force-create) +${ATTRIBUTED_BRANCH_NAME}`,
-  `${COMMAND_START}${GIT_PREFIX} +branch(?: +(?:-f|--force|-t|--track|--no-track|-q|--quiet))* +${ATTRIBUTED_BRANCH_NAME}`,
-  `${COMMAND_START}${GIT_PREFIX} +branch +(?:-m|-c|--move|--copy)(?: +[^ ;&|\\n]+)? +${ATTRIBUTED_BRANCH_NAME}[^ ;&|\\n]*["']? *(?:$|[;&|])`
+  `${COMMAND_START}${GIT_PREFIX}(?:checkout|switch)(?: +[^ ;&|\\n]+)* +(?:-b|-c|--create|--force-create) +${ATTRIBUTED_BRANCH_NAME}`,
+  `${COMMAND_START}${GIT_PREFIX}branch(?: +(?:-f|--force|-t|--track|--no-track|-q|--quiet))* +${ATTRIBUTED_BRANCH_NAME}`,
+  `${COMMAND_START}${GIT_PREFIX}branch +(?:-m|-c|--move|--copy)(?: +[^ ;&|\\n]+)? +${ATTRIBUTED_BRANCH_NAME}[^ ;&|\\n]*["']? *(?:$|[;&|])`
 ].map((pattern) => new RegExp(pattern, 'gim'));
 
 // The options of one invocation end at the first separator outside quotes, so an

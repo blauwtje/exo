@@ -16,16 +16,15 @@
 // A fault reading the input exits 0 with no output; the guard never exits 2.
 
 import { execFileSync } from 'node:child_process';
-import { blankCommandText } from './command-text.mjs';
+import { blankCommandText, GIT_PREFIX_SOURCE } from './command-text.mjs';
 import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
-// A global option may repeat and appear in any order before the subcommand: `-C
-// <path>` and `-c <name>=<value>` take a separate value, every other one is a
-// single token such as `--no-pager`. Matching only a fixed pair would let
+// The prefix is shared with writing-guard: the command word, then every global
+// option, in any order, before the subcommand; matching only a fixed pair would let
 // `git --no-pager reset --hard` through. A `.` before `git` marks a word such as
 // `.git`, not a command; a `/` does not, so `/usr/bin/git` and `./git` still match.
-const GIT_INVOCATION = /(?<![\w.-])git((?: +(?:-[cC] +[^ \n]+|-[^ \n]+))*) +([a-z][a-z-]*)(?= |$|[;&|\n])/g;
-const INVOCATION_END = /[;&|\n]/;
+const GIT_INVOCATION = new RegExp(`(?<![\\w.-])(${GIT_PREFIX_SOURCE})([a-z][a-z-]*)(?=[ \\t\\\\]|$|[;&|\\n])`, 'g');
+const INVOCATION_END = /[;&|]|(?<!\\)\n/;
 const GIT_TIMEOUT_MILLISECONDS = 5000;
 
 // `--force-with-lease` is allowed: the flag must end at a space or the line end.
@@ -34,22 +33,22 @@ const GIT_TIMEOUT_MILLISECONDS = 5000;
 const ARGUMENT_RULES = [
   {
     subcommand: 'push',
-    arguments: /(?:^| )(?:-f|--force|\+[^ ]+)(?: |$)/,
+    arguments: /(?:^|[ \t])(?:-f|--force|\+[^ \t]+)(?:[ \t]|$)/,
     reason: 'git-guard: force push discards remote history. Use --force-with-lease, or ask the user to run it.'
   },
   {
     subcommand: 'reset',
-    arguments: /(?:^| )--hard/,
+    arguments: /(?:^|[ \t])--hard/,
     reason: 'git-guard: git reset --hard discards uncommitted work. Use git stash or ask the user to run it.'
   },
   {
     subcommand: 'clean',
-    arguments: /(?:^| )(?:-[A-Za-z]*f|--force)/,
+    arguments: /(?:^|[ \t])(?:-[A-Za-z]*f|--force)/,
     reason: 'git-guard: git clean -f deletes untracked files. List them with git clean -n and ask the user.'
   },
   {
     subcommand: 'stash',
-    arguments: /^ +(?:drop|clear)(?: |$)/,
+    arguments: /^[ \t]+(?:drop|clear)(?:[ \t]|$)/,
     reason: 'git-guard: dropping a stash deletes the only copy of that work. Ask the user.'
   }
 ];
@@ -58,12 +57,12 @@ const WHOLE_TREE_REASON = 'git-guard: checking out or restoring the whole tree d
 const BRANCH_FORCE_DELETE_REASON = 'git-guard: force-deleting a branch discards unmerged work. Report the branch and ask the user.';
 const BRANCH_UNRESOLVED_REASON = 'git-guard: force-deleting a branch discards unmerged work; only a branch whose commits are all in the branch it was cut from, or whose pull request is MERGED, may go. Report the branch and ask the user.';
 
-const WHOLE_TREE_PATH = /^(?: +[^ ]+)* +(?:-- +)?\.(?: |$)/;
+const WHOLE_TREE_PATH = /^(?:[ \t]+[^ \t]+)*[ \t]+(?:--[ \t]+)?\.(?:[ \t]|$)/;
 // `git restore --staged .` only unstages. Adding `--worktree` makes the same
 // command discard the working tree, so the exemption needs the staged flag
 // without the worktree flag.
-const STAGED_FLAG = /(?:^| )(?:--staged|-S)(?: |$)/;
-const WORKTREE_FLAG = /(?:^| )(?:--worktree|-W)(?: |$)/;
+const STAGED_FLAG = /(?:^|[ \t])(?:--staged|-S)(?:[ \t]|$)/;
+const WORKTREE_FLAG = /(?:^|[ \t])(?:--worktree|-W)(?:[ \t]|$)/;
 
 const unquote = (word) => word.replace(/^["']|["']$/g, '');
 
@@ -77,9 +76,9 @@ function invocationsOf(command) {
     const end = rest.search(INVOCATION_END);
     const argumentsEnd = end === -1 ? blanked.length : argumentsStart + end;
     return {
-      options: command.slice(match.index, match.index + match[1].length + 3),
+      options: command.slice(match.index, match.index + match[1].length),
       subcommand: match[2],
-      arguments: command.slice(argumentsStart, argumentsEnd).replace(/["']/g, '')
+      arguments: command.slice(argumentsStart, argumentsEnd).replace(/\\\n/g, '  ').replace(/["']/g, '')
     };
   });
 }
@@ -145,7 +144,7 @@ function parseBranchArguments(argumentText) {
   let deletes = false;
   let forces = false;
   const branches = [];
-  for (const word of argumentText.split(/ +/).filter(Boolean)) {
+  for (const word of argumentText.split(/[ \t]+/).filter(Boolean)) {
     if (word === '--delete') deletes = true;
     else if (word === '--force') forces = true;
     else if (word.startsWith('--')) continue;
@@ -164,7 +163,7 @@ function branchDeleteReason(invocation) {
   const { deletes, forces, branches } = parseBranchArguments(invocation.arguments);
   if (!deletes || !forces) return null;
   if (branches.length === 0) return BRANCH_FORCE_DELETE_REASON;
-  const directories = [...invocation.options.matchAll(/(?:^| )-C +([^ ]+)/g)];
+  const directories = [...invocation.options.matchAll(/(?:^|[ \t\n])-C(?:[ \t]|\\\n)+([^ \t\n]+)/g)];
   const directory = directories.length > 0 ? unquote(directories.at(-1)[1]) : '.';
   for (const branch of branches) {
     // A missing or mistyped name has no commits to lose, but its deny skips the

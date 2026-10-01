@@ -174,3 +174,23 @@ test('empty input passes and input that is not JSON exits 0 with no output', asy
   const broken = await guard(null, { input: '{ not json' });
   assert.deepEqual([broken.code, broken.stdout, broken.stderr], [0, '', '']);
 });
+
+test('a commit spelled with a tab, a continuation, quotes, .exe, a path or a backtick is read', async () => {
+  for (const command of [
+    'git\tcommit -m "wip"',
+    'git \\\ncommit -m "wip"',
+    '"git" commit -m "wip"',
+    'git.exe commit -m "wip"',
+    '/usr/bin/git commit -m "wip"',
+    '`git commit -m "wip"`',
+    'git --git-dir x commit -m "wip"',
+    'git --work-tree x --namespace n commit -m "wip"'
+  ]) {
+    assert.match(await reason(command), /Conventional Commits/, command);
+  }
+});
+
+test('a git word inside quoted text is not a commit', async () => {
+  assert.equal(await reason('echo "git commit -m wip"'), null);
+  assert.equal(await reason('echo "run git --git-dir x commit -m wip"'), null);
+});
