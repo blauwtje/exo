@@ -117,6 +117,21 @@ try {
   console.error(`exo: plugin-root pointer not written, ${error.message}`);
 }
 
+// The first session on a machine tells the user once where to start; the marker
+// beside plugin-root records it. A marker that cannot be written shows no
+// message, so a read-only config folder does not repeat it every session.
+function welcomeMessage() {
+  const marker = path.join(configDirectory, 'welcomed');
+  if (fs.existsSync(marker)) return undefined;
+  try {
+    fs.writeFileSync(marker, 'welcomed\n');
+  } catch (error) {
+    console.error(`exo: welcome marker not written, ${error.message}`);
+    return undefined;
+  }
+  return 'exo is installed: run /exo:start to see what it can do, or /exo:configure to set your choices.';
+}
+
 // A clear or a compaction empties the context, so the read guard forgets which
 // ranges the model still holds and the repeat guard forgets which calls it saw.
 let pointers = '';
@@ -148,5 +163,6 @@ if (fs.existsSync(skillFile)) {
     body = body.slice(0, Math.max(room, 0));
   }
   const additionalContext = `${headText}${body}`;
-  process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);
+  const systemMessage = welcomeMessage();
+  process.stdout.write(`${JSON.stringify({ systemMessage, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);
 }

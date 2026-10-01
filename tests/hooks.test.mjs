@@ -176,3 +176,18 @@ test('the session hook deletes the savings folder an earlier version left and ke
     fs.rmSync(configHome, { recursive: true, force: true });
   }
 });
+
+test('the session hook shows a welcome systemMessage once per machine and writes a welcomed marker', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-welcome-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const run = () => JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
+  try {
+    const first = run();
+    assert.match(first.systemMessage, /\/exo:start/);
+    assert.ok(fs.existsSync(path.join(configHome, 'exo', 'welcomed')));
+    assert.equal(run().systemMessage, undefined);
+  } finally {
+    fs.rmSync(configHome, { recursive: true, force: true });
+  }
+});
