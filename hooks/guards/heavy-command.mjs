@@ -38,15 +38,11 @@ function matches(command, prefixes) {
 
 // The output for `hookInput`: the command wrapped when it is heavy, else null.
 export function heavyCommandStep(hookInput) {
-  try {
-    const command = hookInput.tool_input?.command;
-    if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
-    const prefixes = heavyPrefixes();
-    if (prefixes.length === 0 || !matches(command, prefixes)) return null;
-    const session = hookInput.session_id ?? 'unknown';
-    const wrapped = `node ${shellQuote(WRAPPER)} --session ${shellQuote(String(session))} -- ${shellQuote(command)}`;
-    return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { ...hookInput.tool_input, command: wrapped } } };
-  } catch {
-    return null;
-  }
+  const command = hookInput.tool_input?.command;
+  if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
+  const prefixes = heavyPrefixes();
+  if (prefixes.length === 0 || !matches(command, prefixes)) return null;
+  const session = hookInput.session_id ?? 'unknown';
+  const wrapped = `node ${shellQuote(WRAPPER)} --session ${shellQuote(String(session))} -- ${shellQuote(command)}`;
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { ...hookInput.tool_input, command: wrapped } } };
 }

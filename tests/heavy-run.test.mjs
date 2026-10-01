@@ -159,6 +159,8 @@ test('a lock whose holder process is gone is taken over without waiting', async 
   const command = counting(f, '; sleep 2');
   const holder = start(f, command, { session: 'ghost' });
   await new Promise((resolve) => setTimeout(resolve, 500));
+  const owner = JSON.parse(fs.readFileSync(path.join(f.cache, 'locks', fs.readdirSync(path.join(f.cache, 'locks'))[0], 'owner.json'), 'utf8'));
+  process.kill(owner.childPid, 'SIGKILL');
   holder.child.kill('SIGKILL');
   await holder.done;
   assert.equal(fs.readdirSync(path.join(f.cache, 'locks')).length, 1);
