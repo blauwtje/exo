@@ -1,7 +1,6 @@
 # Instruction-density offenders the tree carried when the check began: path, kind, a bullet's sentence count, first 40 characters, tab-separated.
 # Split an offender and delete its line; `node verify/instruction-density.mjs --prune` drops lines that match nothing.
 agents/build-ui.md	sentence	Expect: `RUN` (an absolute run directory
-agents/build-ui.md	sentence	targets at least 24×24 CSS px — the WCAG
 agents/build-ui.md	sentence	The underdesign floor: the ground is a d
 agents/build-ui.md	sentence	Borrow: otherwise take the first source
 agents/build-ui.md	bullet	3	Write: then write it: the fewest stateme
@@ -50,98 +49,10 @@ skills/build/references/wave-worktrees.md	bullet	4	**Remove.** For each folder t
 skills/build/references/workspace.md	sentence	Ask where a code-changing run commits be
 skills/build/references/workspace.md	sentence	Otherwise run `node "${CLAUDE_SKILL_DIR}
 skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
-skills/design-ui/SKILL.md	sentence	A full or bounded redesign fails when th
-skills/design-ui/SKILL.md	bullet	3	This skill owns visual decisions only. W
-skills/design-ui/references/accessibility.md	bullet	3	**1.4.12 Text Spacing** — the content su
-skills/design-ui/references/accessibility.md	bullet	3	**4.1.3 Status Messages** — a status mes
-skills/design-ui/references/accessibility.md	sentence	**4.1.3 Status Messages** — a status mes
-skills/design-ui/references/accessibility.md	bullet	4	**2.4.11 Focus Not Obscured (Minimum)**
-skills/design-ui/references/accessibility.md	bullet	3	**2.5.7 Dragging Movements** — every fun
-skills/design-ui/references/accessibility.md	bullet	4	**[Combobox](https://www.w3.org/WAI/ARIA
-skills/design-ui/references/accessibility.md	bullet	4	**[Modal dialog](https://www.w3.org/WAI/
-skills/design-ui/references/accessibility.md	bullet	4	**[Tabs](https://www.w3.org/WAI/ARIA/apg
-skills/design-ui/references/accessibility.md	sentence	**Roving tabindex or `aria-activedescend
 skills/design-ui/references/component-system.md	sentence	Name the ones this surface has before bu
-skills/design-ui/references/component-system.md	bullet	4	**Table** — one roving focus target with
-skills/design-ui/references/component-system.md	sentence	**Table** — one roving focus target with
-skills/design-ui/references/component-system.md	sentence	A "select all" checkbox above a page of
-skills/design-ui/references/component-system.md	sentence	Sorting has no such choice: a client-sid
-skills/design-ui/references/composition.md	bullet	3	**Application workspace** — expose curre
-skills/design-ui/references/composition.md	sentence	Put the repeated primary action in the l
-skills/design-ui/references/controls.md	sentence	One exception, and it is not a matter of
-skills/design-ui/references/controls.md	bullet	3	**One job per element.** A label labels.
-skills/design-ui/references/direction-preview.md	bullet	3	`--comps` is the directory the seats liv
-skills/design-ui/references/direction-preview.md	sentence	Fidelity scales to what the click decide
-skills/design-ui/references/direction-preview.md	bullet	3	A comp is a fragment, not a document: it
-skills/design-ui/references/direction-preview.md	bullet	3	A click in a comp shows motion and chang
-skills/design-ui/references/feedback-and-status.md	sentence	An indicator for an unpredictable wait a
-skills/design-ui/references/icons-and-imagery.md	bullet	3	**`sizes` is measured from this layout,
-skills/design-ui/references/icons-and-imagery.md	bullet	3	**`<picture media>` is for art direction
-skills/design-ui/references/icons-and-imagery.md	bullet	3	**Choose the placeholder from measured l
-skills/design-ui/references/icons-and-imagery.md	sentence	**Alt text branches by role**, down the
-skills/design-ui/references/implementation.md	bullet	3	**One styling mechanism.** Write the sur
-skills/design-ui/references/implementation.md	sentence	Build the role tokens the interface actu
-skills/design-ui/references/implementation.md	sentence	Pad every screen-anchored edge with `env
-skills/design-ui/references/implementation.md	sentence	When a critique tell removes decoration,
-skills/design-ui/references/implementation.md	sentence	Run `scripts/check-ui.mjs` with `--sourc
-skills/design-ui/references/intake.md	bullet	6	Rungs 3 and 7 of `## Route` offer the pr
-skills/design-ui/references/intake.md	bullet	4	A planning turn routes by `## Route` and
-skills/design-ui/references/intake.md	sentence	On option A it runs the sketch tab under
-skills/design-ui/references/intake.md	sentence	The exception is a read-only planning mo
-skills/design-ui/references/intake.md	sentence	Rung 5 of the skill's `## Route` reads a
-skills/design-ui/references/interaction-qa.md	bullet	4	**Empty** takes one of three forms, each
-skills/design-ui/references/interaction-qa.md	sentence	**Error** is inline at the point of fail
-skills/design-ui/references/internationalization.md	sentence	Apply this file only when the product sh
-skills/design-ui/references/internationalization.md	bullet	3	**"Never use CSS to apply the base direc
-skills/design-ui/references/internationalization.md	bullet	3	**Runtime content declares its own direc
-skills/design-ui/references/internationalization.md	bullet	3	**Every interpolated value is isolated.*
 skills/design-ui/references/motion.md	sentence	Signature count follows the direction's
-skills/design-ui/references/motion.md	bullet	3	An element that appears and disappears,
-skills/design-ui/references/motion.md	sentence	Declare the exit on the closed or leavin
-skills/design-ui/references/motion.md	bullet	4	**An interrupted animation starts from t
-skills/design-ui/references/motion.md	bullet	3	**Velocity carries across a handoff.** P
 skills/design-ui/references/motion.md	bullet	3	**Shared-element continuity means one ob
-skills/design-ui/references/motion.md	sentence	The `:hover` offset, the `:active` press
-skills/design-ui/references/performance-budget.md	sentence	**Compositor properties are `transform`
-skills/design-ui/references/performance-budget.md	sentence	`will-change` everywhere (the guide abov
-skills/design-ui/references/phase-build.md	sentence	A surface whose direction was decided be
-skills/design-ui/references/phase-build.md	sentence	One call with `SCOPE=foundation` writes
-skills/design-ui/references/phase-build.md	sentence	check-ui runs before the first edit as t
-skills/design-ui/references/phase-build.md	sentence	A final check-ui run whose `comparison.b
-skills/design-ui/references/phase-detail.md	sentence	When the request does not name the surfa
-skills/design-ui/references/phase-detail.md	sentence	targets at least 24×24 CSS px — the WCAG
-skills/design-ui/references/phase-detail.md	sentence	The underdesign floor, checked before th
-skills/design-ui/references/phase-detail.md	sentence	A full or bounded redesign renders at th
-skills/design-ui/references/phase-detail.md	sentence	This session produces the evidence and t
-skills/design-ui/references/phase-detail.md	sentence	That checkpoint call costs about 20 seco
-skills/design-ui/references/phase-detail.md	sentence	One fault may name the direction itself;
-skills/design-ui/references/phase-detail.md	sentence	Send every surface with faults one `exo:
-skills/design-ui/references/phase-detail.md	sentence	A `general-purpose` delegate on `sonnet`
-skills/design-ui/references/phase-direction.md	sentence	Rungs 3 and 7 of the skill's `## Route`
-skills/design-ui/references/phase-direction.md	sentence	Full comps are built only when the user
-skills/design-ui/references/sketch-tab.md	bullet	3	It holds two to four options, each one e
-skills/design-ui/references/tokens.md	sentence	In a repository with a token build, keep
-skills/design-ui/references/tokens.md	sentence	Carbon's convention is `[element]-[role]
-skills/design-ui/references/tokens.md	sentence	Radix Colors publishes the clearest publ
-skills/design-ui/references/tokens.md	sentence	What the ladder gives is the discipline:
-skills/design-ui/references/tokens.md	sentence	Its parameters name the procedure: `colo
-skills/design-ui/references/tokens.md	sentence	APCA is not normative in any shipped ver
-skills/design-ui/references/tokens.md	sentence	APCA's own thresholds, for that suppleme
 skills/design-ui/references/typography.md	sentence	A ban list is the opposite instrument: `
-skills/design-ui/references/typography.md	bullet	4	**Run the candidate gate.** Do not name
-skills/design-ui/references/typography.md	sentence	Encode the spec as JSON — including allo
-skills/design-ui/references/typography.md	sentence	When the script reports unavailable, ret
-skills/design-ui/references/typography.md	bullet	4	**Vet the winner:** require only the wei
-skills/design-ui/references/visual-critique.md	sentence	Metrics describe the delta, never define
-skills/design-ui/references/visual-critique.md	sentence	A rendered pattern is a finding when no
-skills/design-ui/references/visual-critique.md	sentence	Findings the render can prove without ta
-skills/design-ui/references/visual-critique.md	sentence	One stays only when a contract field or
-skills/design-ui/references/visual-direction.md	bullet	4	Extract the relationships across composi
-skills/design-ui/references/visual-direction.md	bullet	5	On the preview option, sketch every deal
-skills/design-ui/references/visual-direction.md	sentence	Only when the user asks to see direction
-skills/design-ui/references/visual-direction.md	sentence	Each variant of an open identity or cons
-skills/design-ui/references/visual-direction.md	bullet	3	**The dark scheme is a second design**,
-skills/design-ui/references/visual-direction.md	bullet	3	Name each accent use. UI chrome and text
 skills/edit-skills/SKILL.md	bullet	3	**Watch it happen.** Run `scripts/pressu
 skills/edit-skills/references/blind-eval.md	sentence	Label the two clones' `with` answers A a
 skills/edit-skills/references/blind-eval.md	sentence	Write a rubric of 3-6 concrete criteria
