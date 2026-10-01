@@ -5,7 +5,7 @@
 // `Plan-task: <plan-id>/<n>` commit never runs its Proof here either.
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -293,4 +293,44 @@ test('per-task Proofs overlap, at most 3 at once, and print in task order', asyn
     peak = Math.max(peak, running);
   }
   assert.equal(peak, 3);
+});
+
+async function landedWithRecord(record) {
+  const plan = [
+    '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: node check.js', '',
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(1)"',
+    ''
+  ].join('\n');
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': FAILING_CHECK, '.gitignore': '.exo/\n' });
+  landTask(root, 1);
+  if (record !== null) {
+    const tree = git(root, 'rev-parse', 'HEAD^{tree}');
+    await mkdir(path.join(root, '.exo'), { recursive: true });
+    await writeFile(path.join(root, '.exo/land-gate-plan.json'), JSON.stringify({ tree: record.tree ?? tree, gate: 'node check.js', proofs: ['node -e "process.exit(1)"'] }));
+  }
+  return root;
+}
+
+test('a land-gate record for the same tree skips the gate and the passed Proof', async () => {
+  const root = await landedWithRecord({});
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines[0].startsWith('SKIP Task 1'), result.stdout);
+  assert.ok(lines[1].startsWith('SKIP success-criterion'), result.stdout);
+});
+
+test('a land-gate record for another tree reruns the gate and the Proof', async () => {
+  const root = await landedWithRecord({ tree: 'deadbeef' });
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 2), ['FAIL Task 1', 'FAIL success-criterion']);
+});
+
+test('no land-gate record reruns the gate and the Proof', async () => {
+  const root = await landedWithRecord(null);
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 2), ['FAIL Task 1', 'FAIL success-criterion']);
 });

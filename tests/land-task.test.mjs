@@ -93,6 +93,21 @@ test('a passing Land gate lets a green task land', async () => {
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
 });
 
+test('a passing Land gate leaves a record of the landed tree, the gate and the passed Proof', async () => {
+  const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('## Plan basis\n', '## Plan basis\nLand gate: true\n'));
+  const plan = await fs.readFile(planPath, 'utf8');
+  landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
+  const record = JSON.parse(await fs.readFile(path.join(root, '.exo/land-gate-compact.json'), 'utf8'));
+  assert.deepEqual(record, { tree: git(root, 'rev-parse', 'HEAD^{tree}'), gate: 'true', proofs: ['node --test tests/app.test.mjs'] });
+});
+
+test('no record is written when no Land gate ran', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  landTask({ planPath, planText: PLAN, number: 1, root });
+  await assert.rejects(fs.access(path.join(root, '.exo/land-gate-fixture.json')));
+});
+
 test('a failing Land gate is refused before anything commits, naming the command and its output', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

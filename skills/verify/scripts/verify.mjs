@@ -15,16 +15,19 @@
 // Prints one PASS, FAIL, SKIP, UNRUN or STRAY line per check, then the REVIEWER line,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
+// A land-task record `.exo/land-gate-<plan id>.json` for the HEAD tree skips the gate and each Proof it names with a SKIP line.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` prints UNRUN, not PASS,
 // and does not fail.
 
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import fs, { realpathSync } from 'node:fs';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 import { parseFlags, UsageError } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
 import { changedPaths, measureSizeFacts } from '#size-facts';
+import { SCRATCH_FOLDER } from '#scratch-path';
 import { pickReviewer } from './pick-reviewer.mjs';
 
 const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
@@ -73,6 +76,24 @@ export function manualChecks(frame) {
   return section.split('\n').filter((line) => line.trim().startsWith('- ')).map((line) => line.trim().slice(2));
 }
 
+/**
+ * What land-task passed on the tree now checked out: its `.exo/land-gate-<planId>.json`
+ * `{ gate, proofs }`, or null when the file is absent or unreadable, the HEAD tree differs,
+ * or a tracked file has changed since. An untracked file is not checked, the same
+ * limit land-task's own gate run had.
+ */
+function landedGateRecord(root, planId) {
+  try {
+    const record = JSON.parse(fs.readFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), 'utf8'));
+    const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+    if (record.tree !== git('rev-parse', 'HEAD^{tree}')) return null;
+    if (git('status', '--porcelain', '--untracked-files=no') !== '') return null;
+    return record;
+  } catch {
+    return null;
+  }
+}
+
 function runCommand(command) {
   return new Promise((resolve) => {
     const child = spawn(command, { shell: true });
@@ -108,7 +129,9 @@ async function mapLimited(items, limit, work) {
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
-  const landed = new Set(landedTasks(plan.tasks, root, planIdOf(planPath)));
+  const planId = planIdOf(planPath);
+  const landed = new Set(landedTasks(plan.tasks, root, planId));
+  const record = landedGateRecord(root, planId);
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
@@ -131,6 +154,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
     }
+    if (record?.proofs.includes(command)) {
+      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: land-task passed it on this same tree)` });
+      continue;
+    }
     proofRuns.push({ number: task.number, command });
   }
 
@@ -148,6 +175,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   if (gateSkipped) {
     lines.push('UNRUN success-criterion (Land gate: none)');
+  } else if (record?.gate === gateCommand) {
+    lines.push('SKIP success-criterion (land-task ran the gate on this same tree)');
   } else {
     const { ok: checkOk, output } = await runCommand(gateCommand);
     // The SUMMARY convention binds only exo's own default gate; a plan that

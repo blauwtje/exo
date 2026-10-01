@@ -301,12 +301,27 @@ function refuseSignatureDrift(task, root) {
 // layout still holds on whatever the build left; a plan without the line, or
 // with `Land gate: none`, gates on nothing, as land-task always has.
 function runLandGate(landGate, root) {
-  if (landGate === null || landGate === 'none') return;
+  if (landGate === null || landGate === 'none') return false;
   const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8' });
   if (gate.status !== 0) {
     const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${gate.error?.message ?? ''}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
+  return true;
+}
+
+// The record verify.mjs reads to skip what this landing just passed: the
+// landed commit's tree, the gate command and the task's passed Proof. It holds
+// only the latest landing, so an earlier task's Proof, passed on an older
+// tree, is never skipped; a later landing or edit changes the tree, and
+// verify then reruns everything. Lift the one-landing limit by keying proofs
+// per tree.
+function writeLandGateRecord({ root, planId, gate, proof }) {
+  const tree = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
+  // proofOf's first line reads `<command>: pass`.
+  const proofs = proof === null ? [] : [proof.split('\n')[0].replace(/: pass$/, '')];
+  fs.mkdirSync(path.join(root, SCRATCH_FOLDER), { recursive: true });
+  fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
 
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
@@ -325,7 +340,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // parse, so only a compact task's report is read here.
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
   const frame = frameOf(plan.frame);
-  runLandGate(frame.landGate, root);
+  const gateRan = runLandGate(frame.landGate, root);
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
@@ -345,6 +360,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (subject !== expectedSubject) {
     throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   }
+  if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proof });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
