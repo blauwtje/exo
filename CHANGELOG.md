@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Every exo question now uses one lettered shape, with the recommendation always on A.** Spec asks in rounds until nothing is open, always ends on a brief, and never starts a build by itself.
+
+### Changed
+
+- The question shape lives in one file, `skills/route-skills/references/question.md`, and every question and script menu letters its options with the recommendation on A.
+- Spec asks every open choice in rounds instead of assuming, and the brief drops its Assumptions section.
+- Spec and find-cause end on a lettered pick; spec's pick offers to adjust the brief or build it here.
+- The ship, workspace and configure menus use letters; configure puts Keep first as A.
+- design-ui intake asks instead of assuming.
+- Build stays silent between tasks, names the done tasks on a restart, and ends with every task as done or not done plus the manual checks.
+
+### Fixed
+
+- Build no longer starts by itself after a clear or compaction.
+
 ## 0.69.0 - 2026-10-01
 
 ### Added
