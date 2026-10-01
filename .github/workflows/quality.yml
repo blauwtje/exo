@@ -9,9 +9,16 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request supersedes its older run; a run on main is
+# never cancelled, so every main commit keeps its own result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - run: npm ci
       # The full self-test runs once, on the current Node; the floor runs only the validator.
       - if: matrix.node == 24
         run: npm run check
