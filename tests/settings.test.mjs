@@ -284,3 +284,21 @@ test('heavy_after_seconds accepts 0 for off while guard_lines still needs at lea
   assert.notEqual(rejected.code, 0);
   assert.match(rejected.stderr, /at least 1/);
 });
+
+test('a stored value named like an object property is not read as an alias', async () => {
+  const space = await workspace({ project: { budget: 'constructor' } });
+  const result = await settings(space, ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /budget=constructor is not one of/);
+  assert.doesNotMatch(result.stdout, /function/);
+});
+
+test('a null plugin entry or options in the user settings file is ignored', async () => {
+  for (const pluginConfigs of [{ 'exo@blauwtje': null }, { 'exo@blauwtje': { options: null } }, null]) {
+    const space = await workspace();
+    await writeJson(path.join(space.env.CLAUDE_CONFIG_DIR, 'settings.json'), { pluginConfigs });
+    const result = await settings(space, ['get', 'specs']);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stdout.trim(), 'docs');
+  }
+});
