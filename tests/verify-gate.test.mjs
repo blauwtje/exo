@@ -127,7 +127,7 @@ test("the plan's own Land gate runs when --check-command is not given", async ()
   assert.ok(result.stdout.includes('PASS success-criterion'));
 });
 
-test("a plan's 'Land gate: none' skips the check", async () => {
+test("a plan's 'Land gate: none' prints UNRUN, not PASS, and does not fail", async () => {
   const plan = [
     '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: none', '',
     '### Task 1: feat(app): greet',
@@ -139,7 +139,46 @@ test("a plan's 'Land gate: none' skips the check", async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.ok(result.stdout.includes('PASS success-criterion'));
+  assert.ok(result.stdout.includes('UNRUN success-criterion (Land gate: none)'));
+  assert.ok(!result.stdout.includes('PASS success-criterion'));
+});
+
+const SUITE_PROOF_PLAN = (gate) => [
+  '## Plan basis', '', 'Repository: .', 'Branch: main', ...(gate ? [`Land gate: ${gate}`] : []), '',
+  '### Task 1: feat(app): greet',
+  'Depends on: none | Files: `src/app.js` | Data: none | Proof: npm test',
+  ''
+].join('\n');
+// npm test, not node --test: a nested node --test inherits this runner's NODE_TEST_CONTEXT and exits 0.
+const FAILING_SUITE_PACKAGE = (scripts) => JSON.stringify({ scripts: { test: 'node -e "process.exit(1)"', ...scripts } });
+
+test('a test-suite Proof runs under a custom Land gate, which may run no tests', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': SUITE_PROOF_PLAN('node check.js'),
+    'check.js': CLEAN_CHECK,
+    'package.json': FAILING_SUITE_PACKAGE({})
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1');
+});
+
+test('a test-suite Proof is skipped under the default gate, which runs that suite', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': SUITE_PROOF_PLAN(null),
+    'package.json': FAILING_SUITE_PACKAGE({ check: 'node check.js' }),
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines[0].startsWith('SKIP Task 1'), result.stdout);
+  assert.equal(lines[1], 'PASS success-criterion');
 });
 
 test("the Success criterion's command is the gate, and a task Proof equal to it is skipped", async () => {
