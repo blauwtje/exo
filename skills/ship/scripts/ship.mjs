@@ -100,6 +100,7 @@ function readFlags(argv) {
     throw new UsageError(`route '${flags.route}' needs --title and --body`);
   }
   if (flags.issue !== undefined && !flags.body) throw new UsageError('--issue needs --body');
+  if (flags.issue !== undefined && !/^\d+$/.test(flags.issue)) throw new UsageError('--issue needs a number');
   if (flags.method !== undefined && !METHODS.has(flags.method)) throw new UsageError(`unknown method '${flags.method}'`);
   return flags;
 }
@@ -256,7 +257,7 @@ function runGh(args) {
 
 /** True when `body` closes `issue` in the vocabulary GitHub links a pull request on. */
 function closesIssue(body, issue) {
-  return new RegExp(`(close[sd]?|fix(e[sd])?|resolve[sd]?)\\s+#${issue}\\b`, 'i').test(body);
+  return new RegExp(`\\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?\\s+#${issue}\\b`, 'i').test(body);
 }
 
 /** The branch's open pull request, read fresh so a rerun after a resolved stop gates again. */

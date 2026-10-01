@@ -156,6 +156,19 @@ test('a body missing "Closes #<n>" stops before any push', async () => {
   assert.doesNotMatch(remoteBranches, /refs\/heads\/feat\/x/);
 });
 
+test('a body with a keyword ending a longer word does not close the issue, and "Closes: #n" does', async () => {
+  const { workDir } = await shipRepository();
+  git(workDir, 'checkout', '-q', '-b', 'feat/x');
+  await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
+  await fs.writeFile(path.join(workDir, 'body.md'), 'This prefixes #7 and unfixed #7 only.\n');
+  const outcome = await shipRun(workDir, ['--route', 'open-pr', '--title', 'feat: x', '--body', 'body.md', '--issue', '7']);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.equal(outcome.stdout, 'feat/x stopped create body-missing-closes-7\n');
+  await fs.writeFile(path.join(workDir, 'body.md'), 'Adds it.\n\nCloses: #7\n');
+  const colon = await shipRun(workDir, ['--route', 'open-pr', '--title', 'feat: x', '--body', 'body.md', '--issue', '7']);
+  assert.doesNotMatch(colon.stdout, /body-missing-closes/);
+});
+
 test('an existing open pull request is reused with no pr create', async () => {
   const { workDir } = await shipRepository();
   git(workDir, 'checkout', '-q', '-b', 'feat/x');
@@ -304,7 +317,9 @@ test('a bad route, mode or missing flag is a usage error that runs no gh', async
     ['--route', 'open-pr', '--title', 'feat: x'],
     ['--route', 'pr-merge', '--title', 'feat: x'],
     ['--route', 'push', '--merge', '12'],
-    ['--merge', '12', '--route', 'push']
+    ['--merge', '12', '--route', 'push'],
+    ['--route', 'open-pr', '--title', 'feat: x', '--body', 'body.md', '--issue', '7x'],
+    ['--route', 'open-pr', '--title', 'feat: x', '--body', 'body.md', '--issue', '--json']
   ];
   for (const args of cases) {
     const outcome = await shipRun(workDir, args);
