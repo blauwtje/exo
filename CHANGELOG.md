@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **The default `normal` budget now runs the deep branch review, the design critique and the hardest work at `high` effort instead of `xhigh`.** Set `budget: full` to keep the previous `xhigh` setup.
+
+### Added
+
+- A `full` budget above `normal` dispatches `exo:review-branch-deep-full` and `exo:critique-ui-full`, `xhigh` twins of the deep reviewer and the design critic.
+
+### Changed
+
+- The `review-deep` and `hardest` kinds run at `high` effort instead of `xhigh`, so `exo:review-branch-deep` and `exo:critique-ui` do too.
+
 ## 0.64.3 - 2026-09-30
 
 ### Changed
