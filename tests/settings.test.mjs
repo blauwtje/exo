@@ -201,6 +201,7 @@ test('the low rule names the provider models the kind table maps, and carries no
   assert.match(result.stdout, /budget=low \(project\)/);
   assert.ok(result.stdout.includes('resolves to model model-from ('), result.stdout);
   assert.ok(result.stdout.includes("pass model-to as the Task call's own model parameter"), result.stdout);
+  assert.ok(result.stdout.includes('exo:solve-hard-low'), result.stdout);
   assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
 });
 
@@ -211,6 +212,7 @@ test('the high rule names both twins and carries no placeholder', async () => {
   assert.match(result.stdout, /budget=high \(project\)/);
   assert.ok(result.stdout.includes('exo:review-branch-deep-high'), result.stdout);
   assert.ok(result.stdout.includes('exo:critique-ui-high'), result.stdout);
+  assert.ok(result.stdout.includes('exo:solve-hard-high'), result.stdout);
   assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
 });
 

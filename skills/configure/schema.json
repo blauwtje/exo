@@ -20,10 +20,10 @@
     "type": "string",
     "options": ["high", "medium", "low"],
     "default": "medium",
-    "description": "high: medium, except the deep branch review and the design critique dispatch their xhigh twins. medium: every agent dispatch uses the model its kind resolves to in lib/model-kinds.json. low: an agent whose kind resolves to a tier named under budgets in lib/model-kinds.json dispatches on that tier's replacement instead. The old names full, normal and lean still read as high, medium and low",
+    "description": "high: medium, except the deep branch review, the design critique and the hardest work dispatch their xhigh twins. medium: every agent dispatch uses the model its kind resolves to in lib/model-kinds.json. low: an agent whose kind resolves to a tier named under budgets in lib/model-kinds.json dispatches on that tier's replacement instead, except the hardest work, which dispatches its medium-effort twin. The old names full, normal and lean still read as high, medium and low",
     "rules": {
-      "high": "Budget is high: when you dispatch exo:review-branch-deep or exo:critique-ui, dispatch exo:review-branch-deep-high or exo:critique-ui-high in its place, with the same prompt; no model is replaced.",
-      "low": "Budget is low: when the Task tool dispatches a plugin agent whose kind in lib/model-kinds.json resolves to model {from} (the kind is the agent's entry under agents, looked up under kinds, whose tier the provider named at the top maps to a model under providers), pass {to} as the Task call's own model parameter instead."
+      "high": "Budget is high: when you dispatch exo:review-branch-deep, exo:critique-ui or exo:solve-hard, dispatch exo:review-branch-deep-high, exo:critique-ui-high or exo:solve-hard-high in its place, with the same prompt; no model is replaced.",
+      "low": "Budget is low: when you dispatch exo:solve-hard, dispatch exo:solve-hard-low in its place, with the same prompt, and leave its model as the agent sets it. When the Task tool dispatches any other plugin agent whose kind in lib/model-kinds.json resolves to model {from} (the kind is the agent's entry under agents, looked up under kinds, whose tier the provider named at the top maps to a model under providers), pass {to} as the Task call's own model parameter instead."
     },
     "aliases": { "full": "high", "normal": "medium", "lean": "low" }
   },
