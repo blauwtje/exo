@@ -21,6 +21,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { HOOK_INPUT_TIMEOUT_MS, readHookText } from '#hook-input';
 import { memoryDirectory } from '#memory-store';
+import { isProcessEntry } from './guard-runner.mjs';
 import { environmentMs } from '#script-flags';
 import { updateSession } from '#session-store';
 import { SCHEMA, settingValue } from '#settings-store';
@@ -74,10 +75,9 @@ function guardLines() {
 }
 
 function deny(reason) {
-  const output = {
+  return {
     hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason }
   };
-  process.stdout.write(JSON.stringify(output));
 }
 
 function describe(input) {
@@ -134,15 +134,16 @@ function refusalOf(session, target) {
   };
 }
 
-function guardRead(hookInput) {
+// The deny output for a read the guard refuses, or null to allow it.
+export function guardRead(hookInput) {
   const target = readTarget(hookInput);
-  if (target === null) return;
+  if (target === null) return null;
   let reason = null;
   updateSession(hookInput.session_id, (session) => {
     reason = refusalOf(session, target)?.reason ?? null;
     return false;
   });
-  if (reason !== null) deny(reason);
+  return reason === null ? null : deny(reason);
 }
 
 // PostToolUse runs only after the tool succeeded, so the range is booked as
@@ -166,21 +167,26 @@ function reset(hookInput) {
   });
 }
 
-let inputText;
-try {
-  // EXO_READ_GUARD_INPUT_MS shortens the stdin wait for a test.
-  inputText = await readHookText({ timeoutMs: environmentMs('EXO_READ_GUARD_INPUT_MS', HOOK_INPUT_TIMEOUT_MS) });
-} catch (error) {
-  console.error(`read-guard: could not read hook input: ${error.message}`);
-  process.exitCode = 1;
-}
-if (inputText !== undefined) {
+if (isProcessEntry(import.meta.url)) {
+  let inputText;
   try {
-    const hookInput = JSON.parse(inputText);
-    if (process.argv[2] === 'reset') reset(hookInput);
-    else if (process.argv[2] === 'book') book(hookInput);
-    else guardRead(hookInput);
+    // EXO_READ_GUARD_INPUT_MS shortens the stdin wait for a test.
+    inputText = await readHookText({ timeoutMs: environmentMs('EXO_READ_GUARD_INPUT_MS', HOOK_INPUT_TIMEOUT_MS) });
   } catch (error) {
-    console.error(`read-guard: ${error.message}`);
+    console.error(`read-guard: could not read hook input: ${error.message}`);
+    process.exitCode = 1;
+  }
+  if (inputText !== undefined) {
+    try {
+      const hookInput = JSON.parse(inputText);
+      if (process.argv[2] === 'reset') reset(hookInput);
+      else if (process.argv[2] === 'book') book(hookInput);
+      else {
+        const denial = guardRead(hookInput);
+        if (denial !== null) process.stdout.write(JSON.stringify(denial));
+      }
+    } catch (error) {
+      console.error(`read-guard: ${error.message}`);
+    }
   }
 }

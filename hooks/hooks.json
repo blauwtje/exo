@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/read-guard.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-read.mjs\"",
             "shell": "bash",
             "timeout": 10
           }
@@ -65,14 +65,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/repeat-guard.mjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-edit.mjs\"",
             "shell": "bash",
             "timeout": 10
           }
         ]
       },
       {
-        "matcher": "^(?!Bash$).*",
+        "matcher": "^(?!Bash$|Read$|Edit$|WebFetch$|WebSearch$).*",
         "hooks": [
           {
             "type": "command",
