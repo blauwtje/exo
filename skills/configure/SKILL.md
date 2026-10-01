@@ -45,7 +45,7 @@ Take the first step whose answer the request and the letters so far leave open.
 
 `heavy_commands` runs a Bash command that starts with a listed prefix once per code state across sessions: a second session waits for the first, and a green result holds 24 hours. `EXO_HEAVY_FORCE=1 <command>` forces a run.
 
-`heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command (name has `test`, `e2e`, `check`, `lint` or `verify`) as heavy once its last run in the project took longer; `--watch`, `--ui`, `--headed`, `dev`, `serve` and `start` runs are never learned.
+`heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command (name has `test`, `e2e`, `check`, `lint` or `verify`) as heavy once its last run in the project took longer; never learned: `--watch`, `--ui`, `--headed`, `dev`, `serve`, `start`, `install`, `deploy`, `build`, `EXO_HEAVY_FORCE`, and `until`, `while` or `sleep` loops.
 
 A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed. The ladder has no switch, so a request to switch it off gets that answer and runs nothing.
 
