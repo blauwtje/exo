@@ -37,7 +37,7 @@
     "agents/critique-ui-high.md": {
       "kind": "review-deep-high",
       "generatedFrom": "agents/critique-ui.md",
-      "description": "Judges one built visual surface against its direction and writes the faults file. Dispatched by design-ui instead of critique-ui when the high budget is set. Not for a code review, a direction choice, or an unbuilt surface."
+      "description": "critique-ui at xhigh effort for the high budget, dispatched by name only."
     },
     "agents/fetch-docs.md": { "kind": "research" },
     "agents/locate-code.md": { "kind": "lookup" },
@@ -50,19 +50,19 @@
     "agents/review-branch-deep-high.md": {
       "kind": "review-deep-high",
       "generatedFrom": "agents/review-branch.md",
-      "description": "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch-deep when the high budget is set. Not for a smaller branch, a single task, a pull request or a diff without a plan."
+      "description": "review-branch-deep at xhigh effort for the high budget, dispatched by name only."
     },
     "agents/run-unit.md": { "kind": "coordinate" },
     "agents/solve-hard.md": { "kind": "hardest" },
     "agents/solve-hard-high.md": {
       "kind": "hardest-high",
       "generatedFrom": "agents/solve-hard.md",
-      "description": "Carries out one hard prompt the caller hands it: a failure with no proven cause, a repair after drift, a task the run unit could not land. Dispatched instead of solve-hard when the high budget is set. Not for a routine task, a review or a lookup."
+      "description": "solve-hard at xhigh effort for the high budget, dispatched by name only."
     },
     "agents/solve-hard-low.md": {
       "kind": "hardest-low",
       "generatedFrom": "agents/solve-hard.md",
-      "description": "Carries out one hard prompt the caller hands it: a failure with no proven cause, a repair after drift, a task the run unit could not land. Dispatched instead of solve-hard when the low budget is set. Not for a routine task, a review or a lookup."
+      "description": "solve-hard at medium effort for the low budget, dispatched by name only."
     },
     "agents/survey-ui.md": { "kind": "investigate" }
   },

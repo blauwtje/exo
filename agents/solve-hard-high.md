@@ -1,6 +1,6 @@
 ---
 name: solve-hard-high
-description: "Carries out one hard prompt the caller hands it: a failure with no proven cause, a repair after drift, a task the run unit could not land. Dispatched instead of solve-hard when the high budget is set. Not for a routine task, a review or a lookup."
+description: "solve-hard at xhigh effort for the high budget, dispatched by name only."
 model: opus
 effort: xhigh
 ---
