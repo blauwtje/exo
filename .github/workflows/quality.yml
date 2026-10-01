@@ -15,9 +15,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         # 22 is the floor verify.mjs enforces; 24 is current.
         node: [22, 24]
+        # The floor is a Node concern, covered on Linux; macOS and Windows
+        # catch shell, path and file-system differences on the current Node.
+        exclude:
+          - os: macos-latest
+            node: 22
+          - os: windows-latest
+            node: 22
     steps:
       - uses: actions/checkout@v4
         with:
