@@ -4,8 +4,8 @@ A wave, as `build` step 4 forms it, builds each of its tasks in a worktree of it
 
 1. **Create.**
    - Record `git rev-parse HEAD` as `<base>`.
-   - For each task run `git worktree add --detach "<root>-task-<n>" HEAD && mkdir "<root>-task-<n>/.exo"`, then the plan's `Worktree setup:` command inside it unless that reads `none`.
-   - `<root>` is what `git rev-parse --show-toplevel` prints, since the build writes its report there and never makes a folder.
+   - For each task run `git worktree add --detach "<root>-task-<n>" HEAD && mkdir "<root>-task-<n>/.exo"`, since the build writes its report there and never makes a folder, then the plan's `Worktree setup:` command inside it unless that reads `none`.
+   - `<root>` is what `git rev-parse --show-toplevel` prints.
    - Never dispatch a build with the dispatch tool's worktree isolation, because an isolated delegate reads nothing outside its worktree, so its brief and report would ride in the run's context.
    - A failed `git worktree add` or setup command discards the wave before any dispatch.
    - Then the current task builds alone in the run's checkout and the rest of the run forms no wave.
@@ -29,6 +29,6 @@ A wave, as `build` step 4 forms it, builds each of its tasks in a worktree of it
    - Then run `node "${CLAUDE_SKILL_DIR}/scripts/remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>`, which copies its `.exo/`, patch and build report included, into the run's `.exo/` before removing it.
    - It refuses and removes nothing when any `.exo/` file stays uncopied.
    - A folder whose task did not land adds `--force`, and only after its patch is written.
-   - Otherwise a folder whose diff is unsaved is never force-removed, stays, and the turn ends naming it.
+   - Without a written patch, a folder whose diff is unsaved is never force-removed, stays, and the turn ends naming it.
    - A saved diff outranks a clean `git worktree list`: a worktree leaves only once its work is on the branch or in the run's `.exo/`.
-   - No turn ends, stops or asks while `git worktree list` still prints a wave worktree this run made.
+   - Otherwise no turn ends, stops or asks while `git worktree list` still prints a wave worktree this run made.
