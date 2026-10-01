@@ -83,16 +83,16 @@ function armLines(stdout) {
   });
 }
 
-test('a cell prints the answers directory, the cell label, then one line per arm and run, 3 runs by default', async () => {
+test('a cell prints the answers directory, the cell label, then one line per arm and run, 1 run by default', async () => {
   const clone = await pluginClone();
   const out = await fixture();
   const outcome = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out]);
   assert.equal(outcome.code, 0, outcome.stderr);
   const lines = outcome.stdout.trim().split('\n');
-  assert.equal(lines.length, 8, outcome.stdout);
+  assert.equal(lines.length, 4, outcome.stdout);
   assert.equal(lines[0], `answers: ${out}`);
   assert.equal(lines[1], 'sonnet:high');
-  const expected = ['without 1', 'without 2', 'without 3', 'with 1', 'with 2', 'with 3'];
+  const expected = ['without 1', 'with 1'];
   assert.deepEqual(lines.slice(2).map((line) => ARM_LINE.exec(line)?.slice(1, 3).join(' ')), expected, outcome.stdout);
   for (const line of armLines(outcome.stdout)) {
     assert.equal(line.file, path.join(out, `sonnet-high-${line.arm}-${line.run}.md`));
@@ -100,7 +100,7 @@ test('a cell prints the answers directory, the cell label, then one line per arm
     assert.equal(line.firstAction, 'none');
     assert.equal(line.skills, 'none');
   }
-  assert.equal(outcome.calls.length, 6, outcome.calls.join('\n'));
+  assert.equal(outcome.calls.length, 2, outcome.calls.join('\n'));
 });
 
 test('--runs 2 makes 4 claude calls for one cell and prints 4 arm lines', async () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Runs one pressure-scenario prompt on every model:effort cell, both without
-// the skill and with it, --runs times per arm (default 3), so edit-skills's
+// the skill and with it, --runs times per arm (default 1), so edit-skills's
 // step 2 and step 4 stop reading N manual `claude -p` transcripts by hand.
 // The with arm loads the clone through --plugin-dir; the without arm gets no
 // --plugin-dir and disables the installed copy of the clone's plugin
@@ -42,7 +42,7 @@ import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wr
 import { UsageError, parseFlags } from '#script-flags';
 
 const TIMEOUT_MS = 1_800_000;
-const DEFAULT_RUNS = 3;
+const DEFAULT_RUNS = 1;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
