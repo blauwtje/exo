@@ -34,7 +34,7 @@ Round a pull request to merge-ready by clearing its blockers in order, one push 
 
 ## Report
 
-- Name the fixes applied, each commit by its SHA, and the comments addressed or deferred with a reason.
+- Name the fixes applied as a count and a commit range (`<first>..<last>`), a lone SHA only for a fix the user must act on, and the comments addressed or deferred with a reason.
 - Name the current status, what is pending, and what needs the human.
 - Offer any team-useful dismissal pattern from the round's triage as a candidate rubric entry, because a precedent kept private helps nobody else.
 

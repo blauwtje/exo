@@ -27,7 +27,7 @@ Chase the first actionable error to a green check with the smallest fix that clo
 
 ## Report
 
-- Name the primary failing job and its root error, the fixes applied in order, and the current CI status and next action.
+- Name the primary failing job and its root error, the fixes applied as a count and a commit range (`<first>..<last>`), a lone SHA only for a fix the user must act on, and the current CI status and next action.
 
 ## Judgment
 
