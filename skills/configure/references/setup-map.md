@@ -18,7 +18,7 @@ Walk every setting in the chat, one question per message, and write only what th
 
 ## The order
 
-`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines` and `heavy_commands`.
+`scope`, `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`, `heavy_after_seconds`. `scope` decides the layer for `specs`, `replies`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands` and `heavy_after_seconds`.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -39,6 +39,7 @@ Every setting but `scope` offers its current value first, as `- **A · Keep <val
 | `guards` | Should exo's safety guards refuse the commands and edits they cover? | `on` (default): they refuse. `off`: no guard refuses anything. |
 | `guard_lines` | From how many lines is a file big? | `200`, `400` (the default) and `800`, each: files over that many lines count as big. A typed whole number of at least 1 is also an answer. |
 | `heavy_commands` | Which commands should run at most once per code state? | Empty (the default): no command is held back. Typed command prefixes separated by `;`, such as `npm run e2e`: a repeat on unchanged code returns the earlier green result. Any typed string is an answer. |
+| `heavy_after_seconds` | After how many seconds is a test command heavy? | `30`, `60` (the default) and `120`, each: a test-like command whose last run in this project took longer counts as heavy. `0`: off. A typed whole number of at least 0 is also an answer. |
 
 `issues` and `both` are left out when step 1 found no working GitHub route. A value that is the current one appears only as the keep answer.
 

@@ -54,5 +54,11 @@
     "type": "string",
     "default": "",
     "description": "command prefixes separated by ;, such as npm run e2e:beeld; a Bash command starting with one runs at most once per code state across sessions: a repeat on unchanged code returns the earlier green result and a run waits for one already running. Empty turns this off"
+  },
+  "heavy_after_seconds": {
+    "type": "number",
+    "default": 60,
+    "min": 0,
+    "description": "a test-like Bash command whose last run in this project took longer than this many seconds counts as heavy and runs through the same dedupe as heavy_commands, with nothing listed. 0 turns this off"
   }
 }

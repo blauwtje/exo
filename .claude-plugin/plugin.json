@@ -64,6 +64,13 @@
       "title": "Heavy commands",
       "description": "Command prefixes separated by ;, such as npm run e2e:beeld. A Bash command starting with one runs at most once per code state across Claude sessions: a repeat on unchanged code returns the earlier green result, and a run waits for the same command already running. Leave empty to turn this off. A project overrides this in .claude/exo.json.",
       "default": ""
+    },
+    "heavy_after_seconds": {
+      "type": "number",
+      "title": "Heavy after seconds",
+      "description": "A test-like Bash command whose last run in a project took longer than this many seconds counts as heavy from then on and runs through the same dedupe as heavy commands, with nothing listed. Not sure? Keep 60. 0 turns this off. A project overrides this in .claude/exo.json.",
+      "default": 60,
+      "min": 0
     }
   }
 }

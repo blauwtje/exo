@@ -40,22 +40,22 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default)' + TIGHT_RULE);
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default)' + TIGHT_RULE);
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default)' + TIGHT_RULE);
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default)' + TIGHT_RULE);
 });
 
 test('replies is tight by default and standard when the project sets it', async () => {
@@ -113,7 +113,7 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), budget=medium \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\), guard_lines=400 \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), budget=medium \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\), guard_lines=400 \(default\), heavy_after_seconds=60 \(default\); .*exo\.json is not valid JSON/);
 });
 
 test('a value the schema does not allow is named in the context line, and the default replies rule still applies', async () => {
@@ -153,7 +153,7 @@ test('menu asks for the setting, and with a key for a value other than the curre
   const space = await workspace({ project: { specs: 'issues' } });
   const settingQuestion = await settings(space, ['menu']);
   assert.equal(settingQuestion.code, 0, settingQuestion.stderr);
-  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**1 · Change which setting?**\nEach setting has its own values and layers.\n\n- **A · Keep**: change nothing\n- **B · specs**: change it, now issues\n- **C · replies**: change it, now tight\n- **D · budget**: change it, now medium\n- **E · ship**: change it, now ask\n- **F · workspace**: change it, now ask\n- **G · guards**: change it, now on\n- **H · guard_lines**: change it, now 400\n- **I · heavy_commands**: change it, now (none)\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), settingQuestion.stdout);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**1 · Change which setting?**\nEach setting has its own values and layers.\n\n- **A · Keep**: change nothing\n- **B · specs**: change it, now issues\n- **C · replies**: change it, now tight\n- **D · budget**: change it, now medium\n- **E · ship**: change it, now ask\n- **F · workspace**: change it, now ask\n- **G · guards**: change it, now on\n- **H · guard_lines**: change it, now 400\n- **I · heavy_commands**: change it, now (none)\n- **J · heavy_after_seconds**: change it, now 60\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
   assert.ok(valueQuestion.stdout.trimEnd().endsWith('**1 · Set specs to which value?**\nspecs is now issues.\n\n- **A · Keep issues**: change nothing\n- **B · docs**: set specs to docs\n- **C · both**: set specs to both\n\n→ A. Keeping things as they are is the safe default.\nWithout an answer, nothing changes.'), valueQuestion.stdout);
   assert.doesNotMatch(valueQuestion.stdout, /replies/);
@@ -239,7 +239,7 @@ test('the context line leaves heavy_commands out while empty and prints it once 
   const unset = await workspace();
   assert.ok(!(await settings(unset, ['context'])).stdout.includes('heavy_commands'));
   const project = await workspace({ project: { heavy_commands: 'npm run e2e' } });
-  assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project)'));
+  assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project), heavy_after_seconds=60 (default)'));
   assert.ok((await settings(unset, ['menu'])).stdout.includes('- **I · heavy_commands**: change it, now (none)'));
 });
 
@@ -257,4 +257,18 @@ test('a stored old budget name reads as its new level', async () => {
     assert.equal(result.code, 0, result.stderr);
     assert.equal(result.stdout.trim(), level);
   }
+});
+
+test('heavy_after_seconds defaults to 60', async () => {
+  const unset = await workspace({});
+  assert.equal((await settings(unset, ['get', 'heavy_after_seconds'])).stdout.trim(), '60');
+});
+
+test('heavy_after_seconds accepts 0 for off while guard_lines still needs at least 1', async () => {
+  const space = await workspace({ project: { heavy_after_seconds: 0, guard_lines: 0 } });
+  assert.equal((await settings(space, ['get', 'heavy_after_seconds'])).stdout.trim(), '0');
+  assert.equal((await settings(space, ['get', 'guard_lines'])).stdout.trim(), '400');
+  const rejected = await settings(space, ['set', 'guard_lines', '0', '--scope', 'project']);
+  assert.notEqual(rejected.code, 0);
+  assert.match(rejected.stderr, /at least 1/);
 });
