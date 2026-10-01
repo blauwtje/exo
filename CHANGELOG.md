@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.72.0 - 2026-10-01
+
 ### Added
 
 - edit-skills' instruction style gives each bullet one rule and keeps the rules most often broken first, and a verify check fails a list item of three or more sentences or a sentence over 40 words, with a locked allowlist of today's offenders that can only shrink.
