@@ -19,11 +19,11 @@ effort: medium
 
 ## No spec
 
-1. **Orient.** A decided change with no plan file reads `references/no-spec.md` for steps 1-8 instead of the loop above.
-2. **Gate.** Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file. After a compaction, rebuild what landed from the working-tree diff, not memory. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
+1. **Orient.** A decided change with no plan file reads `references/no-spec.md` for steps 1-8 instead of the loop above. After a compaction, rebuild what landed from the working-tree diff, not memory.
+2. **Gate.** Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.
 3. **Workspace, then baseline.**
 4. **Build.**
-5. **Prove.** A risky change reads `references/test-design.md` first.
+5. **Prove.** A risky change reads `references/test-design.md` first. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
 6. **Project knowledge.** Read `references/project-knowledge.md` when its first line applies.
 7. **Fresh eyes.** Read `references/fresh-eyes.md` and run it.
 8. **Commit.**
