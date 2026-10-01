@@ -41,7 +41,8 @@ Unchosen alternatives, unasked side notes, benefits to me, evidence for passing 
 
 ## Reports
 
-All checks passing: one line, command plus result.
+- A skill's own report format outranks these caps.
+- All checks passing: one line, command plus result.
 
 ## Exempt
 

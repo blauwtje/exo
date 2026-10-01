@@ -3,7 +3,7 @@ name: find-cause
 description: Use when existing behavior is reported wrong (bug, error, crash, regression, broken output, slowdown) and no evidence yet shows one causal line plus a mechanism predicting the symptom. Not when a diagnostic's file, line and symbol match the source, when the stated cause checks out, or for a feature complaint.
 argument-hint: <symptom, failing command or error>
 ---
-# Debug
+# Find cause
 
 a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`; no symbol: dispatch `exo:locate-code`.
 b. **Investigate.** Proven needs a causal line and a mechanism predicting it; else it must hold in the source. Write `Status: proven`; else dispatch the `exo:solve-hard` agent from `investigator-prompt.md`.

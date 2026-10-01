@@ -13,7 +13,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 | `verify` | Runs the scripted gate, reviews the branch and repairs its findings | "verify the plan at docs/...", "does this branch pass?" |
 | `ship` | Pushes, opens or merges a pull request, fixes its checks or review comments | "push this", "merge the PR", "fix the checks" |
 | `spec` | Decides what "done" means, when that is still open | "I want something for X but I'm not sure what exactly" |
-| `spec` then `build` | Writes the brief with its task list and goes straight on to building it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |
+| `spec` then `build` | Writes the brief with its task list, then offers to build it | "I have a spec or a big wish: build it", or type `/exo:start <spec-path>` |
 | `write-docs` | Writes a README, docs page, PR or commit text | "write the README", "PR description" |
 | `find-cause` | Finds the real cause of a failure before fixing it | "this doesn't work", "why does X crash?" |
 | `refactor` | Restructures code without changing its behavior | "rename X", "move Y", "split this module" |
