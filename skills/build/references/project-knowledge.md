@@ -6,9 +6,10 @@ Turn a lesson learned this session into something the next session reads without
 
 ## Append the line, or build the check
 
-A recurring correction becomes a lint, type, or check before a text line, when the repository can build one. When proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from the root `AGENTS.md` (or the root `CLAUDE.md` when `AGENTS.md` is absent), append one line there; with neither file present, create nothing.
+- A recurring correction becomes a lint, type, or check before a text line, when the repository can build one.
+- When proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from the root `AGENTS.md` (or the root `CLAUDE.md` when `AGENTS.md` is absent), append one line there.
+- With neither file present, create nothing.
 
 ## Judgment
 
-- A check or lint outranks a text line for a correction proven to recur.
 - Record no session history: progress lives in the working tree and commits, reaching a file only through the context breaker.
