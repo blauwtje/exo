@@ -47,6 +47,14 @@ test('each guard denies through the dispatcher with its own text', async () => {
   }
 });
 
+test('a guard denies a command inside bash -c and eval through the dispatcher', async () => {
+  for (const command of [`bash -c "git reset --hard"`, `eval 'git reset --hard'`, `sh -c "bash -c 'git reset --hard'"`]) {
+    const decision = await output(command);
+    assert.equal(decision.permissionDecision, 'deny', command);
+    assert.match(decision.permissionDecisionReason, /git-guard/, command);
+  }
+});
+
 test('a command no step objects to produces no output', async () => {
   assert.equal(await output('git status'), null);
 });
