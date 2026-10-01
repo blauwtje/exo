@@ -21,7 +21,7 @@ A named set is a geometry reference, never a house style. Derive the grid and th
 - Coordinates, arc centers, and endpoints align to the pixel grid.
 - **Never strip the `viewBox`**: keep SVGO's `removeViewBox` off, or the icon stops scaling and may clip.
 
-Generic affordances such as close, search and chevron may come from one consistent set. A display or symbol exception is open where the direction names it. A mark carrying the subject or the brand is drawn against the subject's own grid, because that is where a set stops being a reference and starts being someone else's identity. An icon-only control owes the optical mass of its labelled sibling (the `controls` reference).
+Generic affordances such as close, search and chevron may come from one consistent set. A display or symbol exception is open where the direction names it. A mark carrying the subject or the brand is drawn against the subject's own grid, because that is where a set stops being a reference and starts being someone else's identity. A decorative icon beside a text label is `aria-hidden`; an icon-only control owes the accessible name and the optical mass of its labelled sibling (the `controls` reference).
 
 ## Responsive images
 
@@ -33,7 +33,9 @@ Generic affordances such as close, search and chevron may come from one consiste
 - Offer no media conditions inside `sizes` when using `media`.
 - Always give a real `<img>` with `src` and `alt` before `</picture>`, or nothing renders.
 - Verify: `img.currentSrc` differs across two widths, and the difference is a different crop rather than a different scale.
-- Intrinsic dimensions (`width` and `height`, or `aspect-ratio`) reserve the space; they do not set the rendered size. The `performance-budget` reference holds the layout-shift and eager-loading measurements.
+- Intrinsic dimensions (`width` and `height`, or `aspect-ratio`) reserve the space; they do not set the rendered size.
+- **The LCP image loads eager; every other image takes `loading="lazy"`.**
+- The `performance-budget` reference holds the layout-shift and eager-loading measurements.
 
 ## Cropping, placeholders, and alt
 

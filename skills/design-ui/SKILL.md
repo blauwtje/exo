@@ -62,7 +62,7 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 | `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list` and `## Pairing`; Phase 3 `## Roles`, `## Scale`, `## Micro rules — the craft floor`. |
 | `references/controls.md` | Phase 3, before styling a control. |
 | `references/implementation.md` | Phase 3, before writing CSS or component code, whole. |
-| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the recorded decision; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, and `## Continuity contract`, `## Scroll and view transitions` or `## Libraries` only when the build uses one. |
+| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the recorded decision; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, and `## Continuity contract`, `## Scroll and view transitions` only when the build uses one; add `## Judgment` when the build uses an animation library. |
 | `references/interaction-qa.md` | Phase 3 for controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
 | `references/feedback-and-status.md` | Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Phase 3, the `## Slop tropes` section, before finishing a treatment; Phase 4 whole, by `exo:critique-ui` only; this session reads its faults.md. |
