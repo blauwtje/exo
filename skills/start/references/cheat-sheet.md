@@ -1,7 +1,5 @@
 # Cheat sheet
 
-Every exo skill in one table, so a name never has to be remembered. The enemy is a list so long nobody reads it before falling back to doing the work by hand. The overcorrection is a table that buries the skill someone actually needs under six they open once a year.
-
 Ordered by how often people use each skill; **type it** marks a skill the model never runs on its own, so typing the exact command is the only way in.
 
 | Skill | What it does | Just say instead |
@@ -29,8 +27,3 @@ Skills for a case most sessions never hit; still worth knowing about.
 | Skill | What it does | Just say instead |
 |---|---|---|
 | `check-docs` | Checks how a pinned library, API or service actually behaves | "does this still hold for version X of Y?" |
-
-## Judgment
-
-- A skill that only runs when typed outranks its description as the answer: tell the user the command instead of guessing they meant it.
-- The main table outranks the rarely-needed one when a goal could fit either: the common skill is the likelier match.
