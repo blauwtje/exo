@@ -62,10 +62,11 @@ function loopStep(number, text = RUN_LOOP) {
   return step[0];
 }
 
-test('the direct route reads the diff itself and hands a stop\'s report to the repair delegate unread', () => {
+test('the direct route reads the diff stat on a GREEN return and hands a stop\'s report to the repair delegate unread', () => {
   const dispatchStep = RUN_LOOP_DIRECT;
   assert.ok(dispatchStep.includes('carries `Return: one line`'));
-  assert.ok(dispatchStep.includes('reads itself, never the report'));
+  assert.ok(dispatchStep.includes('reads as `git apply --stat <diff path>` only, never the report and never the full diff'));
+  assert.ok(dispatchStep.includes('A land-task refusal reads the full diff'));
   assert.ok(dispatchStep.includes('hands its report path, unread, to a repair delegate'));
 });
 

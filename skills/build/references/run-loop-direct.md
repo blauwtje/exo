@@ -1,9 +1,9 @@
 # Step 5 under `Route: direct`
 
-- `GREEN` names a diff path this session reads itself, never the report; it runs `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, ending in the `Next:` or `Wave:` line, a wave's per the wave worktrees reference's step 3.
+- `GREEN` names a diff path this session reads as `git apply --stat <diff path>` only, never the report and never the full diff; it runs `node "${CLAUDE_SKILL_DIR}/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, ending in the `Next:` or `Wave:` line, a wave's per the wave worktrees reference's step 3.
 - A `Next:` line sends its task, a `Wave:` line each task per the wave worktrees reference in one message, to `exo:build-task` from `../implementer-prompt.md`, which carries `Return: one line`.
 - In a wave, a failed sibling never discards a green task.
 - That reference's step 4 saves each worktree's diff, then removes it.
-- Any other line hands its report path, unread, to a repair delegate: `PLAN DRIFT` to `../drift-repairer-prompt.md`, `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
+- A land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `PLAN DRIFT` to `../drift-repairer-prompt.md`, `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
 - A second failure of one task stops the run `BLOCKED` with both reports and 2-3 options.
 - A land-task refusal but `PLAN DRIFT` goes to a repair delegate the same way and reruns once; a second refusal stops likewise.
