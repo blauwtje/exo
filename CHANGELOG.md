@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The design-ui agents build-ui, survey-ui and critique-ui (with its critique-ui-high twin) give each instruction bullet one rule, and build-ui fences its copy of the reuse ladder in a `text` block like its sibling copies; their 13 instruction-density allowlist entries are gone and the lock drops from 22 to 9.
+
 ## 0.74.0 - 2026-10-02
 
 ### Added
