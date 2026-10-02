@@ -27,11 +27,11 @@ which prints `{"size","estimate","priority"}`.
 
 A milestone is set only when the repository has an open one whose title the outcome falls under. A status column is left alone: the board's own workflows own it.
 
-## The Spec body
+## The body
 
-No body carries a background or motivation section beyond `### Problem`, a quote of the request, or a copy of the labels, type, parent, blocked-by or milestone, which go stale on the first edit.
+No body, Spec or Report, carries a background or motivation section beyond `### Problem`, a quote of the request, or a copy of the labels, type, parent, blocked-by or milestone, which go stale on the first edit.
 
-Every section is an H3, because a repository's issue form renders each of its fields as one, and an item this standard writes then reads as an item a person filed. An issue template's headings order the body.
+Every section is an H3, because a repository's issue form renders each of its fields as one, and an item this standard writes then reads as an item a person filed. An issue template's headings order a Spec or a Report body.
 
 - `### Outcome`: one sentence naming the result, in the present tense; a brief's Goal.
 - `### Problem` (optional): what goes wrong for the user today, seen from their side, in one or two sentences.
