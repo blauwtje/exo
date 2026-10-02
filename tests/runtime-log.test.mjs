@@ -279,6 +279,24 @@ test('wholeSuiteKeys keys a whole-suite segment and skips one narrowed by an arg
   assert.deepEqual(wholeSuiteKeys('npm test | tail -5'), ['npm test']);
 });
 
+test('wholeSuiteKeys skips a leading time and its options', () => {
+  assert.deepEqual(wholeSuiteKeys('time npm test 2>&1 | tail -40'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('time -p npm run test'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('CI=1 time npm test'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('time CI=1 npm test'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('time npm test -- tests/tax.test.ts'), []);
+});
+
+test('a time-prefixed command is learnable and records its whole-suite duration', () => {
+  assert.equal(isLearnable('time npm test 2>&1 | tail -40'), true);
+  assert.equal(isLearnable('time -p pytest'), true);
+  assert.equal(isLearnable('time npm install'), false);
+  withCache(() => {
+    run('time npm test 2>&1 | tail -40', { seconds: 33, threshold: 20 });
+    assert.equal(lastDuration('/p', 'npm test'), 33);
+  });
+});
+
 test('a one-segment whole-suite run records its duration, fast or slow', () => {
   withCache(() => {
     assert.equal(lastDuration('/p', 'npm test'), null);

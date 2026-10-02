@@ -51,6 +51,10 @@ test('the refusal reaches a whole-suite run in a chain and in a bash -c string',
   assert.match(await reason('bash -c "npm test"', { agentType: 'exo:build-task', seconds: 33 }), /whole test suite/);
 });
 
+test('a time-prefixed whole-suite run is refused from a build subagent', async () => {
+  assert.match(await reason('time npm test 2>&1 | tail -40', { agentType: 'exo:build-task', seconds: 33, threshold: 20 }), /whole test suite/);
+});
+
 test('a fast whole-suite run passes', async () => {
   assert.equal(await reason('npm test', { agentType: 'exo:build-task', seconds: 5 }), null);
 });
