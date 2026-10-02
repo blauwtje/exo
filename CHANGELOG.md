@@ -7,9 +7,25 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The process-structure check fails a SKILL.md body that repeats a `##` or `###` heading, or a non-blank line over 40 characters outside tables and fences.
+
+### Changed
+
+- The configure overview leads each setting with its label and plain value, with the raw key, raw value and origin in brackets after it.
+- The configure safety menu folds `heavy_commands` and `heavy_after_seconds` into one Slow commands pick with its own question, the ship menu takes its fifth value as a typed answer, and the `heavy_commands` question offers to clear the list, so every settings question keeps the question shape.
+- The unread `route-skills` next-stage reference is gone; its rules on an `exo: context` notice and on a borrowed stage returning control now sit in `spec` and `find-cause`.
+- edit-skills runs its pressure scenarios on the model and effort cell picked for the skill's kind, not a fixed `sonnet:high`.
+- The README, the start cheat sheet and the start doc now use the same verify phrases, remember wording and spec hand-off.
+
 ### Fixed
 
 - land-task accepts a build report whose proof sits on one line as `Proof: <command>: pass`, while a `Proof:` line with no passing command still refuses.
+- The build-task agent copies the brief's `Proof:` command character for character in its report, never shortening a path.
+- next-task briefs carry the plan's `## Decisions` bullets for the task's paths.
+- The plugin version check warns and asks for a rebase onto `origin/main`, instead of failing, when only a release moved `origin/main` ahead of the branch.
+- save-session's no-note reference has a reader again: the row now fires when save-session itself starts without a note.
 
 ## 0.75.1 - 2026-10-02
 
