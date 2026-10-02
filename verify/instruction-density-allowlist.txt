@@ -1,11 +1,4 @@
 # Instruction-density offenders the tree carried when the check began: path, kind, a bullet's sentence count, first 40 characters, tab-separated.
 # Split an offender and delete its line; `node verify/instruction-density.mjs --prune` drops lines that match nothing.
-agents/locate-code.md	sentence	A location recalled from a name, guessed
-agents/review-branch-deep-high.md	sentence	Write the report with the Write tool to
-agents/review-branch-deep.md	sentence	Write the report with the Write tool to
-agents/review-branch.md	sentence	Write the report with the Write tool to
-agents/run-unit.md	bullet	3	**Take the task from the script's output
-agents/run-unit.md	bullet	4	**Dispatch the build.** Up to three task
-agents/run-unit.md	bullet	4	**Commit a green task.** Done means `GRE
 output-styles/scannable.md	bullet	3	**Max three blocks**, blank line between
 output-styles/scannable.md	bullet	3	**Max eight lines** above the closing li
