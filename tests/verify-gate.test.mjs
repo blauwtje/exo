@@ -413,7 +413,13 @@ const RISK_PLAN = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Fi
 async function reviewerOf(files, { commits = [], args = [] } = {}) {
   const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'check.js': CLEAN_CHECK, ...files });
   const base = git(root, 'rev-parse', 'HEAD');
-  for (const [subject, trailer] of commits) git(root, 'commit', '--allow-empty', '-m', subject, ...(trailer ? ['-m', trailer] : []));
+  // Each commit is [subject, trailer?, files?]; `files`, a map of path to
+  // content, is written and staged first, else the commit is empty.
+  for (const [subject, trailer, files = {}] of commits) {
+    for (const [relativePath, content] of Object.entries(files)) await writeFile(path.join(root, relativePath), content);
+    git(root, 'add', '-A');
+    git(root, 'commit', '--allow-empty', '-m', subject, ...(trailer ? ['-m', trailer] : []));
+  }
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js', ...args], { cwd: root });
   return result.stdout.split('\n').find((line) => line.startsWith('REVIEWER: '));
 }
@@ -426,7 +432,7 @@ test('a landed task with a Risk: field prints the deep reviewer for a small diff
 test('a Signature trailer or a branch commit without Plan-task prints the deep reviewer', async () => {
   const plan = { 'plan.md': RISK_PLAN(' ') };
   assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1\nSignature: a.js:f(x) -> (x, y)']] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
-  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1'], ['fix: review']] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1'], ['fix: review', null, { 'src/app.js': 'export const greet = () => "hello";\n' }]] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
 });
 
 test('a changed manifest prints the deep reviewer', async () => {

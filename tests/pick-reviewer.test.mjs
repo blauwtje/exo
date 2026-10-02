@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, resolveReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
-import { git, gitRepository, run } from './harness.mjs';
+import { commitFiles, git, gitRepository, run } from './harness.mjs';
 
 const { light, deep } = REVIEWER_AGENTS;
 const AGENTS_DIRECTORY = fileURLToPath(new URL('../agents/', import.meta.url));
@@ -66,7 +66,7 @@ test('with no override, the risk facts decide', () => {
   assert.equal(resolveReviewer({ reviewer: undefined, facts: { ...NO_RISK, signatureChanged: true } }), deep);
 });
 
-test('signatureChangedSince reads a Signature trailer or a missing Plan-task trailer, never a merge', async () => {
+test('signatureChangedSince reads a Signature trailer or a script commit missing a Plan-task trailer, never a merge', async () => {
   const root = await gitRepository({ 'app.js': 'export const a = 1;\n' });
   const base = git(root, 'rev-parse', 'HEAD');
   git(root, 'commit', '--allow-empty', '-m', 'feat: plain', '-m', 'Plan-task: plan/1');
@@ -75,8 +75,18 @@ test('signatureChangedSince reads a Signature trailer or a missing Plan-task tra
   assert.equal(signatureChangedSince(base, root), true);
   const second = git(root, 'rev-parse', 'HEAD');
   assert.equal(signatureChangedSince(second, root), false);
-  git(root, 'commit', '--allow-empty', '-m', 'fix: review fix');
+  await commitFiles(root, { 'app.js': 'export const a = 2;\n' }, 'fix: review fix');
   assert.equal(signatureChangedSince(second, root), true);
+});
+
+test('signatureChangedSince ignores a changelog-only commit missing a Plan-task trailer', async () => {
+  const root = await gitRepository({ 'app.js': 'export const a = 1;\n', 'CHANGELOG.md': '# Changelog\n' });
+  const base = git(root, 'rev-parse', 'HEAD');
+  await commitFiles(root, { 'CHANGELOG.md': '# Changelog\n\n- a line\n' }, 'docs(changelog): record the change');
+  assert.equal(signatureChangedSince(base, root), false);
+  const result = await run(SCRIPT, ['--base', base], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, `${light}\n`);
 });
 
 test('parseNumstat sums numstat lines and treats a binary marker as zero', () => {

@@ -9,14 +9,12 @@ Write for a zero-context reader.
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the result.
-2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
+2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
    - When two tasks share no `Depends on:` chain, add `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
    - Add `Land gate: npm run typecheck` for root's package.json `typecheck` script, else `none`; the owner may name a slower `validate` or `check`.
-   - Add `Lint: npm run lint` for root's package.json `lint` script, else `none`; it lints each task's `Files:`.
-3. `## Success criterion`: the one command proving every task landed, no
-   interpretation step, no user-only check.
-4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`,
-   `Smallest safe split:`, each naming tasks, a shared target or `none`.
+   - Add `Lint: <linter binary>` like `npx eslint` for root's package.json `lint` script, else `none`; `npm run lint` skips a task's `Files:`.
+3. `## Success criterion`: the one command proving every task landed, no interpretation step, no user-only check.
+4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`, `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`: the dependency-ordered list.
 
 ## The task template
@@ -38,14 +36,10 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 
 ## Rules
 
-1. **Verified names only.** List a path or symbol only after reading its
-   range; `plan-check` catches only a missing one.
-2. **One field line, one task.** A second field line, `Run:`, `Expected:` or
-   a code block makes it long-format, needing `Commit:`, `Run:`, `Expected:`.
-3. **Small tasks.** One heading, one concern; split only when `Files:` spans
-   a shared write target (rule 4) and an independent one.
-4. **Shared write target.** Split a file, key or branch two tasks both
-   touch, unless a shared invariant earns a serializing `Depends on:` edge.
+1. **Verified names only.** List a path or symbol only after reading its range; `plan-check` catches only a missing one.
+2. **One field line, one task.** A second field line, `Run:`, `Expected:` or a code block makes it long-format, needing `Commit:`, `Run:`, `Expected:`.
+3. **Small tasks.** One heading, one concern; split only when `Files:` spans a shared write target (rule 4) and an independent one.
+4. **Shared write target.** Split a file, key or branch two tasks both touch, unless a shared invariant earns a serializing `Depends on:` edge.
 5. **No manual task.** A user-only check is one `## Manual checks` line.
 
 ## Judgment

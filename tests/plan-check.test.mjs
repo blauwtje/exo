@@ -252,7 +252,7 @@ test('plan-check fails a compact plan whose package.json has a lint script and n
   const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
   const report = planCheckReport(plan);
   assert.equal(report.ok, false);
-  assert.ok(report.lines.some((line) => line.includes("no 'Lint:' line") && line.includes('Lint: npm run lint')));
+  assert.ok(report.lines.some((line) => line.includes("no 'Lint:' line") && line.includes('Lint: npx eslint')));
 });
 
 test('plan-check prints ok for a compact plan whose package.json has a test script but no typecheck or lint script', async () => {

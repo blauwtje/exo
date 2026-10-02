@@ -227,7 +227,7 @@ function checkLandGate(frame, root) {
     problems.push("the plan's '## Plan basis' has no 'Land gate:' line, though the target repository's package.json has a typecheck script to gate on: add 'Land gate: npm run typecheck' or 'Land gate: none' to opt out");
   }
   if (scripts.lint !== undefined && !/^Lint: .+$/m.test(basis)) {
-    problems.push("the plan's '## Plan basis' has no 'Lint:' line, though the target repository's package.json has a lint script: add 'Lint: npm run lint' or 'Lint: none' to opt out");
+    problems.push("the plan's '## Plan basis' has no 'Lint:' line, though the target repository's package.json has a lint script: add a 'Lint:' line naming the linter binary, such as 'Lint: npx eslint', since 'npm run lint' ignores the task's files, or 'Lint: none' to opt out");
   }
   return problems;
 }

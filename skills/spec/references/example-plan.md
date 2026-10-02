@@ -13,7 +13,7 @@ Repository: /repo
 Branch: due-date-badge
 Worktree setup: none
 Land gate: npm run typecheck
-Lint: npm run lint
+Lint: npx eslint
 
 ## Success criterion
 `npm test` passes.

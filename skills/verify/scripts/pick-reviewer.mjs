@@ -4,8 +4,9 @@
 // with --reviewer, or the risk facts and numbers themselves, do.
 
 import { execFileSync } from 'node:child_process';
-import { basename } from 'node:path';
+import { basename, extname } from 'node:path';
 import { readKindTable } from '#model-kinds';
+import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
@@ -51,16 +52,20 @@ export function touchesManifest(paths) {
 
 /**
  * Whether a non-merge commit between `base` and HEAD carries a `Signature:`
- * trailer (land-task adds it) or no `Plan-task:` trailer, such as a `--fix`
- * commit. Merge commits are never read.
+ * trailer (land-task adds it), or carries no `Plan-task:` trailer, such as a
+ * `--fix` commit, and touches a script file. A commit without `Plan-task:`
+ * that touches only prose or data, such as `CHANGELOG.md`, cannot change a
+ * signature. Merge commits are never read.
  */
 export function signatureChangedSince(base, root = process.cwd()) {
-  const format = '%x1e%(trailers:key=Signature,valueonly)%x1f%(trailers:key=Plan-task,valueonly)';
-  const log = execFileSync('git', ['-C', root, 'log', '--no-merges', `--format=${format}`, `${base}..HEAD`], { encoding: 'utf8' });
+  const format = '%x1e%(trailers:key=Signature,valueonly)%x1f%(trailers:key=Plan-task,valueonly)%x1f';
+  const log = execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'log', '--no-merges', '--name-only', `--format=${format}`, `${base}..HEAD`], { encoding: 'utf8' });
   const commits = log.split('\x1e').slice(1);
   return commits.some((commit) => {
-    const [signature, planTask] = commit.split('\x1f');
-    return signature.trim() !== '' || planTask.trim() === '';
+    const [signature, planTask, names] = commit.split('\x1f');
+    if (signature.trim() !== '') return true;
+    if (planTask.trim() !== '') return false;
+    return names.split('\n').some((name) => SCRIPT_EXTENSIONS.has(extname(name.trim())));
   });
 }
 

@@ -305,12 +305,16 @@ function signatureChanges(task, root) {
 }
 
 // A `Lint: <command>` line in the plan's `## Plan basis` runs once on the
-// task's own `Files:` paths that are scripts, spawned without a shell, so the
-// task lands on its Proof plus lint, not the test suite; a plan without the
-// line, with `Lint: none`, or a task naming no script path lints nothing.
+// task's own `Files:` paths that are scripts and still exist, spawned without
+// a shell, so the task lands on its Proof plus lint, not the test suite; a
+// script the task deleted never reaches the linter as a missing path. A plan
+// without the line, with `Lint: none`, or a task with no existing script path
+// lints nothing.
 function runLint(lint, task, root) {
   if (lint === null || lint === 'none') return;
-  const paths = task.files.map((file) => file.path).filter((file) => SCRIPT_EXTENSIONS.has(path.extname(file)));
+  const paths = task.files
+    .map((file) => file.path)
+    .filter((file) => SCRIPT_EXTENSIONS.has(path.extname(file)) && fs.existsSync(path.join(root, file)));
   if (paths.length === 0) return;
   const [command, ...args] = [...lint.split(/\s+/), ...paths];
   const result = spawnSync(command, args, { cwd: root, encoding: 'utf8' });

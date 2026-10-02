@@ -127,6 +127,38 @@ test('Lint: none and a task with no script path run nothing', async () => {
   assert.match(noted, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
+// A checkout that tracks `src/old.mjs`, deleted in the working tree, plus a
+// recording linter, so a test sees exactly which paths reached the linter.
+async function deletedScriptCheckout(files) {
+  const plan = planFixture({ tasks: [taskSection({ number: 1, title: 'Drop old', files, subject: 'refactor(app): drop old' })] });
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'src/old.mjs': 'export const old = 1;\n', 'docs/plans/fixture.md': plan });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  await fs.rm(path.join(root, 'src/old.mjs'));
+  const tools = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-lint-'));
+  const record = path.join(tools, 'lint-args.txt');
+  const linter = path.join(tools, 'linter.sh');
+  await fs.writeFile(linter, `#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\n`, { mode: 0o755 });
+  const planText = plan.replace('Branch: feat/fixture', `Branch: feat/fixture\nLint: ${linter}`);
+  return { root, planPath: path.join(root, 'docs/plans/fixture.md'), planText, record };
+}
+
+test('a task whose only script path it deleted runs no Lint and lands', async () => {
+  const { root, planPath, planText, record } = await deletedScriptCheckout(['- Modify: `src/old.mjs`']);
+  const output = landTask({ planPath, planText, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  await assert.rejects(fs.access(record), { code: 'ENOENT' });
+});
+
+test('Lint gets only the task script paths that still exist, never a deleted one', async () => {
+  const { root, planPath, planText, record } = await deletedScriptCheckout(['- Modify: `src/old.mjs`', '- Modify: `src/app.js`']);
+  await editApp(root);
+  const output = landTask({ planPath, planText, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.equal(await fs.readFile(record, 'utf8'), 'src/app.js\n');
+});
+
 test('a passing Land gate lets a green task land', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
