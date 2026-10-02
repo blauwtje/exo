@@ -1,10 +1,8 @@
 # Where a fix lives
 
-A mistake seen in a run is fixed in the cheapest place that still stops it, and prose is the last of those places. The enemy is a paragraph of instruction for something a check could have refused. The overcorrection is a script for a call that needs judgment, which fails on the first case nobody scripted.
-
 ## Take the first home that fits
 
-Read the transcript of the run that failed, go down this list, and stop at the first line that holds.
+Read the transcript of the run that failed, go down this list, and stop at the first line that holds; prose is the last home.
 
 1. **A machine can tell right from wrong.** The verifier, a hook or a test refuses it, and the skill says nothing. Example: a description over its character limit.
 2. **The steps never vary and a slip damages state.** A script the skill runs, named with its command. Example: the repo map command in `spec`.
@@ -25,11 +23,10 @@ Read the transcript of the run that failed, go down this list, and stop at the f
 ## A rule that has to be prose
 
 - Say what to produce, because a sentence that only names the unwanted output keeps that output in view.
-- Write an exception as its own gate beside the rule, never as a soft clause inside it.
+- Write an exception as its own gate beside the rule, never a soft clause inside it.
 - When one kind of output must stay untouched, place the rule where that output never passes, because an exemption clause still colours it.
 
 ## Judgment
 
-- A check outranks a script, a script a template, a template a gate, and a gate a rule.
 - What the failed run showed outranks the home the writer reaches for by habit.
 - A home that admits every good approach outranks a tighter one.
