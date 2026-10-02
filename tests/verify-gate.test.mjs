@@ -145,6 +145,23 @@ test("a plan's 'Land gate: none' prints UNRUN, not PASS, and does not fail", asy
   assert.ok(!result.stdout.includes('PASS success-criterion'));
 });
 
+test("a plan's 'Land gate: none' still runs the Success criterion command", async () => {
+  const plan = [
+    '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: none', '',
+    '## Success criterion', '`node check.js` passes.', '',
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"',
+    ''
+  ].join('\n');
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': FAILING_CHECK });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.ok(result.stdout.includes('FAIL success-criterion'));
+  assert.ok(!result.stdout.includes('UNRUN success-criterion'));
+});
+
 const SUITE_PROOF_PLAN = (gate) => [
   '## Plan basis', '', 'Repository: .', 'Branch: main', ...(gate ? [`Land gate: ${gate}`] : []), '',
   '### Task 1: feat(app): greet',

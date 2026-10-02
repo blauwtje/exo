@@ -17,8 +17,8 @@
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
 // A land-task record `.exo/land-gate-<plan id>.json` for the HEAD tree skips the gate and each Proof it names with a SKIP line.
-// Exits 1 on any FAIL or STRAY line; `Land gate: none` prints UNRUN, not PASS,
-// and does not fail.
+// Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
+// command prints UNRUN, not PASS, and does not fail.
 
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -166,7 +166,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
-  const gateCommand = checkCommand ?? landGateNone ?? criterionCommand(frame.successCriterion) ?? frame.landGate ?? DEFAULT_LAND_GATE;
+  const gateCommand = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone ?? frame.landGate ?? DEFAULT_LAND_GATE;
   const gateSkipped = gateCommand === 'none';
 
   const proofRuns = [];
