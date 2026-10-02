@@ -7,7 +7,10 @@ Applies to files and folders created or moved, any stack, and to where UI stylin
 1. One exported unit per file, named after it (component, hook, store, service, repository, schema, type group). Entry files (page, route, controller, CLI command) compose units, never define them.
 2. Split by responsibility, not size: extract when a file holds two things looked up separately (markup + data fetching, component + formatting helpers, schema + handler). ~200 lines = look for that seam, not an order to cut.
 3. Colocate a unit's test, stylesheet, hook and types. Move to a shared folder at the second consumer, not before.
-4. Files and folders kebab-case; symbols per language convention. Folder named by domain (`invoice`) or kind (`hooks`), never mixed at one level. No barrel `index` re-exports.
+4. Naming:
+   - Name files and folders kebab-case and symbols per language convention.
+   - Name a folder by domain (`invoice`) or kind (`hooks`), never mixed at one level.
+   - Add no barrel `index` re-exports.
 
 ## Folders
 
