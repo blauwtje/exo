@@ -18,7 +18,7 @@ tools: Read, Edit, Write, Grep, Bash
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
 - Green is the `Proof:` command passing; write a missing `Proof:` script first, with only the project's tools.
-- With no `Proof:` field, write or pick one test for `Success criterion:` and run only it; report it first under Proof, because build build lands on the first outcome line.
+- With no `Proof:` field, write or pick one test for `Success criterion:` and run only it; report it first under Proof: build lands on that line.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
 Before the first edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once per run, never searched for or under `<checkout>`.
@@ -43,9 +43,17 @@ Before the first edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skil
 
 ## Report
 
-- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there: Landed, Proof, Unresolved (or `none`), plus one `Choice: <one clause>` line per choice the task's fields leave open.
-- Under Proof, write each test, `Proof:` or `Run:` command as `<command>: pass` or `: fail` with last output lines indented, never a summary: build lands a compact task on them.
-- Done is real-product proof, not code reading; a skipped or unclear check is not done: write it as it ran, not `pass`.
+- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there, plus one `Choice: <one clause>` line per choice the task's fields leave open.
+- Under Proof, copy each `Proof:` or `Run:` command from the brief character for character, never shortening a path to `...`: build lands on it.
+- Lay it out as:
+
+Landed: <change>
+Proof:
+<command>: pass or fail
+  <last output lines, indented>
+Unresolved: none
+
+- Done is real-product proof, not code reading; write a skipped check as it ran, not `pass`.
 - Without `Return: one line`, return it only on a failed test or unfinished work; a green task returns only:
 
 Task <n>: GREEN
