@@ -14,7 +14,7 @@
 // leave out the user's settings and memory, which could decide it for reasons
 // outside the plugin.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
-// directory outside the repository, matching pressure-scenarios.md:41; cells
+// directory outside the repository, matching pressure-scenarios.md; cells
 // run one after another.
 //
 // Each run's full final answer, untruncated, goes to its own file
