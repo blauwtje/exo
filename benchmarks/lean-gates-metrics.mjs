@@ -31,7 +31,9 @@
 //   tail    = last phase end -> meta.endedAt (ship, final report).
 // - "suite-log": <run>/suite-runs.jsonl lines with full=true (primary full
 //   suite count). "transcript-bash": Bash tool_use commands in the main and
-//   every subagent transcript that run the whole suite (npm test / npm run
+//   every subagent transcript that run the whole suite, per agent type, with the
+//   main session's first run (the prompt's warm-up) and the guard's refusals
+//   counted apart (npm test / npm run
 //   test with no file after "--", node --test or vitest/jest with no file
 //   argument or only a glob); the gate verify.mjs and land-task.mjs run
 //   internally are counted apart, since their suite runs never show as Bash.
@@ -67,6 +69,8 @@ const SCRIPT_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']
 const MANIFESTS = new Set(['package.json', 'package-lock.json', 'npm-shrinkwrap.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
 const OLD_FILE_LIMIT = 5;
 const OLD_LINE_LIMIT = 200;
+// The suite guard's refusal text (hooks/guards/suite-guard.mjs).
+const SUITE_REFUSAL = /may not run the whole test suite/;
 const RECHECK_TIMEOUT_MS = 10 * 60 * 1000;
 const GATE_COMMAND = /verify\.mjs|\bnpm\s+(test|t|run\s+(test|typecheck|lint|check))\b|\btsc\b|\beslint\b|node\s+--test|\bvitest\b/;
 
@@ -560,12 +564,25 @@ export function runMetrics(runDirectory, { recheck: doRecheck = true, forceReche
   });
   const total = addUsage(addUsage({}, main), subagents.reduce((sum, subagent) => addUsage(sum, subagent.usage), { calls: 0, input: 0, cacheCreation: 0, cacheRead: 0, output: 0, totalTokens: 0, costUsd: 0, unpricedCalls: 0, models: {} }));
 
-  // full suite
-  const allEntries = [session.main.entries, ...session.subagents.map((subagent) => subagent.entries)];
-  const bashCommands = allEntries.flatMap((entries) => toolCalls(entries).filter((call) => call.name === 'Bash').map((call) => String(call.input.command ?? '')));
+  // full suite: the main session's first run is the harness warm-up, a refused
+  // call (the suite guard's text in its result) is counted apart, and the rest
+  // are counted per agent type.
+  const transcripts = [{ type: 'main', entries: session.main.entries }, ...session.subagents.map((subagent) => ({ type: subagent.meta.agentType ?? 'unknown', entries: subagent.entries }))];
+  const bashCalls = transcripts.flatMap(({ type, entries }) => toolCalls(entries).filter((call) => call.name === 'Bash').map((call) => ({ type, command: String(call.input.command ?? ''), resultText: call.resultText ?? '' })));
+  const suiteCalls = bashCalls.filter((call) => isFullSuiteCommand(call.command));
+  const refused = suiteCalls.filter((call) => SUITE_REFUSAL.test(call.resultText));
+  const ran = suiteCalls.filter((call) => !refused.includes(call));
+  const warmUp = ran.find((call) => call.type === 'main') ?? null;
+  const counted = ran.filter((call) => call !== warmUp);
+  const perType = (calls) => calls.reduce((counts, call) => ({ ...counts, [call.type]: (counts[call.type] ?? 0) + 1 }), {});
+  const log = fullSuiteFromLog(runDirectory, meta);
+  if (log.full !== null && warmUp) log.full = Math.max(0, log.full - 1);
   const fullSuite = {
-    log: fullSuiteFromLog(runDirectory, meta),
-    bash: { full: bashCommands.filter(isFullSuiteCommand).length, verifyCalls: bashCommands.filter((command) => /verify\.mjs/.test(command)).length, landTaskCalls: bashCommands.filter((command) => /land-task\.mjs/.test(command)).length, source: 'transcript-bash' }
+    log,
+    warmUp: warmUp ? 1 : 0,
+    byAgentType: perType(counted),
+    refusals: perType(refused),
+    bash: { full: counted.length, verifyCalls: bashCalls.filter((call) => /verify\.mjs/.test(call.command)).length, landTaskCalls: bashCalls.filter((call) => /land-task\.mjs/.test(call.command)).length, source: 'transcript-bash' }
   };
 
   // reviewer
@@ -670,6 +687,7 @@ export function aggregate(runs) {
       costHarnessUsd: summarize(group.map((run) => run.cost.harnessUsd)),
       fullSuiteRunsLog: summarize(group.map((run) => run.fullSuite.log.full)),
       fullSuiteRunsBash: summarize(group.map((run) => run.fullSuite.bash.full)),
+      suiteGuardRefusals: summarize(group.map((run) => Object.values(run.fullSuite.refusals).reduce((sum, count) => sum + count, 0))),
       findings: summarize(group.map((run) => run.quality.findings))
     };
   }

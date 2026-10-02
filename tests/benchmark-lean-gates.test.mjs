@@ -27,6 +27,14 @@ test('arguments take defaults and refuse a bad version or run', () => {
   assert.equal(runDirectoryName(12, 'new'), '12-new');
 });
 
+test('--plan defaults to the version and lets either version run either plan', () => {
+  const base = ['--run', '1', '--out', '/tmp/x'];
+  assert.equal(parseArguments(['--version', 'old', ...base]).plan, 'old');
+  assert.equal(parseArguments(['--version', 'old', '--plan', 'new', ...base]).plan, 'new');
+  assert.throws(() => parseArguments(['--version', 'old', '--plan', 'mid', ...base]), /--plan must be old or new/);
+  assert.ok(PROMPT.startsWith('First run `npm test` once in the foreground'));
+});
+
 test('--probe needs no run and pins haiku at fifty cents', () => {
   const options = parseArguments(['--version', 'old', '--probe', '--out', '/tmp/x']);
   assert.deepEqual({ probe: options.probe, model: options.model, budget: options.budget }, { probe: true, model: 'haiku', budget: '0.5' });

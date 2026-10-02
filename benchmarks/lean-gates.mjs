@@ -15,7 +15,7 @@
 //   exo-settings.txt   `settings.mjs show` in repo/, as the plugin resolves it
 //
 //   node benchmarks/lean-gates.mjs --version old|new --run <n> --out <dir>
-//     [--model claude-opus-5-5] [--effort medium] [--budget 30]
+//     [--plan old|new] [--model claude-opus-5-5] [--effort medium] [--budget 30]
 //     [--timeout-min 110] [--dry-run]
 //   node benchmarks/lean-gates.mjs --version old|new --probe --out <dir>
 //
@@ -69,7 +69,8 @@ export const EXO_SETTINGS = {
   guards: 'on',
   guard_lines: 400,
   heavy_commands: '',
-  heavy_after_seconds: 60
+  heavy_after_seconds: 60,
+  subagent_suite_after_seconds: 20
 };
 
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];
@@ -77,7 +78,7 @@ const NO_ANSWER = 'Nobody can answer a question during this run.';
 
 // Identical for both versions. Build ends on verify in both (build
 // references/tail.md), so the prompt names verify as the end, not a second step.
-export const PROMPT = `Load the exo:build skill and run the plan ${PLAN_PATH}; the run is done when the branch passes exo:verify, which build ends on. Commit on a new branch ${BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
+export const PROMPT = `First run \`npm test\` once in the foreground in this session, so the suite's duration is known before any subagent starts. Then load the exo:build skill and run the plan ${PLAN_PATH}; the run is done when the branch passes exo:verify, which build ends on. Commit on a new branch ${BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
 
 export const PROBE_PROMPT = 'Reply with the single word OK.';
 const PROBE = { model: 'haiku', budget: '0.5', timeoutMin: 5 };
@@ -90,7 +91,7 @@ export const ISOLATION_ENV = { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_
 const CONTEXT_NAMES = ['CLAUDE.md', 'CLAUDE.local.md', '.claude'];
 
 export function parseArguments(argv) {
-  const options = { version: null, run: null, out: null, model: 'claude-opus-5-5', effort: 'medium', budget: '30', timeoutMin: 110, dryRun: false, probe: false };
+  const options = { version: null, plan: null, run: null, out: null, model: 'claude-opus-5-5', effort: 'medium', budget: '30', timeoutMin: 110, dryRun: false, probe: false };
   const value = (index) => {
     if (index >= argv.length) throw new Error(`${argv[index - 1]} needs a value`);
     return argv[index];
@@ -98,6 +99,7 @@ export function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--version') options.version = value(++index);
+    else if (flag === '--plan') options.plan = value(++index);
     else if (flag === '--run') options.run = Number(value(++index));
     else if (flag === '--out') options.out = value(++index);
     else if (flag === '--model') options.model = value(++index);
@@ -109,6 +111,8 @@ export function parseArguments(argv) {
     else throw new Error(`unknown flag ${flag}`);
   }
   if (!(options.version in PLUGIN_DIRS)) throw new Error('--version must be old or new');
+  options.plan ??= options.version;
+  if (!(options.plan in PLUGIN_DIRS)) throw new Error('--plan must be old or new');
   if (options.probe) Object.assign(options, PROBE);
   else if (!Number.isInteger(options.run) || options.run < 1) throw new Error('--run must be a positive integer');
   if (options.out === null) throw new Error('--out <dir> is required');
@@ -349,7 +353,7 @@ async function main() {
   const modules = ensureNodeModules();
   fs.mkdirSync(runDirectory, { recursive: true });
   fs.mkdirSync(path.join(runDirectory, 'sessions'));
-  const repository = prepareRepository(runDirectory, options.version, modules);
+  const repository = prepareRepository(runDirectory, options.plan, modules);
   const env = childEnvironment(process.env, runDirectory);
   fs.writeFileSync(path.join(runDirectory, 'exo-settings.txt'), settingsReport(pluginDir, repository, env));
   const sessionId = crypto.randomUUID();
@@ -357,6 +361,7 @@ async function main() {
   const argv = claudeArguments(options, pluginDir, sessionId, prompt);
   const meta = {
     version: options.version,
+    plan: options.plan,
     run: options.run,
     probe: options.probe,
     pluginDir,
