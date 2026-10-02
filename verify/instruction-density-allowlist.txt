@@ -27,9 +27,6 @@ skills/find-cause/SKILL.md	bullet	3	**Reproduce.** One command reproduces it
 skills/find-cause/references/handoff.md	sentence	The investigate part, at most 25 lines,
 skills/find-cause/references/handoff.md	sentence	The fix delegate appends a `## Fix` sect
 skills/remember/SKILL.md	bullet	3	**Book** the user's correction with `nod
-skills/save-session/SKILL.md	sentence	On a branch other than the repository's
-skills/save-session/SKILL.md	sentence	`## Current state` separates what is sav
-skills/save-session/SKILL.md	sentence	Copy this paragraph into `## Resume` exa
 skills/start/SKILL.md	sentence	The exception is a path to a spec file,
 skills/start/SKILL.md	sentence	Call the picked skill through the Skill
 skills/write-docs/SKILL.md	bullet	3	**Write whole sentences in plain words.*
