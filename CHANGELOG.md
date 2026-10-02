@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.74.2 - 2026-10-02
+
 ### Changed
 
 - The agents run-unit, review-branch (with its review-branch-deep and review-branch-deep-high twins) and locate-code give each instruction bullet one rule, with no behaviour or dispatch contract change; their 7 instruction-density allowlist entries are gone and the lock drops from 9 to 2.
