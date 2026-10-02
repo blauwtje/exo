@@ -1,7 +1,5 @@
 # Plugging holes
 
-Each excuse the model still makes with the skill loaded turns into exactly one change to the skill. The enemy is the generic warning such as "be thorough", which the next run skims past. The overcorrection is a skill that gains a paragraph per excuse until the rule that mattered disappears under them.
-
 ## Closing one excuse
 
 Apply these in order, rerunning after each, and stop at the first rerun that passes:
@@ -24,15 +22,6 @@ Ask the run that failed how the skill should have been worded, and act on the ki
 - It proposes a specific sentence: add that sentence in its words.
 - It says it never noticed a section: move that section earlier or into the opening, and add nothing.
 
-## Before calling it closed
-
-- The run without the skill happened, so the pass has an explanation.
-- More than one pressure was tried, so a second pressure in real use finds no gap.
-- The red flags row quotes the model, so it matches the words the model really uses.
-- Every case was rerun after the change, not only the one that failed.
-
 ## Judgment
 
 - A change that names the workaround outranks one that repeats the rule.
-- Moving a section outranks adding text when the model missed something already there.
-- One skill carried through the whole loop outranks two left halfway; the next skill starts once this one passes every case.
