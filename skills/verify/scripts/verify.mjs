@@ -19,10 +19,14 @@
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
 // A FAIL line for a Proof or the Success criterion names why in brackets, the
-// signal that killed the command or its exit code, and is followed by the last
+// signal that killed the command, its exit code, or the unclean SUMMARY line of
+// a Success criterion that exited 0, and is followed by the last
 // lines of that command's output, each indented two spaces, so every check line
 // still starts at the left margin.
 // A land-task record `.exo/land-gate-<plan id>.json` for the HEAD tree skips the gate and each Proof it names with a SKIP line.
+// The Success criterion passes on exit code 0, and when its output holds a
+// `SUMMARY ` line, as exo's own `npm run check` prints, that line must also read
+// FAIL=0 WARN=0 UNRUN=0.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -36,7 +40,9 @@ import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-reviewer.mjs';
 
-const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
+// The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
+const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
+const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
 const DEFAULT_LAND_GATE = 'npm run check';
 // A Proof that starts the whole test suite: `npm test`.
 const TEST_SUITE_PROOF = /^npm test( |$)/;
@@ -97,9 +103,19 @@ export function findStrayPaths(tasks, paths) {
   return paths.filter((path) => !declared.has(path));
 }
 
-/** `npm run check`'s own clean line: exo's default final check, when the plan names none. */
-export function successCriterionPasses(output) {
-  return CHECK_SUMMARY.test(output);
+/** The last `SUMMARY ` line of `output`, or null when it prints none. */
+export function summaryLine(output) {
+  return output.match(SUMMARY_LINE)?.at(-1) ?? null;
+}
+
+/**
+ * Whether a Success criterion run `{ ok, output }` passed. Without a SUMMARY line
+ * its exit code alone decides, since another project's check never prints one. With
+ * one, that line must also be clean, since exo's own `npm run check` exits 0 on a WARN or UNRUN.
+ */
+export function successCriterionPasses({ ok, output }) {
+  const summary = summaryLine(output);
+  return ok && (summary === null || CLEAN_SUMMARY.test(summary));
 }
 
 /** The first backticked command in the plan's Success criterion text, or null when it has none. */
@@ -252,16 +268,15 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     lines.push('SKIP success-criterion (land-task ran the gate on this same tree)');
   } else {
     const gateRun = await runCommand(gateCommand);
-    const { ok: checkOk, output } = gateRun;
-    // The SUMMARY convention binds only exo's own default gate; a plan that
-    // names its own Success criterion command is judged on that command's exit status alone,
-    // since another project's check never prints exo's SUMMARY line.
-    const criterionOk = checkOk && (gateCommand !== DEFAULT_LAND_GATE || successCriterionPasses(output));
-    if (criterionOk) {
+    // The SUMMARY rule binds any gate whose output prints a SUMMARY line, whatever
+    // the command; a gate that prints none, as another project's `npm run check`
+    // does, is judged on its exit code alone. A run that exits 0 yet fails names its
+    // SUMMARY line as the reason.
+    if (successCriterionPasses(gateRun)) {
       lines.push('PASS success-criterion');
     } else {
-      const reason = checkOk ? 'no clean SUMMARY line' : failReason(gateRun);
-      lines.push(...failLines('success-criterion', reason, output));
+      const reason = gateRun.ok ? summaryLine(gateRun.output) : failReason(gateRun);
+      lines.push(...failLines('success-criterion', reason, gateRun.output));
       failed = true;
     }
   }

@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, taskStates } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -35,10 +35,19 @@ test('runnableProof reads a plain Proof as its command, and a backticked one as 
   assert.equal(runnableProof(null), null);
 });
 
-test('successCriterionPasses reads the clean SUMMARY line', () => {
-  assert.equal(successCriterionPasses('SUMMARY FAIL=0 WARN=0 UNRUN=0\n'), true);
-  assert.equal(successCriterionPasses('SUMMARY FAIL=1 WARN=0 UNRUN=0\n'), false);
-  assert.equal(successCriterionPasses(''), false);
+test('successCriterionPasses needs exit 0 and, when a SUMMARY line is printed, a clean one', () => {
+  assert.equal(successCriterionPasses({ ok: true, output: 'SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0\n' }), true);
+  assert.equal(successCriterionPasses({ ok: true, output: 'SUMMARY PASS=3 FAIL=1 WARN=0 UNRUN=0\n' }), false);
+  assert.equal(successCriterionPasses({ ok: true, output: 'SUMMARY PASS=3 FAIL=0 WARN=2 UNRUN=0\n' }), false);
+  assert.equal(successCriterionPasses({ ok: false, output: 'SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0\n' }), false);
+  assert.equal(successCriterionPasses({ ok: true, output: 'all green, no SUMMARY here\n' }), true);
+  assert.equal(successCriterionPasses({ ok: true, output: '' }), true);
+  assert.equal(successCriterionPasses({ ok: false, output: '' }), false);
+});
+
+test('summaryLine reads the last line starting SUMMARY, or null', () => {
+  assert.equal(summaryLine('SUMMARY PASS=1 FAIL=1 WARN=0 UNRUN=0\nSUMMARY PASS=2 FAIL=0 WARN=0 UNRUN=0\r\n'), 'SUMMARY PASS=2 FAIL=0 WARN=0 UNRUN=0');
+  assert.equal(summaryLine('  SUMMARY indented\nno SUMMARY at start\n'), null);
 });
 
 test('outputTail keeps the last 20 non-empty lines, each cut to 300 characters and indented', () => {
@@ -135,6 +144,42 @@ test('a failing check-command prints FAIL success-criterion', async () => {
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
   assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+});
+
+test('a check that exits 0 and prints no SUMMARY line passes, under any gate command', async () => {
+  const plan = [
+    '## Plan basis', '', 'Repository: .', 'Branch: main', '',
+    '## Success criterion', '`npm run check` passes.', '',
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"',
+    ''
+  ].join('\n');
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': plan,
+    'check.js': "console.log('all 12 checks green');\n",
+    'package.json': JSON.stringify({ scripts: { check: 'node check.js' } })
+  });
+  landTask(root, 1);
+
+  for (const args of [[], ['--check-command', 'node check.js']]) {
+    const result = await run(SCRIPT, ['--plan', 'plan.md', ...args], { cwd: root });
+    assert.equal(result.code, 0, result.stdout);
+    assert.equal(result.stdout.trim().split('\n')[1], 'PASS success-criterion');
+  }
+});
+
+test('a check that exits 0 with an unclean SUMMARY line fails, naming that line', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
+    'check.js': "console.log('FAIL lint');\nconsole.log('SUMMARY PASS=3 FAIL=1 WARN=0 UNRUN=0');\n"
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(1, 4), ['FAIL success-criterion (SUMMARY PASS=3 FAIL=1 WARN=0 UNRUN=0)', '  FAIL lint', '  SUMMARY PASS=3 FAIL=1 WARN=0 UNRUN=0']);
 });
 
 test("the plan's Success criterion command runs when --check-command is not given", async () => {
