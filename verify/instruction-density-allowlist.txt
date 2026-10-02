@@ -27,11 +27,6 @@ skills/find-cause/SKILL.md	bullet	3	**Reproduce.** One command reproduces it
 skills/find-cause/references/handoff.md	sentence	The investigate part, at most 25 lines,
 skills/find-cause/references/handoff.md	sentence	The fix delegate appends a `## Fix` sect
 skills/remember/SKILL.md	bullet	3	**Book** the user's correction with `nod
-skills/route-skills/SKILL.md	sentence	No skill for a version-only bump, a git-
-skills/route-skills/references/code-standard.md	bullet	3	**Readability**: explicit data and contr
-skills/route-skills/references/code-standard.md	bullet	3	**Complete behavior**: follow convention
-skills/route-skills/references/context.md	sentence	No message between the steps of a run bu
-skills/route-skills/references/project-structure.md	bullet	3	Files and folders kebab-case; symbols pe
 skills/save-session/SKILL.md	sentence	On a branch other than the repository's
 skills/save-session/SKILL.md	sentence	`## Current state` separates what is sav
 skills/save-session/SKILL.md	sentence	Copy this paragraph into `## Resume` exa
