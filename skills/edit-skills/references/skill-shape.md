@@ -1,6 +1,6 @@
 # Skill shape
 
-A new skill starts from this template and removes every section it has nothing real to put in. The enemy is a near-empty section kept so the file looks complete, which spends tokens and teaches nothing. The overcorrection is a body without the opening paragraph or the judgment ladder, which the verifier refuses.
+A new skill starts from this template and removes every section it has nothing real to put in.
 
 ```markdown
 ---
@@ -50,6 +50,4 @@ An agent uses the same shape with two changes: its frontmatter sets `model`, `to
 
 ## Judgment
 
-- Dropping a section outranks keeping a thin one.
-- One real example outranks the same example ported twice.
 - The verifier's rules for the opening and the closing outrank any layout preference.
