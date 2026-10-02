@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The scannable output style gives each Shape bullet one rule, with no change to the replies it shapes; the last 2 instruction-density allowlist entries are gone and the lock drops from 2 to 0.
+
+### Fixed
+
+- The run-unit agent now builds each task dispatch from build's implementer prompt, which build already said the unit reads, so the task's `Budget:` line and report path reach build-task.
+
 ## 0.74.2 - 2026-10-02
 
 ### Changed
