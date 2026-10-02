@@ -12,6 +12,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 - plan-check and the plan parser read a `Lint:` plan-basis line and a `Risk:` task field; spec defaults the land gate to a project-wide type check.
 - The code standard forbids guards for a state the code's own boundary rules out and asks types to make invalid states unrepresentable.
 
+- build lints each task's existing script `Files:` with the plan's `Lint:` command before landing, and records a caller-breaking exported signature change as a `Signature:` trailer in the task's commit.
+- spec marks each risky task with a `Risk:` field and defaults `Lint:` to the project's linter binary.
+
+### Changed
+
+- verify picks the deep reviewer on risk (a `Risk:` task, a manifest or lockfile change, a `Signature:` trailer, or a script-file commit without `Plan-task:`), not on diff size.
+
 ### Fixed
 
 - verify runs the Success criterion even when the plan says `Land gate: none`.
