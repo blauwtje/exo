@@ -57,7 +57,7 @@ Depends on: 1, 2 | Files: `skills/edit-skills/SKILL.md` | Data: the step 2 `--ce
 ### Task 8: fix(save-session): retrigger the no-note reference for its own reader
 Depends on: 1, 2 | Files: `skills/save-session/SKILL.md` | Data: the Read-it-when cell of the `references/reconstructing-without-a-note.md` row | Proof: npm run validate
 ### Task 9: test(configure): check every settings menu question's shape
-Depends on: 1, 2 | Files: `tests/settings.test.mjs` | Data: one loop over `menu`, the TOPICS keys and the SCHEMA keys | Proof: node --test tests/settings.test.mjs
+Depends on: 1, 2 | Files: `tests/settings.test.mjs`, `skills/configure/scripts/settings.mjs` | Data: one loop over `menu`, the TOPICS keys and the SCHEMA keys | Proof: node --test tests/settings.test.mjs
 ### Task 10: feat(configure): lead the settings overview with labels
 Depends on: 9 | Files: `skills/configure/scripts/settings.mjs`, `tests/settings.test.mjs` | Data: the lines `settingBlock` returns per key | Proof: node --test tests/settings.test.mjs
 ### Task 11: docs(start): align the README, cheat sheet and start doc

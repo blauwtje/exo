@@ -9,6 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
+import { assertQuestionShape } from './question-shape.mjs';
 import { readFileSync } from 'node:fs';
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
@@ -176,10 +177,21 @@ test('menu asks for a topic, with a topic for its setting, and with a key for a 
   assert.match(unknown.stderr, /unknown setting wiki/);
 });
 
+test('the menu, every topic and every setting render a question of the right shape', async () => {
+  const space = await workspace();
+  const topics = ['work', 'places', 'safety', 'slow'];
+  for (const name of [undefined, ...topics, ...Object.keys(SCHEMA)]) {
+    const result = await settings(space, name === undefined ? ['menu'] : ['menu', name]);
+    assert.equal(result.code, 0, `${name}: ${result.stderr}`);
+    const afterFence = result.stdout.slice(result.stdout.lastIndexOf('\n```\n') + 5);
+    assertQuestionShape(afterFence);
+  }
+});
+
 test('the topics hold every setting once, and every setting has plain question texts', async () => {
   const schema = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
   const space = await workspace();
-  const topics = (await Promise.all(['work', 'places', 'safety'].map((topic) => settings(space, ['menu', topic])))).map((result) => result.stdout).join('\n');
+  const topics = (await Promise.all(['work', 'places', 'safety', 'slow'].map((topic) => settings(space, ['menu', topic])))).map((result) => result.stdout).join('\n');
   for (const [key, entry] of Object.entries(schema)) {
     for (const field of ['label', 'about', 'question']) assert.ok(entry[field], `${key} lacks ${field}`);
     assert.equal(topics.split(`**: ${entry.about} (now:`).length - 1, 1, `${key} sits in one topic`);
@@ -265,7 +277,15 @@ test('the context line leaves heavy_commands out while empty and prints it once 
   assert.ok(!(await settings(unset, ['context'])).stdout.includes('heavy_commands'));
   const project = await workspace({ project: { heavy_commands: 'npm run e2e' } });
   assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project), heavy_after_seconds=60 (default)'));
-  assert.ok((await settings(unset, ['menu', 'safety'])).stdout.includes('- **(D) Slow commands**: commands I run only once per code change (now: None)'));
+  assert.ok((await settings(unset, ['menu', 'safety'])).stdout.includes('- **(D) Slow commands**: which commands and tests I run only once per code change\n\n'));
+  assert.ok((await settings(unset, ['menu', 'slow'])).stdout.includes('- **(B) Slow commands**: commands I run only once per code change (now: None)'));
+  assert.ok((await settings(unset, ['menu', 'heavy_commands'])).stdout.includes('- **(A) Keep None**: every command runs each time\n- **(B) Clear the list**: every command runs each time\n\n'));
+});
+
+test('a value past the third pick is named as a typed answer', async () => {
+  const result = await settings(await workspace(), ['menu', 'ship']);
+  assert.ok(result.stdout.includes('**What should happen once work is finished?**\nOr type `local` for Keep it here (nothing leaves this machine).\n\n- **(A) Keep Ask me**'), result.stdout);
+  assert.doesNotMatch(result.stdout, /\(E\)/);
 });
 
 test('heavy_commands is empty by default and carries the project string whole', async () => {

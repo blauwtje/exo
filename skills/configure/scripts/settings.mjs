@@ -123,16 +123,28 @@ function show(root) {
 }
 
 // The overview plus the one question that moves a change forward: which topic
-// without an argument, which setting with a topic, which value with a key. The
-// topics keep the first answer to four letters. Keep is always A, the
-// recommended answer, and the plain texts come from the schema's `label`,
-// `about`, `question`, `typed` and `choices`. The option lines sit outside the fence
-// because bold renders only there.
+// without an argument, which setting with a topic or group, which value with a
+// key. Every question holds Keep plus at most three picks, the four letters the
+// question shape allows: the topics keep the first answer to four letters, a
+// group folds settings into one pick that leads to a second question, and a
+// value past the third pick is named in the context line as a typed answer.
+// Keep is always A, the recommended answer, and the plain texts come from the
+// schema's `label`, `about`, `question`, `typed` and `choices`. The option lines
+// sit outside the fence because bold renders only there.
+const MAX_PICKS = 3;
 const TOPICS = {
   work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['replies', 'budget'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
-  safety: { label: 'Safety and speed', question: 'Which part of safety and speed?', about: 'what I block and which slow commands I skip repeating', keys: ['guards', 'guard_lines', 'heavy_commands', 'heavy_after_seconds'] }
+  safety: { label: 'Safety and speed', question: 'Which part of safety and speed?', about: 'what I block and which slow commands I skip repeating', keys: ['guards', 'guard_lines', 'slow'] }
 };
+
+const GROUPS = {
+  slow: { label: 'Slow commands', question: 'Which part of slow commands?', about: 'which commands and tests I run only once per code change', keys: ['heavy_commands', 'heavy_after_seconds'] }
+};
+
+function settingKeys(keys) {
+  return keys.flatMap((key) => GROUPS[key]?.keys ?? [key]);
+}
 
 function question(title, context, keep, picks, reason) {
   const letters = [keep, ...picks].map((line, index) => `- **(${String.fromCharCode(65 + index)}) ${line}`);
@@ -150,10 +162,12 @@ function menu(root, name) {
     console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', 'Pick a topic to change one setting in it; the rest stay as they are.', 'Keep as is**: change nothing', picks, 'your current settings keep working, and the others change how I behave from now on.')].join('\n'));
     return;
   }
-  if (Object.hasOwn(TOPICS, name)) {
-    const topic = TOPICS[name];
-    const picks = topic.keys.map((key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`);
-    console.log([...overview(topic.keys, stack), '', ...question(topic.question, '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
+  const topic = Object.hasOwn(TOPICS, name) ? TOPICS[name] : Object.hasOwn(GROUPS, name) ? GROUPS[name] : undefined;
+  if (topic) {
+    const picks = topic.keys.map((key) => (GROUPS[key]
+      ? `${GROUPS[key].label}**: ${GROUPS[key].about}`
+      : `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`));
+    console.log([...overview(settingKeys(topic.keys), stack), '', ...question(topic.question, '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
     return;
   }
   if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
@@ -162,10 +176,16 @@ function menu(root, name) {
   const choices = entry.choices ?? {};
   const kept = choices[String(current)];
   const keep = kept ? `Keep ${kept.label}**: ${kept.gives}` : `Keep ${plainValue(name, current)}**: change nothing`;
-  const picks = Object.entries(choices)
-    .filter(([value]) => value !== String(current))
-    .map(([, choice]) => `${choice.label}**: ${choice.gives}`);
-  console.log([...overview([name], stack), '', ...question(entry.question, entry.typed, keep, picks, 'it keeps what you have now, and any other answer changes it from now on.')].join('\n'));
+  // A list whose only choice is empty takes its other values typed, so clearing
+  // stays the second option even while the list is already empty.
+  const listOnly = Object.keys(choices).length === 1 && Object.hasOwn(choices, '');
+  const others = listOnly
+    ? [['', { label: 'Clear the list', gives: choices[''].gives }]]
+    : Object.entries(choices).filter(([value]) => value !== String(current));
+  const picks = others.slice(0, MAX_PICKS).map(([, choice]) => `${choice.label}**: ${choice.gives}`);
+  const rest = others.slice(MAX_PICKS).map(([value, choice]) => `\`${value}\` for ${choice.label} (${choice.gives})`);
+  const context = [entry.typed, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : ''].filter(Boolean).join(' ');
+  console.log([...overview([name], stack), '', ...question(entry.question, context, keep, picks, 'it keeps what you have now, and any other answer changes it from now on.')].join('\n'));
 }
 
 // Appending to a file that lacks a final newline would glue the entry onto its last line.
