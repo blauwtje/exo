@@ -99,9 +99,14 @@ function settingBlock(key, stack) {
   const { value, layer } = resolve(key, stack);
   const number = Object.keys(SCHEMA).indexOf(key) + 1;
   const origin = layer === 'global' ? `global, changed via ${GLOBAL_SOURCE}` : layer;
-  const block = [`${number}. ${key} = ${value}  (${origin})`, ...wrapped(entry.description, BLOCK_INDENT)];
+  const head = wrapped(`${number}. ${entry.label}: ${plainValue(key, value)}  (${key} = ${value}, ${origin})`, BLOCK_INDENT);
+  head[0] = head[0].slice(BLOCK_INDENT.length);
+  const block = [...head, ...wrapped(entry.about, BLOCK_INDENT)];
   if (entry.options) {
-    const marked = entry.options.map((option) => (option === value ? `[${option}]` : option));
+    const marked = entry.options.map((option) => {
+      const label = plainValue(key, option);
+      return option === value ? `[${label}]` : label;
+    });
     block.push(`${BLOCK_INDENT}options: ${marked.join('  ')}`);
   }
   const overridden = stack
