@@ -103,7 +103,7 @@ const SCENARIOS = [
   { name: 'slim-skill-report-not-last', mutate: (root) => {
     append(root, 'skills/ship/SKILL.md', '\nA closing line after the report.\n');
     replaceText(root, 'skills/ship/SKILL.md',
-      'Resolve conflicts, in step 6 or a watch round.', 'In step 6.');
+      'Conflicts, step 6 or watch.', 'Step 6.');
   } },
   { name: 'banned-phrase', mutate: (root) =>
     append(root, 'skills/spec/SKILL.md', "\nlet me know if you'd like me to continue\n") },
