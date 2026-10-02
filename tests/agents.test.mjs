@@ -233,7 +233,7 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(fs.existsSync(fixerPath), 'skills/build/review-fixer-prompt.md exists');
   const fixerPrompt = fs.readFileSync(fixerPath, 'utf8');
   assert.ok(fixerPrompt.includes('`fixed=<n> reported=<n> report=<path>`'), 'the fixer returns one count line');
-  assert.ok(fixerPrompt.includes(`\`general-purpose\` delegate on \`${kindTable.kinds.build.model}\``));
+  assert.ok(fixerPrompt.includes('hands the `exo:fix-review` agent when the branch review'));
   const implementing = fs.readFileSync(path.join(skillsRoot, 'build', 'SKILL.md'), 'utf8');
   const verifying = fs.readFileSync(path.join(skillsRoot, 'verify', 'SKILL.md'), 'utf8');
   assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);

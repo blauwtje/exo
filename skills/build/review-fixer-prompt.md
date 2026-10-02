@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The text `verify` step 3 hands a `general-purpose` delegate on `sonnet` when the branch review returns `FINDINGS`. The delegate repairs from the review report alone and leaves the gate rerun and the commit to `verify`.
+The text `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS`. The agent repairs from the review report alone and leaves the gate rerun and the commit to `verify`.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>, report <report path>.

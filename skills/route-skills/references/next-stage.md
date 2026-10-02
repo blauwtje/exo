@@ -15,7 +15,7 @@ A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on
 | Next stage | Model and effort | Because |
 |---|---|---|
 | `build`, plan with a `Design:` task whose `## Visual direction` is pending or absent | the session's model at the `build` skill's effort | that task builds in the session, and the skill pins that effort. |
-| `build`, any other plan | `sonnet` at `medium` | each task names its files, data and proof, and the build-task agent keeps `high`. |
+| `build`, any other plan | `sonnet` at `medium` | each task names its files, data and proof, and the build-task agent runs at `medium`. |
 | `build`, no plan (a decided change) | `opus` at `max` | it decides the change while building it. |
 
 ## Judgment

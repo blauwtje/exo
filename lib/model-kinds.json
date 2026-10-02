@@ -76,7 +76,6 @@
     "skills/verify/SKILL.md": { "kind": "review", "fields": ["effort"] }
   },
   "dispatches": [
-    { "file": "skills/build/review-fixer-prompt.md", "match": "delegate on `sonnet` when the branch review", "kind": "build" },
     { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` from `fixer-prompt.md`", "kind": "build" },
     { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" }
   ]
