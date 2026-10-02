@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.76.0 - 2026-10-02
+
 ### Added
 
 - The process-structure check fails a SKILL.md body that repeats a `##` or `###` heading, or a non-blank line over 40 characters outside tables and fences.
