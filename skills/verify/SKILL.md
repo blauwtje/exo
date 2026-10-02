@@ -21,7 +21,8 @@ effort: high
    - Pass the code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
    - Pass `<checkout>/.exo/` as the implementer report directory and `<checkout>/.exo/branch-review.md` as the findings path.
    - `BLOCKED` ends the turn with its report.
-3. **Repair the findings.** A `FINDINGS` verdict goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
+3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
+   - At `fix=0` make no `exo:fix-review` dispatch, no rerun and no fix commit; list the report findings in the turn's report and go to step 4.
    - Then rerun step 1's `verify.mjs` command.
    - After that rerun, a `FAIL` or `STRAY` line ends the turn with its report and the fixes uncommitted.
    - Only then run `node "${CLAUDE_SKILL_DIR}/../build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --root <checkout>` to commit every changed path.

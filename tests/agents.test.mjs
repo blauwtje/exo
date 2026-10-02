@@ -225,7 +225,10 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.deepEqual(reviewer.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'NotebookEdit', 'Agent'].includes(tool)), []);
   assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
   assert.doesNotMatch(reviewer.body, /run every Final verification|`fixed` or `reported`|`FIXED`/);
-  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> report=<path>`'), 'the reviewer returns one verdict line');
+  assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
+  for (const name of ['review-branch-deep', 'review-branch-deep-high']) {
+    assert.ok(agents.find((agent) => agent.frontmatter.name === name).body.includes('fix=<n> report=<path>`'), `${name} returns the fix count`);
+  }
 });
 
 test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prompt.md', () => {
@@ -242,6 +245,8 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const rerun = repairStep.indexOf('rerun step 1\'s `verify.mjs`');
   assert.ok(rerun !== -1 && rerun < repairStep.indexOf('land-task.mjs" --fix'), 'verify reruns the gate after the fixer and before the fix commit');
   assert.ok(repairStep.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
+  assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
+  assert.match(repairStep, /`fix=0`[^\n]*report findings/, 'verify still shows the report findings at fix=0');
   assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');
   assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');
 });

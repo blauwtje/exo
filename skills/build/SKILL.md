@@ -41,7 +41,7 @@ effort: medium
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
 | `bug-fixer-prompt.md` | Never here: the loop's step 5 reads it, on a failed check. |
-| `review-fixer-prompt.md` | Never here: `verify` step 3 reads it, on a `FINDINGS` verdict. |
+| `review-fixer-prompt.md` | Never here: `verify` step 3 reads it, on a `FINDINGS` verdict with `fix=1` or more. |
 | `references/design-tasks.md` | Step 4, for a task with a `Design:` line. |
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
