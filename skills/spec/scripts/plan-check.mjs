@@ -3,7 +3,8 @@
 // trailer, a git add line matching Files:, Run: and Expected: on every step
 // with code, no placeholder, a size within the split threshold, every
 // Modify: path present in the target repository, and no shared Files: path
-// between two tasks with no Depends on chain between them. Planning runs
+// between two tasks with no Depends on chain between them, and a plan with
+// two such independent tasks and no Worktree setup: line. Planning runs
 // this instead of reading the finished plan back.
 
 import fs from 'node:fs';
@@ -158,6 +159,24 @@ function checkSharedFiles(tasks) {
   return problems;
 }
 
+// task-list.md's '## Plan basis' item 2 asks for a 'Worktree setup:' line when
+// two tasks share no Depends on chain, since without it the run builds one
+// task at a time; plan-check flags the first such pair and the missing line,
+// while 'Worktree setup: none' still passes as a deliberate choice.
+function checkWorktreeSetup(tasks, frame) {
+  if (frameOf(frame).worktreeSetup !== null) return [];
+  const byNumber = new Map(tasks.map((task) => [task.number, task]));
+  for (let i = 0; i < tasks.length; i++) {
+    for (let j = i + 1; j < tasks.length; j++) {
+      const first = tasks[i].number;
+      const second = tasks[j].number;
+      if (reachesThrough(byNumber, first, second) || reachesThrough(byNumber, second, first)) continue;
+      return [`Task ${first} and Task ${second} share no Depends on chain, but the plan's '## Plan basis' has no 'Worktree setup:' line: add 'Worktree setup: <command>' or 'Worktree setup: none' so they build together`];
+    }
+  }
+  return [];
+}
+
 // build's SKILL.md step 1 matches a plan to a checkout by the '## Plan
 // basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
 // frameOf); a compact plan with neither would parse but never be matched to
@@ -259,7 +278,8 @@ export function planCheckReport(planText, { root } = {}) {
           ...checkSize(task),
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
-    ...checkSharedFiles(plan.tasks)
+    ...checkSharedFiles(plan.tasks),
+    ...checkWorktreeSetup(plan.tasks, plan.frame)
   ];
   if (problems.length > 0) return { ok: false, lines: problems };
   const largest = plan.tasks.reduce((best, task) => {

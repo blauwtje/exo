@@ -93,6 +93,7 @@ function compactTasks(count) {
   return Array.from({ length: count }, (_, index) => compactTask({
     number: index + 1,
     title: `feat(app): t${index + 1}`,
+    dependsOn: index === 0 ? 'none' : `${index}`,
     files: [`src/f${index + 1}.js`]
   }));
 }
@@ -261,4 +262,27 @@ test('plan-check fails an Acceptance bullet that names no task number, Data:, Su
   const report = planCheckReport(briefFixture({ tasks: compactTasks(1) }));
   assert.equal(report.ok, false);
   assert.ok(report.lines.some((line) => line.includes("the plan's '## Acceptance' item") && line.includes(ACCEPTANCE_BULLET.slice(2))));
+});
+
+test('plan-check flags independent tasks in a plan with no Worktree setup: line', () => {
+  const first = goodTask({ number: 1, title: 'Add', files: ['- Create: `src/a.js`'] });
+  const second = goodTask({ number: 2, title: 'Change', files: ['- Create: `src/b.js`'] });
+  const report = planCheckReport(planFixture({ tasks: [first, second] }));
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.lines.filter((line) => line.includes('Worktree setup:')).length, 1);
+  assert.ok(report.lines.some((line) => line.includes('Task 1 and Task 2') && line.includes('Worktree setup:')));
+});
+
+test('plan-check accepts independent tasks once the plan names Worktree setup: none or a command', () => {
+  const first = goodTask({ number: 1, title: 'Add', files: ['- Create: `src/a.js`'] });
+  const second = goodTask({ number: 2, title: 'Change', files: ['- Create: `src/b.js`'] });
+  for (const worktreeSetup of ['none', 'npm ci']) {
+    const report = planCheckReport(planFixture({ worktreeSetup, tasks: [first, second] }));
+    assert.equal(report.ok, true);
+  }
+});
+
+test('plan-check does not flag a plan whose tasks form one Depends on chain, with no Worktree setup: line', () => {
+  const report = planCheckReport(compactPlanFixture({ tasks: compactTasks(3) }));
+  assert.equal(report.ok, true);
 });
