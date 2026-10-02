@@ -24,7 +24,7 @@ argument-hint: <outcome to shape>
    - Then close with one to three lines on what was agreed; the brief follows the user's yes.
    - After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
-5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`. Plan mode: tree-unchanged commands only — an edit-needing proof is the first task.
+5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; mark each task in one of the four risk categories with `Risk:`. Plan mode: tree-unchanged commands only — an edit-needing proof is the first task.
 6. **Store it** per the session's `exo settings:` `specs` value, `docs` when absent (plan mode: the harness's plan file); name its location.
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`; `issues` also writes the `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` path, for `build`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines; add any missing heading, `Data:`, Success criterion or `## Manual checks`.

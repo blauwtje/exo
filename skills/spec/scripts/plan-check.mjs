@@ -19,6 +19,7 @@ const STEP_HEADING = /^Step \d+: .*$/;
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
+const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
 // A fence closes only on a run of backticks at least as long as the one that
@@ -250,6 +251,9 @@ function checkCompactFields(task) {
   const problems = [];
   if (task.filesField === null) problems.push(`Task ${task.number}: field line lacks 'Files:'`);
   if (task.proof === null) problems.push(`Task ${task.number}: field line lacks 'Proof:'`);
+  if (task.risk !== null && !RISK_CATEGORIES.includes(task.risk)) {
+    problems.push(`Task ${task.number}: 'Risk: ${task.risk}' is not one of ${RISK_CATEGORIES.join(', ')}`);
+  }
   return problems;
 }
 

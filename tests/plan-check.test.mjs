@@ -123,6 +123,18 @@ test('plan-check fails a compact task whose field line lacks Proof:', () => {
   assert.ok(report.lines.some((line) => line.includes("Task 1: field line lacks 'Proof:'")));
 });
 
+test('plan-check accepts a Risk: category on a compact task and fails any other value', () => {
+  const task = (risk) => [
+    '### Task 1: feat(app): greet',
+    `Depends on: none | Files: \`src/app.js\` | Data: a plain object | Risk: ${risk} | Proof: node --test`
+  ];
+  const accepted = planCheckReport(compactPlanFixture({ tasks: task('persisted format') }));
+  assert.equal(accepted.ok, true);
+  const rejected = planCheckReport(compactPlanFixture({ tasks: task('big change') }));
+  assert.equal(rejected.ok, false);
+  assert.ok(rejected.lines.some((line) => line.includes("Task 1: 'Risk: big change' is not one of")));
+});
+
 test('plan-check prints ok for a brief whose Decisions and Acceptance sit ahead of a compact task list', () => {
   const report = planCheckReport(briefFixture({ tasks: compactTasks(8) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION));
   assert.equal(report.ok, true);
