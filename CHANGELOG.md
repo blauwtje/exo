@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.72.6 - 2026-10-02
+
 ### Changed
 
 - edit-skills gives each instruction bullet one rule across its SKILL.md and references, leads instruction-style.md with its most-broken rules, and drops rules its references restated; its 7 instruction-density allowlist entries are gone and the lock drops from 53 to 46.
