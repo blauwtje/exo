@@ -1,7 +1,7 @@
-// Picks the review agent by risk (--base/--reviewer), or the review effort
-// for an uncommitted fix (--effort), so a remark about budget, a deadline or
-// how the diff reads never moves either pick: only a reviewer the caller names
-// with --reviewer, or the risk facts and numbers themselves, do.
+// Holds the risk pick of the review agent that verify.mjs prints, and prints
+// the review effort for an uncommitted fix (--effort), so a remark about budget,
+// a deadline or how the diff reads never moves either pick: only the risk facts
+// and numbers themselves do.
 
 import { execFileSync } from 'node:child_process';
 import { basename, extname } from 'node:path';
@@ -87,33 +87,11 @@ function measureEffort() {
   return pickEffort({ files, changedLines, manifestChanged });
 }
 
-export function resolveReviewer({ reviewer, facts }) {
-  if (reviewer !== undefined) {
-    if (!Object.values(REVIEWER_AGENTS).includes(reviewer)) throw new UsageError(`unknown reviewer '${reviewer}'`);
-    return reviewer;
-  }
-  return pickReviewer(facts);
-}
-
 function main(argv) {
-  const flags = parseFlags(argv, { base: 'value', reviewer: 'value', effort: 'boolean' });
-  if (flags.effort) {
-    if (flags.reviewer !== undefined || flags.base !== undefined) {
-      throw new UsageError("flag '--effort' does not take '--reviewer' or '--base'");
-    }
-    process.stdout.write(`${measureEffort()}\n`);
-    return;
-  }
-  const base = flags.base ?? '';
-  // An empty base makes git read `...HEAD` as HEAD...HEAD, an empty diff that
-  // would pick the light reviewer for a branch of any size.
-  if (flags.reviewer === undefined && base === '') throw new UsageError("flag '--base' needs a revision");
-  // The plan's `Risk:` fields live in verify.mjs, so this command reads the
-  // manifest and signature facts only; verify.mjs prints the full pick.
-  const facts = flags.reviewer === undefined
-    ? { riskTasks: false, manifestChanged: touchesManifest(changedPaths({ base })), signatureChanged: signatureChangedSince(base) }
-    : null;
-  process.stdout.write(`${resolveReviewer({ reviewer: flags.reviewer, facts })}\n`);
+  parseFlags(argv, { effort: 'boolean' });
+  // The reviewer pick lives in verify.mjs, which reads the plan's `Risk:` fields
+  // this command cannot see, so only one pick of the reviewer exists.
+  process.stdout.write(`${measureEffort()}\n`);
 }
 
 if (isMain(import.meta.url)) {

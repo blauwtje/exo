@@ -3,8 +3,9 @@
 // (except one equal to the gate command, a repeat of an earlier Proof, or running
 // the test suite or only test files its globs cover when the gate is the default
 // `npm run check`, which runs that suite), the first
-// backticked command of the plan's Success criterion (else its Land gate, else
-// `npm run check`), and a
+// backticked command of the plan's Success criterion (else `none` for `Land gate:
+// none`, else `npm run check`; any other Land gate is the per-task gate, never
+// the final check), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
 // risk (a landed task's `Risk:`, a manifest change or a signature change
@@ -87,7 +88,7 @@ export function findStrayPaths(tasks, paths) {
   return paths.filter((path) => !declared.has(path));
 }
 
-/** `npm run check`'s own clean line: exo's default Land gate, when the plan names none. */
+/** `npm run check`'s own clean line: exo's default final check, when the plan names none. */
 export function successCriterionPasses(output) {
   return CHECK_SUMMARY.test(output);
 }
@@ -167,7 +168,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
-  const gateCommand = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone ?? frame.landGate ?? DEFAULT_LAND_GATE;
+  const gateCommand = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone ?? DEFAULT_LAND_GATE;
   const gateSkipped = gateCommand === 'none';
 
   const proofRuns = [];
@@ -219,7 +220,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else {
     const { ok: checkOk, output } = await runCommand(gateCommand);
     // The SUMMARY convention binds only exo's own default gate; a plan that
-    // names its own Land gate is judged on that command's exit status alone,
+    // names its own Success criterion command is judged on that command's exit status alone,
     // since another project's check never prints exo's SUMMARY line.
     const criterionOk = checkOk && (gateCommand !== DEFAULT_LAND_GATE || successCriterionPasses(output));
     lines.push(`${criterionOk ? 'PASS' : 'FAIL'} success-criterion`);

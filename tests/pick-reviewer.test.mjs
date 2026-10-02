@@ -1,15 +1,11 @@
-// pick-reviewer.mjs picks the review agent by risk, not size,,
-// and only a named --reviewer override moves the pick off that reading.
+// pick-reviewer.mjs picks the review agent by risk, not size; the command itself prints only the review effort.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import process from 'node:process';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, resolveReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { UsageError } from '../lib/script-flags.mjs';
+import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { commitFiles, git, gitRepository, run } from './harness.mjs';
 
 const { light, deep } = REVIEWER_AGENTS;
@@ -34,36 +30,11 @@ test('touchesManifest reads a manifest or lockfile anywhere in the paths', () =>
   assert.equal(touchesManifest(['src/app.js']), false);
 });
 
-test('a named override wins over the risk facts', () => {
-  assert.equal(resolveReviewer({ reviewer: light, facts: { ...NO_RISK, riskTasks: true } }), light);
-  assert.equal(resolveReviewer({ reviewer: deep, facts: NO_RISK }), deep);
-});
-
-test('an unnamed reviewer in the override is rejected', () => {
-  assert.throws(() => resolveReviewer({ reviewer: 'budget is tight', facts: NO_RISK }), UsageError);
-});
-
 test('the pair is two distinct agents that exist as files', async () => {
   assert.notEqual(light, deep);
   for (const name of [light, deep]) {
     await fs.access(path.join(AGENTS_DIRECTORY, `${name}.md`));
   }
-});
-
-test('a model word is not a reviewer name', () => {
-  assert.throws(() => resolveReviewer({ reviewer: 'sonnet', facts: NO_RISK }), UsageError);
-});
-
-test('an empty base is rejected, not read as a change with no risk', () => {
-  const run = spawnSync(process.execPath, [SCRIPT, '--base', ''], { encoding: 'utf8' });
-  assert.equal(run.status, 2);
-  assert.equal(run.stdout, '');
-  assert.match(run.stderr, /--base/);
-});
-
-test('with no override, the risk facts decide', () => {
-  assert.equal(resolveReviewer({ reviewer: undefined, facts: NO_RISK }), light);
-  assert.equal(resolveReviewer({ reviewer: undefined, facts: { ...NO_RISK, signatureChanged: true } }), deep);
 });
 
 test('signatureChangedSince reads a Signature trailer or a script commit missing a Plan-task trailer, never a merge', async () => {
@@ -84,9 +55,13 @@ test('signatureChangedSince ignores a changelog-only commit missing a Plan-task 
   const base = git(root, 'rev-parse', 'HEAD');
   await commitFiles(root, { 'CHANGELOG.md': '# Changelog\n\n- a line\n' }, 'docs(changelog): record the change');
   assert.equal(signatureChangedSince(base, root), false);
-  const result = await run(SCRIPT, ['--base', base], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout, `${light}\n`);
+});
+
+test('the command prints no reviewer, so verify.mjs holds the only pick', async () => {
+  const root = await gitRepository({ 'app.js': 'export const a = 1;\n' });
+  const result = await run(SCRIPT, ['--base', 'HEAD'], { cwd: root });
+  assert.equal(result.code, 2);
+  assert.equal(result.stdout, '');
 });
 
 test('parseNumstat sums numstat lines and treats a binary marker as zero', () => {

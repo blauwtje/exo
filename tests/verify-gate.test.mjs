@@ -114,9 +114,10 @@ test('a failing check-command prints FAIL success-criterion', async () => {
   assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
 });
 
-test("the plan's own Land gate runs when --check-command is not given", async () => {
+test("the plan's Success criterion command runs when --check-command is not given", async () => {
   const plan = [
-    '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: node check.js', '',
+    '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: none', '',
+    '## Success criterion', '`node check.js` passes.', '',
     '### Task 1: feat(app): greet',
     'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"',
     ''
@@ -126,6 +127,27 @@ test("the plan's own Land gate runs when --check-command is not given", async ()
 
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
+  assert.ok(result.stdout.includes('PASS success-criterion'));
+});
+
+test("a Land gate that is not 'none' is the per-task gate, so the final check falls to npm run check", async () => {
+  const plan = [
+    '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: node gate.js', '',
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"',
+    ''
+  ].join('\n');
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': plan,
+    'gate.js': FAILING_CHECK,
+    'check.js': CLEAN_CHECK,
+    'package.json': JSON.stringify({ scripts: { check: 'node check.js' } })
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stdout);
   assert.ok(result.stdout.includes('PASS success-criterion'));
 });
 
@@ -162,8 +184,9 @@ test("a plan's 'Land gate: none' still runs the Success criterion command", asyn
   assert.ok(!result.stdout.includes('UNRUN success-criterion'));
 });
 
-const SUITE_PROOF_PLAN = (gate) => [
-  '## Plan basis', '', 'Repository: .', 'Branch: main', ...(gate ? [`Land gate: ${gate}`] : []), '',
+const SUITE_PROOF_PLAN = (criterion) => [
+  '## Plan basis', '', 'Repository: .', 'Branch: main', '',
+  ...(criterion ? ['## Success criterion', `\`${criterion}\` passes.`, ''] : []),
   '### Task 1: feat(app): greet',
   'Depends on: none | Files: `src/app.js` | Data: none | Proof: npm test',
   ''
@@ -171,7 +194,7 @@ const SUITE_PROOF_PLAN = (gate) => [
 // npm test, not node --test: a nested node --test inherits this runner's NODE_TEST_CONTEXT and exits 0.
 const FAILING_SUITE_PACKAGE = (scripts) => JSON.stringify({ scripts: { test: 'node -e "process.exit(1)"', ...scripts } });
 
-test('a test-suite Proof runs under a custom Land gate, which may run no tests', async () => {
+test('a test-suite Proof runs under a custom final check, which may run no tests', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
     'plan.md': SUITE_PROOF_PLAN('node check.js'),
@@ -371,6 +394,7 @@ test('per-task Proofs overlap, at most 3 at once, and print in task order', asyn
 async function landedWithRecord(record) {
   const plan = [
     '## Plan basis', '', 'Repository: .', 'Branch: main', 'Land gate: node check.js', '',
+    '## Success criterion', '`node check.js` passes.', '',
     '### Task 1: feat(app): greet',
     'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(1)"',
     ''
