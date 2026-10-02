@@ -105,10 +105,10 @@ const SCENARIOS = [
     replaceText(root, 'skills/ship/SKILL.md',
       'Conflicts, step 6 or watch.', 'Step 6.');
   } },
-  // The copy of the References block lands in find-cause, which has room for it
-  // under no lock the duplicate check runs before; the check names the repeat.
+  // verify's body has room under its STAGE_BODY_TOKENS lock for a second copy of
+  // its References block, so the duplicate check alone rejects this scenario.
   { name: 'skill-repeats-references-section', mutate: (root) => {
-    const file = 'skills/find-cause/SKILL.md';
+    const file = 'skills/verify/SKILL.md';
     const text = read(root, file);
     const start = text.indexOf('\n## References\n');
     write(root, file, `${text}${text.slice(start)}`);
