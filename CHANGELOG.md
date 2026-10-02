@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.72.5 - 2026-10-02
+
 ### Changed
 
 - file-issues gives each instruction bullet one rule across its SKILL.md and fields reference, and drops rules its fields reference restated; its 8 instruction-density allowlist entries are gone and the lock drops from 61 to 53.
