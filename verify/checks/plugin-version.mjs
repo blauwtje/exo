@@ -100,6 +100,14 @@ export function checkPluginVersion(report, repository) {
   const baseVersion = JSON.parse(shown.stdout).version;
   const order = compareVersions(declared, baseVersion);
   if (order < 0) {
+    // A release pushed after this branch forked raises origin/main alone; a version
+    // equal to the fork point's means the branch never lowered it.
+    const mergeBase = git(repository, ['merge-base', 'HEAD', BASE_REF]).stdout.trim();
+    const forked = mergeBase === '' ? { status: 1 } : git(repository, ['show', `${mergeBase}:${PLUGIN_FILE}`]);
+    if (forked.status === 0 && JSON.parse(forked.stdout).version === declared) {
+      report.result('WARN', name, `every manifest carries ${declared}, as at the fork point; ${BASE_REF} moved ahead to ${baseVersion} with a release: rebase onto ${BASE_REF}`);
+      return;
+    }
     report.result('FAIL', name, `every manifest carries ${declared}, below ${BASE_REF} at ${baseVersion}`);
     return;
   }

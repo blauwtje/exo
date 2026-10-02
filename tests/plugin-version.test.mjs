@@ -134,6 +134,34 @@ test('fails a version below the pushed base', (t) => {
   assert.equal(verdict(root).FAIL, 1);
 });
 
+function gitIn(root, ...args) {
+  const run = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  assert.equal(run.status, 0, `git ${args[0]} failed: ${run.stderr}`);
+}
+
+test('warns when only a release moved origin/main ahead of the fork point', (t) => {
+  const root = publishedRoot(t, '0.1.0');
+  writeManifests(root, '0.2.0');
+  gitIn(root, 'commit', '-qam', 'chore(release): 0.2.0');
+  gitIn(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  gitIn(root, 'reset', '-q', '--hard', 'HEAD~1');
+
+  const counts = verdict(root);
+  assert.equal(counts.WARN, 1);
+  assert.equal(counts.FAIL, 0);
+});
+
+test('fails a version below the fork point even when origin/main moved ahead', (t) => {
+  const root = publishedRoot(t, '0.2.0');
+  writeManifests(root, '0.3.0');
+  gitIn(root, 'commit', '-qam', 'chore(release): 0.3.0');
+  gitIn(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  gitIn(root, 'reset', '-q', '--hard', 'HEAD~1');
+  writeManifests(root, '0.1.9');
+
+  assert.equal(verdict(root).FAIL, 1);
+});
+
 test('passes an unchanged tree', (t) => {
   const root = publishedRoot(t, '0.1.0');
 
