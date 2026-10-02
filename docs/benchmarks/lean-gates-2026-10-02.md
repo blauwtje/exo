@@ -32,7 +32,7 @@ Mediaan met spreiding (min-max) over n=3 runs per versie. Tijden in seconden, af
 
 De gemiddelde kosten zijn $1,4422 oud tegen $1,5026 nieuw (metrics.json `aggregate.*.costHarnessUsd`). Het gemiddelde ligt bij nieuw hoger door 02-new ($1,7204), de run met de valse FAIL (zie onder). Het tokenverschil van +3,6% is berekend uit de exacte medianen; de afgeronde tabel in metrics-table.md (1,89 tegen 1,82 M) zou +3,8% suggereren.
 
-Over de kostenbron: metrics-table.md toont ook een kolom "$ transcript" ($2,01 oud, $2,04 nieuw als mediaan). Die overschat de kosten, want `benchmarks/prices.mjs` heeft geen rij voor `claude-opus-5-5` en prijst het model daardoor als `claude-opus-5` ($5/$25 in plaats van $4/$20 per miljoen, cost-recon.md). Dit rapport gebruikt daarom `total_cost_usd` uit stdout.json, dat de subagents al bevat en tot op $0,002 overeenkomt met de transcripttokens tegen de juiste tarieven. De splitsing tussen hoofdsessie en subagents komt uit die gecorrigeerde transcriptprijzen (cost-recon.md).
+Over de kostenbron: metrics-table.md toont ook een kolom "$ transcript" ($2,01 oud, $2,04 nieuw als mediaan). Die overschat de kosten, want `benchmarks/prices.mjs` heeft geen rij voor `claude-opus-5-5` en prijst het model daardoor als `claude-opus-5` ($5/$25 in plaats van $4/$20 per miljoen, cost-recon.md; de rij is na deze run toegevoegd). Dit rapport gebruikt daarom `total_cost_usd` uit stdout.json, dat de subagents al bevat en tot op $0,002 overeenkomt met de transcripttokens tegen de juiste tarieven. De splitsing tussen hoofdsessie en subagents komt uit die gecorrigeerde transcriptprijzen (cost-recon.md).
 
 ## Per run
 
@@ -138,7 +138,7 @@ Mediaan nieuw 22, oud 20; gemiddeld 21,67 tegen 21,33 (+1,6%). De beste boom is 
 - **Kunstmatig trage tests.** De gesimuleerde ledger maakt elke volledige suite-run 33 s; dat vergroot de winst van minder suite-runs ten opzichte van een project met snelle tests.
 - **Gemengde subagentmodellen** (sonnet voor bouwen en fixen, opus voor reviewen) zijn per versie gelijk, maar de verhouding verschilt per run.
 - **Afgebroken eerste poging.** De eerste 01-old lekte `~/.claude/CLAUDE.md` en de exo-CLAUDE.md in de sessie en is gestopt en uitgesloten (progress.md, build.md). Bewaard in `/Users/thomash/bench-runs/aborted-01-old-claude-md-leak`.
-- **Ontbrekende prijsrij** in `prices.mjs` voor `claude-opus-5-5`, waardoor de kolom "$ transcript" te hoog is; dit rapport gebruikt die kolom niet.
+- **Ontbrekende prijsrij** in `prices.mjs` voor `claude-opus-5-5`, waardoor de kolom "$ transcript" te hoog is; dit rapport gebruikt die kolom niet (de rij is na deze run toegevoegd).
 - **Eigenaardigheid van de testwrapper:** `node --test` met één ontbrekend bestand naast bestaande bestanden eindigt met 0, terwijl één los ontbrekend bestand met 1 eindigt (progress.md, build.md).
 - **Eén machine, één dag.**
 

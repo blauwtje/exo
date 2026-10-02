@@ -37,3 +37,8 @@ test('Fable 5 prices its cache reads at its own rate, apart from Fable 5.1', () 
   assert.deepEqual(modelPrice('claude-opus-4-7'), { input: 5, output: 25, cacheRead: 0.5, cache5m: 6.25, cache1h: 10 });
   assert.deepEqual(modelPrice('claude-sonnet-4-5-20250929'), { input: 3, output: 15, cacheRead: 0.3, cache5m: 3.75, cache1h: 6 });
 });
+
+test('Opus 5.5 prices at its own row, not as its Opus 5 prefix', () => {
+  assert.deepEqual(modelPrice('claude-opus-5-5'), { input: 4, output: 20, cacheRead: 0.2, cache5m: 5, cache1h: 8 });
+  assert.deepEqual(modelPrice('claude-opus-5'), { input: 5, output: 25, cacheRead: 0.5, cache5m: 6.25, cache1h: 10 });
+});
