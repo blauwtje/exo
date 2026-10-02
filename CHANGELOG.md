@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- find-cause gives each instruction bullet one rule across its SKILL.md, both prompts and both references, splits the fixer prompt's Bash-boundary and test-first rules, lists one handoff field per bullet, and drops the investigator's no-delete sentence that `exo:solve-hard` already carries; its 3 instruction-density allowlist entries are gone and the lock drops from 30 to 27.
+
 ## 0.72.10 - 2026-10-02
 
 ### Changed
