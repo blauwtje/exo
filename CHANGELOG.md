@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- plan-check and the plan parser read a `Lint:` plan-basis line and a `Risk:` task field; spec defaults the land gate to a project-wide type check.
+- The code standard forbids guards for a state the code's own boundary rules out and asks types to make invalid states unrepresentable.
+
+### Fixed
+
+- verify runs the Success criterion even when the plan says `Land gate: none`.
+
 ## 0.73.2 - 2026-10-02
 
 ### Changed
