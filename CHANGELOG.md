@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `exo:fix-review` agent repairs branch review findings marked `fix`; review-branch and its deep variants return a `fix=<n>` count, and verify dispatches the fixer only at `fix=1` or more, so a review with only `report` findings skips the fixer, its gate rerun and its commit.
+- plan-check flags a plan whose independent tasks carry no `Worktree setup:` line, since build then runs them one at a time.
+
+### Changed
+
+- verify.mjs skips a repeated Proof and a `node --test` Proof whose files the default gate's globs already run.
+- build admits a parallel wave in plans of two or more tasks, down from four.
+- build's lead reads `git diff --stat` on a GREEN return instead of the full diff.
+- route-skills sends read-only codebase discovery to `exo:locate-code`, one question per dispatch.
+
 ## 0.72.11 - 2026-10-02
 
 ### Changed
