@@ -58,11 +58,14 @@ the language of the recent pull requests and commits
 (`gh pr list --limit 5 --json title --jq '[.[].title]'`,
 `git log -5 --format=%s`). The skill's own text stays English.
 
-Take the shape from `references/fields.md`: Spec for a brief or for feature
-work, Report for a bug, a regression, a chore or a documentation fix. That
-file holds both section lists, the ban on a background section and on
-repeating the metadata, and how priority, size and estimate are read off the
-body; no field and no section is decided here.
+A brief or any feature work takes the Spec shape in `references/fields.md`; a
+bug, a regression, a chore or a documentation fix takes the Report shape below.
+
+- `### What happens`: one sentence naming the current behavior, in the present tense.
+- `### Expected`: what should happen instead.
+- `### Steps`: the prompts or commands that produce it, in order.
+- `### Environment`: the versions and the platform the repository's own bug template asks for, one per line; where it has no template, the tool versions and the operating system.
+- `### Evidence`: the output, transcript or log lines that show it, the relevant ones only and with secrets removed.
 
 ## References
 

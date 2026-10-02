@@ -31,8 +31,7 @@ import { UsageError, parseFlags, isMain } from '#script-flags';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 // GitHub's own defaults: a label or a project field outside these names, or
-// any issue type at all, marks the repository as having its own vocabulary
-// (fields.md's rule).
+// any issue type at all, marks the repository as having its own vocabulary.
 const DEFAULT_LABELS = new Set([
   'bug', 'documentation', 'duplicate', 'enhancement', 'good first issue',
   'help wanted', 'invalid', 'question', 'wontfix'
