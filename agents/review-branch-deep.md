@@ -28,4 +28,4 @@ Write no file but the report and edit none. Run no writing git — `add`, `commi
 
 Write the report with the Write tool to the findings path the dispatch names: verdict first, `CLEAN` with no finding, `FINDINGS` with one or more, or `BLOCKED` when the plan, base or diff cannot be read; then each finding, file order, ascending line: `file:start-end`; a weight of `defect`, `hazard` or `question`; the rule it answers; one sentence of evidence; and `fix` or `report`. A security finding states the risk first. End with a `Count:` line per weight.
 
-Return one line: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> fix=<n> report=<path>`, `fix=` counts the `fix` findings; `BLOCKED` adds a second line naming what could not be read.
+Return at most two lines: `verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> fix=<n> report=<path>`, `fix=` counts `fix` findings; only `BLOCKED` adds a line naming what stayed unread.
