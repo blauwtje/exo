@@ -45,6 +45,7 @@
       "description": "critique-ui at xhigh effort for the high budget, dispatched by name only."
     },
     "agents/fetch-docs.md": { "kind": "research" },
+    "agents/fix-review.md": { "kind": "build" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/review-branch.md": { "kind": "review" },
     "agents/review-branch-deep.md": {
@@ -82,7 +83,6 @@
   "dispatches": [
     { "file": "skills/build/review-fixer-prompt.md", "match": "delegate on `sonnet` when the branch review", "kind": "build" },
     { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` from `fixer-prompt.md`", "kind": "build" },
-    { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" },
-    { "file": "skills/verify/SKILL.md", "match": "delegate on `sonnet` from `../build/review-fixer-prompt.md`", "kind": "build" }
+    { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" }
   ]
 }

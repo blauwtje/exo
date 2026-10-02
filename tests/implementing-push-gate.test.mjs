@@ -57,6 +57,10 @@ test('the tail pushes only through the finish question', () => {
   const tailStep = loopStep(7, TAIL);
   assert.ok(tailStep.includes('End this loop on `verify`'));
   assert.ok(VERIFY.includes('End on `ship`'), 'verify names the finish that follows build\'s tail');
+  const repairStep = VERIFY.match(/^3\. \*\*Repair the findings\.\*\*.+$/m)[0];
+  assert.ok(repairStep.includes('the `exo:fix-review` agent, with no model override'), 'verify sends the findings to the named fixer agent');
+  assert.ok(!repairStep.includes('`general-purpose`'), 'the fixer is no general-purpose delegate');
+  assert.ok(!repairStep.includes('git push'), 'the repair step runs no push');
   assert.ok(!tailStep.includes('git push'), 'step 7 names no push of its own');
   const question = SHIPPING.indexOf('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.');
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
