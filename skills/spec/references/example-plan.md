@@ -12,7 +12,8 @@ A task row shows a colored badge for its due date.
 Repository: /repo
 Branch: due-date-badge
 Worktree setup: none
-Land gate: npm test
+Land gate: npm run typecheck
+Lint: npm run lint
 
 ## Success criterion
 `npm test` passes.

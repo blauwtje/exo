@@ -11,7 +11,8 @@ Write for a zero-context reader.
 1. `## Goal`: one sentence naming the result.
 2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
    - When two tasks share no `Depends on:` chain, add `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
-   - Add `Land gate: npm test` for root's package.json `test` script, else `none`; the owner names a slower `validate` or `check` there.
+   - Add `Land gate: npm run typecheck` for root's package.json `typecheck` script, else `none`; the owner names a slower `validate` or `check` there.
+   - Add `Lint: npm run lint` for root's package.json `lint` script, else `Lint: none`; a task lands on its own `Proof:` plus this lint on its `Files:`.
 3. `## Success criterion`: the one command proving every task landed, no
    interpretation step, no user-only check (`## Manual checks`).
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`,

@@ -227,26 +227,34 @@ test('plan-check fails a compact plan missing Goal, Success criterion or a Check
   assert.ok(missingPoint.lines.some((line) => line.includes("no 'Shared state:' point")));
 });
 
-test('plan-check fails a compact plan whose package.json has a test script and no Land gate: line', async () => {
-  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { test: 'echo ok' } }) });
+test('plan-check fails a compact plan whose package.json has a typecheck script and no Land gate: line', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { typecheck: 'echo ok' } }) });
   const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
   const report = planCheckReport(plan);
   assert.equal(report.ok, false);
-  assert.ok(report.lines.some((line) => line.includes("no 'Land gate:' line") && line.includes('Land gate: npm test')));
+  assert.ok(report.lines.some((line) => line.includes("no 'Land gate:' line") && line.includes('Land gate: npm run typecheck')));
 });
 
-test('plan-check prints ok for a compact plan whose package.json has a check script but no test script', async () => {
-  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { validate: 'echo ok', check: 'echo ok' } }) });
+test('plan-check fails a compact plan whose package.json has a lint script and no Lint: line', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { lint: 'echo ok' } }) });
+  const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
+  const report = planCheckReport(plan);
+  assert.equal(report.ok, false);
+  assert.ok(report.lines.some((line) => line.includes("no 'Lint:' line") && line.includes('Lint: npm run lint')));
+});
+
+test('plan-check prints ok for a compact plan whose package.json has a test script but no typecheck or lint script', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { test: 'echo ok', validate: 'echo ok', check: 'echo ok' } }) });
   const plan = compactPlanFixture({ tasks: compactTasks(1) }).replace('Repository: /tmp/fixture', `Repository: ${root}`);
   const report = planCheckReport(plan);
   assert.equal(report.ok, true);
 });
 
-test('plan-check accepts Land gate: none as a deliberate opt-out', async () => {
-  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { test: 'echo ok' } }) });
+test('plan-check accepts Land gate: none and Lint: none as deliberate opt-outs', async () => {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { typecheck: 'echo ok', lint: 'echo ok' } }) });
   const plan = compactPlanFixture({ tasks: compactTasks(1) })
     .replace('Repository: /tmp/fixture', `Repository: ${root}`)
-    .replace('Branch: feat/fixture', 'Branch: feat/fixture\nLand gate: none');
+    .replace('Branch: feat/fixture', 'Branch: feat/fixture\nLand gate: none\nLint: none');
   const report = planCheckReport(plan);
   assert.equal(report.ok, true);
 });

@@ -210,19 +210,25 @@ function checkAcceptanceCitations(frame) {
   return problems;
 }
 
-// task-list.md's '## Plan basis' item 2 asks for a 'Land gate:' line by
-// default when the target repository's package.json has a test script to
-// gate the land: plan-check fails a compact plan that leaves the line out,
-// while 'Land gate: none' still passes as a deliberate opt-out.
+// task-list.md's '## Plan basis' item 2 asks for a 'Land gate:' line when the
+// target repository's package.json has a typecheck script, and a 'Lint:' line
+// when it has a lint script: plan-check fails a compact plan that leaves
+// either out, while 'Land gate: none' and 'Lint: none' still pass as
+// deliberate opt-outs.
 function checkLandGate(frame, root) {
   if (root === undefined || root === null) return [];
   const packageJsonPath = path.join(root, 'package.json');
   if (!fs.existsSync(packageJsonPath)) return [];
   const basis = frame['Plan basis'] ?? '';
-  if (/^Land gate: .+$/m.test(basis)) return [];
   const scripts = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).scripts ?? {};
-  if (scripts.test === undefined) return [];
-  return ["the plan's '## Plan basis' has no 'Land gate:' line, though the target repository's package.json has a test script to gate on: add 'Land gate: npm test' or 'Land gate: none' to opt out"];
+  const problems = [];
+  if (scripts.typecheck !== undefined && !/^Land gate: .+$/m.test(basis)) {
+    problems.push("the plan's '## Plan basis' has no 'Land gate:' line, though the target repository's package.json has a typecheck script to gate on: add 'Land gate: npm run typecheck' or 'Land gate: none' to opt out");
+  }
+  if (scripts.lint !== undefined && !/^Lint: .+$/m.test(basis)) {
+    problems.push("the plan's '## Plan basis' has no 'Lint:' line, though the target repository's package.json has a lint script: add 'Lint: npm run lint' or 'Lint: none' to opt out");
+  }
+  return problems;
 }
 
 function checkFrame(frame) {
