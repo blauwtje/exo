@@ -26,8 +26,13 @@ The values when this skill loaded, each with its layer:
 Take the first step whose answer the request and the letters so far leave open.
 
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
-2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter. A topic letter runs `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way; its options follow the order of the blocks above them.
-3. **Ask the value** once the setting is known but no value: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts: a whole number of at least 1 for `guard_lines`, of at least 0 for `heavy_after_seconds`, and command prefixes joined by `;` for `heavy_commands`.
+2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
+   - A topic letter runs `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
+   - That menu's options follow the order of the blocks above them.
+3. **Ask the value** once the setting is known but no value: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts, by key:
+   - `guard_lines`: a whole number of at least 1.
+   - `heavy_after_seconds`: a whole number of at least 0.
+   - `heavy_commands`: command prefixes joined by `;`.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    **Who should this apply to?**
@@ -39,18 +44,21 @@ Take the first step whose answer the request and the letters so far leave open.
 
    Recommended: (A), because the whole team gets the same value, and (B) and (C) reach only you.
    ```
-5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line, because the block above predates the change. Relay a rejection as the script printed it and change nothing by hand.
-6. **Point** a global value at `/config`, where each exo option is a row, and run nothing, because the harness owns that file.
+5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line, because the block above predates the change.
+   - Relay a rejection as the script printed it and change nothing by hand.
+   - A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
+6. **Point** a global value at `/config`, where each exo option is a row, and run nothing.
 
-`heavy_commands` runs a Bash command that starts with a listed prefix once per code state across sessions: a second session waits for the first, and a green result holds 24 hours. `EXO_HEAVY_FORCE=1 <command>` forces a run.
-
-`heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command (program or script name has `test`, `e2e`, `check`, `lint` or `verify`, not a path, URL or later argument) as heavy once its last run in the project took longer; never learned: `--watch`, `--ui`, `--headed`, `dev`, `serve`, `start`, `install`, `deploy`, `build`, `EXO_HEAVY_FORCE`, `until`, `while` or `sleep` loops, and remote-state programs (`gh`, `curl`, `ssh`, `git`, `docker`, …), whose result does not follow the code.
-
-A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed. The ladder has no switch, so a request to switch it off gets that answer and runs nothing.
+- `heavy_commands` runs a Bash command that starts with a listed prefix once per code state across sessions.
+- A second session waits for the first, and a green result holds 24 hours.
+- `EXO_HEAVY_FORCE=1 <command>` forces a run.
+- `heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command as heavy once its last run in the project took longer.
+- A command is test-like when its program or script name holds `test`, `e2e`, `check`, `lint` or `verify`; a path, URL or later argument does not count.
+- It never learns `--watch`, `--ui`, `--headed`, `dev`, `serve`, `start`, `install`, `deploy`, `build`, `EXO_HEAVY_FORCE`, `until`, `while` or `sleep` loops, or remote-state programs (`gh`, `curl`, `ssh`, `git`, `docker`, …), because their result does not follow the code.
 
 ## The walk
 
-Follow `references/setup-map.md` from its first step, asking in the chat one setting per message. Offer `issues` and `both` only when `git remote get-url origin` is on GitHub and `gh auth status` passes, because either answer fails at the first spec otherwise. Never pick an answer for the user. Write nothing before the review is confirmed, then only the changed values: a kept value is never written, even when it equals the default, and a rejection stops every write after it.
+Follow `references/setup-map.md` from its first step. Never pick an answer for the user.
 
 ## The write commands
 
@@ -68,7 +76,8 @@ Follow `references/setup-map.md` from its first step, asking in the chat one set
 
 ## Judgment
 
+- A project or local value outranks a global one.
+- When the user picks every project for a key such a layer holds, the report names that layer, because the new value stays hidden there.
 - The scripts' output outranks any value in the context, including the session's `exo settings:` line, which was read when the session started.
-- A setting, value or layer the request names outranks its question, and a named layer outranks the recommended one.
-- A project or local value outranks a global one: when the user picks every project for a key such a layer holds, the report names that layer, because the new value stays hidden there.
-- The right-sizing ladder rides in every session, whatever `guards` holds.
+- A setting, value or layer the request names outranks its question.
+- The right-sizing ladder has no switch and rides in every session, whatever `guards` holds: a request to switch it off gets that answer and runs nothing.
