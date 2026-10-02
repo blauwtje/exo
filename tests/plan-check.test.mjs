@@ -94,7 +94,8 @@ function compactTasks(count) {
     number: index + 1,
     title: `feat(app): t${index + 1}`,
     dependsOn: index === 0 ? 'none' : `${index}`,
-    files: [`src/f${index + 1}.js`]
+    files: [`src/f${index + 1}.js`],
+    proof: 'node --test tests/app.test.mjs'
   }));
 }
 
@@ -123,10 +124,24 @@ test('plan-check fails a compact task whose field line lacks Proof:', () => {
   assert.ok(report.lines.some((line) => line.includes("Task 1: field line lacks 'Proof:'")));
 });
 
+test('plan-check fails a compact task whose Proof: runs the whole suite and accepts one test file', () => {
+  const proofReport = (proof) => planCheckReport(compactPlanFixture({
+    tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof })]
+  }));
+  for (const proof of ['npm test', 'npm run test > log', 'node --version && npm test']) {
+    const report = proofReport(proof);
+    assert.equal(report.ok, false, proof);
+    assert.ok(report.lines.some((line) => line.includes("Task 1: 'Proof: ") && line.includes('runs the whole suite')), proof);
+  }
+  for (const proof of ['node --test tests/app.test.mjs', 'npm test -- tests/app.test.mjs']) {
+    assert.equal(proofReport(proof).ok, true, proof);
+  }
+});
+
 test('plan-check accepts a Risk: category on a compact task and fails any other value', () => {
   const task = (risk) => [
     '### Task 1: feat(app): greet',
-    `Depends on: none | Files: \`src/app.js\` | Data: a plain object | Risk: ${risk} | Proof: node --test`
+    `Depends on: none | Files: \`src/app.js\` | Data: a plain object | Risk: ${risk} | Proof: node --test tests/app.test.mjs`
   ];
   const accepted = planCheckReport(compactPlanFixture({ tasks: task('persisted format') }));
   assert.equal(accepted.ok, true);

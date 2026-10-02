@@ -4,13 +4,15 @@
 // with code, no placeholder, a size within the split threshold, every
 // Modify: path present in the target repository, and no shared Files: path
 // between two tasks with no Depends on chain between them, and a plan with
-// two such independent tasks and no Worktree setup: line. Planning runs
+// two such independent tasks and no Worktree setup: line, and a compact
+// task whose Proof: runs the whole suite. Planning runs
 // this instead of reading the finished plan back.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, frameOf, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { wholeSuiteKeys } from '../../../lib/runtime-log.mjs';
 
 const STEP_HEADING = /^Step \d+: .*$/;
 // A run of dots on their own, not a spread or rest operator: `...args` and
@@ -247,6 +249,15 @@ function checkFrame(frame) {
   return problems;
 }
 
+// A subagent's guard refuses a whole-suite run, so a Proof: holding one
+// segment that runs the whole suite would block the very task it proves; the
+// Success criterion may still be `npm test`, since verify runs it in the main
+// session.
+function checkWholeSuiteProof(task) {
+  if (task.proof === null || wholeSuiteKeys(task.proof).length === 0) return [];
+  return [`Task ${task.number}: 'Proof: ${task.proof}' runs the whole suite: name the one test file or script that shows this task alone landed`];
+}
+
 function checkCompactFields(task) {
   const problems = [];
   if (task.filesField === null) problems.push(`Task ${task.number}: field line lacks 'Files:'`);
@@ -254,7 +265,7 @@ function checkCompactFields(task) {
   if (task.risk !== null && !RISK_CATEGORIES.includes(task.risk)) {
     problems.push(`Task ${task.number}: 'Risk: ${task.risk}' is not one of ${RISK_CATEGORIES.join(', ')}`);
   }
-  return problems;
+  return [...problems, ...checkWholeSuiteProof(task)];
 }
 
 /**
