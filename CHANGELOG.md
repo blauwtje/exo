@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- start gives each instruction bullet one rule in its SKILL.md, drops the `## When to use` section that restated its description, and cuts the cheat sheet's stance paragraph and `## Judgment` notes; its 2 instruction-density allowlist entries are gone and the lock drops from 27 to 25.
+
 ## 0.73.0 - 2026-10-02
 
 ### Added
