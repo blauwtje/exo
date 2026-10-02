@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- verify gives each instruction one rule per line in its SKILL.md steps; its 4 instruction-density allowlist entries are gone and the lock drops from 41 to 37.
+
 ## 0.72.7 - 2026-10-02
 
 ### Changed
