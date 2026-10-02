@@ -119,6 +119,15 @@ test('touchLearned refreshes lastUsed of a learned command and ignores an unknow
   });
 });
 
+test('touchLearned keeps the whole-suite duration of a learned command from the 30-day drop', () => {
+  withCache(() => {
+    run('npm test', { seconds: 90 });
+    touchLearned({ project: '/p', command: 'npm test', now: T0 + 20 * DAY_MS });
+    run('npm run lint', { seconds: 1, startAt: T0 + 40 * DAY_MS });
+    assert.equal(lastDuration('/p', 'npm test'), 90);
+  });
+});
+
 test('a finish with no start record learns nothing', () => {
   withCache(() => {
     const entry = recordFinish({ sessionId: 's1', command: 'npm test', project: '/p', thresholdSeconds: 60, now: T0 });
