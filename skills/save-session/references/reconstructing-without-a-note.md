@@ -1,6 +1,6 @@
 # Reconstructing without a note
 
-No handoff sits at the path a resuming session was pointed to, so rebuild the working context from what git and the forge already hold. The enemy is asking the user to retell what the repository already records. The overcorrection is inventing a fact the trail does not support instead of naming it unknown.
+Rebuild the working context from what git and the forge already hold, never by asking the user to retell what the repository records.
 
 ## Read the trail
 
