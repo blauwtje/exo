@@ -36,8 +36,4 @@ skills/ship/SKILL.md	bullet	4	**Route.** `node "${CLAUDE_SKILL_DIR}/sc
 skills/ship/references/pr-prep.md	bullet	6	`## Verification`: each real run path an
 skills/start/SKILL.md	sentence	The exception is a path to a spec file,
 skills/start/SKILL.md	sentence	Call the picked skill through the Skill
-skills/verify/SKILL.md	bullet	3	**Run the gate.** Run `node "${CLAUDE_SK
-skills/verify/SKILL.md	sentence	It runs each landed task's own Proof com
-skills/verify/SKILL.md	sentence	Dispatch the `exo:review-branch` agent,
-skills/verify/SKILL.md	bullet	3	**Repair the findings.** A `FINDINGS` ve
 skills/write-docs/SKILL.md	bullet	3	**Write whole sentences in plain words.*
