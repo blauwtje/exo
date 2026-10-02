@@ -10,16 +10,17 @@ This style applies to `CLAUDE.md`, rules, skills, agents, output styles and hook
 - Put the rules most often broken first in a file, because the model recalls the start of its context best and the middle worst.
 - Move what only some paths need to a reference.
 - Keep one load path, SKILL.md plus the references that path reads, under about 150 rules, because adherence falls past it and earlier rules win.
+- Keep a line only when it prevents a mistake.
+- Give each rule one owner: when another file states it, point there or omit it.
 - Write for the model: line length, hard wraps and reading grade are human metrics, not targets.
 - Write short: drop a word where the meaning stays exact, never one that sets a boundary.
 - Leave out comments (HTML included), dates, sources, change history, opinions and examples, unless the rule fails without them.
 - Give a reason only where it sets the rule's boundary, in one clause.
 - Put an exception beside its rule.
 - Define by contrast: "X, not Y".
-- Make a ladder stop at the first match, and make its first step ask whether the thing needs to exist.
-- Give each rule one owner: when another file states it, point there or omit it.
+- Make a ladder stop at the first match.
+- Make a ladder's first step ask whether the thing needs to exist.
 - Keep a rule the system prompt also states, because sessions switch models.
-- Keep a line only when it prevents a mistake.
 - Make what must happen every time without exception a hook, not a rule.
 - A hook never rewrites a command inside a pipeline; a guard denies or allows and leaves the command unchanged.
 - Use Markdown headers and bullets.

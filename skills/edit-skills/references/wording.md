@@ -14,13 +14,10 @@
 ## Sentences that bind
 
 - State a rule as a bright line the model can check, never a hedge, which the model reads as permission.
-- Keep command language off a judgment call, which the model follows literally past the boundary the reason would have drawn.
 - "When X, do Y" with X observable beats general advice; the model executes the trigger without deciding.
 - One term per concept across the skill; a synonym reads as a second concept.
 - A default with one named escape hatch beats a menu of options; the model picks the default and moves.
-- Nothing dated: no "the new API", no "as of this version".
 - A fact that will age goes to a reference with its date.
-- Point to `--help` or the existing skill instead of restating flags or another skill's steps.
 
 ## Micro-test wording
 
@@ -28,12 +25,12 @@ Before a full scenario, test a sentence in isolation when two phrasings compete:
 
 1. Same realistic prompt, fresh context per call, one arm per phrasing and a control arm with no guidance.
 2. If the control arm does not fail, the sentence is cut; there is nothing to fix.
-3. Five runs per arm at least; read every flagged output by eye, a grep match is not a judgment.
-4. Variance across runs is the signal: a phrasing that binds converges, one that does not scatters.
+3. Run each arm at least five times.
+4. Read every flagged output by eye, because a grep match is not a judgment.
+5. Variance across runs is the signal: a phrasing that binds converges, one that does not scatters.
 
 A micro-test settles wording, never whether the skill holds under pressure; that is the scenario's job.
 
 ## Judgment
 
 - The reason clause outranks the imperative on a technique; the imperative outranks the reason on a discipline.
-- Convergence across runs outranks the author's preference between two phrasings.

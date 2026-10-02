@@ -1,10 +1,5 @@
 # Blind eval
 
-Reading the `with`/`without` answers yourself grades your own change, and a close
-call reads as a pass because you already want it to. The enemy is the wording
-tweak declared done on a self-read hunch. The overcorrection is running this
-on every case, which is too slow to survive the loop.
-
 ## When to run it
 
 - Step 4's `with`/`without` read is a close call: both answers could pass for

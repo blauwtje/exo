@@ -22,5 +22,4 @@
 ## Judgment
 
 - A symptom the model would actually think outranks a category label.
-- A "not for" that names the owner outranks a bare exclusion.
 - Trigger-only outranks completeness: a description over its budget loses its weakest symptom, never a "not for".
