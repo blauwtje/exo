@@ -23,13 +23,6 @@ agents/survey-ui.md	sentence	Read `$SKILL/references/visual-direction
 output-styles/scannable.md	bullet	3	**Max three blocks**, blank line between
 output-styles/scannable.md	bullet	3	**Max eight lines** above the closing li
 skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
-skills/edit-skills/SKILL.md	bullet	3	**Watch it happen.** Run `scripts/pressu
-skills/edit-skills/references/blind-eval.md	sentence	Label the two clones' `with` answers A a
-skills/edit-skills/references/blind-eval.md	sentence	Write a rubric of 3-6 concrete criteria
-skills/edit-skills/references/blind-eval.md	sentence	The edit is done only when the judge pic
-skills/edit-skills/references/pressure-scenarios.md	sentence	Save the case to a prompt file, then tak
-skills/edit-skills/references/pressure-scenarios.md	bullet	3	Run `scripts/pressure.mjs --prompt <file
-skills/edit-skills/references/pressure-scenarios.md	sentence	It writes every full final answer to its
 skills/find-cause/SKILL.md	bullet	3	**Reproduce.** One command reproduces it
 skills/find-cause/references/handoff.md	sentence	The investigate part, at most 25 lines,
 skills/find-cause/references/handoff.md	sentence	The fix delegate appends a `## Fix` sect
