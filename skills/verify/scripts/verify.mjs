@@ -51,16 +51,19 @@ export function runnableProof(proof) {
   return proof;
 }
 
-/** The globs `package.json` `scripts.test` hands `node --test`, or [] when it runs no such command. */
+/** The globs `package.json` `scripts.test` hands `node --test`, or [] when there is no `package.json` or it runs no such command; a malformed one throws. */
 function suiteGlobs(root) {
+  let manifest;
   try {
-    const script = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).scripts?.test ?? '';
-    if (!script.startsWith('node --test ')) return [];
-    const words = script.match(/"[^"]*"|'[^']*'|\S+/g).slice(2);
-    return words.filter((word) => !word.startsWith('-')).map((word) => word.replace(/^["']|["']$/g, ''));
-  } catch {
-    return [];
+    manifest = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
   }
+  const script = JSON.parse(manifest).scripts?.test ?? '';
+  if (!script.startsWith('node --test ')) return [];
+  const words = script.match(/"[^"]*"|'[^']*'|\S+/g).slice(2);
+  return words.filter((word) => !word.startsWith('-')).map((word) => word.replace(/^["']|["']$/g, ''));
 }
 
 // `*` stays inside one folder, `**` crosses folders; no other glob syntax is read, so an
