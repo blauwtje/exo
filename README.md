@@ -107,7 +107,7 @@ Every skill is invoked as `/exo:<name>`. Don't remember a name? Type `/exo:start
 |---|---|---|
 | `spec <outcome>` | Decides what "done" means, when that is still open: the result, the data, the architecture. | "I want something for X but I'm not sure what exactly" |
 | `build [plan]` | Runs a plan file, with helpers and review, or with no plan file, builds a decided change test-first where it can. | "run the plan at docs/...", or after `/clear`: "carry on", or "build X", "fix this bug, here's how to reproduce it" |
-| `verify [plan]` | Runs the gate before a pull request: the scripted checks, the branch review and repairing what it finds. | "verify this branch", "is this ready to ship?" |
+| `verify [plan]` | Runs the gate before a pull request: the scripted checks, the branch review and repairing what it finds. | "verify the plan at docs/...", "verify the branch for the plan at docs/..." |
 | `ship [numbers]` | Pushes, opens or merges a pull request, fixes its checks or review comments. | "push this", "merge the PR", "fix the checks" |
 | `find-cause <symptom>` | Finds the real cause of a failure before fixing it. | "this doesn't work", "why does X crash?" |
 | `design-ui <surface>` | Designs or improves how a screen looks. | "make this page nicer", "new component" |
