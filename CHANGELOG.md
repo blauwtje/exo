@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A lean-gates benchmark (`benchmarks/lean-gates.mjs` with its fixture, metrics script and tests) runs `/exo:build` plus verify headless against two exo commits, and its first report, `docs/benchmarks/lean-gates-2026-10-02.md`, finds the lean gates 32% faster at equal quality but not cheaper.
+
+### Fixed
+
+- Benchmark pricing gives `claude-opus-5-5` its own list rates ($4 input, $20 output) instead of falling back to `claude-opus-5`, which overstated its transcript cost by about 40%.
+
 ## 0.74.3 - 2026-10-02
 
 ### Changed
