@@ -11,7 +11,9 @@ a choice the user would not notice goes in `Data:` or the heading.
 ## Header sections, in order
 
 1. `## Goal`: one sentence naming the result.
-2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner. When two tasks share no `Depends on:` chain, the basis adds `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time. It adds `Land gate: npm test` for root's package.json `test` script, else `none`; the owner names a slower `validate` or `check` there.
+2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; with no git repo yet, `Branch:` reads `main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
+   - When two tasks share no `Depends on:` chain, add `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
+   - Add `Land gate: npm test` for root's package.json `test` script, else `none`; the owner names a slower `validate` or `check` there.
 3. `## Success criterion`: the one command proving every task landed, no
    interpretation step, no user-only check (`## Manual checks`).
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`,
@@ -26,15 +28,13 @@ a choice the user would not notice goes in `Data:` or the heading.
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>] | Proof: <one bare command>
 ```
 
-The heading is the conventional-commit subject `land-task` uses,
-trailed by `Plan-task: <plan-stem>/<n>`; it stages `Files:`; no `Commit:` block. `Data:` names the structure holding the result (an object, a
-keyed `Map`, an array), not its fields or algorithm. `Design:` names the skill
-a task loads first, only when it changes a page's look.
-`Proof:` is the one bare command showing this task alone landed. A task whose
-result runs (CLI, server, page, script) takes a `Proof:` running that
-artifact on the project's real input, never a test alone: the project's own
-command when one exists, else a script path the builder writes with only the
-project's tools.
+- The heading is the conventional-commit subject `land-task` uses, trailed by `Plan-task: <plan-stem>/<n>`.
+- The task stages `Files:` and carries no `Commit:` block.
+- `Data:` names the structure holding the result (an object, a keyed `Map`, an array), not its fields or algorithm.
+- `Design:` names the skill a task loads first, only when it changes a page's look.
+- `Proof:` is the one bare command showing this task alone landed.
+- A task whose result runs (CLI, server, page, script) takes a `Proof:` running that artifact on the project's real input, never a test alone.
+- That `Proof:` is the project's own command when one exists, else a script path the builder writes with only the project's tools.
 
 ## Rules
 
