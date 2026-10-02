@@ -1,4 +1,2 @@
 # Instruction-density offenders the tree carried when the check began: path, kind, a bullet's sentence count, first 40 characters, tab-separated.
 # Split an offender and delete its line; `node verify/instruction-density.mjs --prune` drops lines that match nothing.
-output-styles/scannable.md	bullet	3	**Max three blocks**, blank line between
-output-styles/scannable.md	bullet	3	**Max eight lines** above the closing li
