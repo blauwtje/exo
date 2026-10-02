@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.73.0 - 2026-10-02
+
 ### Added
 
 - The `exo:fix-review` agent repairs branch review findings marked `fix`; review-branch and its deep variants return a `fix=<n>` count, and verify dispatches the fixer only at `fix=1` or more, so a review with only `report` findings skips the fixer, its gate rerun and its commit.
