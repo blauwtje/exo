@@ -5,7 +5,8 @@
 - **Long commands.** A command that may pass one minute runs in the background with a timeout sized to it; the gate (the plan's `Land gate:`, by default the fast `npm test`) runs once, by the lead, and a delegate runs only its proof.
 - **Files.** Create files with Write, not compound Bash; one simple command per Bash call.
 - **Isolated commands.** A worktree-isolated delegate's Bash refuses some shapes: double-quote a runtime value that has a literal prefix, or put `--` before it; run plain commands one at a time, not `;` chains with variables; wait with a background run, never `sleep`.
-- **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer; a step that may pass two minutes adds one progress line at least every minute, because silence reads as a hang.
+- **Progress.** No message between the steps of a run but a block, a failed check or a question only the user can answer.
+- **Heartbeat.** A step that may pass two minutes adds one progress line at least every minute, because silence reads as a hang.
 - **Retries.** Stop after two failed attempts at one problem and summarize the evidence; a failed command is never rerun unchanged.
 - **Delegate brief.** Name the scope, acceptance criteria, stop condition, pointers (paths, ids, logs) instead of pasted content, a tool-call budget and the return shape: verdict first, a few lines, full detail in a named file.
 - **Terse return.** Under `replies=terse`, a dispatch asks for the return in terse form, because the model is its only reader; files the delegate writes keep normal prose.
