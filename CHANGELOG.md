@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- land-task accepts a build report whose proof sits on one line as `Proof: <command>: pass`, while a `Proof:` line with no passing command still refuses.
+
 ## 0.75.1 - 2026-10-02
 
 ### Fixed
