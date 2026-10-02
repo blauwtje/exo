@@ -5,6 +5,7 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -84,6 +85,47 @@ test('a task whose changes match every Files: path lands clean', async () => {
 function withLandGate(command) {
   return PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
 }
+
+function withLint(command) {
+  return PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLint: ${command}`);
+}
+
+test('Lint runs on the task Files script paths, without a shell, and a passing run lands', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
+  const tools = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-lint-'));
+  const record = path.join(tools, 'lint-args.txt');
+  const linter = path.join(tools, 'linter.sh');
+  await fs.writeFile(linter, `#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\n`, { mode: 0o755 });
+  const output = landTask({ planPath, planText: withLint(`${linter} --quiet`), number: 4, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
+  assert.equal(await fs.readFile(record, 'utf8'), '--quiet\nsrc/app.js\n');
+});
+
+test('a failing Lint is refused before anything commits, naming the command and its output', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const linter = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-lint-')), 'linter.sh');
+  await fs.writeFile(linter, '#!/bin/sh\necho lint broke\nexit 1\n', { mode: 0o755 });
+  assert.throws(
+    () => landTask({ planPath, planText: withLint(linter), number: 1, root }),
+    /Lint ".*linter\.sh" failed:\nlint broke/
+  );
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+});
+
+test('Lint: none and a task with no script path run nothing', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const output = landTask({ planPath, planText: withLint('none'), number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  const notes = planFixture({ tasks: [taskSection({ number: 1, title: 'Note', files: ['- Create: `src/note.md`'], subject: 'docs: note' })] })
+    .replace('Branch: feat/fixture', 'Branch: feat/fixture\nLint: false');
+  await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
+  const noted = landTask({ planPath, planText: notes, number: 1, root });
+  assert.match(noted, /^Committed: [0-9a-f]+ Task 1$/m);
+});
 
 test('a passing Land gate lets a green task land', async () => {
   const { root, planPath } = await landingCheckout();

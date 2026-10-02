@@ -295,6 +295,22 @@ function refuseSignatureDrift(task, root) {
   if (drifts.length > 0) throw new PlanDriftError(drifts.join('\n'));
 }
 
+// A `Lint: <command>` line in the plan's `## Plan basis` runs once on the
+// task's own `Files:` paths that are scripts, spawned without a shell, so the
+// task lands on its Proof plus lint, not the test suite; a plan without the
+// line, with `Lint: none`, or a task naming no script path lints nothing.
+function runLint(lint, task, root) {
+  if (lint === null || lint === 'none') return;
+  const paths = task.files.map((file) => file.path).filter((file) => SCRIPT_EXTENSIONS.has(path.extname(file)));
+  if (paths.length === 0) return;
+  const [command, ...args] = [...lint.split(/\s+/), ...paths];
+  const result = spawnSync(command, args, { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) {
+    const output = `${result.stdout ?? ''}${result.stderr ?? ''}${result.error?.message ?? ''}`.trim();
+    throw new LandingError(`Lint "${lint}" failed:\n${output}`);
+  }
+}
+
 // A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
 // right before the commit, so a check spec wrote against the plan's own
 // layout still holds on whatever the build left; a plan without the line, or
@@ -339,6 +355,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // parse, so only a compact task's report is read here.
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
   const frame = frameOf(plan.frame);
+  runLint(frame.lint, task, root);
   const gateRan = runLandGate(frame.landGate, root);
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
