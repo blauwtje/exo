@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- route-skills gives each instruction bullet one rule across its injected SKILL.md and references, leads question.md with its most-broken rules, and drops the stance paragraphs its question and next-stage references restated; its 5 instruction-density allowlist entries are gone, the allowlist lock drops from 46 to 41 and the injected-context lock from 2540 to 2532 bytes.
+
 ## 0.72.6 - 2026-10-02
 
 ### Changed
