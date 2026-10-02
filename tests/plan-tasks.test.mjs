@@ -332,3 +332,20 @@ test('parsePlan reads a plan saved with CRLF line endings', () => {
   assert.deepEqual(plan.tasks[0].files, [{ kind: 'Modify', path: 'src/app.js', region: null }]);
   assert.equal(frameOf(plan.frame).branch, 'feat/fixture');
 });
+
+test('a Lint: plan-basis line reads as lint and its absence as null', () => {
+  const withLint = parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['a.js'] })] })
+    .replace('Branch: feat/fixture', 'Branch: feat/fixture\nLint: npx eslint'));
+  assert.equal(frameOf(withLint.frame).lint, 'npx eslint');
+  const without = parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['a.js'] })] }));
+  assert.equal(frameOf(without.frame).lint, null);
+});
+
+test('a Risk: segment reads as risk and its absence as null', () => {
+  const plan = parsePlan(compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'feat(app): greet', files: ['a.js'] }).concat(' | Risk: money path'),
+    compactTask({ number: 2, title: 'feat(app): wave', files: ['b.js'] })
+  ] }));
+  assert.equal(plan.tasks[0].risk, 'money path');
+  assert.equal(plan.tasks[1].risk, null);
+});
