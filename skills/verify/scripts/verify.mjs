@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Runs a lean-workflow plan's gate: each landed task's own Proof command
-// (except one equal to the gate command, or running the test suite when the
-// gate is the default `npm run check`, which runs that suite), the first
+// (except one equal to the gate command, a repeat of an earlier Proof, or running
+// the test suite or only test files its globs cover when the gate is the default
+// `npm run check`, which runs that suite), the first
 // backticked command of the plan's Success criterion (else its Land gate, else
 // `npm run check`), and a
 // stray-path check that the diff touched nothing outside a task's declared
@@ -31,8 +32,10 @@ import { pickReviewer } from './pick-reviewer.mjs';
 
 const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
 const DEFAULT_LAND_GATE = 'npm run check';
-// A Proof that starts the test suite: `npm test` or `node --test ...`.
-const TEST_SUITE_PROOF = /^(npm test|node --test)( |$)/;
+// A Proof that starts the whole test suite: `npm test`.
+const TEST_SUITE_PROOF = /^npm test( |$)/;
+// A Proof naming only test files: `node --test <file>...`, each a plain path.
+const TEST_FILES_PROOF = /^node --test( [\w./-]+)+$/;
 // Per-task Proofs spawned at once; a few overlap without starving the machine.
 const PROOF_CONCURRENCY = 3;
 const BACKTICKED_COMMAND = /`([^`]+)`/;
@@ -46,6 +49,32 @@ const PROSE_PROOF = /`/;
 export function runnableProof(proof) {
   if (proof === null || PROSE_PROOF.test(proof)) return null;
   return proof;
+}
+
+/** The globs `package.json` `scripts.test` hands `node --test`, or [] when it runs no such command. */
+function suiteGlobs(root) {
+  try {
+    const script = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).scripts?.test ?? '';
+    if (!script.startsWith('node --test ')) return [];
+    const words = script.match(/"[^"]*"|'[^']*'|\S+/g).slice(2);
+    return words.filter((word) => !word.startsWith('-')).map((word) => word.replace(/^["']|["']$/g, ''));
+  } catch {
+    return [];
+  }
+}
+
+// `*` stays inside one folder, `**` crosses folders; no other glob syntax is read, so an
+// exotic glob matches nothing and its Proof runs once more.
+function globMatches(glob, file) {
+  const pattern = glob.replace(/[.+^${}()|[\]\\?]/g, '\\$&').replace(/\*\*\/?/g, '\0').replace(/\*/g, '[^/]*').replace(/\0/g, '(.*/)?');
+  return new RegExp(`^${pattern}$`).test(file);
+}
+
+/** True when the Proof is `node --test <files>` and every file matches one of `globs`. */
+export function filesUnderGlobs(command, globs) {
+  if (!TEST_FILES_PROOF.test(command)) return false;
+  const files = command.split(' ').slice(2).map((file) => file.replace(/^\.\//, ''));
+  return files.every((file) => globs.some((glob) => globMatches(glob, file)));
 }
 
 /** A changed path outside every task's declared Files is a stray edit. */
@@ -138,6 +167,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const gateSkipped = gateCommand === 'none';
 
   const proofRuns = [];
+  const queued = new Set();
+  const globs = suiteGlobs(root);
   for (const task of plan.tasks) {
     if (!landed.has(task.number) || task.proof === null) continue;
     const command = runnableProof(task.proof);
@@ -145,10 +176,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: not a single \`command\`)` });
       continue;
     }
-    // A Proof that is the gate command, or runs the test suite under the default
-    // gate (which runs that suite), repeats what the gate runs once below. A
+    // A Proof that is the gate command, or runs the test suite or files its globs
+    // cover under the default gate (which runs that suite), repeats what the gate runs once below. A
     // custom gate may run no tests, so a suite Proof still runs under it.
-    const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && TEST_SUITE_PROOF.test(command);
+    const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && (TEST_SUITE_PROOF.test(command) || filesUnderGlobs(command, globs));
     if (!gateSkipped && (command === gateCommand || suiteUnderDefault)) {
       proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
@@ -157,6 +188,11 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: land-task passed it on this same tree)` });
       continue;
     }
+    if (queued.has(command)) {
+      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: repeats an earlier task's Proof, which runs once)` });
+      continue;
+    }
+    queued.add(command);
     proofRuns.push({ number: task.number, command });
   }
 

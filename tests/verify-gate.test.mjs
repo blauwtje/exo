@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, findStrayPaths, manualChecks, runnableProof, successCriterionPasses, taskStates } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, runnableProof, successCriterionPasses, taskStates } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -183,6 +183,61 @@ test('a test-suite Proof is skipped under the default gate, which runs that suit
   assert.equal(lines[1], 'PASS success-criterion');
 });
 
+test('filesUnderGlobs reads node --test files as covered only when every file matches a suite glob', () => {
+  const globs = ['tests/*.test.mjs'];
+  assert.equal(filesUnderGlobs('node --test tests/a.test.mjs', globs), true);
+  assert.equal(filesUnderGlobs('node --test ./tests/a.test.mjs tests/b.test.mjs', globs), true);
+  assert.equal(filesUnderGlobs('node --test tests/a.test.mjs lib/b.test.mjs', globs), false);
+  assert.equal(filesUnderGlobs('node --test tests/sub/a.test.mjs', globs), false);
+  assert.equal(filesUnderGlobs('node --test tests/*.test.mjs', globs), false);
+  assert.equal(filesUnderGlobs('node --test --watch tests/a.test.mjs', globs), false);
+  assert.equal(filesUnderGlobs('node --test', globs), false);
+  assert.equal(filesUnderGlobs('node --test tests/a.test.mjs', []), false);
+  assert.equal(filesUnderGlobs('node --test lib/deep/a.test.mjs', ['lib/**/*.test.mjs']), true);
+});
+
+test('a node --test Proof on files the default gate globs cover is skipped, one off the globs runs', async () => {
+  const plan = [
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node --test tests/a.test.mjs',
+    '### Task 2: feat(app): wave',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node --test other/b.test.mjs',
+    ''
+  ].join('\n');
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': plan,
+    'package.json': FAILING_SUITE_PACKAGE({ test: 'node --test --test-concurrency=2 "tests/*.test.mjs"', check: 'node check.js' }),
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+  landTask(root, 2);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines[0].startsWith('SKIP Task 1'), result.stdout);
+  // The file does not exist, so the Proof fails when it runs; what matters is that it ran.
+  assert.equal(lines[1], 'FAIL Task 2');
+});
+
+test('a Proof repeated by a later task runs once', async () => {
+  const plan = [
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(1)"',
+    '### Task 2: feat(app): wave',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(1)"',
+    ''
+  ].join('\n');
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  landTask(root, 1);
+  landTask(root, 2);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  const lines = result.stdout.trim().split('\n');
+  assert.equal(lines[0], 'FAIL Task 1');
+  assert.ok(lines[1].startsWith('SKIP Task 2'), result.stdout);
+});
+
 test("the Success criterion's command is the gate, and a task Proof equal to it is skipped", async () => {
   const plan = [
     '## Plan basis', '', 'Repository: .', 'Branch: main', '',
@@ -269,10 +324,11 @@ test('per-task Proofs overlap, at most 3 at once, and print in task order', asyn
   // Each Proof logs +/- around a pause, so the log's running sum is how many ran at once.
   // The log sits outside the checkout, or the stray-path check would flag it.
   const logPath = path.join(await mkdtemp(path.join(tmpdir(), 'verify-gate-')), 'log.txt');
-  const proof = (delay) => `node -e "const fs=require('fs');fs.appendFileSync('${logPath}','+\\\\n');setTimeout(()=>{fs.appendFileSync('${logPath}','-\\\\n')},${delay})"`;
+  // The trailing index keeps each command distinct, or the repeat skip would run only the first of two equal delays.
+  const proof = (delay, index) => `node -e "const fs=require('fs');fs.appendFileSync('${logPath}','+\\\\n');setTimeout(()=>{fs.appendFileSync('${logPath}','-\\\\n')},${delay})" ${index}`;
   const tasks = [500, 300, 300, 50, 50].flatMap((delay, index) => [
     `### Task ${index + 1}: feat(app): step ${index + 1}`,
-    `Depends on: none | Files: \`src/app.js\` | Data: none | Proof: ${proof(delay)}`,
+    `Depends on: none | Files: \`src/app.js\` | Data: none | Proof: ${proof(delay, index)}`,
     ''
   ]);
   const root = await gitRepository({
