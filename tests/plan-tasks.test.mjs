@@ -100,7 +100,11 @@ test('the wave is the current task plus every further ready task without Design:
   assert.deepEqual(nextWave(withSetup.tasks, [], null).map((task) => task.number), [1]);
   assert.deepEqual(nextWave(withSetup.tasks, [1, 2, 3, 4], 'none'), []);
   const three = parsePlan(planFixture({ worktreeSetup: 'none', tasks: four.slice(0, 3) }));
-  assert.deepEqual(nextWave(three.tasks, [], 'none').map((task) => task.number), [1]);
+  assert.deepEqual(nextWave(three.tasks, [], 'none').map((task) => task.number), [1, 3]);
+  const two = parsePlan(planFixture({ worktreeSetup: 'none', tasks: [bare(1, 'none'), bare(2, 'none')] }));
+  assert.deepEqual(nextWave(two.tasks, [], 'none').map((task) => task.number), [1, 2]);
+  const one = parsePlan(planFixture({ worktreeSetup: 'none', tasks: [bare(1, 'none')] }));
+  assert.deepEqual(nextWave(one.tasks, [], 'none').map((task) => task.number), [1]);
 });
 
 test('four disjoint ready tasks form a wave of four', () => {
