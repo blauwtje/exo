@@ -38,7 +38,7 @@
 - Cut the PR body before it passes about 40 lines, because it is the squash commit body.
 - Attach video or screenshots only when they prove a claim.
 - Use these sections in order, dropping one with nothing to say:
-  - `## Why`: the goal and how the change reaches it, in at most two brief paragraphs; no "based on main" preamble.
+  - `## Why`: the goal and how the change reaches it, in at most two brief paragraphs; no SHAs or rebase genealogy, no "based on main" preamble.
   - `## Scope`: a bullet per real symbol or path; a rename or retarget gives old and new name; mark in or out only where that line matters.
   - `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about; skip when there was no real choice.
   - `## Blast Radius`: one sentence, three at most, on whom or what the change reaches, what makes it safe or risky, and the cost of staying red without the fix.
