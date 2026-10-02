@@ -1,7 +1,5 @@
 # Description
 
-The description is the only text the model reads before deciding to load the skill, so it carries the trigger and nothing else. The enemy is a description that summarizes the workflow, which the model follows as a shortcut instead of reading the body. The overcorrection is a description so terse it names no symptom the model would ever match.
-
 ## Contents, in order
 
 1. The moment it fires: the request shape, the symptom, the state of the repository, in third person, opening with "Use when".
