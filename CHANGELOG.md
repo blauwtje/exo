@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.74.3 - 2026-10-02
+
 ### Changed
 
 - The scannable output style gives each Shape bullet one rule, with no change to the replies it shapes; the last 2 instruction-density allowlist entries are gone and the lock drops from 2 to 0.
