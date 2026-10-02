@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- save-session gives each instruction bullet one rule across its SKILL.md and reconstructing reference, fences the Resume paragraph byte-identical, and drops rules its description and script already cover; its 3 instruction-density allowlist entries are gone and the lock drops from 33 to 30.
+
 ## 0.72.9 - 2026-10-02
 
 ### Changed
