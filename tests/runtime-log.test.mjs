@@ -11,11 +11,13 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   isLearnable,
+  lastDuration,
   learnedCommands,
   projectOf,
   recordFinish,
   recordStart,
   touchLearned,
+  wholeSuiteKeys,
   runtimeFile
 } from '../lib/runtime-log.mjs';
 
@@ -255,4 +257,53 @@ test('hooks.json runs the recorder after a Bash call', () => {
   const hooks = JSON.parse(fs.readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
   const entry = hooks.hooks.PostToolUse.find((candidate) => candidate.matcher === 'Bash');
   assert.match(entry.hooks[0].command, /hooks\/record-runtime\.mjs/);
+});
+
+test('wholeSuiteKeys keys a whole-suite segment and skips one narrowed by an argument', () => {
+  assert.deepEqual(wholeSuiteKeys('npm test'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('npm run test'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('CI=1 npm test > .exo/log 2>&1'), ['npm test']);
+  assert.deepEqual(wholeSuiteKeys('npx vitest run'), ['npx vitest']);
+  assert.deepEqual(wholeSuiteKeys('npm test -- tests/tax.test.ts'), []);
+  assert.deepEqual(wholeSuiteKeys('npm test -- due-tone'), []);
+  assert.deepEqual(wholeSuiteKeys('npm install'), []);
+  assert.deepEqual(wholeSuiteKeys('npm test && npm run lint'), ['npm test', 'npm lint']);
+  assert.deepEqual(wholeSuiteKeys('npm test | tail -5'), ['npm test']);
+});
+
+test('a one-segment whole-suite run records its duration, fast or slow', () => {
+  withCache(() => {
+    assert.equal(lastDuration('/p', 'npm test'), null);
+    run('npm test', { seconds: 5 });
+    assert.equal(lastDuration('/p', 'npm test'), 5);
+    run('npm run test', { seconds: 33, threshold: 20 });
+    assert.equal(lastDuration('/p', 'npm test'), 33);
+    assert.equal(lastDuration('/other', 'npm test'), null);
+    assert.equal(learnedCommands('/p')['npm run test'].seconds, 33);
+  });
+});
+
+test('a duration is recorded with the heavy threshold off', () => {
+  withCache(() => {
+    run('npm test', { seconds: 40, threshold: 0 });
+    assert.equal(lastDuration('/p', 'npm test'), 40);
+  });
+});
+
+test('a run narrowed to one file or with two whole-suite segments records no duration', () => {
+  withCache(() => {
+    run('npm test -- tests/tax.test.ts', { seconds: 40 });
+    run('npm test && npm run lint', { seconds: 70, session: 's2' });
+    assert.equal(lastDuration('/p', 'npm test'), null);
+    assert.equal(lastDuration('/p', 'npm lint'), null);
+  });
+});
+
+test('a duration unused for 30 days is dropped on the next write', () => {
+  withCache(() => {
+    run('npm test', { seconds: 5 });
+    run('npm run check', { seconds: 5, session: 's2', startAt: T0 + 31 * DAY_MS });
+    assert.equal(lastDuration('/p', 'npm test'), null);
+    assert.equal(lastDuration('/p', 'npm check'), 5);
+  });
 });
