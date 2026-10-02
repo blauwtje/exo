@@ -25,7 +25,7 @@ function section(text, heading) {
 
 test('the unit dispatches every build in the foreground, a wave still in one message', () => {
   const dispatchStep = loopStep(3, UNIT_AGENT);
-  assert.ok(dispatchStep.includes('Each build goes to the `exo:build-task` agent with `run_in_background: false`'));
+  assert.ok(dispatchStep.includes('Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`'));
   assert.ok(dispatchStep.includes('in one message'));
 });
 

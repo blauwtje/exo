@@ -6,18 +6,18 @@ effort: medium
 tools: Read, Bash, Agent
 ---
 
-The dispatch names plan path, branch, checkout, `<skill>`, block task numbers and the hard agent.
+The dispatch names plan, branch, checkout, `<skill>`, block tasks and the hard agent.
 
 Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 
 ## The loop
 
-1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` line and its `Next:` or `Wave:` line.
+1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines.
   - A `Next:` or `Wave:` task outside this block means a block task waits on a `BLOCKED` one; return each `BLOCKED <n> waits on <m>`.
-2. **Take the task from the script's output**, never from the plan file: it prints the `Brief: <path>`.
+2. **Take the task from the script's output**, never from the plan file: it prints `Brief: <path>`.
   - `PLAN DRIFT: Task <n>` goes to step 3's repair.
   - A `Design:` task is returned `BLOCKED <n> Design: task`.
-3. **Dispatch the build.** Each build goes to the `exo:build-task` agent with `run_in_background: false`, in one message, after `date +%s`.
+3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message, after `date +%s`.
   - Build up to three tasks here on `Drift: none`.
   - Else a wave builds per `<skill>/references/wave-worktrees.md`, reading its `${CLAUDE_SKILL_DIR}` as `<skill>`.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
@@ -27,7 +27,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:`, never a report you wrote; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A path outside `Files:`, a missing `pass` line, a failing Proof line or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
-  - A wave lands and removes its worktrees per that reference's steps 3 and 4; its failed task goes back through step 3.
+  - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
   - Return to step 1 until every block task has a `LANDED` or `BLOCKED` line.
 
 ## Stop

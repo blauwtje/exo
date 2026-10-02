@@ -72,7 +72,7 @@ test('the direct route reads the diff stat on a GREEN return and hands a stop\'s
 
 test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four tasks at most, disjoint `Files:`', () => {
   const askStep = loopStep(1, UNIT_AGENT);
-  assert.ok(askStep.includes('Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` line and its `Next:` or `Wave:` line'));
+  assert.ok(askStep.includes('Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines'));
   assert.ok(loopStep(2, UNIT_AGENT).includes("**Take the task from the script's output**, never from the plan file"));
   const task = (number, path) => ({ number, dependsOn: [], design: false, files: path ? [{ path }] : [] });
   const disjoint = [1, 2, 3, 4, 5].map((number) => task(number, `src/file-${number}.mjs`));
@@ -89,7 +89,7 @@ test('a unit wave builds in worktrees and keeps each green task per wave-worktre
   assert.ok(dispatchStep.includes('in one message'));
   const commitStep = loopStep(4, UNIT_AGENT);
   assert.ok(commitStep.includes("A wave lands and removes its worktrees per that reference's steps 3 and 4"));
-  assert.ok(commitStep.includes('its failed task goes back through step 3'));
+  assert.ok(commitStep.includes('a failed task returns to step 3'));
   assert.ok(!commitStep.includes('only when every report in it is green'), 'no unit wave waits on every report');
   assert.ok(!commitStep.includes('no task of it commits'), 'a failed sibling costs no green task');
   assert.ok(!UNIT_AGENT.includes('git cherry-pick'), 'the landing command has one owner');
