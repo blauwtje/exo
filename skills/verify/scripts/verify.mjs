@@ -7,7 +7,8 @@
 // `npm run check`), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
-// the size of the diff against base, so a caller knows which agent reviews
+// risk (a landed task's `Risk:`, a manifest change or a signature change
+// since base), so a caller knows which agent reviews
 // the change without asking. Reads the plan through #plan-tasks, the same
 // module land-task.mjs uses, so both agree on which task actually landed.
 //
@@ -26,9 +27,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
-import { changedPaths, measureSizeFacts } from '#size-facts';
+import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { pickReviewer } from './pick-reviewer.mjs';
+import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-reviewer.mjs';
 
 const CHECK_SUMMARY = /SUMMARY.*FAIL=0 WARN=0 UNRUN=0/;
 const DEFAULT_LAND_GATE = 'npm run check';
@@ -225,7 +226,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     failed ||= !criterionOk;
   }
 
-  const strays = findStrayPaths(plan.tasks, changedPaths({ base }));
+  const changed = changedPaths({ base });
+  const strays = findStrayPaths(plan.tasks, changed);
   if (strays.length === 0) {
     lines.push('PASS stray-paths');
   } else {
@@ -233,7 +235,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     failed = true;
   }
 
-  lines.push(`REVIEWER: ${pickReviewer(measureSizeFacts({ base }))}`);
+  const riskTasks = plan.tasks.some((task) => landed.has(task.number) && task.risk !== null);
+  // With no base there is no range of commits to read.
+  const signatureChanged = base !== undefined && signatureChangedSince(base, root);
+  lines.push(`REVIEWER: ${pickReviewer({ riskTasks, manifestChanged: touchesManifest(changed), signatureChanged })}`);
   for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
   for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
   return { lines, failed };

@@ -1,7 +1,7 @@
-// Picks the review agent by the size of the change (--base/--reviewer),
-// or the review effort for an uncommitted fix (--effort), so a remark about
-// budget, a deadline or how the diff reads never moves either pick: only a
-// reviewer the caller names with --reviewer, or the numbers themselves, do.
+// Picks the review agent by risk (--base/--reviewer), or the review effort
+// for an uncommitted fix (--effort), so a remark about budget, a deadline or
+// how the diff reads never moves either pick: only a reviewer the caller names
+// with --reviewer, or the risk facts and numbers themselves, do.
 
 import { execFileSync } from 'node:child_process';
 import { basename } from 'node:path';
@@ -39,15 +39,29 @@ export const MANIFESTS = [
   'composer.json', 'composer.lock', 'pom.xml', 'build.gradle', 'build.gradle.kts'
 ];
 
-export function parseShortstat(output) {
-  const files = Number(output.match(/(\d+) files? changed/)?.[1] ?? 0);
-  const insertions = Number(output.match(/(\d+) insertions?\(\+\)/)?.[1] ?? 0);
-  const deletions = Number(output.match(/(\d+) deletions?\(-\)/)?.[1] ?? 0);
-  return { files, changedLines: insertions + deletions };
+/** The deep reviewer when a landed task carries a `Risk:`, a manifest changed or a signature changed; diff size no longer picks it. */
+export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
+  return riskTasks || manifestChanged || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light;
 }
 
-export function pickReviewer({ files, changedLines }) {
-  return files <= FILE_LIMIT && changedLines <= LINE_LIMIT ? REVIEWER_AGENTS.light : REVIEWER_AGENTS.deep;
+/** Whether the diff touches a manifest or lockfile. */
+export function touchesManifest(paths) {
+  return paths.some((relativePath) => MANIFESTS.includes(basename(relativePath)));
+}
+
+/**
+ * Whether a non-merge commit between `base` and HEAD carries a `Signature:`
+ * trailer (land-task adds it) or no `Plan-task:` trailer, such as a `--fix`
+ * commit. Merge commits are never read.
+ */
+export function signatureChangedSince(base, root = process.cwd()) {
+  const format = '%x1e%(trailers:key=Signature,valueonly)%x1f%(trailers:key=Plan-task,valueonly)';
+  const log = execFileSync('git', ['-C', root, 'log', '--no-merges', `--format=${format}`, `${base}..HEAD`], { encoding: 'utf8' });
+  const commits = log.split('\x1e').slice(1);
+  return commits.some((commit) => {
+    const [signature, planTask] = commit.split('\x1f');
+    return signature.trim() !== '' || planTask.trim() === '';
+  });
 }
 
 /** Effort for the uncommitted fix against HEAD: tracked changes plus untracked new files. */
@@ -64,16 +78,16 @@ export function pickEffort({ files, changedLines, manifestChanged }) {
  */
 function measureEffort() {
   const { files, changedLines } = measureSizeFacts();
-  const manifestChanged = changedPaths().some((relativePath) => MANIFESTS.includes(basename(relativePath)));
+  const manifestChanged = touchesManifest(changedPaths());
   return pickEffort({ files, changedLines, manifestChanged });
 }
 
-export function resolveReviewer({ reviewer, shortstatOutput }) {
+export function resolveReviewer({ reviewer, facts }) {
   if (reviewer !== undefined) {
     if (!Object.values(REVIEWER_AGENTS).includes(reviewer)) throw new UsageError(`unknown reviewer '${reviewer}'`);
     return reviewer;
   }
-  return pickReviewer(parseShortstat(shortstatOutput));
+  return pickReviewer(facts);
 }
 
 function main(argv) {
@@ -89,10 +103,12 @@ function main(argv) {
   // An empty base makes git read `...HEAD` as HEAD...HEAD, an empty diff that
   // would pick the light reviewer for a branch of any size.
   if (flags.reviewer === undefined && base === '') throw new UsageError("flag '--base' needs a revision");
-  const shortstatOutput = flags.reviewer === undefined
-    ? execFileSync('git', ['diff', '--shortstat', `${base}...HEAD`], { encoding: 'utf8' })
-    : '';
-  process.stdout.write(`${resolveReviewer({ reviewer: flags.reviewer, shortstatOutput })}\n`);
+  // The plan's `Risk:` fields live in verify.mjs, so this command reads the
+  // manifest and signature facts only; verify.mjs prints the full pick.
+  const facts = flags.reviewer === undefined
+    ? { riskTasks: false, manifestChanged: touchesManifest(changedPaths({ base })), signatureChanged: signatureChangedSince(base) }
+    : null;
+  process.stdout.write(`${resolveReviewer({ reviewer: flags.reviewer, facts })}\n`);
 }
 
 if (isMain(import.meta.url)) {

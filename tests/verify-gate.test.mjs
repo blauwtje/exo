@@ -407,3 +407,48 @@ test('no land-gate record reruns the gate and the Proof', async () => {
   assert.equal(result.code, 1);
   assert.deepEqual(result.stdout.trim().split('\n').slice(0, 2), ['FAIL Task 1', 'FAIL success-criterion']);
 });
+
+const RISK_PLAN = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none${risk}| Proof: node -e "process.exit(0)"\n`;
+
+async function reviewerOf(files, { commits = [], args = [] } = {}) {
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'check.js': CLEAN_CHECK, ...files });
+  const base = git(root, 'rev-parse', 'HEAD');
+  for (const [subject, trailer] of commits) git(root, 'commit', '--allow-empty', '-m', subject, ...(trailer ? ['-m', trailer] : []));
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js', ...args], { cwd: root });
+  return result.stdout.split('\n').find((line) => line.startsWith('REVIEWER: '));
+}
+
+test('a landed task with a Risk: field prints the deep reviewer for a small diff', async () => {
+  const line = await reviewerOf({ 'plan.md': RISK_PLAN(' | Risk: security boundary ') }, { commits: [['feat: x', 'Plan-task: plan/1']] });
+  assert.equal(line, `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+});
+
+test('a Signature trailer or a branch commit without Plan-task prints the deep reviewer', async () => {
+  const plan = { 'plan.md': RISK_PLAN(' ') };
+  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1\nSignature: a.js:f(x) -> (x, y)']] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1'], ['fix: review']] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+});
+
+test('a changed manifest prints the deep reviewer', async () => {
+  const files = { 'plan.md': RISK_PLAN(' '), 'package.json': '{}\n' };
+  const root = await gitRepository({ 'src/app.js': 'x\n', 'check.js': CLEAN_CHECK, ...files });
+  const base = git(root, 'rev-parse', 'HEAD');
+  await writeFile(path.join(root, 'package.json'), '{"name":"a"}\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-m', 'feat: x', '-m', 'Plan-task: plan/1');
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(result.stdout.includes(`REVIEWER: ${REVIEWER_AGENTS.deep}`), result.stdout);
+});
+
+test('a large diff with no risk and merge commits only prints the light reviewer', async () => {
+  const root = await gitRepository({ 'src/app.js': 'x\n', 'plan.md': RISK_PLAN(' '), 'check.js': CLEAN_CHECK });
+  const base = git(root, 'rev-parse', 'HEAD');
+  git(root, 'checkout', '-b', 'side');
+  await writeFile(path.join(root, 'src', 'app.js'), 'y\n'.repeat(300));
+  git(root, 'add', '-A');
+  git(root, 'commit', '-m', 'feat: x', '-m', 'Plan-task: plan/1');
+  git(root, 'checkout', '-');
+  git(root, 'merge', '--no-ff', 'side', '-m', 'merge side');
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(result.stdout.includes(`REVIEWER: ${REVIEWER_AGENTS.light}`), result.stdout);
+});

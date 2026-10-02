@@ -593,6 +593,8 @@ test('a changed export signature with every caller inside Files: lands', async (
   await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 2, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\nNext: Task 1\n$/);
+  const message = git(root, 'log', '-1', '--format=%B');
+  assert.match(message, /^Plan-task: fixture\/2\nSignature: src\/ledger\/create-entry\.js:createEntry\(id, description, amount\) -> \(id, description, amount, bookedOn\)$/m);
 });
 
 // Only a change a caller can feel refuses: more required parameters, fewer

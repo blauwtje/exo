@@ -35,15 +35,21 @@ function shellQuote(value) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
+// The `Plan-task:` trailer plus one `Signature:` trailer per caller-breaking
+// signature change, in one paragraph so git reads them all as trailers.
+function trailersOf(planId, number, signatures) {
+  return [planTaskTrailer(planId, number), ...signatures.map((signature) => `Signature: ${signature}`)].join('\n');
+}
+
 // A compact task carries no `Commit:` block by design: its heading title is
 // the commit subject and its `Files:` field is the `git add` list, so this
 // derives the same shape land-task would otherwise read from the plan text.
-function deriveCommit(task, number, planId) {
+function deriveCommit(task, number, planId, signatures) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
   const addArgs = task.files.map((file) => shellQuote(file.path)).join(' ');
-  return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m ${shellQuote(planTaskTrailer(planId, number))}`;
+  return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m ${shellQuote(trailersOf(planId, number, signatures))}`;
 }
 
 // A `--root` naming a subdirectory of the checkout, or a copy under another
@@ -78,16 +84,16 @@ export function fixLand({ root, subject }) {
 
 // spec writes a `Commit:` block's trailer as the bare `Plan-task: <n>`, which
 // names no plan; the block runs with that trailer swapped for the one that does.
-export function commitBlockOf(plan, number, planId) {
+export function commitBlockOf(plan, number, planId, signatures = []) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   if (task.commitBlock !== null) {
     if (!task.commitBlock.includes(`"Plan-task: ${number}"`)) {
       throw new LandingError(`the Commit: block of Task ${number} carries no "Plan-task: ${number}" trailer`);
     }
-    return task.commitBlock.replace(`"Plan-task: ${number}"`, shellQuote(planTaskTrailer(planId, number)));
+    return task.commitBlock.replace(`"Plan-task: ${number}"`, shellQuote(trailersOf(planId, number, signatures)));
   }
-  if (task.compact) return deriveCommit(task, number, planId);
+  if (task.compact) return deriveCommit(task, number, planId, signatures);
   throw new LandingError(`Task ${number} has no Commit: block`);
 }
 
@@ -271,12 +277,13 @@ function breaksCallers(before, after) {
   return after.required > before.required || after.total < before.total || (before.hasRest && !after.hasRest);
 }
 
-// An exported function whose parameter list the task changed so that it
-// breaks callers the task did not also edit, even when its proof and suite
-// stay green, sends the task back to the plan when such a caller sits
-// outside `Files:`.
-function refuseSignatureDrift(task, root) {
+// Each exported function whose parameter list the task changed so that it
+// breaks callers, as the `<file>:<name>(<old>) -> (<new>)` text the commit's
+// `Signature:` trailer carries. One that still has a caller outside `Files:`,
+// even when its proof and suite stay green, sends the task back to the plan.
+function signatureChanges(task, root) {
   const inFiles = new Set(task.files.map((file) => file.path));
+  const changes = [];
   const drifts = [];
   for (const file of inFiles) {
     if (!SCRIPT_EXTENSIONS.has(path.extname(file))) continue;
@@ -287,12 +294,14 @@ function refuseSignatureDrift(task, root) {
     for (const [name, oldParameters] of exportSignatures(before)) {
       const newParameters = after.get(name);
       if (newParameters === undefined || !breaksCallers(oldParameters, newParameters)) continue;
+      const change = `${file}:${name}(${oldParameters.text}) -> (${newParameters.text})`.replace(/\s+/g, ' ');
+      changes.push(change);
       const callers = outsideCallers(root, name, inFiles);
-      if (callers.length === 0) continue;
-      drifts.push(`PLAN DRIFT: Task ${task.number}: ${file}:${name}(${oldParameters.text}) -> (${newParameters.text}); callers outside Files: ${callers.join(', ')}`);
+      if (callers.length > 0) drifts.push(`PLAN DRIFT: Task ${task.number}: ${change}; callers outside Files: ${callers.join(', ')}`);
     }
   }
   if (drifts.length > 0) throw new PlanDriftError(drifts.join('\n'));
+  return changes;
 }
 
 // A `Lint: <command>` line in the plan's `## Plan basis` runs once on the
@@ -343,13 +352,13 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
-  const block = commitBlockOf(plan, number, planId);
   const task = plan.tasks.find((entry) => entry.number === number);
+  if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   const stray = strayPaths(task, root, planPath);
   if (stray.length > 0) {
     throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
-  refuseSignatureDrift(task, root);
+  const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.

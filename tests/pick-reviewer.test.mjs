@@ -1,4 +1,4 @@
-// pick-reviewer.mjs picks the review agent by the size of the change,
+// pick-reviewer.mjs picks the review agent by risk, not size,,
 // and only a named --reviewer override moves the pick off that reading.
 
 import assert from 'node:assert/strict';
@@ -8,38 +8,39 @@ import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, parseShortstat, pickEffort, pickReviewer, resolveReviewer } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, resolveReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { UsageError } from '../lib/script-flags.mjs';
-import { gitRepository, run } from './harness.mjs';
+import { git, gitRepository, run } from './harness.mjs';
 
 const { light, deep } = REVIEWER_AGENTS;
 const AGENTS_DIRECTORY = fileURLToPath(new URL('../agents/', import.meta.url));
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/pick-reviewer.mjs', import.meta.url));
 
-test('parses files, insertions and deletions out of a shortstat line', () => {
-  assert.deepEqual(parseShortstat(' 3 files changed, 9 insertions(+), 1 deletion(-)'), { files: 3, changedLines: 10 });
-  assert.deepEqual(parseShortstat(' 16 files changed, 384 insertions(+)'), { files: 16, changedLines: 384 });
-  assert.deepEqual(parseShortstat(''), { files: 0, changedLines: 0 });
+const NO_RISK = { riskTasks: false, manifestChanged: false, signatureChanged: false };
+
+test('picks the plain reviewer agent when no risk fact holds, however large the diff', () => {
+  assert.equal(pickReviewer(NO_RISK), light);
 });
 
-test('picks the plain reviewer agent at or under both limits', () => {
-  assert.equal(pickReviewer({ files: FILE_LIMIT, changedLines: LINE_LIMIT }), light);
-  assert.equal(pickReviewer({ files: 1, changedLines: 1 }), light);
+test('picks the deep reviewer agent when any one risk fact holds', () => {
+  assert.equal(pickReviewer({ ...NO_RISK, riskTasks: true }), deep);
+  assert.equal(pickReviewer({ ...NO_RISK, manifestChanged: true }), deep);
+  assert.equal(pickReviewer({ ...NO_RISK, signatureChanged: true }), deep);
 });
 
-test('picks the deep reviewer agent above either limit', () => {
-  assert.equal(pickReviewer({ files: FILE_LIMIT + 1, changedLines: 1 }), deep);
-  assert.equal(pickReviewer({ files: 1, changedLines: LINE_LIMIT + 1 }), deep);
+test('touchesManifest reads a manifest or lockfile anywhere in the paths', () => {
+  assert.equal(touchesManifest(['src/app.js', 'web/package-lock.json']), true);
+  assert.equal(touchesManifest(['src/app.js']), false);
 });
 
-test('a named override wins over the diff reading', () => {
-  assert.equal(resolveReviewer({ reviewer: light, shortstatOutput: ' 16 files changed, 384 insertions(+)' }), light);
-  assert.equal(resolveReviewer({ reviewer: deep, shortstatOutput: ' 1 file changed, 1 insertion(+)' }), deep);
+test('a named override wins over the risk facts', () => {
+  assert.equal(resolveReviewer({ reviewer: light, facts: { ...NO_RISK, riskTasks: true } }), light);
+  assert.equal(resolveReviewer({ reviewer: deep, facts: NO_RISK }), deep);
 });
 
 test('an unnamed reviewer in the override is rejected', () => {
-  assert.throws(() => resolveReviewer({ reviewer: 'budget is tight', shortstatOutput: '' }), UsageError);
+  assert.throws(() => resolveReviewer({ reviewer: 'budget is tight', facts: NO_RISK }), UsageError);
 });
 
 test('the pair is two distinct agents that exist as files', async () => {
@@ -50,19 +51,32 @@ test('the pair is two distinct agents that exist as files', async () => {
 });
 
 test('a model word is not a reviewer name', () => {
-  assert.throws(() => resolveReviewer({ reviewer: 'sonnet', shortstatOutput: '' }), UsageError);
+  assert.throws(() => resolveReviewer({ reviewer: 'sonnet', facts: NO_RISK }), UsageError);
 });
 
-test('an empty base is rejected, not read as a change of no size', () => {
+test('an empty base is rejected, not read as a change with no risk', () => {
   const run = spawnSync(process.execPath, [SCRIPT, '--base', ''], { encoding: 'utf8' });
   assert.equal(run.status, 2);
   assert.equal(run.stdout, '');
   assert.match(run.stderr, /--base/);
 });
 
-test('with no override, the diff reading decides', () => {
-  assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 3 files changed, 9 insertions(+), 1 deletion(-)' }), light);
-  assert.equal(resolveReviewer({ reviewer: undefined, shortstatOutput: ' 16 files changed, 384 insertions(+)' }), deep);
+test('with no override, the risk facts decide', () => {
+  assert.equal(resolveReviewer({ reviewer: undefined, facts: NO_RISK }), light);
+  assert.equal(resolveReviewer({ reviewer: undefined, facts: { ...NO_RISK, signatureChanged: true } }), deep);
+});
+
+test('signatureChangedSince reads a Signature trailer or a missing Plan-task trailer, never a merge', async () => {
+  const root = await gitRepository({ 'app.js': 'export const a = 1;\n' });
+  const base = git(root, 'rev-parse', 'HEAD');
+  git(root, 'commit', '--allow-empty', '-m', 'feat: plain', '-m', 'Plan-task: plan/1');
+  assert.equal(signatureChangedSince(base, root), false);
+  git(root, 'commit', '--allow-empty', '-m', 'feat: breaking', '-m', 'Plan-task: plan/2\nSignature: app.js:a(x) -> (x, y)');
+  assert.equal(signatureChangedSince(base, root), true);
+  const second = git(root, 'rev-parse', 'HEAD');
+  assert.equal(signatureChangedSince(second, root), false);
+  git(root, 'commit', '--allow-empty', '-m', 'fix: review fix');
+  assert.equal(signatureChangedSince(second, root), true);
 });
 
 test('parseNumstat sums numstat lines and treats a binary marker as zero', () => {
