@@ -31,7 +31,12 @@
     "build": { "kind": "coordinate" }
   },
   "agents": {
-    "agents/build-task.md": { "kind": "build" },
+    "agents/build-task.md": { "kind": "coordinate" },
+    "agents/build-task-long.md": {
+      "kind": "build",
+      "generatedFrom": "agents/build-task.md",
+      "description": "build-task at high effort for a long plan task, one with a Run: line, dispatched by name only."
+    },
     "agents/build-ui.md": { "kind": "build" },
     "agents/critique-ui.md": { "kind": "review-deep" },
     "agents/critique-ui-high.md": {

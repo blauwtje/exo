@@ -29,7 +29,7 @@ exo needs a subagent spawn depth of at least 2 in `~/.claude/settings.json`; Cla
 }
 ```
 
-`build` dispatches a `run-unit` agent that dispatches `exo:build-task` agents, so a subagent must be able to spawn subagents of its own ([subagents](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents)).
+`build` dispatches a `run-unit` agent that dispatches `exo:build-task` agents (`exo:build-task-long` for a long task), so a subagent must be able to spawn subagents of its own ([subagents](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents)).
 
 ## Check that it works
 
