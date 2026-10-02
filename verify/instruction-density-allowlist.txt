@@ -22,6 +22,3 @@ agents/survey-ui.md	sentence	Locate the surface's markup, styles, tok
 agents/survey-ui.md	sentence	Read `$SKILL/references/visual-direction
 output-styles/scannable.md	bullet	3	**Max three blocks**, blank line between
 output-styles/scannable.md	bullet	3	**Max eight lines** above the closing li
-skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
-skills/remember/SKILL.md	bullet	3	**Book** the user's correction with `nod
-skills/write-docs/SKILL.md	bullet	3	**Write whole sentences in plain words.*
