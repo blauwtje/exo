@@ -23,9 +23,6 @@ agents/survey-ui.md	sentence	Read `$SKILL/references/visual-direction
 output-styles/scannable.md	bullet	3	**Max three blocks**, blank line between
 output-styles/scannable.md	bullet	3	**Max eight lines** above the closing li
 skills/configure/SKILL.md	sentence	`heavy_after_seconds` (default 60, `0` o
-skills/find-cause/SKILL.md	bullet	3	**Reproduce.** One command reproduces it
-skills/find-cause/references/handoff.md	sentence	The investigate part, at most 25 lines,
-skills/find-cause/references/handoff.md	sentence	The fix delegate appends a `## Fix` sect
 skills/remember/SKILL.md	bullet	3	**Book** the user's correction with `nod
 skills/start/SKILL.md	sentence	The exception is a path to a spec file,
 skills/start/SKILL.md	sentence	Call the picked skill through the Skill
