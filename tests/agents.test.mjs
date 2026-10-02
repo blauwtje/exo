@@ -238,7 +238,7 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const verifying = fs.readFileSync(path.join(skillsRoot, 'verify', 'SKILL.md'), 'utf8');
   assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
-  const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*.+$/m)[0];
+  const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*[\s\S]*?(?=^4\. )/m)[0];
   const rerun = repairStep.indexOf('rerun step 1\'s `verify.mjs`');
   assert.ok(rerun !== -1 && rerun < repairStep.indexOf('land-task.mjs" --fix'), 'verify reruns the gate after the fixer and before the fix commit');
   assert.ok(repairStep.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');

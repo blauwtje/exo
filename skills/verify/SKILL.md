@@ -9,9 +9,22 @@ effort: high
 
 ## The loop
 
-1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`. It runs each landed task's own Proof command, except one equal to the gate command, or running the test suite (`npm test`, `node --test`) under the default `npm run check` gate, then the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`; `Land gate: none` prints `UNRUN success-criterion`, not `PASS`; it also runs the stray-path check against `base`, then prints one `REVIEWER: review-branch` or `REVIEWER: review-branch-deep` line, then one `DONE` or `OPEN` line per task and one `MANUAL` line per `## Manual checks` bullet. A `FAIL` or `STRAY` line ends the turn with the script's own report; nothing here reruns its checks.
-2. **Review the branch.** Dispatch the `exo:review-branch` agent, or `exo:review-branch-deep` when the `REVIEWER:` line prints that name, with no model override, passing the plan path, branch, checkout, base, the code standard path from `CLAUDE.md` or `AGENTS.md` (else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`), `<checkout>/.exo/` as the implementer report directory and `<checkout>/.exo/branch-review.md` as the findings path. `BLOCKED` ends the turn with its report.
-3. **Repair the findings.** A `FINDINGS` verdict goes to a `general-purpose` delegate on `sonnet` from `../build/review-fixer-prompt.md` with the report path. Then rerun step 1's `verify.mjs` command; a `FAIL` or `STRAY` line ends the turn with its report and the fixes uncommitted. Only then run `node "${CLAUDE_SKILL_DIR}/../build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --root <checkout>` to commit every changed path.
+1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
+   - It runs each landed task's own Proof command, except one equal to the gate command, or running the test suite (`npm test`, `node --test`) under the default `npm run check` gate.
+   - It then runs the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`.
+   - `Land gate: none` prints `UNRUN success-criterion`, not `PASS`.
+   - It runs the stray-path check against `base`.
+   - It prints one `REVIEWER: review-branch` or `REVIEWER: review-branch-deep` line, then one `DONE` or `OPEN` line per task and one `MANUAL` line per `## Manual checks` bullet.
+   - A `FAIL` or `STRAY` line ends the turn with the script's own report, and nothing here reruns its checks.
+2. **Review the branch.** Dispatch the `exo:review-branch` agent, or `exo:review-branch-deep` when the `REVIEWER:` line prints that name, with no model override.
+   - Pass the plan path, branch, checkout and base.
+   - Pass the code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
+   - Pass `<checkout>/.exo/` as the implementer report directory and `<checkout>/.exo/branch-review.md` as the findings path.
+   - `BLOCKED` ends the turn with its report.
+3. **Repair the findings.** A `FINDINGS` verdict goes to a `general-purpose` delegate on `sonnet` from `../build/review-fixer-prompt.md` with the report path.
+   - Then rerun step 1's `verify.mjs` command.
+   - After that rerun, a `FAIL` or `STRAY` line ends the turn with its report and the fixes uncommitted.
+   - Only then run `node "${CLAUDE_SKILL_DIR}/../build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --root <checkout>` to commit every changed path.
 4. **Offer the finish.** End on `ship`.
 
 ## References
