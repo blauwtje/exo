@@ -499,6 +499,47 @@ test('--fix commits every changed path, tracked or not, with the given subject',
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
+async function lintPlan(linterBody) {
+  const tools = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-fix-lint-'));
+  const linter = path.join(tools, 'linter.sh');
+  await fs.writeFile(linter, linterBody, { mode: 0o755 });
+  const planPath = path.join(tools, 'plan.md');
+  await fs.writeFile(planPath, withLint(`${linter} --quiet`));
+  return { tools, planPath };
+}
+
+test('--fix with a plan lints the changed script paths that still exist, then commits', async () => {
+  const root = await fixCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
+  const record = path.join(os.tmpdir(), `exo-fix-record-${process.pid}.txt`);
+  const { planPath } = await lintPlan(`#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\n`);
+  fixLand({ root, subject: 'fix(app): address the branch review', plan: planPath });
+  assert.equal(await fs.readFile(record, 'utf8'), '--quiet\nsrc/app.js\n');
+  assert.equal(git(root, 'status', '--porcelain'), '');
+});
+
+test('--fix with a plan whose Lint fails refuses the commit and leaves the changes', async () => {
+  const root = await fixCheckout();
+  await editApp(root);
+  const { planPath } = await lintPlan('#!/bin/sh\necho lint broke\nexit 1\n');
+  assert.throws(
+    () => fixLand({ root, subject: 'fix(app): address the branch review', plan: planPath }),
+    /Lint ".*linter\.sh --quiet" failed:\nlint broke/
+  );
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+  assert.match(git(root, 'status', '--porcelain'), /app\.js/);
+});
+
+test('the command line --fix passes --plan to the lint', async () => {
+  const root = await fixCheckout();
+  await editApp(root);
+  const { planPath } = await lintPlan('#!/bin/sh\necho lint broke\nexit 1\n');
+  const result = await run(SCRIPT, ['--fix', 'fix(app): address the branch review', '--plan', planPath, '--root', root], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /Lint ".*" failed/);
+});
+
 test('--fix on a clean checkout is refused', async () => {
   const root = await fixCheckout();
   assert.throws(() => fixLand({ root, subject: 'fix(app): nothing changed' }), /no changed path to commit/);

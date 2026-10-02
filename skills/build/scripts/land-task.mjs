@@ -70,12 +70,15 @@ function refuseMismatchedToplevel(root) {
 // Plan-task trailer entirely: it stages every changed path and commits it
 // with the given subject as-is, the same shape the calling skill used to
 // spell out as a bare `git add -A && git commit -m` line.
-export function fixLand({ root, subject }) {
+// With a `plan` path, the plan's `Lint:` command first runs on the changed
+// script paths and a failure refuses the commit, as a task landing does.
+export function fixLand({ root, subject, plan = null }) {
   refuseMismatchedToplevel(root);
   const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
   if (status.trim() === '') {
     throw new LandingError('no changed path to commit');
   }
+  if (plan !== null) runLint(frameOf(parsePlan(fs.readFileSync(plan, 'utf8')).frame).lint, changedPaths(root), root);
   execFileSync('git', ['-C', root, 'add', '-A'], { encoding: 'utf8' });
   execFileSync('git', ['-C', root, 'commit', '-m', subject], { encoding: 'utf8' });
   const sha = execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -305,15 +308,14 @@ function signatureChanges(task, root) {
 }
 
 // A `Lint: <command>` line in the plan's `## Plan basis` runs once on the
-// task's own `Files:` paths that are scripts and still exist, spawned without
-// a shell, so the task lands on its Proof plus lint, not the test suite; a
+// task's own `Files:` paths (a `--fix` commit's changed paths) that are
+// scripts and still exist, spawned without a shell, so the task lands on its Proof plus lint, not the test suite; a
 // script the task deleted never reaches the linter as a missing path. A plan
 // without the line, with `Lint: none`, or a task with no existing script path
 // lints nothing.
-function runLint(lint, task, root) {
+function runLint(lint, files, root) {
   if (lint === null || lint === 'none') return;
-  const paths = task.files
-    .map((file) => file.path)
+  const paths = files
     .filter((file) => SCRIPT_EXTENSIONS.has(path.extname(file)) && fs.existsSync(path.join(root, file)));
   if (paths.length === 0) return;
   const [command, ...args] = [...lint.split(/\s+/), ...paths];
@@ -368,7 +370,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // parse, so only a compact task's report is read here.
   const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
   const frame = frameOf(plan.frame);
-  runLint(frame.lint, task, root);
+  runLint(frame.lint, task.files.map((file) => file.path), root);
   const gateRan = runLandGate(frame.landGate, root);
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
@@ -400,7 +402,7 @@ function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value' });
   const root = flags.root ?? process.cwd();
   if (flags.fix !== undefined) {
-    process.stdout.write(fixLand({ root, subject: flags.fix }));
+    process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null }));
     return;
   }
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");

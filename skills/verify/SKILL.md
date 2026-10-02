@@ -25,7 +25,7 @@ effort: high
    - At `fix=0` make no `exo:fix-review` dispatch, no rerun and no fix commit; list the report findings in the turn's report and go to step 4.
    - Then rerun step 1's `verify.mjs` command.
    - After that rerun, a `FAIL` or `STRAY` line ends the turn with its report and the fixes uncommitted.
-   - Only then run `node "${CLAUDE_SKILL_DIR}/../build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --root <checkout>` to commit every changed path.
+   - Only then run `node "${CLAUDE_SKILL_DIR}/../build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --plan <plan path> --root <checkout>` to commit every changed path.
 4. **Offer the finish.** End on `ship`.
 
 ## References
