@@ -7,8 +7,8 @@ Fix the proven cause in the handoff below, repository <root>. Load the `exo:find
 
 Handoff file: <path>
 
-Write the failing test the test-design row calls for first, in files the fix does not touch where the repository allows it.
-Quote its failure, because the session commits those files alone before the fix.
+Write the failing test the test-design row calls for first, in files the fix does not touch where the repository allows it, because the session commits those files alone before the fix.
+Quote its failure.
 Then make the predicted fix and prove it: re-run the reproduction and the isolated case, then the required suite, grepping its log for failures.
 A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
 
