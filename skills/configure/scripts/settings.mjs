@@ -144,7 +144,7 @@ const TOPICS = {
 };
 
 const GROUPS = {
-  slow: { label: 'Slow commands', question: 'Which part of slow commands?', about: 'which commands and tests I run only once per code change', keys: ['heavy_commands', 'heavy_after_seconds'] }
+  slow: { label: 'Slow commands', question: 'Which part of slow commands?', about: 'which commands and tests I run only once per code change', keys: ['heavy_commands', 'heavy_after_seconds', 'subagent_suite_after_seconds'] }
 };
 
 function settingKeys(keys) {

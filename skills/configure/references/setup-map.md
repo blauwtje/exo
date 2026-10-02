@@ -12,7 +12,7 @@
 
 ## The order
 
-`scope`, `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`, `heavy_after_seconds`. `scope` decides the layer for every setting after it.
+`scope`, `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `subagent_suite_after_seconds`. `scope` decides the layer for every setting after it.
 
 | Option of `scope` | What it gives |
 |---|---|

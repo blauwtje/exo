@@ -71,6 +71,13 @@
       "description": "A test-like Bash command whose last run in a project took longer than this many seconds counts as heavy from then on and runs through the same dedupe as heavy commands, with nothing listed. Not sure? Keep 60. 0 turns this off. A project overrides this in .claude/exo.json.",
       "default": 60,
       "min": 0
+    },
+    "subagent_suite_after_seconds": {
+      "type": "number",
+      "title": "Subagent suite after seconds",
+      "description": "A build, fix or review subagent that runs a test command over the whole suite, whose last run in a project took longer than this many seconds, is refused and pointed at the task's Proof or one test file; the main session and verify stay free. Not sure? Keep 20. 0 turns this off. A project overrides this in .claude/exo.json.",
+      "default": 20,
+      "min": 0
     }
   }
 }
