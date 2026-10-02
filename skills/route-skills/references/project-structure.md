@@ -16,8 +16,10 @@ Applies to files and folders created or moved, any stack, and to where UI stylin
 
 - Group by domain first, kind second.
 - A domain module (`features/<name>/` in a client; `modules/<name>/` or `<name>/` in a service) holds its whole domain: UI or handlers, use cases or services, data access, types. It exposes few files; the rest stays private.
-- Shared code in kind-named top-level folders (`components/`, `hooks/`, `lib/`, `utils/`, `types/`, `shared/`), domain-agnostic. Imports flow shared → domain → entry; domains never import each other.
-- Entry folders (`app/`, `pages/`, `routes/`, `controllers/`, `cli/`): wiring and thin composition only. Business rules in the domain; data access behind a repository or client, never a driver or SDK called from a domain.
+- Shared code in kind-named top-level folders (`components/`, `hooks/`, `lib/`, `utils/`, `types/`, `shared/`), domain-agnostic.
+- Imports flow shared → domain → entry; domains never import each other.
+- Entry folders (`app/`, `pages/`, `routes/`, `controllers/`, `cli/`): wiring and thin composition only.
+- Business rules in the domain; data access behind a repository or client, never a driver or SDK called from a domain.
 
 ## Data and config
 

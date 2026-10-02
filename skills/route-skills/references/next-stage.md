@@ -1,7 +1,5 @@
 # The next stage
 
-A stage skill reads this file at its final message when its work leaves a next stage open, because the order, the recommendation and the fresh-chat lines are the same for every stage. The enemy is a stage that starts the next one unasked. The overcorrection is a question at the end of a stage another skill borrowed.
-
 ## The next stage
 
 A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on one question and starts nothing before the user picks.

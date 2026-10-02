@@ -1,9 +1,5 @@
 # The question shape
 
-Every question exo puts to the user has one shape, because the user answers with one letter. The enemy is a question too long, too technical or too many at once to answer with one letter. The overcorrection is a question where the user has no real choice to make.
-
-A skill reads this file before a message of its asks anything.
-
 ## One question
 
 A message asks one question, never several, because the user then answers with one letter and nothing else. After the answer, the next question comes only if one is still open.
