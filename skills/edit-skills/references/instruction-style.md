@@ -2,9 +2,11 @@
 
 This style applies to `CLAUDE.md`, rules, skills, agents, output styles and hooks. The enemy is the line that restates what the model does anyway. The overcorrection is a line cut so far that its boundary is lost.
 
-- Give a bullet one rule: one condition, one action; split a compound bullet, because the model follows a specific rule more consistently than a bundle.
+- Give a bullet one rule: one condition, one action.
+- Split a compound bullet, because the model follows a specific rule more consistently than a bundle.
 - Split a sentence that carries a second condition or action, unless the split loses its boundary.
-- The verifier fails a sentence over 40 words, and a list item of three or more sentences.
+- The verifier fails a sentence over 40 words.
+- The verifier fails a list item of three or more sentences.
 - Put the rules most often broken first in a file, because the model recalls the start of its context best and the middle worst.
 - Move what only some paths need to a reference.
 - Keep one load path, SKILL.md plus the references that path reads, under about 150 rules, because adherence falls past it and earlier rules win.
@@ -15,7 +17,9 @@ This style applies to `CLAUDE.md`, rules, skills, agents, output styles and hook
 - Put an exception beside its rule.
 - Define by contrast: "X, not Y".
 - Make a ladder stop at the first match, and make its first step ask whether the thing needs to exist.
-- Give each rule one owner: when another file states it, point there or omit it; keep a rule the system prompt also states, because sessions switch models.
-- Keep a line only when it prevents a mistake. What must happen every time without exception is a hook, not a rule.
+- Give each rule one owner: when another file states it, point there or omit it.
+- Keep a rule the system prompt also states, because sessions switch models.
+- Keep a line only when it prevents a mistake.
+- Make what must happen every time without exception a hook, not a rule.
 - A hook never rewrites a command inside a pipeline; a guard denies or allows and leaves the command unchanged.
 - Use Markdown headers and bullets.
