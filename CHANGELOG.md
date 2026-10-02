@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**A build, fix or review agent may no longer run the whole test suite once its last run in the project took over `subagent_suite_after_seconds` (default 20); set it to 0 to switch the guard off.**
+
+### Added
+
+- A suite guard refuses a whole-suite test run from `exo:build-task`, `exo:fix-review` and the `exo:review-branch` agents when that suite's last run in the project took over `subagent_suite_after_seconds`, and points the agent at the task's `Proof:` or one test file.
+- The `subagent_suite_after_seconds` setting, in the slow-commands topic, sets that threshold; `0` switches the guard off.
+- `runtimes.json` records the last duration of each whole-suite command per project, including one prefixed with `time`.
+- The lean-gates benchmark takes `--plan old|new`, opens with a warm-up suite run, and counts whole-suite runs per agent type and guard refusals; `docs/benchmarks/suite-guard.md` reports a run against v0.76.0.
+
+### Changed
+
+- plan-check reports a task whose `Proof:` runs the whole test suite.
+- `land-task --fix` takes `--plan` and runs the plan's `Lint:` command on the changed scripts, and verify passes it.
+
 ## 0.76.0 - 2026-10-02
 
 ### Added
