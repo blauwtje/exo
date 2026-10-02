@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.73.2 - 2026-10-02
+
 ### Changed
 
 - write-docs, remember and configure give each instruction bullet one rule; write-docs drops the `## When to use` section that restated its description, and configure moves the setup walk's rules into its setup map and cuts that map's contents list; their 3 instruction-density allowlist entries are gone and the lock drops from 25 to 22.
