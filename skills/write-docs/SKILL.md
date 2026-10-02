@@ -14,7 +14,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
    - A tutorial teaches by doing, a how-to gets a known task done, a reference lists what exists, an explanation says why.
    - A Usage section opens on the command, never on a welcome.
 2. **State the fact, not the benefit.**
-   - Give the number, the behavior or the error that changed.
+   - Give the number, the behavior or the error that changed, because "ensuring stability" or "more robust" asks the reader to trust what the text could have shown.
    - A request to show off, sell or impress still gets only the facts the input states, because an effect nobody measured is invented.
 3. **Name the actor and the mechanism.**
    - Say who does what, because a passive verb or an abstract noun hides the part the reader has to find.

@@ -5,7 +5,8 @@
 1. **Check the issue route.** Run `git remote get-url origin` and `gh auth status`. Offer `issues` and `both` only when origin is on GitHub and both pass, because either answer fails at the first spec otherwise.
 2. **Ask each setting in its own message**, in the order `## The order` sets and in the question shape.
 3. **Review before writing.** List the changes, one line each, and wait for a yes. A setting named in the answer is asked again, then the review follows once more.
-4. **Write only the changes, then report.** Use the commands under `## The write commands` in the skill; a kept value is never written, even when it equals the default.
+4. **Write only the changes, then report.** Use the commands under `## The write commands` in the skill.
+   - A kept value is never written, even when it equals the default.
    - On a rejection, relay it as printed and write nothing after it, because the user confirmed the set as a whole.
    - Report one line per changed value and where it now lives.
 
