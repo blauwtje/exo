@@ -54,15 +54,6 @@ skills/ship/SKILL.md	bullet	4	**Ask.** Quote the stdout of `node "${CL
 skills/ship/SKILL.md	bullet	4	**Verify**, for `pr-merge`: hand the dif
 skills/ship/SKILL.md	bullet	4	**Route.** `node "${CLAUDE_SKILL_DIR}/sc
 skills/ship/references/pr-prep.md	bullet	6	`## Verification`: each real run path an
-skills/spec/SKILL.md	bullet	4	**Gate.** Spec always ends on a brief; w
-skills/spec/SKILL.md	bullet	5	**Sort each point.** Every open decision
-skills/spec/references/architecture-sketch.md	sentence	Re-sketch only on a repeated pattern of
-skills/spec/references/brief-in-an-issue.md	sentence	`issues` creates one GitHub issue whose
-skills/spec/references/brief-in-an-issue.md	sentence	The setting is the authorization, so no
-skills/spec/references/stored-brief.md	bullet	3	**One match is the brief**, named in one
-skills/spec/references/stored-brief.md	bullet	3	**Edit in place.** A file is edited wher
-skills/spec/references/task-list.md	bullet	3	`## Plan basis`: `Repository: <absolute
-skills/spec/references/task-list.md	sentence	A task whose result runs (CLI, server, p
 skills/start/SKILL.md	sentence	The exception is a path to a spec file,
 skills/start/SKILL.md	sentence	Call the picked skill through the Skill
 skills/verify/SKILL.md	bullet	3	**Run the gate.** Run `node "${CLAUDE_SK

@@ -23,7 +23,7 @@ export const DESCRIPTION_TOTAL_LOCK = { chars: 3321, measured: '2026-10-01' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2540, measured: '2026-09-30' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
-export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 70, measured: '2026-10-01' };
+export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 61, measured: '2026-10-02' };
 
 // The rendered project-memory file, which a session opens by path. It is a
 // ceiling the writer enforces before it writes, not a lock the verifier reads:
@@ -39,9 +39,9 @@ export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 636 };
 // The six stage-path skills, capped at 750 tokens each. spec sits above the
-// cap because its pinned gate sentences hold it at its measured 837.
+// cap because its pinned gate sentences hold it at its measured 777.
 export const STAGE_BODY_TOKENS = {
-  'start': 750, 'spec': 837, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
+  'start': 750, 'spec': 777, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. build-ui, survey-ui, critique-ui and its twin carry visual-direction context
