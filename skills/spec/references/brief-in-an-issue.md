@@ -6,7 +6,6 @@ The `specs` setting authorizes the issue, so the brief goes to GitHub with no dr
 
 - Create no label, type or milestone the repository does not already define.
 - Set every field the repository does define.
-- Show no draft first, because the setting is the authorization.
 - `issues` creates one GitHub issue whose body opens with the line `<!-- exo:spec -->`.
 - The body after that line is the brief in the Spec shape of the file-issues skill's fields file, with its sections, fields and relations as that file says and none of them decided here.
 - `issues` writes no file in the repository, only the scratch copy `build` runs, so the issue stays the source.

@@ -54,7 +54,6 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui
 // lock only ever moves down; a locked file that drops to 750 tokens or under
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
-  'skills/spec/references/task-list.md': 779,
   'skills/build/references/critique.md': 845,
   'skills/build/references/data-migration.md': 912,
   'skills/build/references/security.md': 1040,

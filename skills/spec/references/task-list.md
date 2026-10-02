@@ -2,11 +2,9 @@
 
 The task list names the goal, the basis, the proof and one
 line per task, with no implicit file or shape and no step's code. `node
-<skill>/scripts/plan-check.mjs --plan <path>` enforces every rule below; run
-it before the turn ends; repair each line.
+<skill>/scripts/plan-check.mjs --plan <path>` enforces every rule below.
 
-Write for a zero-context reader: ask a fact planning could not settle;
-a choice the user would not notice goes in `Data:` or the heading.
+Write for a zero-context reader.
 
 ## Header sections, in order
 
@@ -17,7 +15,7 @@ a choice the user would not notice goes in `Data:` or the heading.
 3. `## Success criterion`: the one command proving every task landed, no
    interpretation step, no user-only check (`## Manual checks`).
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`,
-   `Smallest safe split:`, each naming tasks or `none`.
+   `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`: the dependency-ordered list.
 
 ## The task template
@@ -28,13 +26,13 @@ a choice the user would not notice goes in `Data:` or the heading.
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>] | Proof: <one bare command>
 ```
 
-- The heading is the conventional-commit subject `land-task` uses, trailed by `Plan-task: <plan-stem>/<n>`.
-- The task stages `Files:` and carries no `Commit:` block.
-- `Data:` names the structure holding the result (an object, a keyed `Map`, an array), not its fields or algorithm.
-- `Design:` names the skill a task loads first, only when it changes a page's look.
-- `Proof:` is the one bare command showing this task alone landed.
 - A task whose result runs (CLI, server, page, script) takes a `Proof:` running that artifact on the project's real input, never a test alone.
 - That `Proof:` is the project's own command when one exists, else a script path the builder writes with only the project's tools.
+- `Proof:` is the one bare command showing this task alone landed.
+- `Data:` names the structure holding the result (an object, a keyed `Map`, an array), not its fields or algorithm.
+- The heading is the conventional-commit subject `land-task` uses, trailed by `Plan-task: <plan-stem>/<n>`.
+- The task stages `Files:` and carries no `Commit:` block.
+- `Design:` names the skill a task loads first, only when it changes a page's look.
 
 ## Rules
 
@@ -50,6 +48,4 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 
 ## Judgment
 
-- Verified repository evidence outranks a remembered symbol.
-- An explicit user decision outranks an inferred one.
 - A `Data:` choice changing a public signature or persisted format: ask.

@@ -1,9 +1,6 @@
 # Architecture sketch
 
-Read when an open decision names two or more structurally different shapes for new or changed behavior: a module boundary, a data model, an integration point.
-
-- Pick a shape from a sketch, never from prose trade-offs alone.
-- Sketch each candidate, never build it in full before choosing.
+Read when an open decision names two or more structurally different shapes for new or changed behavior: a module boundary, a data model, an integration point. The enemy is picking a shape from prose trade-offs alone. The overcorrection is building each candidate in full before choosing.
 
 ## Sketch, don't build
 
