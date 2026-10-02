@@ -173,7 +173,7 @@ export function proofOf(task, reportText, reportPath) {
   }
   const lines = reportText.replace(/\r\n/g, '\n').split('\n');
   const command = provedCommand(task, lines);
-  const outcomeLine = new RegExp(`^(\\s*)(?:[-*]\\s+)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
+  const outcomeLine = new RegExp(`^(\\s*)(?:[-*]\\s+)?(?:Proof:\\s*)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
   const outcomes = lines.flatMap((line, index) => {
     const match = line.match(outcomeLine);
     return match === null ? [] : [{ outcome: match[2].toLowerCase(), indent: match[1].length, index }];

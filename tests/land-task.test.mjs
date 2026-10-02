@@ -374,6 +374,14 @@ test('a report with a clear pass lands and records the SHA and the proof output'
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
 });
 
+test('a one-line report with the pass line after a Proof: prefix still lands', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, 'Landed: src/app.js\nProof: node --test tests/app.test.mjs: pass\n  # pass 3\nUnresolved: none\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+});
+
 test('--report names a report outside the default path', async () => {
   const { root, planPath } = await compactCheckout();
   // Outside the checkout entirely: a report path inside root's working tree
