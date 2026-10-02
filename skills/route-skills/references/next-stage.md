@@ -9,7 +9,7 @@ A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on
 1. **One question.** It follows the question shape, with options set by the stage before:
    - After `spec`: A Adjust the brief, B Build here, C Build fresh. B runs `/exo:build <brief path>` in this session; C gets the lines of item 4.
    - After `find-cause`: A Build, B Stop.
-2. **A is the recommended option**, as `Recommended: (A), because <reason>`; no answer starts nothing.
+2. **A is the recommended option**, worded by the question shape.
 3. **A context notice changes nothing here.** Past an `exo: context` notice the session keeps the letters above and hands the work on through a fresh delegate.
 4. **Fresh-chat lines.** After the user picks C, the reply gives the lines to type: `/clear`, then `/exo:build <brief path>`, and a switch to this table's model first unless the session's model builds. `scripts/next-stage.mjs --fresh` prints them, reading each row's model and effort from the kinds in `lib/model-kinds.json`: the first row's effort from the `build` skill's kind, the last two from the stage kinds.
 5. **A borrowed skill shows no question.** When another stage or a workflow invoked it, it returns control to that caller.
@@ -22,5 +22,4 @@ A stage skill (`spec`, `find-cause`) whose work leaves a next stage open ends on
 
 ## Judgment
 
-- The session's held facts outrank a clear until the context is large: continuing leads, even past an `exo: context` notice.
-- The caller that borrowed a stage outranks the question: control returns to it.
+- The session's held facts outrank a clear until the context is large: continuing leads.
