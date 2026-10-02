@@ -18,6 +18,10 @@
 // Prints one PASS, FAIL, SKIP, UNRUN or STRAY line per check, then the REVIEWER line,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
+// A FAIL line for a Proof or the Success criterion names why in brackets, the
+// signal that killed the command or its exit code, and is followed by the last
+// lines of that command's output, each indented two spaces, so every check line
+// still starts at the left margin.
 // A land-task record `.exo/land-gate-<plan id>.json` for the HEAD tree skips the gate and each Proof it names with a SKIP line.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
@@ -40,6 +44,11 @@ const TEST_SUITE_PROOF = /^npm test( |$)/;
 const TEST_FILES_PROOF = /^node --test( [\w./-]+)+$/;
 // Per-task Proofs spawned at once; a few overlap without starving the machine.
 const PROOF_CONCURRENCY = 3;
+// Output lines kept under a failed check's FAIL line: enough for a stack trace or
+// a test summary, few enough that the report stays readable.
+const FAIL_TAIL_LINES = 20;
+// A longer output line is cut, so one minified or base64 line cannot flood the report.
+const FAIL_TAIL_LINE_LENGTH = 300;
 const BACKTICKED_COMMAND = /`([^`]+)`/;
 // A Proof: value that carries a backtick reads as prose describing the
 // check (for example "npm run validate, whose output holds no `[FAIL]`
@@ -127,15 +136,35 @@ function landedGateRecord(root, planId) {
   }
 }
 
+/**
+ * Runs `command` through a shell to `{ ok, code, signal, output }`, `output` its stdout
+ * and stderr together. When the shell cannot start, `code` holds the spawn error's code instead of an exit code.
+ */
 function runCommand(command) {
   return new Promise((resolve) => {
     const child = spawn(command, { shell: true });
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk; });
     child.stderr.on('data', (chunk) => { output += chunk; });
-    child.on('error', () => resolve({ ok: false, output }));
-    child.on('close', (code) => resolve({ ok: code === 0, output }));
+    child.on('error', (error) => resolve({ ok: false, code: error.code ?? error.message, signal: null, output }));
+    child.on('close', (code, signal) => resolve({ ok: code === 0, code, signal, output }));
   });
+}
+
+/** Why a command failed: the signal that killed it, else its exit code, else its spawn error. */
+function failReason({ code, signal }) {
+  if (signal !== null) return `signal ${signal}`;
+  return typeof code === 'number' ? `exit ${code}` : `spawn error ${code}`;
+}
+
+/** The last FAIL_TAIL_LINES non-empty lines of `output`, each cut to FAIL_TAIL_LINE_LENGTH characters and indented two spaces. */
+export function outputTail(output) {
+  return output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-FAIL_TAIL_LINES).map((line) => `  ${line.slice(0, FAIL_TAIL_LINE_LENGTH)}`);
+}
+
+/** A failed check's FAIL line, naming `reason`, then the tail of its output. */
+function failLines(check, reason, output) {
+  return [`FAIL ${check} (${reason})`, ...outputTail(output)];
 }
 
 /** `items` mapped through the async `work`, at most `limit` running at once, results in item order. */
@@ -208,9 +237,13 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       lines.push(run.skipLine);
       return;
     }
-    const { ok } = proofResults[index];
-    lines.push(`${ok ? 'PASS' : 'FAIL'} Task ${run.number}`);
-    failed ||= !ok;
+    const proofRun = proofResults[index];
+    if (proofRun.ok) {
+      lines.push(`PASS Task ${run.number}`);
+    } else {
+      lines.push(...failLines(`Task ${run.number}`, failReason(proofRun), proofRun.output));
+      failed = true;
+    }
   });
 
   if (gateSkipped) {
@@ -218,13 +251,19 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else if (record?.gate === gateCommand) {
     lines.push('SKIP success-criterion (land-task ran the gate on this same tree)');
   } else {
-    const { ok: checkOk, output } = await runCommand(gateCommand);
+    const gateRun = await runCommand(gateCommand);
+    const { ok: checkOk, output } = gateRun;
     // The SUMMARY convention binds only exo's own default gate; a plan that
     // names its own Success criterion command is judged on that command's exit status alone,
     // since another project's check never prints exo's SUMMARY line.
     const criterionOk = checkOk && (gateCommand !== DEFAULT_LAND_GATE || successCriterionPasses(output));
-    lines.push(`${criterionOk ? 'PASS' : 'FAIL'} success-criterion`);
-    failed ||= !criterionOk;
+    if (criterionOk) {
+      lines.push('PASS success-criterion');
+    } else {
+      const reason = checkOk ? 'no clean SUMMARY line' : failReason(gateRun);
+      lines.push(...failLines('success-criterion', reason, output));
+      failed = true;
+    }
   }
 
   const changed = changedPaths({ base });

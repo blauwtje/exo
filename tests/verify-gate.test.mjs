@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, runnableProof, successCriterionPasses, taskStates } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, taskStates } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -39,6 +39,16 @@ test('successCriterionPasses reads the clean SUMMARY line', () => {
   assert.equal(successCriterionPasses('SUMMARY FAIL=0 WARN=0 UNRUN=0\n'), true);
   assert.equal(successCriterionPasses('SUMMARY FAIL=1 WARN=0 UNRUN=0\n'), false);
   assert.equal(successCriterionPasses(''), false);
+});
+
+test('outputTail keeps the last 20 non-empty lines, each cut to 300 characters and indented', () => {
+  const output = Array.from({ length: 25 }, (_, index) => `line ${index}`).join('\n\n');
+  const tail = outputTail(`${output}\r\n${'x'.repeat(400)}\n`);
+  assert.equal(tail.length, 20);
+  assert.equal(tail[0], '  line 6');
+  assert.equal(tail.at(-2), '  line 24');
+  assert.equal(tail.at(-1), `  ${'x'.repeat(300)}`);
+  assert.deepEqual(outputTail(''), []);
 });
 
 test('criterionCommand reads the first backticked command, or null', () => {
@@ -73,7 +83,20 @@ test('a landed task whose Proof fails prints FAIL and exits 1', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1');
+  assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1 (exit 1)');
+});
+
+test('a Proof killed by a signal prints the signal on its FAIL line and its output under it', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): abort\nDepends on: none | Files: `src/app.js` | Data: none | Proof: echo line a; echo line b; kill -ABRT $$\n',
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 4), ['FAIL Task 1 (signal SIGABRT)', '  line a', '  line b', 'PASS success-criterion']);
 });
 
 test('an unlanded task never runs its Proof', async () => {
@@ -111,7 +134,7 @@ test('a failing check-command prints FAIL success-criterion', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
 });
 
 test("the plan's Success criterion command runs when --check-command is not given", async () => {
@@ -205,7 +228,7 @@ test('a test-suite Proof runs under a custom final check, which may run no tests
 
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1');
+  assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1 (exit 1)');
 });
 
 test('a test-suite Proof is skipped under the default gate, which runs that suite', async () => {
@@ -257,7 +280,7 @@ test('a node --test Proof on files the default gate globs cover is skipped, one 
   const lines = result.stdout.trim().split('\n');
   assert.ok(lines[0].startsWith('SKIP Task 1'), result.stdout);
   // The file does not exist, so the Proof fails when it runs; what matters is that it ran.
-  assert.equal(lines[1], 'FAIL Task 2');
+  assert.equal(lines[1], 'FAIL Task 2 (exit 1)');
 });
 
 test('a Proof repeated by a later task runs once', async () => {
@@ -274,7 +297,7 @@ test('a Proof repeated by a later task runs once', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   const lines = result.stdout.trim().split('\n');
-  assert.equal(lines[0], 'FAIL Task 1');
+  assert.equal(lines[0], 'FAIL Task 1 (exit 1)');
   assert.ok(lines[1].startsWith('SKIP Task 2'), result.stdout);
 });
 
@@ -422,14 +445,14 @@ test('a land-gate record for another tree reruns the gate and the Proof', async 
   const root = await landedWithRecord({ tree: 'deadbeef' });
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 2), ['FAIL Task 1', 'FAIL success-criterion']);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 3), ['FAIL Task 1 (exit 1)', 'FAIL success-criterion (exit 1)', '  check failed']);
 });
 
 test('no land-gate record reruns the gate and the Proof', async () => {
   const root = await landedWithRecord(null);
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 2), ['FAIL Task 1', 'FAIL success-criterion']);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 3), ['FAIL Task 1 (exit 1)', 'FAIL success-criterion (exit 1)', '  check failed']);
 });
 
 const RISK_PLAN = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none${risk}| Proof: node -e "process.exit(0)"\n`;
