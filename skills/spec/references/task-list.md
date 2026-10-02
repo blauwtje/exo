@@ -1,8 +1,7 @@
 # Specification of the task list
 
-The task list names the goal, basis, proof and one
-line per task, with no implicit file or shape and no step's code. `plan-check`
-enforces every rule below.
+The task list names the goal, basis, proof and one line per task, with no
+implicit file, shape or step code; `plan-check` enforces every rule below.
 
 Write for a zero-context reader.
 
@@ -13,7 +12,7 @@ Write for a zero-context reader.
    - When two tasks share no `Depends on:` chain, add `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
    - Add `Land gate: npm run typecheck` for root's package.json `typecheck` script, else `none`; the owner may name a slower `validate` or `check`.
    - Add `Lint: <linter binary>` like `npx eslint` for root's package.json `lint` script, else `none`; `npm run lint` skips a task's `Files:`.
-3. `## Success criterion`: the one command proving every task landed, no interpretation step, no user-only check.
+3. `## Success criterion`: the one command proving every task landed, with no interpretation or user-only check.
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`, `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`: the dependency-ordered list.
 
@@ -25,12 +24,11 @@ Write for a zero-context reader.
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one bare command>
 ```
 
-- A task whose result runs takes a `Proof:` running that artifact on the project's real input, never a test alone.
-- That `Proof:` is the project's own command when one exists, else a script the builder writes with only the project's tools.
-- `Proof:` is the one bare command showing this task alone landed.
-- `Proof:` never runs the whole suite, such as `npm test`: name one test file or a script, because a build subagent's guard refuses a whole-suite run; the `## Success criterion` may still be `npm test`, which verify runs in the main session.
-- `Data:` names the structure holding the result, not its fields or algorithm.
-- `Risk:` marks a task touching a `security boundary`, `persisted format`, `public signature` or `dependency`; a task touching none omits it.
+- A task whose result runs has a `Proof:` running it on the project's real input, never a test alone.
+- That `Proof:` is the project's own command if one exists, else a builder's script using only the project's tools.
+- `Proof:` is the one bare command showing this task alone landed, never the whole suite (`npm test`), which build's guard refuses.
+- `Data:` names the structure holding the result, not its fields or logic.
+- `Risk:` marks a task touching a `security boundary`, `persisted format`, `public signature` or `dependency`.
 - The heading is `land-task`'s conventional-commit subject, trailed by `Plan-task: <plan-stem>/<n>`.
 - The task stages `Files:` and carries no `Commit:` block.
 - `Design:` names the skill a task loads first, only when it changes a page's look.

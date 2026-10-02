@@ -17,6 +17,7 @@
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
     "#prose-density": "./lib/prose-density.mjs",
+    "#runtime-log": "./lib/runtime-log.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-extensions": "./lib/script-extensions.mjs",
     "#script-flags": "./lib/script-flags.mjs",

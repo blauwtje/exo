@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, frameOf, parsePlan, PlanError, taskSize } from '#plan-tasks';
-import { wholeSuiteKeys } from '../../../lib/runtime-log.mjs';
+import { wholeSuiteKeys } from '#runtime-log';
 
 const STEP_HEADING = /^Step \d+: .*$/;
 // A run of dots on their own, not a spread or rest operator: `...args` and
