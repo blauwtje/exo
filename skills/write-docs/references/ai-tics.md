@@ -1,8 +1,6 @@
 # AI writing tics
 
-Each tic below is a pattern that marks text as machine-written, with its id, the fix, and one before/after pair. The enemy is prose a reader dismisses as generated before weighing what it says. The overcorrection is a rewrite that strips a term or number the reader needs because it matched a pattern.
-
-An id is stable: a review cites it, a new tic takes the next free number in its group, and a removed tic retires its number rather than passing it on.
+A tic id is stable: a review cites it, a new tic takes the next free number in its group, and a removed tic retires its number.
 
 ## Contents
 
@@ -112,7 +110,7 @@ Sentences that hide who acts or make the reader decode. Fix: actor, verb, object
 
 ## Documentation mode
 
-A document serves one reader need: learning by doing (tutorial), getting a known task done (how-to), looking a fact up (reference), or understanding why (explanation). Fix: pick one mode per document and move the rest to its own page or section.
+Text that serves a second reader need. Fix: move it to its own page or section.
 
 | Id | Tic | Before | After |
 |---|---|---|---|
