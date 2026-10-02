@@ -31,4 +31,3 @@ Depends on: none | Files: `src/tasks/due-tone.js`, `src/tasks/due-tone.test.js` 
 Depends on: 1, 2 | Files: `src/tasks/task-row.jsx`, `src/tasks/task-row.css`, `src/tasks/task-row.test.jsx` | Data: one `{ label, tone }` object per row, rendered as its badge | Design: design-ui | Proof: npm test -- task-row
 ## Judgment
 - When this example and this skill's plan specification disagree, the specification wins and this file is the one to fix.
-- A field left out here for brevity would be a field left out of a real plan; nothing is left out.
