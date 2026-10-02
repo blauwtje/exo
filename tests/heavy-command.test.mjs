@@ -19,16 +19,17 @@ let lastCache;
 
 // Runs the Bash dispatcher in a project whose heavy_commands is `heavy` and
 // returns its parsed hook output, or null when it prints nothing.
-async function dispatch(command, { heavy, guards, after, learned, session = 'session-1', cache } = {}) {
+async function dispatch(command, { heavy, guards, after, suite, learned, learnedSeconds = 90, session = 'session-1', cache } = {}) {
   const directory = await fixture();
   cache ??= path.join(directory, 'cache');
   const settings = {};
   if (heavy !== undefined) settings.heavy_commands = heavy;
   if (guards !== undefined) settings.guards = guards;
   if (after !== undefined) settings.heavy_after_seconds = after;
+  if (suite !== undefined) settings.subagent_suite_after_seconds = suite;
   if (learned !== undefined) {
     await fs.mkdir(cache, { recursive: true });
-    const entries = Object.fromEntries(learned.map((text) => [text, { seconds: 90, lastUsed: new Date().toISOString() }]));
+    const entries = Object.fromEntries(learned.map((text) => [text, { seconds: learnedSeconds, lastUsed: new Date().toISOString() }]));
     await fs.writeFile(path.join(cache, 'runtimes.json'), JSON.stringify({ learned: { [directory]: entries }, starts: {} }));
   }
   await fs.mkdir(path.join(directory, '.claude'));
@@ -117,8 +118,18 @@ test('a test-like command that is not wrapped has its start booked, others do no
   const log = JSON.parse(await fs.readFile(path.join(lastCache, 'runtimes.json'), 'utf8'));
   assert.deepEqual(Object.keys(log.starts), ['booked']);
   assert.deepEqual(Object.keys(log.starts.booked), ['make lint']);
-  for (const options of [{ command: 'ls' }, { command: 'make verify --watch' }, { command: 'make lint', after: 0 }, { command: 'make lint', heavy: 'make lint' }]) {
+  for (const options of [{ command: 'ls' }, { command: 'make verify --watch' }, { command: 'make lint', after: 0, suite: 0 }, { command: 'make lint', heavy: 'make lint' }]) {
     await dispatch(options.command, options);
     await assert.rejects(fs.readFile(path.join(lastCache, 'runtimes.json')), options.command);
   }
+});
+
+test('a start is booked with learning off while the suite guard is on', async () => {
+  assert.equal(await dispatch('make lint', { session: 'suite', after: 0, suite: 20 }), null);
+  const log = JSON.parse(await fs.readFile(path.join(lastCache, 'runtimes.json'), 'utf8'));
+  assert.deepEqual(Object.keys(log.starts.suite), ['make lint']);
+});
+
+test('a learned 33 s test command is not wrapped at the default 60', async () => {
+  assert.equal(await dispatch('make verify', { learned: ['make verify'], learnedSeconds: 33 }), null);
 });
