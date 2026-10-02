@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- verify names why a Proof or the Success criterion failed on its `FAIL` line (the signal, the exit code or an unclean `SUMMARY` line) and prints the last 20 lines of its output under it, so a check that dies early can be diagnosed.
+- verify judges a Success criterion whose output has no `SUMMARY` line on its exit code alone, so another project's `npm run check` that exits 0 no longer fails the gate every time.
+
 ## 0.75.0 - 2026-10-02
 
 ### Added
