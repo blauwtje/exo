@@ -15,7 +15,9 @@ import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-ch
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
-const REVIEW_THRESHOLD = [`${NUMBER_WORDS[FILE_LIMIT]} changed files`, `${LINE_LIMIT} changed lines`];
+// The reviewer is picked on risk; the file and line limits still set the code-review effort.
+const EFFORT_LIMITS = [`${NUMBER_WORDS[FILE_LIMIT]} changed files`, `${LINE_LIMIT} changed lines`];
+const RISK_TRIGGER = 'carries a `Risk:` field, a manifest or lockfile changed or a public signature changed';
 
 const thousands = (value) => value.toLocaleString('en-US');
 
@@ -42,7 +44,7 @@ const PINNED_SENTENCES = {
     'When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.',
   ],
   'skills/build/references/fresh-eyes.md': [
-    ...REVIEW_THRESHOLD,
+    ...EFFORT_LIMITS,
   ],
   'skills/check-docs/SKILL.md': [
     'Never end a turn on a research pass alone.',
@@ -116,15 +118,15 @@ const PINNED_SENTENCES = {
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
   'README.md': [
-    ...REVIEW_THRESHOLD, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
+    RISK_TRIGGER, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
     `over ${DEFAULT_GUARD_LINES} lines`,
   ],
   'CONTRIBUTING.md': [
-    ...REVIEW_THRESHOLD,
+    RISK_TRIGGER,
     `lines, ${DEFAULT_GUARD_LINES} unless set`,
     `reads as ${DEFAULT_GUARD_LINES}`,
   ],
-  'docs/skills/build.md': [...REVIEW_THRESHOLD],
+  'docs/skills/build.md': [RISK_TRIGGER],
   'skills/ship/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
   'skills/remember/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
   'skills/configure/references/setup-map.md': [`\`${DEFAULT_GUARD_LINES}\` (the default)`],

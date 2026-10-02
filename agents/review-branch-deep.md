@@ -1,6 +1,6 @@
 ---
 name: review-branch-deep
-description: "Reviews one finished plan branch above five files or 200 changed lines against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch for that size. Not for a smaller branch, a single task, a pull request or a diff without a plan."
+description: "Reviews one finished plan branch against its plan and the code standard, and writes a report. Dispatched by verify instead of review-branch when a landed task carries a Risk: field, a manifest or lockfile changed or a public signature changed. Not for a branch with none of these, a single task, a pull request or a diff without a plan."
 model: opus
 effort: high
 tools: Read, Write, Glob, Grep, Bash
