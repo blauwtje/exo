@@ -47,7 +47,7 @@ function routeLine(taskCount) {
   return `Route: ${taskCount > BLOCK_TASK_LIMIT ? 'unit' : 'direct'}`;
 }
 
-// The Non-goals and Context bullets that name one of the task's paths or
+// The Non-goals, Context and Decisions bullets that name one of the task's paths or
 // regions; with no match, every bullet, because a brief that drops a fact
 // turns it into a guess.
 function bulletsFor(task, bullets) {
@@ -85,8 +85,8 @@ function successCriterionLines(frame) {
 }
 
 // `--frame` prints the plan frame's header sections verbatim, the fields
-// frameOf reads off the plan, so a plan's Goal, Non-goals, Context and
-// Visual direction reach a caller without it retyping them as prose.
+// frameOf reads off the plan, so a plan's Goal, Non-goals, Context,
+// Decisions and Visual direction reach a caller without it retyping them as prose.
 function frameReport(frame) {
   return `${[
     `Goal: ${frame.goal}`,
@@ -95,6 +95,8 @@ function frameReport(frame) {
     ...bulletLines(frame.nonGoals),
     'Context for these paths and symbols:',
     ...bulletLines(frame.context),
+    'Decisions for these paths:',
+    ...bulletLines(frame.decisions),
     ...(frame.visualDirection === null ? ['Visual direction: none'] : ['Visual direction:', frame.visualDirection])
   ].join('\n')}\n`;
 }
@@ -107,6 +109,8 @@ function taskBrief(task, frame, root) {
     ...bulletLines(bulletsFor(task, frame.nonGoals)),
     'Context for these paths and symbols:',
     ...bulletLines(bulletsFor(task, frame.context)),
+    'Decisions for these paths:',
+    ...bulletLines(bulletsFor(task, frame.decisions)),
     ...visualDirectionLines(task, frame),
     'Modify ranges:',
     ...bulletLines(modifyRanges(task, root)),

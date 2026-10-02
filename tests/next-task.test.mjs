@@ -123,6 +123,31 @@ test('a Success criterion section becomes a Success criterion: line after Goal:,
   assert.match(brief, /^Goal: The fixture proves the plan reader\.\nSuccess criterion: `node --test` passes\.\nNo new files remain uncommitted\.$/m);
 });
 
+test('a task brief and the --frame report carry the plan\'s Decisions bullets, the task\'s own first', async () => {
+  const planWithDecisions = PLAN.replace(
+    '\n## Non-goals',
+    '\n## Decisions\n\n- `src/app.js` keeps `greet` synchronous.\n- `src/wave.js` is generated.\n\n## Non-goals'
+  );
+  const root = await gitRepository({
+    'src/app.js': 'export function greet() {\n  return "hi";\n}\n',
+    'docs/plans/fixture.md': planWithDecisions
+  });
+  const planPath = path.join(root, 'docs/plans/fixture.md');
+  nextTaskReport({ planPath, planText: planWithDecisions, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, /^Decisions for these paths:\n- `src\/app\.js` keeps `greet` synchronous\.\n/m);
+  assert.doesNotMatch(brief, /`src\/wave\.js` is generated/);
+  const frameReport = frameOnlyReport(planWithDecisions);
+  assert.match(frameReport, /^Decisions for these paths:\n- `src\/app\.js` keeps `greet` synchronous\.\n- `src\/wave\.js` is generated\.$/m);
+});
+
+test('a plan with no Decisions section prints Decisions for these paths: - none', async () => {
+  const { root, planPath } = await checkout();
+  nextTaskReport({ planPath, planText: PLAN, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, /^Decisions for these paths:\n- none$/m);
+});
+
 test('a wave of two writes two briefs, and a task outside the wave gets none', async () => {
   const { root, planPath } = await checkout();
   nextTaskReport({ planPath, planText: PLAN, root });
