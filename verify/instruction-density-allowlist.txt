@@ -30,14 +30,6 @@ skills/edit-skills/references/blind-eval.md	sentence	The edit is done only when 
 skills/edit-skills/references/pressure-scenarios.md	sentence	Save the case to a prompt file, then tak
 skills/edit-skills/references/pressure-scenarios.md	bullet	3	Run `scripts/pressure.mjs --prompt <file
 skills/edit-skills/references/pressure-scenarios.md	sentence	It writes every full final answer to its
-skills/file-issues/SKILL.md	bullet	4	**Intake.** Turn the request into one go
-skills/file-issues/references/fields.md	sentence	It prints one JSON line: `repo` (owner,
-skills/file-issues/references/fields.md	bullet	3	**The repository has its own.** A label
-skills/file-issues/references/fields.md	sentence	Use the default set, creating each missi
-skills/file-issues/references/fields.md	sentence	A Spec's `### Problem` names what goes w
-skills/file-issues/references/fields.md	bullet	3	A parent the brief or request names: `--
-skills/file-issues/references/fields.md	sentence	Project fields are set after creation, o
-skills/file-issues/references/fields.md	sentence	Its labels, milestone and project field
 skills/find-cause/SKILL.md	bullet	3	**Reproduce.** One command reproduces it
 skills/find-cause/references/handoff.md	sentence	The investigate part, at most 25 lines,
 skills/find-cause/references/handoff.md	sentence	The fix delegate appends a `## Fix` sect
