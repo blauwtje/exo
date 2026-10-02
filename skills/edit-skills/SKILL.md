@@ -13,6 +13,16 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 - Creating a skill or an agent, changing one, or judging whether one has grown too long.
 - Not for a fix that happens once, a habit of one project, or a limit a regex can check: a commit, `CLAUDE.md` or the verifier holds those, because a skill exists for a call that needs judgment.
 
+## The loop
+
+1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom.
+2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells sonnet:high --plugin-dir <clone>` and read only the `without` answers now. A delegate takes no effort setting, so it cannot stand in for this run.
+3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape below and in the register `references/wording.md` sets.
+4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
+5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
+6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
+7. **Judge blind.** When step 4's read is a close call, judge the pre-edit and edited clones' `with` answers blind, per `references/blind-eval.md`.
+
 ## The shape
 
 | Part | Contract |
@@ -31,16 +41,6 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 - Aim the body at 2,000 tokens (bytes after the frontmatter / 4) and the description at 300 characters; the verifier fails 2,500 tokens, 636 for the injected `route-skills`, and 375 characters.
 - A reference holds one topic and links to no other reference; over 100 lines it opens with a contents list linking each section.
 - Text handed to a delegate lives beside `SKILL.md` as `<role>-prompt.md`, with a References row naming the step that dispatches it; `references/` holds only what the skill reads itself.
-
-## The loop
-
-1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom; save the case in `benchmarks/pressure/<skill>/`, as step 5 there describes.
-2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells sonnet:high --plugin-dir <clone>`. It runs the without-skill and with-skill arm of every cell `--runs` times in parallel, writes each answer to its own file, and prints one line per arm naming that file, the first edit and the skills called. Read only the `without` answers now; a delegate takes no effort, so it cannot stand in.
-3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape above and in the register `references/wording.md` sets.
-4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
-5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
-6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
-7. **Judge blind.** When step 4's read is a close call, rerun `pressure.mjs` on the pre-edit and the edited clone. Score their `with` answers with a fresh sonnet judge blind to which is which, per `references/blind-eval.md`.
 
 ## Red flags
 
@@ -69,5 +69,5 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 ## Judgment
 
 - A rule the run without the skill broke outranks a rule that only reads well.
-- An edit that was never tested is reverted rather than kept as a draft, because without the run lacking the skill it is a guess.
+- An edit that was never tested is reverted rather than kept as a draft.
 - Short outranks complete: a skill that grew too long drops its weakest rule, never a reason clause.
