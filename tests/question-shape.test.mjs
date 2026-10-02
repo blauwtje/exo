@@ -8,13 +8,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { nextStageReport } from '../skills/route-skills/scripts/next-stage.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 const USING_EXO = read('skills/route-skills/SKILL.md');
 const QUESTION = read('skills/route-skills/references/question.md');
-const NEXT_STAGE = read('skills/route-skills/references/next-stage.md');
 
 test('the question reference is the one place that defines the shape, with A recommended', () => {
   assert.ok(QUESTION.includes('`**<title>**`'));
@@ -69,14 +69,13 @@ test('the route-skills body points at the question reference', () => {
   assert.ok(USING_EXO.includes('read `references/question.md` first'));
 });
 
-test('the next stage recommends continuing, and a context notice leaves the order alone', () => {
-  assert.ok(NEXT_STAGE.includes('After `spec`: A Adjust the brief, B Build here, C Build fresh.'));
-  assert.ok(NEXT_STAGE.includes('**A is the recommended option**'));
-  assert.ok(NEXT_STAGE.includes('**A context notice changes nothing here.**'));
-  assert.ok(!NEXT_STAGE.includes('stopping is recommended'), 'a context notice no longer moves Stop first');
-  assert.ok(!NEXT_STAGE.includes('stopping leads after every stage'), 'Stop no longer leads unconditionally');
-  assert.ok(NEXT_STAGE.includes('**Fresh-chat lines.**'));
-  assert.ok(!NEXT_STAGE.includes('names its command, model and effort'));
+test('the next stage has no reference file; the script prints A as the recommended option', () => {
+  assert.ok(!fs.existsSync(new URL('../skills/route-skills/references/next-stage.md', import.meta.url)));
+  const report = nextStageReport({ after: 'spec', artifact: 'brief.md' });
+  assert.ok(report.includes('- **(A) Adjust the brief**'));
+  assert.ok(report.includes('- **(B) Build here**'));
+  assert.ok(report.includes('- **(C) Build fresh**'));
+  assert.ok(report.includes('Recommended: (A)'));
 });
 
 test('design-ui offers its preview as one plain question, showing the looks on A', () => {

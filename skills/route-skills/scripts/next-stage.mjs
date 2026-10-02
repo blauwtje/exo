@@ -1,7 +1,7 @@
 // Prints the next-stage question, or with `--fresh` the lines the user types
 // after picking the fresh-chat route. A stage skill whose work leaves a next
 // stage open (`spec`, `find-cause`) runs this at its final message instead of
-// reading `references/next-stage.md` and `references/question.md` itself.
+// reading `references/question.md` itself.
 //
 //   node next-stage.mjs --after <stage> --artifact <path> [--fresh]
 
@@ -12,7 +12,7 @@ import { readKindTable } from '#model-kinds';
 import { frameOf, parsePlan } from '#plan-tasks';
 
 // The stage a session just finished names the question that ends it, per
-// `references/next-stage.md`: a title, a context sentence, lettered option
+// the question shape: a title, a context sentence, lettered option
 // lines with the recommended one on A, and the `Recommended: (A)` line saying
 // why A beats the rest. `stage` names the fresh-chat route's model row, when
 // the stage offers that route. An option is `[label, what the user gets]`; its
