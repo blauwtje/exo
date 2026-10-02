@@ -172,7 +172,11 @@ function menu(root, name) {
     const picks = topic.keys.map((key) => (GROUPS[key]
       ? `${GROUPS[key].label}**: ${GROUPS[key].about}`
       : `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`));
-    console.log([...overview(settingKeys(topic.keys), stack), '', ...question(topic.question, '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
+    const grouped = topic.keys.filter((key) => GROUPS[key]).map((key) => GROUPS[key].label);
+    const reason = grouped.length > 0
+      ? `nothing changes, ${grouped.join(' and ')} leads to a question about which of its settings, and the others each lead to one question about that setting.`
+      : 'nothing changes, and the others each lead to one question about that setting.';
+    console.log([...overview(settingKeys(topic.keys), stack), '', ...question(topic.question, '', 'Keep as is**: change nothing', picks, reason)].join('\n'));
     return;
   }
   if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);

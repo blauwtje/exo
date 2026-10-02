@@ -28,11 +28,13 @@ Take the first step whose answer the request and the letters so far leave open.
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
    - A topic letter runs `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
+   - The Slow commands letter in `menu safety` runs `menu slow`, relayed the same way.
    - That menu's options follow the order of the blocks above them.
 3. **Ask the value** once the setting is known but no value: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts, by key:
    - `guard_lines`: a whole number of at least 1.
    - `heavy_after_seconds`: a whole number of at least 0.
    - `heavy_commands`: command prefixes joined by `;`.
+   - `ship`: a value its context line names.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    **Who should this apply to?**

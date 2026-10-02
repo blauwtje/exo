@@ -279,7 +279,7 @@ test('the context line leaves heavy_commands out while empty and prints it once 
   assert.ok(!(await settings(unset, ['context'])).stdout.includes('heavy_commands'));
   const project = await workspace({ project: { heavy_commands: 'npm run e2e' } });
   assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project), heavy_after_seconds=60 (default)'));
-  assert.ok((await settings(unset, ['menu', 'safety'])).stdout.includes('- **(D) Slow commands**: which commands and tests I run only once per code change\n\n'));
+  assert.ok((await settings(unset, ['menu', 'safety'])).stdout.includes('- **(D) Slow commands**: which commands and tests I run only once per code change\n\nRecommended: (A), because nothing changes, Slow commands leads to a question about which of its settings, and the others each lead to one question about that setting.'));
   assert.ok((await settings(unset, ['menu', 'slow'])).stdout.includes('- **(B) Slow commands**: commands I run only once per code change (now: None)'));
   assert.ok((await settings(unset, ['menu', 'heavy_commands'])).stdout.includes('- **(A) Keep None**: every command runs each time\n- **(B) Clear the list**: every command runs each time\n\n'));
 });
