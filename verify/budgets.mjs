@@ -39,9 +39,9 @@ export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
 export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 636 };
 // The six stage-path skills, capped at 750 tokens each. spec sits above the
-// cap because its pinned gate sentences hold it at its measured 777.
+// cap because its pinned gate sentences hold it at its measured 760.
 export const STAGE_BODY_TOKENS = {
-  'start': 750, 'spec': 777, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
+  'start': 750, 'spec': 760, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
 // ceiling. build-ui, survey-ui, critique-ui and its twin carry visual-direction context

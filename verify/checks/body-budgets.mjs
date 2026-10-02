@@ -1,6 +1,6 @@
 // Every SKILL.md body after its frontmatter stays within SKILL_BODY_TOKENS.ceiling
 // tokens, INJECTED_BODY_TOKENS.ceiling for the skill the session hook injects
-// and STAGE_BODY_TOKENS for a stage-path skill capped at 750 (777 for spec), because a body is paid for on every run of its skill while a reference costs
+// and STAGE_BODY_TOKENS for a stage-path skill capped at 750 (760 for spec), because a body is paid for on every run of its skill while a reference costs
 // nothing until the step that opens it. A body over its ceiling moves its bulk
 // to references/; the ceiling is never raised for one skill. Every plugin
 // agent body, stripped of its own frontmatter, stays within
