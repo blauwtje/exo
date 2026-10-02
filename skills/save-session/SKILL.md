@@ -67,7 +67,7 @@ Diff what `## Proven` and `## Files touched` already cover against what `## Next
 
 | File | Read it when |
 |---|---|
-| `references/reconstructing-without-a-note.md` | A session resumes and no note exists at the path. |
+| `references/reconstructing-without-a-note.md` | Save-session itself starts without a note and must rebuild context before saving. |
 
 ## Judgment
 
