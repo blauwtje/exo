@@ -263,7 +263,7 @@ const SCENARIOS = [
   { name: 'injected-body-over-ceiling', mutate: (root) =>
     append(root, 'skills/route-skills/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
   { name: 'drifted-review-threshold', mutate: (root) =>
-    replaceText(root, 'README.md', '200 changed lines', '250 changed lines') },
+    replaceText(root, 'README.md', 'a manifest or lockfile changed', 'a manifest changed') },
   { name: 'drifted-wait-bound', mutate: (root) =>
     replaceText(root, 'skills/ship/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
   { name: 'unprefixed-delegate-budget-key', mutate: (root) =>

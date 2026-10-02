@@ -14,21 +14,21 @@ argument-hint: <outcome to shape>
    - Asked for options: list them, recommend one, no file.
    - New wishes for briefed work reopen that brief.
 2. **Sort each point.**
-   - Answerable by running or reading: run it, record it; a fact is never asked.
-   - Every open decision is a question, the root other decisions hang on first.
-   - A decision the user left undecided stays open whatever the code suggests.
+   - Answerable by running or reading: run it, record it, never ask.
+   - Each open decision is a question, the root others hang on first.
+   - A decision the user left open stays open whatever the code suggests.
    - A point the user would not notice goes in its task's `Data:`.
    - Name the owning layer and a smaller alternative.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`: decide nothing silently.
-   - Then close with one to three lines on what was agreed; the brief follows the user's yes.
+   - Close with one to three lines on what was agreed; the brief follows the user's yes.
    - After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight file/symbol/call-site ranges — never `cat`, `head` or `sed`.
-5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; mark each task in one of the four risk categories with `Risk:`. Plan mode: tree-unchanged commands only — an edit-needing proof is the first task.
-6. **Store it** per the session's `exo settings:` `specs` value, `docs` when absent (plan mode: the harness's plan file); name its location.
+5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; give each risk-category task `Risk:`. Plan mode: tree-unchanged commands only — an edit-needing proof is the first task.
+6. **Store it** per the session's `exo settings:` `specs` value, `docs` when absent (plan mode: the harness plan file); name its location.
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`; `issues` also writes the `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` path, for `build`.
-7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines; add any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output, and on `C` reply with its `--fresh` output; never load `exo:build` unasked.
+7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines; add a missing heading, `Data:`, Success criterion or `## Manual checks`.
+8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on `C` reply with its `--fresh` output; never load `exo:build` unasked.
 
 ## References
 
