@@ -1,15 +1,5 @@
 # Instruction-density offenders the tree carried when the check began: path, kind, a bullet's sentence count, first 40 characters, tab-separated.
 # Split an offender and delete its line; `node verify/instruction-density.mjs --prune` drops lines that match nothing.
-agents/build-ui.md	sentence	Expect: `RUN` (an absolute run directory
-agents/build-ui.md	sentence	The underdesign floor: the ground is a d
-agents/build-ui.md	sentence	Borrow: otherwise take the first source
-agents/build-ui.md	bullet	3	Write: then write it: the fewest stateme
-agents/critique-ui-high.md	sentence	`$RUN/renders/` holds the post-build pai
-agents/critique-ui-high.md	sentence	Locate each repair in the source before
-agents/critique-ui-high.md	bullet	3	Write `$RUN/faults.md`: first line `disp
-agents/critique-ui.md	sentence	`$RUN/renders/` holds the post-build pai
-agents/critique-ui.md	sentence	Locate each repair in the source before
-agents/critique-ui.md	bullet	3	Write `$RUN/faults.md`: first line `disp
 agents/locate-code.md	sentence	A location recalled from a name, guessed
 agents/review-branch-deep-high.md	sentence	Write the report with the Write tool to
 agents/review-branch-deep.md	sentence	Write the report with the Write tool to
@@ -17,8 +7,5 @@ agents/review-branch.md	sentence	Write the report with the Write tool to
 agents/run-unit.md	bullet	3	**Take the task from the script's output
 agents/run-unit.md	bullet	4	**Dispatch the build.** Up to three task
 agents/run-unit.md	bullet	4	**Commit a green task.** Done means `GRE
-agents/survey-ui.md	sentence	Expect `RUN` (an absolute run directory)
-agents/survey-ui.md	sentence	Locate the surface's markup, styles, tok
-agents/survey-ui.md	sentence	Read `$SKILL/references/visual-direction
 output-styles/scannable.md	bullet	3	**Max three blocks**, blank line between
 output-styles/scannable.md	bullet	3	**Max eight lines** above the closing li
