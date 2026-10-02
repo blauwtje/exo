@@ -37,6 +37,6 @@ Recommended: (A), because seeing the looks beats reading about them, and (C) ski
 
 ## Judgment
 
-- A letter the user typed outranks any reading of the conversation.
 - Nothing is written, edited or run before the answer arrives, because work done first is work the answer undoes.
+- A letter the user typed outranks any reading of the conversation.
 - A decision line naming a choice made for the user counts as one of the two context sentences, or is dropped.
