@@ -62,7 +62,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/find-cause/references/profiling.md': 854,
   'skills/ship/references/pr-prep.md': 830,
   'skills/build/bug-fixer-prompt.md': 897,
-  'skills/find-cause/fixer-prompt.md': 823,
+  'skills/find-cause/fixer-prompt.md': 819,
 };
 export const DESCRIPTION_CHARS = { realistic: 300, ceiling: 375 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };

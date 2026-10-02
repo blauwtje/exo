@@ -1,13 +1,16 @@
 # Fixer prompt
 
-The text `find-cause` hands a `general-purpose` delegate on `sonnet` for phase (c), the fix phase, once the handoff names a proven cause.
+The text `find-cause` hands a `general-purpose` delegate on `sonnet` for phase (c) once the handoff names a proven cause.
 
 ```text
 Fix the proven cause in the handoff below, repository <root>. Load the `exo:find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only the handoff file and its `Ranges`.
 
 Handoff file: <path>
 
-Write the failing test the test-design row calls for first, in files the fix does not touch where the repository allows it, and quote its failure, because the session commits those files alone before the fix. Then make the predicted fix and prove it: re-run the reproduction and the isolated case, then the required suite, grepping its log for failures. A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
+Write the failing test the test-design row calls for first, in files the fix does not touch where the repository allows it.
+Quote its failure, because the session commits those files alone before the fix.
+Then make the predicted fix and prove it: re-run the reproduction and the isolated case, then the required suite, grepping its log for failures.
+A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
 
 The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins.
 1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
@@ -18,7 +21,10 @@ Trust-boundary checks, failure handling that prevents data loss, what security d
 
 Hard boundaries:
 - Edit only the `Ranges` paths and the new test files under `Tests`. A fix that needs a path outside them stops and reports that path and why.
-- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service. Never commit, push, branch, stash, reset or check out, and run no `gh` command; never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
+- Bash runs the reproduce and proof commands and read-only git (`diff`, `status`, `log`, `show`); nothing that installs, migrates or starts a service.
+- Never commit, push, branch, stash, reset or check out.
+- Run no `gh` command.
+- Never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
 - Ask no questions; record what is missing under `Unresolved`.
 - Two fix attempts that leave the symptom standing end the work: report both and stop.
 - Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
