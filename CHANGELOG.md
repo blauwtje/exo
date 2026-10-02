@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.74.0 - 2026-10-02
+
 ### Added
 
 - plan-check and the plan parser read a `Lint:` plan-basis line and a `Risk:` task field; spec defaults the land gate to a project-wide type check.
