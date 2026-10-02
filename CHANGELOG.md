@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- ship gives each instruction bullet one rule across its SKILL.md and references, moves the merge `--strategy`/`-X` guard into merge-conflicts.md, and has the watch route read pr-comments.md instead of restating its comment rules; its 4 instruction-density allowlist entries are gone and the lock drops from 37 to 33.
+
 ## 0.72.8 - 2026-10-02
 
 ### Changed
