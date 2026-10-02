@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.72.4 - 2026-10-02
+
 ### Changed
 
 - spec gives each instruction bullet one rule across its SKILL.md and references, and drops the brief sections the task-list specification owns; its 9 instruction-density allowlist entries are gone and the lock drops from 70 to 61.
