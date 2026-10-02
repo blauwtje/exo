@@ -15,3 +15,5 @@ Applies to written or changed code, not instruction files. This file: how the co
 11. **Explicit flow**: explicit data and control flow; cohesive units over clever compression, boolean mode flags and hidden side effects.
 12. **Comments**: state the code as it is (constraint, invariant, needed reason); change history goes in the commit.
 13. **Conventions**: follow conventions for errors, cancellation, concurrency, resource lifetimes.
+14. **No inner guards**: no guard, fallback or try/catch for a state the code's own boundary already rules out; validate once at the trust boundary.
+15. **Types rule out invalid states**: types and data structures make an invalid state unrepresentable, not checked for.
