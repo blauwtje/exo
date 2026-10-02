@@ -105,6 +105,14 @@ const SCENARIOS = [
     replaceText(root, 'skills/ship/SKILL.md',
       'Conflicts, step 6 or watch.', 'Step 6.');
   } },
+  // The copy of the References block lands in find-cause, which has room for it
+  // under no lock the duplicate check runs before; the check names the repeat.
+  { name: 'skill-repeats-references-section', mutate: (root) => {
+    const file = 'skills/find-cause/SKILL.md';
+    const text = read(root, file);
+    const start = text.indexOf('\n## References\n');
+    write(root, file, `${text}${text.slice(start)}`);
+  } },
   { name: 'banned-phrase', mutate: (root) =>
     append(root, 'skills/spec/SKILL.md', "\nlet me know if you'd like me to continue\n") },
   { name: 'expanded-banned-language', mutate: (root) =>

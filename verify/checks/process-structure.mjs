@@ -27,6 +27,8 @@ const DROPPED_SECTION = /^#{2,} (?:Judgment|Red flags)\s*$/m;
 const NUMBERED_STEP = /^(?<number>\d+)\. \S/gm;
 const REFERENCES_TABLE = /^## References\r?\n\s*\r?\n\|[^\r\n]*\|\r?$/m;
 const MIN_STEPS = 3;
+const SUBSECTION_HEADING = /^#{2,3} \S/;
+const LONG_LINE = 40;
 
 function fullContractErrors(relative, body, afterHeading) {
   const errors = [];
@@ -79,6 +81,29 @@ function slimContractErrors(relative, body, afterHeading) {
   return errors;
 }
 
+// A SKILL.md that repeats a heading text or a long line carries a pasted
+// section twice. Fences and table rows repeat legitimately, so they stay out.
+function repeatedTextErrors(relative, body) {
+  const errors = [];
+  const seen = new Set();
+  let inFence = false;
+  for (const line of body.split(/\r?\n/)) {
+    if (/^\s*(?:```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    const text = line.trim();
+    if (inFence || text.startsWith('|')) continue;
+    const isHeading = SUBSECTION_HEADING.test(text);
+    if (!isHeading && text.length <= LONG_LINE) continue;
+    if (seen.has(text)) {
+      errors.push(`${relative}: repeats "${text.slice(0, 60)}"`);
+    }
+    seen.add(text);
+  }
+  return errors;
+}
+
 export function checkProcessStructure(report, repository) {
   const errors = [];
   for (const file of repository.processFiles()) {
@@ -92,6 +117,7 @@ export function checkProcessStructure(report, repository) {
     }
     const afterHeading = body.slice(heading.index + heading[0].length).replace(/^\s+/, '');
     const isStepReference = path.basename(file) !== 'SKILL.md';
+    if (!isStepReference) errors.push(...repeatedTextErrors(relative, body));
     if (SLIM_SKILLS.includes(relative)) {
       errors.push(...slimContractErrors(relative, body, afterHeading));
     } else if (!isStepReference) {
