@@ -40,8 +40,8 @@ Only a request from the user opens the picker: a landing page or an open identit
 The default for every rung but 1 and 4; it builds in this session, with no agent. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3; Phases 4 and 5 are the full run's critique and QA.
 
 1. **Context.** Read `## Context`, `## The build floor`, `## Precedence` and `## Judgment` of `references/phase-detail.md`, once.
-2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, under `references/phase-direction.md`. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
-3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, from the `--deal` that `## The one pass` of `references/phase-direction.md` runs. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing and `--check-plan` reports ok.
 4. **Build.** Read `references/phase-build.md` first, then build the whole page here and run its proof.
 5. **Capture.** Run `node <skill dir>/scripts/capture.mjs --url <file:// or http:// url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
 6. **Look.** Read `$RUN/renders/post-build-390x844-fullpage.png` and `$RUN/renders/post-build-1440x900-fullpage.png`, and list each fault against the plan, the request and the build floor.

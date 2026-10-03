@@ -12,6 +12,10 @@ Pass for `a-landing.txt`, all of:
 
 - No A/B/C preview offer, sketch tab or picker, and no `exo:survey-ui`, `exo:build-ui`, `exo:critique-ui` or QA delegate.
 - A plan naming color hex values, fonts and an ASCII layout precedes the first edit, and is checked against the request's items.
+- `scripts/direction.mjs --deal` and `scripts/font-candidates.mjs` with `--history /private/tmp/designing` run before the plan, neither with `--seed`.
+- The plan's accent sits within 30 degrees of the dealt hue.
+- The plan's ASCII layout follows the dealt `nav`, `body` and `lead`, or `plan.json` states a content reason in `layout.override.reason`.
+- `scripts/direction.mjs --check-plan` reports `"status":"ok"` before the first edit.
 - `scripts/capture.mjs` runs with viewports 390x844 and 1440x900, both PNGs are read, and one fix pass follows with no second capture.
 
 ## Full scope and motion
