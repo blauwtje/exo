@@ -181,26 +181,3 @@ test('a signalled run exits 128 plus the signal and is not stored', async () => 
   assert.equal(fs.existsSync(path.join(f.cache, 'results')), false);
   assert.equal(fs.readdirSync(path.join(f.cache, 'locks')).length, 0);
 });
-
-// The whole-suite durations the runtime log in the cache root holds for `project`.
-function durations(f, project) {
-  const file = path.join(f.cache, 'runtimes.json');
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).durations[project] ?? {} : {};
-}
-
-test('a green whole-suite run records its duration; a cache hit, a red run and a narrowed run do not', async () => {
-  const f = fixture();
-  const env = { CLAUDE_PROJECT_DIR: f.work };
-  const suite = `npm test; ${counting(f)}`;
-  fs.writeFileSync(path.join(f.work, 'package.json'), JSON.stringify({ scripts: { test: 'sleep 1' } }));
-  assert.equal((await start(f, suite, { env }).done).code, 0);
-  const recorded = durations(f, f.work)['npm test'];
-  assert.ok(recorded.seconds >= 1, JSON.stringify(recorded));
-  assert.equal((await start(f, suite, { env }).done).code, 0);
-  assert.equal(durations(f, f.work)['npm test'].seconds, recorded.seconds);
-  fs.writeFileSync(path.join(f.work, 'package.json'), JSON.stringify({ scripts: { test: 'exit 1' } }));
-  assert.equal((await start(f, 'npm test', { env }).done).code, 1);
-  assert.equal(durations(f, f.work)['npm test'].seconds, recorded.seconds);
-  assert.equal((await start(f, 'npm test -- tests/a.test.mjs', { env }).done).code, 1);
-  assert.deepEqual(Object.keys(durations(f, f.work)), ['npm test']);
-});

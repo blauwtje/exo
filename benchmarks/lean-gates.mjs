@@ -69,8 +69,7 @@ export const EXO_SETTINGS = {
   guards: 'on',
   guard_lines: 400,
   heavy_commands: '',
-  heavy_after_seconds: 60,
-  subagent_suite_after_seconds: 20
+  heavy_after_seconds: 60
 };
 
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];
@@ -78,7 +77,7 @@ const NO_ANSWER = 'Nobody can answer a question during this run.';
 
 // Identical for both versions. Build ends on verify in both (build
 // references/tail.md), so the prompt names verify as the end, not a second step.
-export const PROMPT = `First run \`npm test\` once in the foreground in this session, so the suite's duration is known before any subagent starts. Then load the exo:build skill and run the plan ${PLAN_PATH}; the run is done when the branch passes exo:verify, which build ends on. Commit on a new branch ${BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
+export const PROMPT = `First run \`npm test\` once in the foreground in this session, before any subagent starts. Then load the exo:build skill and run the plan ${PLAN_PATH}; the run is done when the branch passes exo:verify, which build ends on. Commit on a new branch ${BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
 
 export const PROBE_PROMPT = 'Reply with the single word OK.';
 const PROBE = { model: 'haiku', budget: '0.5', timeoutMin: 5 };

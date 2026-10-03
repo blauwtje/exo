@@ -155,7 +155,7 @@ test('a synthetic run yields phases, suite counts, the token split and quality',
   assert.equal(metrics.aggregate.new.wallMs.median, 810000);
 });
 
-test('suite runs count per agent type, with the warm-up and the guard refusals apart', async () => {
+test('suite runs count per agent type, with the warm-up apart', async () => {
   const { out, config } = await syntheticRun();
   const project = path.join(config, 'projects', '-tmp-fixture');
   const main = path.join(project, `${SESSION}.jsonl`);
@@ -166,14 +166,10 @@ test('suite runs count per agent type, with the warm-up and the guard refusals a
     result('2026-10-02T10:00:06.000Z', 'tW2', 'ok')
   ];
   await fs.writeFile(main, `${warm.join('\n')}\n${await fs.readFile(main, 'utf8')}`);
-  const refusedLines = [assistant('s3', '2026-10-02T10:02:30.000Z', [{ type: 'tool_use', id: 'x3', name: 'Bash', input: { command: 'npm test' } }], usage(1, 1)), result('2026-10-02T10:02:31.000Z', 'x3', 'exo: exo:build-task may not run the whole test suite here: its last run in this project took 33 s')];
-  const subagent = path.join(project, SESSION, 'subagents', 'agent-a1.jsonl');
-  await fs.writeFile(subagent, `${await fs.readFile(subagent, 'utf8')}${refusedLines.join('\n')}\n`);
   await metricsCli(out, config);
   const [run] = JSON.parse(await fs.readFile(path.join(out, 'metrics.json'), 'utf8')).runs;
   assert.equal(run.fullSuite.warmUp, 1);
   assert.deepEqual(run.fullSuite.byAgentType, { main: 1, 'exo:build-task': 1 });
-  assert.deepEqual(run.fullSuite.refusals, { 'exo:build-task': 1 });
   assert.equal(run.fullSuite.bash.full, 2);
   assert.equal(run.fullSuite.log.full, 1);
 });

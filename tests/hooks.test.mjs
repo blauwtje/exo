@@ -128,7 +128,7 @@ test('every shipped guard is a step of the Bash dispatcher and none has a hook o
   // The read guard has its own hook, and the repeat guard its own hooks besides its dispatcher step.
   const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs') && !['read-guard.mjs', 'repeat-guard.mjs'].includes(name));
   assert.deepEqual(guardFiles.sort(), [
-    'bash-output-guard.mjs', 'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'suite-guard.mjs', 'writing-guard.mjs'
+    'bash-output-guard.mjs', 'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'writing-guard.mjs'
   ]);
   const dispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   for (const guardFile of guardFiles) {

@@ -33,7 +33,6 @@ Take the first step whose answer the request and the letters so far leave open.
 3. **Ask the value** once the setting is known but no value: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts, by key:
    - `guard_lines`: a whole number of at least 1.
    - `heavy_after_seconds`: a whole number of at least 0.
-   - `subagent_suite_after_seconds`: a whole number of at least 0.
    - `heavy_commands`: command prefixes joined by `;`.
    - `ship`: a value its context line names.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
@@ -56,7 +55,6 @@ Take the first step whose answer the request and the letters so far leave open.
 - A second session waits for the first, and a green result holds 24 hours.
 - `EXO_HEAVY_FORCE=1 <command>` forces a run.
 - `heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command as heavy once its last run in the project took longer.
-- `subagent_suite_after_seconds` (default 20, `0` off) refuses a whole-suite command to a build, fix or review agent once its last run in the project took longer, pointing it at the task's `Proof:`; the main session and verify stay free.
 - A command is test-like when its program or script name holds `test`, `e2e`, `check`, `lint` or `verify`; a path, URL or later argument does not count.
 - It never learns `--watch`, `--ui`, `--headed`, `dev`, `serve`, `start`, `install`, `deploy`, `build`, `EXO_HEAVY_FORCE`, `until`, `while` or `sleep` loops, or remote-state programs (`gh`, `curl`, `ssh`, `git`, `docker`, …), because their result does not follow the code.
 

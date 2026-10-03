@@ -135,20 +135,5 @@
       "60": { "label": "Over a minute", "gives": "skips only clearly slow tests" },
       "120": { "label": "Over two minutes", "gives": "skips only the slowest tests" }
     }
-  },
-  "subagent_suite_after_seconds": {
-    "type": "number",
-    "default": 20,
-    "min": 0,
-    "description": "a build, fix or review subagent that runs a test command over the whole suite, whose last run in this project took longer than this many seconds, is refused and pointed at the task's Proof or one test file; the main session and verify stay free. 0 turns this off",
-    "label": "Subagent test runs",
-    "about": "when I keep helpers from running the whole suite",
-    "question": "When should I stop a helper from running the whole test suite?",
-    "choices": {
-      "0": { "label": "Never", "gives": "helpers may run the whole suite each time" },
-      "10": { "label": "Over ten seconds", "gives": "keeps helpers off all but the quickest suites" },
-      "20": { "label": "Over twenty seconds", "gives": "keeps helpers off clearly slow suites" },
-      "60": { "label": "Over a minute", "gives": "keeps helpers off only the slowest suites" }
-    }
   }
 }

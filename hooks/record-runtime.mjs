@@ -3,9 +3,8 @@
 // the run's `duration_ms` from the hook input (time since the start without it),
 // and keeps a test-like command that ran longer than the
 // `heavy_after_seconds` setting in the runtime log (lib/runtime-log.mjs), so
-// the heavy step wraps it from the next call. 0 switches learning off, and the
-// duration of a whole-suite run is still kept while `subagent_suite_after_seconds`
-// is above 0. A command that already matches `heavy_commands` is not recorded again. Every
+// the heavy step wraps it from the next call. 0 switches learning off. A
+// command that already matches `heavy_commands` is not recorded again. Every
 // fault is swallowed: a recorder never blocks the command.
 
 import process from 'node:process';
@@ -19,8 +18,7 @@ function recordRuntime(hookInput) {
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return;
   if (typeof hookInput.session_id !== 'string') return;
   const thresholdSeconds = Number(settingValue('heavy_after_seconds'));
-  const suiteSeconds = Number(settingValue('subagent_suite_after_seconds'));
-  if (!(thresholdSeconds > 0 || suiteSeconds > 0) || isListedHeavy(command)) return;
+  if (!(thresholdSeconds > 0) || isListedHeavy(command)) return;
   recordFinish({
     sessionId: hookInput.session_id,
     command,

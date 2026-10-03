@@ -11,9 +11,7 @@
 // A command whose last run in the project took longer than `heavy_after_seconds`
 // (the runtime log, lib/runtime-log.mjs) is wrapped too, when its text equals
 // the logged one. A test-like command that is not wrapped has its start booked
-// there for hooks/record-runtime.mjs; the wrap needs `heavy_after_seconds` above
-// 0, while the booking also runs for `subagent_suite_after_seconds` above 0,
-// which reads the whole-suite durations the recorder keeps.
+// there for hooks/record-runtime.mjs; 0 switches both off.
 // Ceiling: the split ignores quotes, so a separator inside a quoted string
 // starts a segment there; lift it with the tokeniser in bash-output-guard.mjs.
 
@@ -56,12 +54,12 @@ export function heavyCommandStep(hookInput) {
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
   const listed = isListedHeavy(command);
   const thresholdSeconds = Number(settingValue('heavy_after_seconds'));
-  const booking = (thresholdSeconds > 0 || Number(settingValue('subagent_suite_after_seconds')) > 0) && isLearnable(command);
+  const learning = thresholdSeconds > 0 && isLearnable(command);
   const project = projectOf(hookInput);
   // An entry recorded under a threshold since raised no longer counts as heavy.
-  const learned = thresholdSeconds > 0 && isLearnable(command) && (learnedCommands(project)[command]?.seconds ?? 0) > thresholdSeconds;
+  const learned = learning && (learnedCommands(project)[command]?.seconds ?? 0) > thresholdSeconds;
   if (!listed && !learned) {
-    if (booking && typeof hookInput.session_id === 'string') recordStart({ sessionId: hookInput.session_id, command });
+    if (learning && typeof hookInput.session_id === 'string') recordStart({ sessionId: hookInput.session_id, command });
     return null;
   }
   if (!listed) touchLearned({ project, command });

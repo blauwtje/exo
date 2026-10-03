@@ -11,7 +11,6 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   isLearnable,
-  lastDuration,
   learnedCommands,
   projectOf,
   recordFinish,
@@ -119,15 +118,6 @@ test('touchLearned refreshes lastUsed of a learned command and ignores an unknow
   });
 });
 
-test('touchLearned keeps the whole-suite duration of a learned command from the 30-day drop', () => {
-  withCache(() => {
-    run('npm test', { seconds: 90 });
-    touchLearned({ project: '/p', command: 'npm test', now: T0 + 20 * DAY_MS });
-    run('npm run lint', { seconds: 1, startAt: T0 + 40 * DAY_MS });
-    assert.equal(lastDuration('/p', 'npm test'), 90);
-  });
-});
-
 test('a finish with no start record learns nothing', () => {
   withCache(() => {
     const entry = recordFinish({ sessionId: 's1', command: 'npm test', project: '/p', thresholdSeconds: 60, now: T0 });
@@ -221,18 +211,18 @@ function runHook(input, cache) {
 
 // Runs the recorder on a Bash call to `npm test` whose start was booked
 // `waitedMs` ago, with `heavy_after_seconds` at 60 in a temporary project.
-function runHookAfterStart({ waitedMs, durationMs, settings = { heavy_after_seconds: 60 }, command = 'npm test' }) {
+function runHookAfterStart({ waitedMs, durationMs }) {
   return withCache((cache) => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-project-'));
     try {
       fs.mkdirSync(path.join(project, '.claude'));
-      fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify(settings));
-      recordStart({ sessionId: 's1', command, now: Date.now() - waitedMs });
-      const input = JSON.stringify({ tool_name: 'Bash', session_id: 's1', cwd: project, tool_input: { command }, duration_ms: durationMs });
+      fs.writeFileSync(path.join(project, '.claude', 'exo.json'), JSON.stringify({ heavy_after_seconds: 60 }));
+      recordStart({ sessionId: 's1', command: 'npm test', now: Date.now() - waitedMs });
+      const input = JSON.stringify({ tool_name: 'Bash', session_id: 's1', cwd: project, tool_input: { command: 'npm test' }, duration_ms: durationMs });
       const env = { ...process.env, EXO_HEAVY_CACHE: cache, CLAUDE_CONFIG_DIR: project, CLAUDE_PROJECT_DIR: project };
       const result = spawnSync('node', [HOOK], { input, env, encoding: 'utf8' });
       assert.equal(result.status, 0, result.stderr);
-      return { learned: learnedCommands(project), duration: lastDuration(project, command) };
+      return learnedCommands(project);
     } finally {
       fs.rmSync(project, { recursive: true, force: true });
     }
@@ -240,23 +230,15 @@ function runHookAfterStart({ waitedMs, durationMs, settings = { heavy_after_seco
 }
 
 test('the hook learns a command whose duration_ms is over the threshold', () => {
-  assert.equal(runHookAfterStart({ waitedMs: 0, durationMs: 90_000 }).learned['npm test'].seconds, 90);
+  assert.equal(runHookAfterStart({ waitedMs: 0, durationMs: 90_000 })['npm test'].seconds, 90);
 });
 
 test('the hook leaves a permission wait before a fast run out of the duration', () => {
-  assert.deepEqual(runHookAfterStart({ waitedMs: 120_000, durationMs: 2_000 }).learned, {});
+  assert.deepEqual(runHookAfterStart({ waitedMs: 120_000, durationMs: 2_000 }), {});
 });
 
 test('the hook falls back to the time since the start without duration_ms', () => {
-  assert.ok(runHookAfterStart({ waitedMs: 120_000 }).learned['npm test'].seconds >= 120);
-});
-
-test('the hook records a whole-suite duration with learning off while the suite guard is on, and nothing with both off', () => {
-  const on = runHookAfterStart({ waitedMs: 0, durationMs: 33_000, settings: { heavy_after_seconds: 0, subagent_suite_after_seconds: 20 } });
-  assert.equal(on.duration, 33);
-  assert.deepEqual(on.learned, {});
-  const off = runHookAfterStart({ waitedMs: 0, durationMs: 33_000, settings: { heavy_after_seconds: 0, subagent_suite_after_seconds: 0 } });
-  assert.equal(off.duration, null);
+  assert.ok(runHookAfterStart({ waitedMs: 120_000 })['npm test'].seconds >= 120);
 });
 
 test('the hook exits 0 and writes nothing on bad input or a call it ignores', () => {
@@ -286,59 +268,4 @@ test('wholeSuiteKeys keys a whole-suite segment and skips one narrowed by an arg
   assert.deepEqual(wholeSuiteKeys('npm install'), []);
   assert.deepEqual(wholeSuiteKeys('npm test && npm run lint'), ['npm test', 'npm lint']);
   assert.deepEqual(wholeSuiteKeys('npm test | tail -5'), ['npm test']);
-});
-
-test('wholeSuiteKeys skips a leading time and its options', () => {
-  assert.deepEqual(wholeSuiteKeys('time npm test 2>&1 | tail -40'), ['npm test']);
-  assert.deepEqual(wholeSuiteKeys('time -p npm run test'), ['npm test']);
-  assert.deepEqual(wholeSuiteKeys('CI=1 time npm test'), ['npm test']);
-  assert.deepEqual(wholeSuiteKeys('time CI=1 npm test'), ['npm test']);
-  assert.deepEqual(wholeSuiteKeys('time npm test -- tests/tax.test.ts'), []);
-});
-
-test('a time-prefixed command is learnable and records its whole-suite duration', () => {
-  assert.equal(isLearnable('time npm test 2>&1 | tail -40'), true);
-  assert.equal(isLearnable('time -p pytest'), true);
-  assert.equal(isLearnable('time npm install'), false);
-  withCache(() => {
-    run('time npm test 2>&1 | tail -40', { seconds: 33, threshold: 20 });
-    assert.equal(lastDuration('/p', 'npm test'), 33);
-  });
-});
-
-test('a one-segment whole-suite run records its duration, fast or slow', () => {
-  withCache(() => {
-    assert.equal(lastDuration('/p', 'npm test'), null);
-    run('npm test', { seconds: 5 });
-    assert.equal(lastDuration('/p', 'npm test'), 5);
-    run('npm run test', { seconds: 33, threshold: 20 });
-    assert.equal(lastDuration('/p', 'npm test'), 33);
-    assert.equal(lastDuration('/other', 'npm test'), null);
-    assert.equal(learnedCommands('/p')['npm run test'].seconds, 33);
-  });
-});
-
-test('a duration is recorded with the heavy threshold off', () => {
-  withCache(() => {
-    run('npm test', { seconds: 40, threshold: 0 });
-    assert.equal(lastDuration('/p', 'npm test'), 40);
-  });
-});
-
-test('a run narrowed to one file or with two whole-suite segments records no duration', () => {
-  withCache(() => {
-    run('npm test -- tests/tax.test.ts', { seconds: 40 });
-    run('npm test && npm run lint', { seconds: 70, session: 's2' });
-    assert.equal(lastDuration('/p', 'npm test'), null);
-    assert.equal(lastDuration('/p', 'npm lint'), null);
-  });
-});
-
-test('a duration unused for 30 days is dropped on the next write', () => {
-  withCache(() => {
-    run('npm test', { seconds: 5 });
-    run('npm run check', { seconds: 5, session: 's2', startAt: T0 + 31 * DAY_MS });
-    assert.equal(lastDuration('/p', 'npm test'), null);
-    assert.equal(lastDuration('/p', 'npm check'), 5);
-  });
 });

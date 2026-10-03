@@ -249,10 +249,9 @@ function checkFrame(frame) {
   return problems;
 }
 
-// A subagent's guard refuses a whole-suite run, so a Proof: holding one
-// segment that runs the whole suite would block the very task it proves; the
-// Success criterion may still be `npm test`, since verify runs it in the main
-// session.
+// A Proof: shows one task landed, so a segment that runs the whole suite is
+// out of place there; the Success criterion may still be `npm test`, since
+// verify runs it once in the main session.
 function checkWholeSuiteProof(task) {
   if (task.proof === null || wholeSuiteKeys(task.proof).length === 0) return [];
   return [`Task ${task.number}: 'Proof: ${task.proof}' runs the whole suite: name the one test file or script that shows this task alone landed`];

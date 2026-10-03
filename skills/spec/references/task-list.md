@@ -26,7 +26,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 
 - A task whose result runs has a `Proof:` running it on the project's real input, never a test alone.
 - That `Proof:` is the project's own command if one exists, else a builder's script using only the project's tools.
-- `Proof:` is the one bare command showing this task alone landed, never the whole suite (`npm test`), which build's guard refuses.
+- `Proof:` is the one bare command showing this task alone landed, never the whole suite (`npm test`), which verify runs once.
 - `Data:` names the structure holding the result, not its fields or logic.
 - `Risk:` marks a task touching a `security boundary`, `persisted format`, `public signature` or `dependency`.
 - The heading is `land-task`'s conventional-commit subject, trailed by `Plan-task: <plan-stem>/<n>`.
