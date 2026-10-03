@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.78.3 - 2026-10-03
+
 ### Highlights
 
 **design-ui now builds one complete page in this session by default; the picker, survey, builder split, critique and QA run only when you ask for them.**
