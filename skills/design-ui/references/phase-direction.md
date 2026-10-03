@@ -18,7 +18,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Friendly and playful: committed color, rounded shapes, a warm humanist face and lively overshoot on entrances.
 - Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
 - Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
-- Where `--plan` dealt a `palette.hue`, build the accent on it, taking only its chroma and lightness from the mood.
+- Pick hues, faces and radii yourself from the mood and the product, not from a seed or a stock default.
 - Record the mood in the contract's rationale, or in the plan on the one pass, and trace each look value to it.
 - Invent no company, brand story or metaphor as a theme, because the mood and the content carry the look.
 
@@ -28,7 +28,7 @@ Rung 3 of the skill's `## Route`, reached only when the user asks to see or choo
 
 - Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save.
 - Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
-- Deal three contracts over the space's axes with `scripts/direction.mjs --plan --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, without `--seed`, so the script draws a random one.
+- Deal three contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
 - Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
 - `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
 - Ask nothing between `--check` and the first sketch, because the scope form already carried the offer.
@@ -67,7 +67,7 @@ Full comps are built only when the user asks to see directions whole.
 - A planning turn routes by `## Route` and makes the offer on rung 3 only, because the user asked to choose there.
 - On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The sketch answer` says.
 - On option B, it freezes the contract the user's letter named the same way.
-- On option C, or on any other rung, it writes the space file, deals `--plan --space <file> --variants 2` without `--seed`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
+- On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
 - Add `--candidates <file>` to that freeze when fonts came from the candidate gate.
 - The plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`.
 - The plan carries that output verbatim in the Edit block of its first Build step, which writes that file.

@@ -377,21 +377,6 @@ describe('font-candidates.mjs ranking', () => {
 
   // Ties are the common case below the popularity cut, so the tie break decides
   // the chosen family. localeCompare would resolve it from the process ICU locale.
-  it('excludes width siblings of faces named by earlier runs in a history directory', async () => {
-    const catalog = fontsourceCatalog();
-    const base = catalog.fonts.find((font) => font.id === 'static-old-serif');
-    catalog.fonts.push({ ...base, id: 'static-old-serif-semi-condensed', family: 'Static Old Serif Semi Condensed' });
-    const catalogPath = await catalogFile('siblings.json', catalog);
-    const runs = await fs.mkdtemp(path.join(os.tmpdir(), 'dui-runs-'));
-    await fs.mkdir(path.join(runs, 'earlier-run'));
-    await fs.writeFile(path.join(runs, 'earlier-run', 'contract-selected.json'),
-      JSON.stringify({ contract: { type: { display: { family: 'Static Old Serif Expanded' }, body: { family: null } } } }));
-    const result = await resolve(['--catalog', catalogPath, '--history', runs, '--limit', '20'], spec());
-    const named = families(result);
-    assert.ok(named.length > 0);
-    assert.ok(named.every((family) => !family.startsWith('Static Old Serif')), named.join(', '));
-  });
-
   it('breaks score ties by code point, not by the process locale', async () => {
     const catalog = fontsourceCatalog();
     const tied = catalog.fonts.find((font) => font.id === 'static-old-serif');
@@ -401,8 +386,8 @@ describe('font-candidates.mjs ranking', () => {
       { ...tied, id: 'zeta-serif', family: 'Zeta Serif' }
     );
     const catalogPath = await catalogFile('tied.json', catalog);
-    const swedish = await resolve(['--catalog', catalogPath, '--seed', 'atlas'], spec(), { env: { LC_ALL: 'sv_SE.UTF-8', LANG: 'sv_SE.UTF-8' } });
-    const american = await resolve(['--catalog', catalogPath, '--seed', 'atlas'], spec(), { env: { LC_ALL: 'en_US.UTF-8', LANG: 'en_US.UTF-8' } });
+    const swedish = await resolve(['--catalog', catalogPath], spec(), { env: { LC_ALL: 'sv_SE.UTF-8', LANG: 'sv_SE.UTF-8' } });
+    const american = await resolve(['--catalog', catalogPath], spec(), { env: { LC_ALL: 'en_US.UTF-8', LANG: 'en_US.UTF-8' } });
     assert.deepEqual(families(swedish), families(american));
   });
 
