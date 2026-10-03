@@ -134,3 +134,43 @@ test('does not block while a background launch is pending, and blocks once it ha
   assert.equal(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, report]) }), '');
   assert.equal(JSON.parse(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, notice, report]) })).decision, 'block');
 });
+
+test('does not treat a command after a cp destination as a written path', () => {
+  const cwd = '/Users/thomash/Documents/Code/personal/plugins/exo';
+  const proofCommand = 'git pull --ff-only -q && git status -sb | head -1 && git log --oneline -1';
+  const file = transcript([
+    SKILL_CALL,
+    bashCall('toolu_bash1', 'T=$(mktemp -d /tmp/verify-fail-XXXX); cp -R /Users/thomash/bench-runs/lean-gates-2026-10-02/02-new/repo "$T/repo"; echo $T; grep -n "assert" "$T/repo/tests/tax.test.ts" | head -5', cwd),
+    bashResult('toolu_bash1', '/tmp/verify-fail-AbCd'),
+    bashCall('toolu_bash2', proofCommand, cwd),
+    bashResult('toolu_bash2', '## main...origin/main\n22b7548b chore(release): 0.78.0'),
+    finalReport(`**Done:** pulled main.\nProof: \`${proofCommand}\` -> \`## main...origin/main\``)
+  ]);
+  assert.equal(stopOutput({ transcript_path: file }), '');
+});
+
+test('does not match a written path that is only a substring of a Proof token', () => {
+  const file = transcript([
+    SKILL_CALL,
+    bashCall('toolu_bash1', 'node scripts/build.mjs > out', '/repo'),
+    bashResult('toolu_bash1', ''),
+    bashCall('toolu_bash2', 'node scripts/layout.mjs', '/repo'),
+    bashResult('toolu_bash2', 'layout: 3 columns'),
+    finalReport('**Done:** fixed the layout.\nProof: node scripts/layout.mjs -> layout: 3 columns')
+  ]);
+  assert.equal(stopOutput({ transcript_path: file }), '');
+});
+
+test('blocks a Proof naming the absolute form of a relative written path', () => {
+  const file = transcript([
+    SKILL_CALL,
+    bashCall('toolu_bash1', 'echo \'{"a":1}\' > fixtures/in.json', '/repo'),
+    bashResult('toolu_bash1', ''),
+    bashCall('toolu_bash2', 'node bin/cli.js /repo/fixtures/in.json', '/repo'),
+    bashResult('toolu_bash2', 'a: 1'),
+    finalReport('**Done:** parsed input.\nProof: node bin/cli.js /repo/fixtures/in.json -> a: 1')
+  ]);
+  const result = JSON.parse(stopOutput({ transcript_path: file }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /input this session wrote/);
+});
