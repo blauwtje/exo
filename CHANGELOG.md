@@ -7,6 +7,24 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**design-ui now aims for a polished, modern, cleanly finished look in the chosen mood, with no theme or props taken from the subject unless you ask.**
+
+### Changed
+
+- design-ui's goal is a polished, modern and cleanly finished result in the chosen mood; a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, appears only on request.
+- design-ui allows monospace only for code, not for amounts, times or order numbers, and no longer sets labels in all caps by default.
+- design-ui's overused-font list no longer includes Inter and Geist, and `direction.mjs --check` rejects a chosen font that stays on that list.
+
+### Fixed
+
+- design-ui centers the text of search fields and selects vertically and draws their arrows itself, with no browser-default select arrow or search cancel button.
+
+### Removed
+
+- design-ui's font candidate gate, `scripts/font-candidates.mjs`: the model picks a well-made modern font that fits the mood itself.
+
 ## 0.79.0 - 2026-10-03
 
 ### Highlights
