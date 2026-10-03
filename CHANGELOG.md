@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **design-ui turns a short ask into a full screen: it completes the scope a mature product carries, asks it as one form with a Mood question, and builds rich motion on every screen.**
+
+### Changed
+
+- design-ui completes a short ask with navigation, search and filtering, data visualisation, rich components and every state, and shows the scope groups and four moods (crisp and businesslike, friendly and playful, calm and luxurious, bold and expressive) as one form before Direction, on tool surfaces too; a named mood, "decide yourself" or a headless run skips the form and builds every group.
+- design-ui derives palette, type, shape and motion feel from the chosen mood, and every screen meets one motion bar whatever the mood: staggered entrances, count-up figures, sliding indicators, view transitions, sliding-in panels and a reduced-motion mode.
+- design-ui keeps an unnamed product generic instead of inventing a brand or domain, and states the scope and mood in one line each before Direction.
+
+### Fixed
+
+- design-ui no longer repeats a look across projects: `direction.mjs` and `font-candidates.mjs` draw a random seed, `--plan` deals an accent hue that `--check` holds the palette to, and `font-candidates.mjs --history /private/tmp/designing` keeps faces and their width variants from earlier runs out.
+- design-ui's `capture.mjs`, `check-ui.mjs` and `inspect-styles.mjs` wait up to 4 s for entrance animations and count-ups to settle before a capture or measurement, so critique and QA no longer judge a faded page or a half-drawn chart.
+
 ## 0.78.1 - 2026-10-03
 
 ### Fixed
