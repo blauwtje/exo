@@ -39,6 +39,7 @@ The full run starts only when the user asks for a survey, parallel builders, a c
 The underdesign floor, checked before the critique:
 
 - the ground is a designed surface, not an untouched flat neutral;
+- the page background and any sidebar or side rail span the full page height at 390px and 1440px, full-page captures included, because one ending at the viewport or content height leaves a band of another color below;
 - raised surfaces carry the direction's material, not one grey shadow each;
 - type carries a voice through a second weight, width, or family;
 - the motion bar is built;
