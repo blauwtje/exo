@@ -35,7 +35,7 @@ Name a missing input on the first line of `$RUN/inventory.md` and collect the re
 
 **Discovery.**
 
-1. State three facts, defaulting an absent one and marking it assumed: the product in one sentence; the audience and what they know on arrival; the page's single action or belief.
+1. State three facts, marking defaults assumed: product, kept generic when unnamed, not invented brand or domain; audience and arrival knowledge; page's one action or belief.
 2. Run `node "$SKILL/scripts/context.mjs" --surface <name> --needs color,typography,controls,motion --root "$REPO"` with its output redirected into `$RUN/context.json`.
    Record a `potentially-stale` or `unknown` status as it stands rather than resolving it.
 3. Locate the surface's markup, styles, tokens, components and the tests that assert on it with `Glob` and `Grep`.

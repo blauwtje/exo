@@ -24,8 +24,8 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - An ask that names a mood drops the Mood question.
 - An ask that says decide yourself drops the Scope and Mood questions.
 - Send no form when no answer can arrive, as in a headless run.
-- Without a Scope answer, build every group.
-- Without a Mood answer off rung 5, use the mood the ask names, else the best-fitting mood.
+- Without a Scope answer, build every group, named in one line before Direction.
+- Without a Mood answer off rung 5, take the mood the ask names, else the best-fitting mood, named in one line before Direction.
 - Rungs 3 and 7 of `## Route` offer the preview once, as the form's last question, so the user answers one form.
 - The offer follows the question shape, and the user answers with the letter:
 

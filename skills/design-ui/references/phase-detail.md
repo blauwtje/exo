@@ -14,7 +14,7 @@ The per-phase detail the skill body no longer carries: what Phase 1 establishes,
 ## Context
 
 - When a fact is missing, including an `## Open` line the `exo:survey-ui` agent returns, ask one question only if it materially changes scope, behavior, or a claim; never substitute a product-category aesthetic for missing evidence, which the chosen mood fills.
-- State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief.
+- State three facts, defaulting absent ones: product, kept generic when unnamed, not invented brand or domain; audience and arrival knowledge; page's one action or belief.
 - Read durable design context through `scripts/context.mjs --surface <name> --needs color,typography,controls,motion`.
 - Report a `potentially-stale` or `unknown` status rather than resolving it silently.
 - When the request does not name the surface's files, delegate locating its markup, styles, tokens and components to the `exo:locate-code` agent.

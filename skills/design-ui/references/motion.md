@@ -28,7 +28,7 @@ Write the thesis as one sentence before the first animation: how the chosen mood
 - regions enter staggered from their container, focal region first, content visible at rest;
 - key figures count up to their value on first view;
 - tabs, segmented controls and navigation move the active mark with a sliding indicator;
-- a section or view switch runs a view transition on the elements that persist;
+- a section or view switch calls `document.startViewTransition()` around its DOM change, not only `view-transition-name`, so persisting elements morph;
 - a detail, filter or edit panel slides in from its edge and leaves faster.
 
 Beneath the bar, transitions on hover, focus, active and open states are the floor at every size.
