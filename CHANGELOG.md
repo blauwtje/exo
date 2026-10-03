@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.77.0 - 2026-10-03
+
 ### Added
 
 - The lean-gates benchmark takes `--plan old|new`, opens with a warm-up suite run, and counts whole-suite runs per agent type; `docs/benchmarks/suite-guard.md` records why a guard against whole-suite runs in subagents did not land.
