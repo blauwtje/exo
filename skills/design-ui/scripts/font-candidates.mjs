@@ -7,8 +7,12 @@
 //
 //   node scripts/font-candidates.mjs --spec <file> [--source auto|google|fontsource] [--limit <1..20>]
 //                                    [--catalog <file>] [--cache <file>] [--offline]
-//                                    [--history <file>] [--seed <token>]
+//                                    [--history <file|dir>] [--seed <token>]
+// --history is a JSON array of family names, or a directory whose */contract-selected.json
+// files name the faces of earlier runs; a width sibling of a named family counts as it.
+// Without --seed the deal draws a random seed.
 
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -305,7 +309,35 @@ function stratifiedPick(passed, limit, prng) {
 
 /** Route-specific ordering. The Google route ranks on tag semantics; the
  *  Fontsource route has no semantic metadata and diversifies instead. */
-export function rankCandidates(passed, roleSpec, { provider, history, limit, prng }) {
+const WIDTH_WORDS = new Set(['semi', 'extra', 'ultra', 'condensed', 'expanded', 'narrow', 'wide', 'compressed', 'extended']);
+
+/** A family name without its width words, so Encode Sans Semi Condensed and Encode Sans Expanded share one stem. */
+export function familyStem(family) {
+  return String(family).toLowerCase().split(/\s+/).filter((word) => word && !WIDTH_WORDS.has(word)).join(' ');
+}
+
+/** Faces named by the contract-selected.json of each run directory under root. */
+async function historyFromRuns(root) {
+  const families = [];
+  for (const entry of await fs.readdir(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    let selected;
+    try {
+      selected = JSON.parse(await fs.readFile(path.join(root, entry.name, 'contract-selected.json'), 'utf8'));
+    } catch {
+      continue;
+    }
+    for (const role of ['display', 'body']) {
+      const family = selected?.contract?.type?.[role]?.family;
+      if (typeof family === 'string') families.push(family);
+    }
+  }
+  return families;
+}
+
+export function rankCandidates(passed, roleSpec, { provider, history: named, limit, prng }) {
+  const stems = new Set(named.map(familyStem));
+  const history = { includes: (family) => stems.has(familyStem(family)) };
   if (provider === 'google') {
     const scored = passed.map((entry) => {
       const { score, matches } = tagScore(entry.font, roleSpec);
@@ -505,14 +537,16 @@ async function main(argv) {
   if (!['auto', 'google', 'fontsource'].includes(source)) {
     throw new UsageError(`--source must be auto, google or fontsource, received '${source}'`);
   }
-  const seed = flags.seed ?? 'ui-design';
+  const seed = flags.seed ?? randomBytes(4).toString('hex');
   if (!SEED_TOKEN.test(seed)) throw new UsageError('--seed must be a plain file-name token');
   // Validated before any catalog work, so a cache path outside the OS temp
   // directory is refused even when --catalog would have skipped the cache.
   const cacheFile = flags.cache ? requireTemporaryPath(flags.cache) : null;
   const limit = requireLimit(flags.limit);
   const spec = normalizeSpec(await readJsonFlag(flags.spec, '--spec'));
-  const history = flags.history ? await readJsonFlag(flags.history, '--history') : [];
+  const historyIsDirectory = flags.history ? (await fs.stat(flags.history).catch(() => null))?.isDirectory() : false;
+  const history = !flags.history ? []
+    : historyIsDirectory ? await historyFromRuns(flags.history) : await readJsonFlag(flags.history, '--history');
   if (!Array.isArray(history)) throw new UsageError('--history must be a JSON array of family names');
 
   const googleKeyPresent = Boolean(process.env.GOOGLE_FONTS_API_KEY);

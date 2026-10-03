@@ -21,6 +21,7 @@ Any fixed list of "distinctive fonts" becomes next year's cliché, and a categor
    - Do not name a new typeface from memory.
    - Encode the spec as JSON, including allowed licenses and delivery modes, and run `scripts/font-candidates.mjs`.
    - Save its successful stdout unchanged as `font-candidates.json` beside the contract files, outside the repository.
+   - Pass `--history /private/tmp/designing` and no `--seed`, so no earlier run's face returns.
    - A constraint the provider cannot enforce excludes candidates or restricts the run rather than warning.
    - Choose only from the returned eligible set, recording family, candidate ID, provider, and the selected load mode and source in the contract, where `--check --candidates` verifies them.
    - When the script reports unavailable, retry with `--source fontsource`.
