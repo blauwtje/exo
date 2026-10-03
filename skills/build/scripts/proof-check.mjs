@@ -112,6 +112,8 @@ function bashOutputsAfter(rows, startIndex) {
 // A Bash command's redirection/copy destination: `> path`, `>> path`,
 // `tee [-a] path`, `cp ... path`, `mv ... path`. Best-effort text parsing,
 // not a shell parser: good enough to catch a fixture the session wrote.
+// A cp/mv destination is the last argument of that simple command, so its
+// arguments end at the next `;`, `&`, `|` or newline.
 function bashDestinationPaths(command) {
   const destinations = [];
   for (const match of command.matchAll(/(?:^|[\s;&|])>{1,2}\s*(\S+)/g)) {
@@ -119,8 +121,7 @@ function bashDestinationPaths(command) {
   }
   const tee = command.match(/\btee\b\s+(?:-a\s+)?(\S+)/);
   if (tee) destinations.push(tee[1]);
-  const copyOrMove = command.match(/\b(?:cp|mv)\b\s+(.+)/);
-  if (copyOrMove) {
+  for (const copyOrMove of command.matchAll(/\b(?:cp|mv)\b[ \t]+([^;&|\n]+)/g)) {
     const args = copyOrMove[1].trim().split(/\s+/).filter((arg) => !arg.startsWith('-'));
     if (args.length > 0) destinations.push(args[args.length - 1]);
   }
@@ -159,13 +160,33 @@ function absoluteForm(writtenPath, cwd) {
   return path.join(cwd, writtenPath);
 }
 
+// The Proof command's standalone words, split on whitespace and shell
+// punctuation; a `--flag=value` word also yields `value`.
+function commandTokens(command) {
+  const tokens = [];
+  for (const word of command.split(/[\s;&|<>()'"`]+/)) {
+    if (!word) continue;
+    tokens.push(word);
+    const assigned = word.slice(word.indexOf('=') + 1);
+    if (word.includes('=') && assigned) tokens.push(assigned);
+  }
+  return tokens;
+}
+
 // Only the Proof line's command counts as input; the product's own output
-// naming a written path is not the issue this guards against.
+// naming a written path is not the issue this guards against. A token names a
+// written path when it equals it as written, or both resolve to one absolute
+// path, a relative token resolved against the cwd the path was written from.
 function proofNamesWrittenInput(command, writtenPaths) {
+  const tokens = commandTokens(command);
   return writtenPaths.some(({ path: writtenPath, cwd }) => {
-    if (command.includes(writtenPath)) return true;
     const absolute = absoluteForm(writtenPath, cwd);
-    return absolute !== null && command.includes(absolute);
+    return tokens.some((token) => {
+      if (token === writtenPath) return true;
+      if (absolute === null) return false;
+      if (path.isAbsolute(token)) return path.normalize(token) === path.normalize(absolute);
+      return Boolean(cwd) && path.join(cwd, token) === path.normalize(absolute);
+    });
   });
 }
 
@@ -184,7 +205,7 @@ function verify(text, bashOutputs, writtenPaths) {
   const proof = text.match(PROOF_LINE);
   if (proof) {
     const command = normalizeCommand(proof[1]);
-    const output = proof[2].trim();
+    const output = proof[2].trim().replace(/^`(.*)`$/, '$1');
     if (TEST_RUNNER_DENYLIST.test(command)) return 'The Proof line names a test runner, not the product.';
     if (proofNamesWrittenInput(command, writtenPaths)) return WRITTEN_INPUT;
     const ran = bashOutputs.get(command);
