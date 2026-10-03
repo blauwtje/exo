@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.78.2 - 2026-10-03
+
 ### Highlights
 
 - **design-ui turns a short ask into a full screen: it completes the scope a mature product carries, asks it as one form with a Mood question, and builds rich motion on every screen.**
