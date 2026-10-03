@@ -330,18 +330,42 @@ describe('font-candidates.mjs constraints are fail-closed', () => {
 });
 
 describe('font-candidates.mjs ranking', () => {
-  it('penalizes a history family on the Google route and excludes it on Fontsource', async () => {
+  it('excludes a history family on both the Google and the Fontsource route', async () => {
     const history = await jsonFixture('history.json', ['Tidal Serif', 'Tidal Variable']);
 
     const google = await resolve(['--catalog', await catalogFile('google.json', googleCatalog())]);
     const googleWithHistory = await resolve(
       ['--catalog', await catalogFile('google.json', googleCatalog()), '--history', history]);
-    assert.notEqual(families(google).at(-1), 'Tidal Serif', 'tag-matched family outranks an unmatched one');
-    assert.equal(families(googleWithHistory).at(-1), 'Tidal Serif', 'the history penalty pushes it below both');
+    assert.ok(families(google).includes('Tidal Serif'));
+    assert.ok(families(googleWithHistory).length > 0);
+    assert.ok(!families(googleWithHistory).includes('Tidal Serif'), families(googleWithHistory).join(', '));
 
     const fontsource = await resolve(
       ['--catalog', await catalogFile('fontsource.json', fontsourceCatalog()), '--history', history]);
     assert.ok(!families(fontsource).includes('Tidal Variable'));
+  });
+
+  it('keeps the Google candidates when every one of them is in history', async () => {
+    const catalog = await catalogFile('google.json', googleCatalog());
+    const unfiltered = families(await resolve(['--catalog', catalog]));
+    const history = await jsonFixture('history.json', unfiltered);
+    const withHistory = families(await resolve(['--catalog', catalog, '--history', history]));
+    assert.ok(unfiltered.length > 0);
+    assert.deepEqual(withHistory, unfiltered);
+  });
+
+  it('reads the faces of a one-pass run from its plan.json, width siblings included', async () => {
+    const runs = await fs.mkdtemp(path.join(os.tmpdir(), 'dui-runs-'));
+    await fs.mkdir(path.join(runs, 'one-pass'));
+    await fs.writeFile(path.join(runs, 'one-pass', 'plan.json'),
+      JSON.stringify({ type: { display: { family: 'Tidal Serif Condensed' }, body: { family: 'Familiar Sans' } } }));
+    await fs.mkdir(path.join(runs, 'broken-run'));
+    await fs.writeFile(path.join(runs, 'broken-run', 'plan.json'), '{not json');
+    const result = await resolve(
+      ['--catalog', await catalogFile('google.json', googleCatalog()), '--history', runs]);
+    const named = families(result);
+    assert.ok(named.length > 0);
+    assert.ok(!named.includes('Tidal Serif'), named.join(', '));
   });
 
   it('stratifies the Fontsource route across variable and static families', async () => {

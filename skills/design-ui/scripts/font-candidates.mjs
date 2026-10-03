@@ -9,7 +9,9 @@
 //                                    [--catalog <file>] [--cache <file>] [--offline]
 //                                    [--history <file|dir>] [--seed <token>]
 // --history is a JSON array of family names, or a directory whose */contract-selected.json
-// files name the faces of earlier runs; a width sibling of a named family counts as it.
+// and */plan.json files name the faces of earlier runs; a width sibling of a named family
+// counts as it. Both routes exclude history faces; the Google route keeps a role's
+// candidates when every one of them is in history, so the role is never emptied by it.
 // Without --seed the deal draws a random seed.
 
 import { randomBytes } from 'node:crypto';
@@ -316,20 +318,28 @@ export function familyStem(family) {
   return String(family).toLowerCase().split(/\s+/).filter((word) => word && !WIDTH_WORDS.has(word)).join(' ');
 }
 
-/** Faces named by the contract-selected.json of each run directory under root. */
+/** The parsed JSON at file, or null when it is missing, unreadable or malformed. */
+async function readRunRecord(file) {
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Faces named by the contract-selected.json and plan.json of each run directory under root:
+ *  a direction run writes the first, design-ui's one pass the second. */
 async function historyFromRuns(root) {
   const families = [];
   for (const entry of await fs.readdir(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    let selected;
-    try {
-      selected = JSON.parse(await fs.readFile(path.join(root, entry.name, 'contract-selected.json'), 'utf8'));
-    } catch {
-      continue;
-    }
-    for (const role of ['display', 'body']) {
-      const family = selected?.contract?.type?.[role]?.family;
-      if (typeof family === 'string') families.push(family);
+    const selected = await readRunRecord(path.join(root, entry.name, 'contract-selected.json'));
+    const plan = await readRunRecord(path.join(root, entry.name, 'plan.json'));
+    for (const type of [selected?.contract?.type, plan?.type]) {
+      for (const role of ['display', 'body']) {
+        const family = type?.[role]?.family;
+        if (typeof family === 'string') families.push(family);
+      }
     }
   }
   return families;
@@ -338,16 +348,19 @@ async function historyFromRuns(root) {
 export function rankCandidates(passed, roleSpec, { provider, history: named, limit, prng }) {
   const stems = new Set(named.map(familyStem));
   const history = { includes: (family) => stems.has(familyStem(family)) };
+  const withoutHistory = passed.filter((entry) => !history.includes(entry.font.family));
   if (provider === 'google') {
-    const scored = passed.map((entry) => {
+    // History faces are excluded unless every candidate is in history, where
+    // excluding would leave the role with no face at all.
+    const pool = withoutHistory.length > 0 ? withoutHistory : passed;
+    const scored = pool.map((entry) => {
       const { score, matches } = tagScore(entry.font, roleSpec);
       // An unranked catalog gets no popularity term rather than a fabricated
       // one, leaving tag semantics to carry the ordering alone.
       const popularityPenalty = entry.font.popularityRank === null
         ? 0
         : Math.max(0, 1 - entry.font.popularityRank / 100);
-      const historyPenalty = history.includes(entry.font.family) ? 2 : 0;
-      return { ...entry, tagMatches: matches, score: score - popularityPenalty - historyPenalty };
+      return { ...entry, tagMatches: matches, score: score - popularityPenalty };
     });
     // Code-point order, not localeCompare: ties are common below the popularity
     // cut, and an ICU-locale-dependent tie break makes the same catalog and spec
@@ -356,7 +369,6 @@ export function rankCandidates(passed, roleSpec, { provider, history: named, lim
       || (a.font.family < b.font.family ? -1 : a.font.family > b.font.family ? 1 : 0));
     return scored.slice(0, limit);
   }
-  const withoutHistory = passed.filter((entry) => !history.includes(entry.font.family));
   return stratifiedPick(withoutHistory, limit, prng).map((entry) => ({ ...entry, tagMatches: [] }));
 }
 
