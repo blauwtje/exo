@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `docs/benchmarks/skill-model-field.md` records that a `model:` line in a skill's frontmatter does not keep the main session on that model: a skill loaded through the Skill tool ignores it, and a typed one reverts at the first background notification.
+- `docs/benchmarks/unit-route.md` compares the direct route, the unit route and a Sonnet main session on the lean-gates fixture, and records why the unit route did not land.
+
+### Changed
+
+- The solve-hard agents list their tools (`Read, Edit, Write, Glob, Grep, Bash, Skill`) instead of inheriting every tool, MCP tools included.
+
 ## 0.77.0 - 2026-10-03
 
 ### Added
