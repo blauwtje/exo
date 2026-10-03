@@ -41,12 +41,12 @@ Rung 3 of the skill's `## Route`, reached only when the user asks to see or choo
 
 Full comps are built only when the user asks to see directions whole.
 
-- Send one message holding a Write for every `$RUN/variant-<n>/index.html` and the `pick.mjs` start, under the Bash tool's `run_in_background`, because one message costs one round trip where a message per comp costs one each.
+- Send one message holding a Write for every `$RUN/variant-<n>/index.html`, because one message costs one round trip where a message per comp costs one each.
 - Build each variant from its contract inside the comp budget the `direction-preview` reference sets, because a delegate per comp costs its brief and its report for a file this session can type.
-- Run no capture, screenshot, or repair pass before the picker opens, as `## Before the picker` of `direction-preview` says: the picker is the first render of the comps.
+- Run `pick.mjs --check`, read every capture and `check-ui.json`, and repair before the picker opens, as `## Before the picker` of `direction-preview` says: the chooser is never the first to see a broken comp.
 - Fill the contracts of the directions still standing and write them as one container to `$RUN/finalists.json`.
 - Next, validate the set with `--check` to status ok before building any variant, then write `$RUN/labels.json`.
-- Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json" --frame` at the frame the surface needs: `390x844` for a phone-first surface and `1280x800` otherwise.
+- Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json"`, adding `--frame 390x844` only for a phone-first surface, since each comp otherwise fills the window width.
 - The picker waits for the last comp before it opens the tab, so the chooser never sees an empty card.
 - The picker prints the chosen index when the click arrives, or exits 3 and leaves the `--recommend` contract as the selection.
 - Freeze the selection with `--select --contracts "$RUN/finalists.json" --index <n> --space "$RUN/space.json" > "$RUN/contract-selected.json"` for Build, the critique, and QA.
