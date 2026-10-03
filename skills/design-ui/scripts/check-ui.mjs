@@ -525,7 +525,7 @@ function degrees(angle) {
 
 /** OKLCH lightness (0 to 1), chroma and hue of an oklch() token or of any token parseColor reads,
  *  via the Ottosson OKLab conversion; null otherwise. An oklch chroma of 100% is 0.4. */
-function oklchOf(token) {
+export function oklchOf(token) {
   if (/^oklch\(/i.test(token)) {
     const args = colorArguments(token);
     if (args.length < 3) return null;
