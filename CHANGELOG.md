@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.78.4 - 2026-10-03
+
 ### Changed
 
 - design-ui's default one pass now deals its own look: `direction.mjs --deal` draws a random seed, an accent hue clear of recent runs and a layout structure (navigation, body and lead) that skips the last runs' choices, and `--check-plan` holds the plan's palette and layout to that deal before the build.
