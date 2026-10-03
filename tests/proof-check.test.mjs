@@ -134,3 +134,71 @@ test('does not block while a background launch is pending, and blocks once it ha
   assert.equal(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, report]) }), '');
   assert.equal(JSON.parse(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, notice, report]) })).decision, 'block');
 });
+
+function typedMessage(text) {
+  return { type: 'user', message: { role: 'user', content: text } };
+}
+
+const SKILL_BODY = { type: 'user', isMeta: true, message: { role: 'user', content: [{ type: 'text', text: 'Base directory for this skill: /exo/skills/build\n\n# build' }] } };
+
+test('stays silent on a later typed turn that did not call build', () => {
+  const file = transcript([
+    typedMessage('run the plan'),
+    SKILL_CALL,
+    SKILL_BODY,
+    bashCall('toolu_bash1', 'node bin/report.js --status paid --file data/sample-orders.csv'),
+    bashResult('toolu_bash1', 'orders: 4, total: 913.50 EUR'),
+    finalReport('**Done:** wired --status into bin/report.js.\nProof: node bin/report.js --status paid --file data/sample-orders.csv -> orders: 4, total: 913.50 EUR'),
+    typedMessage('pull main'),
+    bashCall('toolu_bash2', 'git pull --ff-only'),
+    bashResult('toolu_bash2', 'Already up to date.'),
+    finalReport('**Done:** main is up to date.')
+  ]);
+  assert.equal(stopOutput({ transcript_path: file }), '');
+});
+
+const NOTIFICATION_TEXT = '<task-notification><tool-use-id>toolu_x</tool-use-id><status>completed</status></task-notification>';
+const NOTIFICATION = { type: 'user', origin: { kind: 'task-notification' }, turnOrigin: 'task_notification', message: { role: 'user', content: NOTIFICATION_TEXT } };
+
+function notifiedAgentTurn(notification, beforeReport) {
+  return [
+    typedMessage('run the plan'),
+    SKILL_CALL,
+    SKILL_BODY,
+    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Agent', id: 'toolu_x', input: { prompt: 'build task 1' } }] } },
+    { type: 'user', toolUseResult: {}, message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_x', content: [{ type: 'text', text: 'Async agent launched successfully.\nagentId: a1' }] }] } },
+    notification,
+    ...beforeReport,
+    finalReport('**Done:** wired --status into bin/report.js.')
+  ];
+}
+
+test('checks the build turn across the skill body, a launch and its task notification', () => {
+  const result = JSON.parse(stopOutput({ transcript_path: transcript(notifiedAgentTurn(NOTIFICATION, [])) }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /no Proof line/);
+});
+
+test('checks the build turn after Stop hook feedback', () => {
+  const feedback = { type: 'user', isMeta: true, message: { role: 'user', content: [{ type: 'text', text: 'Stop hook feedback:\nThe report claims Done with no Proof line.' }] } };
+  const result = JSON.parse(stopOutput({ transcript_path: transcript(notifiedAgentTurn(NOTIFICATION, [finalReport('Working on it.'), feedback])) }));
+  assert.equal(result.decision, 'block');
+});
+
+test('checks the build turn after a task notification with no origin fields', () => {
+  const olderNotification = { type: 'user', message: { role: 'user', content: NOTIFICATION_TEXT } };
+  const result = JSON.parse(stopOutput({ transcript_path: transcript(notifiedAgentTurn(olderNotification, [])) }));
+  assert.equal(result.decision, 'block');
+});
+
+test('passes a typed build turn whose Proof line its own Bash call backs', () => {
+  const file = transcript([
+    typedMessage('run the plan'),
+    SKILL_CALL,
+    SKILL_BODY,
+    bashCall('toolu_bash1', 'node bin/report.js --status paid --file data/sample-orders.csv'),
+    bashResult('toolu_bash1', 'orders: 4, total: 913.50 EUR'),
+    finalReport('**Done:** wired --status into bin/report.js.\nProof: node bin/report.js --status paid --file data/sample-orders.csv -> orders: 4, total: 913.50 EUR')
+  ]);
+  assert.equal(stopOutput({ transcript_path: file }), '');
+});
