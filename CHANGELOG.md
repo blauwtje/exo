@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- build's Stop-hook proof check runs only on a turn that called build since the last message the user typed, so a later plain turn such as a `git pull` is no longer blocked; tool results, task notifications, the skill body and hook feedback do not end a build turn.
+- The proof check matches a written path against each standalone token of the Proof command, or its absolute form, instead of any substring, and a `cp` or `mv` destination stops at the next shell separator, so `| head -1` no longer counts as session-written input.
+
 ## 0.78.0 - 2026-10-03
 
 ### Added
