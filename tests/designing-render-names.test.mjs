@@ -15,10 +15,9 @@ const VIEWPORTS = JSON.parse(
   fs.readFileSync(new URL('skills/design-ui/assets/viewports.json', ROOT), 'utf8')
 ).capture;
 
-// Mentions that name the script without running it: a prohibition and the
-// statement of which render path the skill uses.
+// Mentions that name the script without running it: the statement of which
+// render path the skill uses.
 const NON_INVOCATIONS = [
-  { file: 'skills/design-ui/references/direction-preview.md', sentence: /^- No `capture\.mjs`/ },
   { file: 'skills/design-ui/references/phase-detail.md', sentence: /the render path is `scripts\/capture\.mjs` and the critic$/ }
 ];
 
