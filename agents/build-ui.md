@@ -10,7 +10,7 @@ omitClaudeMd: true
 
 Budget: you have 35 turns total; read your scope's list under `**Reads by scope.**` first, batching the reads, then write; write your report by your thirtieth turn.
 
-- Do not render, screenshot, or start a browser; the reviewer renders.
+- Render only through the surface scope's capture step; the foundation and repair scopes render nothing.
 - Do not run a production build, a bundler, or a type check.
 - Do not read a reference or a section your scope's list below does not name.
 
@@ -24,6 +24,7 @@ Expect these inputs:
 - `REPO`: the repository root.
 - `SKILL`: the absolute skill directory.
 - `REFERENCES`: the rows of the skill's reference table whose predicate this scope meets.
+- `URL`: the surface's `file://` or `http://` url, for a surface scope that renders.
 
 Read each `FILES` range with Read's offset and limit, which an Edit to that file also requires.
 
@@ -61,7 +62,15 @@ Build the surface from its inventory slice on top of the foundation: every conte
 
 Never edit the foundation files; a missing primitive is reported, not added locally.
 
-Write `$RUN/build-<SCOPE>.md`: the paths written, the inventory items covered and any missing, the floor checks you could confirm from source, and the primitives you needed but the foundation lacks. At most 20 lines.
+Then capture, look and fix once:
+
+1. Run `node $SKILL/scripts/capture.mjs --url $URL --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders/<SCOPE>`.
+2. Read `$RUN/renders/<SCOPE>/post-build-390x844-fullpage.png` and `$RUN/renders/<SCOPE>/post-build-1440x900-fullpage.png`, and list each fault against the contract, your inventory slice and the floor.
+3. Repair every listed fault in one pass, with no second capture.
+
+Without a `URL`, or when the capture exits non-zero, skip these steps and report the capture as blocked.
+
+Write `$RUN/build-<SCOPE>.md`: the paths written, the faults the capture showed with `fixed` or `open`, the inventory items covered and any missing, the floor checks you could confirm from source, and the primitives you needed but the foundation lacks. At most 20 lines.
 
 **Repair scope (`repair:<surface>`).**
 

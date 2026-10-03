@@ -1,6 +1,6 @@
 # Phase 2: Direction
 
-Settle one direction before any production code changes, from Phase 1 evidence. The enemy is a neutral middle that no region carries. The overcorrection is a picker offered for a surface whose identity is already settled.
+Settle one direction before any production code changes, from Phase 1 evidence. The enemy is a neutral middle that no region carries. The overcorrection is a picker offered to a user who did not ask to choose.
 
 ## Every rung
 
@@ -8,12 +8,12 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Change no production code before a selection exists.
 - Outside an existing brand or design system, commit to one bold aesthetic direction before Build, because a neutral middle is not a direction.
 - The direction settles composition and visual material together: the contract names it and every region carries it.
-- Every rung other than 3 and 7 produces one direction, with no variants, no offer, and no selection gate.
+- Every rung other than 3 produces one direction, written as the skill's plan, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
 
-## Rungs 3 and 7
+## Rung 3
 
-Rungs 3 and 7 of the skill's `## Route` run contract, variant, selection.
+Rung 3 of the skill's `## Route`, reached only when the user asks to see or choose between looks, runs contract, variant, selection.
 
 - Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save.
 - Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
@@ -53,7 +53,7 @@ Full comps are built only when the user asks to see directions whole.
 
 ## A planning turn
 
-- A planning turn routes by `## Route` and makes the offer on rungs 3 and 7, because a direction frozen without it was chosen for the user.
+- A planning turn routes by `## Route` and makes the offer on rung 3 only, because the user asked to choose there.
 - On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The sketch answer` says.
 - On option B, it freezes the contract the user's letter named the same way.
 - On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
@@ -67,4 +67,5 @@ Full comps are built only when the user asks to see directions whole.
 ## Judgment
 
 - A settled identity outranks a new direction unless the user or the brief lets it be replaced: it produces one direction and no offer.
+- The user's own request for options is the only trigger for the offer; a landing page, an open identity or a full redesign is not.
 - A click in the sketch tab or the picker outranks this session's preference; an exit 3 makes the `--recommend` contract the selection without a further question.

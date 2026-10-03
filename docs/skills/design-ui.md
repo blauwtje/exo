@@ -8,11 +8,11 @@ A page, component or visual axis changes: typography, color, spacing, motion or 
 
 ## What you get
 
-- A chosen visual direction, frozen before anything is built, with the evidence it rests on.
-- The surface built against that one direction, then critiqued against it and repaired.
+- A short plan before anything is built: the colors, the fonts and an ASCII layout, checked against your request.
+- The whole page built in one pass by your own session, then screenshotted at 390 and 1440 wide, looked at, and fixed once.
 - Accessibility, contrast, reflow and reduced-motion floors met, never traded for the look.
-- Renders as evidence: a baseline before the first edit, one after the build, one after the repairs.
+- Only when you ask: looks to choose between in a browser tab, a survey of the existing surface, parallel builders, a separate critique and a QA check.
 
 ## Where its rules live
 
-`skills/design-ui/SKILL.md` carries the routing, the run directory and the five phases. Its `references/` folder holds the axis rules the phase that needs them opens: typography, color, composition, motion, accessibility, performance and the critique checklists.
+`skills/design-ui/SKILL.md` carries the routing, the one pass and what runs only on request. Its `references/` folder holds the axis rules the phase that needs them opens: typography, color, composition, motion, accessibility, performance and the critique checklists.

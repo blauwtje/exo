@@ -55,7 +55,7 @@ const PINNED_SENTENCES = {
     'This skill owns visual decisions only.',
     'When a `spec`, `build`, or `find-cause` stage called it, return control for product decisions, ordering, wiring, persistence, validation, proof, and reporting.',
     'When no stage called it, execute the visual-only request and report directly.',
-    'A user who leaves the look to this skill has not asked for text: rung 7 still offers.',
+    'Only a request from the user opens the picker: a landing page or an open identity does not.',
     'A component library in the manifest is not that evidence on its own',
   ],
   'skills/design-ui/references/intake.md': [

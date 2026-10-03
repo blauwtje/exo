@@ -5,6 +5,7 @@ The per-phase detail the skill body no longer carries: what Phase 1 establishes,
 ## Contents
 
 - [Context](#context)
+- [Full run](#full-run)
 - [The build floor](#the-build-floor)
 - [The critique dispatch](#the-critique-dispatch)
 - [QA](#qa)
@@ -20,11 +21,18 @@ The per-phase detail the skill body no longer carries: what Phase 1 establishes,
 - When the request does not name the surface's files, delegate locating its markup, styles, tokens and components to the `exo:locate-code` agent.
 - Read here only the ranges under the agent's `Read next:`.
 - Keep a list of every repository path and line range this phase read; Build hands it to each builder as `FILES`.
-- A full or bounded redesign runs none of this here.
+
+## Full run
+
+The full run starts only when the user asks for a survey, parallel builders, a critique or QA; it replaces the one pass's capture, look and fix steps.
+
+- Phase 1 runs none of `## Context` here.
 - This session first takes the baseline pair under `## The critique dispatch` when the surface renders.
 - The `exo:survey-ui` agent, dispatched with `RUN`, `SKILL`, `REPO`, `SURFACE`, `SIZE` and `REQUEST`, collects the baseline record, the content inventory and at least three subject observations into `$RUN/inventory.md` and `$RUN/files.md`.
-- Build hands `$RUN/files.md` to each builder as `FILES`.
+- Build hands `$RUN/files.md` to each builder as `FILES`, under `## Full run builders` of the `phase-build` reference.
 - Phase 3 rows of the skill's References table are read by the surface builder, never the main session, except the build row, which decides who builds.
+- Phase 4 follows `## The critique dispatch` after the build and the post-build checkpoint.
+- Phase 5 is a `general-purpose` delegate on `sonnet` running `## QA`; this session reads only that section's last two bullets, the close and the ignore entry, and quotes qa.md.
 
 ## The build floor
 
@@ -52,10 +60,10 @@ The numeric floor:
 
 ## The critique dispatch
 
-- A full or bounded redesign renders at three checkpoints and nowhere between them, each at 390px and 1440px: baseline before the first edit, post-build before the critique fixes, and final after them.
+- A full run renders at three checkpoints and nowhere between them, each at 390px and 1440px: baseline before the first edit, post-build before the critique fixes, and final after them.
 - Run each with `scripts/checkpoint.mjs --run "$RUN" --stage <checkpoint> --url <u> [--source <s>]`, where `<checkpoint>` is `baseline`, `post-build` or `final`.
 - Each pair lands as `<checkpoint>-390x844-fullpage.png` and `<checkpoint>-1440x900-fullpage.png` under `$RUN/renders`.
-- On rungs 3 and 7 of the skill's `## Route` the baseline stage follows the selection, because nothing renders before the offer is answered.
+- On rung 3 of the skill's `## Route` the baseline stage follows the selection, because nothing renders before the offer is answered.
 - A surface that did not render before the run takes no baseline stage.
 - The six captures, or four without a baseline pair, are the render budget for Phases 4 and 5.
 - The post-build checkpoint call writes `$RUN/critic-evidence.json`: check-ui and inspect-render findings, the render delta and the style inspection for that stage.
@@ -95,7 +103,7 @@ The numeric floor:
 - Exercise one interactive control.
 - The final render is a capture this pass takes itself.
 - Report the outcome numbers from the `performance-budget` reference beside the design, naming which were measured under throttling and which were not.
-- A redesign is complete only when the post-build and final pairs exist under `$RUN/renders/`, with the baseline pair before them for a surface that rendered before the run.
+- A full run is complete only when the post-build and final pairs exist under `$RUN/renders/`, with the baseline pair before them for a surface that rendered before the run.
 - Completion also needs source and rendered pixels changed between consecutive checkpoints.
 - Completion also needs the fixed faults to include one content or relationship fault and one craft fault.
 - With no render path, report visual verification as blocked, name what went unchecked, and do not report the design complete.

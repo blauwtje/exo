@@ -12,7 +12,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question.
 - Beyond the offer, ask one only while an unanswered fact blocks a decision the brief, the repository, and Phase 1 evidence cannot settle.
 - Name that decision inside the question.
-- Rungs 3 and 7 of `## Route` offer the preview once, sent where the direction is the open question.
+- Rung 3 of `## Route`, a user asking to see or choose between looks, gets the preview offer once; no other rung offers it.
 - The offer follows the question shape, and the user answers with the letter:
 
   ```text
@@ -40,7 +40,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 
 ## The run directory
 
-- Every run past a tweak writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript.
+- Every run past a tweak, the one pass included, writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript.
 - Redirect every `node scripts/*.mjs` call's stdout into `$RUN` and read the fields the session needs with `jq` or `sed -n`, never the whole file, because a JSON line that reaches the transcript is carried into every turn after it.
 - `$RUN` holds `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `font-candidates.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md.
 - `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` is what writes it.
@@ -50,7 +50,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 
 ## Symptoms
 
-A complaint names a fault in the words of the person who saw it, and this table says which file owns that symptom; the file's own row in the skill's References table says when it may be read. A symptom with no row here is diagnosed in Phase 4, not guessed at.
+A complaint names a fault in the words of the person who saw it, and this table says which file owns that symptom; the file's own row in the skill's References table says when it may be read. A symptom with no row here is diagnosed from the capture the one pass reads, not guessed at.
 
 | Reported as | Owned by |
 |---|---|
