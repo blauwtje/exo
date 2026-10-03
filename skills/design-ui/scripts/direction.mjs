@@ -34,10 +34,36 @@
 // --check rejects a changed hue, and a palette with no anchor within 30 degrees
 // of it unless an anchor's evidence is of kind brief or repository.
 // --check names the shape and the allowed vocabulary of anything it rejects.
+//
+//   node scripts/direction.mjs --deal [--seed <token>] [--kind page|app] [--history <dir>]
+//   node scripts/direction.mjs --check-plan --deal <deal.json> --plan <plan.json>
+//
+// --deal serves the one pass, which has no axis space: it prints
+// {"schemaVersion":1,"seed","kind","hue":<int>,"layout":{"nav","body","lead"}}.
+// The seed is random when absent; kind defaults to app. hue is the hue --plan
+// deals at index 0. Each layout slot is drawn from a built-in table per kind
+// on the stream <seed>:0:layout. That table departs from the
+// no-built-in-options stance above on purpose: a one pass has no Phase 1
+// evidence to deal from, so the table is a default that the plan may override
+// only with a named content reason. --history reads <dir>/*/deal.json, skips
+// any that is unreadable or malformed, and keeps the 3 most recent by mtime.
+// Each slot then avoids the values those runs used while one value remains.
+// The hue moves to the next index stream while it sits within 30 degrees of
+// one of their hues, for a bounded number of tries, then keeps index 0. A
+// missing <dir> counts as no history.
+// --check-plan reads plan.json {"seed","kind","hue","layout":{"nav","body",
+// "lead","override"?:{"reason"}},"palette":{"anchors":[{"role","hex"}]},
+// "type":{"display":{"family"},"body":{"family"}}} beside the deal.json it was
+// planned from. It reports plan-incomplete, hue-mismatch, hue-unused (no
+// anchor of chroma 0.01 or more within 30 degrees of the dealt hue) and one
+// layout-mismatch per slot that differs from the deal unless
+// layout.override.reason is non-empty.
 
 import process from 'node:process';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
@@ -402,6 +428,21 @@ function templateKitFindings(contract, space, variant) {
   return findings;
 }
 
+function hueGap(left, right) {
+  const gap = Math.abs(left - right) % 360;
+  return Math.min(gap, 360 - gap);
+}
+
+/** True when a color token is chromatic enough to read as a hue and sits within the tolerance of `hue`. */
+function colorCarriesHue(color, hue) {
+  const lch = typeof color === 'string' ? oklchOf(color) : null;
+  if (!lch || lch.chroma < 0.01) return false;
+  return hueGap(lch.hue, hue) <= HUE_TOLERANCE;
+}
+
+const hueUnused = (variant, hue) =>
+  finding('hue-unused', variant, `no palette anchor sits within ${HUE_TOLERANCE} degrees of the dealt oklch hue ${hue}; build the accent on it`);
+
 function hueFindings(contract, space, seed, dealtIndex, variant) {
   const hue = dealtHue(seed, dealtIndex);
   if (contract.palette?.hue !== hue) {
@@ -409,15 +450,9 @@ function hueFindings(contract, space, seed, dealtIndex, variant) {
   }
   const anchors = Array.isArray(contract.palette.anchors) ? contract.palette.anchors : [];
   const exempt = anchors.some((anchor) => KIT_EXEMPT_KINDS.includes(space.evidence?.[anchor?.evidence]?.kind));
-  const carries = anchors.some((anchor) => {
-    const color = typeof anchor === 'string' ? anchor : anchor?.color;
-    const lch = typeof color === 'string' ? oklchOf(color) : null;
-    if (!lch || lch.chroma < 0.01) return false;
-    const gap = Math.abs(lch.hue - hue);
-    return Math.min(gap, 360 - gap) <= HUE_TOLERANCE;
-  });
+  const carries = anchors.some((anchor) => colorCarriesHue(typeof anchor === 'string' ? anchor : anchor?.color, hue));
   if (exempt || carries) return [];
-  return [finding('hue-unused', variant, `no palette anchor sits within ${HUE_TOLERANCE} degrees of the dealt oklch hue ${hue}; build the accent on it`)];
+  return [hueUnused(variant, hue)];
 }
 
 function locateCandidate(manifest, role, family, candidateId) {
@@ -635,6 +670,137 @@ export function selectContract(container, index, { space, candidates = null }) {
   };
 }
 
+// --- one-pass deal ---------------------------------------------------------
+
+// The built-in layout table: the one departure from the no-built-in-options
+// stance, because a one pass has no axis space. A dealt value is the default;
+// the plan overrides it only by naming a content reason in layout.override.
+export const LAYOUT_TABLES = {
+  app: {
+    nav: ['top-bar', 'sidebar', 'rail', 'split-pane'],
+    body: ['table-first', 'master-detail', 'card-grid', 'board-columns', 'split-list-chart'],
+    lead: ['kpi-strip', 'filter-bar-first', 'summary-panel', 'chart-band']
+  },
+  page: {
+    nav: ['top-bar', 'inline-header', 'side-index', 'none'],
+    body: ['editorial-column', 'asymmetric-grid', 'card-grid', 'timeline', 'alternating-rows'],
+    lead: ['hero-band', 'split-hero', 'statement-strip', 'index-first']
+  }
+};
+
+const LAYOUT_SLOTS = ['nav', 'body', 'lead'];
+const RECENT_RUNS = 3;
+// With three recent hues at most 183 of the dealable hues are blocked, so 16
+// tries miss a free hue with odds near 1 in 10,000.
+const HUE_TRIES = 16;
+
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
+
+/** The {hue, layout} a deal.json records, or null when it is not one. */
+function dealRecord(parsed) {
+  if (!isPlainObject(parsed) || !Number.isInteger(parsed.hue) || !isPlainObject(parsed.layout)) return null;
+  if (!LAYOUT_SLOTS.every((slot) => typeof parsed.layout[slot] === 'string')) return null;
+  return { hue: parsed.hue, layout: parsed.layout };
+}
+
+/** The deal.json records of the most recent run directories under root, newest first. */
+export async function recentDeals(root) {
+  let entries;
+  try {
+    entries = await fs.readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw new UsageError(`--history '${root}' is not a readable directory`);
+  }
+  const deals = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const file = path.join(root, entry.name, 'deal.json');
+    let record;
+    let modified;
+    try {
+      record = dealRecord(JSON.parse(await fs.readFile(file, 'utf8')));
+      modified = (await fs.stat(file)).mtimeMs;
+    } catch {
+      continue;
+    }
+    if (record) deals.push({ ...record, modified });
+  }
+  deals.sort((left, right) => right.modified - left.modified);
+  return deals.slice(0, RECENT_RUNS);
+}
+
+function dealHue(seed, recent) {
+  for (let index = 0; index < HUE_TRIES; index += 1) {
+    const hue = dealtHue(seed, index);
+    if (recent.every((deal) => hueGap(deal.hue, hue) > HUE_TOLERANCE)) return hue;
+  }
+  return dealtHue(seed, 0);
+}
+
+function dealLayout(seed, kind, recent) {
+  const prng = createPrng(`${seed}:0:layout`);
+  const layout = {};
+  for (const slot of LAYOUT_SLOTS) {
+    const options = LAYOUT_TABLES[kind][slot];
+    const fresh = options.filter((value) => recent.every((deal) => deal.layout[slot] !== value));
+    const pool = fresh.length > 0 ? fresh : options;
+    layout[slot] = pool[prng.below(pool.length)];
+  }
+  return layout;
+}
+
+/** The one-pass deal: a hue and a layout, each steered off the recent runs. */
+export function dealOnePass({ seed, kind, recent = [] }) {
+  return { schemaVersion: 1, seed, kind, hue: dealHue(seed, recent), layout: dealLayout(seed, kind, recent) };
+}
+
+function missingPlanFields(plan) {
+  const missing = [];
+  if (!isNonEmptyString(plan?.seed)) missing.push('seed');
+  if (!Object.hasOwn(LAYOUT_TABLES, plan?.kind)) missing.push('kind');
+  if (!Number.isInteger(plan?.hue)) missing.push('hue');
+  for (const slot of LAYOUT_SLOTS) {
+    if (!isNonEmptyString(plan?.layout?.[slot])) missing.push(`layout.${slot}`);
+  }
+  const anchors = plan?.palette?.anchors;
+  if (!Array.isArray(anchors) || anchors.length === 0) missing.push('palette.anchors');
+  else {
+    anchors.forEach((anchor, index) => {
+      if (!isNonEmptyString(anchor?.role)) missing.push(`palette.anchors[${index}].role`);
+      if (!/^#[0-9a-f]{6}$/i.test(anchor?.hex ?? '')) missing.push(`palette.anchors[${index}].hex`);
+    });
+  }
+  for (const role of ['display', 'body']) {
+    if (!isNonEmptyString(plan?.type?.[role]?.family)) missing.push(`type.${role}.family`);
+  }
+  return missing;
+}
+
+/** Checks a one-pass plan.json against the deal.json it was planned from. */
+export function checkPlan(plan, deal) {
+  const missing = missingPlanFields(plan);
+  if (missing.length > 0) {
+    return { status: 'findings', findings: [finding('plan-incomplete', null, `plan.json lacks ${missing.join(', ')}`)] };
+  }
+  const findings = [];
+  if (plan.hue !== deal.hue) {
+    findings.push(finding('hue-mismatch', null, `plan.hue is ${plan.hue}, not the dealt hue ${deal.hue}`));
+  }
+  if (!plan.palette.anchors.some((anchor) => colorCarriesHue(anchor.hex, deal.hue))) {
+    findings.push(hueUnused(null, deal.hue));
+  }
+  if (!isNonEmptyString(plan.layout.override?.reason)) {
+    for (const slot of LAYOUT_SLOTS) {
+      if (plan.layout[slot] === deal.layout[slot]) continue;
+      findings.push(finding('layout-mismatch', null,
+        `layout.${slot} is '${plan.layout[slot]}', not the dealt '${deal.layout[slot]}'; keep it or give layout.override.reason`));
+    }
+  }
+  return { status: findings.length === 0 ? 'ok' : 'findings', findings };
+}
+
 // --- CLI -------------------------------------------------------------------
 
 function requireVariants(text) {
@@ -665,20 +831,52 @@ function headerText() {
   return `${header.join('\n')}\n`;
 }
 
+function requireSeed(text) {
+  const seed = text ?? randomBytes(4).toString('hex');
+  if (!SEED_TOKEN.test(seed)) throw new UsageError('--seed must be a plain file-name token');
+  return seed;
+}
+
+function requireKind(text) {
+  if (text === undefined) return 'app';
+  if (!Object.hasOwn(LAYOUT_TABLES, text)) throw new UsageError(`--kind must be page or app, received '${text}'`);
+  return text;
+}
+
+async function checkPlanMode(flags) {
+  const deal = dealRecord(await readJsonFlag(flags.deal, '--deal'));
+  if (!deal) throw new UsageError('--deal file is not a deal: it needs an integer hue and a nav/body/lead layout');
+  const plan = await readJsonFlag(flags.plan, '--plan');
+  return checkPlan(plan, deal);
+}
+
 async function main(argv) {
+  // --deal names the mode alone, and the deal.json file under --check-plan.
+  const dealTakesFile = argv.includes('--check-plan');
   const flags = parseFlags(argv, {
-    plan: 'boolean', check: 'boolean', select: 'boolean', shape: 'boolean',
-    seed: 'value', space: 'value', variants: 'value',
+    plan: dealTakesFile ? 'value' : 'boolean', check: 'boolean', select: 'boolean', shape: 'boolean',
+    deal: dealTakesFile ? 'value' : 'boolean', 'check-plan': 'boolean',
+    seed: 'value', space: 'value', variants: 'value', kind: 'value', history: 'value',
     contracts: 'value', candidates: 'value', index: 'value'
   });
-  const modes = ['plan', 'check', 'select', 'shape'].filter((mode) => flags[mode]);
-  if (modes.length !== 1) throw new UsageError('exactly one of --plan, --check, --select or --shape is required');
+  if (dealTakesFile) {
+    if (flags.check || flags.select || flags.shape) throw new UsageError('--check-plan runs alone, without --check, --select or --shape');
+    return checkPlanMode(flags);
+  }
+  const modes = ['plan', 'check', 'select', 'shape', 'deal'].filter((mode) => flags[mode]);
+  if (modes.length !== 1) throw new UsageError('exactly one of --plan, --check, --select, --deal, --check-plan or --shape is required');
 
   if (modes[0] === 'shape') return headerText();
 
+  if (modes[0] === 'deal') {
+    const seed = requireSeed(flags.seed);
+    const kind = requireKind(flags.kind);
+    const recent = flags.history ? await recentDeals(flags.history) : [];
+    return dealOnePass({ seed, kind, recent });
+  }
+
   if (modes[0] === 'plan') {
-    const seed = flags.seed ?? randomBytes(4).toString('hex');
-    if (!SEED_TOKEN.test(seed)) throw new UsageError('--seed must be a plain file-name token');
+    const seed = requireSeed(flags.seed);
     const variants = requireVariants(flags.variants);
     const space = await readJsonFlag(flags.space, '--space');
     return planDirections({ seed, variants, space });

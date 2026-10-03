@@ -2,10 +2,13 @@
 // space, contract validation, and the frozen selection. No dependency beyond node:*.
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { describe, it } from 'node:test';
-import { axisDistance, checkContracts, dealtHue, planDirections, selectContract, VOCABULARY }
-  from '../skills/design-ui/scripts/direction.mjs';
-import { jsonFixture, run, script } from './harness.mjs';
+import {
+  axisDistance, checkContracts, checkPlan, dealOnePass, dealtHue, LAYOUT_TABLES, planDirections, selectContract, VOCABULARY
+} from '../skills/design-ui/scripts/direction.mjs';
+import { fixture, jsonFixture, run, script } from './harness.mjs';
 
 const DIRECTION = script('direction.mjs');
 
@@ -530,7 +533,8 @@ describe('direction.mjs usage contract', () => {
     assert.equal(result.stderr, '');
     assert.ok(result.stdout.startsWith('Deal seeded, divergent direction axes'), result.stdout.slice(0, 80));
     assert.ok(result.stdout.includes('below: {"schemaVersion":1,"axes":{<axis>:{"values":[{"id":<token>,'));
-    assert.ok(result.stdout.endsWith('--check names the shape and the allowed vocabulary of anything it rejects.\n'));
+    assert.ok(result.stdout.includes('--check names the shape and the allowed vocabulary of anything it rejects.\n'));
+    assert.ok(result.stdout.endsWith('layout.override.reason is non-empty.\n'));
     assert.ok(!result.stdout.includes('import '), 'the header stops before the imports');
   });
 
@@ -563,6 +567,177 @@ describe('direction.mjs usage contract', () => {
   it('exits 2 on a file that is not JSON', async () => {
     const spaceFile = await jsonFixture('space.json', space());
     const result = await run(DIRECTION, ['--plan', '--seed', 'atlas', '--space', `${spaceFile}.missing`]);
+    assert.equal(result.code, 2);
+    assert.equal(result.stdout, '');
+  });
+});
+
+const hueGap = (left, right) => {
+  const gap = Math.abs(left - right) % 360;
+  return Math.min(gap, 360 - gap);
+};
+
+/** Writes each deal as <root>/<name>/deal.json with an mtime `age` seconds in the past. */
+async function historyFixture(runs) {
+  const root = await fixture();
+  for (const { name, deal, age } of runs) {
+    await fs.mkdir(path.join(root, name));
+    const file = path.join(root, name, 'deal.json');
+    await fs.writeFile(file, typeof deal === 'string' ? deal : JSON.stringify(deal));
+    const when = new Date(Date.UTC(2026, 0, 1) - age * 1000);
+    await fs.utimes(file, when, when);
+  }
+  return root;
+}
+
+describe('direction.mjs --deal', () => {
+  it('repeats the same deal for a fixed seed, with the --plan hue and the app table by default', async () => {
+    const first = await run(DIRECTION, ['--deal', '--seed', 'atlas']);
+    const second = await run(DIRECTION, ['--deal', '--seed', 'atlas']);
+    assert.equal(first.code, 0, first.stderr);
+    assert.equal(first.stdout, second.stdout);
+    const deal = JSON.parse(first.stdout);
+    assert.deepEqual(Object.keys(deal), ['schemaVersion', 'seed', 'kind', 'hue', 'layout']);
+    assert.equal(deal.kind, 'app');
+    assert.equal(deal.hue, dealtHue('atlas', 0));
+    for (const slot of ['nav', 'body', 'lead']) assert.ok(LAYOUT_TABLES.app[slot].includes(deal.layout[slot]), slot);
+  });
+
+  it('draws a random seed when --deal gets none', async () => {
+    const seeds = [];
+    for (let round = 0; round < 2; round += 1) {
+      const result = await run(DIRECTION, ['--deal', '--kind', 'page']);
+      assert.equal(result.code, 0, result.stderr);
+      seeds.push(JSON.parse(result.stdout).seed);
+    }
+    assert.match(seeds[0], /^[0-9a-f]{8}$/);
+    assert.notEqual(seeds[0], seeds[1]);
+  });
+
+  it('deals each kind only from its own table and reaches every value of it', () => {
+    for (const kind of ['app', 'page']) {
+      const seen = { nav: new Set(), body: new Set(), lead: new Set() };
+      for (let round = 0; round < 60; round += 1) {
+        const deal = dealOnePass({ seed: `seed-${round}`, kind });
+        for (const slot of Object.keys(seen)) seen[slot].add(deal.layout[slot]);
+      }
+      for (const [slot, values] of Object.entries(seen)) {
+        assert.deepEqual([...values].sort(), [...LAYOUT_TABLES[kind][slot]].sort(), `${kind} ${slot}`);
+      }
+    }
+  });
+
+  it('avoids the slot values and near hues of the three most recent runs', async () => {
+    const seed = 'atlas';
+    const layout = (nav, body, lead) => ({ nav, body, lead });
+    const root = await historyFixture([
+      { name: 'a', age: 10, deal: { hue: dealtHue(seed, 0), layout: layout('top-bar', 'table-first', 'kpi-strip') } },
+      { name: 'b', age: 20, deal: { hue: 120, layout: layout('sidebar', 'master-detail', 'filter-bar-first') } },
+      { name: 'c', age: 30, deal: { hue: 240, layout: layout('rail', 'card-grid', 'summary-panel') } },
+      { name: 'd', age: 40, deal: { hue: 0, layout: layout('split-pane', 'board-columns', 'chart-band') } },
+      { name: 'e', age: 1, deal: '{ not json' },
+      { name: 'f', age: 2, deal: { hue: 'red', layout: layout('a', 'b', 'c') } }
+    ]);
+    const result = await run(DIRECTION, ['--deal', '--seed', seed, '--history', root]);
+    assert.equal(result.code, 0, result.stderr);
+    const deal = JSON.parse(result.stdout);
+    assert.equal(deal.layout.nav, 'split-pane', 'the fourth run is older than the three counted');
+    assert.ok(['board-columns', 'split-list-chart'].includes(deal.layout.body), deal.layout.body);
+    assert.equal(deal.layout.lead, 'chart-band');
+    for (const recentHue of [dealtHue(seed, 0), 120, 240]) {
+      assert.ok(hueGap(deal.hue, recentHue) > 30, `hue ${deal.hue} near ${recentHue}`);
+    }
+  });
+
+  it('falls back to the full slot list once recent runs used every value', () => {
+    const recent = LAYOUT_TABLES.app.nav.map((nav) => ({ hue: 0, layout: { nav, body: 'card-grid', lead: 'kpi-strip' } }));
+    const deal = dealOnePass({ seed: 'atlas', kind: 'app', recent });
+    assert.ok(LAYOUT_TABLES.app.nav.includes(deal.layout.nav));
+  });
+
+  it('reads a missing history directory as no history', async () => {
+    const root = await fixture();
+    const result = await run(DIRECTION, ['--deal', '--seed', 'atlas', '--history', path.join(root, 'absent')]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), dealOnePass({ seed: 'atlas', kind: 'app' }));
+  });
+});
+
+describe('direction.mjs --check-plan', () => {
+  const deal = () => ({
+    schemaVersion: 1, seed: 'atlas', kind: 'app', hue: 30,
+    layout: { nav: 'sidebar', body: 'table-first', lead: 'kpi-strip' }
+  });
+  const plan = () => ({
+    seed: 'atlas',
+    kind: 'app',
+    hue: 30,
+    layout: { nav: 'sidebar', body: 'table-first', lead: 'kpi-strip' },
+    palette: { anchors: [{ role: 'ground', hex: '#1a1a1a' }, { role: 'accent', hex: '#c0392b' }] },
+    type: { display: { family: 'Fraunces' }, body: { family: 'Public Sans' } }
+  });
+  const codesFor = (edit) => {
+    const copy = plan();
+    edit(copy);
+    return checkPlan(copy, deal()).findings.map((entry) => entry.code);
+  };
+
+  it('passes a plan that keeps the deal and carries the hue', async () => {
+    const dealFile = await jsonFixture('deal.json', deal());
+    const planFile = await jsonFixture('plan.json', plan());
+    const result = await run(DIRECTION, ['--check-plan', '--deal', dealFile, '--plan', planFile]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { status: 'ok', findings: [] });
+  });
+
+  it('exits 1 with the findings on stdout when the plan drifts', async () => {
+    const dealFile = await jsonFixture('deal.json', deal());
+    const planFile = await jsonFixture('plan.json', { ...plan(), hue: 200 });
+    const result = await run(DIRECTION, ['--check-plan', '--deal', dealFile, '--plan', planFile]);
+    assert.equal(result.code, 1, result.stderr);
+    assert.equal(JSON.parse(result.stdout).status, 'findings');
+  });
+
+  it('reports hue-mismatch for a changed hue', () => {
+    assert.deepEqual(codesFor((copy) => { copy.hue = 31; }), ['hue-mismatch']);
+  });
+
+  it('reports hue-unused when no chromatic anchor sits near the dealt hue', () => {
+    assert.deepEqual(codesFor((copy) => { copy.palette.anchors[1].hex = '#2b7bc0'; }), ['hue-unused']);
+    assert.deepEqual(codesFor((copy) => { copy.palette.anchors[1].hex = '#f4f1ea'; }), ['hue-unused']);
+  });
+
+  it('reports one layout-mismatch per changed slot', () => {
+    assert.deepEqual(codesFor((copy) => { copy.layout.nav = 'rail'; copy.layout.lead = 'chart-band'; }),
+      ['layout-mismatch', 'layout-mismatch']);
+    assert.deepEqual(codesFor((copy) => { copy.layout.nav = 'rail'; copy.layout.override = { reason: '  ' }; }),
+      ['layout-mismatch']);
+  });
+
+  it('accepts a changed layout that names an override reason', () => {
+    assert.deepEqual(codesFor((copy) => {
+      copy.layout.body = 'board-columns';
+      copy.layout.override = { reason: 'orders move through four fixed stages' };
+    }), []);
+  });
+
+  it('reports plan-incomplete for missing fields', () => {
+    const cases = [
+      (copy) => { delete copy.seed; },
+      (copy) => { copy.kind = 'site'; },
+      (copy) => { delete copy.hue; },
+      (copy) => { delete copy.layout.body; },
+      (copy) => { copy.palette.anchors = []; },
+      (copy) => { copy.palette.anchors[0].hex = 'oklch(0.2 0 0)'; },
+      (copy) => { delete copy.type.display; }
+    ];
+    for (const edit of cases) assert.deepEqual(codesFor(edit), ['plan-incomplete']);
+  });
+
+  it('refuses a deal file that is not a deal', async () => {
+    const dealFile = await jsonFixture('deal.json', { hue: 30 });
+    const planFile = await jsonFixture('plan.json', plan());
+    const result = await run(DIRECTION, ['--check-plan', '--deal', dealFile, '--plan', planFile]);
     assert.equal(result.code, 2);
     assert.equal(result.stdout, '');
   });
