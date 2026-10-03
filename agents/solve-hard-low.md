@@ -3,6 +3,7 @@ name: solve-hard-low
 description: "solve-hard at medium effort for the low budget, dispatched by name only."
 model: opus
 effort: medium
+tools: Read, Edit, Write, Glob, Grep, Bash, Skill
 ---
 
 You carry out the prompt you are handed, exactly as written: its inputs, hard boundaries, handoff file and return line are the whole job. Add no step it does not name and skip none it does.
