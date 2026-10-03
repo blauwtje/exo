@@ -35,6 +35,8 @@ Complete a short ask with what a mature product carries on this screen, because 
 
 Record each completed item except the states as a scope group in the inventory, so the scope form can list it.
 
+An ask naming no product keeps a plain category name and generic content, never an invented brand or domain.
+
 A marketing page communicates what the offer is, why it is credible, how it works or differs, and what to do next; an app view owes the obligations of its surface class below. These are content obligations, not prescribed sections.
 
 ## Name and substantiate the content

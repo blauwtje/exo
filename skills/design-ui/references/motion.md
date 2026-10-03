@@ -23,13 +23,13 @@ Choreograph motion as part of the direction, not a garnish. The enemy is unowned
 
 ## Motion thesis
 
-Write the thesis as one sentence before the first animation: how the chosen mood moves. Every build then meets this bar, because rich motion is a level, not a look:
+Write the thesis as one sentence before the first animation: how the chosen mood moves. Every screen carries this whole bar, each item in a home the scope gives it, because rich motion is a level, not a look:
 
 - regions enter staggered from their container, focal region first, content visible at rest;
 - key figures count up to their value on first view;
 - tabs, segmented controls and navigation move the active mark with a sliding indicator;
-- view changes run view transitions on the elements that persist;
-- detail, filter and edit panels slide in from their edge and leave faster.
+- a section or view switch runs a view transition on the elements that persist;
+- a detail, filter or edit panel slides in from its edge and leaves faster.
 
 Beneath the bar, transitions on hover, focus, active and open states are the floor at every size.
 

@@ -11,6 +11,8 @@ Design so the result cannot be mistaken for a template: every visual choice trac
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design. It also fails when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
+Every screen ships the scope `references/composition.md` completes and the motion bar of `references/motion.md`, whatever the mood.
+
 **After a compaction notice**, see `## The run directory` of `references/intake.md`.
 
 ## Size the request
@@ -39,7 +41,7 @@ A surface neither list names takes rung 6, and the report names rung 7 as the ri
 The references call these steps Phase 1 to 5.
 
 1. **Context.** Read `## Context`, `## The build floor`, `## Precedence` and `## Judgment` of `references/phase-detail.md`, once; `## Context` guides this step. A full or bounded redesign takes the baseline pair first and hands Phase 1 to the `exo:survey-ui` agent.
-2. **Direction.** Decide it in this session, before any production code changes, under `references/phase-direction.md`.
+2. **Direction.** After one line each stating the scope groups and the mood, decide it in this session, before any production code changes, under `references/phase-direction.md`.
 3. **Build.** Read `references/phase-build.md` before the first edit or builder dispatch; follow `## The build floor` of `references/phase-detail.md`, already read at Phase 1.
 4. **Critique the render.** A full or bounded redesign follows `## The critique dispatch` of `references/phase-detail.md`, run after the build and the post-build checkpoint; the baseline pair was taken before the first edit.
 5. **Check.** A `general-purpose` delegate on `sonnet` runs `## QA` of `references/phase-detail.md`, with `RUN`, `SKILL` and `REPO`, and writes `$RUN/qa.md`; this session's close quotes qa.md.
@@ -62,7 +64,7 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 | `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list` and `## Pairing`; Phase 3 `## Roles`, `## Scale`, `## Micro rules — the craft floor`. |
 | `references/controls.md` | Phase 3, before styling a control. |
 | `references/implementation.md` | Phase 3, before writing CSS or component code, whole. |
-| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the recorded decision; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, and `## Continuity contract`, `## Scroll and view transitions` only when the build uses one; add `## Judgment` when the build uses an animation library. |
+| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the bar; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, `## Scroll and view transitions`, and `## Continuity contract` only when the build uses one; add `## Judgment` when the build uses an animation library. |
 | `references/interaction-qa.md` | Phase 3 for controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
 | `references/feedback-and-status.md` | Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Phase 3, the `## Slop tropes` section, before finishing a treatment; Phase 4 whole, by `exo:critique-ui` only; this session reads its faults.md. |

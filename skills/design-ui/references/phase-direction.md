@@ -13,8 +13,8 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 ## Mood to look
 
-- The mood sets palette commitment, type character, corner and stroke shape, density and motion feel together.
-- Crisp and businesslike: a restrained accent, compact rhythm, sharp corners, tabular figures and short decisive motion.
+- The mood sets palette commitment, type character, corner and stroke shape, density and motion feel, never the amount of motion.
+- Crisp and businesslike: a restrained accent, compact rhythm, sharp corners, tabular figures and snappy precise easing on every motion of the motion bar.
 - Friendly and playful: committed color, rounded shapes, a warm humanist face and lively overshoot on entrances.
 - Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
 - Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.

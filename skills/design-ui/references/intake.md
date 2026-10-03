@@ -26,7 +26,6 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Send no form when no answer can arrive, as in a headless run.
 - Without a Scope answer, build every group.
 - Without a Mood answer off rung 5, use the mood the ask names, else the best-fitting mood.
-- State the scope groups and the mood in one line each before Direction.
 - Rungs 3 and 7 of `## Route` offer the preview once, as the form's last question, so the user answers one form.
 - The offer follows the question shape, and the user answers with the letter:
 
