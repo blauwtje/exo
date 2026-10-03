@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**design-ui now builds one complete page in this session by default; the picker, survey, builder split, critique and QA run only when you ask for them.**
+
+### Changed
+
+- design-ui builds a page in one pass by default: a short plan of colors, fonts and an ASCII layout, checked against the request, then the build, a capture at 390 and 1440 wide that the builder looks at, and one fix pass; `build-ui` surface scopes run the same capture and fix pass.
+- design-ui's direction picker shows each comp as a complete, scrollable page in its own tab at full size, and refuses to open until `pick.mjs --check` has captured every comp at 390 and 1440 and those captures were viewed.
+
 ## 0.78.1 - 2026-10-03
 
 ### Fixed
