@@ -33,7 +33,19 @@ Complete a short ask with what a mature product carries on this screen, because 
 - rich components chosen for this content's relationships, never a fixed kit;
 - every reachable state of every region.
 
+An app screen, such as an admin, dashboard or tool view, always carries this minimum, whatever the Scope answer:
+
+- navigation with an icon on each item;
+- search;
+- a user menu;
+- stat counters, each with a sparkline;
+- at least one chart;
+- a table with avatars, status badges, sortable columns, and row checkboxes that open a bulk action bar;
+- a detail panel.
+
 Record each completed item except the states as a scope group in the inventory, so the scope form can list it.
+
+On an app screen, record each minimum item as its own fixed scope group, so the plan check lists it and fails a plan that misses one.
 
 An ask naming no product keeps a plain category name and generic content, never an invented brand or domain.
 

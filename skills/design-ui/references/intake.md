@@ -15,9 +15,9 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Rungs 3, 5 and 6 of `## Route` show the completed scope as one form, after Phase 1 and before Direction.
 - The form holds a multi-select Scope question and a single-select Mood question, sent together.
 - Each Scope option is one completed scope group from the inventory, at most four.
-- Reachable states are never a Scope option, because every build carries them.
+- Reachable states and an app screen's fixed scope groups are never a Scope option, because every build carries them.
 - A Scope answer that ticks every option, ticks none, or says decide yourself builds every group.
-- A Scope answer that ticks some options builds only the ticked groups.
+- A Scope answer that ticks some options builds the ticked groups plus every fixed group.
 - The Mood options are crisp and businesslike, friendly and playful, calm and luxurious, bold and expressive.
 - Put the mood that best fits the product first, as option A, and recommend it.
 - Rung 5 drops the Mood question, because its settled identity already fixes the look.
