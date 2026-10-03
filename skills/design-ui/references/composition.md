@@ -61,7 +61,7 @@ For every marketing claim, include at least one mechanism, constraint, example, 
 
 Write at least three Phase 1 observations as `evidence → structural or content behavior → recurring echo` — one changing composition or navigation, one changing how real content or data is presented; palette and type alone do not qualify. The form, not a style to copy: `repair chronology → time-anchored work surface → timestamps align filters and detail`.
 
-These mappings are the subject system. If removing the logo, headline, and focal element leaves a layout that accepts a competitor unchanged, the system failed.
+These mappings are the subject system: they shape structure and content, never a theme, metaphor or prop the user did not ask for.
 
 ## Choose structures from relationships
 
@@ -139,7 +139,6 @@ On a touch-first surface, reachability is physical: a hand holding the device sw
 - [ ] Does each region add new information or a new relationship rather than paraphrase the previous one?
 - [ ] Can every large whitespace area and every repeated container name its job?
 - [ ] Does mobile preserve substance and the action path rather than hide the difficult regions?
-- [ ] After covering the brand and focal element, would a subject swap visibly break the remaining composition?
 - [ ] For a bounded redesign, does the result differ from the recorded baseline on the axes the complaint named?
 
 ## Judgment

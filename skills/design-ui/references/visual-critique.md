@@ -50,10 +50,11 @@ Read `$RUN/critic-evidence.json`'s `renderDelta`, the baseline-to-post-build del
 A cliché list alone convicts nothing, and the slop tropes below are defaults awaiting provenance, not bans. A rendered pattern is a finding when any one of these holds:
 
 - No direction-contract field requires it.
-- No subject mapping explains it.
+- No content relationship or mood explains it.
+- It is a theme, metaphor or prop drawn from the subject that the user did not ask for.
 - The same anatomy serves unrelated content relationships.
 - It is the only source of atmosphere or hierarchy.
-- Removing it leaves the page's subject fit unchanged.
+- Removing it leaves the page's hierarchy and finish unchanged.
 
 Repair by changing the contract or the affected relationship, not by substituting another known decorative pattern.
 
@@ -102,7 +103,7 @@ Target: src/styles/tide-table.css, .tide-footnotes { padding-inline }
 Repair: raise padding-inline from 0 to the page gutter token.
 ```
 
-The set covers at least one content or relationship fault, missing content, a broken relationship, or a missing subject mapping, and at least one craft fault, absent atmosphere, motion below the bar, untransitioned states, or an unthemed browser finish.
+The set covers at least one content or relationship fault, missing content or a broken relationship, and at least one craft fault, absent atmosphere, motion below the bar, untransitioned states, or an unthemed browser finish.
 
 "Looks polished or premium" is not a finding.
 
@@ -111,7 +112,7 @@ Fix them and render again. A redesign also removes one accessory with no content
 ## Two whole-page tests
 
 - Cover the focal element. Full or bounded redesign: three or more supporting subject decisions and every supporting region's content job remain; new piece: every subject decision it carries stays visible.
-- The substitution test: swap in a competitor's name and subject. Does the design resist, or fit them just as well?
+- The finish test: does every region read polished, modern and cleanly finished in the mood, free of an unrequested subject theme or prop?
 
 ## Craft sweep, against the render
 
@@ -143,6 +144,6 @@ Read `$RUN/critic-evidence.json`'s `blocking`, `clipped` and `overlap` findings,
 ## Judgment
 
 - The hard floor still requires the accessibility cost to be disclosed when a brief choice breaks it.
-- Subject evidence outranks familiarity, and content preservation outranks deleting a flagged container.
+- Polish in the chosen mood outranks novelty, and content preservation outranks deleting a flagged container.
 - A rendered finding outranks a code-read suspicion; a measured number outranks both.
 - One fault may name the direction itself; the repair is then a return to direction, not another polish pass.

@@ -29,7 +29,7 @@ background:
   var(--ground);
 ~~~
 
-**Grain** — a subject-derived texture (paper, print, film) the contract names; the overlay is a pseudo-element, so the ground stays one declaration and the texture one opacity token. The grain is perceptible at 390px and 1440px, or it is removed.
+**Grain** — a texture the mood calls for (paper, print, film) the contract names; the overlay is a pseudo-element, so the ground stays one declaration and the texture one opacity token. The grain is perceptible at 390px and 1440px, or it is removed.
 
 ~~~css
 .ground::after {

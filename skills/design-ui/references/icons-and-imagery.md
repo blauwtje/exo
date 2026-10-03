@@ -1,6 +1,6 @@
 # Icons and Imagery
 
-Draw the subject, do not decorate around it. The enemy is the transferable asset: the 24×24 round-cap icon set every product now wears, the blob-people illustration, the stock photograph that fits any competitor unchanged. The overcorrection is a bespoke mark nobody recognises, or an image so ambitious it arrives after the reader left.
+Show the product's real content, do not decorate around it. The enemy is the transferable asset: the 24×24 round-cap icon set every product now wears, the blob-people illustration, the stock photograph that fits any competitor unchanged. The overcorrection is a bespoke mark nobody recognises, or an image so ambitious it arrives after the reader left.
 
 The `visual-direction` reference decides whether a region gets an image and what job it does. This file decides how the mark or the picture is built and what the render must prove.
 
@@ -51,7 +51,7 @@ Generic affordances such as close, search and chevron may come from one consiste
 
 ## Illustration and photography
 
-Imagery depicts the subject's actual artifacts, environment, or output. Apply the substitution test from the `visual-critique` reference to the asset alone: if the same picture would fit a competitor unchanged, the ladder in the `implementation` reference replaces it rather than deleting the region. Generated illustration filling a region and stock isometric scenes are transferable by construction; a labelled placeholder plus a request for the real material beats both.
+Imagery depicts the product's actual screens, environment, or output, never a prop drawn from the subject as decoration. A stock picture that would fit a competitor unchanged is replaced up the ladder in the `implementation` reference, not deleted. Generated illustration filling a region and stock isometric scenes are transferable by construction; a labelled placeholder plus a request for the real material beats both.
 
 ## Charts as visual material
 

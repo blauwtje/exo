@@ -69,9 +69,9 @@ One coherent physical logic per direction: state the light source and the lighti
 - **Hard offset** — solid shadows and thick strokes, for a neobrutalist direction.
 - **Layered translucency** — blur and glass, only over real changing content.
 
-The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a subject-derived texture — grain, paper, graph grid, planning, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in the `motion` reference.
+The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a fine texture the mood calls for — grain, paper, graph grid, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in the `motion` reference.
 
-The focal point may earn what a tell denies elsewhere — a glow where the subject emits light, glass over its layered content, one gradient with named hue logic — when an observation and a named job back it.
+The focal point may earn what a tell denies elsewhere — a glow, glass over its layered content, one gradient with named hue logic — when a named job backs it.
 
 ## Visual material and imagery
 
@@ -83,7 +83,7 @@ Inventory before invention: list what the repository and subject already own —
 
 ## Whole-page visual logic
 
-The focal point leads, and supporting regions carry real art direction rather than generic backing: the same material grammar at lower intensity, their own content job, and a subject mapping that survives covering the focal element.
+The focal point leads, and supporting regions carry real art direction rather than generic backing: the same material grammar at lower intensity and their own content job.
 
 - When a tell from the `visual-critique` reference removes a default, replacement parity applies: the content keeps or gains hierarchy, specificity, atmosphere, relationship clarity, or interaction feedback, and deletion alone never passes.
 - A replacement chosen for being the known non-default is still a default, so every replacement traces to Phase 1 evidence, not to this list's negation.

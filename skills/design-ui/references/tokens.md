@@ -56,6 +56,6 @@ Outside a token pipeline, such as a single-file deliverable or a small repositor
 ## Judgment
 
 - Existing repository tokens, tiers, naming, and build configuration outrank every default here; extend them by role.
-- Architecture transfers, values do not: adopting another system's ladder is craft, adopting its hues is the transferable default this skill exists to prevent.
+- Architecture transfers, values do not: adopting another system's ladder is craft, adopting its hues borrows another product's identity.
 - A verified contrast ratio outranks a generated ramp's promise, and a sampled pixel outranks a computed value.
 - The inventory in the `composition` reference decides the roles, not this ladder.

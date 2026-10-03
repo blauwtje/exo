@@ -1,6 +1,6 @@
 # design-ui
 
-Owns how a surface looks, so the result cannot be mistaken for a template.
+Owns how a surface looks, so the result reads polished, modern and cleanly finished in the chosen mood.
 
 ## When it fires
 

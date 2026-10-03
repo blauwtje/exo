@@ -116,7 +116,7 @@ Theme every browser surface the page shows; these small details are what separat
 When a critique tell removes decoration, climb this ladder rather than deleting the region:
 
 1. A repository asset.
-2. A subject artifact drawn with SVG, CSS, or canvas.
+2. A diagram of real content drawn with SVG, CSS, or canvas.
 3. Real data as an instrument.
 4. A typographic or compositional treatment.
 5. Omitting the region, last.

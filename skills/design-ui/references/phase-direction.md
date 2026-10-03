@@ -20,7 +20,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
 - Pick hues, faces and radii yourself from the mood and the product, not from a seed or a stock default.
 - Record the mood in the contract's rationale, or in the plan on the one pass, and trace each look value to it.
-- Invent no company, brand story or metaphor as a theme, because the mood and the content carry the look.
+- Invent no company, brand story, metaphor or subject prop as a theme unless the user asks, because the mood and content carry the look.
 
 ## Rung 3
 
