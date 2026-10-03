@@ -302,10 +302,10 @@ describe('check-ui.mjs static subset', () => {
   }
 
   it('reports a font-family naming an overused family or its superfamily once', async () => {
-    const tells = await tellsFor('.card {\n  font-family: "Inter Tight", system-ui, sans-serif;\n}\n');
+    const tells = await tellsFor('.card {\n  font-family: "Roboto Slab", system-ui, sans-serif;\n}\n');
     assert.deepEqual(tells.map((entry) => entry.type), ['overused-font']);
     assert.equal(tells[0].confidence, 'definite');
-    assert.equal(tells[0].measured, 'Inter Tight');
+    assert.equal(tells[0].measured, 'Roboto Slab');
   });
 
   it('reports transition-property: all as transition-all', async () => {
@@ -1012,7 +1012,6 @@ describe('argument and JSON contracts', () => {
     ['inspect-styles.mjs', ['--url', 'file:///tmp/a.html', '--viewport', 'wide']],
     ['check-ui.mjs', []],
     ['direction.mjs', ['--plan', '--seed', 'a', '--space', '/tmp/s.json', '--variants', '9']],
-    ['font-candidates.mjs', ['--spec', '/tmp/spec.json', '--source', 'typekit']],
     ['inspect-render.mjs', ['--image', '/tmp/a.png', '--tile', '4']]
   ];
 

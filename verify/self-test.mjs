@@ -231,7 +231,7 @@ const SCENARIOS = [
     'validate the set with `--check` to status ok before building any variant',
     'render at least two variants and pick the better one') },
   { name: 'dropped-font-provenance', mutate: (root) => replaceText(root, 'skills/design-ui/references/typography.md',
-    'Do not name a new typeface from memory.', 'Choose a face you know works.') },
+    'Record family, provenance `chosen`, the matched traits as `matchEvidence`', 'Record the family') },
   { name: 'dropped-quiet-region-jobs', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
   { name: 'broken-skill-script', mutate: (root) =>

@@ -65,7 +65,7 @@ Findings the render can prove without taste:
 - Uniform spacing where nothing groups.
 - Flat hierarchy: adjacent type steps under a 1.25 ratio, or headings that are merely bold body.
 - A single family whose display and body are separated by neither 200 weight units nor a width axis.
-- A face with no candidate, repository, or brief provenance.
+- A face with no chosen, repository, or brief provenance.
 - Emoji doing icon duty and mixed icon families (`scripts/check-ui.mjs` reports both).
 - Placeholder boxes where imagery was promised.
 - Numbered markers on content that is not a sequence.
@@ -86,7 +86,7 @@ By category:
 - Grounds: a gradient whose hue swings across the page, a saturated halo or glow in the middle, a gradient wash used as decoration.
 - Icons and imagery: emoji outside a stated brand use, and SVG drawings invented to fill a region; a labelled placeholder does better in both cases, with a request for the real material.
 - Containers: a rounded box with a colored left border, cards inside cards, the same grey shadow under every card, and a thin border beneath a broad soft shadow.
-- Type: a display face from `scripts/overused-fonts.mjs`, such as Inter, Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
+- Type: a display face from `scripts/overused-fonts.mjs`, such as Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
 - Kits: cream with a serif and terracotta, and near-black with one acid accent.
 - Buttons: an arrow glyph added to the label.
 

@@ -35,7 +35,7 @@ Verify: collect `LayoutShift` entries with `hadRecentInput` false and attribute 
 
 ## Font cost
 
-The skill sources a face through `scripts/font-candidates.mjs`; this is what that face owes once chosen.
+This is what a face owes once the `typography` reference has chosen it.
 
 - **Metric-matched fallback is the real fix for swap shift.** `size-adjust` scales glyph width and height proportionally, and `ascent-override` is the web font ascent divided by (UPM × size-adjust).
 - Verify the fallback: measure a paragraph's `getBoundingClientRect().height` with the fallback and with the loaded face; the difference is 0px or the fallback is not matched.

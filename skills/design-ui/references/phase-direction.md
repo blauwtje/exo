@@ -35,7 +35,7 @@ Rung 3 of the skill's `## Route`, reached only when the user asks to see or choo
 - Make the offer `## Asking` of the `intake` reference defines.
 - Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 - On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
-- Every `--check` and `--select` call passes that `--space` file, plus `--candidates "$RUN/font-candidates.json"` once that file exists, because either refuses a contract whose fonts came from candidates without it.
+- Every `--check` and `--select` call passes that `--space` file.
 
 ## The sketch answer
 
@@ -68,7 +68,6 @@ Full comps are built only when the user asks to see directions whole.
 - On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The sketch answer` says.
 - On option B, it freezes the contract the user's letter named the same way.
 - On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
-- Add `--candidates <file>` to that freeze when fonts came from the candidate gate.
 - The plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`.
 - The plan carries that output verbatim in the Edit block of its first Build step, which writes that file.
 - A read-only planning mode runs no `scripts/direction.mjs` call, because every mode of that script reads a file under `$RUN` and that mode refuses the write.

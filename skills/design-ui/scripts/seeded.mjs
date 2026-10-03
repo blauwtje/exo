@@ -1,7 +1,5 @@
-// The seeded draw shared by direction.mjs and font-candidates.mjs. Both deal from
-// a seed token and must repeat the same order for the same seed, so the generator
-// and the shuffle live here once: a divergence between two copies would surface as
-// an unreproducible deal rather than as a failing test. Nothing is written.
+// The seeded draw direction.mjs deals from. It must repeat the same order for the
+// same seed token, so the generator and the shuffle live here once. Nothing is written.
 
 import { createHash } from 'node:crypto';
 

@@ -5,8 +5,8 @@
 // is traceable to Phase 1 evidence rather than to this file. Nothing is written.
 //
 //   node scripts/direction.mjs --plan --seed <token> --space <file> [--variants <2..6>]
-//   node scripts/direction.mjs --check --contracts <file> --space <file> [--candidates <file>]
-//   node scripts/direction.mjs --select --contracts <file> --index <n> --space <file> [--candidates <file>]
+//   node scripts/direction.mjs --check --contracts <file> --space <file>
+//   node scripts/direction.mjs --select --contracts <file> --index <n> --space <file>
 //   node scripts/direction.mjs --shape
 //
 // --space is JSON, written from this header rather than from the validators
@@ -24,6 +24,10 @@
 // "evidence":<key>} when the color needs a reason: --check rejects a purple,
 // a cream, or a neon beside a near-black anchor as template-kit unless that
 // anchor's evidence is of kind brief or repository.
+// A contract's type.display and type.body each carry family and provenance:
+// chosen, with matchEvidence (the traits it fits) and loadSource, or repository
+// or brief, with sourceEvidence. --check rejects a chosen family that
+// scripts/overused-fonts.mjs bans.
 // A contract's seed is <container seed>:<n>, n being the index --plan dealt it
 // at, so a container may hold any subset of the dealt contracts in any order;
 // --check re-deals index n and rejects axes that differ from that deal.
@@ -37,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
 import { isCream, isNearBlack, isNeon, isPurple } from './check-ui.mjs';
+import { isOverusedFamily } from './overused-fonts.mjs';
 import { isMain } from '#script-flags';
 
 const TOKEN = /^[a-z0-9-]+$/;
@@ -112,7 +117,7 @@ const QUIET_JOBS = [
   'navigation-clearance', 'interaction-clearance', 'grouping-separation', 'edge-tension'
 ];
 
-const FONT_PROVENANCE = ['candidates', 'repository', 'brief'];
+const FONT_PROVENANCE = ['chosen', 'repository', 'brief'];
 
 // A semantic block may extend its axis but never restate it: what the axis
 // decided is read from the dealt payload alone.
@@ -223,8 +228,7 @@ export function axisDistance(left, right) {
 // --- planning --------------------------------------------------------------
 
 const emptyRole = () => ({
-  family: null, provenance: null, candidateId: null, provider: null,
-  selectedLoadMode: null, selectedLoadSource: null, matchEvidence: [], sourceEvidence: null
+  family: null, provenance: null, loadSource: null, matchEvidence: [], sourceEvidence: null
 });
 
 function contractSkeleton(seed, index, axes) {
@@ -388,69 +392,29 @@ function templateKitFindings(contract, space, variant) {
   return findings;
 }
 
-function locateCandidate(manifest, role, family, candidateId) {
-  for (const entry of manifest.roles ?? []) {
-    for (const candidate of entry.candidates ?? []) {
-      if (candidate.id === candidateId && candidate.family === family) {
-        return { role: entry.role, candidate };
-      }
-    }
-  }
-  return null;
-}
-
-function candidateFindings(role, spec, manifest, variant) {
-  if (!manifest) {
-    return [finding('candidate-manifest-required', variant,
-      `${role} claims candidate provenance but no --candidates manifest was supplied`)];
-  }
-  if (manifest.status !== 'ok' || (manifest.unmetConstraints ?? []).length > 0) {
-    return [finding('candidate-result-not-eligible', variant,
-      `the ${role} manifest reports status '${manifest.status}' with unmet constraints ${JSON.stringify(manifest.unmetConstraints ?? [])}`)];
-  }
-  const located = locateCandidate(manifest, role, spec.family, spec.candidateId);
-  if (!located) {
-    return [finding('candidate-not-found', variant,
-      `no eligible candidate '${spec.candidateId}' for family '${spec.family}' appears in the manifest`)];
-  }
-  if (located.role !== role) {
-    return [finding('candidate-role-mismatch', variant,
-      `candidate '${spec.candidateId}' was resolved for role '${located.role}', not '${role}'`)];
-  }
-  if (manifest.provider !== spec.provider) {
-    return [finding('candidate-provider-mismatch', variant,
-      `${role} records provider '${spec.provider}' but the manifest came from '${manifest.provider}'`)];
-  }
-  const enforced = manifest.enforcedConstraints?.deliveryModes ?? null;
-  const matched = (located.candidate.loadOptions ?? []).some(
-    (option) => option.mode === spec.selectedLoadMode && option.source === spec.selectedLoadSource
-      && (enforced === null || enforced.includes(option.mode)));
-  if (!matched) {
-    return [finding('candidate-load-mode-not-eligible', variant,
-      `${role} load '${spec.selectedLoadMode}' from '${spec.selectedLoadSource}' is not an enforced load option of the candidate`)];
-  }
-  return [];
-}
-
-const REQUIRED_CANDIDATE_FIELDS = ['family', 'candidateId', 'provider', 'selectedLoadMode', 'selectedLoadSource'];
-
-function fontFindings(contract, manifest, variant) {
+function fontFindings(contract, variant) {
   return ['display', 'body'].flatMap((role) => {
     const spec = contract.type?.[role];
     if (!spec || typeof spec !== 'object') {
       return [finding('missing-field', variant, `type.${role} is absent`)];
     }
     if (spec.family !== null && !FONT_PROVENANCE.includes(spec.provenance)) {
-      return [finding('family-before-candidates', variant,
+      return [finding('family-without-provenance', variant,
         `type.${role} names family '${spec.family}' under provenance ${JSON.stringify(spec.provenance)}`)];
     }
-    if (spec.provenance === 'candidates') {
-      const missing = REQUIRED_CANDIDATE_FIELDS.filter((field) => !spec[field]);
-      if (missing.length > 0 || (spec.matchEvidence ?? []).length === 0) {
-        return [finding('missing-field', variant,
-          `type.${role} claims candidate provenance without ${[...missing, ...((spec.matchEvidence ?? []).length === 0 ? ['matchEvidence'] : [])].join(', ')}`)];
+    if (spec.provenance === 'chosen') {
+      const missing = [
+        ...(spec.family ? [] : ['family']),
+        ...((spec.matchEvidence ?? []).length === 0 ? ['matchEvidence'] : []),
+        ...(spec.loadSource ? [] : ['loadSource'])
+      ];
+      if (missing.length > 0) {
+        return [finding('missing-field', variant, `type.${role} claims chosen provenance without ${missing.join(', ')}`)];
       }
-      return candidateFindings(role, spec, manifest, variant);
+      if (isOverusedFamily(spec.family)) {
+        return [finding('overused-font', variant,
+          `type.${role} family '${spec.family}' is on scripts/overused-fonts.mjs; pick another, or cite repository or brief provenance`)];
+      }
     }
     if (spec.provenance === 'repository' && !spec.sourceEvidence) {
       return [finding('repository-font-source-missing', variant,
@@ -525,7 +489,7 @@ function dealtAxisFindings(contract, space, seed, dealtIndex, variant) {
     `axes ${differing.join(', ')} differ from what seed '${seed}' dealt at index ${dealtIndex}`)];
 }
 
-function contractFindings(contract, index, { space, seed, manifest }) {
+function contractFindings(contract, index, { space, seed }) {
   const findings = [];
   if (contract?.schemaVersion !== 1) {
     return [finding('unsupported-schema-version', index,
@@ -547,7 +511,7 @@ function contractFindings(contract, index, { space, seed, manifest }) {
   findings.push(...evidenceReferenceFindings(contract, space, index));
   findings.push(...quietRegionFindings(contract, index));
   findings.push(...templateKitFindings(contract, space, index));
-  findings.push(...fontFindings(contract, manifest, index));
+  findings.push(...fontFindings(contract, index));
   const expectations = Array.isArray(contract.expectations) ? contract.expectations : [];
   if (expectations.length < 3) {
     findings.push(finding('too-few-expectations', index,
@@ -557,7 +521,7 @@ function contractFindings(contract, index, { space, seed, manifest }) {
   return findings;
 }
 
-export function checkContracts(container, space, { candidates = null } = {}) {
+export function checkContracts(container, space) {
   const spaceFindings = validateSpace(space);
   if (spaceFindings.length > 0) return { status: 'invalid', findings: spaceFindings };
   if (container?.schemaVersion !== 1) {
@@ -572,7 +536,7 @@ export function checkContracts(container, space, { candidates = null } = {}) {
   }
 
   const findings = container.contracts.flatMap((contract, index) =>
-    contractFindings(contract, index, { space, seed: container.seed, manifest: candidates }));
+    contractFindings(contract, index, { space, seed: container.seed }));
 
   for (let left = 0; left < container.contracts.length; left += 1) {
     for (let right = left + 1; right < container.contracts.length; right += 1) {
@@ -586,13 +550,13 @@ export function checkContracts(container, space, { candidates = null } = {}) {
   return { status: findings.length === 0 ? 'ok' : 'invalid', findings };
 }
 
-export function selectContract(container, index, { space, candidates = null }) {
+export function selectContract(container, index, { space }) {
   if (!Array.isArray(container?.contracts)) throw new UsageError('--contracts file carries no contracts array');
   if (!Number.isInteger(index) || index < 0 || index >= container.contracts.length) {
     throw new UsageError(`--index must name one of the ${container.contracts.length} contracts`);
   }
   const chosen = { schemaVersion: container.schemaVersion, seed: container.seed, contracts: [container.contracts[index]] };
-  const report = checkContracts(chosen, space, { candidates });
+  const report = checkContracts(chosen, space);
   if (report.status !== 'ok') return report;
   return {
     schemaVersion: 1,
@@ -636,7 +600,7 @@ async function main(argv) {
   const flags = parseFlags(argv, {
     plan: 'boolean', check: 'boolean', select: 'boolean', shape: 'boolean',
     seed: 'value', space: 'value', variants: 'value',
-    contracts: 'value', candidates: 'value', index: 'value'
+    contracts: 'value', index: 'value'
   });
   const modes = ['plan', 'check', 'select', 'shape'].filter((mode) => flags[mode]);
   if (modes.length !== 1) throw new UsageError('exactly one of --plan, --check, --select or --shape is required');
@@ -654,9 +618,8 @@ async function main(argv) {
   const container = await readJsonFlag(flags.contracts, '--contracts');
   const index = modes[0] === 'select' ? requireIndex(flags.index) : null;
   const space = await readJsonFlag(flags.space, '--space');
-  const candidates = flags.candidates ? await readJsonFlag(flags.candidates, '--candidates') : null;
-  if (modes[0] === 'check') return checkContracts(container, space, { candidates });
-  return selectContract(container, index, { space, candidates });
+  if (modes[0] === 'check') return checkContracts(container, space);
+  return selectContract(container, index, { space });
 }
 
 if (isMain(import.meta.url)) {

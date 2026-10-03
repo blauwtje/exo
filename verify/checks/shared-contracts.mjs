@@ -96,7 +96,7 @@ const PINNED_SENTENCES = {
   'skills/design-ui/references/typography.md': [
     '- **Body** — text set at 16px or larger, or 14px in dense data UI, with line-height at least 1.5, every used weight loaded, and a true italic when italic text appears.',
     'Ratio between adjacent steps: **1.25 by default**',
-    'Do not name a new typeface from memory.',
+    'Record family, provenance `chosen`, the matched traits as `matchEvidence`',
   ],
   'agents/build-ui.md': [
     '- no horizontal scroll from 360px through 1440px;',

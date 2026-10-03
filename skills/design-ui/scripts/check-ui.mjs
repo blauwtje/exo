@@ -336,7 +336,7 @@ function fontFindings(line, location, overused) {
     confidence: 'definite',
     selector: location,
     measured: primary.trim().replace(/^["']|["']$/g, ''),
-    threshold: 'a family chosen from candidates the brief can justify',
+    threshold: 'a family chosen for the direction the brief can justify',
     note: 'family on the overused list in scripts/overused-fonts.mjs'
   })];
 }
