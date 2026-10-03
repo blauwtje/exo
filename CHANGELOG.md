@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.79.0 - 2026-10-03
+
 ### Highlights
 
 **design-ui picks colors, fonts and layout itself from the mood and the product again, instead of from a random deal.**
