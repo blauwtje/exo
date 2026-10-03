@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- design-ui's default one pass now deals its own look: `direction.mjs --deal` draws a random seed, an accent hue clear of recent runs and a layout structure (navigation, body and lead) that skips the last runs' choices, and `--check-plan` holds the plan's palette and layout to that deal before the build.
+
+### Fixed
+
+- `font-candidates.mjs --history` now also reads the fonts of earlier one-pass runs from their `plan.json`, and the Google route drops those faces instead of only ranking them lower.
+
 ## 0.78.3 - 2026-10-03
 
 ### Highlights
