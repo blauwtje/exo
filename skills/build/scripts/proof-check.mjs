@@ -6,8 +6,9 @@
 //
 //   node proof-check.mjs stop   Stop hook: stdin is the hook JSON
 //
-// Silent outside a session that called the exo:build skill, and on
-// stop_hook_active, so this never loops or fires for unrelated work. Also
+// Silent unless the exo:build skill was called since the last message the
+// human typed, and on stop_hook_active, so this never loops or fires for a
+// later unrelated turn. Only that build call's turn is checked. Also
 // silent while a background task the session launched has not notified, since
 // the turn then ends to wait. A hook failure never blocks the turn.
 
@@ -57,6 +58,20 @@ function isBuildCall(block) {
   if (block?.type !== 'tool_use' || block.name !== 'Skill') return false;
   const skill = typeof block.input?.skill === 'string' ? block.input.skill : '';
   return BUILD_SKILL.test(skill);
+}
+
+// A user row the human typed, not one the harness wrote: a tool result, a
+// meta row (the skill body injected after a Skill call, Stop hook feedback,
+// caveats, wakeups), a compact summary or a background-task notification.
+// Older rows lack the origin fields and isMeta, so their text is checked too.
+function isTypedMessage(entry) {
+  if (entry?.type !== 'user') return false;
+  if (entry.isMeta === true || entry.isCompactSummary === true) return false;
+  if (entry.origin?.kind === 'task-notification' || entry.turnOrigin === 'task_notification') return false;
+  if (contentBlocks(entry).some((block) => block?.type === 'tool_result')) return false;
+  const content = entry.message?.content;
+  const text = (typeof content === 'string' ? content : textOf(entry)).trimStart();
+  return !text.startsWith('<task-notification>') && !text.startsWith('Stop hook feedback:');
 }
 
 function normalizeCommand(command) {
@@ -185,8 +200,9 @@ export function stopHook(input) {
   if (input.stop_hook_active === true) return null;
   if (hasPendingBackgroundTask(input.transcript_path)) return null;
   const rows = entries(input.transcript_path);
-  const skillIndex = rows.findIndex((entry) => contentBlocks(entry).some(isBuildCall));
-  if (skillIndex === -1) return null;
+  const typedIndex = rows.findLastIndex(isTypedMessage);
+  const skillIndex = rows.findLastIndex((entry) => contentBlocks(entry).some(isBuildCall));
+  if (skillIndex === -1 || skillIndex < typedIndex) return null;
 
   let lastAssistantText = '';
   for (let index = rows.length - 1; index >= 0; index -= 1) {
