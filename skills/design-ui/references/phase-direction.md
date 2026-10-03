@@ -6,10 +6,21 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 - Decide the direction in this session, never inside a builder delegate, because this session holds the contract.
 - Change no production code before a selection exists.
-- Outside an existing brand or design system, commit to one bold aesthetic direction before Build, because a neutral middle is not a direction.
+- Outside an existing brand or design system, derive one bold direction from the chosen mood before Build, because a neutral middle is not a direction.
 - The direction settles composition and visual material together: the contract names it and every region carries it.
 - Every rung other than 3 produces one direction, written as the skill's plan, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
+
+## Mood to look
+
+- The mood sets palette commitment, type character, corner and stroke shape, density and motion feel, never the amount of motion.
+- Crisp and businesslike: a restrained accent, compact rhythm, sharp corners, tabular figures and snappy precise easing on every motion of the motion bar.
+- Friendly and playful: committed color, rounded shapes, a warm humanist face and lively overshoot on entrances.
+- Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
+- Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
+- Where `--plan` dealt a `palette.hue`, build the accent on it, taking only its chroma and lightness from the mood.
+- Record the mood in the contract's rationale, or in the plan on the one pass, and trace each look value to it.
+- Invent no company, brand story or metaphor as a theme, because the mood and the content carry the look.
 
 ## Rung 3
 
@@ -17,10 +28,10 @@ Rung 3 of the skill's `## Route`, reached only when the user asks to see or choo
 
 - Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save.
 - Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
-- Deal three contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
+- Deal three contracts over the space's axes with `scripts/direction.mjs --plan --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, without `--seed`, so the script draws a random one.
 - Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
 - `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
-- Ask nothing but the preview offer between `--check` and the first sketch.
+- Ask nothing between `--check` and the first sketch, because the scope form already carried the offer.
 - Make the offer `## Asking` of the `intake` reference defines.
 - Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 - On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
@@ -56,7 +67,7 @@ Full comps are built only when the user asks to see directions whole.
 - A planning turn routes by `## Route` and makes the offer on rung 3 only, because the user asked to choose there.
 - On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The sketch answer` says.
 - On option B, it freezes the contract the user's letter named the same way.
-- On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
+- On option C, or on any other rung, it writes the space file, deals `--plan --space <file> --variants 2` without `--seed`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
 - Add `--candidates <file>` to that freeze when fonts came from the candidate gate.
 - The plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`.
 - The plan carries that output verbatim in the Edit block of its first Build step, which writes that file.

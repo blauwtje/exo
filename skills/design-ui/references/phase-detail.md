@@ -14,8 +14,8 @@ The per-phase detail the skill body no longer carries: what Phase 1 establishes,
 
 ## Context
 
-- When a fact is missing, including an `## Open` line the `exo:survey-ui` agent returns, ask one question only if it materially changes scope, behavior, or a claim; never substitute a product-category aesthetic for missing evidence.
-- State three facts, defaulting absent ones: product in one sentence; audience and what they know on arrival; the page's single action or belief.
+- When a fact is missing, including an `## Open` line the `exo:survey-ui` agent returns, ask one question only if it materially changes scope, behavior, or a claim; never substitute a product-category aesthetic for missing evidence, which the chosen mood fills.
+- State three facts, defaulting absent ones: product, kept generic when unnamed, not invented brand or domain; audience and arrival knowledge; page's one action or belief.
 - Read durable design context through `scripts/context.mjs --surface <name> --needs color,typography,controls,motion`.
 - Report a `potentially-stale` or `unknown` status rather than resolving it silently.
 - When the request does not name the surface's files, delegate locating its markup, styles, tokens and components to the `exo:locate-code` agent.
@@ -41,7 +41,7 @@ The underdesign floor, checked before the critique:
 - the ground is a designed surface, not an untouched flat neutral;
 - raised surfaces carry the direction's material, not one grey shadow each;
 - type carries a voice through a second weight, width, or family;
-- the recorded motion decision is built;
+- the motion bar is built;
 - every browser surface on the finish list in the `implementation` reference is themed;
 - no slop trope from the `visual-critique` reference stands without recorded provenance;
 - `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration, and their shapes live in the `craft-recipes` reference.
@@ -99,7 +99,7 @@ The numeric floor:
 - Read line 1 of the final stage's `scripts/checkpoint.mjs --stage final` call: `stage=final renders=<n> blocking390=<n> blocking1440=<n> blockingStatic=<n> new=<n> predating=<n> ignored=<n>`.
 - Repair every blocking finding, and repair or name every new `potential` finding, as the `phase-build` reference `## Judgment` sets, before the design is reported complete.
 - Read `$RUN/check-ui-final.json` only for the detail of a finding this pass repairs.
-- Then run the interaction and accessibility sweep: the recorded motion decision's route, the sweep in the `accessibility` reference, and, where that file's predicate applies, the locale and RTL rerun in the `internationalization` reference.
+- Then run the interaction and accessibility sweep: every motion in the bar, the sweep in the `accessibility` reference, and, where that file's predicate applies, the locale and RTL rerun in the `internationalization` reference.
 - Exercise one interactive control.
 - The final render is a capture this pass takes itself.
 - Report the outcome numbers from the `performance-budget` reference beside the design, naming which were measured under throttling and which were not.
@@ -115,7 +115,7 @@ The numeric floor:
 - An approved durable design decision outranks a new direction; changing one requires asking first.
 - Repository framework, naming, file-layout, and component conventions outrank this skill's code defaults; they do not preserve the visual anatomy the user asked to replace.
 - Scope restraint limits which surfaces and files change; it never requires the smallest visual delta inside them.
-- A brief asking for showy motion or effects raises the ambition ceiling: tells and timing caps become minimums to exceed; contrast, reduced-motion, and state coverage still hold.
+- The motion bar binds every build; a brief asking for showier motion raises it, while contrast, reduced motion and state coverage still hold.
 
 ## Judgment
 

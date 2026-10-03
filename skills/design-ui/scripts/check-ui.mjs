@@ -13,7 +13,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { readFileSync } from 'node:fs';
-import { DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
+import {
+  DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, settleAnimations, UsageError
+} from './capture.mjs';
 import { isOverusedFamily, loadOverusedFonts } from './overused-fonts.mjs';
 import { isMain } from '#script-flags';
 
@@ -525,7 +527,7 @@ function degrees(angle) {
 
 /** OKLCH lightness (0 to 1), chroma and hue of an oklch() token or of any token parseColor reads,
  *  via the Ottosson OKLab conversion; null otherwise. An oklch chroma of 100% is 0.4. */
-function oklchOf(token) {
+export function oklchOf(token) {
   if (/^oklch\(/i.test(token)) {
     const args = colorArguments(token);
     if (args.length < 3) return null;
@@ -1351,6 +1353,7 @@ async function overflowFindings(page, url) {
   for (const width of [360, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(url, { waitUntil: 'load' });
+    await settleAnimations(page);
     const measurement = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       innerWidth: window.innerWidth
@@ -1374,6 +1377,7 @@ async function overflowFindings(page, url) {
 async function reflowFindings(page, url) {
   await page.setViewportSize({ width: 320, height: 256 });
   await page.goto(url, { waitUntil: 'load' });
+  await settleAnimations(page);
   const measurement = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     innerWidth: window.innerWidth
@@ -1409,6 +1413,7 @@ export async function renderedAudit({ url, viewports, cwd }) {
       // over from the previous viewport's Tab pass would otherwise survive
       // into this viewport's baseline audit. Force a real reload per viewport.
       await page.reload({ waitUntil: 'load' });
+      await settleAnimations(page);
       // A function argument cannot cross into the page, so the audit and the colour
       // parser travel as one source expression.
       const audit = await page.evaluate(

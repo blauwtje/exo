@@ -7,9 +7,11 @@ effort: high
 
 # Visual Design
 
-Design so the result cannot be mistaken for a template: every visual choice traceable to the subject, audience, or page job, plus one evidence-backed differentiator a competitor could not justify. The enemy is the transferable default — a design that could accept another product name unchanged. The overcorrection is novelty that obscures content, removes states, or breaks accessibility.
+Design so the result cannot be mistaken for a template: every visual choice traceable to the subject, audience, page job, or chosen mood. The enemy is the transferable default — a design that could accept another product name unchanged. The overcorrection is novelty that obscures content, removes states, or breaks accessibility.
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design. It also fails when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
+
+Every screen ships the scope `references/composition.md` completes and the motion bar of `references/motion.md`, whatever the mood.
 
 **After a compaction notice**, see `## The run directory` of `references/intake.md`.
 
@@ -29,7 +31,7 @@ Resolve the surface from the markup and style files in the working-tree diff, th
 3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, while neither the user nor the brief lets it be replaced: the plan keeps that identity. A component library in the manifest is not that evidence on its own.
-6. **Everything else**, a landing or marketing page included: one direction in the plan, no offer.
+6. **Everything else**, a landing or marketing page included: the scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface, no offer.
 
 Only a request from the user opens the picker: a landing page or an open identity does not.
 
@@ -38,8 +40,8 @@ Only a request from the user opens the picker: a landing page or an open identit
 The default for every rung but 1 and 4; it builds in this session, with no agent. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3; Phases 4 and 5 are the full run's critique and QA.
 
 1. **Context.** Read `## Context`, `## The build floor`, `## Precedence` and `## Judgment` of `references/phase-detail.md`, once.
-2. **Plan.** Before any edit, write a plan of at most 25 lines in the transcript, under `references/phase-direction.md`. It names the color roles with hex values, the display and body fonts, the motion decision, and an ASCII layout at 1440 and 390 wide.
-3. **Check the plan.** List each section, content item, tone word and constraint the request names, mark where the plan carries it, and revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, under `references/phase-direction.md`. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, mark where the plan carries it, and revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
 4. **Build.** Read `references/phase-build.md` first, then build the whole page here and run its proof.
 5. **Capture.** Run `node <skill dir>/scripts/capture.mjs --url <file:// or http:// url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
 6. **Look.** Read `$RUN/renders/post-build-390x844-fullpage.png` and `$RUN/renders/post-build-1440x900-fullpage.png`, and list each fault against the plan, the request and the build floor.
@@ -72,7 +74,7 @@ Load a reference only at its row's phase and predicate, never the set up front. 
 | `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list` and `## Pairing`; Phase 3 `## Roles`, `## Scale`, `## Micro rules — the craft floor`. |
 | `references/controls.md` | Phase 3, before styling a control. |
 | `references/implementation.md` | Phase 3, before writing CSS or component code, whole. |
-| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the recorded decision; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, and `## Continuity contract`, `## Scroll and view transitions` only when the build uses one; add `## Judgment` when the build uses an animation library. |
+| `references/motion.md` | Phase 3: `## Motion thesis`, `## Job gate` for the bar; before any animation add `## Materials`, `## Timing`, `## Reduced motion`, `## Scroll and view transitions`, and `## Continuity contract` only when the build uses one; add `## Judgment` when the build uses an animation library. |
 | `references/interaction-qa.md` | Phase 3 for controls, flows, disclosure, or reachable states; Phase 5 `## Pre-ship interaction sweep` alone. |
 | `references/feedback-and-status.md` | Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Phase 3, the `## Slop tropes` section, before finishing a treatment; opt-in Phase 4 whole, by `exo:critique-ui` only. |

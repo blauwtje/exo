@@ -540,6 +540,82 @@ export async function openDrivenPage({
   };
 }
 
+// design-ui asks every screen for entrance motion (staggered reveals, count-up
+// figures, chart draws), so a screenshot or measurement taken at load reads the
+// first frame of it. The cap bounds the wait when the motion never ends.
+const SETTLE_CAP_MS = 4_000;
+const SETTLE_QUIET_MS = 300;
+const SETTLE_SAMPLE_MS = 50;
+
+/**
+ * Runs inside the page as one evaluation. Phase 1 waits on every running Web
+ * Animation with a finite end, querying again so an animation an earlier one
+ * started is waited on too. Phase 2 covers motion the Animations API does not
+ * list, requestAnimationFrame count-ups and everything on obscura, which lists
+ * none: it waits until the text and the animated paint properties hold still for
+ * quietMs. Both phases share one deadline. Elements an endless animation drives
+ * stay out of the comparison.
+ */
+async function settlePage({ capMs, quietMs, sampleMs }) {
+  const deadline = performance.now() + capMs;
+  const pause = (ms) => new Promise((resolve) => {
+    setTimeout(resolve, Math.max(0, Math.min(ms, deadline - performance.now())));
+  });
+  const endlessTargets = new Set();
+  if (typeof document.getAnimations === 'function') {
+    while (performance.now() < deadline) {
+      const finishing = [];
+      for (const animation of document.getAnimations()) {
+        if (animation.playState !== 'running') continue;
+        if (animation.effect?.getComputedTiming().endTime === Infinity) {
+          if (animation.effect.target) endlessTargets.add(animation.effect.target);
+          continue;
+        }
+        finishing.push(animation.finished);
+      }
+      if (finishing.length === 0) break;
+      // finished rejects when the page cancels the animation, which also ends it.
+      await Promise.race([Promise.allSettled(finishing), pause(capMs)]);
+    }
+  }
+
+  const root = document.body ?? document.documentElement;
+  const snapshot = () => {
+    // obscura keeps serving the computed style of the first frame until the DOM
+    // changes, so an empty comment added to and removed from <head> makes it
+    // recompute; no selector matches a comment, so the page's styles are untouched.
+    const marker = document.createComment('');
+    document.head?.append(marker);
+    marker.remove();
+    const parts = [root.textContent];
+    for (const element of root.querySelectorAll('*')) {
+      if (endlessTargets.has(element)) continue;
+      const style = getComputedStyle(element);
+      parts.push(style.opacity, style.transform, style.translate, style.scale, style.rotate,
+        style.clipPath, style.strokeDashoffset, style.width);
+    }
+    return parts.join('|');
+  };
+  let previous = snapshot();
+  let quietSince = performance.now();
+  while (performance.now() < deadline && performance.now() - quietSince < quietMs) {
+    await pause(sampleMs);
+    const current = snapshot();
+    if (current !== previous) {
+      previous = current;
+      quietSince = performance.now();
+    }
+  }
+}
+
+/**
+ * Wait until the page's entrance motion has settled, at most SETTLE_CAP_MS.
+ * Every driven screenshot and measurement calls this after a load.
+ */
+export async function settleAnimations(page) {
+  await page.evaluate(settlePage, { capMs: SETTLE_CAP_MS, quietMs: SETTLE_QUIET_MS, sampleMs: SETTLE_SAMPLE_MS });
+}
+
 export function readPngGeometry(bytes) {
   const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   if (bytes.length < 24 || !bytes.subarray(0, 8).equals(signature)) return null;
@@ -642,6 +718,7 @@ async function captureWithPlaywright({ capability, cwd, url, width, height, full
     try {
       const page = await context.newPage();
       await page.goto(url, { waitUntil: 'load' });
+      await settleAnimations(page);
       await page.screenshot({ path: target, fullPage });
     } finally {
       await context.close();

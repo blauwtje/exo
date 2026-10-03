@@ -4,7 +4,7 @@
 // the option set. Every dealt value comes from the supplied space, so a direction
 // is traceable to Phase 1 evidence rather than to this file. Nothing is written.
 //
-//   node scripts/direction.mjs --plan --seed <token> --space <file> [--variants <2..6>]
+//   node scripts/direction.mjs --plan [--seed <token>] --space <file> [--variants <2..6>]
 //   node scripts/direction.mjs --check --contracts <file> --space <file> [--candidates <file>]
 //   node scripts/direction.mjs --select --contracts <file> --index <n> --space <file> [--candidates <file>]
 //   node scripts/direction.mjs --shape
@@ -29,14 +29,19 @@
 // --check re-deals index n and rejects axes that differ from that deal.
 // --select freezes a contract only after the same check passes. Every report
 // whose status is not ok exits 1, with the report still on stdout.
+// --plan without --seed draws a random seed. Each contract's palette.hue is an
+// oklch hue dealt from its seed, so the accent is drawn rather than reasoned:
+// --check rejects a changed hue, and a palette with no anchor within 30 degrees
+// of it unless an anchor's evidence is of kind brief or repository.
 // --check names the shape and the allowed vocabulary of anything it rejects.
 
 import process from 'node:process';
+import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, readJsonFlag, UsageError } from './capture.mjs';
 import { createPrng, shuffledRange } from './seeded.mjs';
-import { isCream, isNearBlack, isNeon, isPurple } from './check-ui.mjs';
+import { isCream, isNearBlack, isNeon, isPurple, oklchOf } from './check-ui.mjs';
 import { isMain } from '#script-flags';
 
 const TOKEN = /^[a-z0-9-]+$/;
@@ -50,6 +55,10 @@ const SAMPLE_ATTEMPTS = 4096;
 const MIN_AXIS_DIVERGENCE = 3;
 const MAX_VARIANTS = 6;
 const DEALT_INDEX = /^(0|[1-9][0-9]*)$/;
+const HUE_TOLERANCE = 30;
+// Purple is excluded because --check rejects a purple anchor as template-kit.
+const DEALABLE_HUES = Array.from({ length: 360 }, (_, hue) => hue)
+  .filter((hue) => !isPurple(`oklch(0.55 0.12 ${hue})`));
 
 const isToken = (value) => typeof value === 'string' && TOKEN.test(value);
 const isUnitNumber = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
@@ -227,6 +236,11 @@ const emptyRole = () => ({
   selectedLoadMode: null, selectedLoadSource: null, matchEvidence: [], sourceEvidence: null
 });
 
+/** The accent hue dealt at index n, from its own stream so the axis deal stays unchanged. */
+export function dealtHue(seed, index) {
+  return DEALABLE_HUES[createPrng(`${seed}:${index}:hue`).below(DEALABLE_HUES.length)];
+}
+
 function contractSkeleton(seed, index, axes) {
   return {
     schemaVersion: 1,
@@ -235,7 +249,7 @@ function contractSkeleton(seed, index, axes) {
     subjectMappings: [],
     ground: { source: '', origin: '', regions: [], textSeparation: '', reducedMotion: '' },
     quietRegions: [],
-    palette: { anchors: [], regionalAssignment: '' },
+    palette: { hue: dealtHue(seed, index), anchors: [], regionalAssignment: '' },
     type: { traits: {}, display: emptyRole(), body: emptyRole() },
     materialLight: '',
     motion: { decision: '', reducedMotion: '' },
@@ -386,6 +400,24 @@ function templateKitFindings(contract, space, variant) {
       `palette.anchors[${index}] '${color}' falls in the ${kit} kit check-ui flags after the build; cite brief or repository evidence for it, or pick another anchor`));
   });
   return findings;
+}
+
+function hueFindings(contract, space, seed, dealtIndex, variant) {
+  const hue = dealtHue(seed, dealtIndex);
+  if (contract.palette?.hue !== hue) {
+    return [finding('hue-mismatch', variant, `palette.hue is ${JSON.stringify(contract.palette?.hue)}, not the hue ${hue} seed '${seed}' dealt at index ${dealtIndex}`)];
+  }
+  const anchors = Array.isArray(contract.palette.anchors) ? contract.palette.anchors : [];
+  const exempt = anchors.some((anchor) => KIT_EXEMPT_KINDS.includes(space.evidence?.[anchor?.evidence]?.kind));
+  const carries = anchors.some((anchor) => {
+    const color = typeof anchor === 'string' ? anchor : anchor?.color;
+    const lch = typeof color === 'string' ? oklchOf(color) : null;
+    if (!lch || lch.chroma < 0.01) return false;
+    const gap = Math.abs(lch.hue - hue);
+    return Math.min(gap, 360 - gap) <= HUE_TOLERANCE;
+  });
+  if (exempt || carries) return [];
+  return [finding('hue-unused', variant, `no palette anchor sits within ${HUE_TOLERANCE} degrees of the dealt oklch hue ${hue}; build the accent on it`)];
 }
 
 function locateCandidate(manifest, role, family, candidateId) {
@@ -544,6 +576,7 @@ function contractFindings(contract, index, { space, seed, manifest }) {
   findings.push(...substanceFindings(contract, index));
   findings.push(...axisFindings(contract, space, index));
   if (dealtIndex !== null) findings.push(...dealtAxisFindings(contract, space, seed, dealtIndex, index));
+  if (dealtIndex !== null) findings.push(...hueFindings(contract, space, seed, dealtIndex, index));
   findings.push(...evidenceReferenceFindings(contract, space, index));
   findings.push(...quietRegionFindings(contract, index));
   findings.push(...templateKitFindings(contract, space, index));
@@ -644,11 +677,11 @@ async function main(argv) {
   if (modes[0] === 'shape') return headerText();
 
   if (modes[0] === 'plan') {
-    if (!flags.seed) throw new UsageError('--seed is required with --plan');
-    if (!SEED_TOKEN.test(flags.seed)) throw new UsageError('--seed must be a plain file-name token');
+    const seed = flags.seed ?? randomBytes(4).toString('hex');
+    if (!SEED_TOKEN.test(seed)) throw new UsageError('--seed must be a plain file-name token');
     const variants = requireVariants(flags.variants);
     const space = await readJsonFlag(flags.space, '--space');
-    return planDirections({ seed: flags.seed, variants, space });
+    return planDirections({ seed, variants, space });
   }
 
   const container = await readJsonFlag(flags.contracts, '--contracts');

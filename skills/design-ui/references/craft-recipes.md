@@ -75,7 +75,7 @@ background:
 
 ## Motion
 
-**Staged focal entrance** — the signature sequence the `motion` reference allows: focal first, supporting groups after, content visible at rest so a failed animation hides nothing.
+**Staged focal entrance** — the staggered entrance the `motion` bar requires: focal first, supporting groups after, content visible at rest so a failed animation hides nothing.
 
 ~~~css
 .hero > * { animation: rise var(--dur-focal) var(--ease-out) both; }

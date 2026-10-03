@@ -6,8 +6,8 @@ Build the whole page in this session by default; builder delegates run only when
 
 These rules bind this session and every builder:
 
-- The recorded motion decision is built; a redesign or new piece that lacks one is not finished.
-- When the subject's world names a technique, such as a canvas, an instrument or generative motion, that technique is built working and live, never faked by an image, a frozen SVG or a mock that does not move.
+- The motion bar of the `motion` reference is built; a redesign or new piece that lacks it is not finished.
+- When the content or the brief names a technique, such as a canvas, an instrument or generative motion, that technique is built working and live, never faked by an image, a frozen SVG or a mock that does not move.
 - A component the design repeats stays unbuilt while any reachable entry of its state row has no styling.
 - A surface with no existing product stays unfinished while a content obligation from the inventory is missing or any region still holds placeholder material.
 - On the full run, check-ui runs before the first edit, as the baseline stage of `scripts/checkpoint.mjs --run "$RUN" --stage baseline --url <u> [--source <s>]`.
@@ -55,7 +55,7 @@ A new piece on the settled identity that rung 5 of the skill's `## Route` names 
 4. Build, then run the repository checks `## The mechanics` names.
 5. Take the skill's capture, look and fix-once steps, and stop.
 
-Without that identity, a new piece extracts the existing tokens and patterns, takes the one pass against what the piece carries, and records one local motion decision in its plan.
+Without that identity, a new piece extracts the existing tokens and patterns, takes the one pass against what the piece carries, and writes its motion thesis in its plan.
 
 ## Judgment
 

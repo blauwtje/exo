@@ -45,7 +45,7 @@ Run this loop for an open identity, one that does not exist yet or that the brie
    - Record what to borrow and what to reject; that list is the output, not a style name.
    - Do not route the decision through a named style label.
    - Where visual research capability is available, a reference set widens the list and never replaces it.
-   - A relationship no evidence supports is an invention; one the build keeps is named as an assumption in the report.
+   - A relationship neither evidence nor the chosen mood supports is an invention; one the build keeps is named as an assumption.
 
 The `phase-direction` reference owns the rest: deal, check, sketch or compare, select.
 

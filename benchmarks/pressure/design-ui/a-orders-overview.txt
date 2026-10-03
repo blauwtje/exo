@@ -1,0 +1,1 @@
+You are in an empty directory. The user typed only: "An admin overview of orders." Start the design-ui run. Before writing any file, write the exact message you show the user about what you will build: the screen's parts and how it will move.

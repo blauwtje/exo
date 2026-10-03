@@ -102,7 +102,7 @@ Target: src/styles/tide-table.css, .tide-footnotes { padding-inline }
 Repair: raise padding-inline from 0 to the page gutter token.
 ```
 
-The set covers at least one content or relationship fault, missing content, a broken relationship, or a missing subject mapping, and at least one craft fault, absent atmosphere, an unbuilt signature moment, untransitioned states, or an unthemed browser finish.
+The set covers at least one content or relationship fault, missing content, a broken relationship, or a missing subject mapping, and at least one craft fault, absent atmosphere, motion below the bar, untransitioned states, or an unthemed browser finish.
 
 "Looks polished or premium" is not a finding.
 

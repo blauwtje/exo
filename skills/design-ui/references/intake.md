@@ -4,20 +4,34 @@ Settle what the run needs before it builds: the questions worth asking, where th
 
 ## Asking
 
-- A visual choice is never a terminal question unless the user picked option B below, because a color named in words is not the color the user would see.
+- A visual choice is never a terminal question, except the Mood question and option B, because a named color is not the seen color.
 - Color, type, spacing, layout, motion, imagery and every other choice between looks is a visual choice.
-- A visual choice reaches the user as a sketch in the browser tab, as one plain-words question after option B, or it is decided and never asked.
+- A visual choice reaches the user as a sketch, as the Mood question, as one plain-words question after option B, or it is decided.
 - Name the decision an answer changes before asking anything; a question with no named decision is not asked.
 - Sort each question by one test: would the user answer it better by seeing it?
 - Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question.
-- Beyond the offer, ask one only while an unanswered fact blocks a decision the brief, the repository, and Phase 1 evidence cannot settle.
+- Beyond the form and the offer, ask only while an open fact blocks a decision the brief, repository and Phase 1 cannot settle.
 - Name that decision inside the question.
-- Rung 3 of `## Route`, a user asking to see or choose between looks, gets the preview offer once; no other rung offers it.
+- Rungs 3, 5 and 6 of `## Route` show the completed scope as one form, after Phase 1 and before Direction.
+- The form holds a multi-select Scope question and a single-select Mood question, sent together.
+- Each Scope option is one completed scope group from the inventory, at most four.
+- Reachable states are never a Scope option, because every build carries them.
+- A Scope answer that ticks every option, ticks none, or says decide yourself builds every group.
+- A Scope answer that ticks some options builds only the ticked groups.
+- The Mood options are crisp and businesslike, friendly and playful, calm and luxurious, bold and expressive.
+- Put the mood that best fits the product first, as option A, and recommend it.
+- Rung 5 drops the Mood question, because its settled identity already fixes the look.
+- An ask that names a mood drops the Mood question.
+- An ask that says decide yourself drops the Scope and Mood questions.
+- Send no form when no answer can arrive, as in a headless run.
+- Without a Scope answer, build every group, named in one line before Direction.
+- Without a Mood answer off rung 5, take the mood the ask names, else the best-fitting mood, named in one line before Direction.
+- Rung 3 of `## Route`, a user asking to see or choose between looks, gets the preview offer once, as the form's last question, so the user answers one form; no other rung offers it.
 - The offer follows the question shape, and the user answers with the letter:
 
   ```text
   **How should we pick the new look?**
-  I have <n> looks ready. You can see them first or let me choose.
+  I will make <n> looks. You can see them first or let me choose.
 
   - **(A) Show me**: open all <n> side by side in your browser.
   - **(B) Describe them**: I explain each look here in a few words.

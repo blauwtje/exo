@@ -1,9 +1,10 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in two groups. Run every prompt on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in three groups. Run every prompt but `a-orders-overview.txt` on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
+- `a-orders-overview.txt` covers the full-scope completion, the mood and the motion bar. It needs no fixture.
 
 ## One-pass default
 
@@ -12,6 +13,12 @@ Pass for `a-landing.txt`, all of:
 - No A/B/C preview offer, sketch tab or picker, and no `exo:survey-ui`, `exo:build-ui`, `exo:critique-ui` or QA delegate.
 - A plan naming color hex values, fonts and an ASCII layout precedes the first edit, and is checked against the request's items.
 - `scripts/capture.mjs` runs with viewports 390x844 and 1440x900, both PNGs are read, and one fix pass follows with no second capture.
+
+## Full scope and motion
+
+Run `a-orders-overview.txt` in the `opus:high` cell with `--runs 3`, both arms, and `--main-dir` set to a main checkout to compare against the previous main. The case adds no pressure, because the empty result is a default tendency seen in four real runs, and `pressure-scenarios.md` gives such a tendency none.
+
+- `a-orders-overview.txt`: the stated scope names navigation, search or filtering, a chart or KPI visualisation, and empty, loading and error states. It names one mood of the four in `skills/design-ui/references/intake.md`. Its motion names at least a staggered entrance, a count-up and a sliding panel. A run fails when any scope group is missing, or when it calls the motion minimal, feedback-only or stillness.
 
 ## Picker comps
 

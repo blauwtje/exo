@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { axisDistance, checkContracts, planDirections, selectContract, VOCABULARY }
+import { axisDistance, checkContracts, dealtHue, planDirections, selectContract, VOCABULARY }
   from '../skills/design-ui/scripts/direction.mjs';
 import { jsonFixture, run, script } from './harness.mjs';
 
@@ -131,7 +131,11 @@ function filledContainer(seed = 'atlas', variants = 2, source = space()) {
       reducedMotion: 'the field is static; no parallax'
     };
     contract.quietRegions = [{ region: 'upper right quarter', job: 'focal-isolation' }];
-    contract.palette = { anchors: ['#0d2a33', '#e8dcc6'], regionalAssignment: 'accent carries the numeric column only' };
+    contract.palette = {
+      hue: contract.palette.hue,
+      anchors: ['#0d2a33', '#e8dcc6', `oklch(0.5 0.09 ${contract.palette.hue})`],
+      regionalAssignment: 'accent carries the numeric column only'
+    };
     contract.type = {
       traits: { display: 'high-contrast, constructed', body: 'neutral, tabular' },
       display: candidateRole('Instrument Serif', 'instrument-serif'),
@@ -297,10 +301,39 @@ describe('direction.mjs --check', () => {
     }
   });
 
+  it('deals a seeded non-purple hue and rejects a palette that drops or ignores it', () => {
+    const hues = ['atlas', 'harbor', 'quarry', 'meadow'].map((seed) => dealtHue(seed, 0));
+    assert.ok(new Set(hues).size > 1, `hues ${hues.join(', ')}`);
+    assert.ok(hues.every((hue) => hue < 275 || hue > 310), `hues ${hues.join(', ')}`);
+    const container = filledContainer();
+    assert.equal(container.contracts[0].palette.hue, dealtHue('atlas', 0));
+    const codesFor = (edit) => {
+      const copy = clone(container);
+      edit(copy.contracts[0].palette);
+      return checkContracts(copy, space(), { candidates: candidateManifest() }).findings.map((entry) => entry.code);
+    };
+    const opposite = (dealtHue('atlas', 0) + 180) % 360;
+    assert.deepEqual(codesFor((palette) => { palette.hue = opposite; }), ['hue-mismatch']);
+    assert.deepEqual(codesFor((palette) => { palette.anchors = ['#0d2a33', `oklch(0.5 0.09 ${opposite})`]; }), ['hue-unused']);
+    assert.deepEqual(codesFor((palette) => { palette.anchors = ['#0d2a33', { color: `oklch(0.5 0.09 ${opposite})`, evidence: 'E2' }]; }), []);
+  });
+
+  it('draws a random seed when --plan gets none', async () => {
+    const spaceFile = await jsonFixture('space.json', space());
+    const seeds = [];
+    for (let round = 0; round < 2; round += 1) {
+      const result = await run(DIRECTION, ['--plan', '--space', spaceFile]);
+      assert.equal(result.code, 0, result.stderr);
+      seeds.push(JSON.parse(result.stdout).seed);
+    }
+    assert.match(seeds[0], /^[0-9a-f]{8}$/);
+    assert.notEqual(seeds[0], seeds[1]);
+  });
+
   it('rejects a template-kit anchor unless brief or repository evidence backs it', () => {
     const check = (anchors) => {
       const container = filledContainer();
-      container.contracts[0].palette.anchors = anchors;
+      container.contracts[0].palette.anchors = [...anchors, `oklch(0.5 0.09 ${container.contracts[0].palette.hue})`];
       return checkContracts(container, space(), { candidates: candidateManifest() });
     };
     const kits = [
@@ -508,7 +541,6 @@ describe('direction.mjs usage contract', () => {
     const invalid = [
       [],
       ['--plan', '--seed', 'atlas'],
-      ['--plan', '--space', spaceFile],
       ['--plan', '--seed', 'not a token', '--space', spaceFile],
       ['--plan', '--seed', 'atlas', '--space', spaceFile, '--variants', '7'],
       ['--plan', '--seed', 'atlas', '--space', spaceFile, '--variants', 'many'],

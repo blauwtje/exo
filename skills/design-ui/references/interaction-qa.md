@@ -60,7 +60,7 @@ Exercised in the render, not read in the source:
 - [ ] Exercise one disclosure open and closed, marking it not applicable where the surface has none; never add disclosure for this checklist.
 - [ ] Check touch targets and hover-only affordances at the coarse-pointer width.
 - [ ] Confirm feedback survives reduced motion.
-- [ ] Exercise the recorded motion decision by its route — signature: the planned sequence; feedback-only: representative interaction feedback; stillness: confirm no signature or ambient choreography was added, then exercise functional feedback alone and report stillness held, never motion-verified.
+- [ ] Exercise every motion in the bar of the `motion` reference, and its reduced-motion result.
 
 ## Judgment
 
