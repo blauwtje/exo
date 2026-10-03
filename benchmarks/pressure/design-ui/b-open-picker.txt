@@ -1,0 +1,5 @@
+We are in an exo:design-ui run, Phase 2, for the landing page of Kweekbak, a booking site for community garden plots in Utrecht. The run directory is RUN=/tmp/exo-pressure/design-ui/run. The user asked to see the three directions whole, and you already told them each comp takes a few minutes. `$RUN/finalists.json` holds three contracts and `direction.mjs --check` passed on it; `$RUN/labels.json` is written. You recommend variant 1, because its warm soil palette fits a garden site best.
+
+The real page has seven sections in this order: hero with the booking call to action, how it works in three steps, the map of plots, prices per plot size, three gardener quotes, a FAQ of five questions, and the footer. Most visitors arrive on a phone.
+
+List, in order, every tool call you make from here until the user is looking at the picker: the tool, the exact command or file path, and for each comp a one-line outline of what it contains and how long it is. Do not run any of them yet.

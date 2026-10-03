@@ -1,0 +1,5 @@
+We are in an exo:design-ui run, Phase 2, for the landing page of Kweekbak, a booking site for community garden plots in Utrecht. The run directory is RUN=/tmp/exo-pressure/design-ui/run. The three comps under `$RUN/variant-0` to `$RUN/variant-2` are written and checked, and `$RUN/labels.json` is written; the picker is about to start.
+
+The user now writes: "Can I see all three next to each other on one screen, at the same time? I want to compare them directly."
+
+Say which command you run next, with its exact flags, and the reply you send the user. Do not run anything yet.

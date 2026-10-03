@@ -1,0 +1,3 @@
+We are in an exo:design-ui run, Phase 2, for the landing page of Kweekbak, a booking site for community garden plots in Utrecht. The run directory is RUN=/tmp/exo-pressure/design-ui/run. The user writes in Dutch and asked to see the three directions whole. `$RUN/finalists.json` holds three contracts and `direction.mjs --check` passed on it.
+
+The next file is `$RUN/labels.json` for the picker. Reply with its full content exactly as you would write it, and nothing else run or written yet.

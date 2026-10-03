@@ -1,29 +1,43 @@
 // Blocking live picker for the ui-design skill: every direction comp runs live
-// in its own sandboxed frame, all frames whole at one shared scale inside a
-// single viewport, and the script waits for one click and prints the choice.
-// A comp in the grid takes the pointer, so its hover and motion run where it is
-// compared; the Choose button under it is the answer. Enlarged, one comp fills
-// the viewport with nothing around it, and a shim neutralises navigation so a
-// click demonstrates without doing anything. The server binds a random
-// localhost port behind a per-run key, so nothing else on the machine can read
-// the comps or answer for the user. Nothing is written.
+// in its own sandboxed frame, one comp per tab at full size, and the script
+// waits for one click and prints the choice. A comp is a whole page, so its
+// frame fills the room under the tab strip at scale 1 and the comp scrolls
+// inside its own frame; its hover and motion run where it is compared. The one
+// Choose button in the bar answers with the tab on screen, and a shim
+// neutralises navigation so a click demonstrates without doing anything. The
+// server binds a random localhost port behind a per-run key, so nothing else on
+// the machine can read the comps or answer for the user.
 //
 //   node scripts/pick.mjs --comps <dir> --contracts <contracts.json>
 //                         [--labels <labels.json>] [--intrinsic]
-//                         [--frame <width>x<height>, default 1280x800]
+//                         [--frame <width>x<height>, default full width]
 //                         [--recommend <n>] [--recommend-note <one sentence>]
 //                         [--timeout <seconds, default 600>] [--no-open]
+//                         [--unchecked]
+//   node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json>
+//                         [--labels <labels.json>]
 //
 // --contracts decides the seats: contracts[i] is variant i, and --comps holds
 // one directory per variant, named variant-0, variant-1, and so on, each
 // carrying an index.html plus its own assets. The script waits until every
 // seat's index.html exists and only then prints the URL and opens the tab, so
-// the chooser never looks at an empty card. A variant sets its own frame size
-// in an optional meta.json ({"width":<n>,"height":<n>}), which --intrinsic
-// honours so a size comparison keeps its size differences at one shared scale.
-// stdout carries one line, {"index","label","steer"}, on exit 0. Exit 2 is a
-// usage error; exit 3 means no browser, comps that never all landed, or no
-// answer, and the --recommend variant is then the selection.
+// the chooser never looks at an empty tab. A comp fills the panel's width
+// unless --frame sets one width for every frame, or --intrinsic reads each
+// variant's own meta.json ({"width":<n>}); the height is always the room left,
+// and a frame is never transformed or scaled. stdout carries one line,
+// {"index","label","steer"}, on exit 0. Exit 2 is a usage error; exit 3 means
+// no browser, comps that never all landed, or no answer, and the --recommend
+// variant is then the selection.
+//
+// --check renders every comp before the chooser sees it: each variant is
+// captured full-page at 390 and 1440 wide through capture.mjs and audited
+// through check-ui.mjs, and both land under that variant's own checked/
+// directory, the only thing this script writes. It prints one JSON line per
+// variant, {"index","captures","fullPage","findings","checkUi"}, and exits 0;
+// exit 2 names a missing comp, exit 3 means no browser engine. The picker
+// refuses (exit 2) a variant whose captures at both widths are not at least as
+// new as every file of that comp, so a fix after the check needs a new check.
+// --unchecked skips that gate, only for when --check exited 3.
 //
 // A comp file opening with <!doctype or <html is served as it stands. Anything
 // else is a fragment, and the server wraps it in the document shell, so a comp
@@ -34,12 +48,12 @@
 //
 // --labels carries the screen's own copy, written by the skill in the language
 // the conversation runs in: an object with any of title, hint, recommended,
-// fallbackTitle, choose, zoom, close, typeRole, steer, done, failed, plus lang,
-// the language tag that copy is written in. Only fallbackTitle keeps a {n}
+// fallbackTitle, choose, tabs, typeRole, steer, done, failed, plus lang, the
+// language tag that copy is written in. Only fallbackTitle keeps a {n}
 // placeholder, which stands for the seat's letter. Whatever it omits falls back
-// to its English string in assets/pick-labels.json. --recommend seats that variant first and badges
-// it, and --recommend-note puts one plain sentence of reasoning inside that
-// card.
+// to its English string in assets/pick-labels.json. --recommend seats that
+// variant first and badges its tab, and --recommend-note puts one plain
+// sentence of reasoning in the header.
 
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -49,14 +63,20 @@ import http from 'node:http';
 import path from 'node:path';
 import process from 'node:process';
 import { CHROME_TOKENS, escapeHtml } from '#page-chrome';
-import { CapabilityError, parseFlags, parseViewport, readJsonFlag, UsageError } from './capture.mjs';
+import {
+  capture, CapabilityError, DEFAULT_VIEWPORTS, parseFlags, parseViewport, readJsonFlag, UsageError
+} from './capture.mjs';
+import { applyNotesTable, renderedAudit, staticAudit } from './check-ui.mjs';
 import { isMain } from '#script-flags';
 
 const DEFAULT_TIMEOUT_SECONDS = 600;
-// A three-up comparison is width-bound, so the frame decides how large the
-// comp's own content lands on screen: at 1280 it reads where 1440 did not,
-// and it is still a real desktop viewport rather than a flattering one.
-const DEFAULT_FRAME = { width: 1280, height: 800 };
+// No frame size by default: a comp fills the panel's width, because a whole
+// page shown at 100% is read as the page it will be.
+const DEFAULT_FRAME = null;
+
+// The widths a comp is checked at before the picker serves it, mobile first.
+const CHECK_VIEWPORTS = DEFAULT_VIEWPORTS.map(parseViewport);
+const CHECKED_DIRECTORY = 'checked';
 
 // The last resort, reached only for a key the --labels file leaves out. A flag
 // cannot know what language the session runs in, so this script ships no
@@ -106,8 +126,7 @@ const MEDIA_TYPES = new Map(Object.entries({
 // Injected into every served comp document. The frame is sandboxed without
 // allow-forms, allow-popups, or allow-top-navigation, so this covers the one
 // gap that leaves: a same-frame link would replace the comp being compared. It
-// also hands the picker the keys that close and step the enlarged view, which
-// stop reaching the picker once a click has put focus inside the comp.
+// forwards no key, so the arrows and the space bar scroll the comp itself.
 const DEMO_SHIM = `<script>
 (() => {
   const swallow = (event) => {
@@ -117,13 +136,6 @@ const DEMO_SHIM = `<script>
   addEventListener('click', swallow, true);
   addEventListener('submit', (event) => event.preventDefault(), true);
   window.open = () => null;
-
-  const PICKER_KEYS = ['Escape', 'ArrowLeft', 'ArrowRight'];
-  addEventListener('keydown', (event) => {
-    if (!PICKER_KEYS.includes(event.key)) return;
-    if (event.target.closest?.('input, textarea, select, [contenteditable]')) return;
-    parent.postMessage({ uiDesignKey: event.key }, '*');
-  });
 })();
 </script>`;
 
@@ -139,8 +151,8 @@ const COMP_RESET = '*,*::before,*::after{box-sizing:border-box}'
   + 'button,input,select,textarea{font:inherit;color:inherit}';
 
 // A comp that wrote its own <head> owns the whole document and keeps it; the
-// shim is appended either way, because the picker neutralises navigation and
-// forwards its keys from inside the frame in both cases.
+// shim is appended either way, because the picker neutralises navigation in
+// both cases.
 const OPENS_ITS_OWN_DOCUMENT = /^\s*<(?:!doctype|html)\b/i;
 
 export function compDocument(markup, lang, shim = DEMO_SHIM) {
@@ -225,8 +237,10 @@ export function openSystemBrowser(url) {
   }
 }
 
-/** A variant's own frame size, used only under --intrinsic; the shared --frame
- *  wins otherwise, so a direction comparison stays a like-for-like one. */
+/** A variant's own frame width, used only under --intrinsic; the shared --frame
+ *  wins otherwise, so a direction comparison stays a like-for-like one. The
+ *  height is the room under the tab strip, so a written height is checked but
+ *  never applied. */
 async function readFrame(directory, fallback) {
   let text;
   try {
@@ -240,12 +254,13 @@ async function readFrame(directory, fallback) {
   } catch {
     throw new UsageError(`'${directory}/meta.json' is not valid JSON`);
   }
-  const width = meta?.width ?? fallback.width;
-  const height = meta?.height ?? fallback.height;
-  if (!Number.isInteger(width) || width < 200 || !Number.isInteger(height) || height < 200) {
+  const width = meta?.width ?? fallback?.width ?? null;
+  const height = meta?.height ?? fallback?.height ?? null;
+  const fits = (value) => value === null || (Number.isInteger(value) && value >= 200);
+  if (!fits(width) || !fits(height)) {
     throw new UsageError(`'${directory}/meta.json' needs whole width and height from 200`);
   }
-  return { width, height };
+  return width === null ? null : { width, height };
 }
 
 // A CSS value written by the skill lands in a style attribute. Escaping keeps it
@@ -319,8 +334,9 @@ function readSignature(contract, index) {
   return { face, fontHref, swatches };
 }
 
-/** One seat per contract. Every seat starts on the shared frame; main swaps in
- *  each comp's own meta.json size under --intrinsic once every comp exists. */
+/** One seat per contract. Every seat starts on the shared frame, null for full
+ *  width; main swaps in each comp's own meta.json width under --intrinsic once
+ *  every comp exists. */
 export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME } = {}) {
   if (!compsDirectory) throw new UsageError('--comps is required');
   let root;
@@ -423,43 +439,41 @@ function page(variants, key, { words, recommended, recommendedNote }) {
     ? variants
     : [variants[recommended], ...variants.filter((variant) => variant.index !== recommended)];
 
-  // The material as a row of chips in the caption: the face set in itself, then
-  // one chip per colour. A caption line has no room to print the words, so they
-  // stay in the markup for a screen reader and in the tooltip for a pointer.
+  // The material as a row of chips in the tab: the face set in itself, then one
+  // chip per colour. A tab has no room to print the words, so they stay in the
+  // markup for a screen reader and in the tooltip for a pointer.
   const signature = (written) => {
     if (!written) return '';
     const faceName = written.face?.name ?? '';
     const face = written.face
-      ? `<li class="face" style="--face:${escapeHtml(written.face.stack)}" title="${escapeHtml(`${words.typeRole}: ${faceName}`)}"><span class="face-sample" aria-hidden="true">Aa</span><span class="words"><span class="role">${escapeHtml(words.typeRole)}</span> <span class="tone">${escapeHtml(faceName)}</span></span></li>`
+      ? `<span class="face" style="--face:${escapeHtml(written.face.stack)}" title="${escapeHtml(`${words.typeRole}: ${faceName}`)}"><span class="face-sample" aria-hidden="true">Aa</span><span class="words"><span class="role">${escapeHtml(words.typeRole)}</span> <span class="tone">${escapeHtml(faceName)}</span></span></span>`
       : '';
     const swatches = written.swatches.map((swatch) => {
       const tooltip = [swatch.role, swatch.name, swatch.code].filter(Boolean).join(' · ');
-      return `<li style="--swatch:${escapeHtml(swatch.value)}" title="${escapeHtml(tooltip)}"><span class="chip" aria-hidden="true"></span><span class="words"><span class="role">${escapeHtml(swatch.role)}</span> <span class="tone">${escapeHtml(swatch.name)}</span> <code>${escapeHtml(swatch.code)}</code></span></li>`;
+      return `<span class="swatch" style="--swatch:${escapeHtml(swatch.value)}" title="${escapeHtml(tooltip)}"><span class="chip" aria-hidden="true"></span><span class="words"><span class="role">${escapeHtml(swatch.role)}</span> <span class="tone">${escapeHtml(swatch.name)}</span> <code>${escapeHtml(swatch.code)}</code></span></span>`;
     }).join('');
-    return `<ul class="signature">${face}${swatches}</ul>`;
+    return `<span class="signature">${face}${swatches}</span>`;
   };
 
   // What a chooser reads is the contract's own title and description, written by
   // the skill in the words of the subject. The dealt axis ids stay out of the
-  // tile: they name the machinery, not the direction.
-  const tile = (variant, seat) => {
-    const mark = seatMark(seat);
-    const title = variant.contract?.title ?? fillPosition(words.fallbackTitle, mark);
-    const description = variant.contract?.description ?? '';
+  // tab: they name the machinery, not the direction.
+  const titleOf = (variant, seat) => variant.contract?.title ?? fillPosition(words.fallbackTitle, seatMark(seat));
+  const descriptionOf = (variant) => variant.contract?.description ?? '';
+
+  const tab = (variant, seat) => {
+    const title = titleOf(variant, seat);
     const isPick = variant.index === recommended;
-    const source = `/k/${key}/v/${variant.index}/index.html`;
-    return `<section class="tile${isPick ? ' recommended' : ''}" style="--fw:${variant.frame.width};--fh:${variant.frame.height}" data-index="${variant.index}" data-source="${source}">
-    <div class="stage"><iframe sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}" src="${source}"></iframe></div>
-    <div class="caption">
-      <div class="naming">
-        <h2><span class="ordinal">${mark}</span><span class="label" title="${escapeHtml(title)}">${escapeHtml(title)}</span>${isPick ? `<span class="badge">${escapeHtml(words.recommended)}</span>` : ''}</h2>
-        <p class="description" title="${escapeHtml(description)}">${escapeHtml(description)}</p>
-      </div>
-      ${signature(variant.signature)}
-      <button type="button" class="enlarge" data-zoom="${variant.index}" aria-label="${escapeHtml(`${words.zoom}: ${title}`)}"><span aria-hidden="true">&#x2922;</span></button>
-      <button type="button" class="choose" data-choose="${variant.index}" aria-label="${escapeHtml(`${words.choose}: ${title}`)}">${escapeHtml(words.choose)}</button>
-    </div>
-  </section>`;
+    const active = seat === 0;
+    return `<button type="button" role="tab" class="tab${isPick ? ' recommended' : ''}" id="tab-${variant.index}" aria-controls="panel-${variant.index}" aria-selected="${active}" tabindex="${active ? 0 : -1}" data-index="${variant.index}" data-description="${escapeHtml(descriptionOf(variant))}"><span class="ordinal">${seatMark(seat)}</span><span class="label" title="${escapeHtml(title)}">${escapeHtml(title)}</span>${isPick ? `<span class="badge">${escapeHtml(words.recommended)}</span>` : ''}${signature(variant.signature)}</button>`;
+  };
+
+  // The comp at scale 1, as wide as the panel unless a frame width was set, and
+  // as tall as the room left, so the comp scrolls inside its own frame.
+  const panel = (variant, seat) => {
+    const title = titleOf(variant, seat);
+    const width = variant.frame?.width ? ` style="inline-size:${variant.frame.width}px"` : '';
+    return `<section class="panel" role="tabpanel" id="panel-${variant.index}" aria-labelledby="tab-${variant.index}" data-index="${variant.index}"${seat === 0 ? '' : ' hidden'}><iframe sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}" src="/k/${key}/v/${variant.index}/index.html"${width}></iframe></section>`;
   };
 
   // The comps load their own faces inside their frames, which the picker page
@@ -471,6 +485,8 @@ function page(variants, key, { words, recommended, recommendedNote }) {
   const why = recommendedNote
     ? `<p class="why"><span class="why-mark" aria-hidden="true">&#9733;</span>${escapeHtml(recommendedNote)}</p>`
     : '';
+  const first = seated[0];
+  const firstTitle = titleOf(first, 0);
 
   return `<!doctype html>
 <html lang="${escapeHtml(words.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(words.title)}</title>
@@ -480,14 +496,9 @@ ${fontLinks}
   @layer tokens {
     :root {
 ${CHROME_TOKENS}
-      /* Black around an enlarged comp whose shape differs from the window's, so
-         the letterbox reads as no part of any direction. */
-      --letterbox: oklch(0 0 0);
       --radius-card: 12px;
-      --gap: 12px;
+      --gap: 8px;
       --pad: 12px;
-      --k: 0.3;
-      --cols: 1;
     }
   }
   @layer base {
@@ -497,13 +508,14 @@ ${CHROME_TOKENS}
       margin: 0; color: var(--ink); background: var(--ground);
       font: 14px/1.5 var(--font-stack);
       font-variant-numeric: tabular-nums;
-      /* The header takes what its one line needs and the grid every pixel left,
-         which is the room fit() solves the scale against. */
-      display: grid; grid-template-rows: auto minmax(0, 1fr); row-gap: var(--gap);
+      /* The bar, the strip and the description take what they need and the
+         panel every pixel left, which is the comp's own viewport height. */
+      display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); row-gap: var(--gap);
       padding: var(--pad);
     }
     ::selection { background: var(--accent); color: var(--accent-ink); }
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
     .words {
       position: absolute; inline-size: 1px; block-size: 1px;
       overflow: hidden; clip-path: inset(50%); white-space: nowrap;
@@ -514,139 +526,78 @@ ${CHROME_TOKENS}
     .heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; flex: 1; min-inline-size: 0; }
     h1 { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; margin: 0; }
     .hint { margin: 0; color: var(--ink-muted); font-size: 13px; }
-    .grid {
-      display: grid; gap: var(--gap); min-block-size: 0;
-      grid-template-columns: repeat(var(--cols), max-content);
-      justify-content: center; align-content: center;
-    }
-    /* Hidden until every comp has loaded, so the cards arrive together instead
-       of one by one. */
-    .grid:not(.ready) { visibility: hidden; }
-    .tile { inline-size: calc(var(--fw) * var(--k) * 1px + 2px); }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; border-block-end: 1px solid var(--border); }
+    .panels { display: grid; min-block-size: 0; }
+    .panel { display: grid; justify-items: center; min-block-size: 0; }
   }
   @layer components {
-    /* The card is the comp plus one caption row and nothing else: no padding
-       around the picture, so every pixel the scale earns goes to the comp. */
-    .tile {
-      display: grid; overflow: hidden;
-      background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius-card);
-      transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+    .tab {
+      display: inline-flex; align-items: center; gap: 6px; flex: none; max-inline-size: 40ch;
+      min-block-size: 36px; padding: 6px 10px; margin-block-end: -1px;
+      font: inherit; font-weight: 600; color: var(--ink-muted); cursor: pointer;
+      background: transparent; border: 1px solid transparent; border-block-end-color: var(--border);
+      border-radius: var(--radius-control) var(--radius-control) 0 0;
+      transition: color 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .tile:hover, .tile:focus-within { border-color: var(--accent); }
-    .stage {
-      inline-size: calc(var(--fw) * var(--k) * 1px);
-      block-size: calc(var(--fh) * var(--k) * 1px);
-      overflow: hidden; background: var(--ground);
+    .tab:hover { color: var(--ink); }
+    .tab[aria-selected="true"] {
+      color: var(--ink); background: var(--surface);
+      border-color: var(--border); border-block-end-color: var(--surface);
     }
-    /* Live at its own frame size and scaled whole, so the comp keeps the layout
-       it was composed for and its hover and motion run under the pointer. */
-    .stage iframe {
-      display: block; border: 0;
-      inline-size: calc(var(--fw) * 1px); block-size: calc(var(--fh) * 1px);
-      transform: scale(var(--k)); transform-origin: top left;
+    .label { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* One line, cut with an ellipsis and whole in the tooltip. */
+    .description {
+      margin: 0; min-block-size: 1.5em; color: var(--ink-muted); font-size: 13px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .caption {
-      display: flex; align-items: center; gap: 8px; min-inline-size: 0;
-      padding: 6px 6px 6px 10px;
-      border-block-start: 1px solid var(--border);
-    }
-    .naming { display: grid; flex: 1; min-inline-size: 0; }
-    h2 {
-      display: flex; align-items: center; gap: 6px; min-inline-size: 0;
-      margin: 0; font-size: 14px; font-weight: 650; letter-spacing: -0.01em;
-    }
-    /* One line each, cut with an ellipsis and whole in the tooltip: a caption
-       that wraps makes one card taller than the next. */
-    .label, .description { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .description { margin: 0; color: var(--ink-muted); font-size: 12.5px; }
     .ordinal {
       display: grid; place-items: center; inline-size: 20px; block-size: 20px; flex: none;
       border-radius: 999px; background: var(--accent); color: var(--accent-ink);
       font-size: 11px; font-weight: 650;
     }
-    /* Filled, not outlined: an outline anywhere on this card reads as a card
-       already chosen, and the badge has to carry the recommendation alone. */
+    /* Filled, not outlined: an outline reads as a direction already chosen, and
+       the badge has to carry the recommendation alone. */
     .badge {
       flex: none; padding: 1px 7px; border-radius: 999px;
       font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
       background: var(--accent); color: var(--accent-ink);
     }
-    .signature { display: flex; align-items: center; gap: 4px; flex: none; margin: 0; padding: 0; list-style: none; }
-    .signature li { position: relative; display: grid; place-items: center; }
+    .signature { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+    .signature > span { position: relative; display: grid; place-items: center; }
     .face-sample { font-family: var(--face); font-size: 16px; line-height: 1; padding-inline: 2px 4px; color: var(--ink); }
     .chip {
-      inline-size: 16px; block-size: 16px; border-radius: 4px;
+      inline-size: 14px; block-size: 14px; border-radius: 4px;
       background: var(--swatch);
       border: 1px solid oklch(from var(--ink) l c h / 0.28);
     }
-    button {
-      font: inherit; font-weight: 550; flex: none;
-      min-block-size: 32px; min-inline-size: 32px; padding-inline: 12px;
-      display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
-      border: 1px solid var(--border-control); border-radius: var(--radius-control);
-      background: var(--surface); color: var(--ink); cursor: pointer;
-      transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-                  border-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    /* Scale 1, never a transform: the comp is the page at its real size. */
+    .panel iframe {
+      display: block; border: 1px solid var(--border); border-radius: var(--radius-card);
+      inline-size: 100%; max-inline-size: 100%; block-size: 100%;
+      background: var(--surface);
     }
-    button:hover { border-color: var(--accent); }
-    @media (pointer: coarse) { button { min-block-size: 44px; min-inline-size: 44px; } }
-    .enlarge { padding-inline: 0; font-size: 15px; }
-    .choose { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .choose:hover { background: color-mix(in oklch, var(--accent) 88%, var(--ink)); }
+    button.choose, .steer input { min-block-size: 32px; border-radius: var(--radius-control); }
+    button.choose {
+      font: inherit; font-weight: 550; flex: none; padding-inline: 12px; cursor: pointer; white-space: nowrap;
+      background: var(--accent); color: var(--accent-ink); border: 1px solid transparent;
+      transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    button.choose:hover { background: color-mix(in oklch, var(--accent) 88%, var(--ink)); }
+    @media (pointer: coarse) { button.choose, .tab { min-block-size: 44px; } }
     .why { display: flex; align-items: baseline; gap: 6px; margin: 0; font-size: 13px; }
     .why-mark { flex: none; color: var(--accent); }
     .steer { display: flex; align-items: center; gap: 8px; flex: 0 1 380px; color: var(--ink-muted); font-size: 13px; }
     .steer input {
-      flex: 1; min-inline-size: 0; min-block-size: 32px; padding-inline: 10px;
+      flex: 1; min-inline-size: 0; padding-inline: 10px;
       font: inherit; color: var(--ink); background: var(--surface);
-      border: 1px solid var(--border-control); border-radius: var(--radius-control);
-      caret-color: var(--accent);
+      border: 1px solid var(--border-control); caret-color: var(--accent);
     }
     .alert { margin: 0; font-size: 13px; font-weight: 600; }
-    .alert[hidden] { display: none; }
     /* Between the click and the answer there is a network hop, and a screen that
        shows nothing for it reads as a click that missed. */
-    .grid.deciding { pointer-events: none; }
-    .grid.deciding .tile:not(.choosing) { opacity: 0.5; }
-    .tile.choosing {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 26%, transparent);
-    }
-    /* Enlarged is the comp and nothing else: the whole viewport, no margin, no
-       bar, no rail. */
-    dialog {
-      position: fixed; inset: 0; margin: 0; padding: 0; border: 0;
-      inline-size: 100vw; block-size: 100dvh; max-inline-size: none; max-block-size: none;
-      background: var(--letterbox); overflow: hidden;
-      display: none; opacity: 0;
-      transition: opacity 180ms ease, display 200ms allow-discrete, overlay 200ms allow-discrete;
-    }
-    dialog[open] { display: grid; place-items: center; opacity: 1; }
-    @starting-style { dialog[open] { opacity: 0; } }
-    dialog::backdrop {
-      background-color: var(--letterbox);
-      transition: display 200ms allow-discrete, overlay 200ms allow-discrete;
-    }
-    .full-shell {
-      inline-size: calc(var(--zfw) * var(--zk) * 1px);
-      block-size: calc(var(--zfh) * var(--zk) * 1px);
-      overflow: hidden;
-    }
-    .full-shell iframe {
-      display: block; border: 0;
-      inline-size: calc(var(--zfw) * 1px); block-size: calc(var(--zfh) * 1px);
-      transform: scale(var(--zk)); transform-origin: top left;
-    }
-    /* Invisible until the pointer or the keyboard reaches it, so the comp fills
-       the screen; it covers the comp's own top-right 44px, the one place a click
-       there closes instead of demonstrating. */
-    .full-close {
-      position: fixed; inset-block-start: 8px; inset-inline-end: 8px; z-index: 1;
-      min-inline-size: 44px; min-block-size: 44px; padding-inline: 0; font-size: 15px;
-      opacity: 0; transition: opacity 140ms ease;
-    }
-    .full-close:hover, .full-close:focus-visible { opacity: 1; }
+    body.deciding { pointer-events: none; }
+    body.deciding .tab:not(.choosing) { opacity: 0.5; }
+    .tab.choosing { box-shadow: inset 0 -3px 0 var(--accent); }
     /* The last thing the screen says. A tick, the name of what was picked, and
        one line: the chooser has already left, so it confirms rather than asks. */
     body.finished { grid-template-rows: 1fr; place-items: center; }
@@ -667,8 +618,7 @@ ${CHROME_TOKENS}
     .done p { margin: 0; color: var(--ink-muted); font-size: 14px; text-wrap: pretty; }
     @keyframes settle { from { opacity: 0; scale: 0.97; translate: 0 6px; } }
     @media (prefers-reduced-motion: reduce) {
-      button, .tile, .full-close { transition-duration: 1ms; }
-      dialog, dialog::backdrop { transition-duration: 1ms; }
+      button, .tab { transition-duration: 1ms; }
       .done { animation-duration: 1ms; }
     }
   }
@@ -677,141 +627,53 @@ ${CHROME_TOKENS}
 <header>
   <div class="heading"><h1>${escapeHtml(words.title)}</h1><p class="hint">${escapeHtml(words.hint)}</p>${why}<p class="alert" id="alert" role="alert" hidden></p></div>
   <label class="steer"><span>${escapeHtml(words.steer)}</span><input id="steer" type="text" autocomplete="off"></label>
+  <button type="button" class="choose" id="choose" data-choose="${first.index}" aria-label="${escapeHtml(`${words.choose}: ${firstTitle}`)}">${escapeHtml(words.choose)}</button>
 </header>
-<div class="grid">
-${seated.map(tile).join('\n')}
+<div class="tabs" role="tablist" aria-label="${escapeHtml(words.tabs)}">
+${seated.map(tab).join('\n')}
 </div>
-<dialog id="full" aria-label="${escapeHtml(words.zoom)}">
-  <div class="full-shell" id="full-shell"><iframe id="full-frame" sandbox="allow-scripts" title="${escapeHtml(words.zoom)}"></iframe></div>
-  <button type="button" class="full-close" id="full-close" aria-label="${escapeHtml(words.close)}"><span aria-hidden="true">&#10005;</span></button>
-</dialog>
+<p class="description" id="description" title="${escapeHtml(descriptionOf(first))}">${escapeHtml(descriptionOf(first))}</p>
+<div class="panels">
+${seated.map(panel).join('\n')}
+</div>
 <script>
   const key = ${JSON.stringify(key)};
+  const chooseTemplate = ${JSON.stringify(words.choose)};
   const doneTemplate = ${JSON.stringify(words.done)};
   const failedTemplate = ${JSON.stringify(words.failed)};
-  const grid = document.querySelector('.grid');
-  const tiles = [...document.querySelectorAll('.tile')];
-  // A tile's seat is where it sits on screen; its index is the variant it
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const chooseButton = document.getElementById('choose');
+  const description = document.getElementById('description');
+  // A tab's seat is where it sits in the strip; its index is the variant it
   // serves. The two stop matching once the recommendation takes the first seat,
-  // so anything the chooser aims at a position resolves through this.
-  const seatOf = new Map(tiles.map((tile, seat) => [Number(tile.dataset.index), seat]));
-  const frameWidths = tiles.map((tile) => parseFloat(tile.style.getPropertyValue('--fw')));
-  const frameHeights = tiles.map((tile) => parseFloat(tile.style.getPropertyValue('--fh')));
+  // so the Choose button always carries the index, never the seat.
+  let activeSeat = 0;
 
-  /** The largest shared scale at which every comp, whole, fits the room in that
-   *  many columns. Each column is as wide as its widest frame and each row as
-   *  tall as its tallest, so --intrinsic sizes do not over-reserve. Never past
-   *  1: a comp blown up beyond the size it was drawn for is a third design. */
-  function scaleFor(columns, room, captionHeight, gap) {
-    const rows = Math.ceil(tiles.length / columns);
-    let stageWidth = 0;
-    for (let column = 0; column < columns; column += 1) {
-      let widest = 0;
-      for (let index = column; index < tiles.length; index += columns) widest = Math.max(widest, frameWidths[index]);
-      stageWidth += widest;
-    }
-    let stageHeight = 0;
-    for (let row = 0; row < rows; row += 1) {
-      stageHeight += Math.max(...frameHeights.slice(row * columns, (row + 1) * columns));
-    }
-    // Each tile spends two pixels of border on either axis.
-    const availableWidth = room.width - gap * (columns - 1) - 2 * columns;
-    const availableHeight = room.height - gap * (rows - 1) - (captionHeight + 2) * rows;
-    return Math.min(availableWidth / stageWidth, availableHeight / stageHeight, 1);
+  function activate(seat, focus) {
+    activeSeat = seat;
+    tabs.forEach((tab, at) => {
+      const on = at === seat;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      document.getElementById(tab.getAttribute('aria-controls')).hidden = !on;
+    });
+    const tab = tabs[seat];
+    const title = tab.querySelector('.label').textContent;
+    chooseButton.dataset.choose = tab.dataset.index;
+    chooseButton.setAttribute('aria-label', chooseTemplate + ': ' + title);
+    description.textContent = tab.dataset.description;
+    description.title = tab.dataset.description;
+    if (focus) tab.focus();
   }
-
-  // The column count is searched rather than fixed at one row: in a 16:10
-  // window three 16:10 comps in two rows are larger than three in a line.
-  function fit() {
-    const gap = parseFloat(getComputedStyle(grid).rowGap);
-    const room = grid.getBoundingClientRect();
-    const captionHeight = Math.max(...tiles.map((tile) => tile.querySelector('.caption').getBoundingClientRect().height));
-    let best = { scale: 0, columns: tiles.length };
-    for (let columns = 1; columns <= tiles.length; columns += 1) {
-      const scale = scaleFor(columns, room, captionHeight, gap);
-      if (scale > best.scale) best = { scale, columns };
-    }
-    document.documentElement.style.setProperty('--cols', String(best.columns));
-    document.documentElement.style.setProperty('--k', String(best.scale));
-  }
-  fit();
-
-  // The cards appear together once every comp has loaded, or after two seconds
-  // for a comp still waiting on a remote face, so no card is seen empty beside
-  // a neighbour that is already drawn.
-  const REVEAL_CAP_MS = 2000;
-  const loads = tiles.map((tile) => new Promise((resolve) => {
-    tile.querySelector('iframe').addEventListener('load', resolve, { once: true });
-  }));
-  Promise.race([Promise.all(loads), new Promise((resolve) => { setTimeout(resolve, REVEAL_CAP_MS); })])
-    .then(() => grid.classList.add('ready'));
-
-  const dialog = document.getElementById('full');
-  const fullFrame = document.getElementById('full-frame');
-  const fullShell = document.getElementById('full-shell');
-  // Which seat the enlarged view is showing, so an arrow key has somewhere to
-  // step from and a closed view has nothing to step at all.
-  let shownSeat = null;
-
-  document.getElementById('full-close').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('close', () => {
-    fullFrame.removeAttribute('src');
-    shownSeat = null;
-  });
-  // A click on the dialog itself landed on the letterbox, outside the comp.
-  dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
-
-  /** The comp at its own frame size, scaled to fill the viewport along its
-   *  tighter axis. A comp composed for the window's shape fills it edge to edge;
-   *  any other shape is centred on the letterbox, never cropped or reflowed. */
-  function fitFull() {
-    if (!dialog.open) return;
-    const frameWidth = parseFloat(fullShell.style.getPropertyValue('--zfw'));
-    const frameHeight = parseFloat(fullShell.style.getPropertyValue('--zfh'));
-    const scale = Math.min(innerWidth / frameWidth, innerHeight / frameHeight);
-    fullShell.style.setProperty('--zk', String(scale));
-  }
-  addEventListener('resize', () => { fit(); fitFull(); });
-
-  function enlarge(index) {
-    const seat = seatOf.get(index);
-    const tile = tiles[seat];
-    shownSeat = seat;
-    fullShell.style.setProperty('--zfw', tile.style.getPropertyValue('--fw'));
-    fullShell.style.setProperty('--zfh', tile.style.getPropertyValue('--fh'));
-    fullFrame.title = tile.querySelector('.label').textContent;
-    dialog.dataset.index = String(index);
-    fullFrame.src = tile.dataset.source;
-    if (!dialog.open) dialog.showModal();
-    fitFull();
-  }
-
-  /** The seat one step along the row, wrapping, so the last comp is one key
-   *  from the first. */
-  function stepSeat(step) {
-    if (shownSeat === null) return;
-    const count = tiles.length;
-    const seat = ((shownSeat + step) % count + count) % count;
-    enlarge(Number(tiles[seat].dataset.index));
-  }
-
-  // A click inside the enlarged comp moves focus into its frame, where the
-  // page's own keys no longer arrive; the comp's shim forwards these three.
-  addEventListener('message', (event) => {
-    if (event.source !== fullFrame.contentWindow) return;
-    const forwarded = event.data?.uiDesignKey;
-    if (forwarded === 'Escape') dialog.close();
-    if (forwarded === 'ArrowRight' || forwarded === 'ArrowLeft') stepSeat(forwarded === 'ArrowRight' ? 1 : -1);
-  });
 
   async function choose(index) {
     const steer = document.getElementById('steer').value;
     const alert = document.getElementById('alert');
     alert.hidden = true;
     for (const each of document.querySelectorAll('button')) each.disabled = true;
-    const chosen = tiles[seatOf.get(index)];
+    const chosen = document.getElementById('tab-' + index);
     chosen.classList.add('choosing');
-    grid.classList.add('deciding');
+    document.body.classList.add('deciding');
     // The picker has a timeout and the tab outlives it, so a click can land on
     // a server that has already gone. Confirming a choice nobody received would
     // send the user away from the one place they can still answer.
@@ -824,15 +686,11 @@ ${seated.map(tile).join('\n')}
     if (!delivered) {
       for (const each of document.querySelectorAll('button')) each.disabled = false;
       chosen.classList.remove('choosing');
-      grid.classList.remove('deciding');
-      if (dialog.open) dialog.close();
+      document.body.classList.remove('deciding');
       alert.textContent = failedTemplate;
       alert.hidden = false;
       return;
     }
-    // The panel replaces the page, and a modal still open when its own element
-    // is removed leaves the backdrop painted over the answer.
-    if (dialog.open) dialog.close();
     const panel = document.createElement('div');
     panel.className = 'done';
     const mark = document.createElement('div');
@@ -851,38 +709,40 @@ ${seated.map(tile).join('\n')}
   document.addEventListener('click', (event) => {
     const chooser = event.target.closest('button[data-choose]');
     if (chooser) return void choose(Number(chooser.dataset.choose));
-    const zoomer = event.target.closest('button[data-zoom]');
-    if (zoomer) enlarge(Number(zoomer.dataset.zoom));
+    const tab = event.target.closest('[role="tab"]');
+    if (tab) activate(tabs.indexOf(tab), true);
   });
 
   /** The seat a letter names, or null for a key that names none. */
   function seatFromKey(pressed) {
     if (pressed.length !== 1) return null;
     const seat = pressed.toUpperCase().charCodeAt(0) - 65;
-    return seat >= 0 && seat < tiles.length ? seat : null;
+    return seat >= 0 && seat < tabs.length ? seat : null;
   }
 
+  // Keys pressed inside a comp stay in its frame, so the comp scrolls; only the
+  // picker's own page reads these.
   addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     // The note field invites free text, so a letter typed there is a character,
-    // not a choice; without this a note starting "beter met meer wit" picks B.
+    // not a tab; without this a note starting "beter met meer wit" shows B.
     if (event.target.closest('textarea, input, [contenteditable]')) return;
-    const seat = seatFromKey(event.key);
-    // Enlarged, a letter and an arrow move the view, and Enter answers with the
-    // comp on screen, because nothing else is on screen to click.
-    if (dialog.open) {
-      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+    if (event.target.closest('[role="tab"]')) {
+      const count = tabs.length;
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+      if (step) {
         event.preventDefault();
-        stepSeat(event.key === 'ArrowRight' ? 1 : -1);
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        choose(Number(dialog.dataset.index));
-      } else if (seat !== null) {
-        enlarge(Number(tiles[seat].dataset.index));
+        return void activate(((activeSeat + step) % count + count) % count, true);
       }
-      return;
+      if (event.key === 'Home' || event.key === 'End') {
+        event.preventDefault();
+        return void activate(event.key === 'Home' ? 0 : count - 1, true);
+      }
     }
-    if (seat !== null) choose(Number(tiles[seat].dataset.index));
+    // A letter shows that direction and never chooses it: the answer is the
+    // Choose button alone.
+    const seat = seatFromKey(event.key);
+    if (seat !== null) activate(seat, event.target.closest('[role="tab"]') !== null);
   });
 </script></body></html>`;
 }
@@ -934,20 +794,10 @@ export function sentByOwnPage(request, port) {
   return !foreignOrigin && isJson;
 }
 
-/** Serve the picker on a random localhost port. Returns the URL to print and a
- *  promise that resolves on the first valid answer or rejects at the deadline,
- *  which the wait for the comps has already spent part of. */
-async function serve(variants, key, presentation, timeoutSeconds, deadline) {
-  let settle;
-  const answer = new Promise((resolve, reject) => {
-    settle = (error, value) => {
-      clearTimeout(timer);
-      server.close();
-      server.closeAllConnections();
-      if (error) reject(error);
-      else resolve(value);
-    };
-  });
+/** Serve the comps, and the picker page when an answer is wanted, on a random
+ *  localhost port. onAnswer receives the first valid answer; close stops the
+ *  server, which --check calls once every comp is rendered. */
+async function startServer(variants, key, presentation, onAnswer) {
   const server = http.createServer(async (request, response) => {
     const { port } = server.address();
     const url = new URL(request.url, `http://127.0.0.1:${port}`);
@@ -969,7 +819,7 @@ async function serve(variants, key, presentation, timeoutSeconds, deadline) {
       return send(response, 200, type, compDocument(markup, presentation.words.lang));
     }
 
-    if (url.searchParams.get('key') !== key) return send(response, 403, null, '');
+    if (!onAnswer || url.searchParams.get('key') !== key) return send(response, 403, null, '');
     if (request.method === 'GET' && url.pathname === '/') {
       return send(response, 200, 'text/html; charset=utf-8', page(variants, key, presentation));
     }
@@ -985,25 +835,130 @@ async function serve(variants, key, presentation, timeoutSeconds, deadline) {
       const variant = Number.isInteger(parsed?.index) ? variants[parsed.index] : undefined;
       if (!variant) return send(response, 400, 'application/json', '{"ok":false}');
       send(response, 200, 'application/json', '{"ok":true}');
-      settle(null, { index: variant.index, label: variant.label, steer: typeof parsed.steer === 'string' ? parsed.steer.trim() : '' });
+      onAnswer({ index: variant.index, label: variant.label, steer: typeof parsed.steer === 'string' ? parsed.steer.trim() : '' });
     });
   });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);
   });
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const close = () => {
+    server.close();
+    server.closeAllConnections();
+  };
+  return { origin, close };
+}
+
+/** Serve the picker. Returns the URL to print and a promise that resolves on
+ *  the first valid answer or rejects at the deadline, which the wait for the
+ *  comps has already spent part of. */
+async function serve(variants, key, presentation, timeoutSeconds, deadline) {
+  let settle;
+  const answer = new Promise((resolve, reject) => {
+    settle = (error, value) => {
+      clearTimeout(timer);
+      close();
+      if (error) reject(error);
+      else resolve(value);
+    };
+  });
+  const { origin, close } = await startServer(variants, key, presentation, (value) => settle(null, value));
   const timer = setTimeout(
     () => settle(new CapabilityError(`ui-design: no choice arrived within ${timeoutSeconds}s; the recommended variant stands`)),
     Math.max(0, deadline - Date.now()));
-  return { url: `http://127.0.0.1:${server.address().port}/?key=${key}`, answer };
+  return { url: `${origin}/?key=${key}`, answer };
+}
+
+/** The newest modification time of any file of the comp, every file outside
+ *  its checked/ directory, so an asset edited after the check counts too. */
+async function newestCompTime(directory) {
+  let newest = 0;
+  for (const entry of await fs.readdir(directory, { withFileTypes: true, recursive: true })) {
+    if (!entry.isFile()) continue;
+    const full = path.join(entry.parentPath ?? entry.path, entry.name);
+    const relative = path.relative(directory, full);
+    if (relative.split(path.sep)[0] === CHECKED_DIRECTORY) continue;
+    newest = Math.max(newest, (await fs.stat(full)).mtimeMs);
+  }
+  return newest;
+}
+
+/** Refuse the picker until every comp has a capture at each check width at
+ *  least as new as the comp itself, so the chooser sees only checked comps. */
+async function requireFreshChecks(variants) {
+  for (const variant of variants) {
+    const newest = await newestCompTime(variant.directory);
+    for (const { width, height } of CHECK_VIEWPORTS) {
+      const names = [`comp-${width}x${height}.png`, `comp-${width}x${height}-fullpage.png`];
+      const times = await Promise.all(names.map((name) =>
+        fs.stat(path.join(variant.directory, CHECKED_DIRECTORY, name)).then((stat) => stat.mtimeMs, () => -1)));
+      if (Math.max(...times) < newest) {
+        throw new UsageError(`${variant.label} has no capture at ${width} newer than its comp; run pick.mjs --check and view the captures before the picker`);
+      }
+    }
+  }
+}
+
+/** Render and audit every comp into its own checked/ directory, one JSON line
+ *  per variant. A missing comp is a usage error; no engine is exit 3. */
+async function check(variants, words) {
+  for (const variant of variants) {
+    if (!(await seatReady(variant))) {
+      throw new UsageError(`${variant.label}/index.html is missing; write every comp before --check`);
+    }
+  }
+  const key = randomBytes(8).toString('hex');
+  const { origin, close } = await startServer(variants, key, { words }, null);
+  let fullPage = true;
+  try {
+    for (const variant of variants) {
+      const url = `${origin}/k/${key}/v/${variant.index}/index.html`;
+      const outputDirectory = path.join(variant.directory, CHECKED_DIRECTORY);
+      const shoot = (wholePage) => capture({
+        url, viewports: CHECK_VIEWPORTS, fullPage: wholePage, colorScheme: 'no-preference',
+        label: 'comp', outputDirectory, cwd: process.cwd()
+      });
+      let records;
+      try {
+        ({ records } = await shoot(fullPage));
+      } catch (error) {
+        if (!(error instanceof CapabilityError) || error.payload?.capability !== 'full-page') throw error;
+        process.stderr.write('ui-design: full-page capture needs Playwright; comps captured at the viewport height only\n');
+        fullPage = false;
+        ({ records } = await shoot(false));
+      }
+
+      const staticFindings = await staticAudit(variant.directory);
+      const rendered = await renderedAudit({ url, viewports: CHECK_VIEWPORTS, cwd: process.cwd() });
+      const findings = [
+        ...staticFindings,
+        ...(rendered.fixed?.findings ?? []),
+        ...Object.values(rendered.viewports ?? {}).flatMap((entry) => entry.findings ?? [])
+      ];
+      const report = { static: { status: 'ok', findings: staticFindings }, rendered };
+      report.notes = applyNotesTable(findings);
+      const checkUi = path.join(outputDirectory, 'check-ui.json');
+      await fs.writeFile(checkUi, `${JSON.stringify(report)}\n`);
+      process.stdout.write(`${JSON.stringify({
+        index: variant.index, captures: records.map((record) => record.path), fullPage, findings: findings.length, checkUi
+      })}\n`);
+    }
+  } finally {
+    close();
+  }
 }
 
 async function main(argv) {
   const flags = parseFlags(argv, {
     comps: 'value', contracts: 'value', frame: 'value', intrinsic: 'boolean',
     labels: 'value', recommend: 'value', 'recommend-note': 'value',
-    timeout: 'value', 'no-open': 'boolean'
+    timeout: 'value', 'no-open': 'boolean', check: 'boolean', unchecked: 'boolean'
   });
+  if (flags.check) {
+    const variants = await loadVariants(flags.comps, flags.contracts);
+    return check(variants, await readLabels(flags.labels));
+  }
   const timeoutSeconds = requireTimeout(flags.timeout);
   const words = await readLabels(flags.labels);
   const frame = requireFrame(flags.frame);
@@ -1023,6 +978,8 @@ async function main(argv) {
   if (intrinsic) {
     for (const variant of variants) variant.frame = await readFrame(variant.directory, frame);
   }
+  if (flags.unchecked) process.stderr.write('ui-design: comps shown unchecked\n');
+  else await requireFreshChecks(variants);
 
   const { url, answer } = await serve(variants, randomBytes(8).toString('hex'), { words, recommended, recommendedNote }, timeoutSeconds, deadline);
   const waitedSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);

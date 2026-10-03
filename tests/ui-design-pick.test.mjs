@@ -10,6 +10,27 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fixture, jsonFixture, run, script, SCRIPTS } from './harness.mjs';
 
+const CAPTURES = ['comp-390x844-fullpage.png', 'comp-1440x900-fullpage.png'];
+
+/** Fake the captures --check writes, stamped `ahead` ms from now, so a comp
+ *  written after them in the same test still counts as checked. */
+async function stampChecks(directory, names = CAPTURES, ahead = 60_000) {
+  const checked = path.join(directory, 'checked');
+  await fs.mkdir(checked, { recursive: true });
+  const when = new Date(Date.now() + ahead);
+  for (const name of names) {
+    await fs.writeFile(path.join(checked, name), 'png');
+    await fs.utimes(path.join(checked, name), when, when);
+  }
+}
+
+/** One checked comp: its captures, then its index.html. */
+async function writeComp(directory, markup) {
+  await fs.mkdir(directory, { recursive: true });
+  await stampChecks(directory);
+  await fs.writeFile(path.join(directory, 'index.html'), markup);
+}
+
 const PICK = script('pick.mjs');
 const COMP = (label) => `<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>${label}</title></head><body><h1>${label}</h1><button type="button">Actie</button></body></html>`;
 
@@ -34,8 +55,7 @@ async function round() {
   const comps = await fixture();
   for (const label of ['variant-0', 'variant-1']) {
     const directory = path.join(comps, label);
-    await fs.mkdir(directory, { recursive: true });
-    await fs.writeFile(path.join(directory, 'index.html'), COMP(label));
+    await writeComp(directory, COMP(label));
   }
   await fs.writeFile(path.join(comps, 'secret.txt'), 'not a comp asset');
   const contracts = await jsonFixture('contracts.json', {
@@ -89,14 +109,14 @@ describe('pick.mjs', () => {
     const page = await fetch(url);
     assert.equal(page.status, 200);
     const html = await page.text();
-    assert.equal((html.match(/data-choose=/g) ?? []).length, 2, 'one choose button per variant');
-    assert.equal((html.match(/class="choose"/g) ?? []).length, 2, 'the answer is a button under each comp');
+    assert.equal((html.match(/data-choose=/g) ?? []).length, 1, 'one choose button in the bar');
+    assert.match(html, /class="choose" id="choose" data-choose="0"/, 'it answers with the tab on screen');
     assert.equal(
-      (html.match(/aria-label="Choose this: /g) ?? []).length, 2,
+      (html.match(/aria-label="Choose this: /g) ?? []).length, 1,
       'and it announces which direction it picks'
     );
-    assert.equal((html.match(/sandbox="allow-scripts"/g) ?? []).length, 3, 'every frame is sandboxed');
-    assert.doesNotMatch(html, /<iframe inert/, 'the grid comps take the pointer, so their hover and motion run');
+    assert.equal((html.match(/sandbox="allow-scripts"/g) ?? []).length, 2, 'every frame is sandboxed');
+    assert.doesNotMatch(html, /<iframe inert/, 'the comps take the pointer, so their hover and motion run');
     assert.doesNotMatch(html, /\son[a-z]+\s*=\s*["'][^"']/i, 'no inline event handler');
 
     const origin = new URL(url);
@@ -119,96 +139,44 @@ describe('pick.mjs', () => {
     assert.deepEqual(JSON.parse(result.stdout), { index: 1, label: 'variant-1', steer: 'meer contrast in de kop' });
   });
 
-  it('gives every frame the shared size unless --intrinsic reads meta.json', async () => {
+  it('fills the panel width unless --frame or --intrinsic sets one', async () => {
     const { comps, contracts } = await round();
     await fs.writeFile(path.join(comps, 'variant-1', 'meta.json'), '{"width":520,"height":900}');
-    const shared = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const sharedUrl = await shared.url;
-    const sharedHtml = await (await fetch(sharedUrl)).text();
-    assert.equal((sharedHtml.match(/--fw:1280/g) ?? []).length, 2, 'without --intrinsic every frame is 1280 wide');
+    await stampChecks(path.join(comps, 'variant-1'));
+    const runs = [[], ['--frame', '800x600'], ['--intrinsic']].map((extra) =>
+      startPick(['--comps', comps, '--contracts', contracts, ...extra, '--no-open', '--timeout', '30']));
+    const urls = await Promise.all(runs.map((each) => each.url));
+    const [full, framed, intrinsic] = await Promise.all(urls.map(async (url) => (await fetch(url)).text()));
+    assert.doesNotMatch(full, /<iframe[^>]*style=/, 'by default every frame is as wide as its panel');
+    assert.equal((framed.match(/style="inline-size:800px"/g) ?? []).length, 2, '--frame sets one width, ignoring the height');
+    assert.match(intrinsic, /style="inline-size:520px"/, 'with --intrinsic the second frame keeps its own width');
+    assert.equal((intrinsic.match(/<iframe[^>]*style=/g) ?? []).length, 1, 'and the first stays full width');
 
-    const intrinsic = startPick(['--comps', comps, '--contracts', contracts, '--intrinsic', '--no-open', '--timeout', '30']);
-    const intrinsicUrl = await intrinsic.url;
-    const intrinsicHtml = await (await fetch(intrinsicUrl)).text();
-    assert.match(intrinsicHtml, /--fw:520/, 'with --intrinsic the second frame keeps its own width');
-    assert.match(intrinsicHtml, /--fw:1280/, 'and the first keeps the default');
-
-    // Answer both, so neither child lingers for the rest of its --timeout.
-    await Promise.all([sharedUrl, intrinsicUrl].map((url) => answer(url, 0)));
-    await Promise.all([shared.exit, intrinsic.exit]);
+    await Promise.all(urls.map((url) => answer(url, 0)));
+    await Promise.all(runs.map((each) => each.exit));
   });
 
-  it('shows every comp whole and live, with no crop window', async () => {
+  it('shows each comp whole in its own tab at scale 1', async () => {
     const { comps, contracts } = await round();
     const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
     const url = await pick.url;
     const html = await (await fetch(url)).text();
-    assert.equal((html.match(/--fw:1280;--fh:800"/g) ?? []).length, 2, 'each card carries its whole frame');
-    assert.doesNotMatch(html, /--cw:|--cx:/, 'and no window that crops it once the comps report');
-    assert.match(html, /grid\.classList\.add\('ready'\)/, 'the cards appear together once the comps have loaded');
+    assert.equal((html.match(/role="tablist"/g) ?? []).length, 1, 'one tab strip');
+    assert.equal((html.match(/role="tab" /g) ?? []).length, 2, 'one tab per variant');
+    assert.equal((html.match(/role="tabpanel"/g) ?? []).length, 2, 'one panel per variant');
+    assert.equal((html.match(/role="tabpanel"[^>]* hidden>/g) ?? []).length, 1, 'only the first panel shows');
+    assert.match(html, /aria-label="Directions"/, 'the strip is named');
+    assert.doesNotMatch(/\.panel iframe \{[^}]*\}/.exec(html)[0], /transform|scale/, 'no comp frame is transformed or scaled');
+    assert.doesNotMatch(html, /transform: scale|--zk|--k:/, 'and nothing scales one anywhere on the page');
+    assert.doesNotMatch(html, /<dialog|data-zoom/, 'and no enlarged view remains');
+    assert.match(html, /\{ ArrowRight: 1, ArrowLeft: -1 \}/, 'arrow keys move along the strip');
+    assert.match(html, /body\.deciding \.tab:not\(\.choosing\) \{ opacity: 0\.5; \}/,
+      'the tabs not chosen step back while the answer travels');
 
     const origin = new URL(url);
     const key = origin.searchParams.get('key');
     const compMarkup = await (await fetch(`${origin.origin}/k/${key}/v/0/index.html`)).text();
-    assert.doesNotMatch(compMarkup, /uiDesignContentBox/, 'a comp measures nothing for the picker');
-    assert.match(compMarkup, /parent\.postMessage\(\{ uiDesignKey: event\.key \}, '\*'\)/,
-      'it forwards the keys that leave the enlarged view');
-
-    await answer(url, 0);
-    await pick.exit;
-  });
-
-  it('puts enlarge and choose in the caption, never over the comp', async () => {
-    const { comps, contracts } = await round();
-    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const url = await pick.url;
-    const html = await (await fetch(url)).text();
-    assert.equal((html.match(/<div class="stage"><iframe [^>]*><\/iframe><\/div>/g) ?? []).length, 2,
-      'the stage holds the comp and nothing painted over it');
-    assert.equal((html.match(/<div class="caption">/g) ?? []).length, 2, 'one caption row per card');
-    assert.match(html, /<div class="caption">[\s\S]*?class="enlarge"[\s\S]*?class="choose"/,
-      'enlarge and choose sit in that row');
-
-    await answer(url, 0);
-    await pick.exit;
-  });
-
-  it('enlarges one comp to fill the viewport with nothing around it', async () => {
-    const { comps, contracts } = await round();
-    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const url = await pick.url;
-    const html = await (await fetch(url)).text();
-    assert.match(html, /\.full-shell iframe \{[^}]*transform: scale\(var\(--zk\)\)/,
-      'the comp is scaled whole, never reflowed into the shape of the window');
-    assert.match(html, /const scale = Math\.min\(innerWidth \/ frameWidth, innerHeight \/ frameHeight\);/,
-      'it fills the viewport along its tighter axis, with no cap at life size');
-    assert.match(html, /dialog \{[^}]*inline-size: 100vw; block-size: 100dvh;/,
-      'the enlarged view is the whole viewport');
-    assert.doesNotMatch(html, /zoom-bar|zoom-rail|zoom-seats/, 'with no bar, rail or seat track around the comp');
-    assert.match(html, /stepSeat\(event\.key === 'ArrowRight' \? 1 : -1\);/,
-      'the other directions are an arrow key away');
-    assert.match(html, /if \(forwarded === 'Escape'\) dialog\.close\(\);/,
-      'and Escape leaves it even with focus inside the comp');
-
-    await answer(url, 0);
-    await pick.exit;
-  });
-
-  it('travels into the enlarged view and marks the card whose answer is in flight', async () => {
-    const { comps, contracts } = await round();
-    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
-    const url = await pick.url;
-    const html = await (await fetch(url)).text();
-    assert.match(html, /@starting-style \{ dialog\[open\] \{ opacity: 0;/,
-      'the enlarged view arrives from somewhere instead of replacing the page outright');
-    assert.match(html, /display 200ms allow-discrete, overlay 200ms allow-discrete;/,
-      'and leaves the same way, rather than being cut at frame one');
-    assert.match(html, /\.grid\.deciding \.tile:not\(\.choosing\) \{ opacity: 0\.5; \}/,
-      'the cards not chosen step back while the answer travels');
-    assert.match(html, /chosen\.classList\.add\('choosing'\);/,
-      'and the one that was clicked says so before the server can confirm it');
-    assert.match(html, /dialog, dialog::backdrop \{ transition-duration: 1ms; \}/,
-      'someone who asked for less motion gets the state without the travel');
+    assert.doesNotMatch(compMarkup, /postMessage/, 'a comp forwards no key, so its arrows scroll it');
 
     await answer(url, 0);
     await pick.exit;
@@ -238,8 +206,7 @@ describe('pick.mjs', () => {
     const comps = await fixture();
     for (const label of ['variant-0', 'variant-1']) {
       const directory = path.join(comps, label);
-      await fs.mkdir(directory, { recursive: true });
-      await fs.writeFile(path.join(directory, 'index.html'), COMP(label));
+      await writeComp(directory, COMP(label));
     }
     const named = [contract(0, 'light-field'), contract(1, 'tide-band-strata')];
     named[1].title = 'Koel en technisch';
@@ -271,8 +238,7 @@ describe('pick.mjs', () => {
     const comps = await fixture();
     for (const label of ['variant-0', 'variant-1']) {
       const directory = path.join(comps, label);
-      await fs.mkdir(directory, { recursive: true });
-      await fs.writeFile(path.join(directory, 'index.html'), COMP(label));
+      await writeComp(directory, COMP(label));
     }
     const signed = [contract(0, 'light-field'), contract(1, 'tide-band-strata')];
     signed[0].type = { display: { family: 'Fraunces' }, body: { family: 'Inter' } };
@@ -299,7 +265,7 @@ describe('pick.mjs', () => {
     assert.match(html, /Bijna zwart/, 'and by the name the skill wrote for it');
     assert.match(html, /<code>#0E1116<\/code>/, 'the code is shown in one case, whatever was typed');
     assert.equal(
-      (html.match(/<li style="--swatch/g) ?? []).length, 2,
+      (html.match(/<span class="swatch" style="--swatch/g) ?? []).length, 2,
       'a colour without a name still emits its row, so the codes stay in line'
     );
     assert.equal(
@@ -316,8 +282,7 @@ describe('pick.mjs', () => {
     const comps = await fixture();
     for (const label of ['variant-0', 'variant-1']) {
       const directory = path.join(comps, label);
-      await fs.mkdir(directory, { recursive: true });
-      await fs.writeFile(path.join(directory, 'index.html'), COMP(label));
+      await writeComp(directory, COMP(label));
     }
     const build = async (name, signature) => {
       const list = [contract(0, 'light-field'), contract(1, 'tide-band-strata')];
@@ -355,11 +320,11 @@ describe('pick.mjs', () => {
     const html = await (await fetch(url)).text();
     assert.match(html, /Elige una direccion/, 'the skill-written title is the heading');
     assert.equal(
-      (html.match(/Elegir esta/g) ?? []).length, 4,
-      'each card button shows it and names its direction with it'
+      (html.match(/Elegir esta/g) ?? []).length, 3,
+      'the bar button shows it, names its direction with it, and keeps it for the next tab'
     );
     assert.match(html, /Elegida: variante \{n\}\./, 'the done template reaches the page with its placeholder');
-    assert.match(html, /Enlarge/, 'a key the file omits keeps the English last resort');
+    assert.match(html, /aria-label="Directions"/, 'a key the file omits keeps the English last resort');
     assert.match(html, /<html lang="es">/, 'the file that carries the words names their language');
 
     await answer(url, 0);
@@ -421,14 +386,12 @@ describe('pick.mjs', () => {
     assert.equal(printed, false, 'no tab opens while no comp exists');
 
     const second = path.join(comps, 'variant-1');
-    await fs.mkdir(second, { recursive: true });
-    await fs.writeFile(path.join(second, 'index.html'), COMP('variant-1'));
+    await writeComp(second, COMP('variant-1'));
     await settle();
     assert.equal(printed, false, 'nor while one comp is still missing');
 
     const first = path.join(comps, 'variant-0');
-    await fs.mkdir(first, { recursive: true });
-    await fs.writeFile(path.join(first, 'index.html'), COMP('variant-0'));
+    await writeComp(first, COMP('variant-0'));
     const url = await pick.url;
     assert.match(pick.stderr(), /every comp landed after \d+\.\d+s/, 'the wait is reported, so a run can be timed');
 
@@ -446,12 +409,10 @@ describe('pick.mjs', () => {
   it('wraps a comp fragment in the document shell and leaves a whole document alone', async () => {
     const comps = await fixture();
     const fragmentDirectory = path.join(comps, 'variant-0');
-    await fs.mkdir(fragmentDirectory, { recursive: true });
-    await fs.writeFile(path.join(fragmentDirectory, 'index.html'),
+    await writeComp(fragmentDirectory,
       '<style>main{background:#0b1b2b;color:#f4e9d8;font-family:Fraunces,serif;padding:64px}</style>\n<main><h1>Tij</h1></main>');
     const wholeDirectory = path.join(comps, 'variant-1');
-    await fs.mkdir(wholeDirectory, { recursive: true });
-    await fs.writeFile(path.join(wholeDirectory, 'index.html'), COMP('variant-1'));
+    await writeComp(wholeDirectory, COMP('variant-1'));
     const contracts = await jsonFixture('shell-contracts.json', {
       schemaVersion: 1, seed: 'atlas', status: 'ok',
       contracts: [contract(0, 'light-field'), contract(1, 'tide-band-strata')]
@@ -504,8 +465,8 @@ describe('pick.mjs', () => {
     const html = await (await fetch(url)).text();
     assert.equal((html.match(/class="why"/g) ?? []).length, 1, 'one line carries the reason, not every card');
     assert.match(html, /Deze leest het rustigst op een klein scherm\./);
-    assert.ok(html.indexOf('class="why"') < html.indexOf('<section class="tile'),
-      'and it sits in the header, so no card grows taller than the others');
+    assert.ok(html.indexOf('class="why"') < html.indexOf('role="tablist"'),
+      'and it sits in the header, above the strip');
 
     await answer(url, 0);
     await pick.exit;
@@ -526,6 +487,59 @@ describe('pick.mjs', () => {
     const result = await run(PICK, ['--comps', comps, '--contracts', contracts, '--recommend', '5', '--no-open']);
     assert.equal(result.code, 2);
     assert.match(result.stderr, /--recommend must be a variant index from 0 to 1/);
+  });
+
+  it('refuses the picker until every comp has a fresh capture at both widths', async () => {
+    const refusal = /variant-(\d) has no capture at (\d+) newer than its comp; run pick\.mjs --check/;
+    const attempt = (comps, contracts, extra = []) =>
+      run(PICK, ['--comps', comps, '--contracts', contracts, ...extra, '--no-open', '--timeout', '5']);
+
+    const bare = await round();
+    await fs.rm(path.join(bare.comps, 'variant-0', 'checked'), { recursive: true });
+    const none = await attempt(bare.comps, bare.contracts);
+    assert.equal(none.code, 2, none.stderr);
+    assert.match(none.stderr, refusal);
+
+    const stale = await round();
+    await stampChecks(path.join(stale.comps, 'variant-1'), CAPTURES, -60_000);
+    const older = await attempt(stale.comps, stale.contracts);
+    assert.equal(older.code, 2, 'an index.html newer than its captures is refused');
+    assert.match(older.stderr, /variant-1 has no capture at 390/);
+
+    const asset = await round();
+    const later = new Date(Date.now() + 120_000);
+    await fs.writeFile(path.join(asset.comps, 'variant-0', 'style.css'), 'body{}');
+    await fs.utimes(path.join(asset.comps, 'variant-0', 'style.css'), later, later);
+    const edited = await attempt(asset.comps, asset.contracts);
+    assert.equal(edited.code, 2, 'an asset edited after the check is refused');
+    assert.match(edited.stderr, /variant-0 has no capture at 390/);
+
+    const narrow = await round();
+    await fs.rm(path.join(narrow.comps, 'variant-1', 'checked', CAPTURES[1]));
+    const half = await attempt(narrow.comps, narrow.contracts);
+    assert.equal(half.code, 2, 'one width missing is refused');
+    assert.match(half.stderr, /variant-1 has no capture at 1440/);
+
+    const unchecked = startPick(['--comps', bare.comps, '--contracts', bare.contracts, '--unchecked', '--no-open', '--timeout', '30']);
+    const url = await unchecked.url;
+    assert.match(unchecked.stderr(), /ui-design: comps shown unchecked/, '--unchecked serves and says so');
+    await answer(url, 0);
+    assert.equal((await unchecked.exit).code, 0);
+  });
+
+  it('--check exits 2 naming a missing comp and 3 with no browser engine', async () => {
+    const { comps, contracts } = await round();
+    await fs.rm(path.join(comps, 'variant-1', 'index.html'));
+    const missing = await run(PICK, ['--check', '--comps', comps, '--contracts', contracts]);
+    assert.equal(missing.code, 2, missing.stderr);
+    assert.match(missing.stderr, /variant-1\/index\.html is missing/);
+
+    const ready = await round();
+    const blind = await run(PICK, ['--check', '--comps', ready.comps, '--contracts', ready.contracts],
+      { env: { UI_DESIGN_TEST_DISABLE_BROWSER_DISCOVERY: '1', CHROME_PATH: '' } });
+    assert.equal(blind.code, 3, blind.stderr);
+    assert.equal(blind.stdout, '');
+    assert.match(blind.stderr, /no browser available/);
   });
 
   it('exits 3 without stdout when no answer arrives before --timeout', async () => {
