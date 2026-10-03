@@ -14,6 +14,7 @@ import {
 } from '../skills/design-ui/scripts/capture.mjs';
 import { parseFrontmatter } from '../skills/design-ui/scripts/context.mjs';
 import { fontConfidence } from '../skills/design-ui/scripts/inspect-styles.mjs';
+import { decodePng, rasterize } from '../skills/design-ui/scripts/inspect-render.mjs';
 import {
   ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable, parseComputedColor
 } from '../skills/design-ui/scripts/check-ui.mjs';
@@ -1218,6 +1219,28 @@ const URL_REWRITE_PAGE = `<!doctype html>
 </body></html>
 `;
 
+// A full-viewport red panel that fades in from transparent over 800 ms, the
+// entrance motion design-ui asks of every screen; a capture taken at load sees
+// white or a pale pink instead of the red the page settles on.
+const FADE_IN_PAGE = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Fade in</title><style>
+  html, body { margin: 0; height: 100%; background: #ffffff; }
+  .panel { position: fixed; inset: 0; background: #d00000; animation: enter 800ms ease-out both; }
+  @keyframes enter { from { opacity: 0; } to { opacity: 1; } }
+</style></head>
+<body><main class="panel"></main></body></html>
+`;
+
+function meanColor(bytes) {
+  const raster = rasterize(decodePng(bytes));
+  const cells = raster.width * raster.height;
+  const sums = [0, 0, 0];
+  for (let cell = 0; cell < cells; cell += 1) {
+    for (let channel = 0; channel < 3; channel += 1) sums[channel] += raster.rgb[cell * 3 + channel];
+  }
+  return sums.map((sum) => Math.round(sum / cells));
+}
+
 async function pageFixture() {
   const root = await fixture();
   const file = path.join(root, 'page.html');
@@ -1241,6 +1264,22 @@ describe('rendered capability', () => {
     const viewportRecord = JSON.parse(viewportRun.stdout.trim().split('\n')[0]);
     const viewportGeometry = pngGeometry(await fs.readFile(viewportRecord.path));
     assert.deepEqual(viewportGeometry, { width: 390, height: 844 });
+  });
+
+  it('captures a fading-in page only once its entrance animation has settled', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.driven) return t.skip(`settling animations needs a driven browser: ${capability.reason}`);
+    const root = await fixture();
+    const file = path.join(root, 'fade-in.html');
+    await fs.writeFile(file, FADE_IN_PAGE);
+
+    const result = await run(script('capture.mjs'),
+      ['--url', `file://${file}`, '--viewport', '390x844', '--label', 'fade', '--out', root], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+    const record = JSON.parse(result.stdout.trim().split('\n')[0]);
+    const [red, green, blue] = meanColor(await fs.readFile(record.path));
+    assert.ok(red > 190 && green < 30 && blue < 30,
+      `expected the settled #d00000 panel, captured rgb(${red}, ${green}, ${blue}) on ${record.engine}`);
   });
 
   it('runs two --viewport values and reports both keys under rendered.viewports', async (t) => {

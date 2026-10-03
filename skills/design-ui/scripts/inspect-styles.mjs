@@ -5,7 +5,9 @@
 //   node scripts/inspect-styles.mjs --url <url> [--viewport <width>x<height>]
 
 import process from 'node:process';
-import { BROWSER_CAPABILITIES, DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, UsageError } from './capture.mjs';
+import {
+  BROWSER_CAPABILITIES, DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, settleAnimations, UsageError
+} from './capture.mjs';
 import { isMain } from '#script-flags';
 
 // SURVEY runs inside page.evaluate, where no CDP exists. It therefore reports
@@ -214,6 +216,7 @@ export async function inspect({ url, viewport, cwd }) {
   }
   try {
     await session.page.goto(url, { waitUntil: 'load' });
+    await settleAnimations(session.page);
     const report = await session.page.evaluate(SURVEY);
     const platformFonts = await readPlatformFonts(session.page, report.font_render_check);
     report.font_render_check = report.font_render_check.map((record, index) => ({
