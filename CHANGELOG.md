@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.78.1 - 2026-10-03
+
 ### Fixed
 
 - build's Stop-hook proof check runs only on a turn that called build since the last message the user typed, so a later plain turn such as a `git pull` is no longer blocked; tool results, task notifications, the skill body and hook feedback do not end a build turn.
