@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.80.0 - 2026-10-03
+
 ### Highlights
 
 **design-ui now aims for a polished, modern, cleanly finished look in the chosen mood, with no theme or props taken from the subject unless you ask.**
