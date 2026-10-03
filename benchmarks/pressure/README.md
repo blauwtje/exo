@@ -1,6 +1,6 @@
 # Pressure cases
 
-Each folder holds the pressure cases of one skill: the case prompts, a `criteria.md` with the pass criterion for the `with` arm, and a `setup.sh` that lays down the fixtures under `/tmp/exo-pressure/<skill>/`. `write-docs` needs no fixture, so it has no `setup.sh`.
+Each folder holds the pressure cases of one skill: the case prompts, a `criteria.md` with the pass criterion for the `with` arm, and a `setup.sh` that lays down the fixtures under `/tmp/exo-pressure/<skill>/`. `write-docs` and `design-ui` need no fixture, so they have no `setup.sh`.
 
 To rerun a case, run the skill's setup, then run the prompt from the root of an exo clone:
 
