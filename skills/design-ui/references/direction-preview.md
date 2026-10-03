@@ -1,63 +1,76 @@
 # Direction Preview
 
-Put the built directions in front of the person deciding, whole and live, at a size where the type, the colour and the spacing can be read, and let one click settle it. The enemy is a comparison nobody can see: cards that fill in one by one, or taste polled in words the comps already answer. The overcorrection is a preview so staged that the chooser picks a presentation instead of a direction.
+Put the built directions in front of the person deciding as complete pages at full size, checked first, and let one click settle it. The enemy is a comparison nobody can judge: a first screenful standing in for the page, a scaled thumbnail, or a broken comp the chooser is the first to see. The overcorrection is a preview so staged that the chooser picks a presentation instead of a direction.
 
 This file owns the screen that asks for a direction; the `visual-direction` reference owns what a direction is.
 
 ## Before the picker
 
-- No `capture.mjs`, `inspect-render.mjs`, screenshot, or image read of a comp before the picker: the picker is the comps' first render and the chooser's eyes are the critique.
-- A headless capture engine is not the chooser's browser, so a repair made against it fixes a defect the chooser might never have seen.
-- One message holds a Write per comp and the `pick.mjs` start under the Bash tool's `run_in_background`, and the labels file is written just before it.
-- The order inside that message does not matter, because the picker opens the tab only once the last comp exists.
+- Write every comp in one message, then run `pick.mjs --check` before starting the picker, because the chooser must never be the first to see a broken comp.
+- `pick.mjs --check` renders each comp full page at 390 and 1440 wide through the capture and check-ui scripts, and writes the PNGs and a `check-ui.json` under each variant's `checked/`.
+- Read every capture at both widths and every `check-ui.json` with the Read tool; a capture nobody viewed checks nothing.
+- Fix each fault they show: horizontal overflow, a section cut off or missing, overlapping text, unreadable contrast, an empty band, a broken image or font.
+- Rerun `pick.mjs --check` after every fix, and read the new captures, until none of those faults is left.
+- The picker refuses to start, exit 2, while a variant lacks a capture at 390 or 1440 newer than its own files, so any edit after a check needs another check.
+- Only then write the labels file and start `pick.mjs` under the Bash tool's `run_in_background`.
+- When `pick.mjs --check` exits 3, no capture engine exists: start the picker with `--unchecked` and tell the user in one line that the comps were not checked.
+- `--unchecked` answers that exit 3 alone, never a failing or unread check.
 - Write each `index.html` directly from its contract: no template, generator, build script, or patch script stands between the two, because a pipeline costs the minutes it was meant to save.
-- A comp the chooser reports broken is repaired after the click and the picker reruns once; a comp nobody reports broken was not broken.
+- A comp the chooser still reports broken is repaired after the click, checked again, and the picker reruns once.
 - Run the picker only when the user asks to see directions whole, after the message that names its price as `## Asking` of the `intake` reference says.
 - Every other visual choice belongs to the `sketch-tab` reference.
 
 ## What the comp owes the screen
 
-Each comp is a sketch of one direction, not a build: one screenful of the real surface, with real content, in one self-contained HTML file and no build step. The picker shows every comp whole and live at one shared scale, so hover and motion run in the grid, and enlarging one fills the viewport with that comp alone.
+Each comp is a sketch of one direction, not a build: the complete page of the real surface, with real content, in one self-contained HTML file and no build step. The picker shows one comp per tab at 100%, never scaled, and the comp scrolls inside its own frame, so its length, hover and motion run as the chooser would meet them.
 
-- A comp fills its frame and stops at its edge: nothing below the fold and no region that scrolls, because the picker shows the frame and nothing past it.
-- Compose a comp inside the whole frame, so no empty band reads as part of the direction.
+- A comp holds every section of the real page in the page's order, top to bottom, because a direction judged on its first screen hides how its sections hold up.
+- A comp is responsive: it reflows between 390 and 1440 wide, with no horizontal scroll at either width.
+- Compose every section across its full width, so no empty band reads as part of the direction.
 - A click in a comp shows motion and changes nothing: hover, press, and the transition the contract records are the demo, and JavaScript exists for that motion alone.
 - Navigation, a working tab, filter, form, or toggle, or any state that alters what the page shows, is a build, not a comp.
 - The exception is the contract's own technique, a canvas or generative motion, which runs because it is the direction.
 - A comp is a fragment, not a document: its own markup and its own `<style>`, with no doctype, no `<head>`, no viewport tag and no reset.
 - The picker injects the document parts and nothing else, so the ground, the type, the palette and the one technique stay inside the comp.
 - A file that opens with `<!doctype` or `<html>` is served untouched, which is the escape hatch for a direction whose technique needs the document itself.
-- The budget is 180 lines of HTML and CSS per comp: the content the frame shows and nothing past it, the rest state alone, and the one frame size `--frame` names.
-- Past the budget, cut regions, never the direction.
+- The budget is 400 lines of HTML and CSS per comp: every section at sketch fidelity, plus its responsive rules and its hover and motion states.
+- Past the budget, cut detail inside a section, never a section or the direction.
 - Scale fidelity to what the click decides: sketch fidelity carries the composition, and material fidelity goes only where the direction's difference lives, its ground, its type, its palette, its one technique.
 
 ## The command
 
 ```
+node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json>
 node scripts/pick.mjs --comps <dir> --contracts <contracts.json> \
-  --recommend <n> --recommend-note <one sentence> --labels <labels.json> --frame <w>x<h>
+  --recommend <n> --recommend-note <one sentence> --labels <labels.json>
 ```
 
 - `--comps` is the directory the seats live in: the contracts file decides how many, and `variant-<n>/index.html` plus its own assets fills seat `n`.
-- The script waits until every seat's file exists, then prints `every comp landed after <s>s` and the URL on stderr and opens the tab.
-- The script writes nothing and installs no dependency.
-- `--recommend <n>` seats that variant first and badges it, and `--recommend-note` puts the reason above the cards in one short everyday sentence.
+- `--check` exits 2 naming a missing `index.html`, and prints one JSON line per variant: its captures, whether they are full page, its finding count, and its `check-ui.json` path.
+- The picker waits until every seat's file exists and each has a fresh capture at both widths, then prints the URL on stderr and opens the tab.
+- `--check` writes only under each variant's `checked/`, the picker writes nothing, and neither installs a dependency.
+- The page shows one tab per seat with its letter, title, signature and any recommended badge, and the open tab's description on one line under the strip.
+- The arrow keys or a seat's letter switch tabs, and the one Choose button answers for the open tab.
+- `--recommend <n>` seats that variant first and badges it, and `--recommend-note` puts the reason above the tabs in one short everyday sentence.
 - Always name this skill's own pick: a row of three with no opinion hands the work back.
-- `--frame <width>x<height>` is the frame every comp renders in and was composed for: `390x844` for a phone-first surface, the default `1280x800` otherwise, so a phone comp is not a phone centred in a desktop tile.
-- `--intrinsic` belongs to a size comparison alone, where each comp carries its own `meta.json` and the frame size is the thing being compared.
+- Each comp renders at the full width of the window by default.
+- `--frame <width>x<height>` caps that width and centres the comp, ignoring the height, so `--frame 390x844` shows a phone-first surface at phone width.
+- `--intrinsic` belongs to a size comparison alone, where each comp's own `meta.json` width sets its frame, because the width is the thing being compared.
 - Exit 3 means no browser opened, not every comp landed, or no answer arrived within the 600 seconds; the `--recommend` variant is then the selection, and no question goes to the terminal.
-- Exit 2 is a usage error, and the flag it names is the flag to fix.
+- Exit 2 is a usage error or a comp without a fresh capture, and the message names what to fix.
 
 ## What the chooser reads
 
-- Every contract carries a `title` and a plain-language `description`, written in the words of the subject; those two are what a card says, each on one line. Dealt axis ids stay out of it: `tide-band-strata` names the machinery, and tells someone deciding between three pictures nothing they can act on.
-- `--labels <labels.json>` is written on every run and carries the screen's own copy in the language the conversation runs in: `title`, `hint`, `recommended`, `fallbackTitle`, `choose`, `zoom`, `close`, `typeRole`, `steer`, `done`, `failed`, plus `lang`, the language tag those words are written in. Running the picker without it is a defect: the script's English strings are a last resort for a missing key, and this session is the only side that knows what language the conversation runs in.
+- Every contract carries a `title` and a plain-language `description`, written in the words of the subject; the title is what a tab says, and the description is its one line under the strip. Dealt axis ids stay out of it: `tide-band-strata` names the machinery, and tells someone deciding between three pages nothing they can act on.
+- `--labels <labels.json>` is written on every run and carries the screen's own copy in the language the conversation runs in: `title`, `hint`, `recommended`, `fallbackTitle`, `choose`, `tabs`, `typeRole`, `steer`, `done`, `failed`, plus `lang`, the language tag those words are written in.
+- `tabs` is the tab strip's accessible name, which a screen reader announces.
+- Running the picker without the labels file is a defect: the script's English strings are a last resort for a missing key, and this session is the only side that knows the conversation's language.
 - `fallbackTitle` keeps its `{n}`, which stands for the seat's letter (A, B, C).
 - All of it is written for someone who has never seen a design tool: short sentences, everyday words, no design or code term, and no sentence that repeats what a button already says.
 
 ## The signature
 
-A contract may carry a chooser-only `signature`, so the card shows its material rather than describing it: the face as an `Aa` sample and each colour as a chip, with the words in the chip's tooltip.
+A contract may carry a chooser-only `signature`, so the tab shows its material rather than describing it: the face as an `Aa` sample and each colour as a chip, with the words in the chip's tooltip.
 
 - `typeface` is the CSS font-family that sets the sample, and `fontHref` an https stylesheet when that face needs one.
 - `colors` holds up to four `{role, name, value}`, where `role` names the job and `name` names the colour itself, both in the user's language, with `value` shown beside them as the code to copy.
@@ -68,4 +81,4 @@ A contract may carry a chooser-only `signature`, so the card shows its material 
 
 - A human selection of a rendered variant outranks the recommendation this skill seated first.
 - The chooser's own language outranks the script's English last resort, and plain words outrank exact ones.
-- A comp that renders outranks a more ambitious comp that does not; that is a reason to build plainly, not to render before the picker.
+- A comp the check shows clean at both widths outranks a more ambitious comp it shows broken: cut ambition before repairing a second time.
