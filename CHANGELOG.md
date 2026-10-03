@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**design-ui picks colors, fonts and layout itself from the mood and the product again, instead of from a random deal.**
+
+### Changed
+
+- design-ui always gives an app screen navigation with icons, search, a user menu, stat counters with sparklines, at least one chart, a table with avatars, badges, sorting and bulk selection, and a detail panel; the scope form adds groups on top but never drops these.
+
+### Fixed
+
+- design-ui's build floor makes the page background and any sidebar run the full page height, so a full-page capture no longer shows a band of another color below them.
+
+### Removed
+
+- design-ui's random look variety: the random seed, the dealt accent hue and its check, the exclusion of fonts from earlier runs, and `direction.mjs --deal` and `--check-plan` with their layout deal.
+
 ## 0.78.4 - 2026-10-03
 
 ### Changed
