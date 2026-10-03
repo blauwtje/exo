@@ -25,7 +25,17 @@ Start with content, not sections:
 - **Actions and states** — primary and secondary actions; loading, empty, error, success, permission, and live states that can occur.
 - **Subject artifacts** — real units, labels, documents, instruments, imagery, and vernacular from Phase 1.
 
-Keep only material supporting the page's job, but do not proceed when the inventory populates only a headline and generic benefit blurbs. A marketing page communicates what the offer is, why it is credible, how it works or differs, and what to do next; an app view owes the obligations of its surface class below. These are content obligations, not prescribed sections.
+Complete a short ask with what a mature product carries on this screen, because a literal reading builds an empty page:
+
+- navigation that places the screen inside its product;
+- search and filtering over every collection the screen shows;
+- data visualisation of the figures the screen's job turns on;
+- rich components chosen for this content's relationships, never a fixed kit;
+- every reachable state of every region.
+
+Record each completed item except the states as a scope group in the inventory, so the scope form can list it.
+
+A marketing page communicates what the offer is, why it is credible, how it works or differs, and what to do next; an app view owes the obligations of its surface class below. These are content obligations, not prescribed sections.
 
 ## Name and substantiate the content
 

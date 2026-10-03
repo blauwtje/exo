@@ -6,10 +6,21 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 - Decide the direction in this session, never inside a builder delegate, because this session holds the contract.
 - Change no production code before a selection exists.
-- Outside an existing brand or design system, commit to one bold aesthetic direction before Build, because a neutral middle is not a direction.
+- Outside an existing brand or design system, derive one bold direction from the chosen mood before Build, because a neutral middle is not a direction.
 - The direction settles composition and visual material together: the contract names it and every region carries it.
 - Every rung other than 3 and 7 produces one direction, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
+
+## Mood to look
+
+- The mood sets palette commitment, type character, corner and stroke shape, density and motion feel together.
+- Crisp and businesslike: a restrained accent, compact rhythm, sharp corners, tabular figures and short decisive motion.
+- Friendly and playful: committed color, rounded shapes, a warm humanist face and lively overshoot on entrances.
+- Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
+- Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
+- Pick hues, faces and radii fresh each project through a new seed token, so one mood never repeats a look.
+- Record the mood in the contract's rationale and trace each look value to it.
+- Invent no company, brand story or metaphor as a theme, because the mood and the content carry the look.
 
 ## Rungs 3 and 7
 
@@ -20,7 +31,7 @@ Rungs 3 and 7 of the skill's `## Route` run contract, variant, selection.
 - Deal three contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
 - Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
 - `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
-- Ask nothing but the preview offer between `--check` and the first sketch.
+- Ask nothing between `--check` and the first sketch, because the scope form already carried the offer.
 - Make the offer `## Asking` of the `intake` reference defines.
 - Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 - On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.

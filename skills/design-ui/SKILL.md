@@ -7,7 +7,7 @@ effort: high
 
 # Visual Design
 
-Design so the result cannot be mistaken for a template: every visual choice traceable to the subject, audience, or page job, plus one evidence-backed differentiator a competitor could not justify. The enemy is the transferable default — a design that could accept another product name unchanged. The overcorrection is novelty that obscures content, removes states, or breaks accessibility.
+Design so the result cannot be mistaken for a template: every visual choice traceable to the subject, audience, page job, or chosen mood. The enemy is the transferable default — a design that could accept another product name unchanged. The overcorrection is novelty that obscures content, removes states, or breaks accessibility.
 
 A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design. It also fails when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
@@ -29,7 +29,7 @@ Resolve the surface from the markup and style files in the working-tree diff, th
 3. **Asked to choose:** the user asks to see or choose between directions, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, read when rungs 1-4 miss, while neither the user nor the brief lets it be replaced: one direction in text, no offer. A component library in the manifest is not that evidence on its own.
-6. **Tool surface:** an open identity on an app view, dashboard, admin or settings page, form, documentation page, internal tool, or component: one direction in text from Phase 1 evidence and the nearest sibling surface, no offer.
+6. **Tool surface:** an open identity on an app view, dashboard, admin or settings page, form, documentation page, internal tool, or component: the scope form in `references/intake.md`, then one direction from its mood and the nearest sibling surface.
 7. **Expression surface:** an open identity on a landing, marketing, pricing, portfolio, or launch page, whose job is a first impression on someone who has not adopted the product: the offer, as in rung 3.
 
 A surface neither list names takes rung 6, and the report names rung 7 as the rival reading. A user who leaves the look to this skill has not asked for text: rung 7 still offers.

@@ -21,7 +21,7 @@ Recommended: (A), because seeing the looks beats reading about them, and (C) ski
 4. **Three or four options.** Two only when no honest third route exists; a padded option is a fake choice.
 5. **Recommendation.** `Recommended: (A), because <why A beats the others>`, one plain clause on one line. A is always the recommended option.
 6. **Size.** Under about 60 words outside the option labels, because simple beats complete; nothing follows the recommendation.
-7. **No tool.** The options are text in the reply; a question tool, a form or a picker is never used.
+7. **No tool.** The options are text in the reply; a question tool, a form or a picker is never used, except design-ui's scope form.
 8. **Language.** Title, context, labels and recommendation are in the reply's language, as the language rule in route-skills' `references/context.md` sets. The letters stay.
 9. **Order.** Stopping or keeping things as they are comes last unless it is the recommended one.
 

@@ -51,13 +51,13 @@ Read a section of a reference by finding its `## ` heading with `Grep -n`, then 
 
 Write the tokens file, the base layer, and every primitive the inventory repeats across surfaces, in the repository's styling architecture from `$SKILL/references/implementation.md`.
 
-Build the recorded motion decision's tokens.
+Build the motion bar's tokens.
 
 Write `$RUN/foundation.md`: the paths written, each token group in one line, each primitive with its state row, and what a surface builder must not redefine. At most 20 lines.
 
 **Surface scope.**
 
-Build the surface from its inventory slice on top of the foundation: every content obligation, every reachable state of every repeated component, the technique the subject's world names built as itself.
+Build the surface from its inventory slice on top of the foundation: every content obligation, every reachable state of every repeated component, the technique the content or the brief names built as itself.
 
 Never edit the foundation files; a missing primitive is reported, not added locally.
 
@@ -89,7 +89,7 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 
 - Raised surfaces carry the direction's material, not one grey shadow each.
 - Type carries a voice through a second weight, width, or family.
-- The recorded motion decision is built.
+- The motion bar is built.
 - Every browser surface on the finish list in `$SKILL/references/implementation.md` is themed.
 - No slop trope from `$SKILL/references/visual-critique.md` stands without recorded provenance.
 - `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration.
