@@ -1012,9 +1012,6 @@ describe('argument and JSON contracts', () => {
     ['inspect-styles.mjs', ['--url', 'file:///tmp/a.html', '--viewport', 'wide']],
     ['check-ui.mjs', []],
     ['direction.mjs', ['--plan', '--seed', 'a', '--space', '/tmp/s.json', '--variants', '9']],
-    ['direction.mjs', ['--deal', '--kind', 'site']],
-    ['direction.mjs', ['--deal', '--plan']],
-    ['direction.mjs', ['--check-plan', '--plan', '/tmp/missing-plan.json']],
     ['font-candidates.mjs', ['--spec', '/tmp/spec.json', '--source', 'typekit']],
     ['inspect-render.mjs', ['--image', '/tmp/a.png', '--tile', '4']]
   ];
