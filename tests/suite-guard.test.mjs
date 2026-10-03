@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 
 const DISPATCHER = fileURLToPath(new URL('../hooks/dispatch-bash.mjs', import.meta.url));
+const WRAPPER = fileURLToPath(new URL('../hooks/heavy-run.mjs', import.meta.url));
 
 // The deny reason the Bash dispatcher gives `command` from `agentType`, or null.
 async function reason(command, { agentType, seconds, threshold, guards } = {}) {
@@ -75,4 +76,18 @@ test('a whole-suite run with no recorded duration passes', async () => {
 test('a threshold of 0 and the guards setting off pass any run', async () => {
   assert.equal(await reason('npm test', { agentType: 'exo:build-task', seconds: 33, threshold: 0 }), null);
   assert.equal(await reason('npm test', { agentType: 'exo:build-task', seconds: 33, guards: 'off' }), null);
+});
+
+test('a suite listed in heavy_commands is refused after a slow run through the wrapper', async () => {
+  const directory = await fixture();
+  const cache = path.join(directory, 'cache');
+  const env = { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, EXO_HEAVY_CACHE: cache };
+  await fs.mkdir(path.join(directory, '.claude'));
+  await fs.writeFile(path.join(directory, '.claude', 'exo.json'), JSON.stringify({ heavy_commands: 'npm test', subagent_suite_after_seconds: 1 }));
+  await fs.writeFile(path.join(directory, 'package.json'), JSON.stringify({ scripts: { test: 'sleep 2' } }));
+  const wrapped = await run(WRAPPER, ['--session', 's', '--', 'npm test'], { cwd: directory, env });
+  assert.equal(wrapped.code, 0, wrapped.stderr);
+  const hookInput = { tool_name: 'Bash', session_id: 's', cwd: directory, agent_type: 'exo:build-task', tool_input: { command: 'npm test' } };
+  const outcome = await run(DISPATCHER, [], { cwd: directory, input: JSON.stringify(hookInput), env });
+  assert.equal(JSON.parse(outcome.stdout).hookSpecificOutput.permissionDecision, 'deny', outcome.stdout);
 });

@@ -8,12 +8,18 @@
 // directory with inherited stdio, and the wrapper exits with its code.
 // Cache root: $EXO_HEAVY_CACHE, else $XDG_CACHE_HOME/exo/heavy, else
 // ~/.cache/exo/heavy. A failed, interrupted or signalled run is never stored.
+// A whole-suite command (lib/runtime-log.mjs `wholeSuiteKeys`) that this wrapper
+// ran green records its run time in the runtime log, so the suite guard sees a
+// suite listed in `heavy_commands`, which hooks/record-runtime.mjs skips. Only
+// such a run records: a cache hit, a wait that gave up, and a red or signalled
+// run may stop early, and a short time would overwrite the suite's real one.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { recordFinish, recordStart, wholeSuiteKeys } from '../lib/runtime-log.mjs';
 
 const GREEN_VALID_MS = 24 * 60 * 60 * 1000;
 const PRUNE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
@@ -232,6 +238,19 @@ function runCommand(command, onChild) {
   });
 }
 
+// Books and finishes the run in the runtime log with its measured time; the
+// threshold 0 leaves the learned commands alone, so only the duration changes.
+// The project matches lib/runtime-log.mjs `projectOf` for a hook called in `cwd`.
+function recordSuiteDuration(command, session, cwd, startedAt) {
+  const now = Date.now();
+  try {
+    recordStart({ sessionId: session, command, now: startedAt });
+    recordFinish({ sessionId: session, command, project: process.env.CLAUDE_PROJECT_DIR || cwd, thresholdSeconds: 0, durationMs: now - startedAt, now });
+  } catch (error) {
+    console.error(`exo heavy: could not record the run time: ${error.message}`);
+  }
+}
+
 async function main() {
   const { session, command } = parseArguments(process.argv.slice(2));
   if (!command) {
@@ -275,12 +294,14 @@ async function main() {
     // The holder may have finished a green run for this very code while this wrapper waited.
     const { hash, result } = lookup();
     if (result) return 0;
+    const startedAt = Date.now();
     const { code, signal } = await runCommand(command, (spawned) => {
       child = spawned;
       if (spawned.pid) recordChild(lockDirectory, spawned.pid);
     });
     if (signalName || signal) return 128 + os.constants.signals[signalName ?? signal];
     if (code === 0 && hash) storeGreen(root, hash, command, session);
+    if (code === 0 && wholeSuiteKeys(command).length === 1) recordSuiteDuration(command, session, cwd, startedAt);
     return code ?? 1;
   } finally {
     release(lockDirectory);
