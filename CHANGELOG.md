@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **A plan Proof that needs an MCP tool is written `Proof: mcp:<tool> <args>`, and the session runs it as a tool call; builders and the verify gate never shell it.**
+- **build's Stop hook now checks every `Proof:` line against a Bash or MCP call this turn, including on its retry, so a report must quote each proof's real output.**
+
+### Added
+
+- A plan `Proof: mcp:<tool> <args>` names an MCP tool: verify prints a `SESSION` line for it and the session runs it, builders report it `deferred` and land-task lists it `Pending:` for the session to run after the unit, and with no matching tool the report says `Unverified:`.
+- spec loads every installed non-exo skill whose description matches the request before its first question, and recommends that skill's pattern over an option it rules out.
+
+### Fixed
+
+- build's Stop hook no longer passes any report once it has blocked one: it checks every `Proof:` line (bulleted, `->` or `→`) against a Bash or MCP tool call this turn, and stops blocking after two blocks per build turn.
+- verify reports an unmarked Proof whose first word looks like an MCP tool and exits 127 as one to write `mcp:<tool>`, not a bare `command not found`.
+- spec's handoff recommends building unless the brief's `## Open points` lists an entry, instead of always recommending Adjust the brief.
+
 ## 0.82.1 - 2026-10-04
 
 ### Changed
