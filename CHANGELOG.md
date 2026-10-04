@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.81.0 - 2026-10-04
+
 ### Highlights
 
 - **design-ui now asks who uses the screen and builds the plan around that user's top three tasks, with a Laws of UX rule behind each layout choice.**
