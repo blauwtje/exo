@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.80.2 - 2026-10-04
+
 ### Fixed
 
 - design-ui names one standout element, tints its ground and surfaces and varies block shape in every mood, and lists white cards on grey with one blue or teal accent as a slop trope.
