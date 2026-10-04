@@ -53,7 +53,7 @@ A sketch builds in this session with no variants, agents, or critic: state the t
 A new piece on the settled identity that rung 5 of the skill's `## Route` names builds in this session, with no baseline, inventory, comps, critic, or `scripts/inspect-render.mjs`:
 
 1. Read the rung 5 evidence `## Settled identity` of the `intake` reference lists, and the output of the Phase 1 `scripts/context.mjs` call.
-2. Load the `implementation` reference without `## Tokens and palette derivation`; read that section only when the piece adds a role token the repository lacks.
+2. Load the `implementation` sections the skill's References row names, skipping `## Tokens and palette derivation` unless the piece adds a role token the repository lacks.
 3. Load `## Adopt before authoring` and `## The state row` from the `component-system` reference, `## Tactile hierarchy` and `## Labels` from the `controls` reference, and `## Anatomy of the composite controls` for a composite control.
 4. Build, then run the repository checks `## The mechanics` names.
 5. Take the skill's capture, look and fix-once steps, and stop.

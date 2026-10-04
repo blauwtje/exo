@@ -86,7 +86,7 @@ Build the role tokens the interface actually has:
 
 ## Enhanced transitions and native controls
 
-Read the `motion` reference before adding motion. Scroll timelines, view transitions, and `@starting-style` are enhancements: guard them for the target matrix, keep final content visible without them, and provide the reduced-motion path. Both states stay usable without the view transition.
+Read the `motion` sections the skill's References row names before adding motion. Scroll timelines, view transitions, and `@starting-style` are enhancements: guard them for the target matrix, keep final content visible without them, and provide the reduced-motion path. Both states stay usable without the view transition.
 
 Prefer semantic HTML and shipped controls — `dialog`, `popover`, `details`, native form states — over div-plus-ARIA reconstructions. Style their focus, open/closed, invalid, and disabled states; native does not mean unstyled.
 
