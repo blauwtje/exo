@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- design-ui names one standout element, tints its ground and surfaces and varies block shape in every mood, and lists white cards on grey with one blue or teal accent as a slop trope.
+- design-ui's check-ui prints a short summary of definite and blocking findings grouped by type, writes the full JSON to disk, and leaves out `target-size-enhanced` and px in media queries unless `--all` asks.
+- design-ui's one pass reads only the named sections of each reference, so a page run loads fewer reference bytes into context.
+
 ## 0.80.1 - 2026-10-04
 
 ### Fixed
