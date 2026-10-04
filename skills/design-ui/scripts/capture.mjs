@@ -40,10 +40,9 @@ export const DEFAULT_VIEWPORTS = Object.freeze(
 
 /**
  * Capabilities a caller can need beyond rendering a page and taking a picture
- * of it. Obscura is the fastest driven engine here and the only one that never
- * registers a desktop application, but it reports nothing for
- * CSS.getPlatformFontsForNode and ignores prefers-color-scheme, so a caller
- * that depends on either names it and drops to the next rung.
+ * of it. Obscura, the driven fallback below every Chrome rung, reports nothing
+ * for CSS.getPlatformFontsForNode and ignores prefers-color-scheme, so a caller
+ * that depends on either names it and obscura is passed over.
  */
 export const BROWSER_CAPABILITIES = Object.freeze({
   darkColorScheme: 'color-scheme-dark',
@@ -54,6 +53,17 @@ const OBSCURA_MISSING_CAPABILITIES = [
   BROWSER_CAPABILITIES.darkColorScheme,
   BROWSER_CAPABILITIES.platformFonts
 ];
+
+// Obscura also lacks popover, <dialog> and SVG <use>, and lays a page out wider
+// than Chrome does, so a picture it takes can show faults Chrome never renders.
+const OBSCURA_WARNING =
+  'obscura fallback: it lacks popover, <dialog> and SVG <use> and lays out differently from Chrome, ' +
+  'so verify anything that looks broken in Chrome before fixing it';
+
+/** The caveat a capture taken by this engine carries, or null when it has none. */
+export function engineWarning(engine) {
+  return engine === 'obscura' ? OBSCURA_WARNING : null;
+}
 
 const OBSCURA_READY_TIMEOUT_MS = 10_000;
 const OBSCURA_STOP_GRACE_MS = 2_000;
@@ -310,27 +320,30 @@ async function startObscuraServer({ binary, url }) {
   }
 }
 
-// Rung 1 can be passed over for five different reasons and the caller is owed
+// Rung 3 can be passed over for four different reasons and the caller is owed
 // the one that actually applied, in the order the ladder checks them.
-function obscuraSkipReason({ client, explicitBinary, unmet, excludeObscura, obscura }) {
-  if (excludeObscura) return 'obscura: skipped after its server failed to start';
+function obscuraSkipReason({ client, unmet, failedRungs, obscura }) {
+  if (failedRungs.includes(3)) return 'obscura: skipped after its server failed to start';
   if (!obscura) return 'obscura: not found on PATH';
   if (!client) return 'obscura: needs playwright or playwright-core as its CDP client';
-  if (explicitBinary) return `obscura: skipped because CHROME_PATH names ${explicitBinary}`;
   if (unmet.length > 0) return `obscura: skipped because this run needs ${unmet.join(' and ')}`;
   return null;
 }
 
 /**
- * The one capability ladder. Rungs 1 to 3 drive a real page; rungs 4 and 5 can
- * only take a screenshot. Every attempt is recorded so the caller can report
- * which rung ran and why the others did not.
+ * The one capability ladder. Rungs 1 and 2 drive Chrome or Chromium, rung 3
+ * drives obscura, and rungs 4 and 5 can only take a screenshot. Obscura is
+ * reached only when no Chrome binary is found or every Chrome rung failed to
+ * launch, so a capture runs in Chrome whenever this machine can reach one.
+ * failedRungs names the rungs whose launch already failed in this run. Every
+ * attempt is recorded so the caller can report which rung ran and why the
+ * others did not.
  */
 export async function resolveBrowser({
   cwd = process.cwd(),
   colorScheme = 'no-preference',
   requires = [],
-  excludeObscura = false
+  failedRungs = []
 } = {}) {
   const attempts = [];
   if (process.env[DISCOVERY_DISABLED_ENV] === '1') {
@@ -349,49 +362,31 @@ export async function resolveBrowser({
   const playwright = requireFromProject('playwright', cwd);
   if (!playwright?.chromium) attempts.push(`playwright: not resolvable from ${cwd}`);
   const playwrightCore = playwright?.chromium ? null : requireFromProject('playwright-core', cwd);
+  if (!playwright?.chromium && !playwrightCore?.chromium) attempts.push(`playwright-core: not resolvable from ${cwd}`);
   const client = playwright?.chromium ?? playwrightCore?.chromium ?? null;
+  const clientName = playwright?.chromium ? 'playwright' : 'playwright-core';
 
-  // CHROME_PATH is read before any rung is chosen: it names a browser on purpose,
-  // so it outranks the obscura default, and a broken value is reported either way.
+  // CHROME_PATH is read before any rung is chosen, so a broken value is reported
+  // whichever rung ends up running.
   const envBinary = process.env.CHROME_PATH;
   const explicitBinary = envBinary && (await isExecutableFile(envBinary)) ? envBinary : null;
   if (envBinary && !explicitBinary) attempts.push(`CHROME_PATH: '${envBinary}' is not an existing file`);
 
-  // Rung 1: obscura renders through a CDP server of our own and registers no
-  // desktop application, so nothing appears in the Dock while a capture runs.
-  const needed = colorScheme === 'dark'
-    ? [...requires, BROWSER_CAPABILITIES.darkColorScheme]
-    : requires;
-  const unmet = OBSCURA_MISSING_CAPABILITIES.filter((capability) => needed.includes(capability));
-  const obscura = await findOnPath('obscura');
-  const obscuraSkipped = obscuraSkipReason({ client, explicitBinary, unmet, excludeObscura, obscura });
-  if (obscuraSkipped) {
-    attempts.push(obscuraSkipped);
-  } else {
-    return {
-      rung: 1,
-      engine: 'obscura',
-      driven: true,
-      chromium: client,
-      executablePath: null,
-      binary: obscura,
-      attempts: [...attempts, `obscura: ${obscura} driven over CDP`],
-      reason: `obscura at ${obscura} driven over CDP`
-    };
-  }
-
-  // Rung 2: a project that installs Playwright brings its own headless browser.
+  // Rung 1: a project that installs Playwright brings its own headless browser.
   if (playwright?.chromium) {
-    return {
-      rung: 2,
-      engine: 'playwright',
-      driven: true,
-      chromium: playwright.chromium,
-      executablePath: null,
-      binary: null,
-      attempts: [...attempts, 'playwright: resolved from the target project'],
-      reason: 'playwright resolved from the target project'
-    };
+    if (!failedRungs.includes(1)) {
+      return {
+        rung: 1,
+        engine: 'playwright',
+        driven: true,
+        chromium: playwright.chromium,
+        executablePath: null,
+        binary: null,
+        attempts: [...attempts, 'playwright: resolved from the target project'],
+        reason: 'playwright resolved from the target project'
+      };
+    }
+    attempts.push('playwright: skipped after its own browser failed to launch');
   }
 
   let binary = explicitBinary;
@@ -405,27 +400,52 @@ export async function resolveBrowser({
     if (!binary) attempts.push('platform-known Chrome, Chromium and Edge paths: none present');
   }
 
-  // Rung 3: playwright-core driving a binary this machine already has. CHROME_PATH
-  // names an explicit choice and keeps precedence; otherwise an installed headless
-  // shell wins, because a browser application would claim a Dock icon.
-  if (playwrightCore?.chromium) {
-    const shell = explicitBinary ? null : await headlessShellBinary(playwrightCore.chromium);
+  // Rung 2: the Playwright client driving a binary this machine already has.
+  // CHROME_PATH names an explicit choice and keeps precedence; otherwise an
+  // installed headless shell wins, because a browser application would claim a
+  // Dock icon.
+  if (client && failedRungs.includes(2)) {
+    attempts.push(`${clientName}: skipped after its executablePath failed to launch`);
+  } else if (client) {
+    const shell = explicitBinary ? null : await headlessShellBinary(client);
     const drivenBinary = shell ?? binary;
     if (drivenBinary) {
       return {
-        rung: 3,
+        rung: 2,
         engine: 'playwright',
         driven: true,
-        chromium: playwrightCore.chromium,
+        chromium: client,
         executablePath: drivenBinary,
         binary: drivenBinary,
-        attempts: [...attempts, `playwright-core: resolved with executablePath ${drivenBinary}`],
-        reason: `playwright-core driving ${drivenBinary}`
+        attempts: [...attempts, `${clientName}: resolved with executablePath ${drivenBinary}`],
+        reason: `${clientName} driving ${drivenBinary}`
       };
     }
-    attempts.push('playwright-core: resolved but no compatible executablePath, so it is unavailable');
-  } else if (!playwright?.chromium) {
-    attempts.push(`playwright-core: not resolvable from ${cwd}`);
+    attempts.push(`${clientName}: resolved but no compatible executablePath, so it is unavailable`);
+  }
+
+  // Rung 3: obscura renders through a CDP server of our own. It is the driven
+  // fallback only, because it lacks popover, <dialog> and SVG <use> and lays a
+  // page out differently from Chrome.
+  const needed = colorScheme === 'dark'
+    ? [...requires, BROWSER_CAPABILITIES.darkColorScheme]
+    : requires;
+  const unmet = OBSCURA_MISSING_CAPABILITIES.filter((capability) => needed.includes(capability));
+  const obscura = await findOnPath('obscura');
+  const obscuraSkipped = obscuraSkipReason({ client, unmet, failedRungs, obscura });
+  if (obscuraSkipped) {
+    attempts.push(obscuraSkipped);
+  } else {
+    return {
+      rung: 3,
+      engine: 'obscura',
+      driven: true,
+      chromium: client,
+      executablePath: null,
+      binary: obscura,
+      attempts: [...attempts, `obscura: ${obscura} driven over CDP`],
+      reason: `obscura at ${obscura} driven over CDP`
+    };
   }
 
   if (binary) {
@@ -486,20 +506,32 @@ async function launchDrivenBrowser({ capability, url }) {
 }
 
 /**
- * Obscura is the preferred rung but it is a server this process starts itself. A
- * stale binary or a port taken between reservation and bind must not turn a
- * working capture into a failure, so a failed start descends the ladder once and
- * reports the rung that actually ran.
+ * A driven rung can resolve and still fail to launch: Playwright installed
+ * without its browser download, a CHROME_PATH that is no browser, a stale
+ * obscura binary or a port taken between reservation and bind. Each failure
+ * passes over that rung and launches the next driven one, so a run lands on
+ * obscura only after every Chrome rung failed, and reports the rung that ran.
+ * The loop ends because resolveBrowser never returns a rung in failedRungs.
+ * With no driven rung left the first failure is rethrown, because it names the
+ * browser the caller should fix.
  */
 async function openDrivenBrowser({ capability, cwd, url, colorScheme, requires }) {
-  try {
-    return { capability, ...(await launchDrivenBrowser({ capability, url })) };
-  } catch (error) {
-    if (capability.engine !== 'obscura') throw error;
-    const fallback = await resolveBrowser({ cwd, colorScheme, requires, excludeObscura: true });
-    if (!fallback.driven) throw error;
-    return { capability: fallback, ...(await launchDrivenBrowser({ capability: fallback, url })) };
+  const failedRungs = [];
+  const launchFailures = [];
+  let firstFailure = null;
+  let current = capability;
+  while (current.driven) {
+    try {
+      const session = await launchDrivenBrowser({ capability: current, url });
+      return { capability: { ...current, attempts: [...launchFailures, ...current.attempts] }, ...session };
+    } catch (error) {
+      firstFailure ??= error;
+      failedRungs.push(current.rung);
+      launchFailures.push(`rung ${current.rung} (${current.reason}) failed to launch: ${String(error.message).split('\n')[0]}`);
+      current = await resolveBrowser({ cwd, colorScheme, requires, failedRungs });
+    }
   }
+  throw firstFailure;
 }
 
 /**
@@ -768,6 +800,7 @@ export async function capture(options) {
     if (!fullPage && geometry.height !== height) {
       throw new Error(`capture at ${target} decoded height ${geometry.height}, expected ${height}`);
     }
+    const warning = engineWarning(capability.engine);
     records.push({
       label,
       width,
@@ -778,7 +811,8 @@ export async function capture(options) {
       path: target,
       sha256: createHash('sha256').update(bytes).digest('hex'),
       bytes: bytes.length,
-      engine: capability.engine
+      engine: capability.engine,
+      ...(warning && { warning })
     });
   }
   return { capability, records };
@@ -810,6 +844,8 @@ async function main(argv) {
   });
 
   process.stderr.write(`ui-design: capture rung ${capability.rung} — ${capability.reason}\n`);
+  const warning = engineWarning(capability.engine);
+  if (warning) process.stderr.write(`ui-design: warning: ${warning}\n`);
   for (const record of records) process.stdout.write(`${JSON.stringify(record)}\n`);
 }
 

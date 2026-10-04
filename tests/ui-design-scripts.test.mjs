@@ -9,6 +9,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import {
   BROWSER_CAPABILITIES,
+  engineWarning,
   obscuraServerArguments,
   resolveBrowser
 } from '../skills/design-ui/scripts/capture.mjs';
@@ -1087,15 +1088,30 @@ describe('unavailable browser capability', () => {
   });
 });
 
-async function withChromePath(value, body) {
-  const previous = process.env.CHROME_PATH;
-  process.env.CHROME_PATH = value;
+async function withEnvironment(values, body) {
+  const previous = Object.fromEntries(Object.keys(values).map((name) => [name, process.env[name]]));
+  Object.assign(process.env, values);
   try {
     await body();
   } finally {
-    if (previous === undefined) delete process.env.CHROME_PATH;
-    else process.env.CHROME_PATH = previous;
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
   }
+}
+
+function withChromePath(value, body) {
+  return withEnvironment({ CHROME_PATH: value }, body);
+}
+
+// A stand-in obscura on PATH: the ladder only looks it up, and a launch of it
+// fails at once, like a stale binary.
+async function standInObscura(root) {
+  const binDirectory = path.join(root, 'bin');
+  await fs.mkdir(binDirectory);
+  await fs.writeFile(path.join(binDirectory, 'obscura'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  return `${binDirectory}${path.delimiter}${process.env.PATH}`;
 }
 
 describe('browser ladder preference', () => {
@@ -1109,32 +1125,62 @@ describe('browser ladder preference', () => {
       ['serve', '--port', '41234', '--host', '127.0.0.1', '--allow-private-network', '--quiet']);
   });
 
-  it('drives obscura rather than a browser application when nothing rules it out', async (t) => {
-    const capability = await resolveBrowser({ cwd: SCRIPTS });
-    if (capability.engine !== 'obscura') return t.skip(`obscura is not the resolved rung: ${capability.reason}`);
-    assert.equal(capability.driven, true);
-    assert.equal(capability.executablePath, null, 'obscura is reached over CDP, not launched by path');
+  it('flags obscura captures with a warning and leaves Chrome captures unflagged', () => {
+    const warning = engineWarning('obscura');
+    assert.match(warning, /^obscura fallback/);
+    for (const feature of ['popover', '<dialog>', '<use>']) assert.ok(warning.includes(feature), feature);
+    assert.equal(engineWarning('playwright'), null);
+    assert.equal(engineWarning('chrome-cli'), null);
+  });
+
+  it('drives Chrome through Playwright ahead of obscura whenever a Chrome rung resolves', async (t) => {
+    if (process.platform === 'win32') return t.skip('the stand-in obscura is a POSIX shell script');
+    const root = await fixture();
+    const chosen = path.join(root, 'chosen-browser');
+    await fs.writeFile(chosen, '');
+    await withEnvironment({ PATH: await standInObscura(root), CHROME_PATH: chosen }, async () => {
+      const capability = await resolveBrowser({ cwd: SCRIPTS });
+      if (!capability.driven) return t.skip(`no Playwright client resolves: ${capability.reason}`);
+      assert.equal(capability.engine, 'playwright', capability.reason);
+      assert.ok([1, 2].includes(capability.rung), `rung ${capability.rung}`);
+    });
+  });
+
+  it('falls back to obscura only once every Chrome rung has failed', async (t) => {
+    if (process.platform === 'win32') return t.skip('the stand-in obscura is a POSIX shell script');
+    const root = await fixture();
+    await withEnvironment({ PATH: await standInObscura(root) }, async () => {
+      const capability = await resolveBrowser({ cwd: SCRIPTS, failedRungs: [1, 2] });
+      if (!capability.driven) return t.skip(`no Playwright client resolves: ${capability.reason}`);
+      assert.equal(capability.engine, 'obscura', capability.reason);
+      assert.equal(capability.rung, 3);
+      assert.equal(capability.executablePath, null, 'obscura is reached over CDP, not launched by path');
+    });
   });
 
   it('drops obscura for a capability it does not have, and says which', async (t) => {
-    const available = await resolveBrowser({ cwd: SCRIPTS });
-    if (available.engine !== 'obscura') return t.skip(`obscura is not the resolved rung: ${available.reason}`);
+    if (process.platform === 'win32') return t.skip('the stand-in obscura is a POSIX shell script');
+    const root = await fixture();
+    await withEnvironment({ PATH: await standInObscura(root) }, async () => {
+      const available = await resolveBrowser({ cwd: SCRIPTS, failedRungs: [1, 2] });
+      if (available.engine !== 'obscura') return t.skip(`obscura is not the resolved rung: ${available.reason}`);
 
-    for (const capability of Object.values(BROWSER_CAPABILITIES)) {
-      const resolved = await resolveBrowser({ cwd: SCRIPTS, requires: [capability] });
-      assert.notEqual(resolved.engine, 'obscura', `${capability} must not resolve to obscura`);
-      assert.ok(resolved.attempts.some((attempt) => attempt.includes(capability)),
-        `attempts should name ${capability}: ${resolved.attempts.join('; ')}`);
-    }
+      for (const capability of Object.values(BROWSER_CAPABILITIES)) {
+        const resolved = await resolveBrowser({ cwd: SCRIPTS, requires: [capability], failedRungs: [1, 2] });
+        assert.notEqual(resolved.engine, 'obscura', `${capability} must not resolve to obscura`);
+        assert.ok(resolved.attempts.some((attempt) => attempt.includes(capability)),
+          `attempts should name ${capability}: ${resolved.attempts.join('; ')}`);
+      }
+    });
   });
 
-  it('keeps an explicit CHROME_PATH ahead of obscura and of a headless shell', async (t) => {
+  it('keeps an explicit CHROME_PATH ahead of a headless shell', async (t) => {
     const root = await fixture();
     const chosen = path.join(root, 'chosen-browser');
     await fs.writeFile(chosen, '');
     await withChromePath(chosen, async () => {
       const capability = await resolveBrowser({ cwd: SCRIPTS });
-      if (capability.rung !== 3) return t.skip(`CHROME_PATH does not decide rung ${capability.rung}`);
+      if (capability.rung !== 2) return t.skip(`CHROME_PATH does not decide rung ${capability.rung}`);
       assert.equal(capability.executablePath, chosen);
     });
   });
@@ -1148,26 +1194,31 @@ describe('browser ladder preference', () => {
     });
   });
 
-  it('falls back down the ladder when the obscura server cannot start', async (t) => {
-    if (process.platform === 'win32') return t.skip('the stand-in obscura is a POSIX shell script');
-    const available = await resolveBrowser({ cwd: SCRIPTS });
-    if (available.engine !== 'obscura') return t.skip(`obscura is not the resolved rung: ${available.reason}`);
-    const fallback = await resolveBrowser({ cwd: SCRIPTS, excludeObscura: true });
-    if (!fallback.driven) return t.skip(`no driven rung below obscura: ${fallback.reason}`);
-
+  it('falls back to obscura with a warning when Chrome fails to launch', async (t) => {
+    if (process.platform === 'win32') return t.skip('the stand-in browser is a POSIX shell script');
     const root = await fixture();
+    const broken = path.join(root, 'broken-browser');
+    await fs.writeFile(broken, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+    let first;
+    let fallback;
+    await withChromePath(broken, async () => {
+      first = await resolveBrowser({ cwd: SCRIPTS });
+      fallback = await resolveBrowser({ cwd: SCRIPTS, failedRungs: [first.rung] });
+    });
+    if (first.rung !== 2) return t.skip(`CHROME_PATH does not decide rung ${first.rung}`);
+    if (fallback.engine !== 'obscura') return t.skip(`no obscura below Chrome: ${fallback.reason}`);
+
     const page = path.join(root, 'page.html');
     await fs.writeFile(page, '<!doctype html><html lang="en"><title>t</title><p>fallback</p>');
-    const binDirectory = path.join(root, 'bin');
-    await fs.mkdir(binDirectory);
-    await fs.writeFile(path.join(binDirectory, 'obscura'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
-
     const result = await run(script('capture.mjs'),
       ['--url', `file://${page}`, '--viewport', '320x240', '--label', 'fallback', '--out', root],
-      { cwd: root, env: { PATH: `${binDirectory}${path.delimiter}${process.env.PATH}` } });
+      { cwd: root, env: { CHROME_PATH: broken } });
     assert.equal(result.code, 0, result.stderr);
-    assert.doesNotMatch(result.stderr, /capture rung 1/, result.stderr);
-    assert.equal(JSON.parse(result.stdout.trim().split('\n')[0]).engine, 'playwright');
+    assert.match(result.stderr, /capture rung 3/, result.stderr);
+    assert.match(result.stderr, /ui-design: warning: obscura fallback/, result.stderr);
+    const record = JSON.parse(result.stdout.trim().split('\n')[0]);
+    assert.equal(record.engine, 'obscura');
+    assert.equal(record.warning, engineWarning('obscura'));
   });
 });
 
@@ -1430,7 +1481,7 @@ describe('rendered capability', () => {
 
   it('does not carry focus from one viewport into the next when the page rewrites its URL', async (t) => {
     const capability = await resolveBrowser({ cwd: SCRIPTS });
-    // obscura (rung 1) never moves focus on Tab, so it cannot exercise this bug either
+    // obscura (the rung 3 fallback) never moves focus on Tab, so it cannot exercise this bug either
     // way; only a real Chrome/Chromium driven through Playwright (CHROME_PATH or a
     // resolvable Playwright browser) can.
     if (capability.engine !== 'playwright') {
