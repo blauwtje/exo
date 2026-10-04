@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.82.0 - 2026-10-04
+
 ### Added
 
 - design-ui's form asks which product the result should feel like (Linear/Vercel, Stripe, Notion, Duolingo or your own), remembers the answer per user and offers it first next time; the product sets finish, density and motion, never brand, logo or layout.
