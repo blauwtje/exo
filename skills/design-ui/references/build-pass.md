@@ -28,7 +28,7 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 
 - Span the page background and any sidebar the full page height at 390px and 1440px, or a band of another color shows below.
 - Theme every browser surface: `::selection`, `accent-color`, `caret-color`, `scrollbar-color` on inner scrollers, and link underline offset and thickness.
-- Set changing figures in `font-variant-numeric: tabular-nums`.
+- Set amounts and changing figures in the body or display family with `font-variant-numeric: tabular-nums`, never a monospace family.
 - Use `text-wrap: pretty`, grid and subgrid, `color-mix()`, masks and scroll-driven animation as the idiom, not enhancements to ration.
 - Build every content item the plan carries; a region still holding placeholder material leaves the page unfinished.
 - Build a technique the content or brief names, such as a canvas or generative motion, working and live, never faked by an image.
