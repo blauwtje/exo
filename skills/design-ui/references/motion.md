@@ -4,7 +4,7 @@ Choreograph motion as part of the direction, not a garnish. The enemy is unowned
 
 ## Reduced motion
 
-- Put every transition and animation behind `@media (prefers-reduced-motion: no-preference)`, and never the state it leads to.
+- Put every CSS transition and animation behind `@media (prefers-reduced-motion: no-preference)`, and never the state it leads to. Wrap a Motion app in `<MotionConfig reducedMotion="user">`, which keeps opacity and drops transform and layout animation under `reduce`.
 - Declare the `:hover` offset, the `:active` press, the open panel and the selected tab outside the query. Under `reduce` each state change still happens, instantly or as an opacity or color change, and no content or feedback is lost.
 - A state change wrapped inside the query deletes feedback, and so does a blanket `* { animation: none; }` under `reduce` that stops a loading shimmer instead of replacing it with an opacity change.
 - The rule covers CSS animations, scroll timelines, view transitions and media that plays by itself.
@@ -28,7 +28,7 @@ Write the thesis as one sentence before the first animation: how the chosen mood
 - regions enter staggered from their container, focal region first, content visible at rest;
 - key figures count up to their value on first view;
 - tabs, segmented controls and navigation move the active mark with a sliding indicator;
-- a section or view switch calls `document.startViewTransition()` around its DOM change, not only `view-transition-name`, so persisting elements morph;
+- a section or view switch morphs through Motion's `AnimatePresence` and `layout` where the project uses Motion, else calls `document.startViewTransition()` around its DOM change, not only `view-transition-name`, so persisting elements morph;
 - a detail, filter or edit panel slides in from its edge and leaves faster.
 
 Beneath the bar, transitions on hover, focus, active and open states are the floor at every size.
@@ -70,7 +70,7 @@ Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or s
 
 - Keep durations and curves in tokens, and list a transition's properties instead of `all`.
 - A focus indicator appears at once; a transition may animate properties around focus, never the indicator itself.
-- Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)` as the default ease-out. A staged entrance takes its curve from the mood's motion feel; overshoot belongs only to the friendly and playful mood or a bouncing brief, never to a functional control.
+- Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)`, or a Motion spring without bounce, as the default ease-out. A staged entrance takes its curve from the mood's motion feel; overshoot belongs only to the friendly and playful mood or a bouncing brief, never to a functional control.
 - An element that appears and disappears, such as a panel, menu, dialog or toast, exits faster than it entered and on its own curve, never the entrance played in reverse.
 - Declare that exit on the closed or leaving state itself: the entry keeps the longer duration token and the ease-out, and the exit takes a shorter duration token and an ease-in such as `cubic-bezier(.3, 0, .8, .15)`. A transition declared once on the base rule runs the same both ways, which is the reversed entrance the exit rule forbids.
 - Hover and press feedback may use one transition on the base rule for both directions, as the chevron example under `## Reduced motion` does, because the release undoes a nudge rather than removing an element.
@@ -94,7 +94,7 @@ Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or s
 
 ## Judgment
 
-- Prefer the platform, and use a repository's existing animation library idiomatically; add a library only for orchestration, physics, or scrubbed timelines CSS cannot express, never for one fade.
+- Use the project's animation library idiomatically, Motion in the default stack of the `stack` reference. Without one, prefer the platform, and add a library only for orchestration, physics, or scrubbed timelines CSS cannot express, never for one fade.
 - Reduced-motion preference and interaction feedback outrank the thesis.
 - A brief's requested intensity outranks these caps; the accessibility floor outranks the brief.
 - Existing repository motion tokens and browser targets outrank these values.

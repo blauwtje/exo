@@ -2,7 +2,7 @@
 
 Make the code preserve the design without hiding its structure, using platform features so the direction is structural rather than decorative. The enemy is under-engineering — inline styling, one file owning unrelated regions, the same declaration block copied three times, or JavaScript recreating shipped CSS. The overcorrection is an abstraction with one caller, or a feature used outside the project's browser matrix without a complete fallback.
 
-Tokens live as custom properties in one tokens file that component rules reference instead of raw values, and stylesheets import into the layers `reset, tokens, base, layout, components, utilities` in that order.
+Tokens live as custom properties in one tokens file that component rules reference instead of raw values, and stylesheets import into the layers `reset, tokens, base, layout, components, utilities` in that order. In a Tailwind project, the theme variables of its main stylesheet are that tokens file and Tailwind's layers replace these.
 
 ## Contents
 
@@ -44,7 +44,7 @@ Read the project's browser targets before choosing syntax, and follow an existin
 
 ## Where code lives
 
-- **Single-file deliverables** (artifacts, single HTML demos) change nothing structurally: one organized `<style>` block in `<head>` *is* the stylesheet. With no imports to carry the layers, declare `@layer reset, tokens, base, layout, components, utilities` once at the top and define the tokens in one `:root` block.
+- **Single-file deliverables** the user asks for (artifacts, single HTML demos) change nothing structurally: one organized `<style>` block in `<head>` *is* the stylesheet. With no imports to carry the layers, declare `@layer reset, tokens, base, layout, components, utilities` once at the top and define the tokens in one `:root` block.
 - Mirror the layer order in stylesheet order, and let component rules follow page order, so the stylesheet reads top-to-bottom like the page.
 - Behavior lives in script files, or one `<script>` block in single-file mode.
 - Wire events with `addEventListener` or the framework's idiom.
@@ -81,14 +81,14 @@ Build the role tokens the interface actually has:
 
 - Use `:has()` when parent or sibling state already exists in the DOM; do not add JavaScript only to mirror that state.
 - Nest selectors at most three levels. Deeper nesting creates specificity coupling.
-- Keep one class per element as the default. Resolve overrides through layer order, not selector weight or `!important`.
+- Outside a utility-class project, keep one class per element as the default. Resolve overrides through layer order, not selector weight or `!important`.
 - Use `text-wrap: balance` for short headings and `text-wrap: pretty` for prose when the target matrix supports them.
 
 ## Enhanced transitions and native controls
 
 Read the `motion` sections the skill's References row names before adding motion. Scroll timelines, view transitions, and `@starting-style` are enhancements: guard them for the target matrix, keep final content visible without them, and provide the reduced-motion path. Both states stay usable without the view transition.
 
-Prefer semantic HTML and shipped controls — `dialog`, `popover`, `details`, native form states — over div-plus-ARIA reconstructions. Style their focus, open/closed, invalid, and disabled states; native does not mean unstyled.
+Prefer semantic HTML, shipped controls — `dialog`, `popover`, `details`, native form states — or the project kit's primitives over div-plus-ARIA reconstructions. Style their focus, open/closed, invalid, and disabled states; native does not mean unstyled.
 
 ## Economy — fewer statements for the same behavior
 
@@ -99,7 +99,7 @@ Prefer semantic HTML and shipped controls — `dialog`, `popover`, `details`, na
 ## Abstraction and readability
 
 - Prefer parameterizing what exists — props, custom properties, a modifier class — over creating a near-duplicate sibling; one primitive may carry several visual expressions that way.
-- Names describe role, not appearance: `.card-price`, not `.text-blue-bold`.
+- Authored class names describe role, not appearance: `.card-price`, not `.text-blue-bold`.
 
 ## Finish — browser surfaces
 
@@ -116,7 +116,7 @@ Theme every browser surface the page shows; these small details are what separat
 When a critique tell removes decoration, climb this ladder rather than deleting the region:
 
 1. A repository asset.
-2. A diagram of real content drawn with SVG, CSS, or canvas.
+2. A diagram of real content drawn with SVG, CSS, or canvas, never a hand-drawn chart.
 3. Real data as an instrument.
 4. A typographic or compositional treatment.
 5. Omitting the region, last.

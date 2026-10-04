@@ -6,7 +6,7 @@ The `visual-direction` reference decides whether a region gets an image and what
 
 ## The icon system is derived, not adopted
 
-A named set is a geometry reference, never a house style. Derive the grid and the stroke from what the design already has (the body face's stem weight, the border token, the control radius), then enforce one system everywhere and prove it in the render. Lucide's design guide gives the geometry at a 24px grid:
+Outside the default stack of the `stack` reference, whose set is lucide-react, a named set is a geometry reference, never a house style. Derive the grid and the stroke from what the design already has (the body face's stem weight, the border token, the control radius), then enforce one system everywhere and prove it in the render. Lucide's design guide gives the geometry at a 24px grid:
 
 - One canvas per surface: 24×24 in that system, and **one `viewBox` family**, never two grids side by side.
 - Verify: collect `viewBox` off every `svg` in the render; more than one grid family is a defect.
@@ -21,7 +21,7 @@ A named set is a geometry reference, never a house style. Derive the grid and th
 - Coordinates, arc centers, and endpoints align to the pixel grid.
 - **Never strip the `viewBox`**: keep SVGO's `removeViewBox` off, or the icon stops scaling and may clip.
 
-Generic affordances such as close, search and chevron may come from one consistent set. A display or symbol exception is open where the direction names it. A mark carrying the subject or the brand is drawn against the subject's own grid, because that is where a set stops being a reference and starts being someone else's identity. A decorative icon beside a text label is `aria-hidden`; an icon-only control owes the accessible name and the optical mass of its labelled sibling (the `controls` reference).
+Generic icons such as close, search and chevron may come from one consistent set. A display or symbol exception is open where the direction names it. A mark carrying the subject or the brand is drawn against the subject's own grid, because that is where a set stops being a reference and starts being someone else's identity. A decorative icon beside a text label is `aria-hidden`; an icon-only control owes the accessible name and the optical mass of its labelled sibling (the `controls` reference).
 
 ## Responsive images
 

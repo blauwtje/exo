@@ -8,14 +8,14 @@ the `controls` reference owns how a control looks: silhouette, optical padding, 
 
 - A repository that already ships a component layer — a copy-in kit, a headless primitive set, a utility-class component library — owns its components. Extend it with a variant, a size, or a theme; never place a second Button, Field, or Dialog beside the first.
 - A stock kit at its default settings is a template wearing the project's accent. Recut its tokens and rebuild at least the primary control's anatomy before building screens on it, and record which defaults were replaced.
-- Adding such a layer to a project that has none is a dependency decision, not a design one: propose it, name what it costs, and build on the platform meanwhile.
+- A project with no UI framework takes the default stack of the `stack` reference, not a build on the platform.
 
 ## Anatomy
 
 Every component the surface repeats carries the same four decisions, recorded once:
 
 - **Parts.** Name the pieces a reader would style separately — root, leading icon, label, trailing indicator, description, action — and give each a stable attribute hook rather than a presentational class. A part with no name cannot be themed, tested, or reused.
-- **Variant and size as values, not classes.** One `data-variant` and one `data-size` attribute carrying a token, so the combinations stay a grid a reader can enumerate; a class per combination hides which combinations exist.
+- **Variant and size as values, not classes.** One `data-variant` and one `data-size` attribute, or the kit's `variant` and `size` props, carrying a token, so the combinations stay a grid a reader can enumerate; a class per combination hides which combinations exist.
 - **State in the DOM.** Open, selected, invalid, busy, and disabled live in a `data-*` attribute or the native ARIA state, and CSS selects them. A component whose script toggles presentational classes has moved its state machine into the stylesheet's blind spot.
 - **Behavior on the platform.** Build the silhouette on the native element or a headless primitive so keyboard, focus order, and value semantics survive; a reconstructed widget owes every behavior it replaced.
 
@@ -58,7 +58,7 @@ Two carry decisions a look cannot make, and both are settled explicitly or they 
 
 Record the form validation timing: when a field validates (on blur, on submit, on change after the first error), where the message sits, and where focus goes on a failed submit. No convention settles it, so hold the one recorded across the whole flow.
 
-Take the behavior contract of a headless primitive library (WAI-ARIA behavior, keyboard support, focus management) and never its look; taking the look is the failure this skill exists to prevent.
+Take the behavior contract of a headless primitive library (WAI-ARIA behavior, keyboard support, focus management) and recut its look; shipping the look unchanged is the failure this skill exists to prevent.
 
 ## Inventory, not kit
 
