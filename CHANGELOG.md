@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **design-ui now builds an empty folder on Vite, React, TypeScript, Tailwind, shadcn/ui and lucide-react instead of one hand-written HTML file.** An existing project, plain HTML included, keeps its own stack.
+
+### Changed
+
+- design-ui's new `stack` reference maps each job to a package in an empty folder: shadcn charts (Recharts), the shadcn data table (TanStack Table) with sorting, filtering and selection, sonner, cmdk, vaul, `@number-flow/react`, Motion and Fontsource, every component fetched with the shadcn CLI, no shadcn block as the base, and Magic UI only on landing pages.
+- design-ui previews a default-stack build through Vite's dev server, started in the background and stopped before the report, instead of a `file://` url.
+- design-ui's platform-first and no-new-dependency rules, Google Fonts option and hand-drawn chart allowance now hold only for an existing project, and the critic flags a hand-drawn chart, a hand-written shadcn component or a block used as the base.
+
 ## 0.80.4 - 2026-10-04
 
 ### Fixed
