@@ -62,6 +62,7 @@ By category:
 - Kits: not cream with a serif and terracotta, not near-black with one acid accent, not white cards on grey with one blue accent.
 - Imagery: no emoji outside a stated brand use and no invented SVG drawing; place a labelled placeholder and ask for the real material.
 - Buttons: no arrow glyph added to the label.
+- Stock shadcn: no fetched component left in its default form; the radius, tokens, density and variants follow the `stack` reference's `## Theme`.
 
 ## The motion bar
 

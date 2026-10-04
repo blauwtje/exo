@@ -1,12 +1,13 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in five groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt`, `a-dispatch-user.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in six groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt`, `a-dispatch-user.txt`, the build-stack cases and `d-orders-theme.txt` on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
 - `a-orders-overview.txt` covers the full-scope completion, the mood and the motion bar. It needs no fixture.
 - `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` cover the build stack: the default stack in an empty folder, an existing project's stack, and where Magic UI effects belong.
 - `d-users-form.txt` and `e-directions-answer.txt` cover the intake form's Users and Directions questions. They need no fixture and run in the `sonnet:high` cell with `--main-dir` against main.
+- `d-orders-theme.txt` covers the shadcn theme in the default stack. It needs no fixture.
 
 ## One-pass default
 
@@ -48,6 +49,14 @@ Run `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` in the `so
 - `c-landing-stack.txt`: the stack and fonts match `a-orders-stack.txt`, the preview is the Vite dev server, and the hero or section effects may come from Magic UI through `shadcn add`. A single HTML file, a Google Fonts CDN link or a `file://` preview fails it.
 
 Pre-edit baseline on 2026-10-04 (0.80.4, one run each arm): with the skill, `opus:high` planned one static `index.html` with an inline SVG chart, Google Fonts and `open index.html` in `a` and `c`, and `sonnet:high` did the same in `c`; without it, both cells chose Vite, React, shadcn, Fontsource and the dev server, yet wrote their own count-up hook, named no Motion and no row selection. Every arm kept the Vue stack in `b`.
+
+## Shadcn theme
+
+Run `d-orders-theme.txt` like the build-stack cases, in the `sonnet:high` and `opus:high` cells with no fixture and no pressure: stock shadcn shapes are a default tendency seen in real runs. Read the final answer.
+
+- Pass: `--radius` and every color token, `--card` and `--popover` included, come from the direction, not the preset; button, card, table, input, select, tabs and checkbox each change classes or `cva` variants, and the plan adds a variant for a named role such as order status. A visible control marked "kept as fetched", or a `className` override at the call site instead of a variant, fails it.
+
+Pre-edit baseline on 2026-10-04 (0.80.5, one run each arm): without the skill, both cells marked `button`, `input`, `tabs`, `checkbox` and the menus "kept as fetched" and set `--card` to pure white in `opus`; with the pre-edit skill, both still kept `input`, `select`, `tabs` or `checkbox` as fetched. After the edit, both `with` cells recut every visible control and kept only token-carried parts such as `chart`, `sonner` and `separator` as fetched.
 
 ## Picker comps
 
