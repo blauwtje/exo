@@ -8,6 +8,11 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Change no production code before a selection exists.
 - Outside an existing brand or design system, derive one bold direction from the chosen mood before Build, because a neutral middle is not a direction.
 - The direction settles composition and visual material together: the contract names it and every region carries it.
+- The plan names the user's three most important tasks, most frequent first, because a screen ordered by its data serves no task.
+- Order the layout by those tasks: the first takes the most prominent region and the nearest controls, the third the least space.
+- Tag each major layout choice on its plan line with the Laws of UX rule deciding it: Hick, Fitts, Jakob, Von Restorff or another.
+- Before the plan, shortlist three faces and three accent hues, then drop the first of each, since the first to mind is the house default.
+- Give the kept faces and accent hue one plan clause each naming the user fact it answers.
 - Every rung other than 3 produces one direction, written as the skill's plan, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
 
