@@ -66,7 +66,7 @@ One coherent physical logic per direction: state the light source and the lighti
 
 - **Flat + borders** — hierarchy from hairlines and surface steps.
 - **Soft ambient light** — layered diffuse shadows, one light direction, tokened elevation.
-- **Hard offset** — solid shadows and thick strokes, for a neobrutalist direction.
+- **Hard offset** — solid shadows and thick strokes, only when the user asks for neobrutalism, because unasked it reads as a gamified template.
 - **Layered translucency** — blur and glass, only over real changing content.
 
 The background is a designed surface, never an untouched default: a deliberate solid ground, a hue-traced ground, a gradient field with a named light source, or a fine texture the mood calls for — grain, paper, graph grid, fabric. Judge atmosphere layers by whether two do the same job, never by their count. Judge texture from the render, not a preset opacity: perceptible at 390px and 1440px where the contract names it, invisible where it is not doing a job, and body-text contrast still at the floor on top of it. Ambient movement passes the job gate in the `motion` reference.

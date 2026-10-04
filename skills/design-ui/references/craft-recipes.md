@@ -71,7 +71,7 @@ background:
   linear-gradient(140deg, var(--accent), color-mix(in oklch, var(--accent) 30%, transparent)) border-box;
 ~~~
 
-**Hard offset** — the neobrutalist grammar: `border: 2px solid var(--ink); box-shadow: var(--offset) var(--offset) 0 var(--ink);`. The pressed state collapses the offset to zero with a matching `translate`.
+**Hard offset** — the neobrutalist grammar, only when the user asks for it: `border: 2px solid var(--ink); box-shadow: var(--offset) var(--offset) 0 var(--ink);`. The pressed state collapses the offset to zero with a matching `translate`.
 
 ## Motion
 

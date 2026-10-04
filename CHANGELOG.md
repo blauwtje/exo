@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- design-ui's form asks which product the result should feel like (Linear/Vercel, Stripe, Notion, Duolingo or your own), remembers the answer per user and offers it first next time; the product sets finish, density and motion, never brand, logo or layout.
+- `check-ui.mjs` reports `hard-offset-shadow`, a solid unblurred offset shadow on a button or card, and the slop lists ban it unless you ask for neobrutalism.
+
+### Changed
+
+- design-ui's one pass builds in one fresh `build-ui` agent on Opus from the plan and chosen comp while the main session only coordinates, and every run ends on a 390 and 1440 capture taken after its last change.
+
 ## 0.81.3 - 2026-10-04
 
 ### Fixed

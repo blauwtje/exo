@@ -1,7 +1,7 @@
 {
   "default": { "soft": 40, "hard": 100, "calls": 60 },
   "agents": {
-    "exo:build-ui": { "calls": 35 },
+    "exo:build-ui": { "calls": 60 },
     "exo:locate-code": { "soft": 70 },
     "exo:fetch-docs": { "soft": 70 },
     "exo:survey-ui": { "soft": 70 },

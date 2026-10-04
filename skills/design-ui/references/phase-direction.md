@@ -18,6 +18,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 ## Mood to look
 
+- Take the reference product's finish, density and motion, never its brand, logo or exact layout, because a look-alike borrows that brand.
 - Dare in one place: name one standout element the viewer remembers, such as a drenched KPI band, because an all-equal page reads generic.
 - Color with confidence: tint the ground and surfaces from the palette and build depth from surface steps, not white boxes carrying one accent.
 - Vary block shape by content job: a band, an open table, an inset panel and a card differ, not one card anatomy repeated.
@@ -29,7 +30,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Prompt the generator with this product's content and direction, never an existing product's characters, mascot or look, because a look-alike borrows that brand.
 - With no image generator, the Imagery trope of the `build-pass` reference holds: a labelled placeholder, never a drawn stand-in.
 - Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
-- Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
+- Bold and expressive: saturated regions, heavy display type, hard edges and large travel.
 - Pick hues, faces and radii yourself from the mood and the product, not from a seed or a stock default.
 - Record the mood in the contract's rationale, or in the plan on the one pass, and trace each look value to it.
 - Invent no company, brand story, metaphor or subject prop as a theme unless the user asks, because the mood and content carry the look.

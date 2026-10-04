@@ -178,6 +178,15 @@ const LINE_TELLS = [
     note: 'indigo, violet or purple utility class, the default generated palette'
   },
   {
+    type: 'hard-offset-shadow',
+    confidence: 'potential',
+    skipsStylesheets: true,
+    // An arbitrary Tailwind shadow with a nonzero offset and a zero blur, such as shadow-[4px_4px_0_#000].
+    pattern: /\bshadow-\[(?!-?0(?:px)?_-?0(?:px)?_)-?\d*\.?\d+(?:px|rem)?_-?\d*\.?\d+(?:px|rem)?_0(?:px)?[_\]]/,
+    threshold: 'depth from soft light or a tonal step',
+    note: 'hard offset shadow: a solid block behind the element'
+  },
+  {
     type: 'monospace-label',
     confidence: 'potential',
     // The lookbehind skips a class on a code, pre, kbd or samp tag opened on the same line.
@@ -747,6 +756,27 @@ function tintedGlowFindings(body, where) {
   return findings;
 }
 
+/** A non-inset box-shadow layer offset 2px or more with no blur in an opaque color: the solid block of the
+ *  neo-brutalist kit; a var() color is not resolved and a layer without a color counts as opaque currentColor. */
+function hardOffsetShadowFindings(body, where) {
+  const value = declaration(body, 'box-shadow');
+  if (!value) return [];
+  for (const layer of value.split(/,(?![^(]*\))/)) {
+    if (/\binset\b|var\(/i.test(layer)) continue;
+    const [token] = layer.match(COLOR_TOKEN) ?? [];
+    const lengths = layer.replace(COLOR_TOKEN, ' ').replace(/\b[a-z]+\b/gi, ' ').trim().split(/\s+/).map(lengthPx);
+    if (lengths.length < 2 || lengths.some((length) => length === null)) continue;
+    const [offsetX, offsetY, blur = 0] = lengths;
+    if (Math.abs(offsetX) + Math.abs(offsetY) < 2 || blur > 0 || (token && alphaOf(token) < 0.9)) continue;
+    return [finding({
+      type: 'hard-offset-shadow', confidence: 'potential', selector: where,
+      measured: `box-shadow ${layer.trim()}`, threshold: 'depth from soft light or a tonal step',
+      note: 'hard offset shadow: a solid block behind the element'
+    })];
+  }
+  return [];
+}
+
 /** A button rule whose radius makes a pill: 100px or more, or Tailwind v4's infinite radius. */
 function pillButtonFindings(selector, body, where) {
   const radius = declaration(body, 'border-radius');
@@ -854,6 +884,7 @@ function ruleFindings(rules, shadows) {
       }));
     }
     findings.push(...tintedGlowFindings(body, where));
+    findings.push(...hardOffsetShadowFindings(body, where));
     findings.push(...pillButtonFindings(selector, body, where));
     findings.push(...cardEntranceFindings(selector, body, where));
     findings.push(...monospaceLabelFindings(selector, body, where));

@@ -80,13 +80,14 @@ A trope stays only when a contract field or the wording of the brief justifies i
 `scripts/check-ui.mjs` reports the code-detectable ones:
 
 - `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`.
-- `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, `invented-content`.
+- `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, `invented-content`, `hard-offset-shadow`.
 
 By category:
 
 - Grounds: a gradient whose hue swings across the page, a saturated halo or glow in the middle, a gradient wash used as decoration.
 - Icons and imagery: emoji outside a stated brand use, and SVG drawings invented to fill a region; a labelled placeholder does better in both cases, with a request for the real material.
 - Containers: a rounded box with a colored left border, cards inside cards, the same grey shadow under every card, and a thin border beneath a broad soft shadow.
+- Buttons and cards: a hard opaque offset shadow, a solid unblurred block behind the element.
 - Type: a display face from `scripts/overused-fonts.mjs`, such as Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
 - Kits: cream with a serif and terracotta, near-black with one acid accent, and white cards on grey with one blue or teal accent.
 - Buttons: an arrow glyph added to the label.

@@ -275,11 +275,11 @@ test('a Design: task with a named direction stays in the build session, not the 
   assert.match(designingSkill, /inventory\.md[^\n]*`exo:survey-ui`|`exo:survey-ui`[^\n]*inventory\.md/);
 });
 
-test('the design builder runs with a 35-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
+test('the design builder runs with a 60-turn limit, no Agent tool, and scopes foundation and repair, never all', () => {
   const builder = agents.find((agent) => agent.frontmatter.name === 'build-ui');
   assert.ok(builder, 'agents/build-ui.md exists');
   assert.equal(builder.frontmatter.model, agentKind('build-ui').model);
-  assert.equal(Number(builder.frontmatter.maxTurns), 35);
+  assert.equal(Number(builder.frontmatter.maxTurns), 60);
   assert.deepEqual(builder.frontmatter.tools.split(', ').filter((tool) => tool === 'Agent'), []);
   assert.match(builder.body, /`foundation`/);
   assert.match(builder.body, /repair:<surface>/);
@@ -290,7 +290,7 @@ test('the design builder runs with a 35-turn limit, no Agent tool, and scopes fo
   assert.deepEqual(skillFiles.filter((relativePath) => relativePath.endsWith('builder-prompt.md')), []);
 
   const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'lib/delegate-budgets.json'), 'utf8'));
-  assert.equal(budgets.agents['exo:build-ui'].calls, 35);
+  assert.equal(budgets.agents['exo:build-ui'].calls, 60);
 });
 
 test('the design-ui repair loop drops the 12-call cap for a repair scope with its own report, and QA always dispatches', () => {

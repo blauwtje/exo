@@ -52,12 +52,13 @@ A trope stays only when the plan or the brief's wording justifies it and the rea
 `scripts/check-ui.mjs` reports the code-detectable ones:
 
 - `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`.
-- `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, `invented-content`.
+- `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, `invented-content`, `hard-offset-shadow`.
 
 By category:
 
 - Grounds: no gradient whose hue swings across the page, no saturated central halo or glow, no decorative gradient wash.
 - Containers: no colored left border on a rounded box, no cards inside cards, no thin border beneath a broad soft shadow.
+- Buttons and cards: no hard opaque offset shadow, a solid unblurred block behind the element, unless the user asks for neobrutalism.
 - Type: no Roboto, Montserrat or system stack as display face, no small label above a heading, no gradient text, no decorative monospace.
 - Kits: not cream with a serif and terracotta, not near-black with one acid accent, not white cards on grey with one blue accent.
 - Imagery: no emoji outside a stated brand use and no invented SVG drawing; place a labelled placeholder and ask for the real material.

@@ -413,6 +413,23 @@ describe('check-ui.mjs static subset', () => {
     assert.equal(tells[0].measured, 'border 1px with 28px blur');
   });
 
+  it('reports a hard opaque offset shadow and leaves a soft or translucent one quiet', async () => {
+    const tells = await tellsFor([
+      '.btn { box-shadow: 4px 4px 0 #111; }',
+      '.card { box-shadow: 0 1px 2px rgb(20 20 40 / 8%), 6px 6px 0px 0 rgb(17 17 17); }',
+      '.soft { box-shadow: 4px 4px 12px #111; }',
+      '.ring { box-shadow: 0 0 0 3px #2244ff; }',
+      '.faint { box-shadow: 3px 3px 0 rgba(0,0,0,0.3); }'
+    ].join('\n'));
+    assert.deepEqual(tells.filter((entry) => entry.type === 'hard-offset-shadow').map((entry) => entry.selector),
+      ['.btn (styles.css:1)', '.card (styles.css:2)']);
+  });
+
+  it('reports a Tailwind arbitrary hard offset shadow in markup', async () => {
+    const tells = await tellsForMarkup('<button class="shadow-[4px_4px_0_#000]">Go</button>\n<div class="shadow-[0_0_0_2px_#000]"></div>\n');
+    assert.deepEqual(tells.filter((entry) => entry.type === 'hard-offset-shadow').map((entry) => entry.selector), ['page.html:1']);
+  });
+
   it('reports emoji in markup text once per line', async () => {
     const tells = await tellsForMarkup('<ul>\n  <li>\u{1F680} Fast builds</li>\n</ul>\n');
     assert.deepEqual(tells.map((entry) => entry.type), ['emoji-in-markup']);
@@ -1598,5 +1615,25 @@ describe('rendered capability', () => {
       [],
       JSON.stringify(findings)
     );
+  });
+});
+
+describe('reference.mjs', () => {
+  it('prints nothing before a save and the saved product after, keeping other keys', async () => {
+    const config = await fixture();
+    const env = { CLAUDE_CONFIG_DIR: config };
+    const file = path.join(config, 'exo', 'design-ui.json');
+    assert.equal((await run(script('reference.mjs'), [], { env })).stdout.trim(), '');
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, '{"other": 1}');
+    const saved = await run(script('reference.mjs'), ['--set', ' Stripe '], { env });
+    assert.equal(saved.code, 0, saved.stderr);
+    assert.equal((await run(script('reference.mjs'), [], { env })).stdout.trim(), 'Stripe');
+    assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')), { other: 1, reference: 'Stripe' });
+  });
+
+  it('refuses an empty name', async () => {
+    const result = await run(script('reference.mjs'), ['--set', ''], { env: { CLAUDE_CONFIG_DIR: await fixture() } });
+    assert.equal(result.code, 2);
   });
 });

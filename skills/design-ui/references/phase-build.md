@@ -1,6 +1,6 @@
 # Phase 3: Build
 
-Build the whole page in this session by default; builder delegates run only when the user asks for parallel builders or the full run. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
+Build the whole page in one `exo:build-ui` page dispatch by default; per-surface builders run only when the user asks for parallel builders or the full run. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
 
 ## The mechanics
 
@@ -16,8 +16,8 @@ These rules bind this session and every builder:
 
 Where the build runs:
 
-- Every surface builds here, in this session, from the plan or the handed contract and the Phase 1 file ranges, then takes the skill's capture, look and fix-once steps.
-- Only a user request for parallel builders or the full run dispatches the `exo:build-ui` agent.
+- The one pass builds in one fresh `exo:build-ui` on Opus with `SCOPE: page`, from the plan and Phase 1 ranges.
+- Only a user request for parallel builders or the full run dispatches per-surface `exo:build-ui` agents.
 
 Proof:
 
@@ -44,11 +44,11 @@ Proof:
 
 - **Sketch:** a demo, prototype, or mock the request names as one, built on `## The sketch path` below: no variants, agents, or critic; the floor holds.
 - **New piece:** a section, component, or view inheriting the existing direction, on `## The piece path` below. A piece that changes the page's hierarchy is a bounded redesign.
-- **Tweak:** one element or named visual property changes and no region is added. Change it, audit the touched surface, verify the floor, and stop; never expand a tweak into a redesign.
+- **Tweak:** one element or named visual property changes and no region is added. Change it, audit the touched surface, verify the floor, take step 4 of `## Capture, look, fix once` with `--out` under `/private/tmp/designing/`, and stop; never expand a tweak into a redesign.
 
 ## The sketch path
 
-A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, then take the skill's capture, look and fix-once steps.
+A sketch builds in this session with no variants, agents, or critic: state the three Phase 1 facts and one direction in one line each, build, then take `## Capture, look, fix once`.
 
 ## The piece path
 
@@ -58,9 +58,16 @@ A new piece on the settled identity that rung 5 of the skill's `## Route` names 
 2. Load the `implementation` sections the skill's References row names, skipping `## Tokens and palette derivation` unless the piece adds a role token the repository lacks.
 3. Load `## Adopt before authoring` and `## The state row` from the `component-system` reference, `## Tactile hierarchy` and `## Labels` from the `controls` reference, and `## Anatomy of the composite controls` for a composite control.
 4. Build, then run the repository checks `## The mechanics` names.
-5. Take the skill's capture, look and fix-once steps, and stop.
+5. Take `## Capture, look, fix once`, and stop.
 
 Without that identity, a new piece extracts the existing tokens and patterns, takes the one pass against what the piece carries, and writes its motion thesis in its plan.
+
+## Capture, look, fix once
+
+1. Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
+2. Read both captures and list each fault against the direction, the request and the floor.
+3. Repair every listed fault in one pass.
+4. Rerun step 1 with `--label final` and read both, because a run is done only on a capture taken after its last edit.
 
 ## Judgment
 

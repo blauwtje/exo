@@ -183,7 +183,7 @@ const SCENARIOS = [
   { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/design-ui/SKILL.md',
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
   { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-critique.md',
-    '`monospace-label`, `invented-content`.', '`monospace-label`.') },
+    '`invented-content`, `hard-offset-shadow`.', '`invented-content`.') },
   { name: 'drifted-sketch-labels', mutate: (root) => replaceText(root, 'skills/design-ui/references/sketch-tab.md',
     '`lost`, ', '') },
   { name: 'drifted-blocking-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-build.md',
