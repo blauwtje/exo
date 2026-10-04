@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- design-ui's capture drives Chrome through Playwright first and uses obscura only as a fallback, flagged with a warning on stderr and in each record, because obscura lacks popover, `<dialog>` and SVG `<use>` and lays pages out differently.
+
 ## 0.80.0 - 2026-10-03
 
 ### Highlights
