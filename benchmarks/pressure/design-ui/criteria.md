@@ -21,6 +21,14 @@ Run `a-orders-overview.txt` in the `opus:high` cell with `--runs 3`, both arms, 
 - `a-orders-overview.txt`: the stated scope names navigation, search or filtering, a chart or KPI visualisation, and empty, loading and error states. It names one mood of the four in `skills/design-ui/references/intake.md`. Its motion names at least a staggered entrance, a count-up and a sliding panel. A run fails when any scope group is missing, or when it calls the motion minimal, feedback-only or stillness.
 - `a-orders-overview.txt`, the app minimum: the stated scope, and any screen built from it, carries navigation with icons, search, a user menu, stat counters each with a sparkline, a chart, and a detail panel. It also carries a table with avatars, status badges, sortable columns, row checkboxes and a bulk action bar, and a run missing any item fails.
 
+## Character
+
+Run `a-orders-character.txt` like `a-orders-overview.txt`, in the `opus:high` cell with no fixture and no pressure.
+
+- Pass: the plan names one standout element, tinted ground and surfaces rather than white boxes on grey with one accent, and at least two block anatomies; a businesslike or strict mood does not excuse any of them.
+
+Pre-edit baseline on 2026-10-04 (0.80.1, two runs each arm): all four built white cards on a light grey or off-white ground with one cobalt or green accent and one card anatomy for every block.
+
 ## Picker comps
 
 The cases cover the `direction-preview` reference: `a` looks a key list up, `b` applies the check before the picker, `c` asks for a picker mode the reference does not hold.

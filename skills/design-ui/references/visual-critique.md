@@ -88,7 +88,7 @@ By category:
 - Icons and imagery: emoji outside a stated brand use, and SVG drawings invented to fill a region; a labelled placeholder does better in both cases, with a request for the real material.
 - Containers: a rounded box with a colored left border, cards inside cards, the same grey shadow under every card, and a thin border beneath a broad soft shadow.
 - Type: a display face from `scripts/overused-fonts.mjs`, such as Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
-- Kits: cream with a serif and terracotta, and near-black with one acid accent.
+- Kits: cream with a serif and terracotta, near-black with one acid accent, and white cards on grey with one blue or teal accent.
 - Buttons: an arrow glyph added to the label.
 
 ## The fault contract

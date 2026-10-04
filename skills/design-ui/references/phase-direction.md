@@ -13,8 +13,12 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 ## Mood to look
 
+- Dare in one place: name one standout element the viewer remembers, such as a drenched KPI band, because an all-equal page reads generic.
+- Color with confidence: tint the ground and surfaces from the palette and build depth from surface steps, not white boxes carrying one accent.
+- Vary block shape by content job: a band, an open table, an inset panel and a card differ, not one card anatomy repeated.
+- These three hold in every mood, crisp, businesslike, strict and clean included, because a quiet mood sharpens character and never removes it.
 - The mood sets palette commitment, type character, corner and stroke shape, density and motion feel, never the amount of motion.
-- Crisp and businesslike: a restrained accent, compact rhythm, sharp corners, tabular figures and snappy precise easing on every motion of the motion bar.
+- Crisp and businesslike: tinted slate or ink surfaces, one committed accent region, compact rhythm, sharp corners, tabular figures and snappy precise easing on every motion of the motion bar.
 - Friendly and playful: committed color, rounded shapes, a warm humanist face and lively overshoot on entrances.
 - Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
 - Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
