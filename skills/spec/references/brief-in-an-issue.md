@@ -8,7 +8,7 @@ The `specs` setting authorizes the issue, so the brief goes to GitHub with no dr
 - Set every field the repository does define.
 - `issues` creates one GitHub issue whose body opens with the line `<!-- exo:spec -->`.
 - The body after that line is the brief in the Spec shape of the file-issues skill's fields file, with its sections, fields and relations as that file says and none of them decided here.
-- `issues` writes no file in the repository, only the scratch copy `build` runs, so the issue stays the source.
+- `issues` writes no file in the repository, only the scratch copy `build` runs, at the `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` path, so the issue stays the source.
 - `both` writes the file, then that issue with the file's path under its references.
 - `issues` and `both` write the file alone when `git remote get-url origin` names no GitHub repository or `gh auth status` fails, and the message says so in one line.
 

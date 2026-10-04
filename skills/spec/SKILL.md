@@ -9,6 +9,7 @@ argument-hint: <outcome to shape>
 ## Steps
 
 1. **Gate.**
+   - First invoke every installed non-`exo:` skill whose description matches the request.
    - Spec always ends on a brief; with no open decision the brief still gets written.
    - An open decision is one the user would notice that neither request nor code settles.
    - Asked for options: list them, recommend one, no file.
@@ -21,12 +22,13 @@ argument-hint: <outcome to shape>
    - Name the owning layer and a smaller alternative.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`: decide nothing silently.
+   - An option a loaded skill rules out is no equal choice: recommend its prescribed pattern.
    - Close with up to three lines on what was agreed; brief after the user's yes.
    - After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight ranges; never `cat`, `head` or `sed`.
-5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; give each risk-category task `Risk:`. Plan mode: read-only commands; an edit-needing proof is the first task.
+5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; in plan mode an edit-needing proof is Task 1.
 6. **Store it** per `specs` in `exo settings:`, else `docs` (plan mode: the harness plan file).
-   `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`; `issues` also writes the `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" specs/<n>.md` path, for `build`.
+   `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
 8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on `C` reply with its `--fresh` output; never load `exo:build` unasked.
    - Past `exo: context`: keep the letters, hand on via a fresh delegate; stage- or workflow-invoked: ask nothing, return to it.
