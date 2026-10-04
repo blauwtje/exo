@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.80.5 - 2026-10-04
+
 ### Highlights
 
 - **design-ui now builds an empty folder on Vite, React, TypeScript, Tailwind, shadcn/ui and lucide-react instead of one hand-written HTML file.** An existing project, plain HTML included, keeps its own stack.
