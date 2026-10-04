@@ -92,12 +92,14 @@ test('stays silent when build was never called', () => {
   assert.equal(stopOutput({ transcript_path: file }), '');
 });
 
-test('stays silent on stop_hook_active when the report has no Proof line', () => {
+test('blocks a Done report with no Proof line on stop_hook_active', () => {
   const file = transcript([
     SKILL_CALL,
     finalReport('**Done:** wired --status into bin/report.js.')
   ]);
-  assert.equal(stopOutput({ transcript_path: file, stop_hook_active: true }), '');
+  const result = JSON.parse(stopOutput({ transcript_path: file, stop_hook_active: true }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /no Proof line/);
 });
 
 test('blocks a Proof run on a fixture this session wrote with Write', () => {
@@ -247,7 +249,7 @@ function mcpCall(id, name) {
   return { type: 'assistant', message: { content: [{ type: 'tool_use', name, id, input: { mode: 'play' } }] } };
 }
 
-const PROOF_FEEDBACK = { type: 'user', isMeta: true, message: { role: 'user', content: 'Stop hook feedback:\nThe report claims Done with no Proof line. Run it, or report "Unverified: <reason>" without claiming Done.' } };
+const PROOF_FEEDBACK = { type: 'user', isMeta: true, message: { role: 'user', content: 'Stop hook feedback:\nexo proof-check: No call this build turn backs "node bin/report.js --status open".' } };
 const UNRUN_PROOF = '**Done:** wired --status.\nProof: node bin/report.js --status open -> orders: 1';
 
 test('blocks a Proof line naming a never-run command on stop_hook_active', () => {
@@ -297,9 +299,44 @@ test('blocks an MCP Proof whose output is not in that tool\'s result', () => {
   assert.match(result.reason, /no user_mouse_input call returned/);
 });
 
-test('stops blocking once the build turn holds the limit of proof-check blocks', () => {
-  const once = transcript([SKILL_CALL, PROOF_FEEDBACK, finalReport(UNRUN_PROOF)]);
-  const twice = transcript([SKILL_CALL, PROOF_FEEDBACK, finalReport('Working.'), PROOF_FEEDBACK, finalReport(UNRUN_PROOF)]);
-  assert.equal(JSON.parse(stopOutput({ transcript_path: once, stop_hook_active: true })).decision, 'block');
-  assert.equal(stopOutput({ transcript_path: twice, stop_hook_active: true }), '');
+// The build turn after `blocks` proof-check blocks, each stopping UNRUN_PROOF, ending on `report`.
+function blockedTurn(blocks, report, before = []) {
+  const rows = [SKILL_CALL, ...before];
+  for (let block = 0; block < blocks; block += 1) rows.push(finalReport(UNRUN_PROOF), PROOF_FEEDBACK);
+  return transcript([...rows, finalReport(report)]);
+}
+
+test('still blocks a Done report with an unbacked Proof after two blocks', () => {
+  const result = JSON.parse(stopOutput({ transcript_path: blockedTurn(2, UNRUN_PROOF), stop_hook_active: true }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /No call this build turn backs "node bin\/report\.js --status open"/);
+  assert.match(result.reason, /turn each into "Unverified: <command> \(<reason>\)" and drop the Done claim/);
+});
+
+test('passes a report that turns each earlier unbacked proof into an Unverified line without Done', () => {
+  const paid = [bashCall('toolu_bash1', 'node bin/report.js --status paid'), bashResult('toolu_bash1', 'orders: 4')];
+  const earlier = '**Done:** wired.\nProof: node bin/report.js --status paid -> orders: 4\nProof: mcp:run_playtest mode=play -> passed';
+  const file = transcript([
+    SKILL_CALL, ...paid, finalReport(earlier), PROOF_FEEDBACK,
+    finalReport('Wired --status.\nProof: node bin/report.js --status paid -> orders: 4\n- **Unverified:** `mcp__plugin_kit_studio__run_playtest` (Studio closed)')
+  ]);
+  assert.equal(stopOutput({ transcript_path: file, stop_hook_active: true }), '');
+  const stillDone = transcript([SKILL_CALL, finalReport(UNRUN_PROOF), PROOF_FEEDBACK, finalReport('**Done:** wired.\nUnverified: node bin/report.js --status open (no open orders)')]);
+  assert.match(JSON.parse(stopOutput({ transcript_path: stillDone, stop_hook_active: true })).reason, /drop the Done claim/);
+});
+
+test('blocks a report that drops an unbacked Proof line without an Unverified line', () => {
+  const paid = [bashCall('toolu_bash1', 'node bin/report.js --status paid'), bashResult('toolu_bash1', 'orders: 4')];
+  for (const report of ['**Done:** wired.\nProof: node bin/report.js --status paid -> orders: 4', 'Wired.\nProof: node bin/report.js --status paid -> orders: 4']) {
+    const result = JSON.parse(stopOutput({ transcript_path: blockedTurn(1, report, paid), stop_hook_active: true }));
+    assert.equal(result.decision, 'block');
+    assert.match(result.reason, /backs "node bin\/report\.js --status open"/);
+  }
+});
+
+test('ends the turn with a systemMessage, not a block, at the ceiling of proof-check blocks', () => {
+  assert.equal(JSON.parse(stopOutput({ transcript_path: blockedTurn(4, UNRUN_PROOF), stop_hook_active: true })).decision, 'block');
+  const result = JSON.parse(stopOutput({ transcript_path: blockedTurn(5, UNRUN_PROOF), stop_hook_active: true }));
+  assert.equal(result.decision, undefined);
+  assert.equal(result.systemMessage, 'exo proof-check: report not verified; Unverified: node bin/report.js --status open (no matching call after 5 blocks)');
 });
