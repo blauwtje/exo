@@ -1,6 +1,6 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in four groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in four groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt`, `a-dispatch-user.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
@@ -29,6 +29,14 @@ Run `a-orders-character.txt` like `a-orders-overview.txt`, in the `opus:high` ce
 - Pass: the plan names one standout element, tinted ground and surfaces rather than white boxes on grey with one accent, and at least two block anatomies; a businesslike or strict mood does not excuse any of them.
 
 Pre-edit baseline on 2026-10-04 (0.80.1, two runs each arm): all four built white cards on a light grey or off-white ground with one cobalt or green accent and one card anatomy for every block.
+
+## Plan for the user
+
+Run `a-dispatch-user.txt` in the `opus:high` cell with `--runs 2`, `--main-dir` on a main checkout, no fixture and no pressure: the cliché look is a default tendency seen in two real runs.
+
+- Pass, all of: the plan names the dispatcher's three most important tasks and orders the layout by them; each major layout choice names its Laws of UX rule; each face and the accent hue carries a clause naming the user fact it answers, after a shortlist of three.
+
+Pre-edit baseline on 2026-10-04 (0.80.5, six runs of the pre-edit skill): no plan named three tasks or a Laws of UX rule; all six chose a cobalt or navy accent and four chose Archivo. After the edit, two runs: both named tasks and laws, both chose teal, one kept Archivo.
 
 ## Build stack
 
