@@ -25,6 +25,9 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - The mood sets palette commitment, type character, corner and stroke shape, density and motion feel, never the amount of motion.
 - Crisp and businesslike: tinted slate or ink surfaces, one committed accent region, compact rhythm, sharp corners, tabular figures and snappy precise easing on every motion of the motion bar.
 - Friendly and playful: committed color, rounded shapes, a warm humanist face and lively overshoot on entrances.
+- Friendly and playful with an image generator: plan generated illustrations of the page's own content in the direction's palette, because drawn character carries that mood.
+- Prompt the generator with this product's content and direction, never an existing product's characters, mascot or look, because a look-alike borrows that brand.
+- With no image generator, the Imagery trope of the `build-pass` reference holds: a labelled placeholder, never a drawn stand-in.
 - Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
 - Bold and expressive: saturated regions, heavy display type, hard edges or offsets and large travel.
 - Pick hues, faces and radii yourself from the mood and the product, not from a seed or a stock default.

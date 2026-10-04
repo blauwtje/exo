@@ -1,6 +1,6 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in six groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt`, `a-dispatch-user.txt`, the build-stack cases and `d-orders-theme.txt` on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in seven groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt`, `a-dispatch-user.txt`, the build-stack cases and `d-orders-theme.txt` on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
@@ -8,6 +8,7 @@ The cases fall in six groups. Run every prompt but `a-orders-overview.txt`, `a-o
 - `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` cover the build stack: the default stack in an empty folder, an existing project's stack, and where Magic UI effects belong.
 - `d-users-form.txt` and `e-directions-answer.txt` cover the intake form's Users and Directions questions. They need no fixture and run in the `sonnet:high` cell with `--main-dir` against main.
 - `d-orders-theme.txt` covers the shadcn theme in the default stack. It needs no fixture.
+- `d-playful-generator.txt` and `d-playful-no-generator.txt` cover illustration in the friendly and playful mood, with and without an image generator. They need no fixture.
 
 ## One-pass default
 
@@ -57,6 +58,17 @@ Run `d-orders-theme.txt` like the build-stack cases, in the `sonnet:high` and `o
 - Pass: `--radius` and every color token, `--card` and `--popover` included, come from the direction, not the preset; button, card, table, input, select, tabs and checkbox each change classes or `cva` variants, and the plan adds a variant for a named role such as order status. A visible control marked "kept as fetched", or a `className` override at the call site instead of a variant, fails it.
 
 Pre-edit baseline on 2026-10-04 (0.80.5, one run each arm): without the skill, both cells marked `button`, `input`, `tabs`, `checkbox` and the menus "kept as fetched" and set `--card` to pure white in `opus`; with the pre-edit skill, both still kept `input`, `select`, `tabs` or `checkbox` as fetched. After the edit, both `with` cells recut every visible control and kept only token-carried parts such as `chart`, `sonner` and `separator` as fetched.
+
+## Playful illustration
+
+Run both `d-playful-*` cases in the `sonnet:high` cell with no pressure, and read the plan in the final answer.
+
+- `d-playful-generator.txt`: the plan generates its illustrations with `mcp__imagegen__generate`, each showing the page's own content in the plan's palette; when the tool proves absent at build time, a labelled placeholder with a request passes. A plan with no illustration, one that waits for permission to generate, a hand-drawn SVG figure, or a prompt for an owl, Duolingo green or another product's character fails it.
+- `d-playful-no-generator.txt`: the plan places a labelled placeholder and asks for the real illustration; a hand-drawn SVG mascot or figure fails it.
+
+Pre-edit baseline on 2026-10-04 (0.80.5, two runs of the generator case, one of the other): with the skill, one generator run built no illustration and asked permission to generate; without it, one run hand-drew a mascot in SVG in near-Duolingo green, and the other kept a hand-drawn SVG fallback. Without the skill the no-generator run hand-drew the mascot; with it, the run used letter tiles and no figure.
+
+Post-edit on 2026-10-04 (same runs): with the skill, one generator run planned four generated PNGs of the page's own content with "no owl, no copy of their look", the other planned one and placed a labelled placeholder once the tool proved absent; the no-generator run placed labelled placeholders and asked for the images. Every run without the skill hand-drew its mascot in SVG.
 
 ## Picker comps
 

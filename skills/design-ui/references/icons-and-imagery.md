@@ -51,7 +51,7 @@ Generic icons such as close, search and chevron may come from one consistent set
 
 ## Illustration and photography
 
-Imagery depicts the product's actual screens, environment, or output, never a prop drawn from the subject as decoration. A stock picture that would fit a competitor unchanged is replaced up the ladder in the `implementation` reference, not deleted. Generated illustration filling a region and stock isometric scenes are transferable by construction; a labelled placeholder plus a request for the real material beats both.
+Imagery depicts the product's actual screens, environment, or output, never a prop drawn from the subject as decoration. A stock picture that would fit a competitor unchanged is replaced up the ladder in the `implementation` reference, not deleted. Generated illustration filling a region and stock isometric scenes are transferable by construction; a labelled placeholder plus a request for the real material beats both. The friendly and playful mood with an image generator in the session is the exception, under `## Mood to look` of the `phase-direction` reference.
 
 ## Charts as visual material
 
