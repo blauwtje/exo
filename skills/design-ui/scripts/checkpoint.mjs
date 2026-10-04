@@ -158,7 +158,7 @@ async function checkpoint({ run, stage, url, source }) {
   }
 
   const checkUiFile = path.join(run, `check-ui-${stage}.json`);
-  const checkUiArgs = ['--url', url];
+  const checkUiArgs = ['--url', url, '--out', checkUiFile];
   if (source) checkUiArgs.push('--source', source);
   for (const viewport of VIEWPORTS) checkUiArgs.push('--viewport', viewport);
   if (useBaselineCheckUi) checkUiArgs.push('--baseline', baselineCheckUiFile);
@@ -166,7 +166,6 @@ async function checkpoint({ run, stage, url, source }) {
   if (checkUiResult.code !== 0) {
     failed.push('check-ui');
   } else {
-    await fs.writeFile(checkUiFile, checkUiResult.stdout);
     files.push(checkUiFile);
   }
 

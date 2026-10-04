@@ -17,7 +17,8 @@ import { parseFrontmatter } from '../skills/design-ui/scripts/context.mjs';
 import { fontConfidence } from '../skills/design-ui/scripts/inspect-styles.mjs';
 import { decodePng, rasterize } from '../skills/design-ui/scripts/inspect-render.mjs';
 import {
-  ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable, parseComputedColor
+  ALWAYS_BLOCKING, applyNotesTable, compareFindings, DECORATIVE_TELLS, notesTable, omitAdvisory, parseComputedColor,
+  summaryLines
 } from '../skills/design-ui/scripts/check-ui.mjs';
 import { fixture, run, script, SCRIPTS } from './harness.mjs';
 
@@ -232,7 +233,7 @@ describe('check-ui.mjs static subset', () => {
     await fs.writeFile(path.join(root, 'index.html'),
       '<button onclick="save()">Lorem ipsum dolor sit amet</button>\n');
 
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     const types = report.static.findings.map((entry) => entry.type);
@@ -253,7 +254,7 @@ describe('check-ui.mjs static subset', () => {
       '<p>Tide readings every 6 minutes from 14 stations, from $24 a month.</p>'
     ].join('\n'));
 
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     const invented = JSON.parse(result.stdout).static.findings.filter((entry) => entry.type === 'invented-content');
     assert.deepEqual(invented.map((entry) => entry.selector).sort(),
@@ -273,7 +274,7 @@ describe('check-ui.mjs static subset', () => {
       '}'
     ].join('\n'));
 
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout).static.findings, []);
   });
@@ -287,7 +288,7 @@ describe('check-ui.mjs static subset', () => {
       '}'
     ].join('\n'));
 
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     const findings = JSON.parse(result.stdout).static.findings
       .filter((entry) => entry.type === 'raw-value-in-component-rule');
@@ -297,7 +298,7 @@ describe('check-ui.mjs static subset', () => {
   async function tellsFor(stylesheet) {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'styles.css'), stylesheet);
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     return JSON.parse(result.stdout).static.findings.filter((entry) => DECORATIVE_TELLS.includes(entry.type));
   }
@@ -324,7 +325,7 @@ describe('check-ui.mjs static subset', () => {
   async function tellsForMarkup(markup) {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'page.html'), markup);
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     return JSON.parse(result.stdout).static.findings.filter((entry) => DECORATIVE_TELLS.includes(entry.type));
   }
@@ -394,7 +395,7 @@ describe('check-ui.mjs static subset', () => {
       '<img alt="a > b" src="a.png" />',
       '<svg class="bare">'
     ].join('\n'));
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     const findings = JSON.parse(result.stdout).static.findings.filter((entry) => entry.type === 'svg-without-viewbox' || entry.type === 'image-without-alt');
     assert.deepEqual(findings.map((entry) => entry.selector), ['page.jsx:4']);
@@ -443,7 +444,7 @@ describe('check-ui.mjs named anti-patterns', () => {
     for (const [name, content] of Object.entries(files)) {
       await fs.writeFile(path.join(root, name), content);
     }
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     return JSON.parse(result.stdout).static.findings;
   }
@@ -764,7 +765,7 @@ describe('check-ui.mjs notes table', () => {
     await fs.writeFile(path.join(root, 'a.css'), '.a { transition: all 200ms ease; }\n');
     await fs.writeFile(path.join(root, 'b.css'), '.b { transition: all 100ms linear; }\n');
 
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     const transitions = report.static.findings.filter((entry) => entry.type === 'transition-all');
@@ -810,15 +811,90 @@ describe('check-ui.mjs notes table', () => {
     assert.deepEqual(reconstructed, entries);
   });
 
-  it('--summary prints at most 10 lines starting with static= on a --source-only run', async () => {
+  it('prints a total line and one line per definite type by default, and writes the full report to --out', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), [
+      '.a { transition: all 200ms ease; }',
+      '.b { transition: all 100ms linear; }',
+      '.c { color: #ff0055; }'
+    ].join('\n'));
+    const reportFile = path.join(root, 'report.json');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--out', reportFile]);
+    assert.equal(result.code, 0, result.stderr);
+    const lines = result.stdout.trimEnd().split('\n');
+    assert.equal(lines[0], `static=ok rendered=unavailable findings=3 shown=2 blocking=2 omitted=0 report=${reportFile}`);
+    assert.deepEqual(lines.slice(1), ['transition-all 2 blocking=2']);
+    const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
+    assert.equal(report.static.findings.length, 3);
+  });
+
+  it('names a temp report file when --out is not given', async () => {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'a.css'), '.a { transition: all 200ms ease; }\n');
 
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--summary']);
+    const result = await run(script('check-ui.mjs'), ['--source', root]);
     assert.equal(result.code, 0, result.stderr);
-    const lines = result.stdout.trimEnd().split('\n');
-    assert.ok(lines.length <= 10, lines.join('\n'));
-    assert.match(lines[0], /^static=/);
+    const reportFile = /report=(\S+)$/.exec(result.stdout.split('\n')[0])[1];
+    const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
+    assert.equal(report.static.findings[0].type, 'transition-all');
+    await fs.rm(path.dirname(reportFile), { recursive: true, force: true });
+  });
+
+  it('leaves media-query px out unless --all, and keeps a rule px in the same line', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), [
+      '@media (min-width: 768px) {',
+      '  .a { display: grid; }',
+      '}',
+      '@container (max-width: 40px) { .b { padding: 32px; } }'
+    ].join('\n'));
+
+    const types = (report) => report.static.findings.map((entry) => `${entry.type} ${entry.measured}`);
+    const plain = await run(script('check-ui.mjs'), ['--json', '--source', root]);
+    assert.equal(plain.code, 0, plain.stderr);
+    assert.deepEqual(types(JSON.parse(plain.stdout)), ['raw-value-in-component-rule 32px']);
+    const all = await run(script('check-ui.mjs'), ['--json', '--all', '--source', root]);
+    assert.deepEqual(types(JSON.parse(all.stdout)), [
+      'raw-value-in-media-query 768px', 'raw-value-in-media-query 40px', 'raw-value-in-component-rule 32px'
+    ]);
+  });
+
+  it('omitAdvisory drops target-size-enhanced from every list and counts it', () => {
+    const enhanced = { type: 'target-size-enhanced', confidence: 'potential', selector: 'a', measured: '30×30 CSS px' };
+    const minimum = { type: 'target-size-minimum', confidence: 'definite', selector: 'b', measured: '20×20 CSS px' };
+    const report = {
+      static: { status: 'ok', findings: [] },
+      rendered: {
+        status: 'ok',
+        fixed: { findings: [enhanced] },
+        viewports: { '390x844': { status: 'ok', findings: [enhanced, minimum] } }
+      }
+    };
+    assert.equal(omitAdvisory(report), 2);
+    assert.deepEqual(report.rendered.fixed.findings, []);
+    assert.deepEqual(report.rendered.viewports['390x844'].findings, [minimum]);
+  });
+
+  it('summaryLines puts the most blocking type first and hides ignored definite findings', () => {
+    const contrast = { type: 'contrast-normal-text', confidence: 'definite', selector: 'p' };
+    const ignoredCopy = { type: 'placeholder-copy', confidence: 'definite', selector: 'src/a.html:3' };
+    const transition = { type: 'transition-all', confidence: 'definite', selector: 'src/a.css:1' };
+    const findings = [transition, ignoredCopy, contrast];
+    const report = {
+      static: { status: 'ok' }, rendered: { status: 'ok' },
+      comparison: { counts: { new: 1, predating: 1, ignored: 1 } }
+    };
+    const lines = summaryLines({
+      report, findings, comparison: { blocking: [contrast] },
+      ignoreEntries: [{ type: 'placeholder-copy', file: 'src/a.html', reason: 'fixture' }],
+      omitted: 4, reportFile: null
+    });
+    assert.deepEqual(lines, [
+      'static=ok rendered=ok findings=3 shown=2 blocking=1 omitted=4 new=1 predating=1 ignored=1',
+      'contrast-normal-text 1 blocking=1',
+      'transition-all 1 blocking=0'
+    ]);
   });
 });
 
@@ -847,7 +923,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
       ');'
     ].join('\n'));
 
-    const result = await run(script('check-ui.mjs'), ['--source', root]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(result.code, 0, result.stderr);
     const findings = JSON.parse(result.stdout).static.findings;
     const commented = ['placeholder-copy', 'inline-event-handler', 'emoji-in-markup'];
@@ -920,14 +996,14 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const root = await fixture();
     const stylesheet = path.join(root, 'styles.css');
     await fs.writeFile(stylesheet, '.card {\n  transition: all 200ms ease;\n}\n');
-    const before = await run(script('check-ui.mjs'), ['--source', root]);
+    const before = await run(script('check-ui.mjs'), ['--json', '--source', root]);
     assert.equal(before.code, 0, before.stderr);
     assert.equal(JSON.parse(before.stdout).comparison, undefined);
     const baselineFile = path.join(root, 'baseline.json');
     await fs.writeFile(baselineFile, before.stdout);
     await fs.writeFile(stylesheet, '.intro {\n  margin: 0 !important;\n}\n.card {\n  transition: all 200ms ease;\n}\n');
 
-    const after = await run(script('check-ui.mjs'), ['--source', root, '--baseline', baselineFile]);
+    const after = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', baselineFile]);
     assert.equal(after.code, 0, after.stderr);
     const report = JSON.parse(after.stdout);
     const newTypes = report.comparison.new.map((item) => item.type);
@@ -942,7 +1018,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const root = await fixture();
     const baselineFile = path.join(root, 'baseline.json');
     await fs.writeFile(baselineFile, '{"static": {"findings": "none"}}');
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', baselineFile]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', baselineFile]);
     assert.equal(result.code, 2);
     assert.match(result.stderr, /--baseline/);
   });
@@ -951,7 +1027,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const root = await fixture();
     const baselineFile = path.join(root, 'package.json');
     await fs.writeFile(baselineFile, '{"name": "site", "version": "1.0.0"}');
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', baselineFile]);
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', baselineFile]);
     assert.equal(result.code, 2);
     assert.match(result.stderr, /--baseline holds no check-ui findings/);
   });
@@ -969,7 +1045,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
     const root = await ignoreFixture([
       { type: 'important-override', file: 'styles.css', reason: 'vendor override the user confirmed' }
     ]);
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', 'baseline.json'], { cwd: root });
     assert.equal(result.code, 0, result.stderr);
     const { comparison } = JSON.parse(result.stdout);
     const ignored = comparison.ignored.map((item) => [item.type, item.reason]);
@@ -980,7 +1056,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
 
   it('rejects an ignore entry without a reason, naming its index and field', async () => {
     const root = await ignoreFixture([{ type: 'important-override', file: 'styles.css' }]);
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', 'baseline.json'], { cwd: root });
     assert.equal(result.code, 2);
     assert.match(result.stderr, /entry 0: reason/);
   });
@@ -990,7 +1066,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
       { type: 'important-override', file: 'styles.css', reason: 'vendor override the user confirmed' },
       { type: 'left-accent-card', file: 'styles.css', reason: 'brand stripe' }
     ]);
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', 'baseline.json'], { cwd: root });
     assert.equal(result.code, 0, result.stderr);
     assert.match(result.stderr, /entry 1: unknown type left-accent-card/);
     assert.doesNotMatch(result.stderr, /important-override/);
@@ -998,7 +1074,7 @@ describe('check-ui.mjs comments, baseline and ignore file', () => {
 
   it('warns about an ignore entry whose file still carries a rule and its line', async () => {
     const root = await ignoreFixture([{ type: 'cream-ground', file: 'body (styles.css:4)', reason: 'brand ground' }]);
-    const result = await run(script('check-ui.mjs'), ['--source', root, '--baseline', 'baseline.json'], { cwd: root });
+    const result = await run(script('check-ui.mjs'), ['--json', '--source', root, '--baseline', 'baseline.json'], { cwd: root });
     assert.equal(result.code, 0, result.stderr);
     assert.match(result.stderr, /entry 0: file body \(styles\.css:4\) names a rule and its line; write styles\.css/);
   });
@@ -1071,7 +1147,7 @@ describe('unavailable browser capability', () => {
 
   it('reports check-ui rendered as unavailable and exits 0', async () => {
     const root = await fixture();
-    const result = await run(script('check-ui.mjs'), ['--url', 'file:///tmp/none.html'],
+    const result = await run(script('check-ui.mjs'), ['--json', '--url', 'file:///tmp/none.html'],
       { cwd: root, env: blindEnvironment });
     assert.equal(result.code, 0, result.stderr);
     assert.equal(JSON.parse(result.stdout).rendered.status, 'unavailable');
@@ -1338,7 +1414,7 @@ describe('rendered capability', () => {
     const { url } = await pageFixture();
 
     const result = await run(script('check-ui.mjs'),
-      ['--url', url, '--viewport', '390x844', '--viewport', '1440x900']);
+      ['--json', '--url', url, '--viewport', '390x844', '--viewport', '1440x900']);
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     assert.equal(report.rendered.status, 'ok');
@@ -1391,7 +1467,7 @@ describe('rendered capability', () => {
       + ' width: 120px; height: 48px; font-size: 16px; }'
       + '</style></head><body><button type="button">Save</button></body></html>');
 
-    const result = await run(script('check-ui.mjs'), ['--url', `file://${file}`, '--viewport', '1440x900']);
+    const result = await run(script('check-ui.mjs'), ['--json', '--url', `file://${file}`, '--viewport', '1440x900']);
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     const findings = report.rendered.viewports['1440x900'].findings
@@ -1413,7 +1489,7 @@ describe('rendered capability', () => {
       + 'p { color: rgba(0, 0, 0, 0.4); }'
       + '</style></head><body><p>Translucent label text</p></body></html>');
 
-    const result = await run(script('check-ui.mjs'), ['--url', `file://${file}`, '--viewport', '1440x900']);
+    const result = await run(script('check-ui.mjs'), ['--json', '--url', `file://${file}`, '--viewport', '1440x900']);
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     const findings = report.rendered.viewports['1440x900'].findings
@@ -1492,7 +1568,7 @@ describe('rendered capability', () => {
     await fs.writeFile(file, URL_REWRITE_PAGE);
 
     const result = await run(script('check-ui.mjs'),
-      ['--url', `file://${file}#token=secret`, '--viewport', '390x844', '--viewport', '1440x900'],
+      ['--json', '--url', `file://${file}#token=secret`, '--viewport', '390x844', '--viewport', '1440x900'],
       { cwd: root });
     assert.equal(result.code, 0, result.stderr);
     const report = JSON.parse(result.stdout);

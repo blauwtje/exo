@@ -3,13 +3,18 @@
 // never a beauty score, and the script emits no aggregate quality number.
 //
 //   node scripts/check-ui.mjs [--url <url>] [--source <dir>] [--viewport <width>x<height>]
-//                             [--baseline <earlier check-ui JSON>]
+//                             [--baseline <earlier check-ui JSON>] [--out <file>] [--json] [--all]
+//
+// stdout is a short summary of the definite and blocking findings, grouped by type; the full
+// JSON report goes to --out, or to a fresh temp file the summary names. --json prints the full
+// report on stdout instead. --all keeps the advisory types a run otherwise leaves out.
 //
 // A --baseline run also reads confirmed false positives from docs/design/check-ui-ignore.json
 // under the working directory: a JSON array of { "type", "file", "reason" } strings, where
 // file is the path in the finding's selector, without its :line.
 
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { readFileSync } from 'node:fs';
@@ -286,6 +291,14 @@ function inlineStyleFindings(line, location) {
   return findings;
 }
 
+const QUERY_PRELUDE = /@(?:media|container)\b/;
+
+function pixelValues(text) {
+  return [...text.matchAll(/:\s*(\d+(?:\.\d+)?)px/g)]
+    .map((match) => Number(match[1]))
+    .filter((value) => value > 3);
+}
+
 function rawValueFindings(line, location, insideTokenBlock) {
   if (insideTokenBlock) return [];
   const findings = [];
@@ -300,9 +313,21 @@ function rawValueFindings(line, location, insideTokenBlock) {
       note: 'raw hex inside a component rule'
     }));
   }
-  const pixels = [...line.matchAll(/:\s*(\d+(?:\.\d+)?)px/g)]
-    .map((match) => Number(match[1]))
-    .filter((value) => value > 3);
+  // A media or container query condition cannot read a custom property, so its px gets its own
+  // advisory type; the text after the condition's `{` is an ordinary rule.
+  const queryEnd = QUERY_PRELUDE.test(line) ? (line.indexOf('{') + 1 || line.length) : 0;
+  const queryPixels = pixelValues(line.slice(0, queryEnd));
+  if (queryPixels.length > 0) {
+    findings.push(finding({
+      type: 'raw-value-in-media-query',
+      confidence: 'potential',
+      selector: location,
+      measured: `${queryPixels[0]}px`,
+      threshold: 'breakpoints from one shared set',
+      note: 'px inside a media or container query condition, where a token cannot be read'
+    }));
+  }
+  const pixels = pixelValues(line.slice(queryEnd));
   if (pixels.length > 0) {
     findings.push(finding({
       type: 'raw-value-in-component-rule',
@@ -1494,40 +1519,49 @@ export function applyNotesTable(findings) {
   return table;
 }
 
-const SUMMARY_LINE_LIMIT = 10;
-const SUMMARY_BLOCK_LIMIT = 8;
+// Advisory types a run leaves out of its report unless --all asks for them.
+export const ADVISORY_TYPES = new Set(['target-size-enhanced', 'raw-value-in-media-query']);
 
-function summaryLabel(report, entry) {
-  if (entry.viewport) return entry.viewport;
-  return (report.rendered?.fixed?.findings ?? []).includes(entry) ? 'fixed' : 'static';
+/** Removes every ADVISORY_TYPES finding from the report's lists, in place; returns how many it removed. */
+export function omitAdvisory(report) {
+  const lists = [report.static?.findings, report.rendered?.fixed?.findings];
+  for (const entry of Object.values(report.rendered?.viewports ?? {})) lists.push(entry.findings);
+  let omitted = 0;
+  for (const list of lists.filter(Array.isArray)) {
+    const kept = list.filter((entry) => !ADVISORY_TYPES.has(entry.type));
+    omitted += list.length - kept.length;
+    list.splice(0, list.length, ...kept);
+  }
+  return omitted;
 }
 
-/** At most 10 lines in place of the JSON report: counts, then up to 8 blocking findings. */
-function summaryLines(report, findings, comparison) {
-  const viewportCounts = Object.entries(report.rendered?.viewports ?? {})
-    .map(([viewport, value]) => `${viewport}=${value.findings?.length ?? 0}`);
-  const header = [
-    `static=${report.static?.findings?.length ?? 0}`,
-    `fixed=${report.rendered?.fixed?.findings?.length ?? 0}`,
-    ...viewportCounts
+/**
+ * The default stdout: one total line, then one `<type> <count> blocking=<n>` line per type among
+ * the definite or blocking findings, most blocking first. An ignored finding is never shown.
+ */
+export function summaryLines({ report, findings, comparison, ignoreEntries, omitted, reportFile }) {
+  const blocking = new Set(comparison.blocking);
+  const shown = findings.filter((entry) => blocking.has(entry)
+    || (entry.confidence === 'definite' && !ignoreEntryFor(entry, ignoreEntries)));
+  const byType = new Map();
+  for (const entry of shown) {
+    const tally = byType.get(entry.type) ?? { type: entry.type, count: 0, blocking: 0 };
+    tally.count += 1;
+    if (blocking.has(entry)) tally.blocking += 1;
+    byType.set(entry.type, tally);
+  }
+  const total = [
+    `static=${report.static.status}`, `rendered=${report.rendered.status}`,
+    `findings=${findings.length}`, `shown=${shown.length}`, `blocking=${blocking.size}`, `omitted=${omitted}`
   ];
   if (report.comparison) {
     const counts = report.comparison.counts;
-    header.push(
-      `before=${counts.before}`, `after=${counts.after}`, `new=${counts.new}`,
-      `predating=${counts.predating}`, `ignored=${counts.ignored}`, `blocking=${counts.blocking}`
-    );
+    total.push(`new=${counts.new}`, `predating=${counts.predating}`, `ignored=${counts.ignored}`);
   }
-  const lines = [header.join(' ')];
-  const blockingSet = new Set(comparison.blocking);
-  const blocking = findings.filter((entry) => blockingSet.has(entry));
-  const shown = blocking.slice(0, Math.min(SUMMARY_BLOCK_LIMIT, SUMMARY_LINE_LIMIT - lines.length));
-  for (const entry of shown) {
-    lines.push(`BLOCK ${summaryLabel(report, entry)} ${entry.type} ${entry.selector} ${entry.measured}`);
-  }
-  const remaining = blocking.length - shown.length;
-  if (remaining > 0 && lines.length < SUMMARY_LINE_LIMIT) lines.push(`... ${remaining} more`);
-  return lines;
+  if (reportFile) total.push(`report=${reportFile}`);
+  const tallies = [...byType.values()].sort((left, right) =>
+    right.blocking - left.blocking || right.count - left.count || left.type.localeCompare(right.type));
+  return [total.join(' '), ...tallies.map((tally) => `${tally.type} ${tally.count} blocking=${tally.blocking}`)];
 }
 
 async function readBaseline(file) {
@@ -1544,6 +1578,11 @@ async function readBaseline(file) {
   return findings;
 }
 
+function ignoreEntryFor(entry, ignoreEntries) {
+  const file = findingFile(entry);
+  return ignoreEntries.find((candidate) => candidate.type === entry.type && candidate.file === file);
+}
+
 export function compareFindings(baselineFindings, currentFindings, ignoreEntries = []) {
   const unmatched = new Map();
   for (const entry of baselineFindings) {
@@ -1555,8 +1594,7 @@ export function compareFindings(baselineFindings, currentFindings, ignoreEntries
   const blocking = [];
   let predating = 0;
   for (const entry of currentFindings) {
-    const file = findingFile(entry);
-    const ignoreEntry = ignoreEntries.find((candidate) => candidate.type === entry.type && candidate.file === file);
+    const ignoreEntry = ignoreEntryFor(entry, ignoreEntries);
     if (ignoreEntry) {
       ignored.push({ ...entry, reason: ignoreEntry.reason });
       continue;
@@ -1591,7 +1629,8 @@ const FINDING_TYPES = new Set([
   ...DECORATIVE_TELLS,
   'inline-event-handler', 'important-override', 'placeholder-copy', 'float-layout', 'physical-direction-property',
   'svg-without-viewbox', 'image-without-alt', 'image-without-dimensions', 'srcset-without-sizes',
-  'missing-lang-attribute', 'inline-style-attribute', 'raw-value-in-component-rule', 'contrast-large-text',
+  'missing-lang-attribute', 'inline-style-attribute', 'raw-value-in-component-rule', 'raw-value-in-media-query',
+  'contrast-large-text',
   'contrast-normal-text', 'target-size-minimum', 'target-size-enhanced', 'contrast-non-text-ui',
   'repeated-surface-anatomy', 'content-clipped', 'element-overlap', 'crowded-controls', 'focus-indicator-missing',
   'horizontal-overflow', 'reflow-two-dimensional'
@@ -1630,9 +1669,15 @@ async function readIgnoreEntries(directory) {
   return entries;
 }
 
+async function defaultReportFile() {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'check-ui-'));
+  return path.join(directory, 'report.json');
+}
+
 async function main(argv) {
-  const flags = parseFlags(argv,
-    { url: 'value', source: 'value', viewport: 'list', baseline: 'value', summary: 'boolean' });
+  const flags = parseFlags(argv, {
+    url: 'value', source: 'value', viewport: 'list', baseline: 'value', out: 'value', json: 'boolean', all: 'boolean'
+  });
   if (!flags.url && !flags.source) throw new UsageError('at least one of --url or --source is required');
   const viewports = flags.viewport ? flags.viewport.map(parseViewport) : [parseViewport(DEFAULT_VIEWPORTS.at(-1))];
   const baselineFindings = flags.baseline ? await readBaseline(flags.baseline) : null;
@@ -1645,21 +1690,22 @@ async function main(argv) {
       ? await renderedAudit({ url: requireUrl(flags.url), viewports, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
+  const omitted = flags.all ? 0 : omitAdvisory(report);
   const findings = reportFindings(report) ?? [];
-  let comparison = null;
-  if (baselineFindings) {
-    const ignoreEntries = await readIgnoreEntries(process.cwd());
-    comparison = compareFindings(baselineFindings, findings, ignoreEntries);
-    report.comparison = comparison;
-  }
+  const ignoreEntries = baselineFindings ? await readIgnoreEntries(process.cwd()) : [];
+  if (baselineFindings) report.comparison = compareFindings(baselineFindings, findings, ignoreEntries);
   report.notes = applyNotesTable(findings);
 
-  if (flags.summary) {
-    for (const line of summaryLines(report, findings, comparison ?? compareFindings([], findings, []))) {
-      process.stdout.write(`${line}\n`);
-    }
-  } else {
-    process.stdout.write(`${JSON.stringify(report)}\n`);
+  const reportText = `${JSON.stringify(report)}\n`;
+  const reportFile = flags.out ?? (flags.json ? null : await defaultReportFile());
+  if (reportFile) await fs.writeFile(reportFile, reportText);
+  if (flags.json) {
+    process.stdout.write(reportText);
+    return;
+  }
+  const comparison = report.comparison ?? compareFindings([], findings, []);
+  for (const line of summaryLines({ report, findings, comparison, ignoreEntries, omitted, reportFile })) {
+    process.stdout.write(`${line}\n`);
   }
 }
 

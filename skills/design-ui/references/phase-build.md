@@ -22,6 +22,9 @@ Where the build runs:
 Proof:
 
 - When no stage called this skill, run the repository's own type-check, lint and test commands that cover the touched files before the next `scripts/check-ui.mjs` run.
+- A direct `scripts/check-ui.mjs` run prints only definite and blocking counts by type; read that summary, not the report.
+- Open the JSON file its `report=` names only for a finding being repaired.
+- Pass `--all`, which adds `target-size-enhanced` and media-query px findings, only when the user asks for AAA or breakpoint review.
 - Run them once the last edit lands, here or after every builder has returned.
 - A failure in a file the run did not touch is reported, not chased.
 - When `build` or `find-cause` called this skill, that proof stays with the caller.
