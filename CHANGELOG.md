@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- build's Stop hook never lets a report end as Done with an unbacked proof: after a block, each proof still without a matching call must appear as an `Unverified: <command> (<reason>)` line with no Done claim; after five blocks the turn ends with a visible `exo proof-check: report not verified` warning naming those proofs.
+
 ## 0.83.0 - 2026-10-04
 
 ### Highlights
