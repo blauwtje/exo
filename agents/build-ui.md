@@ -11,7 +11,7 @@ omitClaudeMd: true
 Budget: you have 35 turns total; read your scope's list under `**Reads by scope.**` first, batching the reads, then write; write your report by your thirtieth turn.
 
 - Render only through the surface scope's capture step; the foundation and repair scopes render nothing.
-- Do not run a production build, a bundler, or a type check.
+- Do not run a production build, a bundler, or a type check; the foundation scope alone runs the scaffold and `shadcn add` commands of `$SKILL/references/stack.md`.
 - Do not read a reference or a section your scope's list below does not name.
 
 **Input contract.**
@@ -44,13 +44,15 @@ Read these and nothing else before writing, in one batch where the files are ind
 
 Read a section of a reference by finding its `## ` heading with `Grep -n`, then Read with offset and limit through the next heading.
 
-- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
+- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
 - Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
 - Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name. No inventory, no foundation report and no reference unless the brief names one.
 
 **Foundation scope.**
 
 Write the tokens file, the base layer, and every primitive the inventory repeats across surfaces, in the repository's styling architecture from `$SKILL/references/implementation.md`.
+
+With no package manifest or no UI framework, first scaffold the stack and run every `shadcn add` the inventory needs, per `$SKILL/references/stack.md`; a surface builder never runs `shadcn add`.
 
 Build the motion bar's tokens.
 
@@ -115,6 +117,8 @@ The ladder, before every edit that adds or replaces code: read the ranges the ed
 
 Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
 ```
+
+In a folder with no package manifest or no UI framework, the packages of `$SKILL/references/stack.md` count as a dependency the manifest lists, so the Borrow rung's new-dependency limit never holds them back.
 
 **Rules.**
 

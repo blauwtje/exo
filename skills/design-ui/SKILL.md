@@ -17,7 +17,7 @@ Every screen ships the scope `references/composition.md` completes and the motio
 
 ## Size the request
 
-Any visual change belongs here, at any file count; an undecided surface goes to `spec` first, added state, persistence, a dependency or a network call to `build`.
+Any visual change belongs here, at any file count; an undecided surface goes to `spec` first, added state, persistence, a dependency `references/stack.md` lacks or a network call to `build`.
 
 - **Page or redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. It takes the one pass below; the existing direction is evidence, not a veto.
 - **Sketch, new piece, tweak:** `## Sizes` of `references/phase-build.md`.
@@ -27,23 +27,23 @@ Any visual change belongs here, at any file count; an undecided surface goes to 
 Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface. Then stop at the first matching rung:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at the build step, skipping the plan.
+2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at the build step.
 3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, while neither the user nor the brief lets it be replaced: the plan keeps that identity. A component library in the manifest is not that evidence on its own.
-6. **Everything else**, a landing or marketing page included: the scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface, no offer.
+6. **Everything else**, a landing or marketing page included: the scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface.
 
 Only a request from the user opens the picker: a landing page or an open identity does not.
 
 ## The one pass
 
-The default for every rung but 1 and 4; it builds in this session, with no agent. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3; Phases 4 and 5 are the full run's critique and QA.
+The default for every rung but 1 and 4; it builds in this session. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3; Phases 4 and 5 are the full run's critique and QA.
 
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`, once.
 2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, under the Phase 2 sections of `references/phase-direction.md`. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
 4. **Build.** Read only `references/build-pass.md`, whole and once, then build the whole page here and run its proof.
-5. **Capture.** Run `node <skill dir>/scripts/capture.mjs --url <file:// or http:// url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
+5. **Capture.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
 6. **Look.** Read `$RUN/renders/post-build-390x844-fullpage.png` and `$RUN/renders/post-build-1440x900-fullpage.png`, and list each fault against the plan, the request and `references/build-pass.md`.
 7. **Fix once.** Repair every listed fault in one pass, then report without a second capture; a fault the pass leaves open is named in the report.
 
@@ -58,7 +58,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 
 ## References
 
-Load a reference only at its row's phase and predicate, never the set up front, and only the sections the row names; a row naming none loads whole. The one pass skips every opt-in part.
+Load a reference only at its row's phase and predicate, and only the sections the row names; a row naming none loads whole.
 
 | File | Read it when |
 |---|---|
@@ -68,6 +68,7 @@ Load a reference only at its row's phase and predicate, never the set up front, 
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
 | `references/build-pass.md` | One pass or sketch, Phase 3: whole, once. |
+| `references/stack.md` | Phase 2: whole without a UI framework, else `## Which stack` alone. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: Phase 2 on rung 3, after `--check` reports ok and before the offer; elsewhere, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Opt-in: Phase 2, only when the user asks to see directions whole, before building the picker's comps. |
