@@ -8,6 +8,7 @@ The brief holds these sections, in this order:
 
 - **Goal:** one sentence describing the observable result.
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
+- **Open points:** only while a question or an assumption the user has still to confirm remains, one list item each, none for a point Decisions closed; the handoff recommends adjusting the brief while this section lists an entry.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account: one line per check, which `build` ends its final report with.
 - **Visual direction:** for a new visual surface only: whether the existing identity stays or may be replaced, the ambition, and who chooses between rendered directions.
@@ -25,5 +26,6 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Judgment
 
+- `Open points` keeps that exact name, because the handoff script reads `## Open points` to pick its recommendation.
 - `Visual direction` keeps that exact name, because the design-ui skill reads the brief's `## Visual direction`.
 - A brief whose `## Visual direction` names an existing `contract-selected.json` hands `design-ui` a decided direction; it resumes at Build and repeats no variant choice.

@@ -10,24 +10,31 @@ import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { readKindTable } from '#model-kinds';
 import { frameOf, parsePlan } from '#plan-tasks';
+import { scratchPath, ScratchPathError } from '#scratch-path';
 
 // The stage a session just finished names the question that ends it, per
 // the question shape: a title, a context sentence, lettered option
 // lines with the recommended one on A, and the `Recommended: (A)` line saying
 // why A beats the rest. `stage` names the fresh-chat route's model row, when
 // the stage offers that route. An option is `[label, what the user gets]`; its
-// letter comes from its place in the array.
+// letter comes from its place in the array. `open` replaces `context`,
+// `options` and `reason` while the artifact lists an open point.
+const ADJUST_BRIEF = ['Adjust the brief', 'change it before anything is built.'];
+const BUILD_HERE = ['Build here', 'build it now in this chat.'];
+const BUILD_FRESH = ['Build fresh', 'start a clean chat and build it there.'];
+
 const NEXT_STAGE = {
   'spec': {
     stage: 'build',
     title: 'Is the brief ready to build?',
-    context: (artifact) => `The brief is written at \`${artifact}\`.`,
-    options: [
-      ['Adjust the brief', 'change it before anything is built.'],
-      ['Build here', 'build it now in this chat.'],
-      ['Build fresh', 'start a clean chat and build it there.']
-    ],
-    reason: 'nothing gets built before the brief reads right, while (B) and (C) build it as written.'
+    context: (artifact) => `The brief is written at \`${artifact}\` with no open point.`,
+    options: [BUILD_HERE, BUILD_FRESH, ADJUST_BRIEF],
+    reason: 'the brief settles every point and this chat already knows it, while (B) starts over and (C) reopens a settled brief.',
+    open: {
+      context: (artifact, count) => `The brief is written at \`${artifact}\` with ${count} open point${count === 1 ? '' : 's'} under \`## Open points\`.`,
+      options: [ADJUST_BRIEF, BUILD_HERE, BUILD_FRESH],
+      reason: 'the open points get settled before anything is built, while (B) and (C) build on them unconfirmed.'
+    }
   },
   'find-cause': {
     title: 'Should I build the fix?',
@@ -58,18 +65,46 @@ function modelSwitchFor(stage, artifact) {
   return `Before you type them, switch to a lighter model with \`/model ${kinds[stages[stage].kind].model}\`.`;
 }
 
+// The file holding the brief: the path itself, or for an issue `#<n>` the
+// scratch copy spec writes at `.exo/specs/<n>.md`; `null` when neither exists.
+function briefFile(artifact) {
+  const issue = artifact.match(/^#(\d+)$/);
+  if (issue === null) return fs.existsSync(artifact) ? artifact : null;
+  try {
+    const copy = scratchPath(process.cwd(), `specs/${issue[1]}.md`);
+    return fs.existsSync(copy) ? copy : null;
+  } catch (error) {
+    if (error instanceof ScratchPathError) return null;
+    throw error;
+  }
+}
+
+/**
+ * The open points of a brief: each list item under its `## Open points`
+ * heading, a question or an assumption the user has still to confirm. An
+ * artifact with no readable file has none.
+ */
+export function openPoints(artifact) {
+  const file = briefFile(artifact);
+  if (file === null) return [];
+  const section = parsePlan(fs.readFileSync(file, 'utf8')).frame['Open points'] ?? '';
+  return section.split('\n').filter((line) => /^\s*(?:[-*+]|\d+[.)])\s+\S/.test(line)).map((line) => line.trim());
+}
+
 /**
  * The next-stage question: title, context, lettered options with the
  * recommended one on A, and the recommendation last.
  */
 export function nextStageReport({ after, artifact }) {
-  const next = NEXT_STAGE[after];
-  if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
+  const stage = NEXT_STAGE[after];
+  if (stage === undefined) throw new UsageError(`no next stage known after '${after}'`);
+  const count = stage.open === undefined ? 0 : openPoints(artifact).length;
+  const next = count > 0 ? { ...stage, ...stage.open } : stage;
   const options = next.options.map(([label, does], index) => {
     const text = typeof does === 'function' ? does(artifact) : does;
     return `- **(${String.fromCharCode(65 + index)}) ${label}**: ${text}`;
   });
-  const lines = [`**${next.title}**`, next.context(artifact), '', ...options, '', `Recommended: (A), because ${next.reason}`];
+  const lines = [`**${next.title}**`, next.context(artifact, count), '', ...options, '', `Recommended: (A), because ${next.reason}`];
   return `${lines.join('\n')}\n`;
 }
 

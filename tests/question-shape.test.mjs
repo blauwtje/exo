@@ -72,9 +72,9 @@ test('the route-skills body points at the question reference', () => {
 test('the next stage has no reference file; the script prints A as the recommended option', () => {
   assert.ok(!fs.existsSync(new URL('../skills/route-skills/references/next-stage.md', import.meta.url)));
   const report = nextStageReport({ after: 'spec', artifact: 'brief.md' });
-  assert.ok(report.includes('- **(A) Adjust the brief**'));
-  assert.ok(report.includes('- **(B) Build here**'));
-  assert.ok(report.includes('- **(C) Build fresh**'));
+  assert.ok(report.includes('- **(A) Build here**'));
+  assert.ok(report.includes('- **(B) Build fresh**'));
+  assert.ok(report.includes('- **(C) Adjust the brief**'));
   assert.ok(report.includes('Recommended: (A)'));
 });
 
