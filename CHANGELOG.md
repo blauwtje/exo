@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **design-ui now asks who uses the screen and builds the plan around that user's top three tasks, with a Laws of UX rule behind each layout choice.**
+
+### Added
+
+- design-ui's intake form opens with a Users question, three or four proposed users with role, device, frequency and main task, recorded in `$RUN/user.md`.
+- design-ui's intake form asks "Directions first?" with 1, 2 or 3; at 2 or 3 the directions appear as sketches in the sketch tab and the clicked one gets built.
+- design-ui's friendly and playful mood may use generated illustrations of the product's own content when an image generator exists, never another product's characters or brand.
+
+### Changed
+
+- design-ui's plan names the user's three most important tasks, orders the screen by them, and tags each major layout choice with its Laws of UX rule.
+- design-ui shortlists three faces and three accent hues, drops the first of each, and ties each kept face and hue to a fact about the user.
+- design-ui themes every fetched shadcn component past the preset, radius, density, type, color tokens and `cva` variants, and the build pass and critic count a stock shadcn component as slop.
+
 ## 0.80.5 - 2026-10-04
 
 ### Highlights
