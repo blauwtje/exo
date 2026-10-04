@@ -1,6 +1,6 @@
 # The sketch tab
 
-Answer one visual question in the time it takes to ask it: a rough sketch in a tab that is already open, and one click. The enemy is the sketch polished into a comp, which spends minutes on a question that needed seconds. The overcorrection is a sketch so bare it hides the choice: grey boxes cannot answer a color question. The `direction-preview` reference owns full comps; this file owns every other visual question.
+Answer one visual question in the time it takes to ask it: a rough sketch in a tab that is already open, and one click. The enemy is the sketch polished into a comp, which spends minutes on a question that needed seconds. The overcorrection is a sketch so bare it hides the choice: grey boxes cannot answer a color question. The `direction-preview` reference owns the direction question and its comps; this file owns every other visual question.
 
 ## The commands
 
@@ -41,7 +41,6 @@ A sketch is `$RUN/sketches/<nnn>-<topic>.html`, numbered in the order asked. A r
 - An id is letters, digits and hyphens.
 - The recommended option comes first and its name says so.
 - Each option carries `aria-label` with its short name.
-- For the direction question, the id is the contract's dealt index.
 - The options sit side by side, fit one screen at 1280 pixels wide without scrolling, and stack below 700.
 
 ## The answer

@@ -34,7 +34,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - The Directions question, "Directions first?" in the conversation's language, has the options 1, 2 and 3, in that order.
 - Directions 1 keeps the run on its rung: one direction, no sketch.
 - Directions 2 or 3 asks to choose: rung 3 of `## Route` follows with that many directions, taking option A without the offer.
-- Those directions reach the user as one sketch in the sketch tab, never as full comps, because a click needs a look, not a page.
+- Those directions reach the user as first-screen comps in the picker under the `direction-preview` reference, never as a sketch, because a sketch hides how a direction looks as a product.
 - Rung 5 drops the Mood and Directions questions, because its settled identity already fixes the look.
 - An ask that names its user drops the Users question.
 - An ask that names a mood drops the Mood question.
@@ -53,15 +53,15 @@ Settle what the run needs before it builds: the questions worth asking, where th
   **How should we pick the new look?**
   I will make <n> looks. You can see them first or let me choose.
 
-  - **(A) Show me**: open all <n> side by side in your browser.
+  - **(A) Show me**: open each of the <n> full screen in your browser, one at a time.
   - **(B) Describe them**: I explain each look here in a few words.
   - **(C) You choose**: I build <the recommended look in plain words>.
 
   Recommended: (A), because seeing the looks beats reading about them, and (C) skips your say.
   ```
 
-- Option A opens the sketch tab under the `sketch-tab` reference; the click names the contract that the `phase-direction` reference then freezes.
-- Every later visual choice, and every revision the user asks for, is one more sketch file in that tab, with no second offer.
+- Option A builds the first-screen comps and opens the picker under the `direction-preview` reference; the click names the contract that the `phase-direction` reference then freezes.
+- Every later visual choice the user asks to see is one sketch in the sketch tab under the `sketch-tab` reference, with no second offer.
 - Option B is one more question whose options are the looks, each in one plain line.
 - The letter on option B names the contract the `phase-direction` reference freezes, as a click would.
 - After option B, each later visual choice is decided from the picked contract as on option C, unless the user asks to see it.

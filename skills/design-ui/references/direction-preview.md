@@ -1,6 +1,6 @@
 # Direction Preview
 
-Put the built directions in front of the person deciding as complete pages at full size, checked first, and let one click settle it. The enemy is a comparison nobody can judge: a first screenful standing in for the page, a scaled thumbnail, or a broken comp the chooser is the first to see. The overcorrection is a preview so staged that the chooser picks a presentation instead of a direction.
+Put the built directions in front of the person deciding as real comps at full size, one at a time, checked first, and let one click settle it. The enemy is a comparison nobody can judge: near-identical sketches that differ in one colour, a scaled thumbnail, or a broken comp the chooser is the first to see. The overcorrection is a preview so staged that the chooser picks a presentation instead of a direction.
 
 This file owns the screen that asks for a direction; the `visual-direction` reference owns what a direction is.
 
@@ -15,27 +15,32 @@ This file owns the screen that asks for a direction; the `visual-direction` refe
 - Only then write the labels file and start `pick.mjs` under the Bash tool's `run_in_background`.
 - When `pick.mjs --check` exits 3, no capture engine exists: start the picker with `--unchecked` and tell the user in one line that the comps were not checked.
 - `--unchecked` answers that exit 3 alone, never a failing or unread check.
-- Write each `index.html` directly from its contract: no template, generator, build script, or patch script stands between the two, because a pipeline costs the minutes it was meant to save.
+- Write each comp's source directly from its contract: no template, generator, or patch script stands between the two, because a pipeline costs the minutes it was meant to save.
 - A comp the chooser still reports broken is repaired after the click, checked again, and the picker reruns once.
-- Run the picker only when the user asks to see directions whole, after the message that names its price as `## Asking` of the `intake` reference says.
+- Run the picker only when the user asks to see or choose directions, after the message that names its price as `## Asking` of the `intake` reference says.
 - Every other visual choice belongs to the `sketch-tab` reference.
 
 ## What the comp owes the screen
 
-Each comp is a sketch of one direction, not a build: the complete page of the real surface, with real content, in one self-contained HTML file and no build step. The picker shows one comp per tab at 100%, never scaled, and the comp scrolls inside its own frame, so its length, hover and motion run as the chooser would meet them.
+Each comp is the real surface in one direction, not a sketch: real content, built the way Build would build it. The picker shows one comp at a time at full width on a dark neutral ground, never scaled, under tabs A, B and C. The open direction's description sits under the strip, and the comp scrolls inside its own frame, so its hover and motion run as the chooser would meet them.
 
-- A comp holds every section of the real page in the page's order, top to bottom, because a direction judged on its first screen hides how its sections hold up.
+- Directions differ in layout, colour, typeface and shape at once, because directions that share a layout read as one look in another paint.
+- A direction comp is the surface's first screen: what a visitor meets before scrolling, every region of it complete.
+- When the user asks to see directions whole, a comp holds every section of the real page in the page's order.
+- Build each comp with the project's stack as the `stack` reference picks it: its framework, styling mechanism, component layer and font packages.
+- A project with no pages yet takes that reference's scaffold before the first comp, because the scaffold fixes no look.
+- Compile a stack comp with the project's own build tool into `$RUN/variant-<n>/` with relative asset paths, so the picker serves its `index.html` untouched.
+- Keep a stack comp's source in a scratch folder listed in `.git/info/exclude`, and delete it after the selection, because no production code changes before one.
+- A project whose pages are plain HTML gets a plain HTML comp: a fragment with its own markup and `<style>`, and no doctype, `<head>`, viewport tag or reset.
+- The picker injects a fragment's document parts and nothing else, so the ground, the type, the palette and the one technique stay inside the comp.
+- Load every face the direction names from its real font files, never a system fallback or a monospace stand-in, because the face is half the direction.
+- Every rule of the `build-pass` reference holds in a comp: the character, the build floor, the slop tropes and the motion bar.
+- A comp has no line budget; it is as long as its screen needs.
 - A comp is responsive: it reflows between 390 and 1440 wide, with no horizontal scroll at either width.
-- Compose every section across its full width, so no empty band reads as part of the direction.
+- Compose every region across its full width, so no empty band reads as part of the direction.
 - A click in a comp shows motion and changes nothing: hover, press, and the transition the contract records are the demo, and JavaScript exists for that motion alone.
 - Navigation, a working tab, filter, form, or toggle, or any state that alters what the page shows, is a build, not a comp.
 - The exception is the contract's own technique, a canvas or generative motion, which runs because it is the direction.
-- A comp is a fragment, not a document: its own markup and its own `<style>`, with no doctype, no `<head>`, no viewport tag and no reset.
-- The picker injects the document parts and nothing else, so the ground, the type, the palette and the one technique stay inside the comp.
-- A file that opens with `<!doctype` or `<html>` is served untouched, which is the escape hatch for a direction whose technique needs the document itself.
-- The budget is 400 lines of HTML and CSS per comp: every section at sketch fidelity, plus its responsive rules and its hover and motion states.
-- Past the budget, cut detail inside a section, never a section or the direction.
-- Scale fidelity to what the click decides: sketch fidelity carries the composition, and material fidelity goes only where the direction's difference lives, its ground, its type, its palette, its one technique.
 
 ## The command
 
@@ -61,7 +66,8 @@ node scripts/pick.mjs --comps <dir> --contracts <contracts.json> \
 
 ## What the chooser reads
 
-- Every contract carries a `title` and a plain-language `description`, written in the words of the subject; the title is what a tab says, and the description is its one line under the strip. Dealt axis ids stay out of it: `tide-band-strata` names the machinery, and tells someone deciding between three pages nothing they can act on.
+- Every contract carries a `title` and a plain-language `description`, written in the words of the subject; the title is what a tab says, and the description is its one line under the strip.
+- The description says in one short sentence what sets this direction apart. Dealt axis ids stay out of it: `tide-band-strata` names the machinery, and tells someone deciding between three pages nothing they can act on.
 - `--labels <labels.json>` is written on every run and carries the screen's own copy in the language the conversation runs in: `title`, `hint`, `recommended`, `fallbackTitle`, `choose`, `tabs`, `typeRole`, `steer`, `done`, `failed`, plus `lang`, the language tag those words are written in.
 - `tabs` is the tab strip's accessible name, which a screen reader announces.
 - Running the picker without the labels file is a defect: the script's English strings are a last resort for a missing key, and this session is the only side that knows the conversation's language.

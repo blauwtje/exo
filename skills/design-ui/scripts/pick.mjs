@@ -496,6 +496,9 @@ ${fontLinks}
   @layer tokens {
     :root {
 ${CHROME_TOKENS}
+      /* Dark and neutral whatever the system theme: a light chrome competes
+         with each comp's own ground, a dark neutral one recedes behind it. */
+      color-scheme: dark;
       --radius-card: 12px;
       --gap: 8px;
       --pad: 12px;

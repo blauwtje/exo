@@ -166,6 +166,8 @@ describe('pick.mjs', () => {
     assert.equal((html.match(/role="tabpanel"/g) ?? []).length, 2, 'one panel per variant');
     assert.equal((html.match(/role="tabpanel"[^>]* hidden>/g) ?? []).length, 1, 'only the first panel shows');
     assert.match(html, /aria-label="Directions"/, 'the strip is named');
+    assert.match(html, /color-scheme: dark;\s*--radius-card/,
+      'the chrome stays dark and neutral after the shared tokens, whatever the system theme');
     assert.doesNotMatch(/\.panel iframe \{[^}]*\}/.exec(html)[0], /transform|scale/, 'no comp frame is transformed or scaled');
     assert.doesNotMatch(html, /transform: scale|--zk|--k:/, 'and nothing scales one anywhere on the page');
     assert.doesNotMatch(html, /<dialog|data-zoom/, 'and no enlarged view remains');

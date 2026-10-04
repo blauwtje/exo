@@ -67,11 +67,11 @@ Load a reference only at its row's phase and predicate, and only the sections th
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the opt-in full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | One pass or sketch, Phase 3: whole, once. |
+| `references/build-pass.md` | One pass or sketch, Phase 3, or rung 3 before the first comp if earlier: whole, once. |
 | `references/stack.md` | Phase 2: `## Which stack`, and the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
-| `references/sketch-tab.md` | Opt-in: Phase 2 on rung 3, after `--check` reports ok and before the offer; elsewhere, before the first visual choice the user asked to see. |
-| `references/direction-preview.md` | Opt-in: Phase 2, only when the user asks to see directions whole, before building the picker's comps. |
+| `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |
+| `references/direction-preview.md` | Opt-in: Phase 2 on rung 3, after `--check` reports ok and before the offer or the first comp. |
 | `references/composition.md` | Phase 1 `## Inventory before layout`; Phase 2 `## Turn subject evidence into a system`, `## Choose structures from relationships`, `## Write a composition contract`; full run Phase 3 `## Build density without clutter`, `## Surface obligations`, `## Responsive recomposition`. |
 | `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list`, `## Pairing`; full run Phase 3 the rest. |
 | `references/controls.md` | Full run, before styling a control: `## Tactile hierarchy`, `## Labels`, plus `## Anatomy of the composite controls` for a composite. |

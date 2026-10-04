@@ -43,43 +43,32 @@ Rung 3 of the skill's `## Route`, reached only when the user asks to see or choo
 - Deal the contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants <n> > "$RUN/contracts.json"`.
 - Give `--seed` one token this session picks.
 - `<n>` is the Directions answer of the `intake` reference's form, else 3.
-- Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
-- `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
-- Ask nothing between `--check` and the first sketch, because the scope form already carried the offer or the Directions question.
+- Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because the other options need no second filled contract.
+- `--check` the recommended contract to status ok.
+- Ask nothing between `--check` and the first comp, because the scope form already carried the offer or the Directions question.
 - Make the offer the `intake` reference's `## Asking` defines, except after a Directions answer of 2 or 3, which takes the preview option at once.
-- Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
+- Select autonomously only where the user delegated the choice, took the second option, the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 - On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
 - Every `--check` and `--select` call passes that `--space` file.
 
-## The sketch answer
+## The comps
 
-- On the preview option, send one message holding the `sketch-tab` reference's `--serve` start, a Write of `$RUN/sketches/001-direction.html`, and its `--wait` start with `--sketch 001-direction.html`, both script calls under the Bash tool's `run_in_background`.
-- The sketch shows every dealt direction from its axes, under the `sketch-tab` reference, and each option's `data-choice` is the contract's dealt index.
-- The other contracts stay unfilled, because a sketch needs a direction's visible material and never its whole contract, and filling them first is the wait the sketch removes.
-- A `steer` in the answer is a revision: write the next sketch file and wait again.
-- A click on the recommended direction freezes `$RUN/recommended.json` as the second option does.
-- A click on another direction fills that one contract, writes it as a one-contract container to `$RUN/chosen.json`, and `--check`s it to status ok.
-- Freeze that contract with `--select --index 0 --space "$RUN/space.json"`.
-- An exit 3 leaves the `--recommend` contract as the selection.
+The preview option, a Directions answer of 2 or 3, and a request to see directions whole all run the picker under the `direction-preview` reference; the sketch tab never shows a direction.
 
-## Full comps
-
-Full comps are built only when the user asks to see directions whole.
-
-- Send one message holding a Write for every `$RUN/variant-<n>/index.html`, because one message costs one round trip where a message per comp costs one each.
-- Build each variant from its contract inside the comp budget the `direction-preview` reference sets, because a delegate per comp costs its brief and its report for a file this session can type.
-- Run `pick.mjs --check`, read every capture and `check-ui.json`, and repair before the picker opens, as `## Before the picker` of `direction-preview` says: the chooser is never the first to see a broken comp.
-- Fill the contracts of the directions still standing and write them as one container to `$RUN/finalists.json`.
+- Fill every dealt contract and write them as one container to `$RUN/finalists.json`.
 - Next, validate the set with `--check` to status ok before building any variant, then write `$RUN/labels.json`.
+- Send one message holding a Write for every comp's source, because a message per comp costs one round trip each.
+- Build each comp in this session from its contract, as `## What the comp owes the screen` of `direction-preview` says, because a delegate per comp costs its brief and its report.
+- Run `pick.mjs --check`, read every capture and `check-ui.json`, and repair before the picker opens, as `## Before the picker` of `direction-preview` says: the chooser is never the first to see a broken comp.
 - Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json"`, adding `--frame 390x844` only for a phone-first surface, since each comp otherwise fills the window width.
-- The picker waits for the last comp before it opens the tab, so the chooser never sees an empty card.
 - The picker prints the chosen index when the click arrives, or exits 3 and leaves the `--recommend` contract as the selection.
+- A `steer` in the answer is a revision: change the comps it names, check them again, and start the picker once more.
 - Freeze the selection with `--select --contracts "$RUN/finalists.json" --index <n> --space "$RUN/space.json" > "$RUN/contract-selected.json"` for Build, the critique, and QA.
 
 ## A planning turn
 
 - A planning turn routes by `## Route` and makes the offer on rung 3 only, because the user asked to choose there.
-- On option A, it runs the sketch tab under `$RUN`, which writes nothing in the repository, and freezes the clicked contract as `## The sketch answer` says.
+- On option A, it builds the comps and runs the picker as `## The comps` says, which changes no production code, and freezes the clicked contract.
 - On option B, it freezes the contract the user's letter named the same way.
 - On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
 - The plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`.
@@ -92,4 +81,4 @@ Full comps are built only when the user asks to see directions whole.
 
 - A settled identity outranks a new direction unless the user or the brief lets it be replaced: it produces one direction and no offer.
 - The user's own request for options is the only trigger for the offer; a landing page, an open identity or a full redesign is not.
-- A click in the sketch tab or the picker outranks this session's preference; an exit 3 makes the `--recommend` contract the selection without a further question.
+- A click in the picker outranks this session's preference; an exit 3 makes the `--recommend` contract the selection without a further question.
