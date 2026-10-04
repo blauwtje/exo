@@ -98,6 +98,13 @@ const PINNED_SENTENCES = {
     'Ratio between adjacent steps: **1.25 by default**',
     'Record family, provenance `chosen`, the matched traits as `matchEvidence`',
   ],
+  'skills/design-ui/references/build-pass.md': [
+    '- no horizontal scroll from 360px through 1440px;',
+    '- body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;',
+    '- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;',
+    '- targets at least 24×24 CSS px, the WCAG 2.2 AA minimum;',
+    'The underdesign floor: the ground is a designed surface, not an untouched flat neutral',
+  ],
   'agents/build-ui.md': [
     '- no horizontal scroll from 360px through 1440px;',
     '- reduced-motion handling for every animation and semantic HTML beneath styling;',
@@ -137,6 +144,8 @@ const PINNED_SENTENCES = {
 // the repository under check, so a self-test mutation of either side fails.
 const PINNED_LISTS = [
   { file: 'skills/design-ui/references/visual-critique.md', section: '## Slop tropes',
+    asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
+  { file: 'skills/design-ui/references/build-pass.md', section: '## Slop tropes',
     asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
   { file: 'skills/design-ui/references/sketch-tab.md', section: '## The labels',
     asset: 'skills/design-ui/assets/sketch-tab-labels.json', names: (json) => Object.keys(json) },
