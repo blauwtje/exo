@@ -6,8 +6,9 @@
 //                             [--baseline <earlier check-ui JSON>] [--out <file>] [--json] [--all]
 //
 // stdout is a short summary of the definite and blocking findings, grouped by type; the full
-// JSON report goes to --out, or to a fresh temp file the summary names. --json prints the full
-// report on stdout instead. --all keeps the advisory types a run otherwise leaves out.
+// JSON report, every finding included, goes to --out, or to a fresh temp file the summary names.
+// --json prints the report on stdout instead. --all keeps the advisory types the summary, the
+// --json stdout and the --baseline comparison otherwise leave out.
 //
 // A --baseline run also reads confirmed false positives from docs/design/check-ui-ignore.json
 // under the working directory: a JSON array of { "type", "file", "reason" } strings, where
@@ -1519,7 +1520,7 @@ export function applyNotesTable(findings) {
   return table;
 }
 
-// Advisory types a run leaves out of its report unless --all asks for them.
+// Advisory types a run leaves out of its stdout and comparison unless --all asks for them.
 export const ADVISORY_TYPES = new Set(['target-size-enhanced', 'raw-value-in-media-query']);
 
 /** Removes every ADVISORY_TYPES finding from the report's lists, in place; returns how many it removed. */
@@ -1690,21 +1691,26 @@ async function main(argv) {
       ? await renderedAudit({ url: requireUrl(flags.url), viewports, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
-  const omitted = flags.all ? 0 : omitAdvisory(report);
-  const findings = reportFindings(report) ?? [];
+  // The report file keeps every finding; --all only widens the stdout view and what the comparison gates.
+  const shownReport = flags.all ? report : structuredClone(report);
+  const omitted = flags.all ? 0 : omitAdvisory(shownReport);
+  const findings = reportFindings(shownReport) ?? [];
   const ignoreEntries = baselineFindings ? await readIgnoreEntries(process.cwd()) : [];
-  if (baselineFindings) report.comparison = compareFindings(baselineFindings, findings, ignoreEntries);
-  report.notes = applyNotesTable(findings);
+  if (baselineFindings) {
+    shownReport.comparison = compareFindings(baselineFindings, findings, ignoreEntries);
+    report.comparison = shownReport.comparison;
+  }
+  shownReport.notes = applyNotesTable(findings);
+  if (!flags.all) report.notes = applyNotesTable(reportFindings(report) ?? []);
 
-  const reportText = `${JSON.stringify(report)}\n`;
   const reportFile = flags.out ?? (flags.json ? null : await defaultReportFile());
-  if (reportFile) await fs.writeFile(reportFile, reportText);
+  if (reportFile) await fs.writeFile(reportFile, `${JSON.stringify(report)}\n`);
   if (flags.json) {
-    process.stdout.write(reportText);
+    process.stdout.write(`${JSON.stringify(shownReport)}\n`);
     return;
   }
-  const comparison = report.comparison ?? compareFindings([], findings, []);
-  for (const line of summaryLines({ report, findings, comparison, ignoreEntries, omitted, reportFile })) {
+  const comparison = shownReport.comparison ?? compareFindings([], findings, []);
+  for (const line of summaryLines({ report: shownReport, findings, comparison, ignoreEntries, omitted, reportFile })) {
     process.stdout.write(`${line}\n`);
   }
 }

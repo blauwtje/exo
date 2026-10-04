@@ -860,6 +860,25 @@ describe('check-ui.mjs notes table', () => {
     ]);
   });
 
+  it('writes every finding to the report file without --all, while the summary omits the advisory ones', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), [
+      '@media (min-width: 768px) {',
+      '  .a { display: grid; }',
+      '}',
+      '@container (max-width: 40px) { .b { padding: 32px; } }'
+    ].join('\n'));
+    const reportFile = path.join(root, 'report.json');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--out', reportFile]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout.split('\n')[0], / findings=1 .* omitted=2 /);
+    const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
+    assert.deepEqual(report.static.findings.map((entry) => `${entry.type} ${entry.measured}`), [
+      'raw-value-in-media-query 768px', 'raw-value-in-media-query 40px', 'raw-value-in-component-rule 32px'
+    ]);
+  });
+
   it('omitAdvisory drops target-size-enhanced from every list and counts it', () => {
     const enhanced = { type: 'target-size-enhanced', confidence: 'potential', selector: 'a', measured: '30×30 CSS px' };
     const minimum = { type: 'target-size-minimum', confidence: 'definite', selector: 'b', measured: '20×20 CSS px' };
