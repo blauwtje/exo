@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.81.2 - 2026-10-04
+
 ### Changed
 
 - design-ui shows 2 or 3 directions as real first-screen comps in the picker, one at a time on a dark neutral ground, built with the project's stack, real fonts and the build-pass rules, instead of one side-by-side sketch; the directions now differ in layout, colour, typeface and shape at once.
