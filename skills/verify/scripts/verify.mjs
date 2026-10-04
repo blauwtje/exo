@@ -15,7 +15,7 @@
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
 //
-// Prints one PASS, FAIL, SKIP, UNRUN or STRAY line per check, then the REVIEWER line,
+// Prints one PASS, FAIL, SKIP, SESSION, UNRUN or STRAY line per check, then the REVIEWER line,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
 // A FAIL line for a Proof or the Success criterion names why in brackets, the
@@ -27,6 +27,11 @@
 // The Success criterion passes on exit code 0, and when its output holds a
 // `SUMMARY ` line, as exo's own `npm run check` prints, that line must also read
 // FAIL=0 WARN=0 UNRUN=0.
+// A Proof written `mcp:<tool> <args>` names an MCP tool, which only the session can
+// call: it is never spawned and prints a SESSION line, which is neither PASS nor
+// FAIL, so the gate is not passed until the session runs that tool call.
+// A legacy Proof whose first word is a snake_case name the shell cannot find
+// names that likely MCP tool and the `mcp:<tool>` form on its FAIL line.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -61,11 +66,33 @@ const BACKTICKED_COMMAND = /`([^`]+)`/;
 // line"), not a command; running it through a shell would hand the shell
 // that backtick pair as its own command substitution.
 const PROSE_PROOF = /`/;
+// A Proof naming an MCP tool by its short name, the part after `mcp__<server>__`.
+const MCP_PROOF = /^mcp:\S/;
+// A bare snake_case first word, the shape of an MCP tool's short name.
+const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
+// The exit code a POSIX shell returns for a command it cannot find.
+const COMMAND_NOT_FOUND = 127;
 
 /** A task's Proof: as a command to run, or null when a backtick marks it as prose instead. */
 export function runnableProof(proof) {
   if (proof === null || PROSE_PROOF.test(proof)) return null;
   return proof;
+}
+
+/** True when the Proof names an MCP tool as `mcp:<tool> <args>`, which the session calls instead of a shell. */
+export function isMcpProof(command) {
+  return MCP_PROOF.test(command);
+}
+
+/**
+ * The first word of an unmarked Proof the shell could not find, when that word is
+ * snake_case and so likely an MCP tool's short name, else null.
+ */
+export function unmarkedMcpTool(command, { code, output }) {
+  if (code !== COMMAND_NOT_FOUND) return null;
+  const word = command.split(/\s/, 1)[0];
+  if (!SNAKE_CASE_WORD.test(word)) return null;
+  return new RegExp(`\\b${word}: (?:command )?not found`).test(output) ? word : null;
 }
 
 /** The globs `package.json` `scripts.test` hands `node --test`, or [] when there is no `package.json` or it runs no such command; a malformed one throws. */
@@ -199,7 +226,7 @@ async function mapLimited(items, limit, work) {
 }
 
 /**
- * The plan's checks, one PASS/FAIL/SKIP/UNRUN/STRAY line each, then the REVIEWER
+ * The plan's checks, one PASS/FAIL/SKIP/SESSION/UNRUN/STRAY line each, then the REVIEWER
  * line. `planPath` names the plan whose id its landed trailers carry; `root`
  * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
@@ -223,7 +250,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     if (!landed.has(task.number) || task.proof === null) continue;
     const command = runnableProof(task.proof);
     if (command === null) {
-      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: not a single \`command\`)` });
+      proofRuns.push({ line: `SKIP Task ${task.number} (Proof: not a single \`command\`)` });
       continue;
     }
     // A Proof that is the gate command, or runs the test suite or files its globs
@@ -231,33 +258,39 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     // custom gate may run no tests, so a suite Proof still runs under it.
     const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && (TEST_SUITE_PROOF.test(command) || filesUnderGlobs(command, globs));
     if (!gateSkipped && (command === gateCommand || suiteUnderDefault)) {
-      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
+      proofRuns.push({ line: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
     }
     if (record?.proofs.includes(command)) {
-      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: land-task passed it on this same tree)` });
+      proofRuns.push({ line: `SKIP Task ${task.number} (Proof: land-task passed it on this same tree)` });
       continue;
     }
     if (queued.has(command)) {
-      proofRuns.push({ skipLine: `SKIP Task ${task.number} (Proof: repeats an earlier task's Proof, which runs once)` });
+      proofRuns.push({ line: `SKIP Task ${task.number} (Proof: repeats an earlier task's Proof, which runs once)` });
       continue;
     }
     queued.add(command);
+    if (isMcpProof(command)) {
+      proofRuns.push({ line: `SESSION Task ${task.number} (Proof: ${command}; run it as an MCP tool call)` });
+      continue;
+    }
     proofRuns.push({ number: task.number, command });
   }
 
   // Proofs run up to PROOF_CONCURRENCY at once; their lines keep task order.
-  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.skipLine ? null : runCommand(run.command)));
+  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command)));
   proofRuns.forEach((run, index) => {
-    if (run.skipLine) {
-      lines.push(run.skipLine);
+    if (run.line) {
+      lines.push(run.line);
       return;
     }
     const proofRun = proofResults[index];
     if (proofRun.ok) {
       lines.push(`PASS Task ${run.number}`);
     } else {
-      lines.push(...failLines(`Task ${run.number}`, failReason(proofRun), proofRun.output));
+      const tool = unmarkedMcpTool(run.command, proofRun);
+      const reason = tool === null ? failReason(proofRun) : `${failReason(proofRun)}, ${tool} looks like an MCP tool; write the Proof as mcp:${tool}`;
+      lines.push(...failLines(`Task ${run.number}`, reason, proofRun.output));
       failed = true;
     }
   });

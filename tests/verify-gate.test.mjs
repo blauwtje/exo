@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, filesUnderGlobs, findStrayPaths, isMcpProof, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -131,6 +131,50 @@ test('a Proof: with a backtick reads as prose and is skipped, never handed to a 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.ok(result.stdout.split('\n')[0].startsWith('SKIP Task 1'));
+});
+
+test('isMcpProof reads only an mcp:<tool> Proof as an MCP tool call', () => {
+  assert.equal(isMcpProof('mcp:run_playtest mode=play'), true);
+  assert.equal(isMcpProof('mcp:'), false);
+  assert.equal(isMcpProof('run_playtest mode=play'), false);
+  assert.equal(isMcpProof('node -e "1" mcp:run_playtest'), false);
+});
+
+test('unmarkedMcpTool names a snake_case first word the shell could not find, else null', () => {
+  assert.equal(unmarkedMcpTool('run_playtest mode=play', { code: 127, output: 'sh: run_playtest: command not found\n' }), 'run_playtest');
+  assert.equal(unmarkedMcpTool('run_playtest mode=play', { code: 127, output: 'sh: 1: run_playtest: not found\n' }), 'run_playtest');
+  assert.equal(unmarkedMcpTool('run_playtest mode=play', { code: 1, output: 'sh: run_playtest: command not found\n' }), null);
+  assert.equal(unmarkedMcpTool('playtest mode=play', { code: 127, output: 'sh: playtest: command not found\n' }), null);
+  assert.equal(unmarkedMcpTool('run_ok && missing_tool', { code: 127, output: 'sh: missing_tool: command not found\n' }), null);
+});
+
+test('an mcp:<tool> Proof is never spawned and prints a SESSION line, not PASS', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): play\nDepends on: none | Files: `src/app.js` | Data: none | Proof: mcp:run_playtest mode=play; touch spawned.txt\n',
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trim().split('\n');
+  assert.equal(lines[0], 'SESSION Task 1 (Proof: mcp:run_playtest mode=play; touch spawned.txt; run it as an MCP tool call)');
+  assert.ok(!lines.includes('PASS Task 1'));
+  await assert.rejects(readFile(path.join(root, 'spawned.txt')), { code: 'ENOENT' });
+});
+
+test('an unmarked Proof naming a missing snake_case command fails with the mcp:<tool> hint', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): play\nDepends on: none | Files: `src/app.js` | Data: none | Proof: run_playtest_exo_missing mode=play\n',
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 1);
+  assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1 (exit 127, run_playtest_exo_missing looks like an MCP tool; write the Proof as mcp:run_playtest_exo_missing)');
 });
 
 test('a failing check-command prints FAIL success-criterion', async () => {
