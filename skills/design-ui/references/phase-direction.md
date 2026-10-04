@@ -28,15 +28,16 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 ## Rung 3
 
-Rung 3 of the skill's `## Route`, reached only when the user asks to see or choose between looks, runs contract, variant, selection.
+Rung 3 of the skill's `## Route`, reached only when the user asks to see or choose between looks, a Directions answer of 2 or 3 included, runs contract, variant, selection.
 
 - Write the space, the contracts, and the labels as JSON directly and never through a generator or fill script, because the script costs the minutes it was meant to save.
 - Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
-- Deal three contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants 3 > "$RUN/contracts.json"`, where the seed is one token this session picks.
+- Deal the contracts over the space's axes with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants <n> > "$RUN/contracts.json"`, where the seed is one token this session picks.
+- `<n>` is the Directions answer of the `intake` reference's form, else 3.
 - Fill only the contract this session recommends and write it as a one-contract container to `$RUN/recommended.json`, because neither option needs a second filled contract and a filled contract nobody sees is spent output.
 - `--check` the recommended contract to status ok, then write the tab's copy as `$RUN/sketch-labels.json`.
-- Ask nothing between `--check` and the first sketch, because the scope form already carried the offer.
-- Make the offer `## Asking` of the `intake` reference defines.
+- Ask nothing between `--check` and the first sketch, because the scope form already carried the offer or the Directions question.
+- Make the offer `## Asking` of the `intake` reference defines, except after a Directions answer of 2 or 3, which takes the preview option at once.
 - Select autonomously only where the user delegated the choice, took the second option, the sketch tab or the picker exited 3, or a read-only planning mode allows no picker; record the rationale in the contract.
 - On the second option, freeze `$RUN/recommended.json` with `--select --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
 - Every `--check` and `--select` call passes that `--space` file.

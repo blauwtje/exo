@@ -1,0 +1,1 @@
+You are in an empty directory. The user typed only: "A job board screen for our bike repair shop." Start the design-ui run; Phase 1 finds an empty folder. Before writing any file, write the exact AskUserQuestion call you send the user now, as JSON: every question with its header, each option's label and description, and multiSelect.

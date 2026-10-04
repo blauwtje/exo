@@ -1,0 +1,3 @@
+We are in an exo:design-ui run for the job board screen of Spaak, a bike repair shop; the run directory is RUN=/tmp/exo-pressure/design-ui/run and Phase 1 is done. The user answered the intake form: Users "Mechanic at the bench: tablet, all day, picks the next job and marks it done"; Scope: every group; Mood: crisp and businesslike; Directions first?: 3.
+
+Read whatever skill references you need, but run no script and write no file yet. Then list, in order, every tool call you make from here until the user can click something: the tool, the exact command or file path, and a one-line outline of each file written.

@@ -1,11 +1,12 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in four groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in five groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
 - `a-orders-overview.txt` covers the full-scope completion, the mood and the motion bar. It needs no fixture.
 - `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` cover the build stack: the default stack in an empty folder, an existing project's stack, and where Magic UI effects belong.
+- `d-users-form.txt` and `e-directions-answer.txt` cover the intake form's Users and Directions questions. They need no fixture and run in the `sonnet:high` cell with `--main-dir` against main.
 
 ## One-pass default
 
@@ -49,3 +50,10 @@ The cases cover the `direction-preview` reference: `a` looks a key list up, `b` 
 - `c-side-by-side.txt`: the reply tells the user the picker shows one full-size comp per tab, switched with the arrow keys or a seat's letter, and the command adds no invented flag (`--grid`, `--side-by-side`, a zoom) and no hand-built page of scaled comps.
 
 Pre-edit baseline on 2026-10-03 (`--main-dir` on `main` at 0.78.1, one run): `a` wrote `zoom` and `close`; `b` planned a render check at 390 only, read no capture, and dispatched one `build-ui` agent per comp; `c` promised a side-by-side grid, which the pre-edit picker had.
+
+## Users and directions
+
+- `d-users-form.txt`: the form's first question is a single-select Users question of three or four options, each naming a role, a device, how often and a main task. Scope and Mood follow, then a single-select Directions question with the options 1, 2 and 3. Four questions at most.
+- `e-directions-answer.txt`: the calls deal three contracts with `direction.mjs --plan --variants 3`, start the sketch tab's `--serve`, write one `$RUN/sketches/001-direction.html` with three options, and start `--wait`. The user line is written to `$RUN/user.md`. A preview offer or any other question before the sketch, full comps or `pick.mjs` fails it.
+
+Pre-edit baseline on 2026-10-04 (`--main-dir` on `main` at 0.80.5, one run): `d` sent only Scope and Mood; `e` planned three sketches as the with arm did but recorded no user, and a stricter earlier wording that allowed no reads planned three full comps for `pick.mjs`.

@@ -2,6 +2,14 @@
 
 Settle what the run needs before it builds: the questions worth asking, where the run writes, and which reference the complaint's own words point at. The enemy is a run that starts building on a fact nobody established. The overcorrection is an interview that asks for what the surface already shows.
 
+## Contents
+
+- [Asking](#asking)
+- [The run directory](#the-run-directory)
+- [Symptoms](#symptoms)
+- [Settled identity](#settled-identity)
+- [Judgment](#judgment)
+
 ## Asking
 
 - A visual choice is never a terminal question, except the Mood question and option B, because a named color is not the seen color.
@@ -13,20 +21,31 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Beyond the form and the offer, ask only while an open fact blocks a decision the brief, repository and Phase 1 cannot settle.
 - Name that decision inside the question.
 - Rungs 3, 5 and 6 of `## Route` show the completed scope as one form, after Phase 1 and before Direction.
-- The form holds a multi-select Scope question and a single-select Mood question, sent together.
+- The form sends, in this order, a single-select Users question, a multi-select Scope question, a single-select Mood question and a single-select Directions question.
+- The Users question comes first, because the user the screen serves decides its layout, density and main action.
+- Each Users option is one user Phase 1 evidence suggests, three or four, naming role, device, how often and main task.
+- Put the best-evidenced user first, as option A, and recommend it.
 - Each Scope option is one completed scope group from the inventory, at most four.
 - Reachable states and an app screen's fixed scope groups are never a Scope option, because every build carries them.
 - A Scope answer that ticks every option, ticks none, or says decide yourself builds every group.
 - A Scope answer that ticks some options builds the ticked groups plus every fixed group.
 - The Mood options are crisp and businesslike, friendly and playful, calm and luxurious, bold and expressive.
 - Put the mood that best fits the product first, as option A, and recommend it.
-- Rung 5 drops the Mood question, because its settled identity already fixes the look.
+- The Directions question, "Directions first?" in the conversation's language, has the options 1, 2 and 3, in that order.
+- Directions 1 keeps the run on its rung: one direction, no sketch.
+- Directions 2 or 3 asks to choose: rung 3 of `## Route` follows with that many directions, taking option A without the offer.
+- Those directions reach the user as one sketch in the sketch tab, never as full comps, because a click needs a look, not a page.
+- Rung 5 drops the Mood and Directions questions, because its settled identity already fixes the look.
+- An ask that names its user drops the Users question.
 - An ask that names a mood drops the Mood question.
-- An ask that says decide yourself drops the Scope and Mood questions.
+- An ask that says decide yourself drops the whole form.
 - Send no form when no answer can arrive, as in a headless run.
 - Without a Scope answer, build every group, named in one line before Direction.
 - Without a Mood answer off rung 5, take the mood the ask names, else the best-fitting mood, named in one line before Direction.
-- Rung 3 of `## Route`, a user asking to see or choose between looks, gets the preview offer once, as the form's last question, so the user answers one form; no other rung offers it.
+- Without a Users answer, or on decide yourself, take the user the ask names, else option A's user.
+- Without a Directions answer, or on decide yourself, build one direction.
+- Before Direction, state the user in one line, role, device, how often and main task, and write that line to `$RUN/user.md`.
+- Rung 3 of `## Route`, a user asking to see or choose between looks, gets the preview offer once, as the form's last question in place of the Directions question; no other rung offers it.
 - The offer follows the question shape, and the user answers with the letter:
 
   ```text
@@ -56,7 +75,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 
 - Every run past a tweak, the one pass included, writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below, created before Phase 1 and named once in the transcript.
 - Redirect every `node scripts/*.mjs` call's stdout into `$RUN` and read the fields the session needs with `jq` or `sed -n`, never the whole file, because a JSON line that reaches the transcript is carried into every turn after it.
-- `$RUN` holds `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md.
+- `$RUN` holds user.md, `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `sketches/`, `variant-<n>/`, `renders/`, and the run reports inventory.md, foundation.md, `build-<surface>.md` and faults.md.
 - `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` is what writes it.
 - Agents receive `$RUN` and exchange files under it; they return reports, never file contents.
 
