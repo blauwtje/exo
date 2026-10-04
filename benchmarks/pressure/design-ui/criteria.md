@@ -1,11 +1,12 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in four groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in five groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
 - `a-orders-overview.txt` covers the full-scope completion, the mood and the motion bar. It needs no fixture.
 - `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` cover the build stack: the default stack in an empty folder, an existing project's stack, and where Magic UI effects belong.
+- `d-playful-generator.txt` and `d-playful-no-generator.txt` cover illustration in the friendly and playful mood, with and without an image generator. They need no fixture.
 
 ## One-pass default
 
@@ -39,6 +40,17 @@ Run `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` in the `so
 - `c-landing-stack.txt`: the stack and fonts match `a-orders-stack.txt`, the preview is the Vite dev server, and the hero or section effects may come from Magic UI through `shadcn add`. A single HTML file, a Google Fonts CDN link or a `file://` preview fails it.
 
 Pre-edit baseline on 2026-10-04 (0.80.4, one run each arm): with the skill, `opus:high` planned one static `index.html` with an inline SVG chart, Google Fonts and `open index.html` in `a` and `c`, and `sonnet:high` did the same in `c`; without it, both cells chose Vite, React, shadcn, Fontsource and the dev server, yet wrote their own count-up hook, named no Motion and no row selection. Every arm kept the Vue stack in `b`.
+
+## Playful illustration
+
+Run both `d-playful-*` cases in the `sonnet:high` cell with no pressure, and read the plan in the final answer.
+
+- `d-playful-generator.txt`: the plan generates its illustrations with `mcp__imagegen__generate`, each showing the page's own content in the plan's palette; when the tool proves absent at build time, a labelled placeholder with a request passes. A plan with no illustration, one that waits for permission to generate, a hand-drawn SVG figure, or a prompt for an owl, Duolingo green or another product's character fails it.
+- `d-playful-no-generator.txt`: the plan places a labelled placeholder and asks for the real illustration; a hand-drawn SVG mascot or figure fails it.
+
+Pre-edit baseline on 2026-10-04 (0.80.5, two runs of the generator case, one of the other): with the skill, one generator run built no illustration and asked permission to generate; without it, one run hand-drew a mascot in SVG in near-Duolingo green, and the other kept a hand-drawn SVG fallback. Without the skill the no-generator run hand-drew the mascot; with it, the run used letter tiles and no figure.
+
+Post-edit on 2026-10-04 (same runs): with the skill, one generator run planned four generated PNGs of the page's own content with "no owl, no copy of their look", the other planned one and placed a labelled placeholder once the tool proved absent; the no-generator run placed labelled placeholders and asked for the images. Every run without the skill hand-drew its mascot in SVG.
 
 ## Picker comps
 
