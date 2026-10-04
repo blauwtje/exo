@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- design-ui logs each project's display font, body font and accent in one machine-wide file and warns on the color and font line, in the reply's language, when another project already used a pick; it never blocks or asks.
+- design-ui saves the display font, body font and accent in `docs/design/DESIGN.md` beside the reference product and reuses them on the next run.
+- `benchmarks/design-run.mjs` reports a design-ui run's final context size, and `benchmarks/design-ui-tests.md` records the three fixed test prompts and their checklist.
+
+### Changed
+
+- design-ui builds the one pass in the main session after reading `build-pass.md` whole; `exo:build-ui` no longer takes a page scope.
+- design-ui's plan gives each font and the accent one clause on why it fits this product and this user, and caps each ASCII layout at 8 lines per width.
+
+### Fixed
+
+- design-ui sets amounts in the page's body or display family with `tabular-nums`, never a monospace family.
+- design-ui numbers each pass's report and captures, so no pass overwrites the one before it.
+
 ## 0.85.2 - 2026-10-05
 
 ### Fixed
