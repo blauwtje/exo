@@ -11,8 +11,8 @@ import { fixture } from './harness.mjs';
 
 const DESIGN_RUN = fileURLToPath(new URL('../benchmarks/design-run.mjs', import.meta.url));
 
-function assistant(id, timestamp, output) {
-  return { type: 'assistant', uuid: `u-${id}`, timestamp, message: { id, model: 'claude-opus-5', role: 'assistant', content: [{ type: 'text', text: 'ok' }], usage: { input_tokens: 10, output_tokens: output } } };
+function assistant(id, timestamp, output, extraUsage = {}) {
+  return { type: 'assistant', uuid: `u-${id}`, timestamp, message: { id, model: 'claude-opus-5', role: 'assistant', content: [{ type: 'text', text: 'ok' }], usage: { input_tokens: 10, output_tokens: output, ...extraUsage } } };
 }
 
 async function writeLines(file, entries) {
@@ -66,11 +66,30 @@ test('design-run counts only the responses inside the run window and reports the
   assert.equal(report.counts.output, 70);
   assert.equal(report.excluded.responses, 2);
   assert.equal(report.excluded.counts.output, 70);
+  assert.equal(report.finalContext, 10);
   assert.deepEqual(report.marks, [
     { checkpoint: 'context.json', atMs: 0 },
     { checkpoint: 'renders/baseline-', atMs: 90_000 },
     { checkpoint: 'faults.md', atMs: 210_000 }
   ]);
+});
+
+test('design-run reports finalContext from the last in-window main-session response, not a later delegate', async () => {
+  const root = await fixture();
+  const transcript = path.join(root, 'session.jsonl');
+  await writeLines(transcript, [
+    assistant('msg_early', '2026-09-11T10:01:00.000Z', 5, { cache_read_input_tokens: 100 }),
+    assistant('msg_last', '2026-09-11T10:02:00.000Z', 7, { cache_read_input_tokens: 4000, cache_creation_input_tokens: 500 }),
+    assistant('msg_after', '2026-09-11T10:30:00.000Z', 9, { cache_read_input_tokens: 90000 })
+  ]);
+  await writeLines(path.join(root, 'session', 'subagents', 'agent-a1.jsonl'), [
+    assistant('msg_delegate', '2026-09-11T10:03:00.000Z', 40, { cache_read_input_tokens: 70000 })
+  ]);
+  const run = await writeRun(root);
+
+  const result = await runDesignRun(['--transcript', transcript, '--run', run]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).finalContext, 4510);
 });
 
 test('design-run fails when no response falls inside the run window', async () => {

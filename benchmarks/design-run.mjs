@@ -6,7 +6,9 @@
 // count only the assistant responses timestamped inside that window, in the
 // session transcript and its delegate transcripts; every other response is
 // reported as excluded, never added, so work before or after the run cannot
-// inflate its figures. The closing reply after the last checkpoint falls
+// inflate its figures. finalContext is the prompt size of the last in-window
+// response of the main session alone, input plus both cache counts, never
+// output or a delegate's. The closing reply after the last checkpoint falls
 // outside the window: that is the ceiling of a window read from files. The
 // transcript format is internal to the harness; a line that does not parse is
 // skipped.
@@ -62,6 +64,7 @@ function transcriptFiles(transcript) {
 function responses(transcript) {
   const byId = new Map();
   for (const file of transcriptFiles(transcript)) {
+    const isMain = file === transcript;
     for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
       let entry;
       try {
@@ -72,7 +75,7 @@ function responses(transcript) {
       const message = entry?.message;
       if (entry?.type !== 'assistant' || !message?.id || !message.usage) continue;
       if (typeof entry.timestamp !== 'string') continue;
-      byId.set(message.id, { atMs: Date.parse(entry.timestamp), counts: usageCounts(message.usage) });
+      byId.set(message.id, { atMs: Date.parse(entry.timestamp), counts: usageCounts(message.usage), isMain });
     }
   }
   return [...byId.values()];
@@ -110,13 +113,20 @@ function main() {
   const { startMs, endMs } = runWindow(runDirectory);
   const inside = [];
   const outside = [];
+  let finalMain = null;
   for (const response of responses(transcript)) {
-    if (response.atMs >= startMs && response.atMs <= endMs) inside.push(response.counts);
-    else outside.push(response.counts);
+    if (response.atMs < startMs || response.atMs > endMs) {
+      outside.push(response.counts);
+      continue;
+    }
+    inside.push(response.counts);
+    if (response.isMain && (finalMain === null || response.atMs >= finalMain.atMs)) finalMain = response;
   }
   if (inside.length === 0) {
     throw new Error(`no response in ${transcript} falls inside the run window of ${runDirectory}; pass the session that wrote that run`);
   }
+  const { input, cacheRead, cache5m, cache1h } = finalMain?.counts ?? {};
+  const finalContext = finalMain ? input + cacheRead + cache5m + cache1h : null;
   const marks = [];
   for (const prefix of CHECKPOINTS) {
     const time = checkpointTime(runDirectory, prefix);
@@ -129,6 +139,7 @@ function main() {
     wallMs: Math.round(endMs - startMs),
     responses: inside.length,
     counts: sumCounts(inside),
+    finalContext,
     excluded: { responses: outside.length, counts: sumCounts(outside) },
     marks
   };
