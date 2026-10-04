@@ -5,7 +5,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 ## Every rung
 
 - Decide the direction in this session, never inside a builder delegate, because this session holds the contract.
-- Change no production code before a selection exists.
+- Change no production code before a selection exists; the direction comps and their entry are not production code until the click promotes one.
 - Outside an existing brand or design system, derive one bold direction from the chosen mood before Build, because a neutral middle is not a direction.
 - The direction settles composition and visual material together: the contract names it and every region carries it.
 - The plan names the user's three most important tasks, most frequent first, because a screen ordered by its data serves no task.
@@ -57,13 +57,16 @@ The preview option, a Directions answer of 2 or 3, and a request to see directio
 
 - Fill every dealt contract and write them as one container to `$RUN/finalists.json`.
 - Next, validate the set with `--check` to status ok before building any variant, then write `$RUN/labels.json`.
-- Send one message holding a Write for every comp's source, because a message per comp costs one round trip each.
-- Build each comp in this session from its contract, as `## What the comp owes the screen` of `direction-preview` says, because a delegate per comp costs its brief and its report.
-- Run `pick.mjs --check`, read every capture and `check-ui.json`, and repair before the picker opens, as `## Before the picker` of `direction-preview` says: the chooser is never the first to see a broken comp.
-- Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json"`, adding `--frame 390x844` only for a phone-first surface, since each comp otherwise fills the window width.
+- For a stack comp, write the direction entry and start the dev server before any builder, as `## Stack comps` of `direction-preview` says, so every builder renders through one URL.
+- Dispatch one `exo:build-ui` per contract with `SCOPE: comp:<n>`, all in one message, because comps built in this session fill its context before Build starts.
+- Hand each builder `RUN`, `REPO`, `SKILL`, the `FILES` ranges holding the surface's content, and as `CHECK` its folder and its `pick.mjs --check --variant <n>` command.
+- Read only each builder's two-line return and its `$RUN/comp-<n>.md`, never a comp's source or capture, because the builder checked and viewed them.
+- A report with an open fault sends that comp back to its builder once before the picker opens, because the chooser is never the first to see a broken comp.
+- Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json"` plus the builders' `--url` and `--source`, adding `--frame 390x844` only for a phone-first surface, since each comp otherwise fills the window width.
 - The picker prints the chosen index when the click arrives, or exits 3 and leaves the `--recommend` contract as the selection.
 - A `steer` in the answer is a revision: change the comps it names, check them again, and start the picker once more.
 - Freeze the selection with `--select --contracts "$RUN/finalists.json" --index <n> --space "$RUN/space.json" > "$RUN/contract-selected.json"` for Build, the critique, and QA.
+- Then promote the chosen comp as `## After the click` of `direction-preview` says, because Build starts from the screen the chooser picked.
 
 ## A planning turn
 

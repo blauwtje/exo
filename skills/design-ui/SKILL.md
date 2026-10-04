@@ -42,7 +42,7 @@ The default for every rung but 1 and 4; it builds in this session. The reference
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`, once.
 2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
-4. **Build.** Read only `references/build-pass.md`, whole and once, then build the whole page here and run its proof.
+4. **Build.** Read only `references/build-pass.md`, whole and once, then build the whole page here, around the chosen comp on rung 3, and run its proof.
 5. **Capture.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
 6. **Look.** Read `$RUN/renders/post-build-390x844-fullpage.png` and `$RUN/renders/post-build-1440x900-fullpage.png`, and list each fault against the plan, the request and `references/build-pass.md`.
 7. **Fix once.** Repair every listed fault in one pass, then report without a second capture; a fault the pass leaves open is named in the report.
@@ -67,7 +67,7 @@ Load a reference only at its row's phase and predicate, and only the sections th
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the opt-in full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | One pass or sketch, Phase 3, or rung 3 before the first comp if earlier: whole, once. |
+| `references/build-pass.md` | One pass or sketch, Phase 3: whole, once. |
 | `references/stack.md` | Phase 2: `## Which stack`, and the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |

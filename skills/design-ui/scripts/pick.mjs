@@ -14,8 +14,10 @@
 //                         [--recommend <n>] [--recommend-note <one sentence>]
 //                         [--timeout <seconds, default 600>] [--no-open]
 //                         [--unchecked]
+//                         [--url <template> --source <template>]
 //   node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json>
-//                         [--labels <labels.json>]
+//                         [--labels <labels.json>] [--variant <n>]
+//                         [--url <template> --source <template>]
 //
 // --contracts decides the seats: contracts[i] is variant i, and --comps holds
 // one directory per variant, named variant-0, variant-1, and so on, each
@@ -37,7 +39,16 @@
 // exit 2 names a missing comp, exit 3 means no browser engine. The picker
 // refuses (exit 2) a variant whose captures at both widths are not at least as
 // new as every file of that comp, so a fix after the check needs a new check.
-// --unchecked skips that gate, only for when --check exited 3.
+// --unchecked skips that gate, only for when --check exited 3. --variant <n>
+// checks that one comp alone, so a builder per comp checks its own.
+//
+// --url serves the comps from the project's own dev server instead: each '{n}'
+// in the template becomes the variant index, so --url
+// 'http://localhost:5173/directions.html?direction={n}' loads variant 1 from
+// '?direction=1'. --source names each comp's source folder the same way, which
+// the static audit reads and the freshness gate dates; the captures still land
+// under --comps/variant-<n>/checked/. A seat is ready once its source folder
+// exists and its URL answers.
 //
 // A comp file opening with <!doctype or <html is served as it stands. Anything
 // else is a fragment, and the server wraps it in the document shell, so a comp
@@ -73,6 +84,13 @@ const DEFAULT_TIMEOUT_SECONDS = 600;
 // No frame size by default: a comp fills the panel's width, because a whole
 // page shown at 100% is read as the page it will be.
 const DEFAULT_FRAME = null;
+
+// A module script, and every font and stylesheet a crossorigin attribute
+// marks, is fetched in CORS mode. A frame sandboxed without allow-same-origin
+// sends Origin 'null', so a comp built by Vite or any bundler stays white
+// unless its server answers that origin; a served comp's assets do, and a
+// dev-server comp runs under its own origin instead (see the panel frame).
+const OPAQUE_ORIGIN = 'null';
 
 // The widths a comp is checked at before the picker serves it, mobile first.
 const CHECK_VIEWPORTS = DEFAULT_VIEWPORTS.map(parseViewport);
@@ -187,6 +205,32 @@ function requireFrame(text) {
   } catch {
     throw new UsageError(`--frame must be <width>x<height>, received '${text}'`);
   }
+}
+
+// The marker a --url or --source template replaces with the variant index.
+const INDEX_MARKER = '{n}';
+
+function requireUrlTemplate(text) {
+  if (text === undefined) return null;
+  let parsed;
+  try {
+    parsed = new URL(text.replaceAll(INDEX_MARKER, '0'));
+  } catch {
+    throw new UsageError(`--url must be an http(s) URL, received '${text}'`);
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new UsageError(`--url must be an http(s) URL, received '${text}'`);
+  if (!text.includes(INDEX_MARKER)) throw new UsageError(`--url needs ${INDEX_MARKER} where the variant index goes, or every tab shows one comp`);
+  return text;
+}
+
+function requireSourceTemplate(text, urlTemplate) {
+  if (urlTemplate === null) {
+    if (text !== undefined) throw new UsageError('--source belongs to --url; a served comp is its own source');
+    return null;
+  }
+  if (text === undefined) throw new UsageError('--url needs --source, the folder holding each comp\'s source');
+  if (!text.includes(INDEX_MARKER)) throw new UsageError(`--source needs ${INDEX_MARKER} where the variant index goes`);
+  return text;
 }
 
 // The recommended variant is dealt the first seat, so the badge on the leading
@@ -337,7 +381,7 @@ function readSignature(contract, index) {
 /** One seat per contract. Every seat starts on the shared frame, null for full
  *  width; main swaps in each comp's own meta.json width under --intrinsic once
  *  every comp exists. */
-export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME } = {}) {
+export async function loadVariants(compsDirectory, contractsFile, { frame = DEFAULT_FRAME, url = null, source = null } = {}) {
   if (!compsDirectory) throw new UsageError('--comps is required');
   let root;
   try {
@@ -362,6 +406,8 @@ export async function loadVariants(compsDirectory, contractsFile, { frame = DEFA
       directory: path.join(root, label),
       ready: false,
       frame,
+      url: url?.replaceAll(INDEX_MARKER, String(index)) ?? null,
+      source: source ? path.resolve(source.replaceAll(INDEX_MARKER, String(index))) : null,
       contract,
       signature: readSignature(contract, index)
     });
@@ -371,9 +417,16 @@ export async function loadVariants(compsDirectory, contractsFile, { frame = DEFA
 
 /** True once the seat's own index.html exists. The realpath is taken here and
  *  not at load time, because the directory a comp lands in did not exist when
- *  the run started and resolveAsset compares real paths. */
+ *  the run started and resolveAsset compares real paths. A dev-server seat is
+ *  ready once its source folder exists and its URL answers. */
 async function seatReady(variant) {
   if (variant.ready) return true;
+  if (variant.url) {
+    if (!(await fs.stat(variant.source).catch(() => null))?.isDirectory()) return false;
+    const answered = await fetch(variant.url).then((response) => response.ok, () => false);
+    variant.ready = answered;
+    return answered;
+  }
   if (!(await fs.stat(path.join(variant.directory, 'index.html')).catch(() => null))?.isFile()) return false;
   try {
     variant.directory = realpathSync(variant.directory);
@@ -387,7 +440,7 @@ async function seatReady(variant) {
 // How often the comps directory is checked while the session is still writing.
 const COMP_POLL_MS = 250;
 
-/** Resolves once every seat's index.html exists. The tab opens only after
+/** Resolves once every seat's comp exists. The tab opens only after
  *  this, because a card that fills in later makes the chooser wait twice. */
 async function waitForEveryComp(variants, deadline, timeoutSeconds) {
   for (;;) {
@@ -473,7 +526,13 @@ function page(variants, key, { words, recommended, recommendedNote }) {
   const panel = (variant, seat) => {
     const title = titleOf(variant, seat);
     const width = variant.frame?.width ? ` style="inline-size:${variant.frame.width}px"` : '';
-    return `<section class="panel" role="tabpanel" id="panel-${variant.index}" aria-labelledby="tab-${variant.index}" data-index="${variant.index}"${seat === 0 ? '' : ' hidden'}><iframe sandbox="allow-scripts" loading="eager" title="${escapeHtml(title)}" src="/k/${key}/v/${variant.index}/index.html"${width}></iframe></section>`;
+    // A dev-server comp keeps its own origin, because its server answers module
+    // scripts for that origin alone. That origin is another port, so the frame
+    // still cannot reach this page or post an answer. A served comp shares this
+    // page's origin and must stay opaque.
+    const sandbox = variant.url ? 'allow-scripts allow-same-origin' : 'allow-scripts';
+    const source = variant.url ?? `/k/${key}/v/${variant.index}/index.html`;
+    return `<section class="panel" role="tabpanel" id="panel-${variant.index}" aria-labelledby="tab-${variant.index}" data-index="${variant.index}"${seat === 0 ? '' : ' hidden'}><iframe sandbox="${sandbox}" loading="eager" title="${escapeHtml(title)}" src="${escapeHtml(source)}"${width}></iframe></section>`;
   };
 
   // The comps load their own faces inside their frames, which the picker page
@@ -815,7 +874,9 @@ async function startServer(variants, key, presentation, onAnswer) {
       if (!file) return send(response, 404, null, '');
       const type = MEDIA_TYPES.get(path.extname(file).toLowerCase()) ?? 'application/octet-stream';
       if (!type.startsWith('text/html')) {
-        response.writeHead(200, { 'content-type': type });
+        const headers = { 'content-type': type };
+        if (request.headers.origin === OPAQUE_ORIGIN) headers['access-control-allow-origin'] = OPAQUE_ORIGIN;
+        response.writeHead(200, headers);
         return createReadStream(file).pipe(response);
       }
       const markup = await fs.readFile(file, 'utf8');
@@ -891,7 +952,7 @@ async function newestCompTime(directory) {
  *  least as new as the comp itself, so the chooser sees only checked comps. */
 async function requireFreshChecks(variants) {
   for (const variant of variants) {
-    const newest = await newestCompTime(variant.directory);
+    const newest = await newestCompTime(variant.source ?? variant.directory);
     for (const { width, height } of CHECK_VIEWPORTS) {
       const names = [`comp-${width}x${height}.png`, `comp-${width}x${height}-fullpage.png`];
       const times = await Promise.all(names.map((name) =>
@@ -907,16 +968,16 @@ async function requireFreshChecks(variants) {
  *  per variant. A missing comp is a usage error; no engine is exit 3. */
 async function check(variants, words) {
   for (const variant of variants) {
-    if (!(await seatReady(variant))) {
-      throw new UsageError(`${variant.label}/index.html is missing; write every comp before --check`);
-    }
+    if (await seatReady(variant)) continue;
+    if (variant.url) throw new UsageError(`${variant.label}: ${variant.source} is missing or ${variant.url} does not answer; start the dev server before --check`);
+    throw new UsageError(`${variant.label}/index.html is missing; write every comp before --check`);
   }
   const key = randomBytes(8).toString('hex');
   const { origin, close } = await startServer(variants, key, { words }, null);
   let fullPage = true;
   try {
     for (const variant of variants) {
-      const url = `${origin}/k/${key}/v/${variant.index}/index.html`;
+      const url = variant.url ?? `${origin}/k/${key}/v/${variant.index}/index.html`;
       const outputDirectory = path.join(variant.directory, CHECKED_DIRECTORY);
       const shoot = (wholePage) => capture({
         url, viewports: CHECK_VIEWPORTS, fullPage: wholePage, colorScheme: 'no-preference',
@@ -932,7 +993,7 @@ async function check(variants, words) {
         ({ records } = await shoot(false));
       }
 
-      const staticFindings = await staticAudit(variant.directory);
+      const staticFindings = await staticAudit(variant.source ?? variant.directory);
       const rendered = await renderedAudit({ url, viewports: CHECK_VIEWPORTS, cwd: process.cwd() });
       const findings = [
         ...staticFindings,
@@ -952,21 +1013,35 @@ async function check(variants, words) {
   }
 }
 
+/** The one variant --variant names, or every variant without it. */
+function requireVariant(text, variants) {
+  if (text === undefined) return variants;
+  const index = Number(text);
+  if (!Number.isInteger(index) || !variants[index]) {
+    throw new UsageError(`--variant must be a variant index from 0 to ${variants.length - 1}, received '${text}'`);
+  }
+  return [variants[index]];
+}
+
 async function main(argv) {
   const flags = parseFlags(argv, {
     comps: 'value', contracts: 'value', frame: 'value', intrinsic: 'boolean',
     labels: 'value', recommend: 'value', 'recommend-note': 'value',
-    timeout: 'value', 'no-open': 'boolean', check: 'boolean', unchecked: 'boolean'
+    timeout: 'value', 'no-open': 'boolean', check: 'boolean', unchecked: 'boolean',
+    url: 'value', source: 'value', variant: 'value'
   });
+  const urlTemplate = requireUrlTemplate(flags.url);
+  const source = requireSourceTemplate(flags.source, urlTemplate);
   if (flags.check) {
-    const variants = await loadVariants(flags.comps, flags.contracts);
-    return check(variants, await readLabels(flags.labels));
+    const variants = await loadVariants(flags.comps, flags.contracts, { url: urlTemplate, source });
+    return check(requireVariant(flags.variant, variants), await readLabels(flags.labels));
   }
+  if (flags.variant !== undefined) throw new UsageError('--variant belongs to --check; the picker shows every comp');
   const timeoutSeconds = requireTimeout(flags.timeout);
   const words = await readLabels(flags.labels);
   const frame = requireFrame(flags.frame);
   const intrinsic = Boolean(flags.intrinsic);
-  const variants = await loadVariants(flags.comps, flags.contracts, { frame });
+  const variants = await loadVariants(flags.comps, flags.contracts, { frame, url: urlTemplate, source });
   const recommended = requireRecommendation(flags.recommend, variants.length);
   const recommendedNote = requireRecommendationNote(flags['recommend-note'], recommended);
   const wantsBrowser = !flags['no-open'];

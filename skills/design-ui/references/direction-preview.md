@@ -4,9 +4,20 @@ Put the built directions in front of the person deciding as real comps at full s
 
 This file owns the screen that asks for a direction; the `visual-direction` reference owns what a direction is.
 
+## Contents
+
+- [Before the picker](#before-the-picker)
+- [What the comp owes the screen](#what-the-comp-owes-the-screen)
+- [Stack comps](#stack-comps)
+- [After the click](#after-the-click)
+- [The command](#the-command)
+- [What the chooser reads](#what-the-chooser-reads)
+- [The signature](#the-signature)
+- [Judgment](#judgment)
+
 ## Before the picker
 
-- Write every comp in one message, then run `pick.mjs --check` before starting the picker, because the chooser must never be the first to see a broken comp.
+- Each comp's builder runs `pick.mjs --check --variant <n>` on its own comp before the picker starts, because the chooser must never be the first to see a broken comp.
 - `pick.mjs --check` renders each comp full page at 390 and 1440 wide through the capture and check-ui scripts, and writes the PNGs and a `check-ui.json` under each variant's `checked/`.
 - Read every capture at both widths and every `check-ui.json` with the Read tool; a capture nobody viewed checks nothing.
 - Fix each fault they show: horizontal overflow, a section cut off or missing, overlapping text, unreadable contrast, an empty band, a broken image or font.
@@ -29,8 +40,6 @@ Each comp is the real surface in one direction, not a sketch: real content, buil
 - When the user asks to see directions whole, a comp holds every section of the real page in the page's order.
 - Build each comp with the project's stack as the `stack` reference picks it: its framework, styling mechanism, component layer and font packages.
 - A project with no pages yet takes that reference's scaffold before the first comp, because the scaffold fixes no look.
-- Compile a stack comp with the project's own build tool into `$RUN/variant-<n>/` with relative asset paths, so the picker serves its `index.html` untouched.
-- Keep a stack comp's source in a scratch folder listed in `.git/info/exclude`, and delete it after the selection, because no production code changes before one.
 - A project whose pages are plain HTML gets a plain HTML comp: a fragment with its own markup and `<style>`, and no doctype, `<head>`, viewport tag or reset.
 - The picker injects a fragment's document parts and nothing else, so the ground, the type, the palette and the one technique stay inside the comp.
 - Load every face the direction names from its real font files, never a system fallback or a monospace stand-in, because the face is half the direction.
@@ -42,17 +51,36 @@ Each comp is the real surface in one direction, not a sketch: real content, buil
 - Navigation, a working tab, filter, form, or toggle, or any state that alters what the page shows, is a build, not a comp.
 - The exception is the contract's own technique, a canvas or generative motion, which runs because it is the direction.
 
+## Stack comps
+
+- A stack comp runs on the project's own dev server, not as a build under `$RUN`, so the chosen comp is code Build keeps.
+- Before the builders start, write a direction entry beside the app's own: a page that mounts the folder `src/directions/<n>/` its `?direction=<n>` names.
+- That entry leaves the app's own entry and routes untouched, so the app runs unchanged while the directions are compared.
+- In a Vite project the entry is `directions.html` at the project root, loading a `src/directions/main.tsx` that mounts the `import.meta.glob('./*/index.tsx')` match the query names; Vite serves it in dev with no config.
+- Start the dev server under the Bash tool's `run_in_background`, then pass `pick.mjs` `--url "http://localhost:<port>/directions.html?direction={n}"` and `--source "src/directions/{n}"`.
+
+## After the click
+
+- The chosen comp is Build's first screen: move its folder to where the surface lives and mount it from the app's own entry.
+- Then delete the other direction folders and the direction entry, because an unchosen comp is not production code.
+- Build adds the rest of the surface, its states and the motion bar around that screen and never rewrites it, because the chooser picked what they saw.
+- A plain HTML comp's markup and styles move into the page the same way.
+
 ## The command
 
 ```
-node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json>
+node scripts/pick.mjs --check --comps <dir> --contracts <contracts.json> [--variant <n>]
 node scripts/pick.mjs --comps <dir> --contracts <contracts.json> \
   --recommend <n> --recommend-note <one sentence> --labels <labels.json>
 ```
 
+Both take `--url <template> --source <template>` for stack comps.
+
 - `--comps` is the directory the seats live in: the contracts file decides how many, and `variant-<n>/index.html` plus its own assets fills seat `n`.
-- `--check` exits 2 naming a missing `index.html`, and prints one JSON line per variant: its captures, whether they are full page, its finding count, and its `check-ui.json` path.
-- The picker waits until every seat's file exists and each has a fresh capture at both widths, then prints the URL on stderr and opens the tab.
+- `{n}` in `--url` and `--source` becomes the variant index; the check renders the URL, audits and dates the source folder, and still writes under `--comps`.
+- `--variant <n>` checks that one comp alone.
+- `--check` exits 2 naming a missing `index.html` or a dev server that does not answer, and prints one JSON line per variant: its captures, whether they are full page, its finding count, and its `check-ui.json` path.
+- The picker waits until every seat's file exists or its URL answers, and each has a fresh capture at both widths, then prints the URL on stderr and opens the tab.
 - `--check` writes only under each variant's `checked/`, the picker writes nothing, and neither installs a dependency.
 - The page shows one tab per seat with its letter, title, signature and any recommended badge, and the open tab's description on one line under the strip.
 - The arrow keys or a seat's letter switch tabs, and the one Choose button answers for the open tab.

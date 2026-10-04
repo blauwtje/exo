@@ -1,6 +1,6 @@
 ---
 name: build-ui
-description: "Builds one design-ui scope: the foundation, a surface or a repair. Dispatched by design-ui per scope. Not for work outside a design-ui run."
+description: "Builds one design-ui scope: the foundation, a surface, a direction comp or a repair. Dispatched by design-ui per scope. Not for work outside a design-ui run."
 model: sonnet
 effort: high
 tools: Read, Edit, Write, Grep, Bash
@@ -10,7 +10,7 @@ omitClaudeMd: true
 
 Budget: you have 35 turns total; read your scope's list under `**Reads by scope.**` first, batching the reads, then write; write your report by your thirtieth turn.
 
-- Render only through the surface scope's capture step; the foundation and repair scopes render nothing.
+- Render only through the surface scope's capture step and the comp scope's check; the foundation and repair scopes render nothing.
 - Do not run a production build, a bundler, or a type check; the foundation scope alone runs the scaffold and `shadcn add` commands of `$SKILL/references/stack.md`.
 - Do not read a reference or a section your scope's list below does not name.
 
@@ -19,12 +19,13 @@ Budget: you have 35 turns total; read your scope's list under `**Reads by scope.
 Expect these inputs:
 
 - `RUN`: an absolute run directory.
-- `SCOPE`: `foundation`, a surface name, or `repair:<surface>`, which a later brief defines.
+- `SCOPE`: `foundation`, a surface name, `comp:<n>` for direction comp `<n>`, or `repair:<surface>`, which a later brief defines.
 - `FILES`: the repository paths with line ranges the session read for this scope.
 - `REPO`: the repository root.
 - `SKILL`: the absolute skill directory.
 - `REFERENCES`: the rows of the skill's reference table whose predicate this scope meets.
 - `URL`: the surface's `file://` or `http://` url, for a surface scope that renders.
+- `CHECK`: for a comp scope, the `pick.mjs --check --variant <n>` command for your comp, and the folder you write in.
 
 Read each `FILES` range with Read's offset and limit, which an Edit to that file also requires.
 
@@ -34,7 +35,7 @@ Read the `REFERENCES` files under `$SKILL/references/` and no other.
 
 Expect these files:
 
-- `$RUN/contract-selected.json`: the direction.
+- `$RUN/contract-selected.json`: the direction, except in a comp scope, whose direction is entry `<n>` of `$RUN/finalists.json`.
 - `$RUN/inventory.md`: the content inventory, and the brief names your slice.
 - `$RUN/foundation.md`: exists for a surface scope, and names the tokens file, base layer, and primitives you must use instead of re-deriving.
 
@@ -46,6 +47,7 @@ Read a section of a reference by finding its `## ` heading with `Grep -n`, then 
 
 - Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
 - Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
+- Comp: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps` sections.
 - Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name. No inventory, no foundation report and no reference unless the brief names one.
 
 **Foundation scope.**
@@ -73,6 +75,22 @@ Then capture, look and fix once:
 Without a `URL`, or when the capture exits non-zero, skip these steps and report the capture as blocked.
 
 Write `$RUN/build-<SCOPE>.md`: the paths written, the faults the capture showed with `fixed` or `open`, the inventory items covered and any missing, the floor checks you could confirm from source, and the primitives you needed but the foundation lacks. At most 20 lines.
+
+**Comp scope (`comp:<n>`).**
+
+Build direction `<n>` as its first screen with the `FILES` content, as `## What the comp owes the screen` of `direction-preview` says.
+
+Write only inside the folder `CHECK` names; the direction entry, the app's own files and every other direction's folder belong to the session.
+
+Then check and repair:
+
+1. Run the `CHECK` command.
+2. Read both captures it prints and its `check-ui.json`, and list each fault `## Before the picker` of `direction-preview` names.
+3. Repair every listed fault and return to step 1 until none is left; before a second repair, cut ambition as that reference's `## Judgment` says.
+
+When the check exits 2 or 3, report its message as blocked.
+
+Write `$RUN/comp-<n>.md`, at most 8 lines: the paths written, both capture paths, each fault with `fixed` or `open`, and one sentence on what sets this direction apart as built.
 
 **Repair scope (`repair:<surface>`).**
 

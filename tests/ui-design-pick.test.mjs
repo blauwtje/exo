@@ -1,13 +1,16 @@
 // Behavioral tests for pick.mjs: the usage contract, one answered round driven
 // by a fake browser (fetch against the printed URL), the refusal to serve
 // anything outside a variant directory, and the no-answer timeout.
-// No browser opens: every run passes --no-open.
+// No system browser opens: every run passes --no-open. The frame tests drive a
+// headless browser when one resolves and skip otherwise.
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import { openDrivenPage } from '../skills/design-ui/scripts/capture.mjs';
 import { fixture, jsonFixture, run, script, SCRIPTS } from './harness.mjs';
 
 const CAPTURES = ['comp-390x844-fullpage.png', 'comp-1440x900-fullpage.png'];
@@ -81,6 +84,56 @@ function startPick(args) {
     child.on('close', () => reject(new Error(`pick.mjs exited before printing a URL: ${stderr}`)));
   });
   return { url, exit, stderr: () => stderr };
+}
+
+/** The text each comp frame of a running picker shows in its #root, read the
+ *  way the chooser meets it, or null when no driven browser resolves here. */
+async function frameTexts(url) {
+  const { page, close } = await openDrivenPage({ url: 'about:blank', viewport: { width: 1200, height: 800 } });
+  if (!page) return null;
+  try {
+    await page.goto(url);
+    const frames = page.frames().filter((frame) => frame !== page.mainFrame());
+    return await Promise.all(frames.map(async (frame) => {
+      await frame.waitForFunction(() => document.getElementById('root')?.textContent, null, { timeout: 5000 }).catch(() => {});
+      return frame.evaluate(() => document.getElementById('root')?.textContent ?? '');
+    }));
+  } finally {
+    await close();
+  }
+}
+
+// What a bundler such as Vite emits: an empty root filled by a module script.
+const BUNDLED_COMP = '<!doctype html><html lang="nl"><head><meta charset="utf-8"><script type="module" crossorigin src="./assets/index.js"></script></head><body><div id="root"></div></body></html>';
+
+// A stand-in for a Vite dev server: it answers cross-origin requests only for a
+// localhost origin, the default server.cors of Vite 6 and later, so a frame
+// with an opaque origin gets no module script from it.
+async function startDevServer() {
+  const server = http.createServer((request, response) => {
+    const origin = request.headers.origin;
+    const headers = {};
+    if (origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) headers['access-control-allow-origin'] = origin;
+    const { pathname } = new URL(request.url, 'http://127.0.0.1');
+    if (pathname === '/directions.html') {
+      response.writeHead(200, { ...headers, 'content-type': 'text/html; charset=utf-8' });
+      return response.end('<!doctype html><html><head><meta charset="utf-8"></head><body><div id="root"></div><script type="module" src="/main.js"></script></body></html>');
+    }
+    if (pathname === '/main.js') {
+      response.writeHead(200, { ...headers, 'content-type': 'text/javascript' });
+      return response.end("document.getElementById('root').textContent = `direction ${new URLSearchParams(location.search).get('direction')}`;");
+    }
+    response.writeHead(404, headers);
+    response.end();
+  });
+  await new Promise((resolve) => { server.listen(0, '127.0.0.1', resolve); });
+  return {
+    origin: `http://127.0.0.1:${server.address().port}`,
+    close: () => {
+      server.close();
+      server.closeAllConnections();
+    }
+  };
 }
 
 /** POST one answer to a running picker, the way the page's own click does. */
@@ -542,6 +595,76 @@ describe('pick.mjs', () => {
     assert.equal(blind.code, 3, blind.stderr);
     assert.equal(blind.stdout, '');
     assert.match(blind.stderr, /no browser available/);
+  });
+
+  it('shows a bundled comp inside its frame, module script and all', async (t) => {
+    const { comps, contracts } = await round();
+    for (const index of [0, 1]) {
+      const directory = path.join(comps, `variant-${index}`);
+      await fs.mkdir(path.join(directory, 'assets'), { recursive: true });
+      await fs.writeFile(path.join(directory, 'assets', 'index.js'), `document.getElementById('root').textContent = 'bundled ${index}';`);
+      await writeComp(directory, BUNDLED_COMP);
+    }
+    const pick = startPick(['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30']);
+    const url = await pick.url;
+    try {
+      const { origin, searchParams } = new URL(url);
+      const script = await fetch(`${origin}/k/${searchParams.get('key')}/v/0/assets/index.js`, { headers: { origin: 'null' } });
+      assert.equal(script.headers.get('access-control-allow-origin'), 'null', 'a sandboxed frame may load the module script');
+
+      const texts = await frameTexts(url);
+      if (texts === null) return t.skip('no driven browser resolves here');
+      assert.deepEqual(texts, ['bundled 0', 'bundled 1'], 'no frame stays empty');
+    } finally {
+      await answer(url, 0);
+      await pick.exit;
+    }
+  });
+
+  it('shows a dev-server comp per variant inside its frame', async (t) => {
+    const { comps, contracts } = await round();
+    const source = await fixture();
+    for (const index of [0, 1]) await fs.mkdir(path.join(source, String(index)));
+    const devServer = await startDevServer();
+    try {
+      const pick = startPick([
+        '--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '30',
+        '--url', `${devServer.origin}/directions.html?direction={n}`, '--source', path.join(source, '{n}')
+      ]);
+      const url = await pick.url;
+      try {
+        const html = await (await fetch(url)).text();
+        assert.match(html, /sandbox="allow-scripts allow-same-origin"[^>]*src="http:\/\/127\.0\.0\.1:\d+\/directions\.html\?direction=1"/,
+          'a dev-server comp keeps its own origin');
+
+        const texts = await frameTexts(url);
+        if (texts === null) return t.skip('no driven browser resolves here');
+        assert.deepEqual(texts, ['direction 0', 'direction 1'], 'no frame stays empty');
+      } finally {
+        await answer(url, 0);
+        await pick.exit;
+      }
+    } finally {
+      devServer.close();
+    }
+  });
+
+  it('exits 2 on a --url, --source or --variant it cannot use', async () => {
+    const { comps, contracts } = await round();
+    const base = ['--comps', comps, '--contracts', contracts, '--no-open', '--timeout', '1'];
+    const cases = [
+      [['--url', 'http://localhost:5173/', '--source', 'src/{n}'], /--url needs \{n\}/],
+      [['--url', 'file:///tmp/{n}', '--source', 'src/{n}'], /--url must be an http\(s\) URL/],
+      [['--url', 'http://localhost:5173/?d={n}'], /--url needs --source/],
+      [['--source', 'src/{n}'], /--source belongs to --url/],
+      [['--variant', '0'], /--variant belongs to --check/],
+      [['--check', '--variant', '2'], /--variant must be a variant index from 0 to 1/]
+    ];
+    for (const [extra, message] of cases) {
+      const result = await run(PICK, [...base, ...extra]);
+      assert.equal(result.code, 2, `${extra.join(' ')}: ${result.stderr}`);
+      assert.match(result.stderr, message);
+    }
   });
 
   it('exits 3 without stdout when no answer arrives before --timeout', async () => {

@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- design-ui's picker no longer shows a blank frame for a React or Vite comp: its sandboxed frame has no origin, so the module script was blocked; a served comp's assets now answer that origin and a dev-server comp keeps its own.
+
+### Changed
+
+- design-ui builds each direction comp in its own `build-ui` agent in parallel, renders stack comps from the project's dev server through `pick.mjs --url`, and makes the chosen comp the first screen Build keeps instead of rebuilding it.
+
 ## 0.81.2 - 2026-10-04
 
 ### Changed
