@@ -35,6 +35,12 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - An ask naming a product or style drops the Reference question and wins over the saved product.
 - Without a saved product, put the best-fitting product first, as option A, and recommend it.
 - Save each Reference answer, or the product or style the ask names, with `reference.mjs --set "<name>" --root <repository>`.
+- A `display-font`, `body-font` or `accent` in DESIGN.md's front matter is a saved pick: the plan reuses it, and shortlists only the picks missing.
+- After the plan names its picks, save each new one with `reference.mjs --display-font "<font>" --body-font "<font>" --accent "<color>" --root <repository>`.
+- Then run `node <skill dir>/scripts/picks.mjs --project <repository> --display "<font>" --body "<font>" --accent "<color>"`; it prints the count of other projects per pick.
+- Send the color and font line with the plan: the accent, display font and body font, each pick with a count above 0 followed by "also used in <n> earlier projects" in the conversation's language.
+- A repeat warns and blocks nothing: ask no question about it, and keep the picks, because the user decides whether to steer.
+- A `picks.mjs` failure drops the warning, never the run, and the line says the earlier-project check did not run.
 - The picked product sets the mood, the nearest of the four in `## Mood to look` of the `phase-direction` reference.
 - The Directions question, "Directions first?" in the conversation's language, has the options 1, 2 and 3, in that order.
 - Directions 1 keeps the run on its rung: one direction, no sketch.
