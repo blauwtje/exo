@@ -21,7 +21,7 @@ A decided change with no plan file runs these steps instead of the loop above.
    - Comments state a constraint, invariant or reason, never the change's story, because they outlive the change.
    - When a hook reports the context budget crossed, write landed and open edits to `<scratch>/implement-next.md` at a green state and report that a clear comes next.
 5. **Prove.**
-   - *Done* needs a `Proof: <command> -> <output>` line from a real command this session ran on input it did not write, not a test runner, else `Unverified: <reason>` with no Done.
+   - *Done* needs a `Proof: <command or MCP tool> -> <output>` line from a real call this session made on input it did not write, not a test runner, else `Unverified: <reason>` with no Done.
    - A risky change quotes failing output before the first production edit and passing output after.
    - A test-first bug commits its failing test alone, because a test committed with its fix never shows it failed.
    - Otherwise exercise the feature, else run a test that failed before, else type check and build.

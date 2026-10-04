@@ -55,3 +55,4 @@ effort: medium
 | `../route-skills/references/question.md` | Before asking the user to pick among options. |
 
 Report: `ship`'s overview as this turn's one report, ending with the brief's `## Manual checks`.
+The report carries one `Proof: <command or MCP tool> -> <output>` line per proof, its output copied verbatim from that call's result.

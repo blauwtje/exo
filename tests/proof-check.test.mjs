@@ -92,7 +92,7 @@ test('stays silent when build was never called', () => {
   assert.equal(stopOutput({ transcript_path: file }), '');
 });
 
-test('stays silent when stop_hook_active is true', () => {
+test('stays silent on stop_hook_active when the report has no Proof line', () => {
   const file = transcript([
     SKILL_CALL,
     finalReport('**Done:** wired --status into bin/report.js.')
@@ -241,4 +241,65 @@ test('blocks a Proof naming the absolute form of a relative written path', () =>
   const result = JSON.parse(stopOutput({ transcript_path: file }));
   assert.equal(result.decision, 'block');
   assert.match(result.reason, /input this session wrote/);
+});
+
+function mcpCall(id, name) {
+  return { type: 'assistant', message: { content: [{ type: 'tool_use', name, id, input: { mode: 'play' } }] } };
+}
+
+const PROOF_FEEDBACK = { type: 'user', isMeta: true, message: { role: 'user', content: 'Stop hook feedback:\nThe report claims Done with no Proof line. Run it, or report "Unverified: <reason>" without claiming Done.' } };
+const UNRUN_PROOF = '**Done:** wired --status.\nProof: node bin/report.js --status open -> orders: 1';
+
+test('blocks a Proof line naming a never-run command on stop_hook_active', () => {
+  const file = transcript([SKILL_CALL, PROOF_FEEDBACK, finalReport(UNRUN_PROOF)]);
+  const result = JSON.parse(stopOutput({ transcript_path: file, stop_hook_active: true }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /never ran/);
+});
+
+test('blocks a never-run second Proof line after a valid one', () => {
+  const file = transcript([
+    SKILL_CALL,
+    bashCall('toolu_bash1', 'node bin/report.js --status paid'),
+    bashResult('toolu_bash1', 'orders: 4, total: 913.50 EUR'),
+    finalReport('**Done:** wired --status.\nProof: node bin/report.js --status paid -> orders: 4\nProof: node bin/report.js --status open -> orders: 1')
+  ]);
+  for (const active of [false, true]) {
+    const result = JSON.parse(stopOutput({ transcript_path: file, stop_hook_active: active }));
+    assert.equal(result.decision, 'block');
+    assert.match(result.reason, /--status open -> orders: 1" names a command or MCP tool this build turn never ran/);
+  }
+});
+
+test('passes bulleted arrow Proof lines an MCP tool call backs', () => {
+  const file = transcript([
+    SKILL_CALL,
+    mcpCall('toolu_mcp1', 'mcp__plugin_kit_studio__run_playtest'),
+    bashResult('toolu_mcp1', '{"passed":true,"checks":{"total":16,"passed":16,"failed":0}}'),
+    mcpCall('toolu_mcp2', 'mcp__plugin_kit_studio__search_game_tree'),
+    bashResult('toolu_mcp2', '[{"fullPath":"ServerScriptService.Network"}]'),
+    finalReport('**Done:** shop built.\n- Proof: `run_playtest mode=play` → `"checks":{"total":16,"passed":16,"failed":0}`\n* **Proof:** `mcp:search_game_tree keywords=Network` -> `ServerScriptService.Network`')
+  ]);
+  assert.equal(stopOutput({ transcript_path: file }), '');
+});
+
+test('blocks an MCP Proof whose output is not in that tool\'s result', () => {
+  const file = transcript([
+    SKILL_CALL,
+    mcpCall('toolu_mcp1', 'mcp__plugin_kit_studio__user_mouse_input'),
+    bashResult('toolu_mcp1', 'Success'),
+    mcpCall('toolu_mcp2', 'mcp__plugin_kit_studio__execute_luau'),
+    bashResult('toolu_mcp2', 'Coins: 0, WalkSpeed: 32'),
+    finalReport('**Done:** shop built.\n- Proof: `user_mouse_input` click on BuyButton → `Coins: 0, WalkSpeed: 32`')
+  ]);
+  const result = JSON.parse(stopOutput({ transcript_path: file }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /no user_mouse_input call returned/);
+});
+
+test('stops blocking once the build turn holds the limit of proof-check blocks', () => {
+  const once = transcript([SKILL_CALL, PROOF_FEEDBACK, finalReport(UNRUN_PROOF)]);
+  const twice = transcript([SKILL_CALL, PROOF_FEEDBACK, finalReport('Working.'), PROOF_FEEDBACK, finalReport(UNRUN_PROOF)]);
+  assert.equal(JSON.parse(stopOutput({ transcript_path: once, stop_hook_active: true })).decision, 'block');
+  assert.equal(stopOutput({ transcript_path: twice, stop_hook_active: true }), '');
 });
