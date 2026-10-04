@@ -22,7 +22,7 @@ argument-hint: <outcome to shape>
    - Name the owning layer and a smaller alternative.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`: decide nothing silently.
-   - An option a loaded skill rules out is no equal choice: recommend its prescribed pattern.
+   - Recommend a loaded skill's prescribed pattern over an option it rules out.
    - Close with up to three lines on what was agreed; brief after the user's yes.
    - After a compaction: list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight ranges; never `cat`, `head` or `sed`.

@@ -41,7 +41,7 @@ effort: medium
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
 | `bug-fixer-prompt.md` | Never here: the loop's step 5 reads it, on a failed check. |
-| `review-fixer-prompt.md` | Never here: `verify` step 3 reads it, on a `FINDINGS` verdict with `fix=1` or more. |
+| `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
 | `references/design-tasks.md` | Step 4, for a task with a `Design:` line. |
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
@@ -54,5 +54,4 @@ effort: medium
 | `references/performance.md` | No spec, speed-only work, before measuring. |
 | `../route-skills/references/question.md` | Before asking the user to pick among options. |
 
-Report: `ship`'s overview as this turn's one report, ending with the brief's `## Manual checks`.
-The report carries one `Proof: <command or MCP tool> -> <output>` line per proof, its output copied verbatim from that call's result.
+Report: `ship`'s overview as this turn's one report, one `Proof: <command or MCP tool> -> <output>` line per proof with that call's output verbatim, ending with the brief's `## Manual checks`.

@@ -1,9 +1,6 @@
 # Specification of the task list
 
-The task list names the goal, basis, proof and one line per task, with no
-implicit file, shape or step code; `plan-check` enforces every rule below.
-
-Write for a zero-context reader.
+The task list names the goal, basis, proof and one line per task for a zero-context reader, with no implicit file, shape or step code; `plan-check` enforces every rule below.
 
 ## Header sections, in order
 
@@ -24,11 +21,10 @@ Write for a zero-context reader.
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one bare command>
 ```
 
-- A task whose result runs has a `Proof:` running it on the project's real input, never a test alone.
-- That `Proof:` is the project's own command if one exists, else a builder's script using only the project's tools.
-- `Proof:` is the one bare command showing this task alone landed, never the whole suite (`npm test`), which verify runs once.
-- A `Proof:` that needs an MCP tool reads `mcp:<tool> <args>`, `<tool>` the part after `mcp__<server>__`, since verify has the session call it, never a shell.
-- `Data:` names the structure holding the result, not its fields or logic.
+- `Proof:` is one bare command showing this task alone landed, never the whole suite, which verify runs once.
+- A task whose result runs proves it on the project's real input with the project's own command, else a builder's script using only its tools, never a test alone.
+- An MCP `Proof:` reads `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; the session calls it, never a shell.
+- `Data:` names the structure holding the result, not its fields or logic; ask before one changing a public signature or persisted format.
 - `Risk:` marks a task touching a `security boundary`, `persisted format`, `public signature` or `dependency`.
 - The heading is `land-task`'s conventional-commit subject, trailed by `Plan-task: <plan-stem>/<n>`.
 - The task stages `Files:` and carries no `Commit:` block.
@@ -39,9 +35,5 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 1. **Verified names only.** List a path or symbol only after reading its range; `plan-check` catches only a missing one.
 2. **One field line, one task.** A second field line, `Run:`, `Expected:` or a code block makes it long-format, needing `Commit:`, `Run:`, `Expected:`.
 3. **Small tasks.** One heading, one concern; split only when `Files:` spans a shared write target (rule 4) and an independent one.
-4. **Shared write target.** Split a file, key or branch two tasks both touch, unless a shared invariant earns a serializing `Depends on:` edge.
+4. **Shared write target.** Split a file, key or branch two tasks both touch, unless a shared invariant earns a `Depends on:` edge.
 5. **No manual task.** A user-only check is one `## Manual checks` line.
-
-## Judgment
-
-- A `Data:` choice changing a public signature or persisted format: ask.
