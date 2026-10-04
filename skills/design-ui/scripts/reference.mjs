@@ -1,9 +1,12 @@
 // The product or style a project's look resembles, kept as the `reference`
 // field in its docs/design/DESIGN.md front matter, so each project keeps its
-// own look and the design-ui form asks only once per project.
+// own look and the design-ui form asks only once per project. The chosen
+// `display-font`, `body-font` and `accent` sit beside it.
 //
 //   node scripts/reference.mjs [--root <dir>]               prints the saved reference, or nothing
 //   node scripts/reference.mjs --set <name> [--root <dir>]  saves <name> as the project's reference
+//   node scripts/reference.mjs [--display-font <font>] [--body-font <font>] [--accent <color>] [--root <dir>]
+//                                                           saves the given picks; any mix with --set
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,43 +35,52 @@ export function savedReference(file = designFile()) {
   return typeof reference === 'string' ? reference : '';
 }
 
-// A project without DESIGN.md gets a draft one holding only the reference, so the
+// A project without DESIGN.md gets a draft one holding only the saved fields, so the
 // routing never mistakes it for an approved identity.
-export function saveReference(name, file = designFile()) {
-  const reference = name.replace(/\s+/g, ' ').trim();
-  if (!reference) throw new Error('--set needs a product or style');
-  const line = `reference: ${reference}`;
+export function saveFields(fields, file = designFile()) {
+  const entries = Object.entries(fields).filter(([, value]) => value !== undefined);
+  const saved = {};
+  for (const [key, value] of entries) {
+    saved[key] = value.replace(/\s+/g, ' ').trim();
+    if (!saved[key]) throw new Error(`--${key} needs a value`);
+  }
+  const keys = Object.keys(saved);
+  if (keys.length === 0) throw new Error('nothing to save');
+  const lines = keys.map((key) => `${key}: ${saved[key]}`);
   const text = readText(file);
   let next;
   if (text === null) {
-    next = `---\nschema: ui-design/v1\nstatus: draft\n${line}\n---\n\n# Design\n`;
+    next = `---\nschema: ui-design/v1\nstatus: draft\n${lines.join('\n')}\n---\n\n# Design\n`;
   } else {
     const match = FRONTMATTER.exec(text);
     if (!match) {
-      next = `---\n${line}\n---\n\n${text}`;
+      next = `---\n${lines.join('\n')}\n---\n\n${text}`;
     } else {
-      const lines = match[1].split(/\r?\n/).filter((entry) => !/^reference:/.test(entry));
-      next = `---\n${[...lines, line].join('\n')}\n---\n${text.slice(match[0].length)}`;
+      const kept = match[1].split(/\r?\n/).filter((entry) => !keys.some((key) => entry.startsWith(`${key}:`)));
+      next = `---\n${[...kept, ...lines].join('\n')}\n---\n${text.slice(match[0].length)}`;
     }
   }
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, next);
-  return reference;
+  return lines.join(', ');
 }
 
 if (isMain(import.meta.url)) {
   const args = process.argv.slice(2);
   try {
     let root = '.';
-    let name;
+    const fields = {};
     while (args.length > 0) {
       const flag = args.shift();
       if (flag === '--root') root = args.shift() ?? '';
-      else if (flag === '--set') name = args.shift() ?? '';
+      else if (flag === '--set') fields.reference = args.shift() ?? '';
+      else if (flag === '--display-font') fields['display-font'] = args.shift() ?? '';
+      else if (flag === '--body-font') fields['body-font'] = args.shift() ?? '';
+      else if (flag === '--accent') fields.accent = args.shift() ?? '';
       else throw new Error(`unknown argument: ${flag}`);
     }
     const file = designFile(root);
-    if (name !== undefined) console.log(`saved: ${saveReference(name, file)}`);
+    if (Object.keys(fields).length > 0) console.log(`saved: ${saveFields(fields, file)}`);
     else console.log(savedReference(file));
   } catch (error) {
     console.error(error.message);

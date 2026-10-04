@@ -1645,4 +1645,30 @@ describe('reference.mjs', () => {
     const result = await run(script('reference.mjs'), ['--set', '', '--root', await fixture()]);
     assert.equal(result.code, 2);
   });
+
+  it('saves display font, body font and accent beside the reference and keeps the rest', async () => {
+    const root = await fixture();
+    const file = path.join(root, 'docs', 'design', 'DESIGN.md');
+    const first = await run(script('reference.mjs'), ['--set', 'Stripe', '--display-font', 'Fraunces', '--body-font', 'Inter', '--accent', '#1a73e8', '--root', root]);
+    assert.equal(first.code, 0, first.stderr);
+    assert.deepEqual(parseFrontmatter(await fs.readFile(file, 'utf8')).values, {
+      schema: 'ui-design/v1', status: 'draft', reference: 'Stripe',
+      'display-font': 'Fraunces', 'body-font': 'Inter', accent: '#1a73e8'
+    });
+    await fs.appendFile(file, '\n## Palette\n');
+    const second = await run(script('reference.mjs'), ['--accent', '#e11d48', '--root', root]);
+    assert.equal(second.code, 0, second.stderr);
+    const text = await fs.readFile(file, 'utf8');
+    const { values } = parseFrontmatter(text);
+    assert.equal(values.accent, '#e11d48');
+    assert.equal(values['display-font'], 'Fraunces');
+    assert.equal(values.reference, 'Stripe');
+    assert.match(text, /## Palette/);
+    assert.equal((await run(script('reference.mjs'), ['--root', root])).stdout.trim(), 'Stripe');
+  });
+
+  it('refuses an empty font or accent', async () => {
+    const result = await run(script('reference.mjs'), ['--body-font', ' ', '--root', await fixture()]);
+    assert.equal(result.code, 2);
+  });
 });
