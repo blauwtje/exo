@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.80.4 - 2026-10-04
+
 ### Fixed
 
 - design-ui's one pass reads a single build reference of under 12 KB in Phase 3, character rules first, instead of collecting sections from a dozen references.
