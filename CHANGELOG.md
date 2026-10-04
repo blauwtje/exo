@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- design-ui's check-ui writes every finding to its on-disk JSON report, also without `--all`; the flag now only widens the summary, `--json` output and `--baseline` comparison.
+
 ## 0.80.2 - 2026-10-04
 
 ### Fixed
