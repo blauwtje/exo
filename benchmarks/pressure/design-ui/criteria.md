@@ -36,7 +36,7 @@ Run `a-dispatch-user.txt` in the `opus:high` cell with `--runs 2`, `--main-dir` 
 
 - Pass, all of: the plan names the dispatcher's three most important tasks and orders the layout by them; each major layout choice names its Laws of UX rule; each face and the accent hue carries a clause naming the user fact it answers, after a shortlist of three.
 
-Pre-edit baseline on 2026-10-04 (0.80.5, six runs of the pre-edit skill): no plan named three tasks or a Laws of UX rule; all six chose a cobalt or navy accent and four chose Archivo. After the edit, two runs: both named tasks and laws, both chose teal, one kept Archivo.
+Pre-edit baseline on 2026-10-04 (0.80.5, six runs of the pre-edit skill): no plan named three tasks or a Laws of UX rule; all six chose a cobalt or navy accent and four chose Archivo. After the edit, five runs: all named tasks and laws; accents went teal, teal, violet, cobalt, teal; Archivo stayed in four, with Inter listed first as a decoy.
 
 ## Build stack
 
