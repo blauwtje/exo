@@ -1619,21 +1619,30 @@ describe('rendered capability', () => {
 });
 
 describe('reference.mjs', () => {
-  it('prints nothing before a save and the saved product after, keeping other keys', async () => {
-    const config = await fixture();
-    const env = { CLAUDE_CONFIG_DIR: config };
-    const file = path.join(config, 'exo', 'design-ui.json');
-    assert.equal((await run(script('reference.mjs'), [], { env })).stdout.trim(), '');
-    await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, '{"other": 1}');
-    const saved = await run(script('reference.mjs'), ['--set', ' Stripe '], { env });
+  it('creates a draft DESIGN.md holding only the reference, then prints it', async () => {
+    const root = await fixture();
+    assert.equal((await run(script('reference.mjs'), ['--root', root])).stdout.trim(), '');
+    const saved = await run(script('reference.mjs'), ['--set', ' Stripe ', '--root', root]);
     assert.equal(saved.code, 0, saved.stderr);
-    assert.equal((await run(script('reference.mjs'), [], { env })).stdout.trim(), 'Stripe');
-    assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')), { other: 1, reference: 'Stripe' });
+    assert.equal((await run(script('reference.mjs'), ['--root', root])).stdout.trim(), 'Stripe');
+    const { values } = parseFrontmatter(await fs.readFile(path.join(root, 'docs', 'design', 'DESIGN.md'), 'utf8'));
+    assert.equal(values.status, 'draft');
+  });
+
+  it('replaces the reference in an existing DESIGN.md and keeps the rest', async () => {
+    const root = await fixture();
+    const file = path.join(root, 'docs', 'design', 'DESIGN.md');
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, '---\nstatus: approved\nreference: Notion\n---\n\n# Design\n\n## Palette\n');
+    const saved = await run(script('reference.mjs'), ['--set', 'Linear', '--root', root]);
+    assert.equal(saved.code, 0, saved.stderr);
+    const text = await fs.readFile(file, 'utf8');
+    assert.deepEqual(parseFrontmatter(text).values, { status: 'approved', reference: 'Linear' });
+    assert.match(text, /## Palette/);
   });
 
   it('refuses an empty name', async () => {
-    const result = await run(script('reference.mjs'), ['--set', ''], { env: { CLAUDE_CONFIG_DIR: await fixture() } });
+    const result = await run(script('reference.mjs'), ['--set', '', '--root', await fixture()]);
     assert.equal(result.code, 2);
   });
 });

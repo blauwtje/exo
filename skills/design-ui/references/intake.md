@@ -30,9 +30,11 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - A Scope answer that ticks every option, ticks none, or says decide yourself builds every group.
 - A Scope answer that ticks some options builds the ticked groups plus every fixed group.
 - The Reference question, "Which product should it feel like?" in the conversation's language, offers Linear/Vercel, Stripe, Notion and Duolingo; Other takes any product.
-- Before the form, run `node <skill dir>/scripts/reference.mjs`; a saved product goes first as option A, recommended, replacing the least fitting option.
+- Before the form, run `node <skill dir>/scripts/reference.mjs --root <repository>`; it prints the product saved in docs/design/DESIGN.md, or nothing.
+- A saved product drops the Reference question; state it in one line, "Look: <product>, from DESIGN.md", because each project keeps its own look.
+- An ask naming a product or style drops the Reference question and wins over the saved product.
 - Without a saved product, put the best-fitting product first, as option A, and recommend it.
-- Save every Reference answer with `node <skill dir>/scripts/reference.mjs --set "<product>"`, because the next run's form starts from it.
+- Save each Reference answer, or the product or style the ask names, with `reference.mjs --set "<name>" --root <repository>`.
 - The picked product sets the mood, the nearest of the four in `## Mood to look` of the `phase-direction` reference.
 - The Directions question, "Directions first?" in the conversation's language, has the options 1, 2 and 3, in that order.
 - Directions 1 keeps the run on its rung: one direction, no sketch.
@@ -40,7 +42,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Those directions reach the user as first-screen comps in the picker under the `direction-preview` reference, never as a sketch, because a sketch hides how a direction looks as a product.
 - Rung 5 drops the Reference and Directions questions, because its settled identity already fixes the look.
 - An ask that names its user drops the Users question.
-- An ask that names a mood or a product to resemble drops the Reference question.
+- An ask that names a mood drops the Reference question.
 - An ask that says decide yourself drops the whole form.
 - Send no form when no answer can arrive, as in a headless run.
 - Without a Scope answer, build every group, named in one line before Direction.

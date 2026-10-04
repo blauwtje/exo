@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- design-ui saves the product a project should feel like in that project's `docs/design/DESIGN.md` instead of per user, asks only when none is saved and the prompt names no product or style, and lets a prompt that names one override and update the saved choice.
+
 ## 0.82.0 - 2026-10-04
 
 ### Added
