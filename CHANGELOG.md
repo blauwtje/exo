@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.81.3 - 2026-10-04
+
 ### Fixed
 
 - design-ui's picker no longer shows a blank frame for a React or Vite comp: its sandboxed frame has no origin, so the module script was blocked; a served comp's assets now answer that origin and a dev-server comp keeps its own.
