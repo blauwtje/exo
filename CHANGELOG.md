@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.0 - 2026-10-04
+
 ### Highlights
 
 - **A plan Proof that needs an MCP tool is written `Proof: mcp:<tool> <args>`, and the session runs it as a tool call; builders and the verify gate never shell it.**
