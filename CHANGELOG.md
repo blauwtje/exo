@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- design-ui's overused-font list bans Archivo and its whole superfamily, since models picked it unasked in run after run.
+
 ## 0.81.0 - 2026-10-04
 
 ### Highlights

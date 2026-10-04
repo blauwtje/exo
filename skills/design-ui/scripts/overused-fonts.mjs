@@ -14,14 +14,17 @@
 //    with --runs 3 on 2026-09-16, every family picked for two or more briefs.
 // 4. What models fall back on once parts 1 to 3 are banned: the same probe with
 //    --avoid-overused, the same threshold, not already covered above.
+// 5. Added by hand on 2026-10-04 at the maintainer's request: Archivo, which
+//    models picked unasked in the frontend-design-test, test9 and test10 runs and
+//    in 1 of 2 runs after the plan rules; it replaces Archivo Black, which it covers.
 // Inter and Geist stay off the list: a modern neutral sans that fits the mood is a valid pick.
-// Rebuild the list by rerunning these four steps, never by adding a name by hand.
+// Rebuild the list by rerunning steps 1 to 4 and keeping part 5; add no other name by hand.
 
 export const OVERUSED_FONTS = Object.freeze([
   'Roboto', 'Open Sans', 'Google Sans', 'Montserrat', 'Poppins',
   'Lato', 'Arimo', 'Oswald', 'Noto Sans', 'DM Sans', 'Raleway', 'Nunito',
   'Playfair Display', 'Rubik', 'Ubuntu', 'Manrope', 'Outfit', 'Kanit',
-  'Archivo Black', 'Merriweather', 'Lora', 'Work Sans', 'Plus Jakarta Sans',
+  'Archivo', 'Merriweather', 'Lora', 'Work Sans', 'Plus Jakarta Sans',
   'Quicksand', 'PT Sans', 'Figtree', 'Bebas Neue', 'Mulish',
   'Segoe UI', 'SF Pro', 'Arial', 'Helvetica', 'Times New Roman',
   'Fraunces', 'Space Grotesk', 'IBM Plex Sans', 'Söhne', 'Karla',
