@@ -20,6 +20,19 @@ Build a page with no framework on a maintained component stack, so it ships test
 - Never load a font from the Google Fonts CDN, because it adds a third-party request the page waits on.
 - Point `--font-sans` and `--font-heading` in the `@theme inline` block at the plan's faces, replacing the preset's Geist import.
 
+## Theme
+
+A shadcn component in its fetched form reads as the template whatever the accent, so theme each from the plan's direction by editing the fetched file in place.
+
+- The plan names the radius, the control height and every variant it adds, because the build themes only what the plan names.
+- Set `--radius` from the direction, never the preset's value, and derive the field, control and surface radii from it.
+- Replace every color token in `:root`, `--card` and `--popover` included, with the plan's tinted roles, because a preset value left in place reads as stock.
+- Set control heights, padding and gaps in each fetched component from the plan's spacing scale, so density follows the direction, not the preset.
+- Recut the `cva` base and variants in each fetched file: surface, edge, elevation, weight and press from the direction.
+- Add a `cva` variant in the component's file for each role the plan names, such as a status badge, not a `className` override per call site.
+- Set heading, card title and table header type inside the fetched component from the plan's faces, weights and tracking.
+- Theme every fetched component the screens show, because one stock component among themed ones still reads as the template.
+
 ## Which package for which job
 
 Each job takes its package, because a hand-written one misses the focus, gesture and screen-reader work the package ships:

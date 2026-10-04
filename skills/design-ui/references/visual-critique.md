@@ -91,6 +91,7 @@ By category:
 - Kits: cream with a serif and terracotta, near-black with one acid accent, and white cards on grey with one blue or teal accent.
 - Buttons: an arrow glyph added to the label.
 - Stack: a hand-drawn chart where the stack ships a chart component; on a build in the default stack of the `stack` reference, a hand-written component the shadcn CLI ships, or a shadcn block such as `dashboard-01` as the base.
+- Stock shadcn: a fetched component left in its default form, with the preset's radius, neutral or white tokens, control heights or unchanged `cva` variants.
 
 ## The fault contract
 
