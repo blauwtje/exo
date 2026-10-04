@@ -24,6 +24,7 @@
    - `BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.
    - `BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait` before asking it.
    - `BLOCKED all nested dispatch unavailable` ends the turn asking to set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 2+.
-   - `LANDED` and `GREEN` need nothing.
+   - `LANDED` and `GREEN` need nothing, bar a `pending mcp:<tool> <args>` or `Pending:` line: call `mcp__<server>__<tool>` yourself before step 3.
+   - A failed call goes to the bug fixer with the call as its failing command; rerun it, then land with `land-task.mjs --fix`.
    - Loop to step 3; only a block, failure or question earns a message.
    - An `exo: context` line: keep working once the task in flight lands.

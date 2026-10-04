@@ -18,14 +18,15 @@ tools: Read, Edit, Write, Grep, Bash
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
 - Green is the `Proof:` command passing; write a missing `Proof:` script first, with only the project's tools.
-- With no `Proof:` field, write or pick one test for `Success criterion:` and run only it; report it first under Proof: build lands on that line.
+- A `Proof: mcp:<tool>` is the session's: run what Bash can, write `<command>: deferred`.
+- With no `Proof:` field, write or pick one test for `Success criterion:` and run only it; report it first under Proof.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
-Before the first edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once per run, never searched for or under `<checkout>`.
+Before the first code edit, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once per run, never searched for or under `<checkout>`.
 
 ## Standard
 
-- Never delete, skip or loosen a test to pass it: fix the code or report the failure.
+- Never delete, skip or loosen a test: fix the code or report the failure.
 - Read a non-obvious behavior's call sites before changing it.
 - Run only the brief's `Proof:` or `Run:`, never the plan's `Land gate:`, in the foreground with Bash `timeout: 600000`, or wait with a counted `for` loop on a done file that exits nonzero; never call `Monitor` or start with `sleep`.
 
@@ -39,12 +40,12 @@ Before the first edit adding or replacing code, read `${CLAUDE_PLUGIN_ROOT}/skil
 - Start no background session or delegate, ask nothing.
 - Send output over 40 lines to a log beside `Report to:`.
 - Stop at green, a second failure of one test or `Run:`, or an `exo budget:` message.
-- Stop before a user-noticeable choice the brief leaves open; report BLOCKED with options.
+- Stop before a user-noticeable choice the brief leaves open: report BLOCKED, options.
 
 ## Report
 
-- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there, plus one `Choice: <one clause>` line per choice the task's fields leave open.
-- Under Proof, copy each `Proof:` or `Run:` command from the brief character for character, never shortening a path to `...`: build lands on it.
+- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there, plus one `Choice: <one clause>` line per choice the fields leave open.
+- Under Proof, copy each `Proof:` or `Run:` command character for character, never shortening a path to `...`: build lands on it.
 - Lay it out as:
 
 Landed: <change>

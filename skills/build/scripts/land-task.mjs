@@ -5,7 +5,9 @@
 // holds the task, and prints that set and next-task's `Next:` or `Wave:` line, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and that
-// lists no command as failing under Proof; the printout carries that output. Above eight tasks each `Choice:` line of the
+// lists no command as failing under Proof; the printout carries that output. A
+// `Proof: mcp:<tool> <args>` lands on its `<command>: deferred` line instead and
+// prints `Pending: <command>` for the session to run. Above eight tasks each `Choice:` line of the
 // report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
 // with the given subject, no task, plan or trailer needed. A task whose
@@ -169,18 +171,52 @@ function refuseFailedCommand(task, lines) {
 // `<command>: pass` line with the command's own output under it, at any
 // indentation. Any other outcome for that command, or none, leaves the task
 // not done.
-export function proofOf(task, reportText, reportPath) {
+function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
     const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
     throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}`);
   }
-  const lines = reportText.replace(/\r\n/g, '\n').split('\n');
-  const command = provedCommand(task, lines);
+  return reportText.replace(/\r\n/g, '\n').split('\n');
+}
+
+// Each `<command>: <outcome>` line the report gives `command`, lowercased.
+function outcomesOf(command, lines) {
   const outcomeLine = new RegExp(`^(\\s*)(?:[-*]\\s+)?(?:Proof:\\s*)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
-  const outcomes = lines.flatMap((line, index) => {
+  return lines.flatMap((line, index) => {
     const match = line.match(outcomeLine);
     return match === null ? [] : [{ outcome: match[2].toLowerCase(), indent: match[1].length, index }];
   });
+}
+
+// A `Proof: mcp:<tool> <args>` names a tool of an MCP server only the session
+// holds, so this returns that command, or null for a Bash proof.
+export function mcpProofOf(task) {
+  if (task.proof === null) return null;
+  const command = task.proof.replace(/^`(.*)`$/, '$1');
+  return command.startsWith('mcp:') ? command : null;
+}
+
+// The builder holds no MCP tool, so an `mcp:` Proof lands on the report's
+// `<command>: deferred` line, never a pass it could not have seen; the session
+// runs the tool after the landing.
+export function deferredProofOf(task, command, reportText, reportPath) {
+  const lines = reportLinesOf(task, reportText, reportPath);
+  const outcomes = outcomesOf(command, lines);
+  if (outcomes.length === 0) {
+    throw new LandingError(`Task ${task.number}: the build report has no "${command}: deferred" line`);
+  }
+  const undeferred = outcomes.find(({ outcome }) => !/^deferred\b/.test(outcome));
+  if (undeferred !== undefined) {
+    throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${undeferred.outcome}", yet only the session runs an mcp: Proof; report it deferred`);
+  }
+  refuseFailedCommand(task, lines);
+  return command;
+}
+
+export function proofOf(task, reportText, reportPath) {
+  const lines = reportLinesOf(task, reportText, reportPath);
+  const command = provedCommand(task, lines);
+  const outcomes = outcomesOf(command, lines);
   if (outcomes.length === 0) {
     throw new LandingError(`Task ${task.number}: the build report has no "${command}: pass" line`);
   }
@@ -368,7 +404,9 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.
-  const proof = task.compact ? proofOf(task, reportText, reportPath) : null;
+  const mcpProof = task.compact ? mcpProofOf(task) : null;
+  const pending = mcpProof === null ? null : deferredProofOf(task, mcpProof, reportText, reportPath);
+  const proof = task.compact && pending === null ? proofOf(task, reportText, reportPath) : null;
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
   const gateRan = runLandGate(frame.landGate, root);
@@ -395,7 +433,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
-  return `Committed: ${sha} Task ${number}\n${proofLines}Landed: ${landed.join(', ')}\n${waveLine(nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel))}\n`;
+  const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${waveLine(nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel))}\n`;
 }
 
 function main(argv) {

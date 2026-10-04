@@ -719,3 +719,38 @@ test('a body-only change to an export with an outside caller lands and prints no
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nNext: Task 2\n$/);
 });
+
+// The builder holds no MCP tool, so a `Proof: mcp:<tool> <args>` task lands on
+// the report's `<command>: deferred` line and names the proof as pending for
+// the session.
+const MCP_PLAN = compactPlanFixture({ tasks: [
+  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'mcp:run_playtest mode=play' })
+] });
+
+test('an mcp: Proof reported deferred lands and prints it pending for the session', async () => {
+  const { root, planPath } = await compactCheckout(MCP_PLAN);
+  const report = 'Landed: src/app.js\nProof:\n- `npm run lint`: pass\n  0 problems\n- `mcp:run_playtest mode=play`: deferred\nUnresolved: none\n';
+  const output = landTask({ planPath, planText: MCP_PLAN, number: 1, root, reportText: report });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nPending: mcp:run_playtest mode=play\nLanded: 1$/m);
+  assert.doesNotMatch(output, /^Proof:/m);
+  assert.equal(git(root, 'status', '--porcelain'), '');
+});
+
+test('not done without proof: an mcp: Proof with no deferred line, a claimed pass, or a failing command beside it is refused', async () => {
+  const { root, planPath } = await compactCheckout(MCP_PLAN);
+  await writeReport(root, 'Landed: src/app.js\nProof:\n- `npm run lint`: pass\n  0 problems\nUnresolved: none\n');
+  await assertRefused(root, planPath, [], /no "mcp:run_playtest mode=play: deferred" line/);
+  await writeReport(root, 'Proof:\nmcp:run_playtest mode=play: pass\n  playtest ok\n');
+  await assertRefused(root, planPath, [], /reads "mcp:run_playtest mode=play: pass", yet only the session runs an mcp: Proof/);
+  await writeReport(root, 'Proof:\nmcp:run_playtest mode=play: deferred\nnpm test: fail\n  ✖ greet\nUnresolved: none\n');
+  await assertRefused(root, planPath, [], /lists "npm test: fail" under Proof, no clear pass/);
+  await assertRefused(root, planPath, ['--report', path.join(root, 'missing.md')], /no build report/);
+});
+
+test('an mcp: Proof lands through the CLI with its Pending line', async () => {
+  const { root, planPath } = await compactCheckout(MCP_PLAN);
+  await writeReport(root, 'Proof:\nmcp:run_playtest mode=play: deferred\nUnresolved: none\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Pending: mcp:run_playtest mode=play$/m);
+});

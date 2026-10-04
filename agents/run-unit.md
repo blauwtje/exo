@@ -6,8 +6,6 @@ effort: medium
 tools: Read, Bash, Agent
 ---
 
-The dispatch names plan, branch, checkout, `<skill>`, block tasks and the hard agent.
-
 Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 
 ## The loop
@@ -24,7 +22,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report in 54 minutes`; never a `sleep` command.
   - A repair goes to the dispatch's hard agent (`exo:solve-hard` if none) with `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with both report paths and two or three options.
-4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:`, never a report you wrote; else step 3.
+4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:` (`deferred` for `mcp:`), never a report you wrote; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A path outside `Files:`, a missing `pass` line, a failing Proof line or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
   - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
@@ -42,7 +40,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 
 At most ten lines, one per task:
 
-- `LANDED <n> <sha>` for a committed task.
+- `LANDED <n> <sha>` for a committed task, plus ` pending <command>` per land-task `Pending:` line.
 - `BLOCKED <n> <reason or question for the user>` for a task needing the user or waiting on one.
 - `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`, alone, when no tool dispatches.
 - `BUDGET: done <list or none>; open <list>; next <sentence>` after the hard message.
