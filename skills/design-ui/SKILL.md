@@ -37,15 +37,15 @@ Only a request from the user opens the picker: a landing page or an open identit
 
 ## The one pass
 
-The default for every rung but 1 and 4; this session coordinates and one build delegate builds. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3; Phases 4 and 5 are the full run's critique and QA.
+The default for every rung but 1 and 4; this session builds it. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3.
 
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`, once.
-2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md` before any edit, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the reference product, the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
-3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
-4. **Build.** Dispatch one fresh `exo:build-ui`, `model: "opus"`, `SCOPE: page`, with its page-scope inputs and, on rung 3, the chosen comp.
-5. **Coordinate only.** After dispatch, edit no product file and read no source or render, because building here floods this session.
-6. **Finish on a fresh capture.** Done only when both `final` captures in `$RUN/renders` are newer than every path in `$RUN/build-page.md`, per `find <paths> -newer <capture>`.
-7. **Send changes back.** Any later change goes to that agent through `SendMessage`, which captures `final` again.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the reference product, the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing.
+4. **Read the build pass.** Read `references/build-pass.md` whole before the first product edit.
+5. **Build.** Build the whole page from the plan, around the chosen comp on rung 3, then run `references/build-pass.md`'s proof. Without a url, start the preview `references/stack.md` names.
+6. **Capture, look, fix once.** Run `node scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders` from this skill's directory, read both, list each fault against the plan, the reference product's finish and `references/build-pass.md`, and repair all in one pass.
+7. **Finish on a fresh capture.** Rerun step 6 with `--label final` and read both captures; a page is done only on a capture after its last edit, so a later change ends the same way.
 
 A page that does not render reports the capture as blocked and names what went unchecked.
 
@@ -67,7 +67,7 @@ Load a reference only at its row's phase and predicate, and only the sections th
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the opt-in full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | Sketch, Phase 3: whole, once; on the one pass only the `exo:build-ui` page scope reads it. |
+| `references/build-pass.md` | Sketch Phase 3 and one-pass step 4: whole, once. |
 | `references/stack.md` | Phase 2: `## Which stack`, and the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |

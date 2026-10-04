@@ -1,6 +1,6 @@
 ---
 name: build-ui
-description: "Builds one design-ui scope: the one-pass page, the foundation, a surface, a direction comp or a repair. Dispatched by design-ui per scope. Not for work outside a design-ui run."
+description: "Builds one design-ui scope: the foundation, a surface, a direction comp or a repair. Dispatched by design-ui per scope. Not for work outside a design-ui run."
 model: sonnet
 effort: high
 tools: Read, Edit, Write, Grep, Bash
@@ -8,11 +8,11 @@ maxTurns: 60
 omitClaudeMd: true
 ---
 
-Budget: the page scope has 60 turns, report by turn 55; every other scope has 35, report by turn 30. Read your scope's list under `**Reads by scope.**` first, batching the reads, then write.
+Budget: 35 turns, report by turn 30. Read your scope's list under `**Reads by scope.**` first, batching the reads, then write.
 
-- Render only through the page and surface scopes' capture steps and the comp scope's check; the foundation and repair scopes render nothing.
-- Run no production build, bundler or type check, except the page scope's proof.
-- Only the foundation and page scopes run the scaffold and `shadcn add` commands of `$SKILL/references/stack.md`.
+- Render only through the surface scope's capture steps and the comp scope's check; the foundation and repair scopes render nothing.
+- Run no production build, bundler or type check.
+- Only the foundation scope runs the scaffold and `shadcn add` commands of `$SKILL/references/stack.md`.
 - Do not read a reference or a section your scope's list below does not name.
 
 **Input contract.**
@@ -20,13 +20,12 @@ Budget: the page scope has 60 turns, report by turn 55; every other scope has 35
 Expect these inputs:
 
 - `RUN`: an absolute run directory.
-- `SCOPE`: `page`, `foundation`, a surface name, `comp:<n>` for direction comp `<n>`, or `repair:<surface>`, which a later brief defines.
+- `SCOPE`: `foundation`, a surface name, `comp:<n>` for direction comp `<n>`, or `repair:<surface>`, which a later brief defines.
 - `FILES`: the repository paths with line ranges the session read for this scope.
 - `REPO`: the repository root.
 - `SKILL`: the absolute skill directory.
 - `REFERENCES`: the rows of the skill's reference table whose predicate this scope meets.
 - `URL`: the page's or surface's `file://` or `http://` url, for a scope that renders.
-- `COMP`: for a page scope on rung 3, the chosen comp's folder.
 - `CHECK`: for a comp scope, the `pick.mjs --check --variant <n>` command for your comp, and the folder you write in.
 
 Read each `FILES` range with Read's offset and limit, which an Edit to that file also requires.
@@ -37,8 +36,7 @@ Read the `REFERENCES` files under `$SKILL/references/` and no other.
 
 Expect these files:
 
-- `$RUN/plan.md`: the direction and layout of a page scope.
-- `$RUN/contract-selected.json`: the direction, except in a page scope without one or a comp scope, whose direction is entry `<n>` of `$RUN/finalists.json`.
+- `$RUN/contract-selected.json`: the direction, except in a comp scope, whose direction is entry `<n>` of `$RUN/finalists.json`.
 - `$RUN/inventory.md`: the content inventory, and the brief names your slice.
 - `$RUN/foundation.md`: exists for a surface scope, and names the tokens file, base layer, and primitives you must use instead of re-deriving.
 
@@ -48,28 +46,10 @@ Read these and nothing else before writing, in one batch where the files are ind
 
 Read a section of a reference by finding its `## ` heading with `Grep -n`, then Read with offset and limit through the next heading.
 
-- Page: `$RUN/plan.md`; `$RUN/contract-selected.json` and the `COMP` folder when given; `$RUN/user.md`; the `FILES` ranges; `$SKILL/references/build-pass.md` whole; `$SKILL/references/stack.md` when the plan picks the default stack.
 - Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
 - Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
 - Comp: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps` sections.
 - Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name. No inventory, no foundation report and no reference unless the brief names one.
-
-**Page scope.**
-
-Build the whole page from the plan, around the `COMP` when given, then run the proof of `build-pass.md`.
-
-Then capture, look and fix once:
-
-1. Run `node $SKILL/scripts/capture.mjs --url $URL --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`.
-2. Read both `post-build` captures and list each fault against the plan, the reference product's finish and `build-pass.md`.
-3. Repair every listed fault in one pass.
-4. Rerun step 1 with `--label final` and read both `final` captures, because a page is done only on a capture taken after its last edit.
-
-A later message asking for a change ends with the same `final` capture.
-
-Without a `URL`, start the preview `stack.md` names in the background and capture its url; when the capture exits non-zero, report it as blocked.
-
-Write `$RUN/build-page.md`: the paths written, each fault with `fixed` or `open`, the plan items built and any missing, and the proof's result. At most 20 lines.
 
 **Foundation scope.**
 
