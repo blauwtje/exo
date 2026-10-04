@@ -40,7 +40,7 @@ Only a request from the user opens the picker: a landing page or an open identit
 The default for every rung but 1 and 4; it builds in this session. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3; Phases 4 and 5 are the full run's critique and QA.
 
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`, once.
-2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, under the Phase 2 sections of `references/phase-direction.md`. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines in the transcript before any edit, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the color roles with hex values, the display and body fonts, the motion thesis, and an ASCII layout at 1440 and 390 wide.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing, because a page built from a plan that dropped a request item is rebuilt.
 4. **Build.** Read only `references/build-pass.md`, whole and once, then build the whole page here and run its proof.
 5. **Capture.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
@@ -54,7 +54,7 @@ A page that does not render reports the capture as blocked and names what went u
 The parts below run only when the user's own words ask for them; a page's size, rung or genre never starts them.
 
 - **Variants or a picker** ("show me options", "let me choose"): rung 3.
-- **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): the full run of `## Full run` in `references/phase-detail.md`, where the `exo:survey-ui` agent writes `$RUN/inventory.md`, `exo:build-ui` builds per surface, `exo:critique-ui` judges and a QA delegate checks.
+- **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`, `exo:build-ui` builds per surface, `exo:critique-ui` judges and a QA delegate checks.
 
 ## References
 

@@ -68,7 +68,7 @@ Animate `transform` and `opacity` by default; add blur, `clip-path`, `mask` or s
 | A staged entrance or a count-up | 400–800ms |
 | The delay between siblings in a stagger | 30–80ms, with the whole sequence inside 800ms |
 
-- Keep durations and curves in tokens, and list a transition's properties instead of `all`.
+- Keep durations and curves in tokens, and list a transition's properties instead of `all`, Tailwind's `transition-all` in a fetched component included.
 - A focus indicator appears at once; a transition may animate properties around focus, never the indicator itself.
 - Functional motion slows as it lands, with `cubic-bezier(.16, 1, .3, 1)`, or a Motion spring without bounce, as the default ease-out. A staged entrance takes its curve from the mood's motion feel; overshoot belongs only to the friendly and playful mood or a bouncing brief, never to a functional control.
 - An element that appears and disappears, such as a panel, menu, dialog or toast, exits faster than it entered and on its own curve, never the entrance played in reverse.

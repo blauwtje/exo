@@ -37,7 +37,7 @@ A tertiary text action is a link, not a fourth button style. If two tiers differ
 - **Bespoke knobs, dials, and ranges** are open where the subject supports them — an audio tool, an instrument, a gauge — built on the native input so keyboard and value semantics survive.
 - **Menus and popovers** — the surface enters and exits by one rule: the origin edge, the transform, the timing token. A menu that appears with no origin looks pasted on.
 - **Fields** — dense treatment (compact height, hairline edge, tight label) and expressive treatment (generous height, filled surface, floating or stacked label) are both available; the direction picks one per surface class and holds it.
-- **Field and select text sits vertically centered:** equal block padding around a stated line-height, not a fixed height over the browser default.
+- **Field and select text sits vertically centered:** equal block padding around a stated line-height, not a fixed height over the browser default, outside a kit whose fetched fields set their own height.
 - **Native select** — `appearance: none` removes the native arrow; the build draws its chevron from the icon set, with end padding that clears it.
 - **Search field** — `appearance: none` on the input, `::-webkit-search-cancel-button` and `::-webkit-search-decoration`; any clear button is the build's own.
 

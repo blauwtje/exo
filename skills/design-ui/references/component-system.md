@@ -7,8 +7,8 @@ the `controls` reference owns how a control looks: silhouette, optical padding, 
 ## Adopt before authoring
 
 - A repository that already ships a component layer — a copy-in kit, a headless primitive set, a utility-class component library — owns its components. Extend it with a variant, a size, or a theme; never place a second Button, Field, or Dialog beside the first.
-- A stock kit at its default settings is a template wearing the project's accent. Recut its tokens and rebuild at least the primary control's anatomy before building screens on it, and record which defaults were replaced.
-- A project with no UI framework takes the default stack of the `stack` reference, not a build on the platform.
+- A stock kit at its default settings is a template wearing the project's accent. Recut its tokens and the primary control's variants in the kit's own component file, never a hand-written replacement, before building screens on it, and record which defaults were replaced.
+- A project with no pages and no UI framework in its manifest, an empty folder included, takes the default stack of the `stack` reference, not a build on the platform; existing pages, plain HTML included, keep their stack.
 
 ## Anatomy
 

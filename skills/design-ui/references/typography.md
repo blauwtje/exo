@@ -19,7 +19,7 @@ A category-to-face recipe designs every product in a category alike. `scripts/ov
 3. **Pick the face.**
    - Choose a well-made, current face whose mood fits the type spec, not an odd or dated face picked to look unusual.
    - Match the product's mood and audience, not a costume of its domain, such as stencil type for a warehouse.
-   - Pick a face the build can load from Fontsource or the repository, not the Google Fonts CDN unless the repository already uses it.
+   - Pick a face the build can load: Fontsource, as an npm import with a manifest or self-hosted files without one, or the repository's own; never the Google Fonts CDN unless the repository already uses it.
    - Record family, provenance `chosen`, the matched traits as `matchEvidence`, and `loadSource` in the contract.
    - A brand that owns a banned family records repository or brief provenance in the contract.
    - A system stack is a recorded gap to replace, never a finished display choice.

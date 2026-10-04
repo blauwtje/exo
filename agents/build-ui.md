@@ -118,7 +118,7 @@ The ladder, before every edit that adds or replaces code: read the ranges the ed
 Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
 ```
 
-In a project with no pages and no UI framework, the packages of `$SKILL/references/stack.md` count as a dependency the manifest lists, so the Borrow rung's new-dependency limit never holds them back.
+In a project with no pages and no UI framework, a job `$SKILL/references/stack.md` maps to a package takes that package before any other Borrow source, native platform features included, and the new-dependency limit never holds it back. A native `<button>` or hand-drawn SVG chart passes the rung yet misses the focus, keyboard and screen-reader work the package ships.
 
 **Rules.**
 

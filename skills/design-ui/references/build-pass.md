@@ -1,6 +1,6 @@
 # Build Pass
 
-Build the one pass from this file alone, read whole and once. The enemy is the assembled default page: white ground, grey cards, stock controls, no motion. The overcorrection is stacking every treatment until nothing leads.
+Build the one pass from this file, read whole and once; where the `stack` reference, read in Phase 2, picks the default stack, it governs the scaffold, every component, the package per job and the preview url. The enemy is the assembled default page: white ground, grey cards, stock controls, no motion. The overcorrection is stacking every treatment until nothing leads.
 
 ## Contents
 
@@ -78,10 +78,10 @@ By category:
 - Space a stagger 30–80ms per sibling, with the whole sequence inside 800ms.
 - Ease functional motion out with `cubic-bezier(.16, 1, .3, 1)` or a Motion spring without bounce; overshoot belongs only to a playful mood, never a functional control.
 - Declare the exit on the closed state, or in Motion's `exit`, with a shorter duration and an ease-in, because one base-rule transition replays the entrance reversed.
-- Animate `transform` and `opacity`, keep durations and curves in tokens, and name each transitioned property, never `all`.
+- Animate `transform` and `opacity`, keep durations and curves in tokens, and name each transitioned property, never `all`, Tailwind's `transition-all` in a fetched component included.
 - Show a focus indicator at once; never transition the indicator itself.
 - Put every CSS transition and animation behind `@media (prefers-reduced-motion: no-preference)`, never the state it leads to.
-- Wrap a Motion app in `<MotionConfig reducedMotion="user">`.
+- Wrap a Motion app in `<MotionConfig reducedMotion="user">`, so Motion drops transform and layout animation under `reduce` while keeping opacity.
 - Declare hover offset, press, open panel and selected tab outside that query, so each state change still happens under `reduce`.
 - Under `reduce`, replace meaningful motion with a fade or color shift rather than deleting it, so loading and feedback survive.
 
@@ -102,7 +102,7 @@ By category:
 - Tie one radius scale to control height; never mix a 4px input with a 24px button.
 - Name the outcome on a control, such as "Save changes", never "Submit", "Go" or "OK" where an outcome exists.
 - Reset `appearance` on native select and search fields, drawing the chevron from the icon set with end padding that clears it.
-- Center field and select text with equal block padding around a stated line-height, not a fixed height.
+- Center field and select text with equal block padding around a stated line-height, not a fixed height, outside a kit whose fetched fields set their own height.
 - Build each reachable loading, empty, error and success state; loading reserves its space so arrival shifts no layout.
 - Write an empty state for its reason: first use hands over the first action, a filtered result keeps the query and offers recovery.
 
