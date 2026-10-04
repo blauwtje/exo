@@ -4,14 +4,14 @@ Build a page with no framework on a maintained component stack, so it ships test
 
 ## Which stack
 
-- An existing project keeps the stack it has, and every rule below yields to it, because a second framework splits the codebase.
-- A folder with no package manifest, or one whose manifest names no UI framework, gets Vite, React, TypeScript, Tailwind CSS, shadcn/ui and lucide-react.
-- In that folder every package this file names counts as a dependency the manifest lists, so neither the ladder's Borrow rung nor a build-on-the-platform rule holds one back.
+- Existing pages keep their stack, plain HTML included, and every rule below yields to it, because a second framework splits the codebase.
+- A project with no pages and no UI framework in its manifest, an empty folder included, gets Vite, React, TypeScript, Tailwind CSS, shadcn/ui and lucide-react.
+- In that project every package this file names counts as a dependency the manifest lists, so neither the ladder's Borrow rung nor a build-on-the-platform rule holds one back.
 - The plan names the package for each job its screens carry, because the build installs only what the plan names.
 
 ## Scaffold
 
-- In that folder, run `npx shadcn@latest init -t vite -b radix -p nova -n app -y`, then move the files of `app/`, its `.git` excepted, into the folder and remove `app/`, because the CLI refuses an existing destination.
+- In that project, run `npx shadcn@latest init -t vite -b radix -p nova -n app -y`, then move the files of `app/`, its `.git` excepted, into the folder and remove `app/`, because the CLI refuses an existing destination.
 - That one call writes Vite, React, TypeScript, Tailwind v4, the `@/` alias and lucide-react; set none of them up by hand.
 - Fetch every component with `npx shadcn@latest add <name>...`, never hand-writing one the CLI ships, because a hand-written copy loses the Radix keyboard and focus behavior.
 - Never add a block such as `dashboard-01` as the base, because a block brings its stock layout and the page reads as the template.

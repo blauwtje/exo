@@ -68,7 +68,7 @@ Load a reference only at its row's phase and predicate, and only the sections th
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
 | `references/build-pass.md` | One pass or sketch, Phase 3: whole, once. |
-| `references/stack.md` | Phase 2: whole without a UI framework, else `## Which stack` alone. |
+| `references/stack.md` | Phase 2: whole in a project with no pages and no UI framework, else `## Which stack` alone. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: Phase 2 on rung 3, after `--check` reports ok and before the offer; elsewhere, before the first visual choice the user asked to see. |
 | `references/direction-preview.md` | Opt-in: Phase 2, only when the user asks to see directions whole, before building the picker's comps. |

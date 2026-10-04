@@ -52,7 +52,7 @@ Read a section of a reference by finding its `## ` heading with `Grep -n`, then 
 
 Write the tokens file, the base layer, and every primitive the inventory repeats across surfaces, in the repository's styling architecture from `$SKILL/references/implementation.md`.
 
-With no package manifest or no UI framework, first scaffold the stack and run every `shadcn add` the inventory needs, per `$SKILL/references/stack.md`; a surface builder never runs `shadcn add`.
+In a project with no pages and no UI framework, first scaffold the stack and run every `shadcn add` the inventory needs, per `$SKILL/references/stack.md`; a surface builder never runs `shadcn add`.
 
 Build the motion bar's tokens.
 
@@ -118,7 +118,7 @@ The ladder, before every edit that adds or replaces code: read the ranges the ed
 Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
 ```
 
-In a folder with no package manifest or no UI framework, the packages of `$SKILL/references/stack.md` count as a dependency the manifest lists, so the Borrow rung's new-dependency limit never holds them back.
+In a project with no pages and no UI framework, the packages of `$SKILL/references/stack.md` count as a dependency the manifest lists, so the Borrow rung's new-dependency limit never holds them back.
 
 **Rules.**
 

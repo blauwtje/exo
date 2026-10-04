@@ -34,7 +34,7 @@ Proof:
 - Each call is a few lines naming `RUN=<run dir> SCOPE=<foundation or a surface> SKILL=<skill dir> REPO=<repository root> FILES=$RUN/files.md REFERENCES=<the reference rows whose predicate its scope meets> URL=<the surface's url, for a surface scope that renders>`.
 - `$RUN/files.md` is the Phase 1 list of paths and line ranges this session wrote, so a builder opens no whole file.
 - One call with `SCOPE=foundation` writes the tokens file, the base layer, and the primitives the inventory repeats, and returns foundation.md.
-- In a folder with no UI framework, that call also scaffolds the stack and runs every `shadcn add` the inventory needs, because surface builders running the CLI in parallel race on `package.json`.
+- In a project with no pages and no UI framework, that call also scaffolds the stack and runs every `shadcn add` the inventory needs, because surface builders running the CLI in parallel race on `package.json`.
 - This session then starts the dev server and passes its url as each surface's `URL`.
 - Then, including an inventory of one or two surfaces, one call per surface goes out, all in one message, each given that same foundation.md.
 - Send those calls in the turn foundation.md returns, with nothing read before it but that report, because every surface builder waits on each turn spent between the two.
