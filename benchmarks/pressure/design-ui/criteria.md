@@ -1,10 +1,11 @@
 # design-ui: pass criteria for the `with` arm
 
-The cases fall in three groups. Run every prompt but `a-orders-overview.txt` on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
+The cases fall in four groups. Run every prompt but `a-orders-overview.txt`, `a-orders-character.txt` and the build-stack cases on `sonnet:high`, the cell of design-ui's `build` kind, and read the final answer.
 
 - `a-landing.txt` covers the one-pass default. It needs the fixture `setup.sh` lays down, and runs with `--main-dir` against main.
 - `a-labels.txt`, `b-open-picker.txt` and `c-side-by-side.txt` cover the opt-in picker's `direction-preview` reference. They need no fixture: each prompt asks for the next file or tool calls and runs nothing, so run them from the root of an exo clone.
 - `a-orders-overview.txt` covers the full-scope completion, the mood and the motion bar. It needs no fixture.
+- `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` cover the build stack: the default stack in an empty folder, an existing project's stack, and where Magic UI effects belong.
 
 ## One-pass default
 
@@ -28,6 +29,16 @@ Run `a-orders-character.txt` like `a-orders-overview.txt`, in the `opus:high` ce
 - Pass: the plan names one standout element, tinted ground and surfaces rather than white boxes on grey with one accent, and at least two block anatomies; a businesslike or strict mood does not excuse any of them.
 
 Pre-edit baseline on 2026-10-04 (0.80.1, two runs each arm): all four built white cards on a light grey or off-white ground with one cobalt or green accent and one card anatomy for every block.
+
+## Build stack
+
+Run `a-orders-stack.txt`, `b-vue-stack.txt` and `c-landing-stack.txt` in the `sonnet:high` cell of design-ui's `build` kind and the `opus:high` cell of the session that runs the one pass, with no pressure: the hand-built page is a default tendency seen in a real run. `b-vue-stack.txt` needs the `orders-vue` fixture `setup.sh` lays down; the other two need none. Each answer is a setup written before any file, so read the final answer.
+
+- `a-orders-stack.txt`, all of: the stack is Vite, React, TypeScript, Tailwind, shadcn/ui and lucide-react, scaffolded with a Vite create command and `shadcn init`; components come through `shadcn add`, with no block such as `dashboard-01` as the base; the revenue chart is a shadcn chart on Recharts; the orders table is the shadcn data table on TanStack Table with sorting, filtering and row selection; toasts are sonner and the stat counters `@number-flow/react`; motion comes from Motion; fonts come from a Fontsource package; the preview is the Vite dev server. A single HTML file, hand-written CSS or JS components, a hand-drawn SVG or canvas chart, a Google Fonts `<link>` or `@import`, a `file://` preview, or a Magic UI effect on this app screen fails it.
+- `b-vue-stack.txt`: the setup keeps the fixture's Vue 3, Vite, plain CSS and `vue-chartjs`, builds the chart on `vue-chartjs`, and previews through `npm run dev`. Adding React, shadcn/ui, Tailwind or TypeScript, or scaffolding a new project, fails it; a Vue package for a job the project lacks, such as a table or toasts, passes.
+- `c-landing-stack.txt`: the stack and fonts match `a-orders-stack.txt`, the preview is the Vite dev server, and the hero or section effects may come from Magic UI through `shadcn add`. A single HTML file, a Google Fonts CDN link or a `file://` preview fails it.
+
+Pre-edit baseline on 2026-10-04 (0.80.4, one run each arm): with the skill, `opus:high` planned one static `index.html` with an inline SVG chart, Google Fonts and `open index.html` in `a` and `c`, and `sonnet:high` did the same in `c`; without it, both cells chose Vite, React, shadcn, Fontsource and the dev server, yet wrote their own count-up hook, named no Motion and no row selection. Every arm kept the Vue stack in `b`.
 
 ## Picker comps
 
