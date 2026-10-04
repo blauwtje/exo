@@ -45,7 +45,8 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Without a Users answer, or on decide yourself, take the user the ask names, else option A's user.
 - Without a Directions answer, or on decide yourself, build one direction.
 - Before Direction, state the user in one line, role, device, how often and main task, and write that line to `$RUN/user.md`.
-- Rung 3 of `## Route`, a user asking to see or choose between looks, gets the preview offer once, as the form's last question in place of the Directions question; no other rung offers it.
+- On rung 3 of `## Route`, a user asking to see or choose between looks, offer the preview once; no other rung offers it.
+- Ask the offer as the form's last question, in place of the Directions question.
 - The offer follows the question shape, and the user answers with the letter:
 
   ```text

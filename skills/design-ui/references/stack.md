@@ -29,7 +29,7 @@ A shadcn component in its fetched form reads as the template whatever the accent
 - Replace every color token in `:root`, `--card` and `--popover` included, with the plan's tinted roles, because a preset value left in place reads as stock.
 - Set control heights, padding and gaps in each fetched component from the plan's spacing scale, so density follows the direction, not the preset.
 - Recut the `cva` base and variants in each fetched file: surface, edge, elevation, weight and press from the direction.
-- Add a `cva` variant in the component's file for each role the plan names, such as a status badge, not a `className` override per call site.
+- Add a `cva` variant in the component's file per role the plan names, such as a status badge, not a `className` override per call site.
 - Set heading, card title and table header type inside the fetched component from the plan's faces, weights and tracking.
 - Theme every fetched component the screens show, because one stock component among themed ones still reads as the template.
 
