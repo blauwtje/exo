@@ -25,7 +25,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:` (`deferred` for MCP), never a report you wrote; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A path outside `Files:`, a failing Proof line or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
-  - A refusal about the report (no report, no `pass` line, no output, unclear outcome) goes by SendMessage to the agent that wrote it, with land-task's refusal verbatim; never rerun a proof to repair a report.
+  - A report refusal goes by SendMessage to its writer, verbatim; never rerun a proof.
   - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
   - Return to step 1 until every block task has a `LANDED` or `BLOCKED` line.
 
@@ -33,15 +33,14 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
 - Only the hard message, `past the limit of`, ends the loop: finish the task in flight, return `BUDGET:`.
-- Ask the user nothing: a choice or build `BLOCKED` returns that task `BLOCKED` with question, options.
+- Ask the user nothing: a choice or build `BLOCKED` returns it `BLOCKED` with question, options.
 - Delete no data or branch, run no `git stash`: `BLOCKED` with options.
-- Clear wave worktrees before returning.
 
 ## Return
 
 At most ten lines, one per task:
 
-- `LANDED <n> <sha>` for a committed task, plus ` pending <command>` per land-task `Pending:` line.
+- `LANDED <n> <sha>` for a committed task, plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> <reason or question for the user>` for a task needing the user or waiting on one.
 - `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`, alone, when no tool dispatches.
 - `BUDGET: done <list or none>; open <list>; next <sentence>` after the hard message.
