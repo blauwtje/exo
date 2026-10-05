@@ -39,10 +39,10 @@ Only a request from the user opens the picker: a landing page or an open identit
 
 The default for every rung but 1 and 4; this session builds it. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3.
 
-1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`, once.
-2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the named or saved product, if any, the color and font line with hex values, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+1. **Context.** Read `references/phase-detail.md`.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under `references/phase-direction.md` and `references/stack.md`. It names the named or saved product, if any, the color and font line with hex values, the motion thesis, and an ASCII layout at 1440 and 390 wide.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing.
-4. **Read the build pass.** Read `references/build-pass.md` whole before the first product edit.
+4. **Build pass.** Read `references/build-pass.md` before the first product edit.
 5. **Build.** Build the whole page from the plan, around the chosen comp on rung 3, then run `references/build-pass.md`'s proof. Without a url, start the preview `references/stack.md` names.
 6. **Capture, look, fix once.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`, read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and repair all in one pass.
 7. **Finish on a fresh capture.** Rerun step 6's capture command only, with `--label final`, and read both; a page is done only on a capture after its last edit.
@@ -60,7 +60,8 @@ The parts below run only when the user's own words ask for them; a page's size, 
 
 ## References
 
-Load a reference only at its row's phase and predicate, and only the sections the row names; a row naming none loads whole.
+- Open each reference once, at its row's phase and predicate, in one whole Read, not Bash, because long Bash output is persisted and reread.
+- Apply only the sections its row names, all if it names none.
 
 | File | Read it when |
 |---|---|
@@ -69,7 +70,7 @@ Load a reference only at its row's phase and predicate, and only the sections th
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the opt-in full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | Sketch Phase 3 and one-pass step 4: whole, once. |
+| `references/build-pass.md` | Sketch Phase 3 and one-pass step 4. |
 | `references/stack.md` | Phase 2: `## Which stack`, and the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |
