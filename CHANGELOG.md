@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- build's builder asks `node lib/mcp-tool-call.mjs "<proof>"` whether each Proof is an MCP call (`DEFER`, with or without `mcp:`) or a shell command (`SHELL`), and reports a `DEFER` Proof as deferred without running it, so the agent names no tool list.
+
 ## 0.83.6 - 2026-10-05
 
 ### Changed
