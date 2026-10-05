@@ -17,7 +17,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- The proof check accepts bold and list-prefixed `Proof:` and `Unverified:` lines and names a Done claim only when the text makes one.
+- The proof check names a Done claim in its block reason only when the report makes one.
 
 ## 0.84.1 - 2026-10-05
 

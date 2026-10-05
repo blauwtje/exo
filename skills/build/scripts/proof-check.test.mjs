@@ -6,9 +6,10 @@ import test from 'node:test';
 import { stopOutput } from './proof-check.mjs';
 
 // The four report shapes of issue #94: a build turn that changes no code.
-function reportOutput(reportText) {
+function reportOutput(reportText, { afterTypedTurn = false } = {}) {
   const rows = [
     { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Skill', id: 'toolu_skill', input: { skill: 'build' } }] } },
+    ...(afterTypedTurn ? [{ type: 'user', message: { content: 'git pull' } }] : []),
     { type: 'assistant', message: { content: [{ type: 'text', text: reportText }] } }
   ];
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'proof-check-94-')), 'transcript.jsonl');
@@ -39,4 +40,14 @@ test('#94: a Done report with no Proof line still names the Done claim', () => {
   const result = JSON.parse(reportOutput('**Done:** pulled 3 commits.'));
   assert.equal(result.decision, 'block');
   assert.match(result.reason, /claims Done/);
+});
+
+test('#94: the four report shapes on a later typed turn that never called build pass', () => {
+  const reports = [
+    'Pulled 3 commits.\nUnverified: no exo checks run; git pull changes no code.',
+    'Pulled 3 commits.\n**Unverified:** no exo checks run; git pull changes no code.',
+    'Pulled 3 commits.\n- Unverified: no checks run.',
+    'Pulled 3 commits.'
+  ];
+  for (const report of reports) assert.equal(reportOutput(report, { afterTypedTurn: true }), '');
 });

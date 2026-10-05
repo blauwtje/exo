@@ -196,7 +196,7 @@ function runSafeCheck(task, workdir) {
 }
 
 // Deny messages a hook or the permission layer left in the result, for reading
-// only: the score comes from the git state alone.
+// only: the score does not use them.
 function denyMessages(result) {
   if (result === null) return [];
   const denials = Array.isArray(result.permission_denials) ? result.permission_denials.map((denial) => JSON.stringify(denial)) : [];
