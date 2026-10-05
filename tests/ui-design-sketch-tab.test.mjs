@@ -307,11 +307,11 @@ describe('sketch-tab.mjs', () => {
       await events.next();
       events.close();
 
-      const noted = await answer(url, { sketch: '001-palette.html', choice: null, steer: 'geen van beide, groener' });
+      const noted = await answer(url, { sketch: '001-palette.html', choice: null, steer: 'keins von beiden, grüner' });
       assert.equal(noted.status, 200);
       const waited = await run(SKETCH_TAB, ['--wait', folder, '--sketch', '001-palette.html', '--timeout', '5']);
       assert.deepEqual(JSON.parse(waited.stdout), {
-        sketch: '001-palette.html', choice: null, label: '', steer: 'geen van beide, groener'
+        sketch: '001-palette.html', choice: null, label: '', steer: 'keins von beiden, grüner'
       });
     } finally {
       tab.stop();
