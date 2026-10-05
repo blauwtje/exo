@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.88.0 - 2026-10-05
+
 ### Added
 
 - `land-task.mjs --check` runs only the Files: and report checks, commits nothing and prints `Report OK: Task <n>`; build-task runs it before returning GREEN, so a malformed report gets fixed inside the builder's own turn.
