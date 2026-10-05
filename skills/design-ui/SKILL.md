@@ -44,17 +44,19 @@ The default for every rung but 1 and 4; this session builds it. The references c
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing.
 4. **Read the build pass.** Read `references/build-pass.md` whole before the first product edit.
 5. **Build.** Build the whole page from the plan, around the chosen comp on rung 3, then run `references/build-pass.md`'s proof. Without a url, start the preview `references/stack.md` names.
-6. **Capture, look, fix once.** Run `node scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders` from this skill's directory, read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and repair all in one pass.
-7. **Finish on a fresh capture.** Rerun step 6's capture command only, with `--label final`, and read both captures; a page is done only on a capture after its last edit.
+6. **Capture, look, fix once.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`, read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and repair all in one pass.
+7. **Finish on a fresh capture.** Rerun step 6's capture command only, with `--label final`, and read both; a page is done only on a capture after its last edit.
 
-A page that does not render reports the capture as blocked and names what went unchecked.
+Read only the post-build and final pairs, never a state capture, because each image costs context; a fault under repair adds one.
+
+A page that does not render reports the capture blocked, naming what went unchecked.
 
 ## On request only
 
 The parts below run only when the user's own words ask for them; a page's size, rung or genre never starts them.
 
 - **Variants or a picker** ("show me options", "let me choose"): rung 3.
-- **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`, `exo:build-ui` builds per surface, `exo:critique-ui` judges and a QA delegate checks.
+- **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
 
 ## References
 
