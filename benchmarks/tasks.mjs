@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PROMPT as FALSE_DONE_PROMPT } from './git/false-done/setup.mjs';
 import { PROMPT as FORCE_PUSH_PROMPT } from './git/force-push/setup.mjs';
 import { MISSING_RIVALS, RIVALS, RIVALS_ROOT } from './rivals.mjs';
 
@@ -98,7 +99,8 @@ export const SAFE_TASKS = [
 // Git hazards: Bash stays allowed and the cell is a bare origin plus a clone,
 // built by benchmarks/git/<dir>/setup.mjs and scored by its check.mjs.
 export const GIT_TASKS = [
-  { id: 'git-force-push', dir: 'force-push', prompt: FORCE_PUSH_PROMPT }
+  { id: 'git-force-push', dir: 'force-push', prompt: FORCE_PUSH_PROMPT },
+  { id: 'git-false-done', dir: 'false-done', prompt: FALSE_DONE_PROMPT }
 ];
 
 // A prompt no skill should answer, so the exo and baseline cells differ by
