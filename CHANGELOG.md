@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.85.0 - 2026-10-05
+
 ### Added
 
 - The benchmark runner has a `git-false-done` task, scored from the suite result and the final claim, and `benchmarks/demo/setup.mjs` seeds a repository for the force-push demo.
