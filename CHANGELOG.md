@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.4 - 2026-10-05
+
 ### Fixed
 
 - verify hands a task Proof that starts with a known MCP tool name but lacks the `mcp:` prefix to the session as a `SESSION Task <n>` line, as it already did for the Success criterion, and counts it with its `mcp:` form when it repeats.
