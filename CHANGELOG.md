@@ -7,6 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `land-task.mjs --check` runs only the Files: and report checks, commits nothing and prints `Report OK: Task <n>`; build-task runs it before returning GREEN, so a malformed report gets fixed inside the builder's own turn.
+
+### Changed
+
+- Every land-task report refusal ends with the full expected layout under Proof, filled with the task's command, so one round fixes every report fault.
+- A land-task report refusal goes back to the agent that wrote the report with the refusal verbatim, never a session rerun of the proof, and a build-task budget stop redispatches build-task with a raised budget, never an improvised prompt to another agent.
+
+### Fixed
+
+- A `Files:` entry ending in `/` covers every changed path under that folder, so a task that regenerates snapshot files lands without listing each file.
+
 ## 0.87.1 - 2026-10-05
 
 ### Changed
