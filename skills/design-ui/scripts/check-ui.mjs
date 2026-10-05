@@ -5,8 +5,9 @@
 //   node scripts/check-ui.mjs [--url <url>] [--source <dir>] [--viewport <width>x<height>]
 //                             [--baseline <earlier check-ui JSON>] [--out <file>] [--json] [--all]
 //
-// stdout is a short summary of the definite and blocking findings, grouped by type; the full
-// JSON report, every finding included, goes to --out, or to a fresh temp file the summary names.
+// stdout is one summary line of counts; the full JSON report, every finding included, goes to
+// --out, or to a fresh temp file the summary names, with the definite and blocking counts by
+// type under `typeSummary`.
 // --json prints the report on stdout instead. --all keeps the advisory types the summary, the
 // --json stdout and the --baseline comparison otherwise leave out.
 //
@@ -1685,8 +1686,9 @@ export function omitAdvisory(report) {
 }
 
 /**
- * The default stdout: one total line, then one `<type> <count> blocking=<n>` line per type among
- * the definite or blocking findings, most blocking first. An ignored finding is never shown.
+ * The default summary: `total` is the one stdout line, `types` holds one `<type> <count> blocking=<n>`
+ * line per type among the definite or blocking findings, most blocking first, for the report file.
+ * An ignored finding is never shown.
  */
 export function summaryLines({ report, findings, comparison, ignoreEntries, omitted, reportFile }) {
   const blocking = new Set(comparison.blocking);
@@ -1710,7 +1712,7 @@ export function summaryLines({ report, findings, comparison, ignoreEntries, omit
   if (reportFile) total.push(`report=${reportFile}`);
   const tallies = [...byType.values()].sort((left, right) =>
     right.blocking - left.blocking || right.count - left.count || left.type.localeCompare(right.type));
-  return [total.join(' '), ...tallies.map((tally) => `${tally.type} ${tally.count} blocking=${tally.blocking}`)];
+  return { total: total.join(' '), types: tallies.map((tally) => `${tally.type} ${tally.count} blocking=${tally.blocking}`) };
 }
 
 async function readBaseline(file) {
@@ -1852,15 +1854,16 @@ async function main(argv) {
   if (!flags.all) report.notes = applyNotesTable(reportFindings(report) ?? []);
 
   const reportFile = flags.out ?? (flags.json ? null : await defaultReportFile());
-  if (reportFile) await fs.writeFile(reportFile, `${JSON.stringify(report)}\n`);
   if (flags.json) {
+    if (reportFile) await fs.writeFile(reportFile, `${JSON.stringify(report)}\n`);
     process.stdout.write(`${JSON.stringify(shownReport)}\n`);
     return;
   }
   const comparison = shownReport.comparison ?? compareFindings([], findings, []);
-  for (const line of summaryLines({ report: shownReport, findings, comparison, ignoreEntries, omitted, reportFile })) {
-    process.stdout.write(`${line}\n`);
-  }
+  const summary = summaryLines({ report: shownReport, findings, comparison, ignoreEntries, omitted, reportFile });
+  report.typeSummary = summary.types;
+  if (reportFile) await fs.writeFile(reportFile, `${JSON.stringify(report)}\n`);
+  process.stdout.write(`${summary.total}\n`);
 }
 
 if (isMain(import.meta.url)) {

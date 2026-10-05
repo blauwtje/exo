@@ -131,7 +131,7 @@ Run `scripts/check-ui.mjs` with `--source` and `--url` instead of grepping by ha
 - `physical-direction-property`;
 - computed contrast, target size, overflow, `reflow-two-dimensional` at 320×256, and focus-indicator findings.
 
-Read its stdout summary, definite and blocking counts by type; open the JSON file its `report=` names only for a finding being repaired.
+Read its one-line stdout summary; the JSON file its `report=` names holds the definite and blocking counts by type under `typeSummary`, and its findings, which you open only for a finding being repaired.
 
 Read each finding's `confidence` before acting, and fix the code rather than the checker.
 

@@ -828,7 +828,7 @@ describe('check-ui.mjs notes table', () => {
     assert.deepEqual(reconstructed, entries);
   });
 
-  it('prints a total line and one line per definite type by default, and writes the full report to --out', async () => {
+  it('prints one total line by default, and writes the full report and its per-type lines to --out', async () => {
     const root = await fixture();
     await fs.writeFile(path.join(root, 'a.css'), [
       '.a { transition: all 200ms ease; }',
@@ -841,9 +841,28 @@ describe('check-ui.mjs notes table', () => {
     assert.equal(result.code, 0, result.stderr);
     const lines = result.stdout.trimEnd().split('\n');
     assert.equal(lines[0], `static=ok rendered=unavailable findings=3 shown=2 blocking=2 omitted=0 report=${reportFile}`);
-    assert.deepEqual(lines.slice(1), ['transition-all 2 blocking=2']);
+    assert.equal(lines.length, 1);
     const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
+    assert.deepEqual(report.typeSummary, ['transition-all 2 blocking=2']);
     assert.equal(report.static.findings.length, 3);
+  });
+
+  it('prints at most two stdout lines however many types it finds, and keeps the per-type lines in the report file', async () => {
+    const root = await fixture();
+    await fs.writeFile(path.join(root, 'a.css'), [
+      '.a { transition: all 200ms ease; }',
+      '.b { transition: all 100ms linear; }'
+    ].join('\n'));
+    await fs.writeFile(path.join(root, 'a.html'), '<html><body><img src="x.png"><svg></svg></body></html>\n');
+    const reportFile = path.join(root, 'report.json');
+
+    const result = await run(script('check-ui.mjs'), ['--source', root, '--out', reportFile]);
+    assert.equal(result.code, 0, result.stderr);
+    const lines = result.stdout.trimEnd().split('\n');
+    assert.ok(lines.length <= 2, `stdout held ${lines.length} lines:\n${result.stdout}`);
+    const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
+    assert.ok(report.typeSummary.length >= 2, `typeSummary: ${JSON.stringify(report.typeSummary)}`);
+    assert.ok(report.typeSummary.includes('transition-all 2 blocking=2'));
   });
 
   it('names a temp report file when --out is not given', async () => {
@@ -926,11 +945,10 @@ describe('check-ui.mjs notes table', () => {
       ignoreEntries: [{ type: 'placeholder-copy', file: 'src/a.html', reason: 'fixture' }],
       omitted: 4, reportFile: null
     });
-    assert.deepEqual(lines, [
-      'static=ok rendered=ok findings=3 shown=2 blocking=1 omitted=4 new=1 predating=1 ignored=1',
-      'contrast-normal-text 1 blocking=1',
-      'transition-all 1 blocking=0'
-    ]);
+    assert.deepEqual(lines, {
+      total: 'static=ok rendered=ok findings=3 shown=2 blocking=1 omitted=4 new=1 predating=1 ignored=1',
+      types: ['contrast-normal-text 1 blocking=1', 'transition-all 1 blocking=0']
+    });
   });
 });
 
