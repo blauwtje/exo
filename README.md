@@ -5,7 +5,7 @@
 # exo
 
 <p align="center">
-  <strong>Decide what to build, build it, then review it, each as its own step.</strong>
+  <strong>Claude Code plugin with four stages and hooks that refuse risky commands.</strong>
 </p>
 
 <p align="center">
