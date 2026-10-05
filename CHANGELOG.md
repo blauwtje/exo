@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.9 - 2026-10-05
+
 ### Changed
 
 - The `remember` correction nudge works in any language: every main-thread prompt gets one shorter book sentence and the session decides whether it corrects a repository fact, instead of matching a list of English and Dutch words; prompts with no letter or digit and bare slash commands are skipped.
