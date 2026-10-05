@@ -33,7 +33,7 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Put the best-evidenced user first, as option A, and recommend it.
 - Each Scope option is one completed scope group from the inventory, at most four.
 - Name each Scope option by what the user will see on the screen, not by an inventory group label.
-- Reachable states and an app screen's fixed scope groups are never a Scope option, because every build carries them.
+- Reachable states and the fixed scope groups of an admin, dashboard or tool screen are never a Scope option, because the build always carries them.
 - A Scope answer that ticks every option, ticks none, or says decide yourself builds every group.
 - A Scope answer that ticks some options builds the ticked groups plus every fixed group.
 - Before the form, run `node <skill dir>/scripts/reference.mjs --root <repository>`; it prints the product saved in docs/design/DESIGN.md, or nothing.

@@ -25,7 +25,7 @@ Start with content, not sections:
 - **Actions and states** — primary and secondary actions; loading, empty, error, success, permission, and live states that can occur.
 - **Subject artifacts** — real units, labels, documents, instruments, imagery, and vernacular from Phase 1.
 
-Complete a short ask with what a mature product carries on this screen, because a literal reading builds an empty page:
+Complete a short ask for an admin, dashboard or tool screen with what a mature product carries, because a literal reading builds an empty page:
 
 - navigation that places the screen inside its product;
 - search and filtering over every collection the screen shows;
@@ -33,7 +33,7 @@ Complete a short ask with what a mature product carries on this screen, because 
 - rich components chosen for this content's relationships, never a fixed kit;
 - every reachable state of every region.
 
-An app screen, such as an admin, dashboard or tool view, always carries this minimum, whatever the Scope answer:
+Only an admin, dashboard or tool screen always carries this minimum, whatever the Scope answer:
 
 - navigation with an icon on each item;
 - search;
@@ -43,9 +43,13 @@ An app screen, such as an admin, dashboard or tool view, always carries this min
 - a table with avatars, status badges, sortable columns, and row checkboxes that open a bulk action bar;
 - a detail panel.
 
+Any other screen, such as a lesson, checkout, game or consumer app, is a task screen: its content comes from the user's tasks there.
+
+A task screen stays focused: no sidebar, stat counters or chart unless one of the user's tasks needs it, because each competes with the task.
+
 Record each completed item except the states as a scope group in the inventory, so the scope form can list it.
 
-On an app screen, record each minimum item as its own fixed scope group, so the plan check lists it and fails a plan that misses one.
+Record each minimum item as its own fixed scope group, so the plan check lists it and fails a plan that misses one.
 
 An ask naming no product keeps a plain category name and generic content, never an invented brand or domain.
 
