@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The README is rewritten for a quick scan: install first, then one table of what each skill does, example prompts and a compact settings table, with internals left to `CONTRIBUTING.md`.
+
 ## 0.83.2 - 2026-10-05
 
 ### Fixed
