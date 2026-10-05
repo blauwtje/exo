@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- build-task quotes a failing `Red:` run before the production edit and a passing `Proof:` run after, for every test-first task, and `land-task` lands a report holding the `Red:` line.
+- Both branch reviewers report a test-first task whose report shows a passing run with no `Red:` failing run before it as a `defect`.
+
+### Added
+
+- Benchmarks gain `review-green-first-<effort>` review cells, a `prepareGreenFirstBranch` fixture and pressure cases for build-task and review-branch, so the red-before-green rules get measured.
+
 ## 0.86.2 - 2026-10-05
 
 ### Highlights
