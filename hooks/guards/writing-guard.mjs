@@ -12,8 +12,9 @@
 // a `git commit` inside a message or a heredoc body is not one, and the text as
 // written supplies the message, because blanking keeps every offset.
 // Ceiling: a bare "Claude" is not matched, because `chore(claude):` is an
-// established scope; only attribution-shaped phrases are, and a tool name only as
-// the first segment of a new branch name.
+// established scope, nor a bare "Claude Code" in text, because exo's own issues and
+// commits name the product as their subject; only attribution-shaped phrases are,
+// and a tool name only as the first segment of a new branch name.
 // Ceiling: the command string is matched, not parsed. A message option on a
 // continuation line is not seen and that subject passes unread; joining continued
 // lines before matching would lift it. A relative message file is looked up in the
@@ -28,11 +29,14 @@ import path from 'node:path';
 import { blankCommandText, GIT_PREFIX_SOURCE } from './command-text.mjs';
 import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
-// One list for every place attribution can land. A branch name holds no space,
-// so there the whitespace of a phrase stands for the separators a name uses instead.
-const ATTRIBUTION_PHRASES = 'co-authored-by|generated\\s+with|generated\\s+by|claude\\s+code|noreply@anthropic\\.com|robot_face';
-const BRANCH_ATTRIBUTION_PHRASES = ATTRIBUTION_PHRASES.replaceAll('\\s+', '[-_/]');
-const ATTRIBUTION = new RegExp(ATTRIBUTION_PHRASES, 'i');
+// The phrases that attribute wherever they land. Text adds the product name only
+// behind a verb of authorship or as its link, while a branch name refuses the name
+// itself, since no branch has it as a subject. A branch name holds no space, so
+// there the whitespace of a phrase stands for the separators a name uses instead.
+const SHARED_ATTRIBUTION_PHRASES = 'co-authored-by|generated\\s+with|generated\\s+by|noreply@anthropic\\.com|robot_face';
+const PRODUCT_CREDIT = '\\b(?:made|written|built|created|authored|assisted|produced|generated)\\s+(?:with|by|using|via|in)\\s+\\[?claude\\s+code|claude\\.com/claude-code';
+const ATTRIBUTION = new RegExp(`${SHARED_ATTRIBUTION_PHRASES}|${PRODUCT_CREDIT}`, 'i');
+const BRANCH_ATTRIBUTION_PHRASES = `${SHARED_ATTRIBUTION_PHRASES}|claude\\s+code`.replaceAll('\\s+', '[-_/]');
 
 const COMMIT_TYPES = ['build', 'chore', 'ci', 'docs', 'feat', 'fix', 'merge', 'perf', 'refactor', 'revert', 'style', 'test'];
 const CONVENTIONAL_SUBJECT = new RegExp(`^(${COMMIT_TYPES.join('|')})(\\([^()]+\\))?!?: [^ ]`);

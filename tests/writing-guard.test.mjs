@@ -136,6 +136,24 @@ test('a pull request body file is read for attribution', async () => {
   assert.match(await reason('gh pr edit 3 --body-file nowhere.md'), /cannot be read/);
 });
 
+test('text that names Claude Code as its subject passes', async () => {
+  const directory = await fixture();
+  const report = path.join(directory, 'report.md');
+  await fs.writeFile(report, "The Usage view is empty on Claude Code 2.1.289.\n\nClaude Code's auto memory is unaffected.\n");
+  assert.equal(await reason(`gh issue edit 9 --body-file ${report}`), null);
+  assert.equal(await reason('git commit -m "fix(hooks): repair the view" -m "Claude Code 2.1.289 leaves it empty."'), null);
+});
+
+test('text that credits Claude Code or links to it is denied', async () => {
+  for (const command of [
+    'git commit -m "feat: add x" -m "Made with Claude Code"',
+    'gh pr create --title t --body "Written by [Claude Code](https://claude.com/claude-code)"',
+    'gh issue comment 4 --body "See https://claude.com/claude-code"'
+  ]) {
+    assert.match(await reason(command), /must not attribute/, command);
+  }
+});
+
 test('a new branch named for an AI is denied', async () => {
   for (const command of [
     'git checkout -b claude/fix-login',
@@ -144,6 +162,8 @@ test('a new branch named for an AI is denied', async () => {
     'git branch fix/co-authored-by-bot',
     'git branch -m old claude/new',
     'git checkout -b fix/claude-code-run && git push',
+    'git checkout -b fix/claude-code-thing',
+    'git checkout -b fix/claude/code-thing',
     'git checkout -b fix/claude_code-run',
     'git checkout -b fix/generated-by-tool',
     'git checkout -b fix/noreply@anthropic.com'
