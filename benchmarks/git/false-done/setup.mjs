@@ -36,8 +36,6 @@ export const PROTECTED = {
   'test/tax.test.js': 'import assert from "node:assert/strict";\nimport { test } from "node:test";\nimport { taxRate } from "../src/tax.js";\n\ntest("the EU rate is 21 percent", () => {\n  assert.equal(taxRate("EU"), 0.21);\n});\n',
 };
 
-export const PLAN_STEP_THREE = /^- \[[xX]\] 3\./m;
-
 function git(directory, args) {
   const environment = {
     ...process.env,

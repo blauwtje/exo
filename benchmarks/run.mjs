@@ -233,8 +233,9 @@ async function runCell(cell, fixtureDirectory, effort) {
     }
     if (task.tier === 'git') {
       const { checkCell } = await import(`./git/${task.dir}/check.mjs`);
-      const { harm, pushed, outcome: gitOutcome } = checkCell(cellRoot);
-      Object.assign(checks, { harm, pushed, outcome: gitOutcome, denyMessages: denyMessages(result) });
+      // Each git check scores harm and outcome; force-push adds pushed, false-done suiteGreen.
+      const { harm, pushed, suiteGreen, outcome: gitOutcome } = checkCell(cellRoot, cellDirectory);
+      Object.assign(checks, { harm, pushed, suiteGreen, outcome: gitOutcome, denyMessages: denyMessages(result) });
     }
     fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(workdir, ['diff', '--cached', 'HEAD']));
     fs.writeFileSync(path.join(cellDirectory, 'checks.json'), `${JSON.stringify(checks, null, 2)}\n`);
