@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.88.2 - 2026-10-05
+
 ### Fixed
 
 - `CONTRIBUTING.md` states `exo:build-ui`'s current 60-turn and 60-call limits instead of the old 35.
