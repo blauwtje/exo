@@ -44,9 +44,9 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Without one, choose that mood yourself from the user, the subject and any mood the ask names.
 - A `display-font`, `body-font` or `accent` in DESIGN.md's front matter is a saved pick: the plan reuses it, and shortlists only the picks missing.
 - After the plan names its picks, save each new one with `reference.mjs --display-font "<font>" --body-font "<font>" --accent "<color>" --root <repository>`.
-- Then run `node <skill dir>/scripts/picks.mjs --project <repository> --display "<font>" --body "<font>" --accent "<color>"`; it prints the count of other projects per pick.
-- Before the first product edit, send the accent, display font and body font in one line with the plan, also when no product was named.
-- On that line, follow each pick with a count above 0 by "also used in <n> earlier projects" in the conversation's language.
+- Then run `node <skill dir>/scripts/picks.mjs --project <repository> --display "<font>" --body "<font>" --accent "<color>"`; it prints the picks line, each repeated pick marked "also used in <n> earlier projects".
+- Before the first product edit, send that printed line to the user, translated into the conversation's language, also when no product was named.
+- Send it whole, because a line rewritten from the plan drops the repeat marks.
 - A repeat warns and blocks nothing: ask no question about it, and keep the picks, because the user decides whether to steer.
 - A `picks.mjs` failure drops the warning, never the run, and the line says the earlier-project check did not run.
 - The Directions question asks "How many designs should I show you first?" in the conversation's language, with options 1, 2, 3 in order.

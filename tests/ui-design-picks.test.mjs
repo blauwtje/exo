@@ -1,5 +1,5 @@
 // Behavioral tests for picks.mjs: the machine-wide log of font and accent picks
-// and the counts from other projects. No dependency beyond node:*.
+// and the line naming each pick other projects also used. No dependency beyond node:*.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -20,7 +20,7 @@ describe('picks.mjs', () => {
     const config = await fixture();
     const result = await record(config, '/work/alpha', 'Gambetta', 'Switzer', '#C2410C');
     assert.equal(result.code, 0);
-    assert.deepEqual(JSON.parse(result.stdout), { display: 0, body: 0, accent: 0 });
+    assert.equal(result.stdout, 'Accent #C2410C, display Gambetta, body Switzer\n');
     const log = JSON.parse(await fs.readFile(path.join(config, 'exo', 'design-picks.json'), 'utf8'));
     assert.deepEqual(log.projects['/work/alpha'], { display: 'gambetta', body: 'switzer', accent: '#c2410c' });
   });
@@ -30,14 +30,17 @@ describe('picks.mjs', () => {
     await record(config, '/work/alpha', 'Gambetta', 'Switzer', '#c2410c');
     await record(config, '/work/beta', 'Switzer', 'Gambetta', '#C2410C');
     const result = await record(config, '/work/gamma', '"gambetta"', 'Satoshi', '#c2410c');
-    assert.deepEqual(JSON.parse(result.stdout), { display: 2, body: 0, accent: 2 });
+    assert.equal(
+      result.stdout,
+      'Accent #c2410c (also used in 2 earlier projects), display gambetta (also used in 2 earlier projects), body Satoshi\n'
+    );
   });
 
   it('never counts the project against itself on a rerun', async () => {
     const config = await fixture();
     await record(config, '/work/alpha', 'Gambetta', 'Switzer', '#c2410c');
     const result = await record(config, '/work/alpha', 'Gambetta', 'Switzer', '#c2410c');
-    assert.deepEqual(JSON.parse(result.stdout), { display: 0, body: 0, accent: 0 });
+    assert.equal(result.stdout, 'Accent #c2410c, display Gambetta, body Switzer\n');
     const log = JSON.parse(await fs.readFile(path.join(config, 'exo', 'design-picks.json'), 'utf8'));
     assert.equal(Object.keys(log.projects).length, 1);
   });
@@ -47,7 +50,7 @@ describe('picks.mjs', () => {
     await record(config, '/work/alpha', 'Gambetta', 'Switzer', '#c2410c');
     await record(config, '/work/alpha', 'Zodiak', 'Switzer', '#0f766e');
     const result = await record(config, '/work/beta', 'Gambetta', 'Switzer', '#c2410c');
-    assert.deepEqual(JSON.parse(result.stdout), { display: 0, body: 1, accent: 0 });
+    assert.equal(result.stdout, 'Accent #c2410c, display Gambetta, body Switzer (also used in 1 earlier project)\n');
   });
 
   it('counts a near accent from another project in any notation, not a cyan or violet one', async () => {
@@ -58,9 +61,12 @@ describe('picks.mjs', () => {
     await record(config, '/work/delta', 'Zodiak', 'Satoshi', '#7c3aed');
     await record(config, '/work/epsilon', 'Zodiak', 'Satoshi', 'oklch(52% 0.22 265)');
     const result = await record(config, '/work/zeta', 'Erode', 'Switzer', '#2f55e0');
-    assert.deepEqual(JSON.parse(result.stdout), { display: 0, body: 1, accent: 3 });
+    assert.equal(
+      result.stdout,
+      'Accent #2f55e0 (also used in 3 earlier projects), display Erode, body Switzer (also used in 1 earlier project)\n'
+    );
     const cyan = await record(config, '/work/eta', 'Erode', 'Switzer', 'rgb(66 210 240)');
-    assert.equal(JSON.parse(cyan.stdout).accent, 1);
+    assert.match(cyan.stdout, /^Accent rgb\(66 210 240\) \(also used in 1 earlier project\),/);
   });
 
   it('matches two near-greys on lightness only, and an unparseable accent on its exact string', async () => {
@@ -69,9 +75,9 @@ describe('picks.mjs', () => {
     await record(config, '/work/beta', 'Gambetta', 'Switzer', 'Cobalt Blue');
     await record(config, '/work/omega', 'Gambetta', 'Switzer', '#c2410c');
     const grey = await record(config, '/work/gamma', 'Gambetta', 'Switzer', 'hsl(0 0% 50%)');
-    assert.equal(JSON.parse(grey.stdout).accent, 1);
+    assert.match(grey.stdout, /^Accent hsl\(0 0% 50%\) \(also used in 1 earlier project\),/);
     const named = await record(config, '/work/delta', 'Gambetta', 'Switzer', 'cobalt blue');
-    assert.equal(JSON.parse(named.stdout).accent, 1);
+    assert.match(named.stdout, /^Accent cobalt blue \(also used in 1 earlier project\),/);
   });
 
   it('exits 2 on a missing flag', async () => {

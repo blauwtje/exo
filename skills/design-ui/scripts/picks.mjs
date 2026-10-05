@@ -8,11 +8,12 @@
 //
 //   node scripts/picks.mjs --project <root> --display <family> --body <family> --accent <color>
 //
-// Records the project's picks, then prints one JSON line:
-// {"display":<n>,"body":<n>,"accent":<n>}, n being how many other projects used
-// that family (in either role) or a near accent. An accent is near when close in
-// OKLCH under NEAR_ACCENT; an unparseable accent matches only the same string.
-// The caller writes the warning, in the reply's language; this script only counts.
+// Records the project's picks, then prints the one line the caller sends the user:
+// "Accent <color>, display <family>, body <family>", each pick another project
+// used followed by "(also used in <n> earlier project(s))", n being how many other
+// projects used that family (in either role) or a near accent. An accent is near
+// when close in OKLCH under NEAR_ACCENT; an unparseable accent matches only the
+// same string. The caller translates the line into the reply's language.
 // Exit 2 is a usage error; exit 1 means the log is unreadable and is left untouched.
 
 import fs from 'node:fs';
@@ -89,13 +90,27 @@ export function recordPicks(project, picks) {
   return counts;
 }
 
+/** The line the caller shows the user: each pick as given, a repeated one followed by its count of other projects. */
+export function picksLine(picks, counts) {
+  const shown = (value) => String(value).trim().replace(/^(["'])(.*)\1$/, '$2');
+  const repeat = (count) => {
+    if (count === 0) return '';
+    return ` (also used in ${count} earlier ${count === 1 ? 'project' : 'projects'})`;
+  };
+  return [
+    `Accent ${shown(picks.accent)}${repeat(counts.accent)}`,
+    `display ${shown(picks.display)}${repeat(counts.display)}`,
+    `body ${shown(picks.body)}${repeat(counts.body)}`
+  ].join(', ');
+}
+
 function main(argv) {
   const flags = parseFlags(argv, { project: 'string', display: 'string', body: 'string', accent: 'string' });
   for (const name of ['project', 'display', 'body', 'accent']) {
     if (!flags[name]?.trim()) throw new UsageError(`--${name} is required`);
   }
   const counts = recordPicks(flags.project, flags);
-  process.stdout.write(`${JSON.stringify(counts)}\n`);
+  process.stdout.write(`${picksLine(flags, counts)}\n`);
 }
 
 if (isMain(import.meta.url)) {
