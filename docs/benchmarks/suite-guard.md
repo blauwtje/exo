@@ -1,96 +1,96 @@
-Guard niet geland: in deze benchmark draaiden subagents in de oude versie (zonder guard) mediaan 0 keer en hooguit 1 keer de hele suite (de enige keer: `exo:review-branch-deep` in 01-old), dus er viel niets te besparen. Sneller: nee, de mediane wandkloktijd was +2,8%. Goedkoper: nee, de mediane kosten waren -2,7%, beide binnen de spreiding van n=3. En de weigering in 04-new gooide een testbestand weg dat in dezelfde Bash-aanroep werd geschreven.
+Guard not landed: in this benchmark, subagents in the old version (without the guard) ran the whole suite a median of 0 times and at most once (the one time: `exo:review-branch-deep` in 01-old), so there was nothing to save. Faster: no, the median wall-clock time was +2.8%. Cheaper: no, the median cost was -2.7%, both within the spread of n=3. And the refusal in 04-new discarded a test file that was written in the same Bash call.
 
-# Benchmark suite-guard: exo v0.76.0 (cac9a84e) tegen de branch subagent-suite-guard (115f1af5), 2026-10-03
+# Benchmark suite-guard: exo v0.76.0 (cac9a84e) against the branch subagent-suite-guard (115f1af5), 2026-10-03
 
-Dit rapport vergelijkt v0.76.0 (`old`, `.worktrees/bench-old`) met de branch-tip 115f1af5 (`new`, `.worktrees/bench-new`) op dezelfde taak. Elke run begint met een warm-up `npm test` in de hoofdsessie, draait dan `/exo:build` op `docs/plans/business-invoices.md` en sluit af met `exo:verify`, op de TypeScript-fixture met vijf plantaken en het nieuwe plan (`--plan new`). Elke versie draaide drie keer, afwisselend van 01-old tot en met 06-new. De run-mappen staan in `/Users/thomash/bench-runs/suite-guard-2/`.
+This report compares v0.76.0 (`old`, `.worktrees/bench-old`) with the branch tip 115f1af5 (`new`, `.worktrees/bench-new`) on the same task. Each run starts with a warm-up `npm test` in the main session, then runs `/exo:build` on `docs/plans/business-invoices.md` and ends with `exo:verify`, on the TypeScript fixture with five plan tasks and the new plan (`--plan new`). Each version ran three times, alternating from 01-old through 06-new. The run directories are in `/Users/thomash/bench-runs/suite-guard-2/`.
 
-Elk getal noemt zijn bron. `metrics.json` staat in `/Users/thomash/bench-runs/suite-guard-2/` (zie "Reproduceren"); `meta.json`, `stdout.json`, `suite-runs.jsonl` en `exo-settings.txt` staan per run in `/Users/thomash/bench-runs/suite-guard-2/<run>/`, en `runtimes.json` per run in `/Users/thomash/bench-runs/suite-guard-2-heavy/<run>/`. De transcripten staan onder `~/.claude/projects/-Users-thomash-bench-runs-suite-guard-2-<run>-repo/`, en de slaapstand komt uit `pmset -g log` van deze Mac.
+Every number names its source. `metrics.json` is in `/Users/thomash/bench-runs/suite-guard-2/` (see "Reproduce"); `meta.json`, `stdout.json`, `suite-runs.jsonl` and `exo-settings.txt` are per run in `/Users/thomash/bench-runs/suite-guard-2/<run>/`, and `runtimes.json` per run in `/Users/thomash/bench-runs/suite-guard-2-heavy/<run>/`. The transcripts are under `~/.claude/projects/-Users-thomash-bench-runs-suite-guard-2-<run>-repo/`, and the sleep state comes from `pmset -g log` on this Mac.
 
-Verschillen zijn berekend uit de medianen als `(nieuw - oud) / oud x 100`. Voorbeeld voor de wandkloktijd: `(392,0 - 381,5) / 381,5 x 100 = +2,8%`.
+Differences are computed from the medians as `(new - old) / old x 100`. Example for the wall-clock time: `(392.0 - 381.5) / 381.5 x 100 = +2.8%`.
 
-Een eerdere meting op 097ac6f5 (2026-10-02, `/Users/thomash/bench-runs/suite-guard/`) mat een build waarvan de guard nooit een duur kende: de warm-up `time npm test` gold daar niet als volledige suite, dus de guard liet alles door en weigerde nul keer. Commit 115f1af5 legde de duur van zo'n verpakte suite-run wel vast. Deze herhaling vervangt die meting.
+An earlier measurement on 097ac6f5 (2026-10-02, `/Users/thomash/bench-runs/suite-guard/`) measured a build whose guard never learned a duration: the warm-up `time npm test` did not count as a full suite there, so the guard let everything through and refused zero times. Commit 115f1af5 did record the duration of such a wrapped suite run. This repeat replaces that measurement.
 
-## Hoofdtabel per versie
+## Main table per version
 
-Mediaan met spreiding (min-max) over n=3 runs per versie.
+Median with range (min-max) over n=3 runs per version.
 
-| Meting | Oud: mediaan (min-max) | Nieuw: mediaan (min-max) | Verschil mediaan | Bron |
+| Measure | Old: median (min-max) | New: median (min-max) | Median difference | Source |
 |---|---|---|---|---|
-| Wandklok totaal (s) | 381,5 (324,2-1320,9) | 392,0 (319,6-676,7) | +2,8% | meta.json `wallMs` |
-| Kosten totaal (USD) | 1,3627 (1,2315-1,5955) | 1,3262 (1,2762-1,5318) | -2,7% | stdout.json `total_cost_usd` |
-| Tokens totaal (M) | 1,82 (1,57-2,14) | 1,84 (1,61-2,11) | +1,0% | metrics `totalTokens` |
-| Volledige suite-runs in het log, incl. warm-up | 3 (2-4) | 2 (2-3) | -33% | suite-runs.jsonl, regels met `full:true` (gelijk aan metrics `fullSuiteRunsLog`) |
-| Volledige suite-runs buiten de warm-up | 2 (1-3) | 1 (1-2) | -50% | idem min 1; de warm-up is de eerste `full:true`-regel, uit de hoofdsessie |
-| Volledige suite-runs door subagents (uitgevoerd) | 0 (0-1) | 0 (0-0) | n.v.t. | transcripten, zie "Volledige suite-runs per agenttype"; de ene is de reviewer van 01-old |
-| Guard-weigeringen | 0 (0-0) | 1 (0-1) | n.v.t. | metrics `suiteGuardRefusals` |
+| Wall clock total (s) | 381.5 (324.2-1320.9) | 392.0 (319.6-676.7) | +2.8% | meta.json `wallMs` |
+| Cost total (USD) | 1.3627 (1.2315-1.5955) | 1.3262 (1.2762-1.5318) | -2.7% | stdout.json `total_cost_usd` |
+| Tokens total (M) | 1.82 (1.57-2.14) | 1.84 (1.61-2.11) | +1.0% | metrics `totalTokens` |
+| Full suite runs in the log, incl. warm-up | 3 (2-4) | 2 (2-3) | -33% | suite-runs.jsonl, lines with `full:true` (equal to metrics `fullSuiteRunsLog`) |
+| Full suite runs outside the warm-up | 2 (1-3) | 1 (1-2) | -50% | same minus 1; the warm-up is the first `full:true` line, from the main session |
+| Full suite runs by subagents (executed) | 0 (0-1) | 0 (0-0) | n/a | transcripts, see "Full suite runs per agent type"; the one is the reviewer of 01-old |
+| Guard refusals | 0 (0-0) | 1 (0-1) | n/a | metrics `suiteGuardRefusals` |
 
-Bij n=3 zijn de medianen gevoelig voor de twee runs die de slaapstand van de Mac heeft opgerekt, 01-old en 02-new (zie "Slaapstand tijdens de meting"). Zonder die twee liggen de wandkloktijden dicht bij elkaar: oud 324,2 en 381,5 s, nieuw 319,6 en 392,0 s. De verschillen in wandklok, kosten en tokens vallen ruim binnen de spreiding van elke versie, dus deze meting toont geen winst in tijd of geld.
+With n=3 the medians are sensitive to the two runs that the Mac's sleep state stretched, 01-old and 02-new (see "Sleep during the measurement"). Without those two, the wall-clock times are close together: old 324.2 and 381.5 s, new 319.6 and 392.0 s. The differences in wall clock, cost and tokens fall well within the spread of each version, so this measurement shows no gain in time or money.
 
 ## Per run
 
-| Run | Versie | Wand (s) | Kosten USD | Tokens M | Suite-runs log incl. (excl.) warm-up | Weigeringen | Suiteduur warm-up (s) | `subagent_suite_after_seconds` |
+| Run | Version | Wall (s) | Cost USD | Tokens M | Suite runs log incl. (excl.) warm-up | Refusals | Warm-up suite duration (s) | `subagent_suite_after_seconds` |
 |---|---|---|---|---|---|---|---|---|
-| 01-old | v0.76.0 | 1320,9 | 1,5955 | 2,14 | 4 (3) | 0 | 32,5 | bestaat niet in v0.76.0 |
-| 02-new | branch | 676,7 | 1,2762 | 1,61 | 2 (1) | 1 | 174,8 | 20 |
-| 03-old | v0.76.0 | 324,2 | 1,2315 | 1,57 | 2 (1) | 0 | 32,6 | bestaat niet |
-| 04-new | branch | 319,6 | 1,3262 | 1,84 | 2 (1) | 1 | 32,5 | 20 |
-| 05-old | v0.76.0 | 381,5 | 1,3627 | 1,82 | 3 (2) | 0 | 32,3 | bestaat niet |
-| 06-new | branch | 392,0 | 1,5318 | 2,11 | 3 (2) | 0 | 32,4 | 20 |
+| 01-old | v0.76.0 | 1320.9 | 1.5955 | 2.14 | 4 (3) | 0 | 32.5 | does not exist in v0.76.0 |
+| 02-new | branch | 676.7 | 1.2762 | 1.61 | 2 (1) | 1 | 174.8 | 20 |
+| 03-old | v0.76.0 | 324.2 | 1.2315 | 1.57 | 2 (1) | 0 | 32.6 | does not exist |
+| 04-new | branch | 319.6 | 1.3262 | 1.84 | 2 (1) | 1 | 32.5 | 20 |
+| 05-old | v0.76.0 | 381.5 | 1.3627 | 1.82 | 3 (2) | 0 | 32.3 | does not exist |
+| 06-new | branch | 392.0 | 1.5318 | 2.11 | 3 (2) | 0 | 32.4 | 20 |
 
-Bronnen: meta.json `wallMs`, stdout.json `total_cost_usd`, metrics `totalTokens`, suite-runs.jsonl en metrics `suiteGuardRefusals`. De suiteduur is de laatste `duration_ms` in het tool-resultaat van de warm-up in het hoofdtranscript. De grens komt uit `exo-settings.txt`, regel "Subagent test runs: Over twenty seconds (subagent_suite_after_seconds = 20, project)", die alleen in de nieuwe runs staat. Alle zes runs eindigden met exitcode 0 en zonder timeout (`meta.json`, `/Users/thomash/bench-runs/suite-guard-2-progress.log`).
+Sources: meta.json `wallMs`, stdout.json `total_cost_usd`, metrics `totalTokens`, suite-runs.jsonl and metrics `suiteGuardRefusals`. The suite duration is the last `duration_ms` in the tool result of the warm-up in the main transcript. The threshold comes from `exo-settings.txt`, line "Subagent test runs: Over twenty seconds (subagent_suite_after_seconds = 20, project)", which appears only in the new runs. All six runs ended with exit code 0 and without a timeout (`meta.json`, `/Users/thomash/bench-runs/suite-guard-2-progress.log`).
 
-## Suiteduur tegen de grens van 20 s
+## Suite duration against the 20 s threshold
 
-In vijf van de zes runs duurt de suite 32,3-32,6 s (`duration_ms` van de warm-up), ruim boven de grens van 20 s die de branch als standaard meebracht. Een subagent die de hele suite startte, moest daar dus geweigerd worden. De 174,8 s van 02-new is niet de suite zelf maar de slaapstand: de warm-up liep van 08:15:36 tot 08:18:32Z, midden in het slaapvenster (zie "Slaapstand tijdens de meting"). `runtimes.json` van 02-new legde daarom 175,409 s vast.
+In five of the six runs the suite takes 32.3-32.6 s (`duration_ms` of the warm-up), well above the 20 s threshold that the branch shipped as its default. A subagent that started the whole suite therefore had to be refused. The 174.8 s of 02-new is not the suite itself but the sleep state: the warm-up ran from 08:15:36 to 08:18:32Z, in the middle of the sleep window (see "Sleep during the measurement"). `runtimes.json` of 02-new therefore recorded 175.409 s.
 
-De guard kende in alle drie de nieuwe runs de duur voordat de eerste subagent startte. Bron: `durations` in `runtimes.json`, vergeleken met suite-runs.jsonl en de Agent-aanroepen in het hoofdtranscript.
+In all three new runs the guard knew the duration before the first subagent started. Source: `durations` in `runtimes.json`, compared with suite-runs.jsonl and the Agent calls in the main transcript.
 
-| Run | `npm test` in runtimes.json | Vastgelegd om | Eerste build-task gestart | Eerste taaktest (suite-runs.jsonl) |
+| Run | `npm test` in runtimes.json | Recorded at | First build-task started | First task test (suite-runs.jsonl) |
 |---|---|---|---|---|
-| 02-new | 175,409 s | 08:18:32Z | 08:22:01Z | 08:22:39Z |
-| 04-new | 33,159 s | 08:33:02Z | 08:33:24Z | 08:33:26Z |
-| 06-new | 33,177 s | 08:44:44Z | 08:45:08Z | 08:45:10Z |
+| 02-new | 175.409 s | 08:18:32Z | 08:22:01Z | 08:22:39Z |
+| 04-new | 33.159 s | 08:33:02Z | 08:33:24Z | 08:33:26Z |
+| 06-new | 33.177 s | 08:44:44Z | 08:45:08Z | 08:45:10Z |
 
-De `time`-prefix van de warm-up, die de guard in de eerdere meting blind maakte, was op die branch geen probleem meer: `wholeSuiteKeys("time npm test 2>&1 | tail -20")` geeft `["npm test"]`.
+The `time` prefix of the warm-up, which blinded the guard in the earlier measurement, was no longer a problem on that branch: `wholeSuiteKeys("time npm test 2>&1 | tail -20")` gives `["npm test"]`.
 
-## Volledige suite-runs per agenttype
+## Full suite runs per agent type
 
-Een Node-script scande elke Bash-`tool_use` in het hoofdtranscript `<sessionId>.jsonl` en in elk subagent-transcript onder `<sessionId>/subagents/agent-*.jsonl`; het agenttype komt uit het bijbehorende `*.meta.json` (`agentType`). Als kandidaat telde elk `npm test`, `npm run test` of `node scripts/test.mjs` zonder `tests/`- of `.test.ts`-argument in hetzelfde commandosegment, plus elk tool-resultaat met `may not run the whole test suite`. Daarna is elke `full:true`-regel in suite-runs.jsonl op tijdstempel gekoppeld aan het Bash-venster (aanroep tot resultaat) dat hem startte. Zo telt ook de verify-gate mee, die de suite via `skills/verify/scripts/verify.mjs` start en die een tekstscan alleen zou missen. Een geweigerde poging staat niet in suite-runs.jsonl, omdat de hook het commando tegenhoudt voordat het draait.
+A Node script scanned every Bash `tool_use` in the main transcript `<sessionId>.jsonl` and in every subagent transcript under `<sessionId>/subagents/agent-*.jsonl`; the agent type comes from the matching `*.meta.json` (`agentType`). A candidate was every `npm test`, `npm run test` or `node scripts/test.mjs` without a `tests/` or `.test.ts` argument in the same command segment, plus every tool result with `may not run the whole test suite`. Then every `full:true` line in suite-runs.jsonl was matched by timestamp to the Bash window (call to result) that started it. This also counts the verify gate, which starts the suite through `skills/verify/scripts/verify.mjs` and which a text scan alone would miss. A refused attempt is not in suite-runs.jsonl, because the hook stops the command before it runs.
 
-| Run | Hoofdsessie (warm-up + gate/regate) | exo:build-task | exo:fix-review | exo:review-branch / exo:review-branch-deep | Overig |
+| Run | Main session (warm-up + gate/regate) | exo:build-task | exo:fix-review | exo:review-branch / exo:review-branch-deep | Other |
 |---|---|---|---|---|---|
 | 01-old | 1 + 2 (gate 07:56:11, regate 08:14:14) | 0 | 0 | 1 (review-branch-deep, 07:57:55) | 0 |
-| 02-new | 1 + 1 (gate 08:24:58) | 0 uitgevoerd, 1 geweigerd | niet gedispatcht | 0 | 0 |
-| 03-old | 1 + 1 (gate 08:30:05) | 0 | niet gedispatcht | 0 | 0 |
-| 04-new | 1 + 1 (gate 08:35:40) | 0 uitgevoerd, 1 geweigerd | niet gedispatcht | 0 | 0 |
+| 02-new | 1 + 1 (gate 08:24:58) | 0 executed, 1 refused | not dispatched | 0 | 0 |
+| 03-old | 1 + 1 (gate 08:30:05) | 0 | not dispatched | 0 | 0 |
+| 04-new | 1 + 1 (gate 08:35:40) | 0 executed, 1 refused | not dispatched | 0 | 0 |
 | 05-old | 1 + 2 (gate 08:40:52, regate 08:42:57) | 0 | 0 | 0 | 0 |
 | 06-new | 1 + 2 (gate 08:47:03, regate 08:49:35) | 0 | 0 | 0 | 0 |
 
-Per versie opgeteld, buiten de warm-up: oud 7 volledige suite-runs, waarvan 6 door de hoofdsessie (gate en regate) en 1 door de reviewer van 01-old; nieuw 4, allemaal door de hoofdsessie. In alle runs koos build de directe route met vijf `exo:build-task`-subagents, zonder `exo:run-unit`. De reviewer was steeds `exo:review-branch-deep`, omdat taak 1 `Risk: public signature` draagt; `exo:review-branch` kwam niet voor. Alle volledige suite-runs liepen in de hoofdmap `repo`, geen enkele in een taakmap `repo-task-N`.
+Summed per version, outside the warm-up: old 7 full suite runs, of which 6 by the main session (gate and regate) and 1 by the reviewer of 01-old; new 4, all by the main session. In all runs build chose the direct route with five `exo:build-task` subagents, without `exo:run-unit`. The reviewer was always `exo:review-branch-deep`, because task 1 carries `Risk: public signature`; `exo:review-branch` did not occur. All full suite runs ran in the main directory `repo`, none in a task directory `repo-task-N`.
 
-Het lagere aantal volledige suite-runs in de nieuwe versie komt vooral doordat de nieuwe runs minder vaak een regate na een fixronde nodig hadden, en doordat de reviewer van 01-old de suite draaide. Het komt niet van de guard: in de oude runs draaide geen enkele build-task de suite.
+The lower number of full suite runs in the new version comes mostly from the new runs needing a regate after a fix round less often, and from the reviewer of 01-old running the suite. It does not come from the guard: in the old runs no build-task ran the suite.
 
-## Guard-weigeringen
+## Guard refusals
 
-Er zijn twee weigeringen, in de transcripten herkenbaar aan de tekst van `hooks/guards/suite-guard.mjs` (`may not run the whole test suite`). Dat aantal klopt met metrics `suiteGuardRefusals` (02-new 1, 04-new 1, 06-new 0). Beide kwamen van de `exo:build-task` van taak 5, die de hele suite achter zijn eigen test plakte.
+There are two refusals, recognizable in the transcripts by the text of `hooks/guards/suite-guard.mjs` (`may not run the whole test suite`). That count matches metrics `suiteGuardRefusals` (02-new 1, 04-new 1, 06-new 0). Both came from the `exo:build-task` of task 5, which appended the whole suite after its own test.
 
-1. 02-new, `exo:build-task` "Build Task 5 shipping split" (`agent-afd6ed821504c0457`), 08:24:28Z. Het geweigerde commando was één Bash-aanroep met een python3-heredoc die `src/order.ts` en `src/invoice.ts` aanpaste, een `cat > tests/invoice-shipping.test.ts`-heredoc, en daarna `npm test -- tests/invoice-shipping.test.ts 2>&1 | tail -30; npm test 2>&1 | tail -8; npm run typecheck 2>&1 | tail`. De melding noemde "its last run in this project took 175 s, over subagent_suite_after_seconds (20 s)". De subagent draaide daarna `git status --short` (leeg), schreef "Nothing ran. I'll rerun the same edits without the full suite." en voerde om 08:24:38 dezelfde bewerkingen uit met alleen `npm test -- tests/invoice-shipping.test.ts`, die slaagde. Om 08:24:44 meldde hij "Task 5: GREEN", 16 s na de weigering, zonder nieuwe poging op de suite.
-2. 04-new, `exo:build-task` "Build Task 5 shipping" (`agent-a9e283b50871f98c2`), 08:35:12Z. Het geweigerde commando was een `cat > tests/invoice-shipping.test.ts`-heredoc, gevolgd door `npm test -- tests/invoice-shipping.test.ts 2>&1 | tail -25; npm test 2>&1 | tail -12`. De melding noemde "its last run in this project took 33 s, over subagent_suite_after_seconds (20 s)". De subagent draaide daarna `ls tests/invoice-shipping.test.ts; npm test -- tests/invoice-shipping.test.ts` en zag dat het bestand niet bestond. Hij schreef "The hook blocked the whole command, so the file was never written. I'll write it again.", schreef het bestand opnieuw met Write en draaide `npm test -- tests/invoice-shipping.test.ts`, die slaagde. Om 08:35:26 meldde hij "Task 5: GREEN", 14 s na de weigering.
+1. 02-new, `exo:build-task` "Build Task 5 shipping split" (`agent-afd6ed821504c0457`), 08:24:28Z. The refused command was one Bash call with a python3 heredoc that edited `src/order.ts` and `src/invoice.ts`, a `cat > tests/invoice-shipping.test.ts` heredoc, and then `npm test -- tests/invoice-shipping.test.ts 2>&1 | tail -30; npm test 2>&1 | tail -8; npm run typecheck 2>&1 | tail`. The message said "its last run in this project took 175 s, over subagent_suite_after_seconds (20 s)". The subagent then ran `git status --short` (empty), wrote "Nothing ran. I'll rerun the same edits without the full suite." and at 08:24:38 made the same edits with only `npm test -- tests/invoice-shipping.test.ts`, which passed. At 08:24:44 it reported "Task 5: GREEN", 16 s after the refusal, without a new attempt at the suite.
+2. 04-new, `exo:build-task` "Build Task 5 shipping" (`agent-a9e283b50871f98c2`), 08:35:12Z. The refused command was a `cat > tests/invoice-shipping.test.ts` heredoc, followed by `npm test -- tests/invoice-shipping.test.ts 2>&1 | tail -25; npm test 2>&1 | tail -12`. The message said "its last run in this project took 33 s, over subagent_suite_after_seconds (20 s)". The subagent then ran `ls tests/invoice-shipping.test.ts; npm test -- tests/invoice-shipping.test.ts` and saw that the file did not exist. It wrote "The hook blocked the whole command, so the file was never written. I'll write it again.", wrote the file again with Write and ran `npm test -- tests/invoice-shipping.test.ts`, which passed. At 08:35:26 it reported "Task 5: GREEN", 14 s after the refusal.
 
-De guard weigerde de hele Bash-aanroep, dus ook de bestandsbewerkingen die ervoor in hetzelfde commando staan. In 04-new is het testbestand daardoor nooit geschreven, en in 02-new zijn de bewerkingen van `src/order.ts` en `src/invoice.ts` evenmin uitgevoerd. Beide subagents merkten dat zelf en deden de bewerking opnieuw. Geen subagent bleef steken op een weigering, er was geen herhaallus, en alle subagent-transcripten eindigen met een eindrapport.
+The guard refused the whole Bash call, including the file edits that come before it in the same command. In 04-new the test file was therefore never written, and in 02-new the edits to `src/order.ts` and `src/invoice.ts` were not made either. Both subagents noticed this themselves and redid the edit. No subagent got stuck on a refusal, there was no retry loop, and all subagent transcripts end with a final report.
 
-## Slaapstand tijdens de meting
+## Sleep during the measurement
 
-Twee runs zijn opgerekt door de slaapstand van de Mac, niet door exo. Volgens `pmset -g log` ging het scherm om 09:59:13 lokale tijd uit ("Display is turned off") en ging de Mac om 09:59:18 lokaal (07:59:18Z) in `Idle Sleep`. Tot de volledige `Wake` om 10:24:03 lokaal (08:24:03Z) wisselde hij tussen `Maintenance Sleep` en korte `DarkWake`s van 10 tot 20 s. Of er toen een `caffeinate` liep, is niet nagezocht; de slaap zelf staat vast in het log.
+Two runs were stretched by the Mac's sleep state, not by exo. According to `pmset -g log` the display turned off at 09:59:13 local time ("Display is turned off") and the Mac went into `Idle Sleep` at 09:59:18 local (07:59:18Z). Until the full `Wake` at 10:24:03 local (08:24:03Z) it alternated between `Maintenance Sleep` and short `DarkWake`s of 10 to 20 s. Whether a `caffeinate` was running then was not checked; the sleep itself is established in the log.
 
-- 01-old duurde 1320,9 s, waarvan 905,6 s fixfase (metrics `phases.fix`). `exo:fix-review` (`agent-af54f61fe6034c208`) startte om 07:59:19Z twee gerichte tests van elk ongeveer 50 ms, één seconde na het begin van de slaap. Het resultaat kwam pas bij de DarkWake om 08:09:13Z terug, met de melding dat het commando "did not complete within its 120s timeout and was moved to the background". Om 08:09:30Z sliep de Mac weer tot 08:13:48Z, en daarna rondde fix-review in 7 s af ("fixed=2 reported=2"). Ongeveer 14,5 min van de fixfase is slaap.
-- 02-new had een buildfase van 555,6 s (metrics `phases.build`, met de warm-up erin) tegen 2,8-3,1 min in de andere runs. Twee stukken vallen in het slaapvenster: de warm-up van 175 s (normaal 33 s) en een gat van 08:18:41 tot 08:21:54Z tussen twee opeenvolgende Bash-aanroepen, dat samenvalt met `Maintenance Sleep` van 10:18:40 tot de DarkWake om 10:21:51 lokaal. Ongeveer 335 s van de 676,7 s wandklok is daarmee slaap.
+- 01-old took 1320.9 s, of which 905.6 s was the fix phase (metrics `phases.fix`). `exo:fix-review` (`agent-af54f61fe6034c208`) started two targeted tests of about 50 ms each at 07:59:19Z, one second after the sleep began. The result only came back at the DarkWake at 08:09:13Z, with the message that the command "did not complete within its 120s timeout and was moved to the background". At 08:09:30Z the Mac slept again until 08:13:48Z, and after that fix-review finished in 7 s ("fixed=2 reported=2"). About 14.5 min of the fix phase is sleep.
+- 02-new had a build phase of 555.6 s (metrics `phases.build`, warm-up included) against 2.8-3.1 min in the other runs. Two stretches fall in the sleep window: the warm-up of 175 s (normally 33 s) and a gap from 08:18:41 to 08:21:54Z between two consecutive Bash calls, which coincides with `Maintenance Sleep` from 10:18:40 to the DarkWake at 10:21:51 local. About 335 s of the 676.7 s wall clock is therefore sleep.
 
-Beide runs zijn daardoor de maxima van hun versie, wat de spreiding van de wandklok vergroot. De beslissing van de guard in 02-new hing niet af van de opgeblazen 175 s: met de normale 33 s had hij ook geweigerd, zoals 04-new laat zien; alleen de tekst van de melding verschilde. Draai een volgende meting onder `caffeinate -i`, zodat de Mac tijdens de serie niet in `Idle Sleep` gaat, en controleer daarna `pmset -g log` op slaap binnen het meetvenster.
+Both runs are therefore the maxima of their version, which increases the spread of the wall clock. The guard's decision in 02-new did not depend on the inflated 175 s: with the normal 33 s it would also have refused, as 04-new shows; only the text of the message differed. Run a next measurement under `caffeinate -i`, so the Mac does not enter `Idle Sleep` during the series, and afterwards check `pmset -g log` for sleep within the measurement window.
 
-## Bevindingen naast de guard
+## Findings besides the guard
 
-`wholeSuiteKeys` in `lib/runtime-log.mjs` zag op de branch ook `ls tests` en `npm run lint` als volledige suite. `runtimes.json` van 02-new bevat naast `npm test` ook `ls tests` (0,021 s) en `npm lint` (6,389 s), en 04-new en 06-new bevatten ook `ls tests`. Op de branch nagegaan:
+On the branch, `wholeSuiteKeys` in `lib/runtime-log.mjs` also saw `ls tests` and `npm run lint` as a full suite. `runtimes.json` of 02-new contains `ls tests` (0.021 s) and `npm lint` (6.389 s) besides `npm test`, and 04-new and 06-new also contain `ls tests`. Checked on the branch:
 
 ```
 "ls tests"                       -> ["ls tests"]
@@ -99,29 +99,29 @@ Beide runs zijn daardoor de maxima van hun versie, wat de spreiding van de wandk
 "npm test -- tests/tax.test.ts"  -> []
 ```
 
-De oorzaak is `TEST_LIKE = /test|e2e|\bcheck(?!out)|lint|verify/` (`lib/runtime-log.mjs:29`), dat het losse woord `tests` en `lint` treft. In deze meting had dat geen gevolg, omdat beide duren onder de 20 s lagen. Bij een lint van meer dan 20 s had de guard een subagent die lint draaide wel geweigerd, met een melding over de hele testsuite.
+The cause is `TEST_LIKE = /test|e2e|\bcheck(?!out)|lint|verify/` (`lib/runtime-log.mjs:29`), which matches the bare word `tests` and `lint`. In this measurement that had no consequence, because both durations were under 20 s. With a lint of more than 20 s, the guard would have refused a subagent running lint, with a message about the whole test suite.
 
-`metrics.json` meldt `fullSuite.warmUp: 0` in alle zes runs, terwijl elke run een warm-up heeft (`time npm test 2>&1 | tail -N`, de eerste `full:true`-regel in suite-runs.jsonl). De warm-up is daarom met de hand van het log afgetrokken in de regels "buiten de warm-up" hierboven. Waarom `benchmarks/lean-gates-metrics.mjs` de warm-up mist, is niet uitgezocht.
+`metrics.json` reports `fullSuite.warmUp: 0` in all six runs, although every run has a warm-up (`time npm test 2>&1 | tail -N`, the first `full:true` line in suite-runs.jsonl). The warm-up was therefore subtracted from the log by hand in the "outside the warm-up" lines above. Why `benchmarks/lean-gates-metrics.mjs` misses the warm-up was not investigated.
 
-## Reproduceren
+## Reproduce
 
-Per run, via `/Users/thomash/bench-runs/run-all-2.sh` vanuit `.worktrees/subagent-suite-guard`, eerst runs 1-2 en daarna 3-6 achter elkaar:
+Per run, through `/Users/thomash/bench-runs/run-all-2.sh` from `.worktrees/subagent-suite-guard`, first runs 1-2 and then 3-6 back to back:
 
 ```
 EXO_HEAVY_CACHE=/Users/thomash/bench-runs/suite-guard-2-heavy/<NN-arm> node benchmarks/lean-gates.mjs --version <old|new> --plan new --run <n> --out /Users/thomash/bench-runs/suite-guard-2 --timeout-min 30
 ```
 
-De bench-worktrees:
+The bench worktrees:
 
 ```
 git worktree add --detach .worktrees/bench-old cac9a84e
 git worktree add --detach .worktrees/bench-new 115f1af5
 ```
 
-De metrics, die `/Users/thomash/bench-runs/suite-guard-2/metrics.json` schrijven:
+The metrics, which write `/Users/thomash/bench-runs/suite-guard-2/metrics.json`:
 
 ```
 node benchmarks/lean-gates-metrics.mjs /Users/thomash/bench-runs/suite-guard-2 --no-recheck
 ```
 
-Model `claude-opus-5-5`, effort `medium`, budget 30 USD per run (`meta.json` `argv`). Slaapstand: `pmset -g log`, venster 09:59-10:24 lokale tijd (+0200).
+Model `claude-opus-5-5`, effort `medium`, budget 30 USD per run (`meta.json` `argv`). Sleep state: `pmset -g log`, window 09:59-10:24 local time (+0200).

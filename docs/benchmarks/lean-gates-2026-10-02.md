@@ -1,150 +1,150 @@
-Is nieuw sneller én goedkoper zonder kwaliteitsverlies? Nee: nieuw is sneller (mediane wandkloktijd -32,1%), maar niet goedkoper (mediane total_cost_usd -0,7%, gemiddelde +4,2%; mediane tokens +3,6%), en de kwaliteit is gelijk (alle eindchecks slagen op HEAD, mediane blinde score 22 nieuw tegen 20 oud, +10,0%).
+Is new faster and cheaper without losing quality? No: new is faster (median wall-clock time -32.1%), but not cheaper (median total_cost_usd -0.7%, mean +4.2%; median tokens +3.6%), and quality is equal (all final checks pass on HEAD, median blind score 22 new against 20 old, +10.0%).
 
-# Benchmark lean-gates: exo oud (d33adf37) tegen nieuw (a8b27a45), 2026-10-02
+# Benchmark lean-gates: exo old (d33adf37) against new (a8b27a45), 2026-10-02
 
-Dit rapport vergelijkt twee versies van exo op dezelfde taak: `/exo:build` gevolgd door `exo:verify` op een TypeScript-fixture met vijf plantaken. Elke versie draaide drie keer. Elk getal hieronder noemt zijn bron. Alle bronbestanden staan in `.git/exo/bench-lean-gates/` van de hoofdcheckout, tenzij er een absoluut pad staat. De run-mappen staan in `/Users/thomash/bench-runs/lean-gates-2026-10-02/`.
+This report compares two versions of exo on the same task: `/exo:build` followed by `exo:verify` on a TypeScript fixture with five plan tasks. Each version ran three times. Every number below names its source. All source files are in `.git/exo/bench-lean-gates/` of the main checkout, unless an absolute path is given. The run directories are in `/Users/thomash/bench-runs/lean-gates-2026-10-02/`.
 
-Procentuele verschillen zijn steeds berekend uit de medianen (of, waar vermeld, de gemiddelden) als `(nieuw - oud) / oud x 100`. Voorbeeld voor de wandkloktijd: `(434040 - 639223) / 639223 x 100 = -32,1%`.
+Percentage differences are always computed from the medians (or, where stated, the means) as `(new - old) / old x 100`. Example for the wall-clock time: `(434040 - 639223) / 639223 x 100 = -32.1%`.
 
-## Hoofdtabel per versie
+## Main table per version
 
-Mediaan met spreiding (min-max) over n=3 runs per versie. Tijden in seconden, afgeleid van de milliseconden in de bron.
+Median with range (min-max) over n=3 runs per version. Times in seconds, derived from the milliseconds in the source.
 
-| Meting | Oud: mediaan (min-max) | Nieuw: mediaan (min-max) | Verschil mediaan | Bron |
+| Measure | Old: median (min-max) | New: median (min-max) | Median difference | Source |
 |---|---|---|---|---|
-| Wandklok totaal | 639,2 (561,9-723,3) | 434,0 (401,8-603,6) | -32,1% | meta.json `wallMs` |
-| Buildfase | 355,2 (294,3-437,9) | 195,7 (163,3-259,3) | -44,9% | metrics.json `phases.build` (transcript-ts) |
-| Verify-gate | 48,0 (47,1-53,0) | 44,7 (44,1-45,3) | -6,8% | metrics.json `phases.gate` (transcript-ts) |
-| Review | 90,4 (63,5-118,3) | 92,5 (54,6-94,3) | +2,3% | metrics.json `phases.review` (transcript-ts) |
-| Fixronde | 94,0 (70,3-142,8) | 66,0 (61,5-173,6) | -29,8% | metrics.json `phases.fixRound` (commit-ts) |
-| Volledige suite-runs (log) | 11 (9-12) | 5 (4-8) | -54,5% | metrics.json `fullSuite.log.full` (suite-runs.jsonl) |
-| Volledige suite-runs (Bash van agents) | 6 (4-6) | 3 (2-5) | -50,0% | metrics.json `fullSuite.bash.full` |
-| Tokens totaal | 1.824.427 (1.822.093-2.001.059) | 1.889.241 (1.843.971-2.575.166) | +3,6% | metrics.json `tokens.total.totalTokens` |
-| Tokens hoofdsessie | 1.261.252 (1.130.537-1.383.657) | 1.399.003 (1.240.763-1.980.774) | +10,9% | metrics.json `tokens.main.totalTokens` |
-| Tokens subagents | 617.402 (563.175-691.556) | 594.392 (490.238-603.208) | -3,7% | totaal min hoofdsessie |
-| Kosten totaal (USD) | 1,4135 (1,4089-1,5042) | 1,4033 (1,3840-1,7204) | -0,7% (gemiddelde +4,2%) | stdout.json `total_cost_usd` |
-| Kosten hoofdsessie (USD) | 0,7719 (0,7067-0,8065) | 0,8460 (0,7532-1,0701) | +9,6% | cost-recon.md, gecorrigeerde tarieven |
-| Kosten subagents (USD) | 0,6960 (0,6358-0,7068) | 0,6308 (0,5562-0,6503) | -9,4% | cost-recon.md, gecorrigeerde tarieven |
-| Reviewbevindingen | 1 (1-2) | 2 (2-4) | +100% | metrics.json `quality.review` (branch-review.md) |
-| Waarvan defects | 0 (0-0) | 1 (1-1) | n.v.t. | idem, `Count:`-regel |
-| Blinde score (max 25) | 20 (20-24) | 22 (20-23) | +10,0% | /tmp/lg-blind/judgement.md + blind-key.txt |
-| Eindcheck geslaagd (test/typecheck/lint) | 3 van 3 | 2 van 3 bij de recheck, 3 van 3 op HEAD | n.v.t. | metrics.json `quality.recheck`, lint-04.md |
+| Wall clock total | 639.2 (561.9-723.3) | 434.0 (401.8-603.6) | -32.1% | meta.json `wallMs` |
+| Build phase | 355.2 (294.3-437.9) | 195.7 (163.3-259.3) | -44.9% | metrics.json `phases.build` (transcript-ts) |
+| Verify gate | 48.0 (47.1-53.0) | 44.7 (44.1-45.3) | -6.8% | metrics.json `phases.gate` (transcript-ts) |
+| Review | 90.4 (63.5-118.3) | 92.5 (54.6-94.3) | +2.3% | metrics.json `phases.review` (transcript-ts) |
+| Fix round | 94.0 (70.3-142.8) | 66.0 (61.5-173.6) | -29.8% | metrics.json `phases.fixRound` (commit-ts) |
+| Full suite runs (log) | 11 (9-12) | 5 (4-8) | -54.5% | metrics.json `fullSuite.log.full` (suite-runs.jsonl) |
+| Full suite runs (Bash of agents) | 6 (4-6) | 3 (2-5) | -50.0% | metrics.json `fullSuite.bash.full` |
+| Tokens total | 1,824,427 (1,822,093-2,001,059) | 1,889,241 (1,843,971-2,575,166) | +3.6% | metrics.json `tokens.total.totalTokens` |
+| Tokens main session | 1,261,252 (1,130,537-1,383,657) | 1,399,003 (1,240,763-1,980,774) | +10.9% | metrics.json `tokens.main.totalTokens` |
+| Tokens subagents | 617,402 (563,175-691,556) | 594,392 (490,238-603,208) | -3.7% | total minus main session |
+| Cost total (USD) | 1.4135 (1.4089-1.5042) | 1.4033 (1.3840-1.7204) | -0.7% (mean +4.2%) | stdout.json `total_cost_usd` |
+| Cost main session (USD) | 0.7719 (0.7067-0.8065) | 0.8460 (0.7532-1.0701) | +9.6% | cost-recon.md, corrected rates |
+| Cost subagents (USD) | 0.6960 (0.6358-0.7068) | 0.6308 (0.5562-0.6503) | -9.4% | cost-recon.md, corrected rates |
+| Review findings | 1 (1-2) | 2 (2-4) | +100% | metrics.json `quality.review` (branch-review.md) |
+| Of which defects | 0 (0-0) | 1 (1-1) | n/a | same, `Count:` line |
+| Blind score (max 25) | 20 (20-24) | 22 (20-23) | +10.0% | /tmp/lg-blind/judgement.md + blind-key.txt |
+| Final check passed (test/typecheck/lint) | 3 of 3 | 2 of 3 at the recheck, 3 of 3 on HEAD | n/a | metrics.json `quality.recheck`, lint-04.md |
 
-De gemiddelde kosten zijn $1,4422 oud tegen $1,5026 nieuw (metrics.json `aggregate.*.costHarnessUsd`). Het gemiddelde ligt bij nieuw hoger door 02-new ($1,7204), de run met de valse FAIL (zie onder). Het tokenverschil van +3,6% is berekend uit de exacte medianen; de afgeronde tabel in metrics-table.md (1,89 tegen 1,82 M) zou +3,8% suggereren.
+The mean costs are $1.4422 old against $1.5026 new (metrics.json `aggregate.*.costHarnessUsd`). The mean is higher for new because of 02-new ($1.7204), the run with the false FAIL (see below). The token difference of +3.6% is computed from the exact medians; the rounded table in metrics-table.md (1.89 against 1.82 M) would suggest +3.8%.
 
-Over de kostenbron: metrics-table.md toont ook een kolom "$ transcript" ($2,01 oud, $2,04 nieuw als mediaan). Die overschat de kosten, want `benchmarks/prices.mjs` heeft geen rij voor `claude-opus-5-5` en prijst het model daardoor als `claude-opus-5` ($5/$25 in plaats van $4/$20 per miljoen, cost-recon.md; de rij is na deze run toegevoegd). Dit rapport gebruikt daarom `total_cost_usd` uit stdout.json, dat de subagents al bevat en tot op $0,002 overeenkomt met de transcripttokens tegen de juiste tarieven. De splitsing tussen hoofdsessie en subagents komt uit die gecorrigeerde transcriptprijzen (cost-recon.md).
+On the cost source: metrics-table.md also shows a "$ transcript" column ($2.01 old, $2.04 new as median). That column overstates the cost, because `benchmarks/prices.mjs` has no row for `claude-opus-5-5` and therefore prices the model as `claude-opus-5` ($5/$25 instead of $4/$20 per million, cost-recon.md; the row was added after this run). This report therefore uses `total_cost_usd` from stdout.json, which already includes the subagents and matches the transcript tokens at the correct rates to within $0.002. The split between main session and subagents comes from those corrected transcript prices (cost-recon.md).
 
 ## Per run
 
-Bron per kolom als in de hoofdtabel. Reviewer: `REVIEWER:`-regel uit metrics.json `reviewer.line`, verwacht volgens de eigen regel van de versie uit `reviewer.expectedByOwnRule`.
+Source per column as in the main table. Reviewer: `REVIEWER:` line from metrics.json `reviewer.line`, expected by the version's own rule from `reviewer.expectedByOwnRule`.
 
-| Run | Wand (s) | Build (s) | Gate (s) | Review (s) | Fixronde (s) | Suite log/Bash | Tokens (hoofd/sub) | Kosten USD (hoofd/sub) | Reviewer gekozen/verwacht | Bevindingen (defect/hazard) | Blind | Recheck t/tc/l |
+| Run | Wall (s) | Build (s) | Gate (s) | Review (s) | Fix round (s) | Suite log/Bash | Tokens (main/sub) | Cost USD (main/sub) | Reviewer chosen/expected | Findings (defect/hazard) | Blind | Recheck t/tc/l |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 01-old | 723,3 | 437,9 | 53,0 | 118,3 | 70,3 | 12/6 | 1.822.093 (1.130.537/691.556) | 1,4135 (0,7067/0,7068) | deep/deep | 1 (0/1) | F: 24 | P/P/P |
-| 02-new | 603,6 | 259,3 | 44,7 | 94,3 | 173,6 | 8/5 | 2.575.166 (1.980.774/594.392) | 1,7204 (1,0701/0,6503) | deep/deep | 4 (1/3) | D: 20 | P/P/P |
-| 03-old | 561,9 | 294,3 | 47,1 | 90,4 | 94,0 | 9/4 | 2.001.059 (1.383.657/617.402) | 1,5042 (0,8065/0,6960) | deep/deep | 2 (0/2) | E: 20 | P/P/P |
-| 04-new | 434,0 | 195,7 | 44,1 | 92,5 | 61,5 | 5/3 | 1.843.971 (1.240.763/603.208) | 1,3840 (0,7532/0,6308) | deep/deep | 2 (1/1) | B: 23 | P/P/F |
-| 05-old | 639,2 | 355,2 | 48,0 | 63,5 | 142,8 | 11/6 | 1.824.427 (1.261.252/563.175) | 1,4089 (0,7719/0,6358) | deep/deep | 1 (0/1) | C: 20 | P/P/P |
-| 06-new | 401,8 | 163,3 | 45,3 | 54,6 | 66,0 | 4/2 | 1.889.241 (1.399.003/490.238) | 1,4033 (0,8460/0,5562) | deep/deep | 2 (1/1) | A: 22 | P/P/P |
+| 01-old | 723.3 | 437.9 | 53.0 | 118.3 | 70.3 | 12/6 | 1,822,093 (1,130,537/691,556) | 1.4135 (0.7067/0.7068) | deep/deep | 1 (0/1) | F: 24 | P/P/P |
+| 02-new | 603.6 | 259.3 | 44.7 | 94.3 | 173.6 | 8/5 | 2,575,166 (1,980,774/594,392) | 1.7204 (1.0701/0.6503) | deep/deep | 4 (1/3) | D: 20 | P/P/P |
+| 03-old | 561.9 | 294.3 | 47.1 | 90.4 | 94.0 | 9/4 | 2,001,059 (1,383,657/617,402) | 1.5042 (0.8065/0.6960) | deep/deep | 2 (0/2) | E: 20 | P/P/P |
+| 04-new | 434.0 | 195.7 | 44.1 | 92.5 | 61.5 | 5/3 | 1,843,971 (1,240,763/603,208) | 1.3840 (0.7532/0.6308) | deep/deep | 2 (1/1) | B: 23 | P/P/F |
+| 05-old | 639.2 | 355.2 | 48.0 | 63.5 | 142.8 | 11/6 | 1,824,427 (1,261,252/563,175) | 1.4089 (0.7719/0.6358) | deep/deep | 1 (0/1) | C: 20 | P/P/P |
+| 06-new | 401.8 | 163.3 | 45.3 | 54.6 | 66.0 | 4/2 | 1,889,241 (1,399,003/490,238) | 1.4033 (0.8460/0.5562) | deep/deep | 2 (1/1) | A: 22 | P/P/P |
 
-"deep" staat voor `review-branch-deep`. Alle zes runs eindigden met exitcode 0, landden taken 1-5 en hadden precies één fixronde (meta.json, metrics.json `quality`).
+"deep" stands for `review-branch-deep`. All six runs ended with exit code 0, landed tasks 1-5 and had exactly one fix round (meta.json, metrics.json `quality`).
 
-## Buildtijd per taak
+## Build time per task
 
-Seconden tussen opeenvolgende `Plan-task:`-commits; de eerste taak telt vanaf de start van de run (metrics.json `phases.buildPerTask`, bron commit-ts, resolutie 1 s). Taken 1-3 lopen parallel in een wave, dus deze delta's zijn landingsgaten en geen bouwtijd. De echte bouwtijd per subagent staat in metrics.json `phases.buildTaskAgents`.
+Seconds between consecutive `Plan-task:` commits; the first task counts from the start of the run (metrics.json `phases.buildPerTask`, source commit-ts, resolution 1 s). Tasks 1-3 run in parallel in a wave, so these deltas are landing gaps, not build time. The actual build time per subagent is in metrics.json `phases.buildTaskAgents`.
 
 | Run | T1 | T2 | T3 | T4 | T5 |
 |---|---|---|---|---|---|
-| 01-old | 192,2 | 33 | 33 | 78 | 99 |
-| 03-old | 99,9 | 33 | 32 | 60 | 68 |
-| 05-old | 159,6 | 0 | 0 | 93 | 100 |
-| 02-new | 87,7 | 1 | 1 | 57 | 110 |
-| 04-new | 60,5 | 1 | 1 | 28 | 103 |
-| 06-new | 59,7 | 1 | 0 | 69 | 31 |
+| 01-old | 192.2 | 33 | 33 | 78 | 99 |
+| 03-old | 99.9 | 33 | 32 | 60 | 68 |
+| 05-old | 159.6 | 0 | 0 | 93 | 100 |
+| 02-new | 87.7 | 1 | 1 | 57 | 110 |
+| 04-new | 60.5 | 1 | 1 | 28 | 103 |
+| 06-new | 59.7 | 1 | 0 | 69 | 31 |
 
-In 01-old en 03-old zitten tussen de landingen van T1, T2 en T3 gaten van 32-33 s. Dat is de duur van één volledige `npm test` (de suite duurt ongeveer 33 s, build.md), de oude land gate die per taak draait (suite-analysis.md). Bij nieuw landen die taken binnen 1 s na elkaar, omdat de land gate `npm run typecheck` is. 05-old toont geen gaten bij T2 en T3, en de sources verklaren niet waarom; metrics.json vermeldt voor die run wel 5 land-task-aanroepen.
+In 01-old and 03-old there are gaps of 32-33 s between the landings of T1, T2 and T3. That is the duration of one full `npm test` (the suite takes about 33 s, build.md), the old land gate that runs per task (suite-analysis.md). In new, those tasks land within 1 s of each other, because the land gate is `npm run typecheck`. 05-old shows no gaps at T2 and T3, and the sources do not explain why; metrics.json does record 5 land-task calls for that run.
 
-## Reviewerkeuze
+## Reviewer choice
 
-Elke run printte `REVIEWER: review-branch-deep` en dispatchte die ook (metrics.json `reviewer`). Beide versies kozen dus zes van zes keer de diepe review, en dat paste telkens bij hun eigen regel (`fitsRule: true`):
+Every run printed `REVIEWER: review-branch-deep` and also dispatched it (metrics.json `reviewer`). Both versions therefore chose the deep review six times out of six, and each time that matched their own rule (`fitsRule: true`):
 
-- Oud kiest deep bij meer dan 5 bestanden of meer dan 200 gewijzigde regels. De diffs telden 10 bestanden en 272-293 regels (metrics.json `reviewer.risk.files`, `changedLines`).
-- Nieuw kiest deep omdat taak 1 `Risk: public signature` draagt (`riskTasks` in metrics.json, PLANS.md). De exportsignaturen van `taxRate` en `computeTax` veranderden ook, wat de regel los daarvan zou laten afgaan.
+- Old chooses deep for more than 5 files or more than 200 changed lines. The diffs had 10 files and 272-293 lines (metrics.json `reviewer.risk.files`, `changedLines`).
+- New chooses deep because task 1 carries `Risk: public signature` (`riskTasks` in metrics.json, PLANS.md). The export signatures of `taxRate` and `computeTax` also changed, which would trigger the rule independently.
 
-Op deze fixture leverde de risicogebaseerde keuze dus niets op: de oude diffregel kwam op hetzelfde uit. Een besparing in reviewtijd is hier niet te zien; de mediane review was bij nieuw zelfs 2,3% langer.
+On this fixture the risk-based choice therefore gained nothing: the old diff rule gave the same result. No saving in review time is visible here; the median review was even 2.3% longer for new.
 
-## Volledige suite-runs
+## Full suite runs
 
-suite-analysis.md kent elke volledige suite-run toe aan een oorzaak, maar alleen voor 01-old en 02-new. Voor de andere runs zijn alleen de aantallen bekend (metrics.json).
+suite-analysis.md assigns every full suite run to a cause, but only for 01-old and 02-new. For the other runs only the counts are known (metrics.json).
 
-| Run | Volledig (log) | Vereist door de regels | Extra | Extra door wie |
+| Run | Full (log) | Required by the rules | Extra | Extra by whom |
 |---|---|---|---|---|
-| 01-old | 12 | 6 (5 land gates, 1 verify-gate) | 6 | build-task 4, hoofdsessie 1, reviewer 1 |
-| 02-new | 8 | 3 (verify-gates) | 5 | build-task 3, reviewer 1, fix-review 1 |
+| 01-old | 12 | 6 (5 land gates, 1 verify gate) | 6 | build-task 4, main session 1, reviewer 1 |
+| 02-new | 8 | 3 (verify gates) | 5 | build-task 3, reviewer 1, fix-review 1 |
 
-- Oud vereist per run 5 land gates met `npm test` plus de verify-gate. Nieuw vereist alleen de verify-gate per verify-ronde, omdat de land gate `npm run typecheck` is.
-- In 02-new was de derde verify-gate alleen nodig door een valse `FAIL Task 1` (zie Kwaliteit). Zonder die FAIL had 02-new 7 volledige runs gelogd, waarvan 2 vereist (fail-task1.md).
-- In beide versies draaiden build-task-agents zelf `npm test`, tegen de regel in `agents/build-task.md:30` ("Run only the brief's `Proof:` or `Run:`, never the plan's `Land gate:`"). Ook de diepe reviewer draaide in beide versies de suite, en in nieuw ook de fixer, hoewel geen regel daarom vraagt.
-- In 01-old draaide de hoofdsessie `npm test` met de hand direct nadat verify.mjs `SKIP success-criterion` meldde.
-- Door agents gestarte runs: oud 6 van 12, nieuw 5 van 8. De winst zit dus in de gates, niet in het gedrag van de agents.
+- Old requires 5 land gates with `npm test` per run, plus the verify gate. New requires only the verify gate per verify round, because the land gate is `npm run typecheck`.
+- In 02-new the third verify gate was only needed because of a false `FAIL Task 1` (see Quality). Without that FAIL, 02-new would have logged 7 full runs, of which 2 were required (fail-task1.md).
+- In both versions, build-task agents ran `npm test` themselves, against the rule in `agents/build-task.md:30` ("Run only the brief's `Proof:` or `Run:`, never the plan's `Land gate:`"). The deep reviewer also ran the suite in both versions, and in new so did the fixer, although no rule asks for it.
+- In 01-old the main session ran `npm test` by hand right after verify.mjs reported `SKIP success-criterion`.
+- Runs started by agents: old 6 of 12, new 5 of 8. The gain therefore comes from the gates, not from agent behavior.
 
-## Kwaliteit
+## Quality
 
-**Eindcheck.** De recheck draait `npm test`, `npm run typecheck` en `npm run lint` op de eind-HEAD (metrics.json `quality.recheck`). Vijf runs slagen op alle drie. 04-new faalt op lint met één fout in `repo/.exo/probe.ts`, een ongetrackt kladbestand dat de hoofdsessie na verify en na de fixcommit schreef om de Stop-hook een productproof te geven (lint-04.md). Een kloon op HEAD 29a32f6 lint schoon, dus alle commits zijn lint-schoon en dit is geen regressie van de gates. Oud zou het ook gemist hebben: oud lint nergens. Wel blijkt dat nieuw de fix-review-commit nooit lint, omdat `land-task --fix` en verify allebei geen lint draaien. De blinde beoordelaar zag alle zes bomen slagen op typecheck, lint en test (judgement.md).
+**Final check.** The recheck runs `npm test`, `npm run typecheck` and `npm run lint` on the final HEAD (metrics.json `quality.recheck`). Five runs pass all three. 04-new fails lint with one error in `repo/.exo/probe.ts`, an untracked scratch file that the main session wrote after verify and after the fix commit to give the Stop hook a product proof (lint-04.md). A clone at HEAD 29a32f6 lints clean, so all commits are lint-clean and this is not a regression of the gates. Old would also have missed it: old does not lint anywhere. It does show that new never lints the fix-review commit, because `land-task --fix` and verify both run no lint. The blind judge saw all six trees pass typecheck, lint and test (judgement.md).
 
-**Valse FAIL in 02-new.** De tweede verify-ronde meldde `FAIL Task 1`, terwijl de test nooit draaide: het proces stierf binnen ongeveer 0,1 s, voordat de testwrapper een logregel schreef. Dezelfde boom slaagde daarna met de hand, in de derde verify-ronde en in 8 reproductiepogingen (fail-task1.md). Dit kostte 77 s van de 603,6 s wandklok en ongeveer $0,3. De oorzaak ligt in code die oud en nieuw delen; verify.mjs gooit bij een proof-FAIL de uitvoer, exitcode en het signaal weg.
+**False FAIL in 02-new.** The second verify round reported `FAIL Task 1`, although the test never ran: the process died within about 0.1 s, before the test wrapper wrote a log line. The same tree then passed by hand, in the third verify round and in 8 reproduction attempts (fail-task1.md). This cost 77 s of the 603.6 s wall clock and about $0.3. The cause lies in code that old and new share; verify.mjs discards the output, exit code and signal on a proof FAIL.
 
-**Reviewbevindingen.** Uit `repo/.exo/branch-review.md` per run:
+**Review findings.** From `repo/.exo/branch-review.md` per run:
 
-- Oud vond geen defects, alleen hazards: in 01-old dat `buildInvoice` nu gooit bij een order zonder regels; in 03-old dat verzendkosten bij een lege order stil verdwijnen en dat `renderInvoice` geen verzendregel toont; in 05-old alleen die ontbrekende verzendregel. Alle hazards werden gefixt.
-- Nieuw vond in elke run precies één defect, en steeds hetzelfde: het implementatierapport van taak 1 toont alleen een geslaagde proofrun en geen falende run ervoor, wat de regel voor een `Risk:`-taak eist. Dat is een procesbevinding, geen codefout, en hij kan alleen bij nieuw ontstaan omdat alleen het nieuwe plan `Risk:` op taak 1 heeft. Hij werd steeds als "report" afgehandeld, niet gefixt.
-- Daarnaast vond nieuw dezelfde soort hazards als oud: de gooiende lege order (04-new, 06-new), en in 02-new de verdwijnende verzendkosten, de ontbrekende verzendregel en een onverklaarde `as RatePeriod`-cast. Alle gefixt.
+- Old found no defects, only hazards: in 01-old that `buildInvoice` now throws on an order without lines; in 03-old that shipping costs silently disappear on an empty order and that `renderInvoice` shows no shipping line; in 05-old only that missing shipping line. All hazards were fixed.
+- New found exactly one defect in every run, and always the same one: the implementation report of task 1 shows only a passing proof run and no failing run before it, which the rule for a `Risk:` task requires. That is a process finding, not a code error, and it can only arise in new because only the new plan has `Risk:` on task 1. It was handled as "report" each time, not fixed.
+- In addition, new found the same kind of hazards as old: the throwing empty order (04-new, 06-new), and in 02-new the disappearing shipping costs, the missing shipping line and an unexplained `as RatePeriod` cast. All fixed.
 
-Het hogere aantal bevindingen bij nieuw (mediaan 2 tegen 1) komt dus vooral door die Risk-procesregel, niet door slechtere code.
+The higher number of findings for new (median 2 against 1) therefore comes mostly from that Risk process rule, not from worse code.
 
-**Blinde beoordeling.** De beoordelaar zag alleen diffs, bomen en de spec onder `/tmp/lg-blind`, zonder planheaders en exo-sporen, en scoorde vijf criteria van 1 tot 5 (judgement.md). Ontblind met blind-key.txt:
+**Blind judgement.** The judge saw only diffs, trees and the spec under `/tmp/lg-blind`, without plan headers or exo traces, and scored five criteria from 1 to 5 (judgement.md). Unblinded with blind-key.txt:
 
-| Rang | Boom | Run | Score |
+| Rank | Tree | Run | Score |
 |---|---|---|---|
 | 1 | F | 01-old | 24 |
 | 2 | B | 04-new | 23 |
 | 3 | A | 06-new | 22 |
-| 4 (gedeeld) | C | 05-old | 20 |
-| 4 (gedeeld) | E | 03-old | 20 |
+| 4 (shared) | C | 05-old | 20 |
+| 4 (shared) | E | 03-old | 20 |
 | 6 | D | 02-new | 20 |
 
-Mediaan nieuw 22, oud 20; gemiddeld 21,67 tegen 21,33 (+1,6%). De beste boom is een oude run. Volgens de beoordelaar zijn de verschillen klein en draaien ze om teststerkte, scopediscipline en randgevallen buiten de spec; alle zes voldoen aan elke acceptatie-eis.
+Median new 22, old 20; mean 21.67 against 21.33 (+1.6%). The best tree is an old run. According to the judge the differences are small and turn on test strength, scope discipline and edge cases outside the spec; all six meet every acceptance criterion.
 
-## Opzet
+## Setup
 
-- Versies: oud `d33adf3769ca18068557defb79b305fcf932eb27`, nieuw `a8b27a456cf4430109a10f7c7ff8bc3f38a8f29c`, beide als losse worktree zonder wijzigingen (`pluginDirty: false`, meta.json).
+- Versions: old `d33adf3769ca18068557defb79b305fcf932eb27`, new `a8b27a456cf4430109a10f7c7ff8bc3f38a8f29c`, each as a separate worktree without changes (`pluginDirty: false`, meta.json).
 - Claude Code `2.1.287`, Node `v24.16.0` (meta.json).
-- Hoofdsessie: model `claude-opus-5-5`, effort `medium` (meta.json). Subagents gebruiken het model uit hun frontmatter: `claude-sonnet-5-5` voor build-task en fix-review, `claude-opus-5-5` voor review-branch-deep, en in 03-old één general-purpose-agent op `claude-opus-5-5` (metrics.json `tokens.byAgentType`, cost-recon.md).
-- Aanroep: `claude -p <prompt> --plugin-dir <worktree> --model --effort --permission-mode bypassPermissions --output-format json --setting-sources project,local --strict-mcp-config --max-budget-usd <b> --session-id <uuid>` (build.md). De prompt is voor beide versies gelijk.
-- Isolatie: de harness verwijdert `CLAUDECODE`, `CLAUDE_EFFORT` en alle `CLAUDE_CODE_*` uit de omgeving en zet `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` en `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` (meta.json `env`). Uitvoermappen staan buiten elke repo en elke map met CLAUDE.md. Een probe met haiku per versie vond 0 geladen CLAUDE.md-instructies en wel een geladen exo (build.md).
-- Projectinstellingen in de fixture: specs docs, replies tight, budget medium, ship local, workspace branch, guards on (exo-settings.txt).
-- Fixture: TypeScript-pakket `invoice-calc` met scripts `test`, `typecheck` en `lint`. De tests gebruiken een gesimuleerde ledger met 40 ms per round trip en 130 gevallen per bestand, waardoor de volle suite ongeveer 33 s duurt en één testbestand ongeveer 6 s (build.md).
-- Plannen: hetzelfde doel, dezelfde vijf taken en hetzelfde succescriterium (`npm test` passes). Er verschillen alleen drie regels, elk de standaard die de eigen spec-skill schrijft (PLANS.md): `Land gate: npm test` (oud) tegen `Land gate: npm run typecheck` (nieuw), `Lint: npx eslint` (alleen nieuw), en `Risk: public signature` op taak 1 (alleen nieuw).
-- Volgorde afwisselend: 01-old, 02-new, 03-old, 04-new, 05-old, 06-new, achter elkaar op 2026-10-02 van 12:19:39Z tot 13:16:17Z (meta.json `startedAt`/`endedAt`).
+- Main session: model `claude-opus-5-5`, effort `medium` (meta.json). Subagents use the model from their frontmatter: `claude-sonnet-5-5` for build-task and fix-review, `claude-opus-5-5` for review-branch-deep, and in 03-old one general-purpose agent on `claude-opus-5-5` (metrics.json `tokens.byAgentType`, cost-recon.md).
+- Invocation: `claude -p <prompt> --plugin-dir <worktree> --model --effort --permission-mode bypassPermissions --output-format json --setting-sources project,local --strict-mcp-config --max-budget-usd <b> --session-id <uuid>` (build.md). The prompt is the same for both versions.
+- Isolation: the harness removes `CLAUDECODE`, `CLAUDE_EFFORT` and all `CLAUDE_CODE_*` from the environment and sets `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` and `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` (meta.json `env`). Output directories are outside every repo and every directory with a CLAUDE.md. A probe with haiku per version found 0 loaded CLAUDE.md instructions and a loaded exo (build.md).
+- Project settings in the fixture: specs docs, replies tight, budget medium, ship local, workspace branch, guards on (exo-settings.txt).
+- Fixture: TypeScript package `invoice-calc` with scripts `test`, `typecheck` and `lint`. The tests use a simulated ledger with 40 ms per round trip and 130 cases per file, so the full suite takes about 33 s and one test file about 6 s (build.md).
+- Plans: the same goal, the same five tasks and the same success criterion (`npm test` passes). Only three lines differ, each the default that the version's own spec skill writes (PLANS.md): `Land gate: npm test` (old) against `Land gate: npm run typecheck` (new), `Lint: npx eslint` (new only), and `Risk: public signature` on task 1 (new only).
+- Order alternating: 01-old, 02-new, 03-old, 04-new, 05-old, 06-new, back to back on 2026-10-02 from 12:19:39Z to 13:16:17Z (meta.json `startedAt`/`endedAt`).
 
-## Wat de vergelijking oneerlijk kan maken
+## What can make the comparison unfair
 
-- **n=3 per versie.** De spreiding is groot (wandklok nieuw 401,8-603,6 s), dus één afwijkende run verschuift een gemiddelde sterk.
-- **Warme promptcache.** De runs liepen direct na elkaar. De hoofdsessie schrijft alleen 1-uurscache (cost-recon.md), dus latere runs kunnen van eerdere profiteren; 01-old startte koud. Elke versie heeft wel een vroege en een late run.
-- **API-latentie en netwerk** variëren per moment en zijn niet gemeten.
-- **Valse FAIL in 02-new** (77 s, ongeveer $0,3, een extra suite-run) treft alleen nieuw, terwijl de oorzaak in gedeelde code zit.
-- **Kladbestand in 04-new** laat de recheck-lint falen zonder dat de code fout is.
-- **De plannen verschillen bewust**, ook in `Risk:`. Daardoor meet de benchmark ook de Risk-regel, die bij nieuw elke run een procesdefect opleverde.
-- **Kunstmatig trage tests.** De gesimuleerde ledger maakt elke volledige suite-run 33 s; dat vergroot de winst van minder suite-runs ten opzichte van een project met snelle tests.
-- **Gemengde subagentmodellen** (sonnet voor bouwen en fixen, opus voor reviewen) zijn per versie gelijk, maar de verhouding verschilt per run.
-- **Afgebroken eerste poging.** De eerste 01-old lekte `~/.claude/CLAUDE.md` en de exo-CLAUDE.md in de sessie en is gestopt en uitgesloten (progress.md, build.md). Bewaard in `/Users/thomash/bench-runs/aborted-01-old-claude-md-leak`.
-- **Ontbrekende prijsrij** in `prices.mjs` voor `claude-opus-5-5`, waardoor de kolom "$ transcript" te hoog is; dit rapport gebruikt die kolom niet (de rij is na deze run toegevoegd).
-- **Eigenaardigheid van de testwrapper:** `node --test` met één ontbrekend bestand naast bestaande bestanden eindigt met 0, terwijl één los ontbrekend bestand met 1 eindigt (progress.md, build.md).
-- **Eén machine, één dag.**
+- **n=3 per version.** The spread is large (wall clock new 401.8-603.6 s), so one outlying run shifts a mean strongly.
+- **Warm prompt cache.** The runs followed each other directly. The main session writes only the 1-hour cache (cost-recon.md), so later runs can benefit from earlier ones; 01-old started cold. Each version does have an early and a late run.
+- **API latency and network** vary from moment to moment and were not measured.
+- **False FAIL in 02-new** (77 s, about $0.3, one extra suite run) affects only new, although the cause is in shared code.
+- **Scratch file in 04-new** makes the recheck lint fail without the code being wrong.
+- **The plans differ on purpose**, including in `Risk:`. The benchmark therefore also measures the Risk rule, which produced a process defect in every new run.
+- **Artificially slow tests.** The simulated ledger makes every full suite run take 33 s; that enlarges the gain from fewer suite runs compared with a project with fast tests.
+- **Mixed subagent models** (sonnet for building and fixing, opus for reviewing) are the same per version, but the proportions differ per run.
+- **Aborted first attempt.** The first 01-old leaked `~/.claude/CLAUDE.md` and the exo CLAUDE.md into the session and was stopped and excluded (progress.md, build.md). Kept in `/Users/thomash/bench-runs/aborted-01-old-claude-md-leak`.
+- **Missing price row** in `prices.mjs` for `claude-opus-5-5`, which makes the "$ transcript" column too high; this report does not use that column (the row was added after this run).
+- **Quirk of the test wrapper:** `node --test` with one missing file next to existing files exits with 0, while a single missing file on its own exits with 1 (progress.md, build.md).
+- **One machine, one day.**
 
-## Reproduceren
+## Reproduce
 
-De harness, fixture, plannen en tests staan ongecommit in de worktree `.worktrees/bench-lean-gates` (`benchmarks/lean-gates.mjs`, `benchmarks/lean-gates-metrics.mjs`, `benchmarks/lean-gates/`, `tests/benchmark-lean-gates*.test.mjs`). De worktrees `.worktrees/bench-old` en `.worktrees/bench-new` moeten op d33adf37 en a8b27a45 staan. Vanuit de bench-lean-gates-worktree, één run per regel, in deze volgorde:
+The harness, fixture, plans and tests are uncommitted in the worktree `.worktrees/bench-lean-gates` (`benchmarks/lean-gates.mjs`, `benchmarks/lean-gates-metrics.mjs`, `benchmarks/lean-gates/`, `tests/benchmark-lean-gates*.test.mjs`). The worktrees `.worktrees/bench-old` and `.worktrees/bench-new` must be at d33adf37 and a8b27a45. From the bench-lean-gates worktree, one run per line, in this order:
 
 ```sh
 OUT=/Users/thomash/bench-runs/lean-gates-2026-10-02
@@ -157,4 +157,4 @@ node benchmarks/lean-gates.mjs --version new --run 6 --out $OUT --model claude-o
 node benchmarks/lean-gates-metrics.mjs $OUT
 ```
 
-De harness weigert een bestaande run-map, dus kies voor een nieuwe meting een lege `--out` buiten elke repo. De metrics-stap schrijft `$OUT/metrics.json` en print de tabel uit metrics-table.md; `--no-recheck` slaat de eindcheck over.
+The harness refuses an existing run directory, so for a new measurement choose an empty `--out` outside every repo. The metrics step writes `$OUT/metrics.json` and prints the table from metrics-table.md; `--no-recheck` skips the final check.
