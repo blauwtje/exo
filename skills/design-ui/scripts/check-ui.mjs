@@ -1029,7 +1029,19 @@ export function parseComputedColor(value) {
 const FOCUS_SIGNATURE_PROPERTIES = ['outlineStyle', 'outlineWidth', 'outlineColor',
   'boxShadow', 'borderColor', 'backgroundColor', 'color'];
 
-const PAGE_AUDIT = (focusProperties, parseColor) => {
+/**
+ * The selector a rendered finding names: tag, id and the first two classes. The page
+ * audits receive this function's source, so it must not reach module scope.
+ */
+function describeElement(element) {
+  const id = element.id ? `#${element.id}` : '';
+  const classes = typeof element.className === 'string' && element.className
+    ? `.${element.className.trim().split(/\s+/).slice(0, 2).join('.')}`
+    : '';
+  return `${element.tagName.toLowerCase()}${id}${classes}`;
+}
+
+const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
@@ -1067,13 +1079,6 @@ const PAGE_AUDIT = (focusProperties, parseColor) => {
     if (foreground.a >= 1) return foreground;
     const mix = (channel) => foreground.a * foreground[channel] + (1 - foreground.a) * background[channel];
     return { r: mix('r'), g: mix('g'), b: mix('b'), a: 1 };
-  };
-  const describe = (element) => {
-    const id = element.id ? `#${element.id}` : '';
-    const classes = typeof element.className === 'string' && element.className
-      ? `.${element.className.trim().split(/\s+/).slice(0, 2).join('.')}`
-      : '';
-    return `${element.tagName.toLowerCase()}${id}${classes}`;
   };
   const isVisible = (element) => {
     const style = getComputedStyle(element);
@@ -1428,6 +1433,116 @@ async function overflowFindings(page, url) {
   return findings;
 }
 
+// A sidebar or background that ends while the page goes on: a sidebar sized to 100vh
+// in a page that scrolls, or a full-width wrapper whose content overflows its fixed
+// height. The page is measured scrolled to its bottom, so a fixed sidebar of viewport
+// height reaches the bottom by construction. The canvas paints html's background, and
+// body's when html has none, across the whole page, so neither is a candidate then.
+const REGION_AUDIT = (parseColor, describe) => {
+  const SHORT_BY = 16; // a gap up to this reads as an inset, not a stop
+  const EDGE = 8;
+  const PROBE_STEP = 16;
+  const PROBE_DEPTH = 64; // a margin up to this may separate a region from what continues its column
+  const root = document.documentElement;
+  window.scrollTo({ top: root.scrollHeight, behavior: 'instant' });
+  const pageHeight = root.scrollHeight;
+  const viewportHeight = root.clientHeight;
+  const viewportWidth = root.clientWidth;
+  if (pageHeight <= viewportHeight + 1) return [];
+  const topArea = viewportHeight / 4;
+
+  const pageBox = (element) => {
+    const rect = element.getBoundingClientRect();
+    return { top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY, left: rect.left, right: rect.right };
+  };
+  const painted = (color) => (parseColor(color)?.a ?? 0) > 0;
+  const ownBackground = (style) => painted(style.backgroundColor) || (style.backgroundImage ?? 'none') !== 'none';
+  const edgeBorder = (style, edge) => parseFloat(style[`border${edge}Width`]) > 0 &&
+    style[`border${edge}Style`] !== 'none' && painted(style[`border${edge}Color`]);
+  const related = (first, second) => first.contains(second) || second.contains(first);
+
+  const boxes = [];
+  for (const element of document.querySelectorAll('body *')) {
+    const style = getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) continue;
+    const box = pageBox(element);
+    if (box.right - box.left > 0 && box.bottom - box.top > 0) boxes.push({ element, style, box });
+  }
+  const htmlStyle = getComputedStyle(root);
+  const candidates = ownBackground(htmlStyle)
+    ? [{ element: document.body, style: getComputedStyle(document.body), box: pageBox(document.body) }, ...boxes]
+    : boxes;
+
+  // Another element under the sidebar's column, such as a footer it ends on, continues it.
+  const columnContinues = ({ element, box }) => {
+    const x = (box.left + box.right) / 2;
+    for (let y = box.bottom + 2; y < Math.min(pageHeight, box.bottom + PROBE_DEPTH); y += PROBE_STEP) {
+      const covered = boxes.some((other) => !related(other.element, element) && other.style.pointerEvents !== 'none' &&
+        other.box.left <= x && other.box.right >= x && other.box.top <= y && other.box.bottom >= y);
+      if (covered) return true;
+    }
+    return false;
+  };
+  // In-flow content painted past the layer's bottom; absolute, fixed and clipped content does not count.
+  const contentOverflows = ({ element, box }) => boxes.some((inner) => {
+    if (inner.element === element || !element.contains(inner.element) || inner.box.bottom <= box.bottom + SHORT_BY) {
+      return false;
+    }
+    for (let node = inner.element; node !== element; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (['absolute', 'fixed'].includes(style.position)) return false;
+      if (node !== inner.element && (style.overflowX !== 'visible' || style.overflowY !== 'visible')) return false;
+    }
+    return true;
+  });
+  const kindOf = ({ style, box }) => {
+    const width = box.right - box.left;
+    const height = box.bottom - box.top;
+    if (box.top > topArea || height < viewportHeight / 2) return null;
+    if (width >= viewportWidth * 0.95) return ownBackground(style) ? 'background' : null;
+    const edge = box.left <= EDGE ? 'Right' : box.right >= viewportWidth - EDGE ? 'Left' : null;
+    if (!edge || width > viewportWidth * 0.4 || height < width) return null;
+    return ownBackground(style) || edgeBorder(style, edge) ? 'sidebar' : null;
+  };
+
+  const flagged = [];
+  const findings = [];
+  for (const candidate of candidates) {
+    const { element, style, box } = candidate;
+    if (box.bottom >= pageHeight - SHORT_BY || flagged.some((region) => region.contains(element))) continue;
+    const kind = kindOf(candidate);
+    if (kind === 'sidebar') {
+      const parentBottom = element.parentElement ? pageBox(element.parentElement).bottom : pageHeight;
+      if (style.position === 'sticky' && parentBottom >= pageHeight - SHORT_BY) continue;
+      if (columnContinues(candidate)) continue;
+    } else if (kind === 'background') {
+      const clips = element !== document.body && (style.overflowX !== 'visible' || style.overflowY !== 'visible');
+      if (clips || !contentOverflows(candidate)) continue;
+    } else {
+      continue;
+    }
+    flagged.push(element);
+    findings.push({
+      type: 'region-stops-short',
+      confidence: 'definite',
+      selector: describe(element),
+      measured: `ends at ${Math.round(box.bottom)}px of a ${pageHeight}px page`,
+      threshold: `a sidebar or background reaches the page bottom, within ${SHORT_BY}px`,
+      note: kind === 'sidebar'
+        ? 'the sidebar ends while the page continues beside it'
+        : 'the background ends while its content continues below it'
+    });
+  }
+  return findings;
+};
+
+async function regionFindings(page) {
+  // Scrolling first lets content revealed on scroll load and settle before the measure.
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+  await settleAnimations(page);
+  return page.evaluate(`(${REGION_AUDIT})(${parseComputedColor}, ${describeElement})`);
+}
+
 // WCAG 2.2 SC 1.4.10 Reflow: 320x256 CSS px is the 400% zoom equivalent of a 1280x1024
 // viewport. Vertical scrolling is allowed there; scrolling in two dimensions is not,
 // unless the content genuinely requires a two-dimensional layout, which no script decides.
@@ -1474,9 +1589,11 @@ export async function renderedAudit({ url, viewports, cwd }) {
       // A function argument cannot cross into the page, so the audit and the colour
       // parser travel as one source expression.
       const audit = await page.evaluate(
-        `(${PAGE_AUDIT})(${JSON.stringify(FOCUS_SIGNATURE_PROPERTIES)}, ${parseComputedColor})`);
+        `(${PAGE_AUDIT})(${JSON.stringify(FOCUS_SIGNATURE_PROPERTIES)}, ${parseComputedColor}, ${describeElement})`);
       const focusFindings = await focusIndicatorFindings(page, audit.focusables);
-      const findings = [...audit.findings, ...focusFindings].map((entry) => ({ ...entry, viewport: key }));
+      // Last, because it scrolls the page to its bottom.
+      const shortRegions = await regionFindings(page);
+      const findings = [...audit.findings, ...focusFindings, ...shortRegions].map((entry) => ({ ...entry, viewport: key }));
       perViewport[key] = { status: 'ok', findings };
     }
     return { status: 'ok', viewports: perViewport, fixed: { findings: fixedFindings } };
@@ -1665,7 +1782,7 @@ const FINDING_TYPES = new Set([
   'contrast-large-text',
   'contrast-normal-text', 'target-size-minimum', 'target-size-enhanced', 'contrast-non-text-ui',
   'repeated-surface-anatomy', 'content-clipped', 'element-overlap', 'crowded-controls', 'focus-indicator-missing',
-  'horizontal-overflow', 'reflow-two-dimensional'
+  'horizontal-overflow', 'reflow-two-dimensional', 'region-stops-short'
 ]);
 
 async function readIgnoreEntries(directory) {

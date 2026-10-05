@@ -1616,7 +1616,68 @@ describe('rendered capability', () => {
       JSON.stringify(findings)
     );
   });
+
+  it('reports a sidebar or background that stops before the page bottom, and nothing else', async (t) => {
+    const capability = await resolveBrowser({ cwd: SCRIPTS });
+    if (!capability.driven) return t.skip(`no driven browser: ${capability.reason}`);
+    const root = await fixture();
+    const results = {};
+    for (const [name, { body, css = '' }] of Object.entries(REGION_PAGES)) {
+      const file = path.join(root, `${name}.html`);
+      await fs.writeFile(file, `<!doctype html><html lang="en"><head><style>
+        body, h1 { margin: 0; } body { font: 16px/1.5 system-ui; } ${css}</style></head><body>${body}</body></html>`);
+      const result = await run(script('check-ui.mjs'), ['--json', '--url', `file://${file}`, '--viewport', '1440x900']);
+      assert.equal(result.code, 0, result.stderr);
+      results[name] = JSON.parse(result.stdout).rendered.viewports['1440x900'].findings
+        .filter((entry) => entry.type === 'region-stops-short')
+        .map(({ selector, measured, confidence }) => ({ selector, measured, confidence }));
+    }
+    assert.deepEqual(results, {
+      'in-flow-sidebar': [{ selector: 'aside.nav', measured: 'ends at 900px of a 2400px page', confidence: 'definite' }],
+      'short-wrapper': [{ selector: 'div.shell', measured: 'ends at 900px of a 2400px page', confidence: 'definite' }],
+      'fixed-sidebar': [],
+      'sticky-sidebar': [],
+      'footer-below-sidebar': [],
+      'canvas-background': [],
+      'no-scroll': []
+    });
+  });
 });
+
+const TALL = '<main style="height: 2400px"><h1>Orders</h1><p>Real copy.</p></main>';
+const REGION_PAGES = {
+  'in-flow-sidebar': {
+    css: '.row { display: flex; align-items: flex-start; } .nav { width: 240px; height: 100vh; background: #1d2433; }',
+    body: `<div class="row"><aside class="nav"><a href="#">Orders</a></aside>${TALL}</div>`
+  },
+  'short-wrapper': {
+    css: 'html { background: #fff; } .shell { height: 100vh; background: #e8eef7; }',
+    body: `<div class="shell">${TALL}</div>`
+  },
+  'fixed-sidebar': {
+    css: '.nav { position: fixed; inset: 0 auto 0 0; width: 240px; height: 100vh; background: #1d2433; }'
+      + ' main { margin-left: 240px; }',
+    body: `<aside class="nav"><a href="#">Orders</a></aside>${TALL}`
+  },
+  'sticky-sidebar': {
+    css: '.row { display: grid; grid-template-columns: 240px 1fr; }'
+      + ' .nav { position: sticky; top: 0; height: 60vh; background: #1d2433; }',
+    body: `<div class="row"><div class="column"><aside class="nav"><a href="#">Orders</a></aside></div>${TALL}</div>`
+  },
+  'footer-below-sidebar': {
+    css: '.row { display: flex; } .nav { width: 240px; background: #1d2433; }'
+      + ' footer { height: 200px; background: #333; color: #fff; }',
+    body: `<div class="row"><aside class="nav"><a href="#">Orders</a></aside>${TALL}</div><footer>Footer</footer>`
+  },
+  'canvas-background': {
+    css: 'body { height: 100vh; background: #e8eef7; }',
+    body: TALL
+  },
+  'no-scroll': {
+    css: '.row { display: flex; } .nav { width: 240px; height: 50vh; background: #1d2433; }',
+    body: '<div class="row"><aside class="nav"><a href="#">Orders</a></aside><main><h1>Orders</h1></main></div>'
+  }
+};
 
 describe('reference.mjs', () => {
   it('creates a draft DESIGN.md holding only the reference, then prints it', async () => {
