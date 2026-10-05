@@ -173,10 +173,6 @@ function refuseFailedCommand(task, lines) {
   }
 }
 
-// A task is done only on proof from the real product: the report's
-// `<command>: pass` line with the command's own output under it, at any
-// indentation. Any other outcome for that command, or none, leaves the task
-// not done.
 // What every report refusal ends with, so one round fixes every report fault:
 // the layout the report must have under Proof, filled with the task's command.
 // An MCP Proof is only ever deferred, so it has no output lines.
@@ -186,6 +182,11 @@ function expectedLayout(task, reportPath, command = null) {
   const lines = deferred ? [`${written}: deferred`] : [`${written}: pass`, '  <last output lines of that exact command>'];
   return `\nExpected under Proof: in ${reportPath}:\n${lines.join('\n')}`;
 }
+
+// A task is done only on proof from the real product: the report's
+// `<command>: pass` line with the command's own output under it, at any
+// indentation. Any other outcome for that command, or none, leaves the task
+// not done.
 
 function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
