@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.87.0 - 2026-10-05
+
 ### Changed
 
 - build-task quotes a failing `Red:` run before the production edit and a passing `Proof:` run after, for every test-first task, and `land-task` lands a report holding the `Red:` line.
