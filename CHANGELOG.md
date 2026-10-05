@@ -12,8 +12,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 - design-ui logs each project's display font, body font and accent in one machine-wide file and warns on the color and font line, in the reply's language, when another project already used a pick; it never blocks or asks.
 - design-ui saves the display font, body font and accent in `docs/design/DESIGN.md` beside the reference product and reuses them on the next run.
 - `benchmarks/design-run.mjs` reports a design-ui run's final context size, and `benchmarks/design-ui-tests.md` records the three fixed test prompts and their checklist.
+- check-ui reports `region-stops-short`, a sidebar or background that stops before the bottom of the page.
 
 ### Changed
+
+- design-ui's scope form no longer asks which product the page should feel like; without a product the user names, it picks the look from the user and the subject and shows the color and font line before building.
+- design-ui words every form question and option in plain words in the user's language, under the tabs "For whom", "What's in" and "Designs".
+- The design-ui test prompts and pressure fixtures are written in English.
 
 - design-ui builds the one pass in the main session after reading `build-pass.md` whole; `exo:build-ui` no longer takes a page scope.
 - design-ui's plan gives each font and the accent one clause on why it fits this product and this user, and caps each ASCII layout at 8 lines per width.
@@ -22,6 +27,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - design-ui sets amounts in the page's body or display family with `tabular-nums`, never a monospace family.
 - design-ui numbers each pass's report and captures, so no pass overwrites the one before it.
+- design-ui's finish step reruns only the capture, and an empty `reference.mjs --set` value names the `--set` flag in its error.
 
 ## 0.85.2 - 2026-10-05
 
