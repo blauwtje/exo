@@ -130,14 +130,14 @@ const OUTPUT_END_LINE = new RegExp(`^\\s*(?:[-*]\\s+)?(?:${[...REPORT_FIELDS, 'R
 // The command whose outcome proves the task: the plan's `Proof:`, or for an
 // older compact plan with none, the first command the report gives an outcome
 // for, which is the Success-criterion test build-task wrote or picked.
-function provedCommand(task, lines) {
+function provedCommand(task, lines, reportPath) {
   if (task.proof !== null) return task.proof.replace(/^`(.*)`$/, '$1');
   for (const line of lines) {
     const match = line.match(ANY_OUTCOME_LINE);
     const command = match?.[1] ?? match?.[2];
     if (command !== undefined && match[3] !== '' && !REPORT_FIELDS.has(command)) return command;
   }
-  throw new LandingError(`Task ${task.number}: no Proof: command, and the build report has no "<test>: pass" line`);
+  throw new LandingError(`Task ${task.number}: no Proof: command, and the build report has no "<test>: pass" line${expectedLayout(task, reportPath)}`);
 }
 
 const FAILED_OUTCOME = /^fail(?:ed|s|ing)?\b/i;
@@ -177,10 +177,20 @@ function refuseFailedCommand(task, lines) {
 // `<command>: pass` line with the command's own output under it, at any
 // indentation. Any other outcome for that command, or none, leaves the task
 // not done.
+// What every report refusal ends with, so one round fixes every report fault:
+// the layout the report must have under Proof, filled with the task's command.
+// An MCP Proof is only ever deferred, so it has no output lines.
+function expectedLayout(task, reportPath, command = null) {
+  const deferred = mcpProofOf(task) !== null;
+  const written = command ?? (task.proof === null ? '<test command>' : task.proof.replace(/^`(.*)`$/, '$1'));
+  const lines = deferred ? [`${written}: deferred`] : [`${written}: pass`, '  <last output lines of that exact command>'];
+  return `\nExpected under Proof: in ${reportPath}:\n${lines.join('\n')}`;
+}
+
 function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
     const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
-    throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}`);
+    throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}${expectedLayout(task, reportPath)}`);
   }
   const lines = reportText.replace(/\r\n/g, '\n').split('\n');
   const kept = [];
@@ -217,10 +227,10 @@ export function mcpProofOf(task) {
 // the landing, so this returns the `mcp:` form.
 export function deferredProofOf(task, call, reportText, reportPath) {
   const lines = reportLinesOf(task, reportText, reportPath);
-  const written = provedCommand(task, lines);
+  const written = provedCommand(task, lines, reportPath);
   const outcomes = [...new Set([written, call])].flatMap((command) => outcomesOf(command, lines).map((entry) => ({ ...entry, command })));
   if (outcomes.length === 0) {
-    throw new LandingError(`Task ${task.number}: the build report has no "${written}: deferred" line`);
+    throw new LandingError(`Task ${task.number}: the build report has no "${written}: deferred" line${expectedLayout(task, reportPath, written)}`);
   }
   const undeferred = outcomes.find(({ outcome }) => !/^deferred\b/.test(outcome));
   if (undeferred !== undefined) {
@@ -232,16 +242,16 @@ export function deferredProofOf(task, call, reportText, reportPath) {
 
 export function proofOf(task, reportText, reportPath) {
   const lines = reportLinesOf(task, reportText, reportPath);
-  const command = provedCommand(task, lines);
+  const command = provedCommand(task, lines, reportPath);
   const outcomes = outcomesOf(command, lines);
   if (outcomes.length === 0) {
-    throw new LandingError(`Task ${task.number}: the build report has no "${command}: pass" line`);
+    throw new LandingError(`Task ${task.number}: the build report has no "${command}: pass" line${expectedLayout(task, reportPath, command)}`);
   }
   const skipped = outcomes.find(({ outcome }) => SKIPPED_OUTCOME.test(outcome));
-  if (skipped !== undefined) throw new LandingError(`Task ${task.number}: the Proof: command "${command}" was skipped`);
+  if (skipped !== undefined) throw new LandingError(`Task ${task.number}: the Proof: command "${command}" was skipped${expectedLayout(task, reportPath, command)}`);
   const unclear = outcomes.find(({ outcome }) => outcome !== 'pass');
   if (unclear !== undefined) {
-    throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${unclear.outcome}", no clear pass`);
+    throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${unclear.outcome}", no clear pass${expectedLayout(task, reportPath, command)}`);
   }
   // Blank lines before the output, and any indentation the output carries
   // relative to its outcome line, are the report writer's style, not a rule:
@@ -253,7 +263,7 @@ export function proofOf(task, reportText, reportPath) {
     output.push(line);
   }
   if (output.length === 0) {
-    throw new LandingError(`Task ${task.number}: the build report shows no output under "${command}: pass"`);
+    throw new LandingError(`Task ${task.number}: the build report shows no output under "${command}: pass"${expectedLayout(task, reportPath, command)}`);
   }
   refuseFailedCommand(task, lines);
   return [`${command}: pass`, ...output].join('\n');
@@ -407,23 +417,43 @@ function writeLandGateRecord({ root, planId, gate, proof }) {
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
 
+function refuseStrayPaths(task, root, planPath) {
+  const stray = strayPaths(task, root, planPath);
+  if (stray.length > 0) {
+    throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
+  }
+}
+
+function checkReport(task, reportText, reportPath) {
+  const mcpCall = task.compact ? mcpProofOf(task) : null;
+  const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, reportText, reportPath);
+  const proof = task.compact && pending === null ? proofOf(task, reportText, reportPath) : null;
+  return { proof, pending };
+}
+
+// The stray-path and report checks landTask runs first, alone: nothing
+// commits, lints, gates or records, so a builder can run it before it reports.
+export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
+  refuseMismatchedToplevel(root);
+  const task = parsePlan(planText).tasks.find((entry) => entry.number === number);
+  if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
+  refuseStrayPaths(task, root, planPath);
+  checkReport(task, reportText, reportPath);
+  return `Report OK: Task ${number}\n`;
+}
+
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  const stray = strayPaths(task, root, planPath);
-  if (stray.length > 0) {
-    throw new LandingError(`Task ${number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
-  }
+  refuseStrayPaths(task, root, planPath);
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.
-  const mcpCall = task.compact ? mcpProofOf(task) : null;
-  const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, reportText, reportPath);
-  const proof = task.compact && pending === null ? proofOf(task, reportText, reportPath) : null;
+  const { proof, pending } = checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
   const gateRan = runLandGate(frame.landGate, root);
@@ -455,7 +485,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value' });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean' });
   const root = flags.root ?? process.cwd();
   if (flags.fix !== undefined) {
     process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null }));
@@ -469,7 +499,8 @@ function main(argv) {
   // finds its own report with no extra flag.
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
-  process.stdout.write(landTask({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan }));
+  const run = flags.check === true ? checkTask : landTask;
+  process.stdout.write(run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan }));
 }
 
 if (isMain(import.meta.url)) {
