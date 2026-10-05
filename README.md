@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/social-preview.jpg" alt="exo: plugin for AI coding agents. Decide, build, review.">
+  <img src="assets/social-preview.jpg" alt="exo: Claude Code plugin. Spec, build, verify, ship.">
 </p>
 
 # exo

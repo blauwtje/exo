@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>exo social preview</title>
+<!-- Source of assets/social-preview.jpg. Render at 1280x640:
+     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --screenshot=preview.png --window-size=1280,640 --hide-scrollbars file://<this file>
+     sips -s format jpeg -s formatOptions 90 preview.png --out assets/social-preview.jpg -->
+<style>
+  html, body { margin: 0; padding: 0; background: #0f1113; }
+  svg { display: block; }
+  .sans { font-family: "Avenir Next", Avenir, Futura, "Century Gothic", "Helvetica Neue", Arial, sans-serif; }
+  .wordmark { font-weight: 800; font-size: 146px; fill: #f6efe3; letter-spacing: -3px; }
+  .tagline { font-weight: 700; font-size: 40px; fill: #f6efe3; }
+  .stage { font-weight: 700; font-size: 25px; fill: #f2f2ef; letter-spacing: 2px; }
+  .chip { font-weight: 500; font-size: 18px; fill: #d4d7da; }
+  .box { fill: #121518; stroke: #4d5359; stroke-width: 1.5; }
+  .edge { fill: none; stroke: #1fe3e0; stroke-width: 5; stroke-linejoin: miter; }
+  .icon { fill: none; stroke: #1fe3e0; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .chipbox { fill: #121518; stroke: #545a61; stroke-width: 1.5; }
+  .chipicon { fill: none; stroke: #e8e9e6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .wire { fill: none; stroke: #6b737b; stroke-width: 1.5; }
+  .dot { fill: #8a939c; }
+</style>
+</head>
+<body>
+<svg width="1280" height="640" viewBox="0 0 1280 640" class="sans" role="img" aria-label="exo: Claude Code plugin. Spec, build, verify, ship.">
+  <defs>
+    <radialGradient id="glow" cx="0.62" cy="0.47" r="0.6">
+      <stop offset="0" stop-color="#16191c"/>
+      <stop offset="1" stop-color="#0f1113"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+
+  <!-- wordmark and tagline -->
+  <text x="60" y="336" class="wordmark">exo</text>
+  <text x="66" y="396" class="tagline">Claude Code</text>
+  <text x="66" y="442" class="tagline">plugin</text>
+
+  <!-- stages: x0 372, width 196, point depth 26, gap 10 -->
+  <g>
+    <polygon class="box" points="372,250 568,250 594,302 568,354 372,354"/>
+    <polyline class="edge" points="575,250 601,302 575,354"/>
+    <!-- Spec: document with lines -->
+    <g class="icon" transform="translate(394,285)">
+      <path d="M4 0 H20 L28 8 V34 H4 Z"/><path d="M20 0 V8 H28"/><path d="M10 17 H22 M10 24 H22"/>
+    </g>
+    <text x="436" y="311" class="stage">SPEC</text>
+  </g>
+  <g>
+    <polygon class="box" points="578,250 774,250 800,302 774,354 578,354 604,302"/>
+    <polyline class="edge" points="781,250 807,302 781,354"/>
+    <!-- Build: code brackets -->
+    <g class="icon" transform="translate(616,286)">
+      <path d="M9 6 L0 16 L9 26 M27 6 L36 16 L27 26 M21 2 L15 30"/>
+    </g>
+    <text x="664" y="311" class="stage">BUILD</text>
+  </g>
+  <g>
+    <polygon class="box" points="784,250 980,250 1006,302 980,354 784,354 810,302"/>
+    <polyline class="edge" points="987,250 1013,302 987,354"/>
+    <!-- Verify: check in circle -->
+    <g class="icon" transform="translate(820,285)">
+      <circle cx="17" cy="17" r="15"/><path d="M10 17 L15 22 L24 12"/>
+    </g>
+    <text x="864" y="311" class="stage">VERIFY</text>
+  </g>
+  <g>
+    <polygon class="box" points="990,250 1186,250 1212,302 1186,354 990,354 1016,302"/>
+    <polyline class="edge" points="1193,250 1219,302 1193,354"/>
+    <!-- Ship: paper plane -->
+    <g class="icon" transform="translate(1028,285)">
+      <path d="M34 2 L2 15 L14 20 L34 2 L20 33 L14 20"/>
+    </g>
+    <text x="1074" y="311" class="stage">SHIP</text>
+  </g>
+
+  <!-- satellite chips: agents each stage dispatches -->
+  <!-- locate-code -> Spec -->
+  <rect class="chipbox" x="350" y="112" width="190" height="50" rx="9"/>
+  <g class="chipicon" transform="translate(370,124)">
+    <path d="M12 26 C12 26 3 16 3 10 A9 9 0 0 1 21 10 C21 16 12 26 12 26 Z"/><circle cx="12" cy="10" r="3.2"/>
+  </g>
+  <text x="404" y="143" class="chip">locate-code</text>
+  <circle class="dot" cx="445" cy="180" r="4"/>
+  <path class="wire" d="M445 180 V196 Q445 212 461 212 H470 Q483 212 483 228 V240"/>
+  <path class="wire" d="M477 234 L483 241 L489 234"/>
+
+  <!-- review-branch -> Verify -->
+  <rect class="chipbox" x="790" y="112" width="200" height="50" rx="9"/>
+  <g class="chipicon" transform="translate(810,124)">
+    <circle cx="6" cy="4" r="3.2"/><circle cx="6" cy="23" r="3.2"/><circle cx="19" cy="7" r="3.2"/>
+    <path d="M6 7.5 V19.5 M19 10.5 C19 16 6 14 6 19.5"/>
+  </g>
+  <text x="842" y="143" class="chip">review-branch</text>
+  <circle class="dot" cx="890" cy="180" r="4"/>
+  <path class="wire" d="M890 180 V240"/>
+  <path class="wire" d="M884 234 L890 241 L896 234"/>
+
+  <!-- build-task -> Build -->
+  <rect class="chipbox" x="560" y="474" width="180" height="50" rx="9"/>
+  <g class="chipicon" transform="translate(580,486)">
+    <path d="M12 1 L23 7 V20 L12 26 L1 20 V7 Z"/><path d="M1 7 L12 13 L23 7 M12 13 V26"/>
+  </g>
+  <text x="614" y="505" class="chip">build-task</text>
+  <circle class="dot" cx="650" cy="456" r="4"/>
+  <path class="wire" d="M650 456 V440 Q650 424 666 424 H673 Q689 424 689 408 V364"/>
+  <path class="wire" d="M683 370 L689 363 L695 370"/>
+
+  <!-- fix-review -> Verify -->
+  <rect class="chipbox" x="850" y="474" width="170" height="50" rx="9"/>
+  <g class="chipicon" transform="translate(870,486)">
+    <path d="M17 3 A6.5 6.5 0 0 0 9 11 L2 18 A3 3 0 0 0 6.5 22.5 L13.5 15.5 A6.5 6.5 0 0 0 21.5 7.5 L17.5 11 L13.5 7 Z"/>
+  </g>
+  <text x="904" y="505" class="chip">fix-review</text>
+  <circle class="dot" cx="935" cy="456" r="4"/>
+  <path class="wire" d="M935 456 V440 Q935 424 919 424 H911 Q895 424 895 408 V364"/>
+  <path class="wire" d="M889 370 L895 363 L901 370"/>
+</svg>
+</body>
+</html>
