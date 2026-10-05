@@ -70,7 +70,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the opt-in full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | Sketch Phase 3 and one-pass step 4. |
+| `references/build-pass.md` | Sketch Phase 3, one-pass step 4; full run Phase 3 `## Slop tropes`. |
 | `references/stack.md` | Phase 2: `## Which stack`, and the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |
@@ -82,7 +82,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 | `references/motion.md` | Full run Phase 3: `## Motion thesis`, `## Job gate`; before any animation `## Materials`, `## Timing`, `## Reduced motion`; `## Scroll and view transitions` or `## Continuity contract` when the build uses one, `## Judgment` for an animation library. |
 | `references/interaction-qa.md` | Full run Phase 3 for controls, flows, disclosure or reachable states, but `## Pre-ship interaction sweep`, which is Phase 5 alone. |
 | `references/feedback-and-status.md` | Full run Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
-| `references/visual-critique.md` | Full run Phase 3 `## Slop tropes`, before finishing a treatment; opt-in Phase 4 whole, by `exo:critique-ui`. |
+| `references/visual-critique.md` | Opt-in Phase 4 whole, by `exo:critique-ui`. |
 | `references/craft-recipes.md` | Full run, before the first CSS of a ground, surface, motion, or type treatment. |
 | `references/component-system.md` | Phase 1 `## Adopt before authoring` when the repository ships a component layer; full run Phase 3 before a control, field or surface the design repeats: `## Anatomy`, `## The state row`, `## Scales, not values`, plus `## Composite patterns` for a composite. |
 | `references/tokens.md` | Phase 2: `## Tiers`; then the section matching a DTCG pipeline, a second theme or brand, or a ramp derived from target contrast. |

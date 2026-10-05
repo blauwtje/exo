@@ -44,7 +44,7 @@ The underdesign floor, checked before the critique:
 - type carries a voice through a second weight, width, or family;
 - the motion bar is built;
 - every browser surface on the finish list in the `implementation` reference is themed;
-- no slop trope from the `visual-critique` reference stands without recorded provenance;
+- no slop trope from the `build-pass` reference stands without recorded provenance;
 - `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration, and their shapes live in the `craft-recipes` reference.
 
 The numeric floor:

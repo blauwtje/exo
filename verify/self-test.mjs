@@ -182,7 +182,7 @@ const SCENARIOS = [
     'Only a request from the user opens the picker: a landing page or an open identity does not.', '') },
   { name: 'widened-settled-identity', mutate: (root) => replaceText(root, 'skills/design-ui/SKILL.md',
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
-  { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-critique.md',
+  { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/build-pass.md',
     '`invented-content`, `hard-offset-shadow`.', '`invented-content`.') },
   { name: 'dropped-asset-tell', mutate: (root) => replaceText(root, 'skills/design-ui/assets/check-ui-findings.json',
     '"monospace-label", ', '') },

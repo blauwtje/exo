@@ -47,7 +47,7 @@ Read `$RUN/critic-evidence.json`'s `renderDelta`, the baseline-to-post-build del
 
 ## Unsupported-pattern test
 
-A cliché list alone convicts nothing, and the slop tropes below are defaults awaiting provenance, not bans. A rendered pattern is a finding when any one of these holds:
+A cliché list alone convicts nothing, and the slop tropes in the `build-pass` reference are defaults awaiting provenance, not bans. A rendered pattern is a finding when any one of these holds:
 
 - No direction-contract field requires it.
 - No content relationship or mood explains it.
@@ -75,25 +75,7 @@ When a tell removes a default, replacement parity applies (the `visual-direction
 
 ## Slop tropes
 
-A trope stays only when a contract field or the wording of the brief justifies it and the justification is recorded. These defaults make a page look generated.
-
-`scripts/check-ui.mjs` reports the code-detectable ones:
-
-- `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`.
-- `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, `invented-content`, `hard-offset-shadow`.
-
-By category:
-
-- Grounds: a gradient whose hue swings across the page, a saturated halo or glow in the middle, a gradient wash used as decoration.
-- Icons and imagery: emoji outside a stated brand use, and SVG drawings invented to fill a region; a labelled placeholder does better in both cases, with a request for the real material.
-- Containers: a rounded box with a colored left border, cards inside cards, the same grey shadow under every card, and a thin border beneath a broad soft shadow.
-- Buttons and cards: a hard opaque offset shadow, a solid unblurred block behind the element.
-- Type: a display face from `scripts/overused-fonts.mjs`, such as Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
-- Kits: cream with a serif and terracotta, near-black with one acid accent, and white cards on grey with one blue or teal accent.
-- Accents: cobalt or another saturated mid blue, unless the prompt or the product asks for blue.
-- Buttons: an arrow glyph added to the label.
-- Stack: a hand-drawn chart where the stack ships a chart component; on a build in the default stack of the `stack` reference, a hand-written component the shadcn CLI ships, or a shadcn block such as `dashboard-01` as the base.
-- Stock shadcn: a fetched component left in its default form, with the preset's radius, neutral or white tokens, control heights or unchanged `cva` variants.
+Judge each rendered trope against the `build-pass` reference's `## Slop tropes`, the one list.
 
 ## The fault contract
 

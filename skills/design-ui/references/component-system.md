@@ -32,7 +32,7 @@ A component is unbuilt while any reachable row entry is unstyled. The row is res
 
 - **Spacing** is one step function from one base; component rules reference steps, never raw pixels.
 - **Radius is a role, not a number:** a field radius, a control radius, and a surface radius derived from one base, so a dense input and an expressive card stay related without matching.
-- **Elevation is a hairline plus stacked shadows**, each tinted from the ink hue, with the light direction the ground already states. One blurred neutral shadow under everything is the tell the `visual-critique` reference names.
+- **Elevation is a hairline plus stacked shadows**, each tinted from the ink hue, with the light direction the ground already states. One blurred neutral shadow under everything is a slop trope the `build-pass` reference names.
 - **Type comes from three dials** — size, leading, and the flow between blocks — and heading steps, list indents, and the gap under a heading derive from them, so a scale change moves the whole rhythm at once.
 - **Every surface token carries its own ink token.** A filled control names the ink that sits on it, so no variant can inherit unreadable text; this is the pairing the contrast floor in the `visual-direction` reference verifies.
 
