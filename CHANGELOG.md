@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The writing guard lets commit, pull request, issue and release text name the product as its subject, and still refuses it behind a verb of authorship such as "made with", as its claude.com link or in a branch name.
+- The refactor docs page no longer routes finding what to refactor to the removed `audit-architecture` skill.
+
 ## 0.85.1 - 2026-10-05
 
 ### Fixed
