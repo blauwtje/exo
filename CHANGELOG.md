@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.2 - 2026-10-05
+
 ### Fixed
 
 - spec writes a Success criterion that calls an MCP tool as `mcp:<tool> <args>`, the same form as an MCP Proof.
