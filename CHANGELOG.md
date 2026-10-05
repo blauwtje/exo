@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.6 - 2026-10-05
+
 ### Changed
 
 - The README opens with a tagline, a jump-link row and a before-and-after table of real guard output, and folds the command, stage, guard, settings and contributor details into collapsible sections.
