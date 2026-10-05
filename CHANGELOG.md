@@ -17,7 +17,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - design-ui reads at most four screenshots per run, the post-build and final pairs, plus one per fault under repair, and checks other states in the source.
-- design-ui opens each reference once with one whole Read instead of Bash, so a long output is no longer persisted and read twice.
+- design-ui loads only the reference sections a row names, through Read with an offset and limit instead of `cat` or `awk`, and never rereads a persisted tool output, so a long output no longer enters context twice.
+- design-ui keeps its slop-trope list in `build-pass.md` only; `visual-critique.md`, the critique agents and the verify pin point there.
 - design-ui's scope form no longer asks which product the page should feel like; without a product the user names, it picks the look from the user and the subject and shows the color and font line before building.
 - design-ui words every form question and option in plain words in the user's language, under the tabs "For whom", "What's in" and "Designs".
 - The design-ui test prompts and pressure fixtures are written in English.
