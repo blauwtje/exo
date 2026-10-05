@@ -13,21 +13,24 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize, waveLine } from '#plan-tasks';
 
-// lib/delegate-budgets.json holds the delegate's default budget; reading it here keeps
-// one source for the cap instead of a second copy of 40/100.
-const DEFAULT_BUDGET = JSON.parse(
+// lib/delegate-budgets.json holds the build-task delegate's budget, its default
+// entry merged with its exo:build-task override; reading it here keeps one
+// source for the cap instead of a second copy of its numbers.
+const DELEGATE_BUDGETS = JSON.parse(
   fs.readFileSync(new URL('../../../lib/delegate-budgets.json', import.meta.url), 'utf8')
-).default;
+);
+const BUILD_TASK_BUDGET = { ...DELEGATE_BUDGETS.default, ...DELEGATE_BUDGETS.agents['exo:build-task'] };
 // plan-check.mjs requires a split past 250 code lines or 4 files, so a task at
 // that threshold is as large as a task ever gets: its share of the threshold,
-// capped at 1, scales the default budget down for a smaller task.
+// capped at 1, scales build-task's budget down for a smaller task.
 const SPLIT_LINES = 250;
 const SPLIT_FILES = 4;
-// A fresh delegate's context holds this much of the default budget before its
-// first read: the dispatch prompt, its tools and its agent definition. Scaling
-// a small task's share below this floor denies its first tool call, so no
-// task's budget drops past half the default.
-const MIN_BUDGET_SHARE = 0.5;
+// A fresh build-task holds about 18k tokens (p90) before its first read: the
+// dispatch prompt, its tools and its agent definition. Its first edit lands
+// near 44k (p90) whatever the task's size, and a soft line below that stops it
+// before it edits, so no task's budget drops past three quarters of
+// build-task's own, 45k/75k.
+const MIN_BUDGET_SHARE = 0.75;
 
 // `delegate-budget.mjs`'s hook reads a standalone `Budget: <soft>k/<hard>k`
 // line from the dispatch; the wave build carries it verbatim, so a small task
@@ -36,8 +39,8 @@ function budgetLine(task) {
   const size = taskSize(task);
   const share = Math.min(1, Math.max(size.lines / SPLIT_LINES, size.files / SPLIT_FILES));
   const scale = MIN_BUDGET_SHARE + (1 - MIN_BUDGET_SHARE) * share;
-  const soft = Math.round(DEFAULT_BUDGET.soft * scale);
-  const hard = Math.round(DEFAULT_BUDGET.hard * scale);
+  const soft = Math.round(BUILD_TASK_BUDGET.soft * scale);
+  const hard = Math.round(BUILD_TASK_BUDGET.hard * scale);
   return `Budget: ${soft}k/${hard}k`;
 }
 
