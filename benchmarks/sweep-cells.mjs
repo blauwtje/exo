@@ -51,13 +51,15 @@ function reviewDispatch(task) {
 
 // The green-first branch holds a fix whose test already passed on main and
 // whose report quotes no failing run; the dispatch names .exo/ as the
-// directory of implementer reports, so the reviewer reads that report.
+// directory of implementer reports, so the reviewer reads that report, and
+// the findings path readReview scores.
 function greenFirstDispatch() {
   return [
     'Review the branch fix/text-slug of the repository in the current directory.',
     'Plan: docs/plans/text-fix.md',
     'Base: main, for git diff main...HEAD',
     'Implementer reports: .exo/',
+    'Findings path: .git/branch-review.md',
     'Code standard: the checks below',
     'Final verification: `node --test src/text.test.js` exits 0.',
     NO_ANSWER

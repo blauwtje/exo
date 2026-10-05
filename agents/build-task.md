@@ -8,7 +8,7 @@ tools: Read, Edit, Write, Grep, Bash
 
 ## Scope
 
-- Work only in `<checkout>`: start every command with `cd <checkout> &&`.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`; give Edit and Write absolute paths inside it.
 - Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
 - Run no writing git, e.g. `commit`, `push`, `worktree`, and no `gh` command at all.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report any other.
@@ -20,11 +20,11 @@ tools: Read, Edit, Write, Grep, Bash
 - Run `node "${CLAUDE_PLUGIN_ROOT}/lib/mcp-tool-call.mjs" "<proof>"` on each Proof first; on `DEFER` skip it, write `<command>: deferred`.
 - No `Proof:`: write or pick one test for `Success criterion:`, run only it, report it first under Proof.
 - Long task: code each step; green is every `Run:` printing its `Expected:`.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` calls the task risky, it has `Risk:`, or is a `fix` with a test in `Files:`.
-- Test-first follows its `## Red before green`: the test fails before the production edit (long task: first `Run:`).
+- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`.
+- Test-first follows `## Red before green`: the test fails before the production edit (long task: first `Run:`).
 - Before coding, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once, never a copy under `<checkout>`.
-- Never delete, skip or loosen a test: fix the code or report it.
-- Read a non-obvious behavior's callers before changing it.
+- Never delete, skip or loosen a test: fix the code or report.
+- Read a non-obvious behavior's callers first.
 - Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with Bash `timeout: 600000` or a counted `for` loop on a done file that exits nonzero; never call `Monitor` or start with `sleep`.
 
 ## Stop
@@ -38,7 +38,7 @@ tools: Read, Edit, Write, Grep, Bash
 ## Report
 
 - Never probe or create `Report to:`'s folder; write at most 25 lines there, plus a `Choice: <one clause>` per open choice.
-- Under Proof, copy each command verbatim, never `...`-shortened: build lands on it.
+- Under Proof, copy each command verbatim: build lands on it.
 - Layout:
 
 Landed: <change>
@@ -50,7 +50,7 @@ Proof:
   <last output lines, indented>
 Unresolved: none
 
-- Done is real-product proof, not code reading; a skipped check is `skipped`, not `pass`.
+- Done is real-product proof, not code reading; a skipped check is `skipped`.
 - Without `Return: one line`, return the report on a failure or unfinished work, else:
 
 Task <n>: GREEN
