@@ -303,9 +303,14 @@ function changedPaths(root, planPath) {
 // A task lands only the paths its `Files:` lines name: a build that also
 // touched or added another path is not this task's, whatever its proof, so
 // this stops the Commit: block before it stages or commits anything.
+// A `Files:` entry ending in `/` names a folder and covers every path under it.
+function isCovered(entries, changed) {
+  return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
+}
+
 function strayPaths(task, root, planPath) {
-  const allowed = new Set(task.files.map((file) => file.path));
-  return changedPaths(root, planPath).filter((changed) => !allowed.has(changed));
+  const entries = task.files.map((file) => file.path);
+  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed));
 }
 
 // The file's source at HEAD, or null when HEAD holds no such file.
@@ -323,7 +328,7 @@ function outsideCallers(root, name, inFiles) {
   if (found.error !== undefined || found.status > 1) {
     throw new LandingError(`git grep for callers of ${name} failed: ${found.error?.message ?? found.stderr.trim()}`);
   }
-  return found.stdout.split('\n').filter((file) => file !== '' && !inFiles.has(file));
+  return found.stdout.split('\n').filter((file) => file !== '' && !isCovered([...inFiles], file));
 }
 
 // A call written against the old list fails against the new one when it must
@@ -342,7 +347,7 @@ function signatureChanges(task, root) {
   const changes = [];
   const drifts = [];
   for (const file of inFiles) {
-    if (!SCRIPT_EXTENSIONS.has(path.extname(file))) continue;
+    if (file.endsWith('/') || !SCRIPT_EXTENSIONS.has(path.extname(file))) continue;
     const before = sourceAtHead(root, file);
     const workingPath = path.join(root, file);
     if (before === null || !fs.existsSync(workingPath)) continue;
@@ -369,7 +374,7 @@ function signatureChanges(task, root) {
 function runLint(lint, files, root) {
   if (lint === null || lint === 'none') return;
   const paths = files
-    .filter((file) => SCRIPT_EXTENSIONS.has(path.extname(file)) && fs.existsSync(path.join(root, file)));
+    .filter((file) => !file.endsWith('/') && SCRIPT_EXTENSIONS.has(path.extname(file)) && fs.existsSync(path.join(root, file)));
   if (paths.length === 0) return;
   const [command, ...args] = [...lint.split(/\s+/), ...paths];
   const result = spawnSync(command, args, { cwd: root, encoding: 'utf8' });
