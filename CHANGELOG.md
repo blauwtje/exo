@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The `remember` correction nudge works in any language: every main-thread prompt gets one shorter book sentence and the session decides whether it corrects a repository fact, instead of matching a list of English and Dutch words; prompts with no letter or digit and bare slash commands are skipped.
+- The design-ui tests use German instead of Dutch as their non-English input.
+- The benchmark reports in `docs/benchmarks/` are translated from Dutch to English.
+
 ## 0.83.8 - 2026-10-05
 
 ### Changed
