@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.86.2 - 2026-10-05
+
 ### Highlights
 
 - **design-ui's one pass builds and repairs the page in an `exo:build-ui` page scope again, so the main session stays under its context limit.**
