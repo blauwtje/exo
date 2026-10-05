@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- spec writes a Success criterion that calls an MCP tool as `mcp:<tool> <args>`, the same form as an MCP Proof.
+- verify hands a Success criterion written `mcp:<tool> <args>`, or starting with `run_playtest`, `search_game_tree`, `user_mouse_input`, `execute_luau` or `screen_capture`, to the session as a `SESSION success-criterion` line instead of running it through the shell (exit 127).
+
 ## 0.83.1 - 2026-10-04
 
 ### Fixed
