@@ -144,6 +144,8 @@ test('mcpToolCall reads a prefixed call or a known MCP tool as its mcp: form, el
   assert.equal(mcpToolCall('mcp:run_playtest mode=play'), 'mcp:run_playtest mode=play');
   assert.equal(mcpToolCall('run_playtest mode=play'), 'mcp:run_playtest mode=play');
   assert.equal(mcpToolCall('screen_capture'), 'mcp:screen_capture');
+  assert.equal(mcpToolCall('build_map spec=arena'), 'mcp:build_map spec=arena');
+  assert.equal(mcpToolCall('get_console_output'), 'mcp:get_console_output');
   assert.equal(mcpToolCall('run_playtest_exo_missing mode=play'), null);
   assert.equal(mcpToolCall('npm run check'), null);
 });
@@ -169,6 +171,27 @@ test('an mcp:<tool> Proof is never spawned and prints a SESSION line, not PASS',
   const lines = result.stdout.trim().split('\n');
   assert.equal(lines[0], 'SESSION Task 1 (Proof: mcp:run_playtest mode=play; touch spawned.txt; run it as an MCP tool call)');
   assert.ok(!lines.includes('PASS Task 1'));
+  await assert.rejects(readFile(path.join(root, 'spawned.txt')), { code: 'ENOENT' });
+});
+
+test('an unprefixed known MCP tool Proof is never spawned and prints a SESSION line in its mcp: form', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': [
+      '### Task 1: feat(app): play\nDepends on: none | Files: `src/app.js` | Data: none | Proof: run_playtest mode=play; touch spawned.txt\n',
+      '### Task 2: feat(app): replay\nDepends on: none | Files: `src/app.js` | Data: none | Proof: mcp:run_playtest mode=play; touch spawned.txt\n'
+    ].join('\n'),
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+  landTask(root, 2);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trim().split('\n');
+  assert.equal(lines[0], 'SESSION Task 1 (Proof: mcp:run_playtest mode=play; touch spawned.txt; run it as an MCP tool call)');
+  assert.equal(lines[1], "SKIP Task 2 (Proof: repeats an earlier task's Proof, which runs once)");
+  assert.ok(!lines.some((line) => line.startsWith('FAIL')), result.stdout);
   await assert.rejects(readFile(path.join(root, 'spawned.txt')), { code: 'ENOENT' });
 });
 

@@ -27,13 +27,12 @@
 // The Success criterion passes on exit code 0, and when its output holds a
 // `SUMMARY ` line, as exo's own `npm run check` prints, that line must also read
 // FAIL=0 WARN=0 UNRUN=0.
-// A Proof written `mcp:<tool> <args>` names an MCP tool, which only the session can
-// call: it is never spawned and prints a SESSION line, which is neither PASS nor
-// FAIL, so the gate is not passed until the session runs that tool call.
-// A Success criterion command written `mcp:<tool> <args>`, or starting with a
-// known MCP tool's short name, is likewise never spawned: it prints a SESSION
-// success-criterion line naming the call in its `mcp:` form.
-// A legacy Proof whose first word is a snake_case name the shell cannot find
+// A Proof or Success criterion command written `mcp:<tool> <args>`, or starting
+// with a known MCP tool's short name, names an MCP tool, which only the session
+// can call: it is never spawned and prints a SESSION line naming the call in its
+// `mcp:` form, which is neither PASS nor FAIL, so the gate is not passed until
+// the session runs that tool call.
+// Any other Proof whose first word is a snake_case name the shell cannot find
 // names that likely MCP tool and the `mcp:<tool>` form on its FAIL line.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
@@ -71,8 +70,14 @@ const BACKTICKED_COMMAND = /`([^`]+)`/;
 const PROSE_PROOF = /`/;
 // A Proof naming an MCP tool by its short name, the part after `mcp__<server>__`.
 const MCP_PROOF = /^mcp:\S/;
-// MCP tool short names a Success criterion may name without the `mcp:` prefix.
-const KNOWN_MCP_TOOLS = new Set(['run_playtest', 'search_game_tree', 'user_mouse_input', 'execute_luau', 'screen_capture']);
+// MCP tool short names a Proof or Success criterion may name without the `mcp:`
+// prefix. `mcp:` stays the rule; this list is only the fallback for an unprefixed
+// command: roblox-kit's tools, then Roblox Studio's.
+const KNOWN_MCP_TOOLS = new Set([
+  'run_playtest', 'build_map', 'check_map', 'capture_zones',
+  'search_game_tree', 'user_mouse_input', 'execute_luau', 'screen_capture', 'start_stop_play',
+  'get_console_output', 'character_navigation', 'user_keyboard_input', 'script_read', 'multi_edit'
+]);
 // A bare snake_case first word, the shape of an MCP tool's short name.
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
 // The exit code a POSIX shell returns for a command it cannot find.
@@ -265,11 +270,15 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: not a single \`command\`)` });
       continue;
     }
+    // An MCP tool call compares in its `mcp:` form, so a prefixed and an unprefixed
+    // spelling of one call count as the same check.
+    const mcpCall = mcpToolCall(command);
+    const check = mcpCall ?? command;
     // A Proof that is the gate command, or runs the test suite or files its globs
     // cover under the default gate (which runs that suite), repeats what the gate runs once below. A
     // custom gate may run no tests, so a suite Proof still runs under it.
     const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && (TEST_SUITE_PROOF.test(command) || filesUnderGlobs(command, globs));
-    if (!gateSkipped && (command === gateCommand || suiteUnderDefault)) {
+    if (!gateSkipped && (check === (gateMcpCall ?? gateCommand) || suiteUnderDefault)) {
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
     }
@@ -277,13 +286,13 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: land-task passed it on this same tree)` });
       continue;
     }
-    if (queued.has(command)) {
+    if (queued.has(check)) {
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: repeats an earlier task's Proof, which runs once)` });
       continue;
     }
-    queued.add(command);
-    if (isMcpProof(command)) {
-      proofRuns.push({ line: `SESSION Task ${task.number} (Proof: ${command}; run it as an MCP tool call)` });
+    queued.add(check);
+    if (mcpCall !== null) {
+      proofRuns.push({ line: `SESSION Task ${task.number} (Proof: ${mcpCall}; run it as an MCP tool call)` });
       continue;
     }
     proofRuns.push({ number: task.number, command });
