@@ -35,7 +35,7 @@ async function writeComp(directory, markup) {
 }
 
 const PICK = script('pick.mjs');
-const COMP = (label) => `<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>${label}</title></head><body><h1>${label}</h1><button type="button">Actie</button></body></html>`;
+const COMP = (label) => `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${label}</title></head><body><h1>${label}</h1><button type="button">Aktion</button></body></html>`;
 
 function contract(index, mechanism) {
   return {
@@ -104,7 +104,7 @@ async function frameTexts(url) {
 }
 
 // What a bundler such as Vite emits: an empty root filled by a module script.
-const BUNDLED_COMP = '<!doctype html><html lang="nl"><head><meta charset="utf-8"><script type="module" crossorigin src="./assets/index.js"></script></head><body><div id="root"></div></body></html>';
+const BUNDLED_COMP = '<!doctype html><html lang="de"><head><meta charset="utf-8"><script type="module" crossorigin src="./assets/index.js"></script></head><body><div id="root"></div></body></html>';
 
 // A stand-in for a Vite dev server: it answers cross-origin requests only for a
 // localhost origin, the default server.cors of Vite 6 and later, so a frame
@@ -389,7 +389,7 @@ describe('pick.mjs', () => {
   it('ships no language to choose from, so --lang is not a flag', async () => {
     const { comps, contracts } = await round();
     const rejected = await run(PICK,
-      ['--comps', comps, '--contracts', contracts, '--lang', 'nl', '--no-open', '--timeout', '1']);
+      ['--comps', comps, '--contracts', contracts, '--lang', 'de', '--no-open', '--timeout', '1']);
     assert.equal(rejected.code, 2);
     assert.match(rejected.stderr, /unknown flag '--lang'/);
 
@@ -403,7 +403,7 @@ describe('pick.mjs', () => {
 
   it('refuses a --labels file with an unknown key, a dropped {n}, or a lang that is not a tag', async () => {
     const { comps, contracts } = await round();
-    const unknown = await jsonFixture('labels-unknown.json', { titel: 'Kies een richting' });
+    const unknown = await jsonFixture('labels-unknown.json', { titel: 'Wähle eine Richtung' });
     const stripped = await jsonFixture('labels-stripped.json', { fallbackTitle: 'Richting' });
     const sentence = await jsonFixture('labels-lang.json', { lang: 'Nederlands" onload="x' });
 
@@ -490,7 +490,7 @@ describe('pick.mjs', () => {
 
     const whole = await comp(1);
     assert.equal((whole.match(/<!doctype html>/gi) ?? []).length, 1, 'a comp that wrote its own document keeps it');
-    assert.match(whole, /<html lang="nl">/, 'including the language it set for itself');
+    assert.match(whole, /<html lang="de">/, 'including the language it set for itself');
     assert.match(whole, /window\.open = \(\) => null/);
 
     await answer(url, 0);
@@ -513,13 +513,13 @@ describe('pick.mjs', () => {
     const { comps, contracts } = await round();
     const pick = startPick([
       '--comps', comps, '--contracts', contracts, '--recommend', '1',
-      '--recommend-note', 'Deze leest het rustigst op een klein scherm.',
+      '--recommend-note', 'Diese liest sich auf einem kleinen Bildschirm am ruhigsten.',
       '--no-open', '--timeout', '30'
     ]);
     const url = await pick.url;
     const html = await (await fetch(url)).text();
     assert.equal((html.match(/class="why"/g) ?? []).length, 1, 'one line carries the reason, not every card');
-    assert.match(html, /Deze leest het rustigst op een klein scherm\./);
+    assert.match(html, /Diese liest sich auf einem kleinen Bildschirm am ruhigsten\./);
     assert.ok(html.indexOf('class="why"') < html.indexOf('role="tablist"'),
       'and it sits in the header, above the strip');
 

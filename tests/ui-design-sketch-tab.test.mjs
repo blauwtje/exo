@@ -12,10 +12,10 @@ import { fixture, jsonFixture, run, script, SCRIPTS } from './harness.mjs';
 import { optionName, SERVER_START_GRACE_MS, tabPage } from '../skills/design-ui/scripts/sketch-tab.mjs';
 
 const SKETCH_TAB = script('sketch-tab.mjs');
-const PALETTE = `<title>Welke kleuren passen bij de haven?</title>
+const PALETTE = `<title>Welche Farben passen zum Hafen?</title>
 <style>.swatch{padding:24px}</style>
-<div class="swatch" data-choice="zee" style="background:#0b3954;color:#fff">Zee</div>
-<button type="button" data-choice='zand' style="background:#e8d8b9">Zand</button>`;
+<div class="swatch" data-choice="meer" style="background:#0b3954;color:#fff">Meer</div>
+<button type="button" data-choice='sand' style="background:#e8d8b9">Sand</button>`;
 
 /** Start the tab server and resolve its URL from stderr while it keeps running. */
 function startTab(folder, extra = []) {
@@ -165,20 +165,20 @@ describe('sketch-tab.mjs', () => {
       const first = await events.next();
       assert.ok(Date.now() - writtenAt < 1000, 'one file write reaches the tab in under a second');
       assert.equal(first.sketch, '001-palette.html');
-      assert.equal(first.question, 'Welke kleuren passen bij de haven?');
+      assert.equal(first.question, 'Welche Farben passen zum Hafen?');
 
       const served = await fetch(`${url.origin}/k/${key}/sketch/001-palette.html`);
       assert.equal(served.status, 200);
       const html = await served.text();
       assert.match(html, /^<!doctype html>/, 'a fragment is wrapped in the structural shell');
       assert.doesNotMatch(html, /<title>/, 'the question moves to the tab and leaves the sketch');
-      assert.match(html, /data-choice="zee"/);
+      assert.match(html, /data-choice="meer"/);
       assert.match(html, /sketchChoice/, 'the shim that hands a click to the tab is injected');
       assert.ok(html.includes(String(optionName)), 'the shim names an option with the function tested below');
       assert.match(tab.stderr(), /sketch tab: shown 001-palette\.html \d+\.\ds after it was written/);
 
       await new Promise((resolve) => { setTimeout(resolve, 20); });
-      await fs.writeFile(path.join(folder, '002-palette.html'), PALETTE.replace('Zand', 'Duin'));
+      await fs.writeFile(path.join(folder, '002-palette.html'), PALETTE.replace('Sand', 'Duin'));
       const second = await events.next();
       assert.equal(second.sketch, '002-palette.html', 'the newest file replaces the one on screen');
       assert.notEqual(second.version, first.version);
@@ -190,17 +190,17 @@ describe('sketch-tab.mjs', () => {
   });
 
   it('names an option by its aria-label, then its first heading, then the first 40 characters of its text', () => {
-    const cardText = '\n  Zee (aanbevolen)\n  Bewaar je antwoord op de schets\n  Bewaren\n';
-    const labelled = optionElement({ ariaLabel: ' Zee ', heading: 'Zee (aanbevolen)', text: cardText });
-    assert.equal(optionName(labelled), 'Zee');
-    const headed = optionElement({ heading: ' Zee\n (aanbevolen) ', text: cardText });
-    assert.equal(optionName(headed), 'Zee (aanbevolen)');
-    const blankLabel = optionElement({ ariaLabel: '  ', heading: 'Zee (aanbevolen)', text: cardText });
-    assert.equal(optionName(blankLabel), 'Zee (aanbevolen)', 'an aria-label of spaces names nothing');
+    const cardText = '\n  Meer (empfohlen)\n  Speichere deine Antwort auf der Skizze\n  Speichern\n';
+    const labelled = optionElement({ ariaLabel: ' Meer ', heading: 'Meer (empfohlen)', text: cardText });
+    assert.equal(optionName(labelled), 'Meer');
+    const headed = optionElement({ heading: ' Meer\n (empfohlen) ', text: cardText });
+    assert.equal(optionName(headed), 'Meer (empfohlen)');
+    const blankLabel = optionElement({ ariaLabel: '  ', heading: 'Meer (empfohlen)', text: cardText });
+    assert.equal(optionName(blankLabel), 'Meer (empfohlen)', 'an aria-label of spaces names nothing');
     const textOnly = optionName(optionElement({ text: cardText }));
-    assert.equal(textOnly, 'Zee (aanbevolen) Bewaar je antwoord op d');
+    assert.equal(textOnly, 'Meer (empfohlen) Speichere deine Antwort');
     assert.equal(textOnly.length, 40);
-    assert.equal(optionName(optionElement({ text: ' Zand ' })), 'Zand');
+    assert.equal(optionName(optionElement({ text: ' Sand ' })), 'Sand');
   });
 
   it('serves nothing outside the folder and nothing that is not a sketch', async () => {
@@ -236,7 +236,7 @@ describe('sketch-tab.mjs', () => {
       await events.next();
       events.close();
 
-      const picked = { sketch: '001-palette.html', choice: 'zand', label: 'Zand', steer: '' };
+      const picked = { sketch: '001-palette.html', choice: 'sand', label: 'Sand', steer: '' };
       const asForm = await answer(url, picked, { 'content-type': 'text/plain' });
       assert.equal(asForm.status, 403, 'a sandboxed frame cannot send JSON without a preflight');
       const foreign = await answer(url, picked, { 'content-type': 'application/json', origin: 'http://evil.example' });
@@ -256,7 +256,7 @@ describe('sketch-tab.mjs', () => {
       const waited = await run(SKETCH_TAB, ['--wait', folder, '--sketch', '001-palette.html', '--timeout', '5']);
       assert.equal(waited.code, 0, waited.stderr);
       assert.deepEqual(JSON.parse(waited.stdout), {
-        sketch: '001-palette.html', choice: 'zand', label: 'Zand', steer: 'iets warmer'
+        sketch: '001-palette.html', choice: 'sand', label: 'Sand', steer: 'iets warmer'
       });
     } finally {
       tab.stop();
@@ -281,14 +281,14 @@ describe('sketch-tab.mjs', () => {
       assert.equal((tab.stderr().match(/cannot be read/g) ?? []).length, 1, 'said once, not on every scan');
       await fs.stat(path.join(folder, 'tab.json'));
 
-      const bare = '<title>Kaal</title><div data-choice=zee>Zee</div><div data-choice="a&amp;b">Entiteit</div>';
+      const bare = '<title>Kahl</title><div data-choice=meer>Meer</div><div data-choice="a&amp;b">Entität</div>';
       await fs.writeFile(path.join(folder, '002-bare.html'), bare);
       const next = await events.next();
       assert.equal(next.sketch, '002-bare.html', 'the scan survived the unreadable file');
       events.close();
       assert.match(tab.stderr(), /002-bare\.html holds data-choice ids a click cannot match \(a&amp;b\)/);
 
-      const accepted = await answer(url, { sketch: '002-bare.html', choice: 'zee', label: 'Zee', steer: '' });
+      const accepted = await answer(url, { sketch: '002-bare.html', choice: 'meer', label: 'Meer', steer: '' });
       assert.equal(accepted.status, 200, 'an unquoted id is the id the page sends');
     } finally {
       tab.stop();
@@ -418,19 +418,19 @@ describe('sketch-tab.mjs', () => {
 
   it('takes the tab copy from --labels and refuses a key the tab does not know', async () => {
     const folder = await fixture();
-    const labels = await jsonFixture('tab-labels.json', { lang: 'nl', waiting: 'De eerste schets komt eraan.' });
+    const labels = await jsonFixture('tab-labels.json', { lang: 'de', waiting: 'Die erste Skizze kommt gleich.' });
     const tab = startTab(folder, ['--labels', labels]);
     try {
       const html = await (await fetch(await tab.url)).text();
-      assert.match(html, /<html lang="nl">/);
-      assert.match(html, /De eerste schets komt eraan\./);
+      assert.match(html, /<html lang="de">/);
+      assert.match(html, /Die erste Skizze kommt gleich\./);
       assert.match(html, /Want anything changed\?/, 'a key the file omits falls back');
     } finally {
       tab.stop();
       await tab.exit;
     }
 
-    const pickerKey = await jsonFixture('picker-labels.json', { choose: 'Kies' });
+    const pickerKey = await jsonFixture('picker-labels.json', { choose: 'Wähle' });
     const refused = await run(SKETCH_TAB, ['--serve', folder, '--no-open', '--labels', pickerKey]);
     assert.equal(refused.code, 2);
     assert.match(refused.stderr, /unknown key 'choose'/);
