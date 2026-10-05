@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, filesUnderGlobs, findStrayPaths, isMcpProof, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, filesUnderGlobs, findStrayPaths, isMcpProof, manualChecks, mcpToolCall, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -140,6 +140,14 @@ test('isMcpProof reads only an mcp:<tool> Proof as an MCP tool call', () => {
   assert.equal(isMcpProof('node -e "1" mcp:run_playtest'), false);
 });
 
+test('mcpToolCall reads a prefixed call or a known MCP tool as its mcp: form, else null', () => {
+  assert.equal(mcpToolCall('mcp:run_playtest mode=play'), 'mcp:run_playtest mode=play');
+  assert.equal(mcpToolCall('run_playtest mode=play'), 'mcp:run_playtest mode=play');
+  assert.equal(mcpToolCall('screen_capture'), 'mcp:screen_capture');
+  assert.equal(mcpToolCall('run_playtest_exo_missing mode=play'), null);
+  assert.equal(mcpToolCall('npm run check'), null);
+});
+
 test('unmarkedMcpTool names a snake_case first word the shell could not find, else null', () => {
   assert.equal(unmarkedMcpTool('run_playtest mode=play', { code: 127, output: 'sh: run_playtest: command not found\n' }), 'run_playtest');
   assert.equal(unmarkedMcpTool('run_playtest mode=play', { code: 127, output: 'sh: 1: run_playtest: not found\n' }), 'run_playtest');
@@ -240,6 +248,40 @@ test("the plan's Success criterion command runs when --check-command is not give
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.ok(result.stdout.includes('PASS success-criterion'));
+});
+
+function mcpCriterionPlan(criterion) {
+  return [
+    '## Plan basis', '', 'Repository: .', 'Branch: main', '',
+    '## Success criterion', `\`${criterion}\` passes.`, '',
+    '### Task 1: feat(app): greet',
+    'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"',
+    ''
+  ].join('\n');
+}
+
+test('an unprefixed MCP tool Success criterion is never spawned and prints a SESSION line in its mcp: form', async () => {
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': mcpCriterionPlan('run_playtest mode=play serverChecks=foo') });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stdout);
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines.includes('SESSION success-criterion (mcp:run_playtest mode=play serverChecks=foo; run it as an MCP tool call)'), result.stdout);
+  assert.ok(!lines.some((line) => line.startsWith('FAIL')), result.stdout);
+  assert.ok(!result.stdout.includes('not found'), result.stdout);
+});
+
+test('an mcp:<tool> Success criterion is never spawned and prints a SESSION line', async () => {
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': mcpCriterionPlan('mcp:run_playtest mode=play; touch spawned.txt') });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stdout);
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines.includes('SESSION success-criterion (mcp:run_playtest mode=play; touch spawned.txt; run it as an MCP tool call)'), result.stdout);
+  assert.ok(!lines.some((line) => line.startsWith('FAIL')), result.stdout);
+  await assert.rejects(readFile(path.join(root, 'spawned.txt')), { code: 'ENOENT' });
 });
 
 test("a Land gate that is not 'none' is the per-task gate, so the final check falls to npm run check", async () => {

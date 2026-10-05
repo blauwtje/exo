@@ -30,6 +30,9 @@
 // A Proof written `mcp:<tool> <args>` names an MCP tool, which only the session can
 // call: it is never spawned and prints a SESSION line, which is neither PASS nor
 // FAIL, so the gate is not passed until the session runs that tool call.
+// A Success criterion command written `mcp:<tool> <args>`, or starting with a
+// known MCP tool's short name, is likewise never spawned: it prints a SESSION
+// success-criterion line naming the call in its `mcp:` form.
 // A legacy Proof whose first word is a snake_case name the shell cannot find
 // names that likely MCP tool and the `mcp:<tool>` form on its FAIL line.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
@@ -68,6 +71,8 @@ const BACKTICKED_COMMAND = /`([^`]+)`/;
 const PROSE_PROOF = /`/;
 // A Proof naming an MCP tool by its short name, the part after `mcp__<server>__`.
 const MCP_PROOF = /^mcp:\S/;
+// MCP tool short names a Success criterion may name without the `mcp:` prefix.
+const KNOWN_MCP_TOOLS = new Set(['run_playtest', 'search_game_tree', 'user_mouse_input', 'execute_luau', 'screen_capture']);
 // A bare snake_case first word, the shape of an MCP tool's short name.
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
 // The exit code a POSIX shell returns for a command it cannot find.
@@ -82,6 +87,12 @@ export function runnableProof(proof) {
 /** True when the Proof names an MCP tool as `mcp:<tool> <args>`, which the session calls instead of a shell. */
 export function isMcpProof(command) {
   return MCP_PROOF.test(command);
+}
+
+/** The command as an `mcp:<tool> <args>` call when it is one, prefixed or starting with a known MCP tool, else null. */
+export function mcpToolCall(command) {
+  if (isMcpProof(command)) return command;
+  return KNOWN_MCP_TOOLS.has(command.split(/\s/, 1)[0]) ? `mcp:${command}` : null;
 }
 
 /**
@@ -242,6 +253,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
   const gateCommand = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone ?? DEFAULT_LAND_GATE;
   const gateSkipped = gateCommand === 'none';
+  const gateMcpCall = mcpToolCall(gateCommand);
 
   const proofRuns = [];
   const queued = new Set();
@@ -297,6 +309,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   if (gateSkipped) {
     lines.push('UNRUN success-criterion (Land gate: none)');
+  } else if (gateMcpCall !== null) {
+    lines.push(`SESSION success-criterion (${gateMcpCall}; run it as an MCP tool call)`);
   } else if (record?.gate === gateCommand) {
     lines.push('SKIP success-criterion (land-task ran the gate on this same tree)');
   } else {
