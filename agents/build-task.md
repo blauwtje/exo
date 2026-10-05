@@ -17,9 +17,9 @@ tools: Read, Edit, Write, Grep, Bash
 ## Build
 
 - Compact task: build the heading's change in `Files:` with the `Data:` structure.
-- Green is the `Proof:` command passing; write a missing `Proof:` script first, with only the project's tools.
-- A `Proof: mcp:<tool>` is the session's: run what Bash can, write `<command>: deferred`.
-- With no `Proof:` field, write or pick one test for `Success criterion:` and run only it; report it first under Proof.
+- Green is the `Proof:` passing; write a missing `Proof:` script first, with only project tools.
+- Run `node "${CLAUDE_PLUGIN_ROOT}/lib/mcp-tool-call.mjs" "<proof>"` on each Proof first; on `DEFER` never run it, write `<command>: deferred`.
+- With no `Proof:`, write or pick one test for `Success criterion:` and run only it; report it first under Proof.
 - Long task: write each step's code; green is every `Run:` printing its `Expected:`.
 
 Before the first code edit, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once per run, never searched for or under `<checkout>`.
@@ -44,8 +44,8 @@ Before the first code edit, read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/refe
 
 ## Report
 
-- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there, plus one `Choice: <one clause>` line per choice the fields leave open.
-- Under Proof, copy each `Proof:` or `Run:` command character for character, never shortening a path to `...`: build lands on it.
+- `Report to:`'s folder exists: never probe or create it. Write at most 25 lines there, plus one `Choice: <one clause>` line per choice left open.
+- Under Proof, copy each `Proof:` or `Run:` command verbatim, no path shortened to `...`: build lands on it.
 - Lay it out as:
 
 Landed: <change>
