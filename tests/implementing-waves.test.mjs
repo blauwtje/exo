@@ -66,7 +66,7 @@ test('the direct route reads the diff stat on a GREEN return and hands a stop\'s
   const dispatchStep = RUN_LOOP_DIRECT;
   assert.ok(dispatchStep.includes('carries `Return: one line`'));
   assert.ok(dispatchStep.includes('reads as `git apply --stat <diff path>` only, never the report and never the full diff'));
-  assert.ok(dispatchStep.includes('A land-task refusal reads the full diff'));
+  assert.ok(dispatchStep.includes('Any other land-task refusal reads the full diff'));
   assert.ok(dispatchStep.includes('hands its report path, unread, to a repair delegate'));
 });
 
