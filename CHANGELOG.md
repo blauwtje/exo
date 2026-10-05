@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The benchmark runner has a `git` tier with a force-push hazard seed, scored from the remote's git state, plus `skills-rival`, `cc-safety-net` and `prose-rules` arms, pinned rival fetching through `benchmarks/rivals.mjs`, and `--effort` and `--dry-run` flags.
+
 ## 0.83.9 - 2026-10-05
 
 ### Changed
