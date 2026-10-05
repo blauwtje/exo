@@ -120,6 +120,7 @@ By category:
 - When no stage called the skill, run the repository's type-check, lint and tests covering the touched files.
 - Run `node <skill dir>/scripts/check-ui.mjs --source <file> --url <url>` once the last edit lands, and read its stdout summary.
 - Open the JSON its `report=` names only for a finding being repaired.
+- On the one pass, this session starts the preview the `stack` reference names when no url runs, and runs check-ui beside the post-build capture, because the builder starts no preview.
 - Check each reachable state, such as an open menu, in source, not a capture, because the one pass reads only its post-build and final pairs.
 - Repair every definite finding, and any `content-clipped` or `element-overlap` finding, before reporting the page finished.
 - Report a failure in a file the run did not touch; do not chase it.

@@ -37,15 +37,15 @@ Only a request from the user opens the picker: a landing page or an open identit
 
 ## The one pass
 
-The default for every rung but 1 and 4; this session builds it. References call steps 1-2 Phase 1-2 and 3-7 Phase 3.
+The default for every rung but 1 and 4; `exo:build-ui` writes the code, since code here overruns context. References call steps 1-2 Phase 1-2 and 3-7 Phase 3.
 
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`.
 2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names any named or saved product, the hex color and font line, the motion thesis and ASCII layouts at 1440 and 390; send the user `scripts/picks.mjs`'s line.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise until none is missing.
-4. **Build pass.** Read `references/build-pass.md` whole before the first product edit.
-5. **Build.** Build the whole page from the plan, around the chosen comp on rung 3, then run `references/build-pass.md`'s proof. Without a url, start the preview `references/stack.md` names.
-6. **Capture, look, fix once.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`, read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and repair all in one pass.
-7. **Finish on a fresh capture.** Rerun only step 6's capture, with `--label final`, and read both; a page is done only on a capture after its last edit.
+4. **Build pass.** Read `references/build-pass.md` whole.
+5. **Build.** Dispatch fresh `exo:build-ui`, `model: "opus"`, `SCOPE: page`, with the rung 3 comp; read its report only.
+6. **Capture, look, fix once.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`. Read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and `SendMessage` it to the builder to repair.
+7. **Finish on a fresh capture.** Rerun only step 6's capture, with `--label final`, and read both; a page is done only on a capture after its last edit, and later changes go to the builder.
 
 Read only the post-build and final pairs, never a state capture, because each image costs context; a fault under repair adds one.
 

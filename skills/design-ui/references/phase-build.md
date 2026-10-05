@@ -1,6 +1,6 @@
 # Phase 3: Build
 
-Build the whole page in this session by default; per-surface builders run only when the user asks for parallel builders or the full run. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
+One `exo:build-ui` page scope builds the whole page by default; per-surface builders run only when the user asks for parallel builders or the full run. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
 
 ## The mechanics
 
@@ -16,7 +16,7 @@ These rules bind this session and every builder:
 
 Where the build runs:
 
-- The one pass builds in this session, from the plan and Phase 1 ranges.
+- The one pass builds in one `exo:build-ui` page scope, from the plan and Phase 1 ranges, while this session captures, looks and judges.
 - Only a user request for parallel builders or the full run dispatches per-surface `exo:build-ui` agents.
 
 Proof:
