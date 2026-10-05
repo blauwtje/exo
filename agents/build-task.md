@@ -39,6 +39,8 @@ tools: Read, Edit, Write, Grep, Bash
 
 - Never probe or create `Report to:`'s folder; write at most 25 lines there, plus a `Choice: <one clause>` per open choice.
 - Under Proof, copy each command verbatim: build lands on it.
+- Before returning GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan path> --task <n> --root <checkout>`, both from the dispatch's first line; fix the report until it prints `Report OK`.
+- Never rerun a proof to fix the report: copy the output from the log already written.
 - Layout:
 
 Landed: <change>

@@ -24,7 +24,8 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with both report paths and two or three options.
 4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:` (`deferred` for MCP), never a report you wrote; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
-  - A path outside `Files:`, a missing `pass` line, a failing Proof line or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
+  - A path outside `Files:`, a failing Proof line or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
+  - A refusal about the report (no report, no `pass` line, no output, unclear outcome) goes by SendMessage to the agent that wrote it, with land-task's refusal verbatim; never rerun a proof to repair a report.
   - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
   - Return to step 1 until every block task has a `LANDED` or `BLOCKED` line.
 
