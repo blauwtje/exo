@@ -814,3 +814,19 @@ test('an unprefixed known MCP tool Proof is never spawned and lands deferred lik
   await assertRefused(root, planPath, [], /reads "run_playtest mode=play; touch spawned\.txt: fail", yet only the session runs an MCP tool Proof/);
   await assert.rejects(fs.access(path.join(root, 'spawned.txt')));
 });
+
+test('a Files: entry ending in / covers every changed path under that folder', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Snapshots', files: ['- Create: `src/snaps/`'], subject: 'test(app): snapshots' })
+  ] });
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/fixture.md': plan });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  await fs.mkdir(path.join(root, 'src/snaps/deep'), { recursive: true });
+  await fs.writeFile(path.join(root, 'src/snaps/a.png'), 'a');
+  await fs.writeFile(path.join(root, 'src/snaps/deep/b.png'), 'b');
+  const output = landTask({ planPath: path.join(root, 'docs/plans/fixture.md'), planText: plan, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.equal(git(root, 'status', '--porcelain'), '');
+});
