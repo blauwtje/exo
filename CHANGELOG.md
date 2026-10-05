@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.5 - 2026-10-05
+
 ### Fixed
 
 - build's land-task and proof-check treat a Proof that starts with a known MCP tool name but lacks the `mcp:` prefix as an MCP Proof: land-task never runs it and expects it deferred, and proof-check matches it only against the session's MCP tool call; verify, land-task and proof-check now share one list of known MCP tools.
