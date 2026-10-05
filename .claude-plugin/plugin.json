@@ -1,7 +1,7 @@
 {
   "name": "exo",
   "version": "0.84.1",
-  "description": "One engineering process for Claude Code: skills that take turns, and agents and prompts that keep discovery off the main context.",
+  "description": "Claude Code plugin with four stages and hooks that refuse risky commands.",
   "author": {
     "name": "Thomas Hoogteijling"
   },
