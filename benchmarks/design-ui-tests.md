@@ -10,9 +10,9 @@ Three fixed prompts check that design-ui keeps the quality and fullness of the b
 
 ## Prompts
 
-- "Een adminoverzicht van bestellingen". The yardstick is the best run: Linear and Vercel style, rich, with motion.
-- "Een lesscherm voor een taalleer-app". Playful like Duolingo, without its characters or brand.
-- "Een landingspagina voor een nieuwe SaaS-tool". Expressive.
+- "An admin overview of orders". The yardstick is the best run: Linear and Vercel style, rich, with motion.
+- "A lesson screen for a language-learning app". Playful like Duolingo, without its characters or brand.
+- "A landing page for a new SaaS tool". Expressive.
 
 ## Checklist, per run
 
