@@ -42,7 +42,8 @@ export function saveFields(fields, file = designFile()) {
   const saved = {};
   for (const [key, value] of entries) {
     saved[key] = value.replace(/\s+/g, ' ').trim();
-    if (!saved[key]) throw new Error(`--${key} needs a value`);
+    const flag = key === 'reference' ? '--set' : `--${key}`;
+    if (!saved[key]) throw new Error(`${flag} needs a value`);
   }
   const keys = Object.keys(saved);
   if (keys.length === 0) throw new Error('nothing to save');

@@ -25,7 +25,7 @@ Expect these inputs:
 - `REPO`: the repository root.
 - `SKILL`: the absolute skill directory.
 - `REFERENCES`: the rows of the skill's reference table whose predicate this scope meets.
-- `URL`: the page's or surface's `file://` or `http://` url, for a scope that renders.
+- `URL`: the surface's `file://` or `http://` url, for a scope that renders.
 - `CHECK`: for a comp scope, the `pick.mjs --check --variant <n>` command for your comp, and the folder you write in.
 
 Read each `FILES` range with Read's offset and limit, which an Edit to that file also requires.

@@ -7,7 +7,7 @@ Decide the direction from references, render it, and select it before production
 - Read the `approval_status` field `scripts/context.mjs --status` reports before asking whether a DESIGN.md decision is approved; open the body, through `--surface` and `--needs`, only for the sections the task needs.
 - Extract an existing design system from code before proposing a replacement.
 - Create or update DESIGN.md only after explicit user approval of a durable visual identity or an approved redesign. Completing an implementation is not approval.
-- Writing the `reference` field through `reference.mjs --set` needs no approval, because it records only the product the user named.
+- Writing the `reference`, `display-font`, `body-font` or `accent` field through `reference.mjs` needs no approval, because `reference` records only the product the user named and the color and font line sent before the build approves the rest.
 - Keep unapproved directions and experiments ephemeral.
 - No DESIGN.md for one-off prototypes, isolated fixes, or pages that establish no durable identity.
 - Page-specific approved deviations go in `docs/design/surfaces/<surface>.md`, holding only the delta.
