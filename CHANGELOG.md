@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.85.1 - 2026-10-05
+
 ### Fixed
 
 - `npm run check` fails when a pinned design-ui doc list still names a tell or label its JSON asset dropped, and a self-test case mutates the asset side.
