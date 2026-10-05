@@ -125,7 +125,7 @@ const PINNED_SENTENCES = {
     `Aim at ${DESCRIPTION_CHARS.realistic} characters and stay within ${DESCRIPTION_CHARS.ceiling}, so the sum across the corpus stays inside what the harness shows the model.`,
   ],
   'README.md': [
-    RISK_TRIGGER, `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
+    `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
     `over ${DEFAULT_GUARD_LINES} lines`,
   ],
   'CONTRIBUTING.md': [

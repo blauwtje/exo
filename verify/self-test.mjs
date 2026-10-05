@@ -16,7 +16,7 @@ import process from 'node:process';
 // and the Markdown files README.md links to, so its references resolve there too.
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
-  'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md',
+  'ABOUT.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md',
   'docs/skills/build.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json',
 ];
 
@@ -271,7 +271,7 @@ const SCENARIOS = [
   { name: 'injected-body-over-ceiling', mutate: (root) =>
     append(root, 'skills/route-skills/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
   { name: 'drifted-review-threshold', mutate: (root) =>
-    replaceText(root, 'README.md', 'a manifest or lockfile changed', 'a manifest changed') },
+    replaceText(root, 'CONTRIBUTING.md', 'a manifest or lockfile changed', 'a manifest changed') },
   { name: 'drifted-wait-bound', mutate: (root) =>
     replaceText(root, 'skills/ship/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
   { name: 'unprefixed-delegate-budget-key', mutate: (root) =>
