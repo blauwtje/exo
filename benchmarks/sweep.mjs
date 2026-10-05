@@ -21,7 +21,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
 import { claudeArguments, selectCells, sweepCells } from './sweep-cells.mjs';
-import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareReviewBranch } from './sweep-fixtures.mjs';
+import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -106,7 +106,16 @@ function readReview(repository, cellDirectory) {
   return parseReview(fs.readFileSync(file, 'utf8'));
 }
 
+// The green-first branch carries one defect: a test-first fix whose report
+// quotes no failing run, so a cell finds it when its report counts a defect.
+function measureGreenFirst(review) {
+  const defects = review.counts === null ? null : review.counts.defect;
+  const detail = `verdict ${review.verdict ?? 'none'}, ${defects ?? 'no counted'} defect findings`;
+  return { defectsFound: defects !== null && defects > 0 ? 1 : 0, falseAlarms: null, detail };
+}
+
 async function measureReview(cell, repository, review) {
+  if (cell.variant === 'green-first') return measureGreenFirst(review);
   const check = await runSafeCheck(cell.task.id, repository);
   const findings = review.counts === null ? null : review.counts.defect + review.counts.hazard;
   const detail = `verdict ${review.verdict ?? 'none'}, ${findings ?? 'no counted'} defect or hazard findings, check after review: ${check.line}`;
@@ -153,7 +162,8 @@ async function measureCell(cell, repository, usage, cellDirectory) {
 }
 
 function prepareRepository(cell, repository, origin) {
-  if (cell.kind === 'review') prepareReviewBranch(repository, cell.task, cell.source);
+  if (cell.variant === 'green-first') prepareGreenFirstBranch(repository);
+  else if (cell.kind === 'review') prepareReviewBranch(repository, cell.task, cell.source);
   else if (cell.kind === 'build') prepareBuildRepository(repository, cell.task);
   else if (cell.kind === 'fixer') prepareFixerBranch(repository, cell.task);
   else prepareFlowRepository(repository, origin, cell.kind === 'flow');

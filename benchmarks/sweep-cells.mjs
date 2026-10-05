@@ -49,6 +49,38 @@ function reviewDispatch(task) {
   ].join('\n');
 }
 
+// The green-first branch holds a fix whose test already passed on main and
+// whose report quotes no failing run; the dispatch names .exo/ as the
+// directory of implementer reports, so the reviewer reads that report.
+function greenFirstDispatch() {
+  return [
+    'Review the branch fix/text-slug of the repository in the current directory.',
+    'Plan: docs/plans/text-fix.md',
+    'Base: main, for git diff main...HEAD',
+    'Implementer reports: .exo/',
+    'Code standard: the checks below',
+    'Final verification: `node --test src/text.test.js` exits 0.',
+    NO_ANSWER
+  ].join('\n');
+}
+
+function greenFirstCells(reviewer) {
+  return REVIEW_EFFORTS.map((effort) => ({
+    id: `review-green-first-${effort}`,
+    kind: 'review',
+    task: null,
+    variant: 'green-first',
+    source: null,
+    model: SWEEP_MODELS.opus,
+    effort,
+    prompt: greenFirstDispatch(),
+    appendSystemPrompt: reviewer,
+    disallowedTools: [],
+    budgetUsd: '3',
+    timeoutMs: 20 * MINUTE_MS
+  }));
+}
+
 function reviewCells(reviewer) {
   const cells = [];
   for (const task of SAFE_TASKS) {
@@ -71,7 +103,7 @@ function reviewCells(reviewer) {
       }
     }
   }
-  return cells;
+  return [...cells, ...greenFirstCells(reviewer)];
 }
 
 // A build cell repeats the safe tier of run.mjs on Sonnet 5 at high: the same

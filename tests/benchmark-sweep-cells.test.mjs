@@ -14,9 +14,9 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 44 calls: 30 review, 5 build, 5 fixer, 3 plan and 1 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 44);
-  assert.equal(selectCells(cells, ['review']).length, 30);
+test('the full set makes 47 calls: 33 review, 5 build, 5 fixer, 3 plan and 1 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 47);
+  assert.equal(selectCells(cells, ['review']).length, 33);
   assert.equal(selectCells(cells, ['build']).length, 5);
   assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
@@ -72,4 +72,15 @@ test('a fixer cell dispatches the review-fixer prompt naming the plan, base and 
 test('plan cells plan the change the flow cell runs from its fixed plan', () => {
   for (const cell of selectCells(cells, ['plan'])) assert.ok(cell.prompt.includes(FLOW_REQUEST), cell.id);
   assert.ok(selectCells(cells, ['flow'])[0].prompt.includes(FLOW_PLAN));
+});
+
+test('a green-first review cell runs at each effort on a branch whose report has no red run', () => {
+  const green = cells.filter((cell) => cell.variant === 'green-first');
+  assert.deepEqual(green.map((cell) => cell.id), ['review-green-first-low', 'review-green-first-medium', 'review-green-first-high']);
+  for (const cell of green) {
+    assert.equal(cell.kind, 'review', cell.id);
+    assert.equal(cell.model, SWEEP_MODELS.opus, cell.id);
+    assert.match(cell.prompt, /Implementer reports: \.exo\//, cell.id);
+    assert.match(cell.prompt, /docs\/plans\/text-fix\.md/, cell.id);
+  }
 });
