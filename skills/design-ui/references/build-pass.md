@@ -61,6 +61,7 @@ By category:
 - Buttons and cards: no hard opaque offset shadow, a solid unblurred block behind the element, unless the user asks for neobrutalism.
 - Type: no Roboto, Montserrat or system stack as display face, no small label above a heading, no gradient text, no decorative monospace.
 - Kits: not cream with a serif and terracotta, not near-black with one acid accent, not white cards on grey with one blue accent.
+- Accents: no cobalt or other saturated mid blue, unless the prompt or the product asks for blue.
 - Imagery: no emoji outside a stated brand use and no invented SVG drawing; place a labelled placeholder and ask for the real material.
 - Buttons: no arrow glyph added to the label.
 - Stock shadcn: no fetched component left in its default form; the radius, tokens, density and variants follow the `stack` reference's `## Theme`.

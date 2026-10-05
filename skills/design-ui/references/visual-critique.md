@@ -90,6 +90,7 @@ By category:
 - Buttons and cards: a hard opaque offset shadow, a solid unblurred block behind the element.
 - Type: a display face from `scripts/overused-fonts.mjs`, such as Roboto or Montserrat, or a system stack; a small label above a heading; gradient-filled text; monospace worn to look technical.
 - Kits: cream with a serif and terracotta, near-black with one acid accent, and white cards on grey with one blue or teal accent.
+- Accents: cobalt or another saturated mid blue, unless the prompt or the product asks for blue.
 - Buttons: an arrow glyph added to the label.
 - Stack: a hand-drawn chart where the stack ships a chart component; on a build in the default stack of the `stack` reference, a hand-written component the shadcn CLI ships, or a shadcn block such as `dashboard-01` as the base.
 - Stock shadcn: a fetched component left in its default form, with the preset's radius, neutral or white tokens, control heights or unchanged `cva` variants.
