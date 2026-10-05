@@ -13,6 +13,7 @@ With no plan file, it fires when the change is decided and inspection shows it m
 - One commit per task, carrying the task number, so a resumed session knows what has landed.
 - On a restart, one line in your language naming the tasks already done, then silence between tasks.
 - Independent tasks built together in worktrees of their own; a plan of three tasks or fewer built in the session instead.
+- For a test-first plan task: its report quotes the failing run before the production edit and the passing run after, and a missing failing run is a defect for the branch review.
 - A final report that ends with the brief's `## Manual checks`, the checks only you can make, listed once.
 - The loop ends by handing to `verify`, which reviews the branch against the plan and the written code standard with the deep reviewer when a landed task carries a `Risk:` field, a manifest or lockfile changed or a public signature changed, repairs its findings, then asks the finish question `ship` carries out to its end.
 
