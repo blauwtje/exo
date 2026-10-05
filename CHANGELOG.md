@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- proof-check judges the reply that ends the turn, not the one before it, and reads a Proof command written as a backtick span followed by a label, so a corrected report no longer stays blocked.
+
 ## 0.86.0 - 2026-10-05
 
 ### Added
