@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.86.0 - 2026-10-05
+
 ### Added
 
 - design-ui logs each project's display font, body font and accent in one machine-wide file and warns on the color and font line, in the reply's language, when another project already used a pick; it never blocks or asks.
