@@ -146,8 +146,6 @@ const PINNED_SENTENCES = {
 // tokens in the section stand alone and are not checked. The asset is read
 // from the repository under check, so a self-test mutation of either side fails.
 const PINNED_LISTS = [
-  { file: 'skills/design-ui/references/visual-critique.md', section: '## Slop tropes',
-    asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
   { file: 'skills/design-ui/references/build-pass.md', section: '## Slop tropes',
     asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
   { file: 'skills/design-ui/references/sketch-tab.md', section: '## The labels',

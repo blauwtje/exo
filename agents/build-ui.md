@@ -46,8 +46,8 @@ Read these and nothing else before writing, in one batch where the files are ind
 
 Read a section of a reference by finding its `## ` heading with `Grep -n`, then Read with offset and limit through the next heading.
 
-- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
-- Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/visual-critique.md`'s `## Slop tropes` section.
+- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/build-pass.md`'s `## Slop tropes` section.
+- Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/build-pass.md`'s `## Slop tropes` section.
 - Comp: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps` sections.
 - Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name. No inventory, no foundation report and no reference unless the brief names one.
 
@@ -121,7 +121,7 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 - Type carries a voice through a second weight, width, or family.
 - The motion bar is built.
 - Every browser surface on the finish list in `$SKILL/references/implementation.md` is themed.
-- No slop trope from `$SKILL/references/visual-critique.md` stands without recorded provenance.
+- No slop trope from `$SKILL/references/build-pass.md` stands without recorded provenance.
 - `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration.
 - The shapes live in `$SKILL/references/craft-recipes.md`.
 

@@ -29,7 +29,8 @@ Budget: you have 12 turns, and the run ends mid-step, without notice, when they 
 
 **Faults.**
 
-1. Read `$SKILL/references/visual-critique.md` by section: `Grep -n '^## '` for the headings, then Read through the next heading `## Order`, `## The rubric`, `## Structural tells`, `## Slop tropes`, `## The fault contract`, `## Craft sweep, against the render` and `## Hard floor`, and skip the rest.
+1. Read `$SKILL/references/visual-critique.md` by section: `Grep -n '^## '` for the headings, then Read through the next heading `## Order`, `## The rubric`, `## Structural tells`, `## The fault contract`, `## Craft sweep, against the render` and `## Hard floor`, and skip the rest.
+   - Then Read `$SKILL/references/build-pass.md`'s `## Slop tropes` the same way, by section.
 2. Open each post-build render once and answer the rubric; read `$RUN/contract-selected.json` for what the direction promised.
 3. Read `$RUN/critic-evidence.json`'s `clipped` and `overlap` arrays for `content-clipped` and `element-overlap` findings, and its `renderDelta` for the baseline-to-post-build delta, whose numbers are diagnostics and never targets.
 4. Locate each repair in the source before you name it, with `Grep` against the selector, class or element the render shows.

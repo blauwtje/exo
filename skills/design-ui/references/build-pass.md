@@ -47,7 +47,7 @@ The numeric floor:
 
 ## Slop tropes
 
-A trope stays only when the plan or the brief's wording justifies it and the reason is recorded.
+A trope stays only when a `contract-selected.json` field, the plan or the brief's wording justifies it and the reason is recorded.
 
 `scripts/check-ui.mjs` reports the code-detectable ones:
 
@@ -57,13 +57,16 @@ A trope stays only when the plan or the brief's wording justifies it and the rea
 By category:
 
 - Grounds: no gradient whose hue swings across the page, no saturated central halo or glow, no decorative gradient wash.
-- Containers: no colored left border on a rounded box, no cards inside cards, no thin border beneath a broad soft shadow.
+- Containers: no colored left border on a rounded box, no cards inside cards.
+- Shadows: no same grey shadow under every card, no thin border beneath a broad soft shadow.
 - Buttons and cards: no hard opaque offset shadow, a solid unblurred block behind the element, unless the user asks for neobrutalism.
-- Type: no Roboto, Montserrat or system stack as display face, no small label above a heading, no gradient text, no decorative monospace.
-- Kits: not cream with a serif and terracotta, not near-black with one acid accent, not white cards on grey with one blue accent.
+- Type: no display face from `scripts/overused-fonts.mjs` or a system stack, no small label above a heading, no gradient text, no decorative monospace.
+- Kits: not cream with a serif and terracotta, not near-black with one acid accent, not white cards on grey with one blue or teal accent.
 - Accents: no cobalt or other saturated mid blue, unless the prompt or the product asks for blue.
 - Imagery: no emoji outside a stated brand use and no invented SVG drawing; place a labelled placeholder and ask for the real material.
 - Buttons: no arrow glyph added to the label.
+- Charts: no hand-drawn chart where the stack ships a chart component.
+- Default stack: no hand-written component the shadcn CLI ships, and no shadcn block such as `dashboard-01` as the base.
 - Stock shadcn: no fetched component left in its default form; the radius, tokens, density and variants follow the `stack` reference's `## Theme`.
 
 ## The motion bar

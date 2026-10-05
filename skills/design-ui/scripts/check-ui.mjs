@@ -1605,7 +1605,7 @@ export async function renderedAudit({ url, viewports, cwd }) {
 // The finding names the design-ui docs restate live in one asset; verify pins
 // each doc list to it.
 const FINDING_LISTS = JSON.parse(readFileSync(new URL('../assets/check-ui-findings.json', import.meta.url), 'utf8'));
-// The slop tropes visual-critique.md names that this script detects.
+// The slop tropes build-pass.md names that this script detects.
 export const DECORATIVE_TELLS = Object.freeze(FINDING_LISTS.decorativeTells);
 export const ALWAYS_BLOCKING = new Set(FINDING_LISTS.alwaysBlocking);
 

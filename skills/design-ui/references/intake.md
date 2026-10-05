@@ -106,7 +106,7 @@ A complaint names a fault in the words of the person who saw it, and this table 
 
 | Reported as | Owned by |
 |---|---|
-| flat, cheap, unfinished, generic, or like a template | the `visual-critique` reference, its `## Slop tropes` and `## Unsupported-pattern test` |
+| flat, cheap, unfinished, generic, or like a template | the `build-pass` reference's `## Slop tropes`, the `visual-critique` reference's `## Unsupported-pattern test` |
 | empty, bare, or too much white space | the `composition` reference, its `## Build density without clutter`, against every quiet region's named job in the `visual-direction` reference |
 | cluttered, noisy, or hard to scan | the `composition` reference for grouping and pacing, the `typography` reference its `## Scale` for the hierarchy |
 | cramped, misaligned, or spaced inconsistently | the `implementation` reference, and the `component-system` reference its `## Scales, not values` |
