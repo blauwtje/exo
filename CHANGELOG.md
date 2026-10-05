@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.83.8 - 2026-10-05
+
 ### Changed
 
 - The README tagline now reads "Claude Code plugin with four stages and hooks that refuse risky commands.", the one-liner from the positioning research.
