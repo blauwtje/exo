@@ -1,6 +1,6 @@
 # Specification of the task list
 
-The task list names the goal, basis, proof and one line per task for a zero-context reader, with no implicit file, shape or step code; `plan-check` enforces every rule below.
+The task list names the goal, basis, proof and one line per task for a zero-context reader, no implicit file, shape or step code; `plan-check` enforces every rule below.
 
 ## Header sections, in order
 
@@ -9,7 +9,7 @@ The task list names the goal, basis, proof and one line per task for a zero-cont
    - When two tasks share no `Depends on:` chain, add `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
    - Add `Land gate: npm run typecheck` for root's package.json `typecheck` script, else `none`; the owner may name a slower `validate` or `check`.
    - Add `Lint: <linter binary>` like `npx eslint` for root's package.json `lint` script, else `none`; `npm run lint` skips a task's `Files:`.
-3. `## Success criterion`: the one command proving every task landed, with no interpretation or user-only check.
+3. `## Success criterion`: one backticked command proving every task landed, no interpretation or user-only check.
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`, `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`: the dependency-ordered list.
 
@@ -22,13 +22,13 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 ```
 
 - `Proof:` is one bare command showing this task alone landed, never the whole suite, which verify runs once.
-- A task whose result runs proves it on the project's real input with the project's own command, else a builder's script using only its tools, never a test alone.
-- An MCP `Proof:` reads `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; the session calls it, never a shell.
+- A task whose result runs proves it on the project's real input with its own command, else a builder's script using only its tools, never a test alone.
+- An MCP `Proof:` or Success criterion reads `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; the session calls it, never a shell.
 - `Data:` names the structure holding the result, not its fields or logic; ask before one changing a public signature or persisted format.
 - `Risk:` marks a task touching a `security boundary`, `persisted format`, `public signature` or `dependency`.
 - The heading is `land-task`'s conventional-commit subject, trailed by `Plan-task: <plan-stem>/<n>`.
 - The task stages `Files:` and carries no `Commit:` block.
-- `Design:` names the skill a task loads first, only when it changes a page's look.
+- `Design:` names the skill a task loads first, only if it changes a page's look.
 
 ## Rules
 
