@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.84.1 - 2026-10-05
+
 ### Changed
 
 - `remember` names the book command once per session start, including after clear and compaction, instead of on every prompt, and no longer logs prompts to `nudge-log.jsonl`; the `stats` subcommand is removed.
