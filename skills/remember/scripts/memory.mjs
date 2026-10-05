@@ -16,7 +16,7 @@ import process from 'node:process';
 import { Buffer } from 'node:buffer';
 import { parseArgs } from 'node:util';
 import { MEMORY_BUDGET } from '#budgets';
-import { ATTESTATIONS_REQUIRED, appendNudgeLog, memoryDirectory } from '#memory-store';
+import { ATTESTATIONS_REQUIRED, memoryDirectory } from '#memory-store';
 
 function stateFile(cwd) {
   return path.join(memoryDirectory(cwd), 'memory.json');
@@ -219,9 +219,6 @@ if (command === 'paths') {
     const state = readState(cwd);
     const attestations = book(state, values.claim, values.quote, values.session);
     writeState(cwd, state);
-    // The nudge hook logs what it fired on; a booking logged here is the other
-    // half of that measurement, and without it a hit rate cannot be read back.
-    appendNudgeLog(cwd, { event: 'booked', session: values.session, claim: values.claim });
     console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
   } catch (error) {
     fail(error.message);

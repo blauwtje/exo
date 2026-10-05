@@ -8,7 +8,7 @@
 // contexts of the steps that ran are joined into the same output.
 // A fault reading or parsing the input exits 0 with no output.
 
-import { approve } from '../skills/remember/scripts/nudge.mjs';
+import { approve } from '../skills/remember/scripts/approve-book.mjs';
 import { delegateBudget } from './guards/delegate-budget.mjs';
 import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
@@ -41,7 +41,7 @@ const GUARDS = [
 const BOOKKEEPING = [
   { name: 'repeat-guard', run: guardCall },
   { name: 'delegate-budget', run: delegateBudget },
-  { name: 'nudge-approve', run: approve },
+  { name: 'approve-book', run: approve },
   // Last, so it wraps a command an earlier step already rewrote.
   { name: 'heavy-command', run: heavyCommandStep }
 ];

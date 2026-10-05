@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // SessionStart hook on startup, resume, clear and compact: builds one
 // additionalContext string, in order: a handoff pointer, a project-memory
-// pointer, the settings line, then the body of the route-skills skill
-// (frontmatter dropped), the only skill invoked this way because its
-// frontmatter blocks model invocation.
+// pointer, the book-command sentence, the settings line, then the body of the
+// route-skills skill (frontmatter dropped), the only skill invoked this way
+// because its frontmatter blocks model invocation.
 // It runs in Node so a host without `jq` still gets the injection.
 
 import { spawnSync } from 'node:child_process';
@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { readHookText } from '#hook-input';
+import { bookSentence } from '../skills/remember/scripts/approve-book.mjs';
 import { reset as resetReadGuard } from './guards/read-guard.mjs';
 import { reset as resetRepeatGuard } from './guards/repeat-guard.mjs';
 
@@ -151,6 +152,10 @@ if (input.source === 'clear' || input.source === 'compact') {
 const skillFile = path.join(root, 'skills', 'route-skills', 'SKILL.md');
 if (fs.existsSync(skillFile)) {
   if (typeof input.cwd === 'string' && input.cwd !== '') pointers += pointersFor(input.cwd);
+  // Once per session, and again after a clear or compaction, rather than on
+  // every prompt: the session judges which prompt corrects a fact.
+  const book = bookSentence(input.session_id);
+  if (book !== null) pointers += `${book}\n\n`;
   // Skills read project and global choices, such as where spec stores a spec,
   // from this one line instead of opening the settings files themselves.
   const settingsRun = runScript('skills/configure/scripts/settings.mjs', 'context');

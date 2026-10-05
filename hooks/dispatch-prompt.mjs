@@ -1,18 +1,15 @@
 #!/usr/bin/env node
-// The one UserPromptSubmit hook: runs the nudge and expand-reply handlers
-// in that order on a single parse of the hook input, and writes one
-// output whose additionalContext joins their strings with a blank line. Each
-// handler runs in its own try/catch, so a fault in one costs only that
-// handler's context and never blocks the prompt or the other one.
+// The one UserPromptSubmit hook: runs each handler on a single parse of the
+// hook input, and writes one output whose additionalContext joins their
+// strings with a blank line. Each handler runs in its own try/catch, so a
+// fault in one costs only that handler's context and never blocks the prompt.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { expandReply } from '../skills/configure/scripts/expand-reply.mjs';
-import { nudge } from '../skills/remember/scripts/nudge.mjs';
 import { isProcessEntry } from './guards/guard-runner.mjs';
 
 const HANDLERS = [
-  ['nudge', nudge],
   ['expand-reply', expandReply]
 ];
 

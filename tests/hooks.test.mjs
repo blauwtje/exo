@@ -84,13 +84,13 @@ test('one Stop hook runs the dispatcher that books the turn, keeps a plan going,
   assert.ok(stop[0].hook.command.endsWith('hooks/dispatch-stop.mjs"'), stop[0].hook.command);
 });
 
-test('one prompt hook runs the dispatcher for the memory nudge and the reply expander, and takes no matcher', () => {
+test('one prompt hook runs the dispatcher for the reply expander, and takes no matcher', () => {
   const prompt = hookEntries().filter((entry) => entry.event === 'UserPromptSubmit');
   assert.equal(prompt.length, 1, JSON.stringify(prompt.map((entry) => entry.hook.command)));
   assert.equal(prompt[0].matcher, undefined);
   assert.equal(prompt[0].hook.shell, 'bash');
   assert.ok(prompt[0].hook.command.endsWith('hooks/dispatch-prompt.mjs"'), prompt[0].hook.command);
-  for (const script of ['nudge.mjs', 'expand-reply.mjs']) {
+  for (const script of ['approve-book.mjs', 'expand-reply.mjs']) {
     assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes(script)), [], script);
   }
 });
@@ -107,6 +107,21 @@ test('the session hook points at a memory file only where one exists', () => {
   assert.match(hook, /--git-common-dir/, 'the memory pointer does not resolve the common git directory');
   assert.match(hook, /fs\.existsSync\(memoryFile\)/, 'the memory pointer is added without testing for the file');
   assert.match(hook, /A project memory for/, 'the memory pointer sentence is missing');
+});
+
+test('the session hook prints the book command once per session, and approve allows it', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-book-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const context = (input) => JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify(input) }).toString()).hookSpecificOutput.additionalContext;
+  try {
+    for (const source of ['startup', 'resume', 'clear', 'compact']) {
+      assert.match(context({ session_id: 's1', source }), /corrects a repository fact, in any language, run `node "[^`]+memory\.mjs" book --claim "<one sentence>" --quote "<the user's words, verbatim>" --session "s1"`/, source);
+    }
+    assert.doesNotMatch(context({ source: 'startup' }), /book --claim/);
+  } finally {
+    fs.rmSync(configHome, { recursive: true, force: true });
+  }
 });
 
 test('no tool name matches more than one PreToolUse entry', () => {

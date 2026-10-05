@@ -1,6 +1,6 @@
-// The prompt dispatcher runs the nudge and expand-reply handlers in
-// one process and joins their additionalContext strings in that order; a
-// fault in one handler costs only its own string.
+// The prompt dispatcher runs the expand-reply handler; a fault in it costs only
+// its own string, and no prompt gets the book command, which the session hook
+// prints once instead.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -65,19 +65,18 @@ test('one speaking handler prints its string alone', async () => {
   assert.doesNotMatch(context, /book --claim/);
 });
 
-test('nudge and expand-reply strings join in that order', async () => {
+test('a prompt that corrects a fact gets no book command', async () => {
   const { env, prompt } = await dispatchFixture(JSON.stringify({ replies: 'terse' }));
   const context = contextOf(await runDispatch(prompt('no, that is wrong'), env));
-  const nudgeAt = context.indexOf('exo: only if this prompt corrects a repository fact');
-  const expandAt = context.indexOf('replies=terse:');
-  assert.ok(nudgeAt >= 0, 'the nudge speaks');
-  assert.ok(expandAt > nudgeAt, 'the reminder follows the nudge');
+  assert.match(context, /replies=terse:/);
+  assert.doesNotMatch(context, /book --claim/);
 });
 
-test('a fault in one handler leaves the others speaking', async () => {
+test('a fault in a handler prints nothing and names the handler', async () => {
   const { env, prompt } = await dispatchFixture('{ not json');
   const result = await runDispatch(prompt('no, that is wrong'), env);
-  assert.match(contextOf(result), /book --claim/);
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, '');
   assert.match(result.stderr, /dispatch-prompt: expand-reply:/);
 });
 

@@ -10,10 +10,11 @@ import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { HOOK_INPUT_TIMEOUT_MS } from '../lib/hook-input.mjs';
 import { environmentMs } from '../lib/script-flags.mjs';
+import { bookSentence } from '../skills/remember/scripts/approve-book.mjs';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const NUDGE = path.join(REPOSITORY, 'skills', 'remember', 'scripts', 'nudge.mjs');
+const APPROVE_BOOK = path.join(REPOSITORY, 'skills', 'remember', 'scripts', 'approve-book.mjs');
 const GUARD = path.join(REPOSITORY, 'hooks', 'guards', 'read-guard.mjs');
 const READER = pathToFileURL(path.join(REPOSITORY, 'lib', 'hook-input.mjs')).href;
 const WRITE_DELAY_MS = 200;
@@ -44,12 +45,12 @@ async function readerScript(directory, timeoutMs) {
   return file;
 }
 
-test('nudge prints its JSON when stdin is written late', async () => {
-  const directory = await fixture();
-  const input = { session_id: 's1', cwd: directory, prompt: 'no, the verifier reports 17 checks' };
-  const result = await runScript(NUDGE, [], input, { environment: { CLAUDE_CONFIG_DIR: directory }, delayMs: WRITE_DELAY_MS });
+test('approve-book prints its JSON when stdin is written late', async () => {
+  const command = bookSentence('s1').match(/`(node [^`]+)`/)[1];
+  const input = { tool_name: 'Bash', tool_input: { command } };
+  const result = await runScript(APPROVE_BOOK, [], input, { delayMs: WRITE_DELAY_MS });
   assert.equal(result.stderr, '');
-  assert.equal(JSON.parse(result.stdout).hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+  assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'allow');
 });
 
 test('read-guard denies an unbounded read of a large file when stdin is written late', async () => {

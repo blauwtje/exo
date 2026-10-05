@@ -262,19 +262,6 @@ test('a claim already live is refused rather than written a second time', async 
   assert.equal(understanding.split('the release workflow cuts the version').length - 1, 1);
 });
 
-test('book records the booking in the nudge log', async () => {
-  const directory = await fixture();
-  const environment = { CLAUDE_CONFIG_DIR: directory };
-  await run(MEMORY, ['book', '--cwd', directory, '--claim', 'the verifier reports 17 checks', '--quote', 'it is 17, not 15', '--session', 's1'], { env: environment });
-  const log = path.join(directory, 'exo', 'memory', path.basename(directory), 'nudge-log.jsonl');
-  const entries = fs.readFileSync(log, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
-  assert.equal(entries.length, 1);
-  assert.equal(entries[0].event, 'booked');
-  assert.equal(entries[0].session, 's1');
-  assert.equal(entries[0].claim, 'the verifier reports 17 checks');
-  assert.match(entries[0].date, /^\d{4}-\d{2}-\d{2}$/);
-});
-
 test('a state file that does not parse fails every command with one line, never a stack', async () => {
   const root = await repository();
   const statePath = (await memory(root, 'paths')).stdout.trim().split('\n')[0];
