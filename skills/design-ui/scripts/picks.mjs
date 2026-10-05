@@ -10,16 +10,23 @@
 //
 // Records the project's picks, then prints one JSON line:
 // {"display":<n>,"body":<n>,"accent":<n>}, n being how many other projects used
-// that family (in either role) or that accent. The caller writes the warning, in
-// the reply's language; this script only counts. Exit 2 is a usage error; exit 1
-// means the log is unreadable and is left untouched, never overwritten.
+// that family (in either role) or a near accent. An accent is near when close in
+// OKLCH under NEAR_ACCENT; an unparseable accent matches only the same string.
+// The caller writes the warning, in the reply's language; this script only counts.
+// Exit 2 is a usage error; exit 1 means the log is unreadable and is left untouched.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
 import { isMain, parseFlags, UsageError } from '#script-flags';
+import { oklchOf } from './check-ui.mjs';
 import { normalizeFamily } from './overused-fonts.mjs';
+
+// How close another project's accent sits in OKLCH to count as a repeat: the hue gap in degrees when both are
+// chromatic, and the lightness gap on a 0-1 scale. Below `chroma` an accent is a near-grey, whose hue means
+// nothing, so two near-greys match on lightness alone.
+const NEAR_ACCENT = Object.freeze({ hue: 20, lightness: 0.12, chroma: 0.05 });
 
 export function picksFile() {
   return path.join(configDirectory(), 'exo', 'design-picks.json');
@@ -38,6 +45,19 @@ function readLog(file) {
     throw new Error(`${file} is not a picks log`);
   }
   return log;
+}
+
+/** Whether two stored accents read as the same pick: near in OKLCH, or the same string when either is unparseable. */
+function nearAccent(first, second) {
+  const a = oklchOf(first);
+  const b = oklchOf(second);
+  if (!a || !b) return first === second;
+  if (Math.abs(a.lightness - b.lightness) > NEAR_ACCENT.lightness) return false;
+  const aGrey = a.chroma < NEAR_ACCENT.chroma;
+  const bGrey = b.chroma < NEAR_ACCENT.chroma;
+  if (aGrey || bGrey) return aGrey && bGrey;
+  const gap = Math.abs(a.hue - b.hue);
+  return Math.min(gap, 360 - gap) <= NEAR_ACCENT.hue;
 }
 
 function writeLog(file, log) {
@@ -62,7 +82,7 @@ export function recordPicks(project, picks) {
   const counts = {
     display: others.filter((other) => usesFont(other, entry.display)).length,
     body: others.filter((other) => usesFont(other, entry.body)).length,
-    accent: others.filter((other) => other.accent === entry.accent).length
+    accent: others.filter((other) => nearAccent(String(other.accent ?? ''), entry.accent)).length
   };
   log.projects[root] = entry;
   writeLog(file, log);
