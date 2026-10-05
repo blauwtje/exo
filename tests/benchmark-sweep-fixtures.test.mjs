@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { fixture, git } from './harness.mjs';
 import {
   FLOW_BRANCH, FLOW_HELPERS, FLOW_PLAN, FLOW_TASK_COUNT,
-  prepareBuildRepository, prepareFlowRepository, prepareReviewBranch
+  prepareBuildRepository, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch
 } from '../benchmarks/sweep-fixtures.mjs';
 import { SAFE_TASKS } from '../benchmarks/tasks.mjs';
 
@@ -96,4 +96,23 @@ test('the fixed plan code passes the library suite once every task is applied', 
   const suite = await nodeTest(repository);
   assert.equal(suite.code, 0, suite.output);
   assert.match(suite.output, /pass 5/);
+});
+
+test('the green-first branch adds a test that passes on main, then the code, and its report has no Red line', async () => {
+  const { repository } = await emptyRepository();
+  prepareGreenFirstBranch(repository);
+  const plan = await fs.readFile(path.join(repository, 'docs/plans/text-fix.md'), 'utf8');
+  assert.match(plan, /^### Task 1: fix\(text\): /m);
+  assert.doesNotMatch(plan, /^Risk:/m);
+  assert.match(plan, / Files: .*src\/text\.js.*src\/text\.test\.js/);
+  assert.equal(git(repository, 'log', '--format=%s', 'main..HEAD').split('\n').length, 2);
+  assert.equal(git(repository, 'diff', '--name-only', 'main...HEAD~1'), 'src/text.test.js');
+  assert.equal(git(repository, 'diff', '--name-only', 'HEAD~1...HEAD'), 'src/text.js');
+  const report = await fs.readFile(path.join(repository, '.exo', 'implementer-1.md'), 'utf8');
+  assert.match(report, /^Test first: yes, it fixes a reported bug$/m);
+  assert.match(report, /: pass$/m);
+  assert.doesNotMatch(report, /Red:/);
+  git(repository, 'checkout', '-q', 'HEAD~1');
+  const suite = await nodeTest(repository);
+  assert.equal(suite.code, 0, suite.output);
 });

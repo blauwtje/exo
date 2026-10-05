@@ -320,3 +320,79 @@ export function prepareFlowRepository(repository, origin, withPlan) {
   git(repository, ['push', '-q', 'origin', 'main']);
   git(repository, ['remote', 'set-head', 'origin', 'main']);
 }
+
+const GREEN_FIRST_MODULE = [
+  '// Turns a text into a lowercase dash-joined slug.',
+  'export function slugify(text) {',
+  '  const lower = text.toLowerCase();',
+  "  const dashed = lower.replace(/[^a-z0-9]+/g, '-');",
+  "  return dashed.replace(/^-+|-+$/g, '');",
+  '}',
+  ''
+].join('\n');
+
+const GREEN_FIRST_TEST = [
+  "import assert from 'node:assert/strict';",
+  "import { test } from 'node:test';",
+  "import { slugify } from './text.js';",
+  '',
+  "test('slugify drops the dashes at both ends', () => {",
+  "  assert.equal(slugify('  Hello, World!  '), 'hello-world');",
+  '});',
+  ''
+].join('\n');
+
+// The reported bug is already fixed on main, so the branch's test passes before
+// its code changes; the report claims test-first yet quotes no failing run.
+const GREEN_FIRST_PLAN = [
+  '# Text fix',
+  '',
+  '## Goal',
+  '',
+  '`slugify` returns no dash at either end of the slug.',
+  '',
+  '## Non-goals',
+  '',
+  '- No other helper changes.',
+  '',
+  '## Context',
+  '',
+  '- `src/text.js` holds `slugify`; its test sits beside it in `src/text.test.js`.',
+  '',
+  '## Tasks',
+  '',
+  '### Task 1: fix(text): trim the dashes at both ends of a slug',
+  'Depends on: none | Files: `src/text.js`, `src/text.test.js` | Data: the slug string `slugify` returns | Proof: node --test src/text.test.js',
+  '',
+  '## Final verification',
+  '',
+  '- `npm test`: every test passes, `fail 0`.',
+  ''
+].join('\n');
+
+const GREEN_FIRST_REPORT = [
+  'Landed: slugify trims the dashes at both ends of a slug',
+  'Test first: yes, it fixes a reported bug',
+  'Proof:',
+  'node --test src/text.test.js: pass',
+  '  # pass 1',
+  '  # fail 0',
+  'Unresolved: none',
+  ''
+].join('\n');
+
+// A review cell starts here: main holds the library and the plan, the branch's
+// first commit adds a test that passes against main's code, its second changes
+// the code, and `.exo/implementer-1.md` has a passing Proof run but no Red line.
+export function prepareGreenFirstBranch(repository) {
+  const seed = { 'package.json': FLOW_SEED['package.json'], 'src/text.js': GREEN_FIRST_MODULE };
+  git(repository, ['init', '-q', '-b', 'main']);
+  writeFiles(repository, { ...seed, 'docs/plans/text-fix.md': GREEN_FIRST_PLAN });
+  commitAll(repository, 'chore: seed the library and its plan');
+  git(repository, ['switch', '-q', '-c', 'fix/text-slug']);
+  writeFiles(repository, { 'src/text.test.js': GREEN_FIRST_TEST });
+  commitAll(repository, 'test(text): slugify drops the dashes at both ends');
+  writeFiles(repository, { 'src/text.js': GREEN_FIRST_MODULE.replace('const lower = text.toLowerCase();', 'const lower = text.trim().toLowerCase();') });
+  commitAll(repository, 'fix(text): trim the text before slugging');
+  writeFiles(repository, { '.exo/implementer-1.md': GREEN_FIRST_REPORT });
+}
