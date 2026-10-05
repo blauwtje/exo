@@ -22,9 +22,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - design-ui builds the one pass in the main session after reading `build-pass.md` whole; `exo:build-ui` no longer takes a page scope.
 - design-ui's plan gives each font and the accent one clause on why it fits this product and this user, and caps each ASCII layout at 8 lines per width.
+- design-ui keeps the fixed app minimum (navigation, search, user menu, counters, chart, table, detail panel) to admin, dashboard and tool screens; a lesson, checkout, game or consumer screen takes its content from the user's tasks and stays focused.
+- design-ui lists a cobalt or other saturated mid-blue accent as a slop default, kept only when the prompt or product asks for blue.
 
 ### Fixed
 
+- design-ui's picks log counts an accent close in OKLCH to another project's as a repeat, so a second cobalt warns even when its hex differs.
 - design-ui sets amounts in the page's body or display family with `tabular-nums`, never a monospace family.
 - design-ui numbers each pass's report and captures, so no pass overwrites the one before it.
 - design-ui's finish step reruns only the capture, and an empty `reference.mjs --set` value names the `--set` flag in its error.
