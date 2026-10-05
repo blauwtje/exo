@@ -10,9 +10,10 @@
 //
 //   node proof-check.mjs stop   Stop hook: stdin is the hook JSON
 //
-// Silent unless the exo:build skill was called since the last message the
-// human typed, so it never fires for a later unrelated turn. Only that build
-// call's turn is checked. After BLOCK_CEILING blocks in one build turn a
+// The report judged is the Stop input's `last_assistant_message`, else the
+// transcript's last text row. Silent unless the exo:build skill was called
+// since the last message the human typed, so it never fires for a later
+// unrelated turn. Only that build call's turn is checked. After BLOCK_CEILING blocks in one build turn a
 // report that would block ends the turn with a systemMessage naming what
 // stayed unverified, never as Done, so this never loops. Also silent while a
 // background task the session launched has not notified, since the turn then
@@ -242,6 +243,13 @@ function splitAtArrow(body) {
   return arrow ? [body.slice(0, arrow.index), body.slice(arrow.index + arrow[0].length)] : null;
 }
 
+// The command of a Proof line's pre-arrow text: a leading backtick span when
+// text follows it, such as a `(label)`, else the whole text.
+function commandOf(beforeArrow) {
+  const span = beforeArrow.trim().match(/^`([^`]+)`\s+\S/);
+  return normalizeCommand(span ? span[1] : beforeArrow);
+}
+
 // Every Proof line of the report as { line, command, output }; command and
 // output are null on a line with no arrow. Output loses one wrapping pair of
 // backticks.
@@ -253,7 +261,7 @@ function proofLines(text) {
     const parts = splitAtArrow(match[1]);
     proofs.push({
       line: match[1].trim(),
-      command: parts ? normalizeCommand(parts[0]) : null,
+      command: parts ? commandOf(parts[0]) : null,
       output: parts ? parts[1].trim().replace(/^`(.*)`$/, '$1') : null
     });
   }
@@ -378,7 +386,10 @@ export function stopHook(input) {
   const skillIndex = rows.findLastIndex((entry) => contentBlocks(entry).some(isBuildCall));
   if (skillIndex === -1 || skillIndex < typedIndex) return null;
 
-  const report = lastReportBefore(rows, rows.length, skillIndex);
+  // Claude Code runs the Stop hook before it appends the final reply to the
+  // transcript, so the transcript's last text row is the previous reply.
+  const lastMessage = input.last_assistant_message;
+  const report = typeof lastMessage === 'string' && lastMessage.trim() ? lastMessage : lastReportBefore(rows, rows.length, skillIndex);
   if (!report) return null;
   const blockIndexes = proofCheckBlockIndexes(rows, skillIndex);
   const current = assessProofs(report, rows, skillIndex);
