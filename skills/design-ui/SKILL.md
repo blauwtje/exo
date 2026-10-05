@@ -40,11 +40,11 @@ Only a request from the user opens the picker: a landing page or an open identit
 The default for every rung but 1 and 4; this session builds it. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3.
 
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`, once.
-2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the reference product, the color and font line with hex values, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names the named or saved product, if any, the color and font line with hex values, the motion thesis, and an ASCII layout at 1440 and 390 wide.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing.
 4. **Read the build pass.** Read `references/build-pass.md` whole before the first product edit.
 5. **Build.** Build the whole page from the plan, around the chosen comp on rung 3, then run `references/build-pass.md`'s proof. Without a url, start the preview `references/stack.md` names.
-6. **Capture, look, fix once.** Run `node scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders` from this skill's directory, read both, list each fault against the plan, the reference product's finish and `references/build-pass.md`, and repair all in one pass.
+6. **Capture, look, fix once.** Run `node scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders` from this skill's directory, read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and repair all in one pass.
 7. **Finish on a fresh capture.** Rerun step 6's capture command only, with `--label final`, and read both captures; a page is done only on a capture after its last edit.
 
 A page that does not render reports the capture as blocked and names what went unchecked.

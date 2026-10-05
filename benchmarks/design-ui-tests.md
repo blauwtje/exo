@@ -17,7 +17,8 @@ Three fixed prompts check that design-ui keeps the quality and fullness of the b
 ## Checklist, per run
 
 - Only the scope form asked a question.
-- DESIGN.md holds the reference product, display font, body font and accent after the run.
+- DESIGN.md holds the display font, body font and accent after the run, and a product only when the prompt names one.
+- The form asked no product question, and every tab, question and option read in plain words.
 - The plan is at most 25 lines, each layout at most 8 lines per width.
 - Each font and the accent carry a clause naming this product and this user.
 - A pick seen in another project shows the warning on the color and font line, in the reply's language.

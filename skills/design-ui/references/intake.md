@@ -12,47 +12,53 @@ Settle what the run needs before it builds: the questions worth asking, where th
 
 ## Asking
 
-- A visual choice is never a terminal question, except the Reference question and option B, because a named color is not the seen color.
+- A visual choice is never a terminal question, except option B, because a named color is not the seen color.
 - Color, type, spacing, layout, motion, imagery and every other choice between looks is a visual choice.
-- A visual choice reaches the user as a sketch, as the Reference question, as one plain-words question after option B, or it is decided.
+- A visual choice reaches the user as a sketch, as one plain-words question after option B, or it is decided.
 - Name the decision an answer changes before asking anything; a question with no named decision is not asked.
 - Sort each question by one test: would the user answer it better by seeing it?
 - Scope, content, data and behavior are terminal questions, because a question about a visual topic is not a visual question.
 - Beyond the form and the offer, ask only while an open fact blocks a decision the brief, repository and Phase 1 cannot settle.
 - Name that decision inside the question.
 - Rungs 3, 5 and 6 of `## Route` show the completed scope as one form, after Phase 1 and before Direction.
-- The form sends, in this order, a single-select Users question, a multi-select Scope question, a single-select Reference question and a single-select Directions question.
+- The form sends, in this order, a single-select Users question, a multi-select Scope question and a single-select Directions question.
+- Ask no product or style question, because a product or style counts only when the user names one in the ask.
+- Users, Scope and Directions name the questions here; the user never sees these names.
+- Write each question's `header` tab in the conversation's language, at most 12 characters.
+- The tabs read Users "For whom", Scope "What's in", Directions "Designs", each written in the conversation's language.
+- Word every question and option in plain words for someone without design knowledge.
+- Use no jargon or abbreviation in a tab, question or option, such as scope, reference, directions or SLA, in any language.
 - The Users question comes first, because the user the screen serves decides its layout, density and main action.
-- Each Users option is one user Phase 1 evidence suggests, three or four, naming role, device, how often and main task.
+- Each Users option is one person Phase 1 evidence suggests, three or four, described in everyday words: who, on which device, how often, doing what.
 - Put the best-evidenced user first, as option A, and recommend it.
 - Each Scope option is one completed scope group from the inventory, at most four.
+- Name each Scope option by what the user will see on the screen, not by an inventory group label.
 - Reachable states and an app screen's fixed scope groups are never a Scope option, because every build carries them.
 - A Scope answer that ticks every option, ticks none, or says decide yourself builds every group.
 - A Scope answer that ticks some options builds the ticked groups plus every fixed group.
-- The Reference question, "Which product should it feel like?" in the conversation's language, offers Linear/Vercel, Stripe, Notion and Duolingo; Other takes any product.
 - Before the form, run `node <skill dir>/scripts/reference.mjs --root <repository>`; it prints the product saved in docs/design/DESIGN.md, or nothing.
-- A saved product drops the Reference question; state it in one line, "Look: <product>, from DESIGN.md", because each project keeps its own look.
-- An ask naming a product or style drops the Reference question and wins over the saved product.
-- Without a saved product, put the best-fitting product first, as option A, and recommend it.
-- Save each Reference answer, or the product or style the ask names, with `reference.mjs --set "<name>" --root <repository>`.
+- State a saved product in one line, "Look: <product>, from DESIGN.md", because each project keeps its own look.
+- A product or style the ask names wins over the saved product.
+- Run `reference.mjs --set "<name>" --root <repository>` only for a product or style the user named.
+- A named or saved product sets the mood, the nearest of the four in `## Mood to look` of the `phase-direction` reference.
+- Without one, choose that mood yourself from the user, the subject and any mood the ask names.
 - A `display-font`, `body-font` or `accent` in DESIGN.md's front matter is a saved pick: the plan reuses it, and shortlists only the picks missing.
 - After the plan names its picks, save each new one with `reference.mjs --display-font "<font>" --body-font "<font>" --accent "<color>" --root <repository>`.
 - Then run `node <skill dir>/scripts/picks.mjs --project <repository> --display "<font>" --body "<font>" --accent "<color>"`; it prints the count of other projects per pick.
-- Send the color and font line with the plan: the accent, display font and body font, each pick with a count above 0 followed by "also used in <n> earlier projects" in the conversation's language.
+- Before the first product edit, send the accent, display font and body font in one line with the plan, also when no product was named.
+- On that line, follow each pick with a count above 0 by "also used in <n> earlier projects" in the conversation's language.
 - A repeat warns and blocks nothing: ask no question about it, and keep the picks, because the user decides whether to steer.
 - A `picks.mjs` failure drops the warning, never the run, and the line says the earlier-project check did not run.
-- The picked product sets the mood, the nearest of the four in `## Mood to look` of the `phase-direction` reference.
-- The Directions question, "Directions first?" in the conversation's language, has the options 1, 2 and 3, in that order.
+- The Directions question asks "How many designs should I show you first?" in the conversation's language, with options 1, 2, 3 in order.
+- Word option 1 as building one design right away, and options 2 and 3 as showing that many to choose from.
 - Directions 1 keeps the run on its rung: one direction, no sketch.
 - Directions 2 or 3 asks to choose: rung 3 of `## Route` follows with that many directions, taking option A without the offer.
 - Those directions reach the user as first-screen comps in the picker under the `direction-preview` reference, never as a sketch, because a sketch hides how a direction looks as a product.
-- Rung 5 drops the Reference and Directions questions, because its settled identity already fixes the look.
+- Rung 5 drops the Directions question, because its settled identity already fixes the look.
 - An ask that names its user drops the Users question.
-- An ask that names a mood drops the Reference question.
 - An ask that says decide yourself drops the whole form.
 - Send no form when no answer can arrive, as in a headless run.
 - Without a Scope answer, build every group, named in one line before Direction.
-- Without a Reference answer off rung 5, take the named product, else the saved one, else the best fit, stated in one line.
 - Without a Users answer, or on decide yourself, take the user the ask names, else option A's user.
 - Without a Directions answer, or on decide yourself, build one direction.
 - Before Direction, state the user in one line, role, device, how often and main task, and write that line to `$RUN/user.md`.

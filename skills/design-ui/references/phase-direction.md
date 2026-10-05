@@ -13,14 +13,14 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Tag each major layout choice on its plan line with the Laws of UX rule deciding it: Hick, Fitts, Jakob, Von Restorff or another.
 - Before the plan, shortlist three faces and three accent hues, then drop the first of each, since the first to mind is the house default.
 - Give the display font, the body font and the accent hue one plan clause each on why it fits this product and this user.
-- Derive faces and hues from the reference product, the subject and the user, never from a seed.
+- Derive faces and hues from the subject, the user and a named or saved product, never from a seed.
 - Draw each plan ASCII layout in at most 8 lines per width, because the plan holds at most 25 lines.
 - Every rung other than 3 produces one direction, written as the skill's plan, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
 
 ## Mood to look
 
-- Take the reference product's finish, density and motion, never its brand, logo or exact layout, because a look-alike borrows that brand.
+- Take a named or saved product's finish, density and motion, never its brand, logo or exact layout, because a look-alike borrows that brand.
 - Dare in one place: name one standout element the viewer remembers, such as a drenched KPI band, because an all-equal page reads generic.
 - Color with confidence: tint the ground and surfaces from the palette and build depth from surface steps, not white boxes carrying one accent.
 - Vary block shape by content job: a band, an open table, an inset panel and a card differ, not one card anatomy repeated.
