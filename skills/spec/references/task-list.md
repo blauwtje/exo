@@ -21,6 +21,7 @@ The task list names the goal, basis, proof and one line per task for a zero-cont
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one bare command>
 ```
 
+- A `Files:` path ending in `/` covers every path under that folder.
 - `Proof:` is one bare command showing this task alone landed, never the whole suite, which verify runs once.
 - A task whose result runs proves it on the project's real input with its own command, else a builder's script using only its tools, never a test alone.
 - An MCP `Proof:` or Success criterion reads `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; the session calls it, never a shell.

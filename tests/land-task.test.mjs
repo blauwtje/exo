@@ -873,3 +873,19 @@ test('--check on an mcp: Proof task reads the deferred line', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, 'Report OK: Task 1\n');
 });
+
+test('a Files: entry ending in / covers every changed path under that folder', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Snapshots', files: ['- Create: `src/snaps/`'], subject: 'test(app): snapshots' })
+  ] });
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/fixture.md': plan });
+  git(root, 'config', 'user.name', 'exo-test');
+  git(root, 'config', 'user.email', 'exo-test@example.com');
+  git(root, 'config', 'commit.gpgsign', 'false');
+  await fs.mkdir(path.join(root, 'src/snaps/deep'), { recursive: true });
+  await fs.writeFile(path.join(root, 'src/snaps/a.png'), 'a');
+  await fs.writeFile(path.join(root, 'src/snaps/deep/b.png'), 'b');
+  const output = landTask({ planPath: path.join(root, 'docs/plans/fixture.md'), planText: plan, number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.equal(git(root, 'status', '--porcelain'), '');
+});
