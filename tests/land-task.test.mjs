@@ -814,3 +814,62 @@ test('an unprefixed known MCP tool Proof is never spawned and lands deferred lik
   await assertRefused(root, planPath, [], /reads "run_playtest mode=play; touch spawned\.txt: fail", yet only the session runs an MCP tool Proof/);
   await assert.rejects(fs.access(path.join(root, 'spawned.txt')));
 });
+
+// A report refusal ends with the whole expected layout, so one round fixes
+// every report fault.
+function assertLayout(stderr, { deferred = false, command = 'node --test tests/app.test.mjs' } = {}) {
+  assert.match(stderr, /^Expected under Proof: in .+:$/m);
+  const outcome = deferred ? 'deferred' : 'pass';
+  assert.ok(stderr.includes(`\n${command}: ${outcome}`), stderr);
+  assert.equal(stderr.includes('<last output lines of that exact command>'), !deferred, stderr);
+}
+
+test('every report refusal ends with the expected layout filled with the task command', async () => {
+  const { root, planPath } = await compactCheckout();
+  const refuse = async (extraArgs) => (await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, ...extraArgs], { cwd: root })).stderr;
+  assertLayout(await refuse([]));
+  await writeReport(root, 'Proof: fine\n');
+  assertLayout(await refuse([]));
+  await writeReport(root, 'node --test tests/app.test.mjs: skipped\n  # tests 0\n');
+  assertLayout(await refuse([]));
+  await writeReport(root, 'node --test tests/app.test.mjs: unclear\n  # tests 1\n');
+  assertLayout(await refuse([]));
+  await writeReport(root, 'node --test tests/app.test.mjs: pass\n\nUnresolved: none\n');
+  assertLayout(await refuse([]));
+});
+
+test('an mcp: Proof refusal ends with the deferred layout and no output lines', async () => {
+  const { root, planPath } = await compactCheckout(MCP_PLAN);
+  await writeReport(root, 'Proof:\nnpm run lint: pass\n  0 problems\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 1);
+  assertLayout(result.stderr, { deferred: true, command: 'mcp:run_playtest mode=play' });
+});
+
+test('--check validates the stray paths and the report, and commits nothing', async () => {
+  const { root, planPath } = await compactCheckout();
+  const head = git(root, 'rev-parse', 'HEAD');
+  const check = (...extra) => run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--check', ...extra], { cwd: root });
+  const missing = await check();
+  assert.equal(missing.code, 1);
+  assert.match(missing.stderr, /no build report/);
+  await writeReport(root, PASS_REPORT);
+  const ok = await check();
+  assert.equal(ok.code, 0, ok.stderr);
+  assert.equal(ok.stdout, 'Report OK: Task 1\n');
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.match(git(root, 'status', '--porcelain'), /src\/app\.js/);
+  await assert.rejects(fs.access(path.join(root, '.exo', 'land-gate-compact.json')));
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  const stray = await check();
+  assert.equal(stray.code, 1);
+  assert.match(stray.stderr, /outside Files: `src\/extra\.js`/);
+});
+
+test('--check on an mcp: Proof task reads the deferred line', async () => {
+  const { root, planPath } = await compactCheckout(MCP_PLAN);
+  await writeReport(root, 'Proof:\nmcp:run_playtest mode=play: deferred\n');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--check'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, 'Report OK: Task 1\n');
+});
