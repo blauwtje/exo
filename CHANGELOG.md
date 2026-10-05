@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **design-ui's one pass builds and repairs the page in an `exo:build-ui` page scope again, so the main session stays under its context limit.**
+
+### Changed
+
+- design-ui's one pass hands the page build and its one repair to a single Opus `exo:build-ui` page scope that reads `build-pass.md` first and returns a short report, because the main session's own page writes added about 68k tokens and pushed a benchmark run to 157k context.
+
+### Fixed
+
+- design-ui sends the color and font line that `picks.mjs` now prints, "also used in" warning included, before the first edit, so a repeated pick no longer surfaces only in the final reply.
+- design-ui's font and accent clauses name this user and this product, and a font or accent swapped after the plan gets a new clause and a rewritten plan line.
+- check-ui prints its summary in at most 2 lines and writes the per-type lines to its report file.
+
 ## 0.86.1 - 2026-10-05
 
 ### Fixed
