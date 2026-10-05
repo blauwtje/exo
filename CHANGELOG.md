@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `exo:build-task` gets a 60k soft budget, and a smaller task's dispatch drops to no less than 45k/75k, because the 25k to 40k it got stopped about one build-task in four before its first edit.
+
 ## 0.88.0 - 2026-10-05
 
 ### Added
