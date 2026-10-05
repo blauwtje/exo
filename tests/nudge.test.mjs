@@ -1,5 +1,5 @@
-// The nudge hook stays silent unless a prompt carries a correction marker,
-// logs every fire with the marker that fired it, and never blocks a prompt.
+// The nudge hook speaks on every main-thread prompt that holds words of the
+// user's own, in any language, logs every fire, and never blocks a prompt.
 // Its approve mode allows the book command it prints and no other.
 
 import assert from 'node:assert/strict';
@@ -35,52 +35,70 @@ function logPath(directory) {
   return path.join(directory, 'exo', 'memory', path.basename(directory), 'nudge-log.jsonl');
 }
 
-test('a prompt carrying a marker gets the book command and one log line', async () => {
+test('a prompt gets the book command and one log line', async () => {
   const { directory, environment } = await nudgeFixture();
-  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'no, the verifier reports 17 checks' }, environment);
+  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'the verifier reports 17 checks' }, environment);
   assert.equal(result.code, 0);
   const output = JSON.parse(result.stdout);
   assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+  assert.match(output.hookSpecificOutput.additionalContext, /only if this prompt corrects a repository fact/);
   assert.match(output.hookSpecificOutput.additionalContext, /book --claim/);
   assert.match(output.hookSpecificOutput.additionalContext, /--session "s1"/);
   assert.match(output.hookSpecificOutput.additionalContext, /no password, token or key/);
+  assert.match(output.hookSpecificOutput.additionalContext, /otherwise say nothing about this/);
   const entries = (await fs.readFile(logPath(directory), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
   assert.equal(entries.length, 1);
   assert.equal(entries[0].event, 'nudged');
-  assert.equal(entries[0].marker, '\\bno,');
-  assert.equal(entries[0].prompt, 'no, the verifier reports 17 checks');
+  assert.equal(entries[0].session, 's1');
+  assert.equal(entries[0].prompt, 'the verifier reports 17 checks');
 });
 
-test('a Dutch correction fires the same as an English one', async () => {
+test('a prompt in another language fires the same as an English one', async () => {
   const { directory, environment } = await nudgeFixture();
-  const dutchCorrections = [
-    'nee, de verifier meldt 17 checks',
-    'dat klopt niet, het zijn er 17',
-    'niet waar, het zijn er 17',
-    'fout: het zijn er 17',
-    'eigenlijk zijn het er 17'
+  for (const prompt of ['検証ツールのチェックは17件です', 'Der Prüfer meldet 17 Checks']) {
+    const result = await runNudge([], { session_id: 's1', cwd: directory, prompt }, environment);
+    assert.equal(result.code, 0, prompt);
+    assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /book --claim/, prompt);
+  }
+});
+
+test('a prompt with no words of the user\'s own is silent and writes nothing', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const wordless = [
+    '',
+    '   \n\t ',
+    '?',
+    '/clear',
+    '  /exo:start  ',
+    '<command-message>exo:start</command-message>\n<command-name>/exo:start</command-name>\n<command-args></command-args>',
+    '<command-name>/clear</command-name>\n<command-message>clear</command-message>\n<command-args>  </command-args>'
   ];
-  for (const prompt of dutchCorrections) {
+  for (const prompt of wordless) {
+    const result = await runNudge([], { session_id: 's1', cwd: directory, prompt }, environment);
+    assert.equal(result.code, 0, prompt);
+    assert.equal(result.stdout, '', prompt);
+  }
+  await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
+});
+
+test('a slash command with arguments fires, in either form', async () => {
+  const { directory, environment } = await nudgeFixture();
+  const withArguments = [
+    '/exo:remember the verifier reports 17 checks',
+    '<command-message>exo:remember</command-message>\n<command-name>/exo:remember</command-name>\n<command-args>the verifier reports 17 checks</command-args>'
+  ];
+  for (const prompt of withArguments) {
     const result = await runNudge([], { session_id: 's1', cwd: directory, prompt }, environment);
     assert.equal(result.code, 0, prompt);
     assert.notEqual(result.stdout, '', prompt);
   }
 });
 
-test('an ordinary Dutch sentence is silent and writes nothing', async () => {
+test('a prompt that is not a string is silent', async () => {
   const { directory, environment } = await nudgeFixture();
-  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'voeg een test toe voor de budgetcontrole' }, environment);
+  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 17 }, environment);
   assert.equal(result.code, 0);
   assert.equal(result.stdout, '');
-  await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
-});
-
-test('a prompt carrying no marker is silent and writes nothing', async () => {
-  const { directory, environment } = await nudgeFixture();
-  const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'add a test for the budget check' }, environment);
-  assert.equal(result.code, 0);
-  assert.equal(result.stdout, '');
-  await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
 });
 
 test('a delegate is never nudged', async () => {
@@ -109,7 +127,7 @@ test('a background-agent completion notice is silent even when its result reads 
   await assert.rejects(fs.readFile(logPath(directory), 'utf8'), { code: 'ENOENT' });
 });
 
-test('a real correction still nudges once the notification marker is gone', async () => {
+test('the same words fire once the notification wrapper is gone', async () => {
   const { directory, environment } = await nudgeFixture();
   const result = await runNudge([], { session_id: 's1', cwd: directory, prompt: 'actually the old name was wrong, it is config-loader' }, environment);
   assert.equal(result.code, 0);
@@ -185,11 +203,10 @@ test('approve stays silent on a malformed hook payload', async () => {
 test('stats counts fires against bookings', async () => {
   const { directory, environment } = await nudgeFixture();
   await runNudge([], { session_id: 's1', cwd: directory, prompt: 'no, it is 17' }, environment);
-  await runNudge([], { session_id: 's2', cwd: directory, prompt: 'actually the lock is 3889' }, environment);
+  await runNudge([], { session_id: 's2', cwd: directory, prompt: 'the lock is 3889' }, environment);
   await fs.appendFile(logPath(directory), `${JSON.stringify({ date: '2026-09-19', event: 'booked', session: 's1', claim: 'the verifier reports 17 checks' })}\n`);
   const result = await runNudge(['stats', '--cwd', directory], '', environment);
-  assert.match(result.stdout, /^2 nudged, 1 booked, 50% hit rate$/m);
-  assert.match(result.stdout, /\\bno,: 1/);
+  assert.equal(result.stdout, '2 nudged, 1 booked, 50% hit rate\n');
 });
 
 test('stats counts a booking as a hit only when a nudge in its session came first', async () => {

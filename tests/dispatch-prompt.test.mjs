@@ -53,7 +53,7 @@ function contextOf(result) {
 
 test('a prompt no handler answers prints nothing', async () => {
   const { env, prompt } = await dispatchFixture();
-  const result = await runDispatch(prompt('hello'), env);
+  const result = await runDispatch(prompt('/clear'), env);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, '');
 });
@@ -68,7 +68,7 @@ test('one speaking handler prints its string alone', async () => {
 test('nudge and expand-reply strings join in that order', async () => {
   const { env, prompt } = await dispatchFixture(JSON.stringify({ replies: 'terse' }));
   const context = contextOf(await runDispatch(prompt('no, that is wrong'), env));
-  const nudgeAt = context.indexOf('exo: this prompt may correct a repository fact');
+  const nudgeAt = context.indexOf('exo: only if this prompt corrects a repository fact');
   const expandAt = context.indexOf('replies=terse:');
   assert.ok(nudgeAt >= 0, 'the nudge speaks');
   assert.ok(expandAt > nudgeAt, 'the reminder follows the nudge');

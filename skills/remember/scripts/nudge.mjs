@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// UserPromptSubmit hook: a prompt carrying a correction marker gets one
-// sentence naming the book command, and every fire is logged with the marker
-// that fired it. The hook decides nothing. It cannot tell a correction of a
-// repository fact from a correction of the task, so the session reads the
-// prompt and books only the first kind, and /exo:remember books what this misses.
+// UserPromptSubmit hook: every main-thread prompt that could hold a
+// correction gets one sentence naming the book command, and every fire is
+// logged. The hook decides nothing. No word list tells a correction apart in
+// every language the user may type, so the session reads the prompt, books
+// only a correction of a repository fact, and /exo:remember books what it misses.
 //
 //   node nudge.mjs                UserPromptSubmit hook: stdin is the hook JSON
 //   node nudge.mjs approve        PreToolUse hook on Bash: allows that book command
@@ -35,43 +35,31 @@ const BOOK_COMMAND = `node "${MEMORY_SCRIPT}" book`;
 // and nothing else. A quote that needs one of them gets the permission prompt.
 const BOOK_ARGUMENTS = /^(?: --(?:claim|quote|session) "[^"$`\\\r\n]*")+$/;
 
-// Measured against 261 prompts typed in this repository's own history: this
-// list fires on about 4% of them, and roughly one fire in ten is a correction.
-// A false fire costs one sentence the session ignores; a miss costs the fact
-// outright, so the list starts wide and nudge-log.jsonl records which entry
-// fired, which is the data a later change narrows it on.
-const MARKERS = [
-  /\bno,/i,
-  /\bnope\b/i,
-  /\bactually\b/i,
-  /\bwrong\b/i,
-  /\bincorrect\b/i,
-  /\bnot true\b/i,
-  /\bthat'?s not\b/i,
-  /\bisn'?t\b/i,
-  /\bis not\b/i,
-  /\bdoesn'?t\b/i,
-  /\bdoes not\b/i,
-  /\bmistaken\b/i,
-  /\bnee,/i,
-  /\bdat klopt niet\b/i,
-  /\bniet waar\b/i,
-  /\bfout:/i,
-  /\beigenlijk\b/i
-];
-
-// How much of the prompt the log keeps: enough to judge a false fire while
-// tuning the list, short enough that the log stays cheap to read.
+// How much of the prompt the log keeps: enough to judge a fire that booked
+// nothing, short enough that the log stays cheap to read.
 const LOGGED_PROMPT_CHARS = 160;
 
-function firedMarker(prompt) {
-  return MARKERS.find((marker) => marker.test(prompt)) ?? null;
+// A prompt with no letter or digit, such as an empty one or a lone `?`, holds
+// no fact to correct, whatever the language.
+const HAS_WORD = /[\p{L}\p{N}]/u;
+
+// A slash command with no arguments carries no words of the user's own: typed
+// as `/clear`, or as the harness's tag form with an empty <command-args>.
+const BARE_SLASH_COMMAND = /^\/\S+$/;
+const COMMAND_TAG = /<command-(message|name)>[^<]*<\/command-\1>/g;
+const EMPTY_COMMAND_ARGS = /<command-args>\s*<\/command-args>/;
+
+function isBareCommand(prompt) {
+  const text = prompt.trim();
+  if (BARE_SLASH_COMMAND.test(text)) return true;
+  if (!text.includes('<command-name>') || !EMPTY_COMMAND_ARGS.test(text)) return false;
+  return text.replace(COMMAND_TAG, '').replace(EMPTY_COMMAND_ARGS, '').trim() === '';
 }
 
 // A background-agent completion arrives as a prompt, not as user input: the
 // harness wraps it in this marker or a <task-notification> block, and its
-// result text can carry a correction word (wrong, actually, ...) that names
-// no fact this session stated, so the markers never run against it.
+// result text can read like a correction yet names no fact the user stated,
+// so it is never nudged.
 const HARNESS_NOTIFICATION = /\[SYSTEM NOTIFICATION - NOT USER INPUT\]|<task-notification>/;
 
 export function nudge(hookInput) {
@@ -79,19 +67,14 @@ export function nudge(hookInput) {
   // cannot book the session's correction; only the main thread is nudged.
   if (typeof hookInput.agent_id === 'string') return null;
   if (typeof hookInput.prompt !== 'string') return null;
-  if (HARNESS_NOTIFICATION.test(hookInput.prompt)) return null;
+  const { prompt } = hookInput;
+  if (!HAS_WORD.test(prompt) || isBareCommand(prompt)) return null;
+  if (HARNESS_NOTIFICATION.test(prompt)) return null;
   const session = typeof hookInput.session_id === 'string' ? hookInput.session_id : '';
   const cwd = typeof hookInput.cwd === 'string' && hookInput.cwd !== '' ? hookInput.cwd : process.cwd();
-  const marker = firedMarker(hookInput.prompt);
-  if (marker === null) return null;
-  appendNudgeLog(cwd, {
-    event: 'nudged',
-    session,
-    marker: marker.source,
-    prompt: hookInput.prompt.slice(0, LOGGED_PROMPT_CHARS)
-  });
+  appendNudgeLog(cwd, { event: 'nudged', session, prompt: prompt.slice(0, LOGGED_PROMPT_CHARS) });
   const command = `${BOOK_COMMAND} --claim "<one sentence>" --quote "<the user's words, verbatim>" --session "${session}"`;
-  const additionalContext = `exo: this prompt may correct a repository fact. When it does, book it with \`${command}\`, quoting no password, token or key. When it corrects no repository fact, ignore this line and write nothing about it.`;
+  const additionalContext = `exo: only if this prompt corrects a repository fact, run \`${command}\`, quoting no password, token or key; otherwise say nothing about this.`;
   return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext } };
 }
 
@@ -122,8 +105,8 @@ function readLog(cwd) {
 
 // A booking is a hit only when a nudge in its session came before it and no
 // earlier booking already answered that nudge. memory.mjs logs every booking,
-// also one /exo:remember made with no nudge, and counting those would tune the
-// marker list on bookings the markers never caused and push the rate past 100%.
+// also one /exo:remember made with no nudge, and counting those would credit
+// the nudge with bookings it never caused and push the rate past 100%.
 function countHits(entries) {
   const openNudges = new Map();
   let hits = 0;
@@ -144,10 +127,6 @@ function stats(cwd) {
   const hits = countHits(entries);
   const rate = nudged.length === 0 ? 0 : Math.round((100 * hits) / nudged.length);
   console.log(`${nudged.length} nudged, ${hits} booked, ${rate}% hit rate`);
-  const perMarker = new Map();
-  for (const entry of nudged) perMarker.set(entry.marker, (perMarker.get(entry.marker) ?? 0) + 1);
-  const ranked = [...perMarker].sort((first, second) => second[1] - first[1]);
-  for (const [marker, count] of ranked) console.log(`  ${marker}: ${count}`);
 }
 
 if (isMain(import.meta.url)) {
