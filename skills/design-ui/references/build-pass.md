@@ -49,6 +49,9 @@ The numeric floor:
 
 A trope stays only when a `contract-selected.json` field, the plan or the brief's wording justifies it and the reason is recorded.
 
+- A font or accent swapped after the plan, for a trope, a capture fault or a critique, gets a new plan clause naming this user and this product.
+- Before the edit that applies a swap, rewrite the plan's color and font line to the new pick and drop the old pick's clause, because the plan must explain what was built.
+
 `scripts/check-ui.mjs` reports the code-detectable ones:
 
 - `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`.

@@ -12,7 +12,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Order the layout by those tasks: the first takes the most prominent region and the nearest controls, the third the least space.
 - Tag each major layout choice on its plan line with the Laws of UX rule deciding it: Hick, Fitts, Jakob, Von Restorff or another.
 - Before the plan, shortlist three faces and three accent hues, then drop the first of each, since the first to mind is the house default.
-- Give the display font, the body font and the accent hue one plan clause each on why it fits this product and this user.
+- Give the display font, the body font and the accent hue one plan clause each naming this user and this product, as in "for <user> <task> in <product>", because a reason that fits any page is no reason.
 - Derive faces and hues from the subject, the user and a named or saved product, never from a seed.
 - Draw each plan ASCII layout in at most 8 lines per width, because the plan holds at most 25 lines.
 - Every rung other than 3 produces one direction, written as the skill's plan, with no variants, no offer, and no selection gate.
