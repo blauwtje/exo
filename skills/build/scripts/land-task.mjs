@@ -6,8 +6,9 @@
 // block nor reads the log. A compact task lands only on a build report whose
 // `Proof:` command, or with none its Success-criterion test, passed, and that
 // lists no command as failing under Proof; the printout carries that output. A
-// `Proof: mcp:<tool> <args>` lands on its `<command>: deferred` line instead and
-// prints `Pending: <command>` for the session to run. Above eight tasks each `Choice:` line of the
+// `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short name,
+// lands on its `<command>: deferred` line instead and prints `Pending: mcp:<tool> <args>`
+// for the session to run. Above eight tasks each `Choice:` line of the
 // report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
 // with the given subject, no task, plan or trailer needed. A task whose
@@ -23,6 +24,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { mcpToolCall } from '#mcp-tool-call';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
@@ -188,29 +190,31 @@ function outcomesOf(command, lines) {
   });
 }
 
-// A `Proof: mcp:<tool> <args>` names a tool of an MCP server only the session
-// holds, so this returns that command, or null for a Bash proof.
+// A `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short
+// name, names a tool of an MCP server only the session holds, so this returns
+// that call in its `mcp:` form, or null for a Bash proof.
 export function mcpProofOf(task) {
   if (task.proof === null) return null;
-  const command = task.proof.replace(/^`(.*)`$/, '$1');
-  return command.startsWith('mcp:') ? command : null;
+  return mcpToolCall(task.proof.replace(/^`(.*)`$/, '$1'));
 }
 
-// The builder holds no MCP tool, so an `mcp:` Proof lands on the report's
-// `<command>: deferred` line, never a pass it could not have seen; the session
-// runs the tool after the landing.
-export function deferredProofOf(task, command, reportText, reportPath) {
+// The builder holds no MCP tool, so an MCP Proof lands on the report's
+// `<command>: deferred` line, the command as the plan wrote it or in its `mcp:`
+// form, never a pass it could not have seen; the session runs the tool after
+// the landing, so this returns the `mcp:` form.
+export function deferredProofOf(task, call, reportText, reportPath) {
   const lines = reportLinesOf(task, reportText, reportPath);
-  const outcomes = outcomesOf(command, lines);
+  const written = provedCommand(task, lines);
+  const outcomes = [...new Set([written, call])].flatMap((command) => outcomesOf(command, lines).map((entry) => ({ ...entry, command })));
   if (outcomes.length === 0) {
-    throw new LandingError(`Task ${task.number}: the build report has no "${command}: deferred" line`);
+    throw new LandingError(`Task ${task.number}: the build report has no "${written}: deferred" line`);
   }
   const undeferred = outcomes.find(({ outcome }) => !/^deferred\b/.test(outcome));
   if (undeferred !== undefined) {
-    throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${undeferred.outcome}", yet only the session runs an mcp: Proof; report it deferred`);
+    throw new LandingError(`Task ${task.number}: the build report reads "${undeferred.command}: ${undeferred.outcome}", yet only the session runs an MCP tool Proof; report it deferred`);
   }
   refuseFailedCommand(task, lines);
-  return command;
+  return call;
 }
 
 export function proofOf(task, reportText, reportPath) {
@@ -404,8 +408,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.
-  const mcpProof = task.compact ? mcpProofOf(task) : null;
-  const pending = mcpProof === null ? null : deferredProofOf(task, mcpProof, reportText, reportPath);
+  const mcpCall = task.compact ? mcpProofOf(task) : null;
+  const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, reportText, reportPath);
   const proof = task.compact && pending === null ? proofOf(task, reportText, reportPath) : null;
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);

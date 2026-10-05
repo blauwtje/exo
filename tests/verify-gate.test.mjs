@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, filesUnderGlobs, findStrayPaths, isMcpProof, manualChecks, mcpToolCall, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -131,23 +131,6 @@ test('a Proof: with a backtick reads as prose and is skipped, never handed to a 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.ok(result.stdout.split('\n')[0].startsWith('SKIP Task 1'));
-});
-
-test('isMcpProof reads only an mcp:<tool> Proof as an MCP tool call', () => {
-  assert.equal(isMcpProof('mcp:run_playtest mode=play'), true);
-  assert.equal(isMcpProof('mcp:'), false);
-  assert.equal(isMcpProof('run_playtest mode=play'), false);
-  assert.equal(isMcpProof('node -e "1" mcp:run_playtest'), false);
-});
-
-test('mcpToolCall reads a prefixed call or a known MCP tool as its mcp: form, else null', () => {
-  assert.equal(mcpToolCall('mcp:run_playtest mode=play'), 'mcp:run_playtest mode=play');
-  assert.equal(mcpToolCall('run_playtest mode=play'), 'mcp:run_playtest mode=play');
-  assert.equal(mcpToolCall('screen_capture'), 'mcp:screen_capture');
-  assert.equal(mcpToolCall('build_map spec=arena'), 'mcp:build_map spec=arena');
-  assert.equal(mcpToolCall('get_console_output'), 'mcp:get_console_output');
-  assert.equal(mcpToolCall('run_playtest_exo_missing mode=play'), null);
-  assert.equal(mcpToolCall('npm run check'), null);
 });
 
 test('unmarkedMcpTool names a snake_case first word the shell could not find, else null', () => {

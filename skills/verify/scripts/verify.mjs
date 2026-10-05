@@ -45,6 +45,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
 import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { mcpToolCall } from '#mcp-tool-call';
 import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-reviewer.mjs';
 
 // The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
@@ -68,16 +69,6 @@ const BACKTICKED_COMMAND = /`([^`]+)`/;
 // line"), not a command; running it through a shell would hand the shell
 // that backtick pair as its own command substitution.
 const PROSE_PROOF = /`/;
-// A Proof naming an MCP tool by its short name, the part after `mcp__<server>__`.
-const MCP_PROOF = /^mcp:\S/;
-// MCP tool short names a Proof or Success criterion may name without the `mcp:`
-// prefix. `mcp:` stays the rule; this list is only the fallback for an unprefixed
-// command: roblox-kit's tools, then Roblox Studio's.
-const KNOWN_MCP_TOOLS = new Set([
-  'run_playtest', 'build_map', 'check_map', 'capture_zones',
-  'search_game_tree', 'user_mouse_input', 'execute_luau', 'screen_capture', 'start_stop_play',
-  'get_console_output', 'character_navigation', 'user_keyboard_input', 'script_read', 'multi_edit'
-]);
 // A bare snake_case first word, the shape of an MCP tool's short name.
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
 // The exit code a POSIX shell returns for a command it cannot find.
@@ -87,17 +78,6 @@ const COMMAND_NOT_FOUND = 127;
 export function runnableProof(proof) {
   if (proof === null || PROSE_PROOF.test(proof)) return null;
   return proof;
-}
-
-/** True when the Proof names an MCP tool as `mcp:<tool> <args>`, which the session calls instead of a shell. */
-export function isMcpProof(command) {
-  return MCP_PROOF.test(command);
-}
-
-/** The command as an `mcp:<tool> <args>` call when it is one, prefixed or starting with a known MCP tool, else null. */
-export function mcpToolCall(command) {
-  if (isMcpProof(command)) return command;
-  return KNOWN_MCP_TOOLS.has(command.split(/\s/, 1)[0]) ? `mcp:${command}` : null;
 }
 
 /**

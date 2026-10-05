@@ -741,7 +741,7 @@ test('not done without proof: an mcp: Proof with no deferred line, a claimed pas
   await writeReport(root, 'Landed: src/app.js\nProof:\n- `npm run lint`: pass\n  0 problems\nUnresolved: none\n');
   await assertRefused(root, planPath, [], /no "mcp:run_playtest mode=play: deferred" line/);
   await writeReport(root, 'Proof:\nmcp:run_playtest mode=play: pass\n  playtest ok\n');
-  await assertRefused(root, planPath, [], /reads "mcp:run_playtest mode=play: pass", yet only the session runs an mcp: Proof/);
+  await assertRefused(root, planPath, [], /reads "mcp:run_playtest mode=play: pass", yet only the session runs an MCP tool Proof/);
   await writeReport(root, 'Proof:\nmcp:run_playtest mode=play: deferred\nnpm test: fail\n  ✖ greet\nUnresolved: none\n');
   await assertRefused(root, planPath, [], /lists "npm test: fail" under Proof, no clear pass/);
   await assertRefused(root, planPath, ['--report', path.join(root, 'missing.md')], /no build report/);
@@ -753,4 +753,28 @@ test('an mcp: Proof lands through the CLI with its Pending line', async () => {
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Pending: mcp:run_playtest mode=play$/m);
+});
+
+// A Proof starting with a known MCP tool's short name, written without `mcp:`,
+// is the same session-only call: never spawned, landed on a deferred line in
+// the plan's own form or the `mcp:` one, and pending in its `mcp:` form.
+const UNPREFIXED_MCP_PLAN = compactPlanFixture({ tasks: [
+  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'run_playtest mode=play; touch spawned.txt' })
+] });
+
+test('an unprefixed known MCP tool Proof is never spawned and lands deferred like an mcp: Proof', async () => {
+  for (const written of ['run_playtest mode=play; touch spawned.txt', 'mcp:run_playtest mode=play; touch spawned.txt']) {
+    const { root, planPath } = await compactCheckout(UNPREFIXED_MCP_PLAN);
+    const report = `Landed: src/app.js\nProof:\n- \`${written}\`: deferred\nUnresolved: none\n`;
+    const output = landTask({ planPath, planText: UNPREFIXED_MCP_PLAN, number: 1, root, reportText: report });
+    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nPending: mcp:run_playtest mode=play; touch spawned\.txt\nLanded: 1$/m);
+    await assert.rejects(fs.access(path.join(root, 'spawned.txt')));
+    assert.equal(git(root, 'status', '--porcelain'), '');
+  }
+  const { root, planPath } = await compactCheckout(UNPREFIXED_MCP_PLAN);
+  await writeReport(root, 'Proof:\nnpm run lint: pass\n  0 problems\n');
+  await assertRefused(root, planPath, [], /no "run_playtest mode=play; touch spawned\.txt: deferred" line/);
+  await writeReport(root, 'Proof:\nrun_playtest mode=play; touch spawned.txt: fail\n  bash: run_playtest: command not found\n');
+  await assertRefused(root, planPath, [], /reads "run_playtest mode=play; touch spawned\.txt: fail", yet only the session runs an MCP tool Proof/);
+  await assert.rejects(fs.access(path.join(root, 'spawned.txt')));
 });

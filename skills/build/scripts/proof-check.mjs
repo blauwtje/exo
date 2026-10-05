@@ -23,6 +23,7 @@ import path from 'node:path';
 import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
+import { mcpToolCall } from '#mcp-tool-call';
 
 const BUILD_SKILL = /(^|:)build$/i;
 const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
@@ -269,7 +270,9 @@ function proofProblem(proof, calls, writtenPaths) {
   const quoted = `The Proof line "${proof.line.slice(0, 80)}"`;
   if (proof.command === null) return `${quoted} has no "->" between its command and output.`;
   if (TEST_RUNNER_DENYLIST.test(proof.command)) return `${quoted} names a test runner, not the product.`;
-  const bashOutput = proof.command.startsWith('mcp:') ? undefined : calls.bash.get(proof.command);
+  // A Proof naming an MCP tool, prefixed or known, is matched against that
+  // tool's calls only, never a Bash call the shell could not run.
+  const bashOutput = mcpToolCall(proof.command) === null ? calls.bash.get(proof.command) : undefined;
   if (bashOutput !== undefined) {
     if (proofNamesWrittenInput(proof.command, writtenPaths)) {
       return `${quoted} ran the product on input this session wrote, not the repository's or the user's real input.`;

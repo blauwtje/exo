@@ -11,6 +11,7 @@
     "#config-directory": "./lib/config-directory.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",
+    "#mcp-tool-call": "./lib/mcp-tool-call.mjs",
     "#memory-store": "./lib/memory-store.mjs",
     "#model-kinds": "./lib/model-kinds.mjs",
     "#page-chrome": "./lib/page-chrome.mjs",

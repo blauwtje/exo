@@ -285,6 +285,28 @@ test('passes bulleted arrow Proof lines an MCP tool call backs', () => {
   assert.equal(stopOutput({ transcript_path: file }), '');
 });
 
+test('matches an unprefixed known MCP tool Proof against that tool\'s calls, never a Bash run of it', () => {
+  const failedBash = [bashCall('toolu_bash1', 'run_playtest mode=play'), bashResult('toolu_bash1', 'bash: run_playtest: command not found')];
+  const report = finalReport('**Done:** shop built.\nProof: run_playtest mode=play -> "passed":true');
+  const backed = transcript([
+    SKILL_CALL,
+    ...failedBash,
+    mcpCall('toolu_mcp1', 'mcp__plugin_kit_studio__run_playtest'),
+    bashResult('toolu_mcp1', '{"passed":true}'),
+    report
+  ]);
+  assert.equal(stopOutput({ transcript_path: backed }), '');
+  const bashOnly = transcript([
+    SKILL_CALL,
+    bashCall('toolu_bash1', 'run_playtest mode=play'),
+    bashResult('toolu_bash1', '"passed":true'),
+    report
+  ]);
+  const result = JSON.parse(stopOutput({ transcript_path: bashOnly }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /names a command or MCP tool this build turn never ran/);
+});
+
 test('blocks an MCP Proof whose output is not in that tool\'s result', () => {
   const file = transcript([
     SKILL_CALL,
