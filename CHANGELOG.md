@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- verify hands a task Proof that starts with a known MCP tool name but lacks the `mcp:` prefix to the session as a `SESSION Task <n>` line, as it already did for the Success criterion, and counts it with its `mcp:` form when it repeats.
+
+### Changed
+
+- verify's fallback list of known MCP tools adds roblox-kit's `build_map`, `check_map` and `capture_zones` and Studio's `start_stop_play`, `get_console_output`, `character_navigation`, `user_keyboard_input`, `script_read` and `multi_edit`; `mcp:<tool> <args>` stays the rule.
+
 ## 0.83.3 - 2026-10-05
 
 ### Changed
