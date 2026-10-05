@@ -225,6 +225,7 @@ function claimsDone(text) {
 // feedback row holding it is a proof-check block.
 const FEEDBACK_MARKER = 'exo proof-check:';
 const MISSING_PROOF = `${FEEDBACK_MARKER} The report claims Done with no Proof line backed by a product command this session ran. Run the product's entry point or MCP tool on real input in this build turn and report one "Proof: <command or MCP tool> -> <output line>" per proof, or report "Unverified: <reason>" without claiming Done.`;
+const MISSING_UNVERIFIED = `${FEEDBACK_MARKER} The report has no Proof line backed by a product command this session ran and no Unverified line. Run the product's entry point or MCP tool on real input in this build turn and report one "Proof: <command or MCP tool> -> <output line>" per proof, or report "Unverified: <reason>".`;
 const UNBACKED_FIX = 'Run each on real input and report "Proof: <command> -> <output line>", or turn each into "Unverified: <command> (<reason>)" and drop the Done claim.';
 
 // Splits a Proof line's body at its first `->` or `→` outside a backtick
@@ -357,7 +358,8 @@ function quoteCommand(command) {
 function blockReason(report, current, unbacked) {
   if (unbacked.length === 0) {
     if (current.length > 0) return null;
-    return unverifiedKeys(report).size > 0 && !claimsDone(report) ? null : MISSING_PROOF;
+    if (claimsDone(report)) return MISSING_PROOF;
+    return unverifiedKeys(report).size > 0 ? null : MISSING_UNVERIFIED;
   }
   const covered = unverifiedKeys(report);
   const missing = unbacked.filter((command) => !covered.has(namedCommandKey(command)));
