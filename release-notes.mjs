@@ -1,7 +1,8 @@
 // Print the GitHub Release body for one version from its CHANGELOG.md section:
-// the highlights first, the change sections in a fixed order under release
-// headings, the pull requests merged since the previous tag, the commands that
-// upgrade an installed copy, then a compare link to the previous tag.
+// the highlights first, then the change sections in a fixed order under release
+// headings. Each bullet ends with its source: the pull request that brought the
+// line in, else the branch merged with it, else its commit linked on GitHub.
+// A link to the full diff against the previous tag closes the body.
 //
 //   node release-notes.mjs [version]     defaults to the version in plugin.json
 
@@ -19,11 +20,12 @@ const TITLES = new Map([
   ['Fixed', 'Fixed'],
   ['Removed', 'Removed']
 ]);
-const PULL_REQUEST_SUFFIX = /^(?:[a-z]+(?:\([^)]*\))?!?: )?(.*) \(#(\d+)\)$/;
+const SQUASH_SUBJECT = /\(#(\d+)\)$/;
+const PULL_REQUEST_MERGE = /^Merge pull request #(\d+) from /;
+const BRANCH_MERGE = /^Merge branch '([^']+)'/;
 const root = import.meta.dirname;
 const plugin = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/plugin.json'), 'utf8'));
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const marketplace = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/marketplace.json'), 'utf8'));
 const version = process.argv[2] ?? plugin.version;
 
 const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
@@ -33,28 +35,13 @@ if (heading === undefined) {
   process.exit(1);
 }
 
-const body = sectionBody(changelog, heading);
-const subsections = new Map();
-for (const block of body.split(/^(?=### )/m)) {
-  const match = block.match(/^### (.+)\n([\s\S]*)$/);
-  if (match) subsections.set(match[1].trim(), match[2].trim());
-}
-
-const known = ORDER.filter((name) => subsections.has(name));
-const unknown = [...subsections.keys()].filter((name) => !ORDER.includes(name));
-const parts = [...known, ...unknown].map((name) => {
-  const title = TITLES.get(name) ?? name;
-  return `## ${title}\n\n${subsections.get(name)}`;
-});
-if (subsections.size === 0) parts.push(body);
-
 function git(args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
-function tagExists(tag) {
+function succeeds(args) {
   try {
-    git(['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`]);
+    git(args);
     return true;
   } catch {
     return false;
@@ -71,35 +58,81 @@ function previousTag(reference) {
 
 // Before the release is tagged, the notes cover the commits up to HEAD.
 const tag = `v${version}`;
-const reference = tagExists(tag) ? tag : 'HEAD';
+const reference = succeeds(['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`]) ? tag : 'HEAD';
 const previous = previousTag(reference);
 const range = previous === undefined ? reference : `${previous}..${reference}`;
 const repositoryUrl = String(packageJson.repository).replace(/\.git$/, '');
 
-const pullRequests = [];
-for (const subject of git(['log', '--format=%s', range]).split('\n')) {
-  const match = subject.match(PULL_REQUEST_SUFFIX);
-  if (match) pullRequests.push(`- #${match[2]} ${match[1]}`);
+function firstParentLine() {
+  try {
+    return new Set(git(['rev-list', '--first-parent', range]).split('\n'));
+  } catch {
+    return new Set();
+  }
 }
-const pullRequestLines = pullRequests.length > 0
-  ? pullRequests.join('\n')
-  : 'No pull requests: every change went straight to `main`.';
-parts.push(`## Pull requests\n\n${pullRequestLines}`);
+const mainLine = firstParentLine();
 
-const pluginId = `${plugin.name}@${marketplace.name}`;
-parts.push([
-  '## Upgrade',
-  '',
-  '```text',
-  `claude plugin marketplace update ${marketplace.name}`,
-  `claude plugin update ${pluginId}`,
-  '```',
-  '',
-  'Restart the session to load the new version.'
-].join('\n'));
+/** The merges in the range that brought `sha` in through a side parent, those on the first-parent line of the reference first. */
+function mergesBringing(sha) {
+  const merges = [];
+  for (const line of git(['log', '--merges', '--ancestry-path', '--format=%H%x09%P%x09%s', `${sha}..${reference}`]).split('\n')) {
+    if (line === '') continue;
+    const [hash, parents, subject] = line.split('\t');
+    const firstParent = parents.split(' ')[0];
+    if (!succeeds(['merge-base', '--is-ancestor', sha, firstParent])) merges.push({ hash, subject });
+  }
+  return merges.filter((merge) => mainLine.has(merge.hash)).concat(merges.filter((merge) => !mainLine.has(merge.hash)));
+}
+
+/** Where a changelog line came from: a pull request, a merged branch or its commit, or undefined without history. */
+function source(line) {
+  let added;
+  try {
+    added = git(['log', '--reverse', '--format=%H%x09%h%x09%s', `-S${line}`, range, '--', 'CHANGELOG.md']).split('\n')[0];
+  } catch {
+    return undefined;
+  }
+  if (!added) return undefined;
+  const [sha, short, subject] = added.split('\t');
+  const squash = subject.match(SQUASH_SUBJECT);
+  if (squash) return `#${squash[1]}`;
+  const merges = mergesBringing(sha);
+  for (const merge of merges) {
+    const match = merge.subject.match(PULL_REQUEST_MERGE);
+    if (match) return `#${match[1]}`;
+  }
+  for (const merge of merges) {
+    const match = merge.subject.match(BRANCH_MERGE);
+    if (match) return `branch \`${match[1]}\``;
+  }
+  return `[\`${short}\`](${repositoryUrl}/commit/${sha})`;
+}
+
+function attributed(text) {
+  return text.split('\n').map((line) => {
+    if (!line.startsWith('- ')) return line;
+    const origin = source(line.trimEnd());
+    return origin === undefined ? line : `${line.trimEnd()} (${origin})`;
+  }).join('\n');
+}
+
+const body = sectionBody(changelog, heading);
+const subsections = new Map();
+for (const block of body.split(/^(?=### )/m)) {
+  const match = block.match(/^### (.+)\n([\s\S]*)$/);
+  if (match) subsections.set(match[1].trim(), match[2].trim());
+}
+
+const known = ORDER.filter((name) => subsections.has(name));
+const unknown = [...subsections.keys()].filter((name) => !ORDER.includes(name));
+const parts = [...known, ...unknown].map((name) => {
+  const title = TITLES.get(name) ?? name;
+  return `## ${title}\n\n${attributed(subsections.get(name))}`;
+});
+if (subsections.size === 0) parts.push(attributed(body));
 
 if (previous !== undefined) {
-  parts.push(`Every commit since ${previous}: ${repositoryUrl}/compare/${previous}...${tag}`);
+  parts.push(`Full diff: [${previous}...${tag}](${repositoryUrl}/compare/${previous}...${tag})`);
 }
 
 console.log(parts.join('\n\n'));
