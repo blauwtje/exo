@@ -184,6 +184,8 @@ const SCENARIOS = [
     'A component library in the manifest is not that evidence on its own', 'A component library in the manifest is that evidence') },
   { name: 'drifted-tell-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-critique.md',
     '`invented-content`, `hard-offset-shadow`.', '`invented-content`.') },
+  { name: 'dropped-asset-tell', mutate: (root) => replaceText(root, 'skills/design-ui/assets/check-ui-findings.json',
+    '"monospace-label", ', '') },
   { name: 'drifted-sketch-labels', mutate: (root) => replaceText(root, 'skills/design-ui/references/sketch-tab.md',
     '`lost`, ', '') },
   { name: 'drifted-blocking-list', mutate: (root) => replaceText(root, 'skills/design-ui/references/phase-build.md',

@@ -140,8 +140,11 @@ const PINNED_SENTENCES = {
 };
 
 // A doc list that restates a data asset: every name the asset lists appears
-// backticked in the doc section that states the list. The asset is read from
-// the repository under check, so a self-test mutation of either side fails.
+// backticked in the doc section that states the list, and every name in that
+// list is one the asset holds. The list is a run of backticked names joined
+// only by list separators that holds at least one asset name; other backticked
+// tokens in the section stand alone and are not checked. The asset is read
+// from the repository under check, so a self-test mutation of either side fails.
 const PINNED_LISTS = [
   { file: 'skills/design-ui/references/visual-critique.md', section: '## Slop tropes',
     asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.decorativeTells },
@@ -155,6 +158,21 @@ const PINNED_LISTS = [
     asset: 'skills/design-ui/assets/check-ui-findings.json', names: (json) => json.alwaysBlocking },
 ];
 
+const LIST_SEPARATOR = /^(?:, |,? (?:or|and|plus) )$/;
+
+// Maximal runs of backticked tokens joined only by list separators.
+function backtickRuns(body) {
+  const runs = [];
+  let previousEnd = -1;
+  for (const match of body.matchAll(/`([^`\n]+)`/g)) {
+    const joined = previousEnd !== -1 && LIST_SEPARATOR.test(body.slice(previousEnd, match.index));
+    if (joined) runs.at(-1).push(match[1]);
+    else runs.push([match[1]]);
+    previousEnd = match.index + match[0].length;
+  }
+  return runs;
+}
+
 function checkPinnedLists(errors, repository) {
   for (const { file, section, asset, names } of PINNED_LISTS) {
     const text = repository.text(path.resolve(repository.root, file));
@@ -165,9 +183,13 @@ function checkPinnedLists(errors, repository) {
     }
     const end = text.indexOf('\n## ', start + section.length + 2);
     const body = text.slice(start, end === -1 ? undefined : end);
-    const missing = names(JSON.parse(repository.text(path.resolve(repository.root, asset))))
-      .filter((name) => !body.includes(`\`${name}\``));
+    const held = new Set(names(JSON.parse(repository.text(path.resolve(repository.root, asset)))));
+    const missing = [...held].filter((name) => !body.includes(`\`${name}\``));
     if (missing.length > 0) errors.push(`${file}: ${section} lacks ${missing.join(', ')} from ${asset}`);
+    const dropped = backtickRuns(body)
+      .filter((run) => run.some((token) => held.has(token)))
+      .flatMap((run) => run.filter((token) => !held.has(token)));
+    if (dropped.length > 0) errors.push(`${file}: ${section} names ${dropped.join(', ')}, which ${asset} lacks`);
   }
 }
 
