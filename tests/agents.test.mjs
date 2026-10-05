@@ -311,3 +311,21 @@ test('the design-ui repair loop drops the 12-call cap for a repair scope with it
   const skill = fs.readFileSync(path.join(skillsRoot, 'design-ui', 'SKILL.md'), 'utf8');
   assert.doesNotMatch(skill, /exo: context/);
 });
+
+test('the implementer names test-design.md and reports Test first: and Red: lines', () => {
+  const builder = agents.find((agent) => agent.frontmatter.name === 'build-task');
+  assert.ok(builder, 'agents/build-task.md exists');
+  assert.match(builder.body, /test-design\.md/);
+  assert.match(builder.body, /Test first:/);
+  assert.match(builder.body, /Red:/);
+});
+
+test('each branch reviewer holds the test-first rule and the missing-Red: rule', () => {
+  const reviewers = agents.filter((agent) => agent.fileName.startsWith('review-branch'));
+  assert.equal(reviewers.length, 3, 'three branch reviewers exist');
+  for (const reviewer of reviewers) {
+    assert.match(reviewer.body, /test-first/, `${reviewer.fileName} test-first rule`);
+    assert.match(reviewer.body, /`Test first: yes`/, `${reviewer.fileName} Test first: yes`);
+    assert.match(reviewer.body, /`Red:` failing run/, `${reviewer.fileName} Red: rule`);
+  }
+});
