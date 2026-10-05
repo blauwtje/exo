@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The benchmark runner has a `git-false-done` task, scored from the suite result and the final claim, and `benchmarks/demo/setup.mjs` seeds a repository for the force-push demo.
+
+### Changed
+
+- The manifests, `package.json` and the README social preview describe exo as a Claude Code plugin with four stages and hooks that refuse risky commands.
+
+### Fixed
+
+- The proof check accepts bold and list-prefixed `Proof:` and `Unverified:` lines and names a Done claim only when the text makes one.
+
 ## 0.84.1 - 2026-10-05
 
 ### Changed
