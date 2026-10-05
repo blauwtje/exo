@@ -382,6 +382,42 @@ test('a one-line report with the pass line after a Proof: prefix still lands', a
   assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
 });
 
+// A test-first report quotes its failing run on a `Red:` line before `Proof:`;
+// that `fail` is the red step, never the task's outcome.
+const RED_REPORT_HEAD = [
+  'Landed: src/app.js',
+  'Test first: yes, logic',
+  'Red: node --test tests/app.test.mjs: fail',
+  '  AssertionError: expected "hi" but got undefined',
+  'Proof:'
+];
+
+test('a report with a Red: line before Proof: lands on the Proof: pass', async () => {
+  const { root, planPath } = await compactCheckout();
+  await writeReport(root, [...RED_REPORT_HEAD, '- `node --test tests/app.test.mjs`: pass', '  # pass 3', 'Unresolved: none', ''].join('\n'));
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+});
+
+test('a Red: line before Proof: in a report with no Proof: field never counts as the proof or a failing command', async () => {
+  const { root, planPath } = await compactCheckout(OLDER_PLAN);
+  const report = [...RED_REPORT_HEAD.slice(0, -1), 'node --test tests/app.test.mjs: pass', '  # pass 3', 'Unresolved: none', ''].join('\n');
+  await writeReport(root, report);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+});
+
+test('a backticked Red: command and a Red: none line both land', async () => {
+  for (const red of ['Red: `node --test tests/app.test.mjs`: fail', 'Red: none, the test cannot fail before the edit']) {
+    const { root, planPath } = await compactCheckout(OLDER_PLAN);
+    await writeReport(root, ['Landed: src/app.js', 'Test first: yes, logic', red, 'node --test tests/app.test.mjs: pass', '  # pass 3', 'Unresolved: none', ''].join('\n'));
+    const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+    assert.equal(result.code, 0, result.stderr);
+  }
+});
+
 test('--report names a report outside the default path', async () => {
   const { root, planPath } = await compactCheckout();
   // Outside the checkout entirely: a report path inside root's working tree

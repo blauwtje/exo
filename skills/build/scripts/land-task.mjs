@@ -116,6 +116,10 @@ function escapeRegExp(text) {
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
 // The build report's own field names, never a command.
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
+// A test-first report's `Test first:` and `Red: <command>: fail` lines come before `Proof:`;
+// the red run's `fail` is the step before the edit, never a command outcome, so the lines read
+// drop each of them and the more indented lines under it, the assertion and observed value.
+const RED_FIELD_LINE = /^\s*(?:[-*]\s+)?(?:Test first|Red):/;
 // Lines that end a command's output: the report's own fields (including
 // `Report:`, the GREEN template's last line) or another backticked
 // `command`: outcome line. A bare line with a colon, or one starting with
@@ -178,7 +182,16 @@ function reportLinesOf(task, reportText, reportPath) {
     const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
     throw new LandingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}`);
   }
-  return reportText.replace(/\r\n/g, '\n').split('\n');
+  const lines = reportText.replace(/\r\n/g, '\n').split('\n');
+  const kept = [];
+  let redIndent = null;
+  for (const line of lines) {
+    const indent = line.length - line.trimStart().length;
+    if (redIndent !== null && line.trim() !== '' && indent > redIndent) continue;
+    redIndent = RED_FIELD_LINE.test(line) ? indent : null;
+    if (redIndent === null) kept.push(line);
+  }
+  return kept;
 }
 
 // Each `<command>: <outcome>` line the report gives `command`, lowercased.
