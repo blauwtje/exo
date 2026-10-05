@@ -4,7 +4,7 @@ Runs a named refactor with behavior pinned, and finishes it by deleting the old 
 
 ## When it fires
 
-A rename, move, extraction, split or reshape of an internal API has been decided and its results must not change. It also fires when a shim, a signature that accepts both shapes, or a re-export kept "for compatibility" is tempting. Finding what to refactor belongs to audit-architecture, a change that alters behavior to build, and a failure with an unproven cause to find-cause.
+A rename, move, extraction, split or reshape of an internal API has been decided and its results must not change. It also fires when a shim, a signature that accepts both shapes, or a re-export kept "for compatibility" is tempting. Refactor does not choose what to refactor, because the user or the request names it. A change that alters behavior belongs to build, and a failure with an unproven cause to find-cause.
 
 ## What you get
 
