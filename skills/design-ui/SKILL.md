@@ -9,11 +9,11 @@ effort: high
 
 Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. The enemy is the unfinished default — stock type, flat ground, loose spacing and missing states. The overcorrection is a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one.
 
-A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design. It also fails when a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
+A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design, or a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
 
-Every screen ships the scope `references/composition.md` completes and the motion bar of `references/build-pass.md`, whatever the mood.
+Every screen ships the scope `references/composition.md` completes and the motion bar of `references/build-pass.md`.
 
-**After a compaction notice**, see `## The run directory` of `references/intake.md`.
+**After a compaction**, see `## The run directory` of `references/intake.md`.
 
 ## Size the request
 
@@ -27,7 +27,7 @@ Any visual change belongs here, at any file count; an undecided surface goes to 
 Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface. Then stop at the first matching rung:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at the build step.
+2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at step 5.
 3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, while neither the user nor the brief lets it be replaced: the plan keeps that identity. A component library in the manifest is not that evidence on its own.
@@ -37,10 +37,10 @@ Only a request from the user opens the picker: a landing page or an open identit
 
 ## The one pass
 
-The default for every rung but 1 and 4; this session builds it. The references call steps 1-2 Phase 1-2 and steps 3-7 Phase 3.
+The default for every rung but 1 and 4; this session builds it. References call steps 1-2 Phase 1-2 and 3-7 Phase 3.
 
-1. **Context.** Read `references/phase-detail.md`.
-2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under `references/phase-direction.md` and `references/stack.md`. It names the named or saved product, if any, the color and font line with hex values, the motion thesis, and an ASCII layout at 1440 and 390 wide.
+1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`.
+2. **Plan.** After one line each stating the scope groups and the mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names any named or saved product, the color and font line with hex values, the motion thesis, and an ASCII layout at 1440 and 390 wide.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise the plan until none is missing.
 4. **Build pass.** Read `references/build-pass.md` before the first product edit.
 5. **Build.** Build the whole page from the plan, around the chosen comp on rung 3, then run `references/build-pass.md`'s proof. Without a url, start the preview `references/stack.md` names.
@@ -60,18 +60,19 @@ The parts below run only when the user's own words ask for them; a page's size, 
 
 ## References
 
-- Open each reference once, at its row's phase and predicate, in one whole Read, not Bash, because long Bash output is persisted and reread.
-- Apply only the sections its row names, all if it names none.
+- Load only the sections a row names, all if none.
+- Read a section by `offset`/`limit` from `grep -n '^## '`, never `cat`, `awk` or `sed`, since Bash persists long output.
+- Never Read a `tool-results/` file the run holds, which loads it twice.
 
 | File | Read it when |
 |---|---|
 | `references/intake.md` | Before Phase 1: `## Asking`, `## The run directory`; `## Symptoms` for a reported fault; `## Settled identity` when Route rungs 1-4 miss. |
 | `../route-skills/references/question.md` | Opt-in: Phase 2 on rung 3, before the preview offer. |
-| `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the opt-in full run. |
-| `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or in a read-only planning mode. |
+| `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the full run. |
+| `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or a read-only planning mode. |
 | `references/phase-build.md` | Full run, before the first edit: `## The mechanics`, `## Judgment`. |
 | `references/build-pass.md` | Sketch Phase 3 and one-pass step 4. |
-| `references/stack.md` | Phase 2: `## Which stack`, and the rest when it picks the default stack. |
+| `references/stack.md` | Phase 2: `## Which stack`; the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |
 | `references/direction-preview.md` | Opt-in: Phase 2 on rung 3, after `--check` reports ok and before the offer or the first comp. |
@@ -80,7 +81,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 | `references/controls.md` | Full run, before styling a control: `## Tactile hierarchy`, `## Labels`, plus `## Anatomy of the composite controls` for a composite. |
 | `references/implementation.md` | Full run, before writing CSS or component code: `## Where code lives`, `## One styling mechanism`, `## Tokens and palette derivation`, `## Responsive type and layout`, `## Banned patterns`, `## Finish — browser surfaces`. |
 | `references/motion.md` | Full run Phase 3: `## Motion thesis`, `## Job gate`; before any animation `## Materials`, `## Timing`, `## Reduced motion`; `## Scroll and view transitions` or `## Continuity contract` when the build uses one, `## Judgment` for an animation library. |
-| `references/interaction-qa.md` | Full run Phase 3 for controls, flows, disclosure or reachable states, but `## Pre-ship interaction sweep`, which is Phase 5 alone. |
+| `references/interaction-qa.md` | Full run Phase 3 for controls, flows, disclosure or reachable states, but `## Pre-ship interaction sweep`, Phase 5 alone. |
 | `references/feedback-and-status.md` | Full run Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Full run Phase 3 `## Slop tropes`, before finishing a treatment; opt-in Phase 4 whole, by `exo:critique-ui`. |
 | `references/craft-recipes.md` | Full run, before the first CSS of a ground, surface, motion, or type treatment. |
