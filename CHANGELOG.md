@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.87.1 - 2026-10-05
+
 ### Changed
 
 - Release notes list each change with the pull request, branch or commit it came from, and drop the separate pull-request list, the upgrade commands and the restart line.
