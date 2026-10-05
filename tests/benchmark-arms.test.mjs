@@ -12,6 +12,6 @@ for (const level of ['tight', 'terse']) {
   test(`replies-${level} arm prompts with the ${level} rule from the schema`, () => {
     const arm = ARMS[`replies-${level}`];
     assert.equal(arm.prompt, SCHEMA.replies.rules[level]);
-    assert.equal(arm.pluginDir, null);
+    assert.deepEqual(arm.pluginDirs, []);
   });
 }

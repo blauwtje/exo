@@ -9,6 +9,10 @@
 //   node benchmarks/run.mjs --tasks a,b --arms x,y --runs 2 --model haiku --concurrency 2
 //   node benchmarks/run.mjs --tasks calib-reply --arms baseline,exo --runs 6 --concurrency 1
 //                                                         cells of the calibration tier
+//   node benchmarks/run.mjs --tasks git-force-push --arms exo,baseline,skills-rival,cc-safety-net,prose-rules --model sonnet --effort high --dry-run
+//                                                         the git tier; --dry-run prints each cell's argv and spends nothing
+//                                                         (rival plugins first: node benchmarks/rivals.mjs, after
+//                                                         benchmarks/fixtures/rivals.local.json names the local-only ones)
 //
 // A run above smoke size costs money: --full prints the projection from the
 // latest smoke run and stops unless --confirm is given.
@@ -20,7 +24,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
-import { ARMS, CALIBRATION_TASKS, FIXTURE, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
+import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -33,7 +37,7 @@ const HEARTBEAT_MS = 60 * 1000;
 const GIT_IDENTITY = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com'];
 
 function parseArguments(argv) {
-  const options = { mode: 'custom', tasks: null, arms: Object.keys(ARMS), runs: 1, model: 'haiku', concurrency: 2, confirm: false, out: null };
+  const options = { mode: 'custom', tasks: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, confirm: false, out: null, effort: null, dryRun: false };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = () => argv[++index];
@@ -46,6 +50,8 @@ function parseArguments(argv) {
     else if (flag === '--model') options.model = value();
     else if (flag === '--concurrency') options.concurrency = Number(value());
     else if (flag === '--out') options.out = value();
+    else if (flag === '--effort') options.effort = value();
+    else if (flag === '--dry-run') options.dryRun = true;
     else throw new Error(`unknown flag ${flag}`);
   }
   if (options.mode === 'smoke') options.tasks = options.tasks ?? SMOKE_TASKS;
@@ -64,6 +70,8 @@ function findTask(taskId) {
   if (template) return { ...template, tier: 'template' };
   const safe = SAFE_TASKS.find((task) => task.id === taskId);
   if (safe) return { ...safe, tier: 'safe' };
+  const gitTask = GIT_TASKS.find((task) => task.id === taskId);
+  if (gitTask) return { ...gitTask, tier: 'git' };
   const calibration = CALIBRATION_TASKS.find((task) => task.id === taskId);
   if (calibration) return { ...calibration, tier: 'calibration' };
   throw new Error(`unknown task ${taskId}`);
@@ -88,6 +96,7 @@ function ensureTemplateFixture() {
 // with one commit for the diff to compare against.
 function workdirFor(task, fixtureDirectory) {
   const workdir = fs.mkdtempSync(path.join(os.tmpdir(), `exo-bench-${task.id}-`));
+  if (task.tier === 'git') return workdir;
   if (task.tier === 'template') {
     execFileSync('git', ['clone', '-q', fixtureDirectory, workdir], { stdio: 'ignore' });
     git(workdir, ['checkout', '-q', FIXTURE.commit]);
@@ -105,32 +114,44 @@ function workdirFor(task, fixtureDirectory) {
   return workdir;
 }
 
-function claudeArguments(armName, task, model) {
+// The git tier lets the model run Bash, which is where its hazard lives, so it
+// gets neither the Bash ban nor NO_RUN.
+function claudeArguments(armName, task, model, effort) {
   const arm = ARMS[armName];
-  const systemPrompt = arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
+  const git = task.tier === 'git';
+  const systemPrompt = git ? arm.prompt : arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
+  const prompt = arm.promptSuffix === null ? task.prompt : `${task.prompt} ${arm.promptSuffix}`;
   const args = [
-    '-p', task.prompt,
+    '-p', prompt,
     '--model', MODELS[model],
     '--permission-mode', 'bypassPermissions',
     '--output-format', 'json',
     '--setting-sources', 'project,local',
-    '--strict-mcp-config',
-    '--disallowedTools', 'Bash',
-    '--max-budget-usd', CELL_BUDGET_USD,
-    '--append-system-prompt', systemPrompt
+    '--strict-mcp-config'
   ];
-  if (arm.pluginDir !== null) args.push('--plugin-dir', arm.pluginDir);
+  if (!git) args.push('--disallowedTools', 'Bash');
+  args.push('--max-budget-usd', CELL_BUDGET_USD);
+  if (systemPrompt !== null) args.push('--append-system-prompt', systemPrompt);
+  if (effort !== null) args.push('--effort', effort);
+  for (const pluginDirectory of arm.pluginDirs) args.push('--plugin-dir', pluginDirectory);
   return args;
 }
 
-function runClaude(args, workdir, cellDirectory) {
+// Git-tier cells drop the user's CLAUDE.md files and auto memory, which carry a
+// push rule of their own and would load into every arm; other tiers keep the
+// environment their past results were measured in.
+function gitIsolation(task) {
+  return task.tier === 'git' ? { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } : {};
+}
+
+function runClaude(args, workdir, cellDirectory, extraEnvironment) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
     const startedAt = Date.now();
     const child = spawn('claude', args, {
       cwd: workdir,
-      env: { ...process.env, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
+      env: { ...process.env, ...extraEnvironment, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
@@ -174,12 +195,27 @@ function runSafeCheck(task, workdir) {
   });
 }
 
-async function runCell(cell, fixtureDirectory) {
+// Deny messages a hook or the permission layer left in the result, for reading
+// only: the score comes from the git state alone.
+function denyMessages(result) {
+  if (result === null) return [];
+  const denials = Array.isArray(result.permission_denials) ? result.permission_denials.map((denial) => JSON.stringify(denial)) : [];
+  const lines = typeof result.result === 'string' ? result.result.split('\n').filter((line) => /blocked|denied|\bdeny\b/i.test(line)) : [];
+  return [...denials, ...lines];
+}
+
+async function runCell(cell, fixtureDirectory, effort) {
   const { task, arm, run, model, cellDirectory } = cell;
   fs.mkdirSync(cellDirectory, { recursive: true });
-  const workdir = workdirFor(task, fixtureDirectory);
+  let workdir = workdirFor(task, fixtureDirectory);
+  const cellRoot = workdir;
+  if (task.tier === 'git') {
+    const { setupCell } = await import(`./git/${task.dir}/setup.mjs`);
+    setupCell(cellRoot);
+    workdir = path.join(cellRoot, 'repo');
+  }
   try {
-    const outcome = await runClaude(claudeArguments(arm, task, model), workdir, cellDirectory);
+    const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, gitIsolation(task));
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
@@ -195,11 +231,16 @@ async function runCell(cell, fixtureDirectory) {
     } else {
       Object.assign(checks, { loc: countLines(workdir) });
     }
+    if (task.tier === 'git') {
+      const { checkCell } = await import(`./git/${task.dir}/check.mjs`);
+      const { harm, pushed, outcome: gitOutcome } = checkCell(cellRoot);
+      Object.assign(checks, { harm, pushed, outcome: gitOutcome, denyMessages: denyMessages(result) });
+    }
     fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(workdir, ['diff', '--cached', 'HEAD']));
     fs.writeFileSync(path.join(cellDirectory, 'checks.json'), `${JSON.stringify(checks, null, 2)}\n`);
     return checks;
   } finally {
-    fs.rmSync(workdir, { recursive: true, force: true });
+    fs.rmSync(cellRoot, { recursive: true, force: true });
   }
 }
 
@@ -242,6 +283,39 @@ function costGate(options, cellCount) {
   process.exit(2);
 }
 
+// Prints one line per cell: the environment additions, then the argv. Starts no
+// session and builds no cell.
+function printDryRun(cells, effort) {
+  for (const cell of cells) {
+    const environment = Object.entries(gitIsolation(cell.task)).map(([name, value]) => `${name}=${value}`);
+    const arm = ARMS[cell.arm];
+    const missing = arm.pluginDirs.filter((directory) => !fs.existsSync(directory)).map((directory) => ` [missing: ${directory}]`);
+    if (arm.missing) missing.push(` [missing: ${arm.missing}]`);
+    const argv = claudeArguments(cell.arm, cell.task, cell.model, effort).map((argument) => JSON.stringify(argument));
+    console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, 'claude', ...argv].join(' ')}`);
+  }
+}
+
+function requirePluginDirectories(arms) {
+  for (const arm of arms) {
+    if (ARMS[arm].missing) throw new Error(`arm ${arm}: ${ARMS[arm].missing}`);
+    for (const directory of ARMS[arm].pluginDirs) {
+      if (!fs.existsSync(directory)) throw new Error(`arm ${arm}: plugin directory ${directory} is missing; run node benchmarks/rivals.mjs first`);
+    }
+  }
+}
+
+// Each plugin directory with the commit its repository sits at, for meta.json.
+function pluginCommits(arms) {
+  const commits = {};
+  for (const arm of arms) {
+    for (const directory of ARMS[arm].pluginDirs) {
+      commits[directory] = git(directory, ['rev-parse', 'HEAD']).trim();
+    }
+  }
+  return commits;
+}
+
 function claudeVersion() {
   return execFileSync('claude', ['--version'], { encoding: 'utf8' }).trim();
 }
@@ -259,12 +333,18 @@ async function main() {
       }
     }
   }
+  if (options.dryRun) {
+    printDryRun(cells, options.effort);
+    return;
+  }
+  requirePluginDirectories(options.arms);
   costGate(options, cells.length);
   const fixtureDirectory = tasks.some((task) => task.tier === 'template') ? ensureTemplateFixture() : null;
   fs.mkdirSync(runDirectory, { recursive: true });
   fs.writeFileSync(path.join(runDirectory, 'meta.json'), `${JSON.stringify({
     date, mode: options.mode, model: MODELS[options.model], claudeVersion: claudeVersion(), node: process.version,
-    fixture: FIXTURE, arms: options.arms, tasks: options.tasks, runs: options.runs, cells: cells.length
+    fixture: FIXTURE, arms: options.arms, tasks: options.tasks, runs: options.runs, cells: cells.length,
+    effort: options.effort, pluginCommits: pluginCommits(options.arms)
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
@@ -275,11 +355,11 @@ async function main() {
       console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
       return;
     }
-    const checks = await runCell(cell, fixtureDirectory);
+    const checks = await runCell(cell, fixtureDirectory, options.effort);
     done += 1;
     const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
     const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
-    const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}` };
+    const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}` };
     const verdict = verdicts[checks.tier] ?? checks.tier;
     console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} ${cost} ${Math.round(checks.wallMs / 1000)}s loc=${checks.loc.added} ${verdict}${checks.timedOut ? ' TIMED OUT' : ''}`);
   });
