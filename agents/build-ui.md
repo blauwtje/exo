@@ -1,6 +1,6 @@
 ---
 name: build-ui
-description: "Builds one design-ui scope: the one-pass page, the foundation, a surface, a direction comp or a repair. Dispatched by design-ui per scope. Not for work outside a design-ui run."
+description: "Builds one design-ui scope. Dispatched by design-ui only."
 model: sonnet
 effort: high
 tools: Read, Edit, Write, Grep, Bash

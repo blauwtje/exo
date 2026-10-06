@@ -1,6 +1,6 @@
 ---
 name: review-branch-deep-high
-description: "review-branch-deep at xhigh effort for the high budget, dispatched by name only."
+description: "review-branch-deep, high budget, by name only."
 model: opus
 effort: xhigh
 tools: Read, Write, Glob, Grep, Bash

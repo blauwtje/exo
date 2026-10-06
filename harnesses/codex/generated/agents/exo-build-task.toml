@@ -1,5 +1,5 @@
 name = "exo-build-task"
-description = "Builds one decided plan task from its brief in the checkout the dispatch names. Dispatched by build, once per task. Not for a plan repair, a review, a task with a Design: line, or a change with no plan task."
+description = "Builds one plan task. Dispatched by build only."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"

@@ -1,5 +1,5 @@
 name = "exo-fetch-docs"
-description = "Researches how a pinned external library, framework, API or service behaves, or a fact inside a document on disk, from first-party sources. Not for what the repository's own code answers, which locate-code owns."
+description = "Researches a pinned external library, API or service, or a document on disk, from first-party sources. Not for this repository's code."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"

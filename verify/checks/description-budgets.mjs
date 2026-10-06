@@ -9,8 +9,10 @@
 // raised by hand in the commit that pays for the triggers, the same way the
 // lock is.
 
+import fs from 'node:fs';
 import { readFrontmatter } from '../frontmatter.mjs';
-import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, DESCRIPTION_TOTAL_WARN } from '../budgets.mjs';
+import { splitFrontmatter } from '../../harnesses/codex/rules.mjs';
+import { AGENT_DESCRIPTION_TOTAL_LOCK, DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, DESCRIPTION_TOTAL_WARN } from '../budgets.mjs';
 
 export function checkDescriptionBudgets(report, repository) {
   let total = 0;
@@ -46,4 +48,30 @@ export function checkDescriptionBudgets(report, repository) {
     return;
   }
   report.result('PASS', 'description budgets', `model-invocable descriptions total ${total} chars against the ${DESCRIPTION_TOTAL_LOCK.chars} locked on ${DESCRIPTION_TOTAL_LOCK.measured}; every skill is within ${DESCRIPTION_CHARS.ceiling}`);
+}
+
+// Every agent's description loads into each session's Agent tool listing, and
+// skills dispatch agents by name, so the total holds to routing text.
+// AGENT_DESCRIPTION_TOTAL_LOCK fails growth past it the same way.
+export function checkAgentDescriptionBudgets(report, repository) {
+  let total = 0;
+  const unparsed = [];
+  for (const file of repository.agentFiles()) {
+    // An agent's frontmatter holds tools lists the skill parser rejects.
+    const { fields } = splitFrontmatter(fs.readFileSync(file, 'utf8'));
+    if (fields === null) {
+      unparsed.push(repository.relative(file));
+      continue;
+    }
+    total += (fields.description ?? '').length;
+  }
+  if (unparsed.length > 0) {
+    report.result('UNRUN', 'agent description budget', `budget calculation blocked by unparsed frontmatter in ${unparsed.join(', ')}`);
+    return;
+  }
+  if (total > AGENT_DESCRIPTION_TOTAL_LOCK.chars) {
+    report.result('FAIL', 'agent description budget', `agent description total is ${total} chars, over the ${AGENT_DESCRIPTION_TOTAL_LOCK.chars} locked on ${AGENT_DESCRIPTION_TOTAL_LOCK.measured}; shorten a description, or raise the lock in verify/budgets.mjs in the commit that pays for the text`);
+    return;
+  }
+  report.result('PASS', 'agent description budget', `agent descriptions total ${total} chars against the ${AGENT_DESCRIPTION_TOTAL_LOCK.chars} locked on ${AGENT_DESCRIPTION_TOTAL_LOCK.measured}`);
 }

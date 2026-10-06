@@ -1,5 +1,5 @@
 name = "exo-review-branch-deep-high"
-description = "review-branch-deep at xhigh effort for the high budget, dispatched by name only."
+description = "review-branch-deep, high budget, by name only."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "max"
 sandbox_mode = "workspace-write"

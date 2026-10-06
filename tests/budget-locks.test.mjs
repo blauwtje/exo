@@ -11,8 +11,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../verify/budgets.mjs';
-import { checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
+import { AGENT_DESCRIPTION_TOTAL_LOCK, DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../verify/budgets.mjs';
+import { checkAgentDescriptionBudgets, checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
 import { checkBodyBudgets } from '../verify/checks/body-budgets.mjs';
 import { checkReferenceShape } from '../verify/checks/reference-shape.mjs';
@@ -216,4 +216,42 @@ test('an unannounced shrink below a reference lock also fails', (t) => {
   assert.equal(run.counts.FAIL, 1, run.detail);
   const lock = REFERENCE_TOKEN_LOCKS[LOCKED_REFERENCE];
   assert.match(run.detail, new RegExp(`${LOCKED_REFERENCE.replace(/\//g, '\\/')} is \\d+ tokens, under its ${lock}-token lock`));
+});
+
+// AGENT_DESCRIPTION_TOTAL_LOCK works like DESCRIPTION_TOTAL_LOCK over agents/:
+// growth past it fails, shrinking passes and re-locks nothing.
+const COUNTED_AGENT = 'agents/build-task.md';
+
+test('the untouched agents sit at or under the agent description lock', (t) => {
+  const root = corpusFixture(t);
+
+  const run = verdict(root, checkAgentDescriptionBudgets);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
+  assert.match(run.detail, new RegExp(`${AGENT_DESCRIPTION_TOTAL_LOCK.chars} locked`));
+});
+
+test('50 agent description chars past the lock fail, naming the locked total and the new one', (t) => {
+  const root = corpusFixture(t);
+  const baseline = countedTotal(verdict(root, checkAgentDescriptionBudgets).detail);
+  const growth = AGENT_DESCRIPTION_TOTAL_LOCK.chars - baseline + 50;
+  editDescription(root, COUNTED_AGENT, (value) => `"${JSON.parse(value)}${'x'.repeat(growth)}"`);
+
+  const run = verdict(root, checkAgentDescriptionBudgets);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.equal(countedTotal(run.detail), AGENT_DESCRIPTION_TOTAL_LOCK.chars + 50, run.detail);
+  assert.match(run.detail, new RegExp(`${AGENT_DESCRIPTION_TOTAL_LOCK.chars} locked`));
+});
+
+test('a shorter agent description passes and the check re-locks nothing', (t) => {
+  const root = corpusFixture(t);
+  const baseline = countedTotal(verdict(root, checkAgentDescriptionBudgets).detail);
+  editDescription(root, COUNTED_AGENT, (value) => `"${JSON.parse(value).slice(0, -10)}"`);
+
+  const run = verdict(root, checkAgentDescriptionBudgets);
+
+  assert.equal(run.counts.PASS, 1, run.detail);
+  assert.equal(countedTotal(run.detail), baseline - 10, run.detail);
+  assert.match(run.detail, new RegExp(`${AGENT_DESCRIPTION_TOTAL_LOCK.chars} locked`));
 });

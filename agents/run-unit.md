@@ -1,6 +1,6 @@
 ---
 name: run-unit
-description: "Builds and lands one block of at most eight plan tasks from a fresh context. Dispatched by build, once per block. Not for a Design: task, the branch review, a push, or a change with no plan."
+description: "Builds and lands one plan block. Dispatched by build only."
 model: sonnet
 effort: medium
 tools: Read, Bash, Agent

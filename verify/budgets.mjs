@@ -20,6 +20,8 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 3321, measured: '2026-10-01' };
+// Every plugin agent's description, in the Agent tool listing of every session.
+export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 956, measured: '2026-10-06' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2532, measured: '2026-10-02' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.

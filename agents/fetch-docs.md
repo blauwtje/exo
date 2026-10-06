@@ -1,6 +1,6 @@
 ---
 name: fetch-docs
-description: "Researches how a pinned external library, framework, API or service behaves, or a fact inside a document on disk, from first-party sources. Not for what the repository's own code answers, which locate-code owns."
+description: "Researches a pinned external library, API or service, or a document on disk, from first-party sources. Not for this repository's code."
 model: sonnet
 effort: medium
 tools: Read, Glob, Grep, WebSearch, WebFetch

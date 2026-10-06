@@ -1,6 +1,6 @@
 ---
 name: solve-hard-high
-description: "solve-hard at xhigh effort for the high budget, dispatched by name only."
+description: "solve-hard, high budget, by name only."
 model: opus
 effort: xhigh
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill

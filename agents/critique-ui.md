@@ -1,6 +1,6 @@
 ---
 name: critique-ui
-description: "Judges one built visual surface against its direction and writes the faults file. Dispatched once per run by design-ui after its Build phase. Not for a code review, a direction choice, or an unbuilt surface."
+description: "Judges one built visual surface. Dispatched by design-ui only."
 model: opus
 effort: high
 tools: Read, Write, Grep

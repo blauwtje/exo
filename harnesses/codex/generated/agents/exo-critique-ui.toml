@@ -1,5 +1,5 @@
 name = "exo-critique-ui"
-description = "Judges one built visual surface against its direction and writes the faults file. Dispatched once per run by design-ui after its Build phase. Not for a code review, a direction choice, or an unbuilt surface."
+description = "Judges one built visual surface. Dispatched by design-ui only."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"

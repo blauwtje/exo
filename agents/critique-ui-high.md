@@ -1,6 +1,6 @@
 ---
 name: critique-ui-high
-description: "critique-ui at xhigh effort for the high budget, dispatched by name only."
+description: "critique-ui, high budget, by name only."
 model: opus
 effort: xhigh
 tools: Read, Write, Grep

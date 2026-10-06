@@ -1,6 +1,6 @@
 ---
 name: solve-hard-low
-description: "solve-hard at medium effort for the low budget, dispatched by name only."
+description: "solve-hard, low budget, by name only."
 model: opus
 effort: medium
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill

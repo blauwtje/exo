@@ -1,5 +1,5 @@
 name = "exo-solve-hard-low"
-description = "solve-hard at medium effort for the low budget, dispatched by name only."
+description = "solve-hard, low budget, by name only."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"

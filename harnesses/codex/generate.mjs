@@ -134,7 +134,7 @@ function addAgents(root, known, files, sources) {
   }
   for (const [file, twin] of Object.entries(table.lowTwins)) {
     const source = path.basename(file, '.md');
-    const description = `${source} at ${twin.model} and ${twin.effort} effort for the low budget, dispatched by name only.`;
+    const description = `${source}, low budget, by name only.`;
     add(twin.name, file, table.agents[file], twin, description);
   }
 }

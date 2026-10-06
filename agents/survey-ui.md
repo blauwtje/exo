@@ -1,6 +1,6 @@
 ---
 name: survey-ui
-description: "Collects the Phase 1 context of one full or bounded design-ui redesign: the content inventory and the FILES list. Dispatched once per run by design-ui. Not for a tweak, a new piece, a sketch, a direction choice, or any edit to the repository."
+description: "Surveys one design-ui redesign. Dispatched by design-ui only."
 model: sonnet
 effort: high
 tools: Read, Write, Glob, Grep, Bash

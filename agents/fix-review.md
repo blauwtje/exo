@@ -1,6 +1,6 @@
 ---
 name: fix-review
-description: "Repairs the fix findings of one branch review report from the review-fixer prompt the dispatch hands it. Dispatched by verify on a FINDINGS verdict with a fix count above 0. Not for a plan task, a review, a failure with no proven cause, or a commit."
+description: "Repairs one branch review's fix findings. Dispatched by verify only."
 model: sonnet
 effort: high
 tools: Read, Edit, Write, Grep, Bash
