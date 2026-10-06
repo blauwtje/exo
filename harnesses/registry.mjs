@@ -3,6 +3,7 @@
 // `update(record)` and `remove(record)` (see install.mjs for the arguments);
 // adding one is an import and a line in this list.
 
+import * as claude from './claude/adapter.mjs';
 import * as codex from './codex/adapter.mjs';
 
-export const adapters = [codex];
+export const adapters = [claude, codex];
