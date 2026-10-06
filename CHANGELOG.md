@@ -10,6 +10,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - Agent descriptions shrink to the routing text a dispatch needs, cutting the agent listing every session pays from 2,769 to 956 characters, and a new lock in `verify/budgets.mjs` holds the total there.
+- The session-start text drops the stage-order section and the references table: each stage rule moves into the skill it governs and the reference pointers shrink to two lines, cutting the text every session pays by 463 characters.
+- Skill descriptions cap at 250 characters, cutting the skill listing every session pays from 3,319 to 2,725 characters; `DESCRIPTION_TOTAL_LOCK` and `DESCRIPTION_CHARS` drop to match.
 
 ## 0.92.0 - 2026-10-06
 
