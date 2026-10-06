@@ -1,6 +1,6 @@
 # Benchmarks
 
-Paired headless runs that measure exo against a session without it. Running a plugin arm beside prompt-only control arms on one fixture is an idea taken from the agentic benchmark in [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail); the tasks and the prompts here are exo's own.
+Paired headless runs that measure exo against a session without it. The fixture, task set, task names, no-run instruction and run settings follow the agentic benchmark in [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail) (MIT).
 
 Every cell is one `claude -p --output-format json` call on a fresh checkout of `tiangolo/full-stack-fastapi-template` at commit `cd83fc1`. `--setting-sources project,local` keeps your own plugins out of the cell and `--plugin-dir` loads exactly one.
 
