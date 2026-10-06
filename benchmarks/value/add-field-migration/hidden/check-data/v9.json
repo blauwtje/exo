@@ -1,0 +1,368 @@
+{
+  "migrations": [
+    {
+      "name": "1_init",
+      "checksum": "aaf2a574de3fab23241322340067623d2469cc6ba4dee0f072acbba4721527c7",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "2_default_org",
+      "checksum": "f948d82cb36badae4d328191838dcd0f4cc919235adaab4a6e7c065fc5814f4b",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "3_account_org",
+      "checksum": "87992fbfb89cb0a53670866ec5d410c9423890ab38a41c5abb509be155ac2abb",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "4_invoice_status",
+      "checksum": "f7c24d92e51ef30e48a60311c168a911e88b299a1f70b302ab22a7eb435c1994",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "5_invoice_numbers",
+      "checksum": "777204b1fabb34771c82f217d3f86b42dccbbf18e6dfde2baad7a1e980237c48",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "6_sample_workspace",
+      "checksum": "d1faf822fa88c960ce89d20c901b095d0adcc62a1c820ce7f5453374a0c88e1d",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "7_invoice_due_date",
+      "checksum": "b347e1144805e0f40c9e9ef1ae6acc6f9a2e4f497ff31dcc5f1807239679c572",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "8_invoice_lines",
+      "checksum": "ceed91622f64135a5b6820ed291b69378568b1abdc9741d39f747ea7e37457e9",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    },
+    {
+      "name": "9_invoice_notes",
+      "checksum": "3023e958328826aac9b4e843ba17f9dc26ef8c56d96228f7e55d33960e5a029f",
+      "appliedAt": "2026-01-02T08:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "sequences": {
+      "invoice": 13,
+      "account": 7
+    }
+  },
+  "orgs": [
+    {
+      "id": "org_default",
+      "name": "Ledgerline Demo Organisation",
+      "defaultCurrency": "EUR",
+      "timezone": "Europe/Amsterdam"
+    },
+    {
+      "id": "org_nord",
+      "name": "Nordlys Holding",
+      "defaultCurrency": "SEK",
+      "timezone": "Europe/Stockholm"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "acc_1",
+      "orgId": "org_default",
+      "name": "Sample Customer",
+      "billingEmail": "billing@sample.example"
+    },
+    {
+      "id": "acc_2",
+      "orgId": "org_default",
+      "name": "Northwind Traders",
+      "billingEmail": "ap@northwind.example",
+      "currency": "USD"
+    },
+    {
+      "id": "acc_3",
+      "orgId": "org_default",
+      "name": "Brandt Maschinenbau GmbH",
+      "billingEmail": "rechnung@brandt.example"
+    },
+    {
+      "id": "acc_4",
+      "orgId": "org_nord",
+      "name": "Lindqvist & Soner AB",
+      "billingEmail": "ekonomi@lindqvist.example"
+    },
+    {
+      "id": "acc_5",
+      "orgId": "org_default",
+      "name": "Harbour Lane Cafe",
+      "billingEmail": "owner@harbourlane.example",
+      "currency": "gbp"
+    },
+    {
+      "id": "acc_6",
+      "orgId": "org_default",
+      "name": "Tidewater Supply",
+      "billingEmail": "accounts@tidewater.example",
+      "currency": ""
+    },
+    {
+      "id": "acc_7",
+      "orgId": "org_nord",
+      "name": "Aurora Studios",
+      "billingEmail": "billing@aurora.example",
+      "currency": "NOK"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv_1",
+      "number": "2026-0001",
+      "accountId": "acc_1",
+      "status": "open",
+      "issuedAt": "2026-01-02",
+      "dueDate": "2026-02-01",
+      "lines": [
+        {
+          "description": "Welcome package",
+          "quantity": 1,
+          "unitPriceMinor": 12500
+        }
+      ],
+      "totalMinor": 12500,
+      "notes": null,
+      "externalRef": null
+    },
+    {
+      "id": "inv_2",
+      "number": "2025-0002",
+      "accountId": "acc_2",
+      "status": "paid",
+      "issuedAt": "2025-11-03",
+      "dueDate": "2025-12-03",
+      "lines": [
+        {
+          "description": "Platform licence",
+          "quantity": 1,
+          "unitPriceMinor": 480000
+        }
+      ],
+      "totalMinor": 480000,
+      "notes": "renewal",
+      "externalRef": "crm-1001"
+    },
+    {
+      "id": "inv_3",
+      "number": "2025-0003",
+      "accountId": "acc_2",
+      "status": "paid",
+      "issuedAt": "2025-12-03",
+      "dueDate": "2026-01-02",
+      "lines": [
+        {
+          "description": "Platform licence",
+          "quantity": 1,
+          "unitPriceMinor": 480000
+        },
+        {
+          "description": "Onboarding day",
+          "quantity": 2,
+          "unitPriceMinor": 95000
+        }
+      ],
+      "totalMinor": 670000,
+      "notes": null,
+      "externalRef": "crm-1002"
+    },
+    {
+      "id": "inv_4",
+      "number": "2025-0004",
+      "accountId": "acc_3",
+      "status": "paid",
+      "issuedAt": "2025-11-20",
+      "dueDate": "2025-12-20",
+      "lines": [
+        {
+          "description": "Spare parts kit",
+          "quantity": 3,
+          "unitPriceMinor": 21450
+        }
+      ],
+      "totalMinor": 64350,
+      "notes": null,
+      "externalRef": null
+    },
+    {
+      "id": "inv_5",
+      "number": "2026-0005",
+      "accountId": "acc_3",
+      "status": "open",
+      "issuedAt": "2026-01-15",
+      "dueDate": "2026-02-14",
+      "lines": [
+        {
+          "description": "Maintenance visit",
+          "quantity": 1,
+          "unitPriceMinor": 89000
+        }
+      ],
+      "totalMinor": 89000,
+      "notes": "ask for PO number",
+      "externalRef": "crm-1010"
+    },
+    {
+      "id": "inv_6",
+      "number": "2025-0006",
+      "accountId": "acc_4",
+      "status": "paid",
+      "issuedAt": "2025-12-18",
+      "dueDate": "2026-01-17",
+      "lines": [
+        {
+          "description": "Consulting",
+          "quantity": 12,
+          "unitPriceMinor": 14500
+        }
+      ],
+      "totalMinor": 174000,
+      "notes": null,
+      "externalRef": "crm-1020"
+    },
+    {
+      "id": "inv_7",
+      "number": "2026-0007",
+      "accountId": "acc_4",
+      "status": "open",
+      "issuedAt": "2026-02-01",
+      "dueDate": "2026-03-03",
+      "lines": [
+        {
+          "description": "Consulting",
+          "quantity": 8,
+          "unitPriceMinor": 14500
+        },
+        {
+          "description": "Travel",
+          "quantity": 1,
+          "unitPriceMinor": 31200
+        }
+      ],
+      "totalMinor": 147200,
+      "notes": null,
+      "externalRef": null
+    },
+    {
+      "id": "inv_8",
+      "number": "2026-0008",
+      "accountId": "acc_5",
+      "status": "paid",
+      "issuedAt": "2026-01-09",
+      "dueDate": "2026-02-08",
+      "lines": [
+        {
+          "description": "Espresso machine service",
+          "quantity": 1,
+          "unitPriceMinor": 18000
+        }
+      ],
+      "totalMinor": 18000,
+      "notes": "cash discount agreed",
+      "externalRef": null
+    },
+    {
+      "id": "inv_9",
+      "number": "2026-0009",
+      "accountId": "acc_5",
+      "status": "open",
+      "issuedAt": "2026-02-09",
+      "dueDate": "2026-03-11",
+      "lines": [
+        {
+          "description": "Grinder burrs",
+          "quantity": 2,
+          "unitPriceMinor": 6400
+        }
+      ],
+      "totalMinor": 12800,
+      "notes": null,
+      "externalRef": "crm-1031"
+    },
+    {
+      "id": "inv_10",
+      "number": "2025-0010",
+      "accountId": "acc_6",
+      "status": "void",
+      "issuedAt": "2025-12-30",
+      "dueDate": "2026-01-29",
+      "lines": [
+        {
+          "description": "Cold storage rental",
+          "quantity": 4,
+          "unitPriceMinor": 22500
+        }
+      ],
+      "totalMinor": 90000,
+      "notes": "duplicate of next",
+      "externalRef": null
+    },
+    {
+      "id": "inv_11",
+      "number": "2025-0011",
+      "accountId": "acc_6",
+      "status": "paid",
+      "issuedAt": "2025-12-30",
+      "dueDate": "2026-01-29",
+      "lines": [
+        {
+          "description": "Cold storage rental",
+          "quantity": 4,
+          "unitPriceMinor": 22500
+        }
+      ],
+      "totalMinor": 90000,
+      "notes": null,
+      "externalRef": "crm-1040"
+    },
+    {
+      "id": "inv_12",
+      "number": "2026-0012",
+      "accountId": "acc_7",
+      "status": "open",
+      "issuedAt": "2026-01-28",
+      "dueDate": "2026-02-27",
+      "lines": [
+        {
+          "description": "Studio hours",
+          "quantity": 20,
+          "unitPriceMinor": 7500
+        }
+      ],
+      "totalMinor": 150000,
+      "notes": null,
+      "externalRef": null
+    },
+    {
+      "id": "inv_13",
+      "number": "2026-0013",
+      "accountId": "acc_7",
+      "status": "open",
+      "issuedAt": "2026-02-12",
+      "dueDate": "2026-03-14",
+      "lines": [
+        {
+          "description": "Studio hours",
+          "quantity": 6,
+          "unitPriceMinor": 7500
+        },
+        {
+          "description": "Equipment hire",
+          "quantity": 1,
+          "unitPriceMinor": 25000
+        }
+      ],
+      "totalMinor": 70000,
+      "notes": "split over two projects",
+      "externalRef": "crm-1052"
+    }
+  ]
+}

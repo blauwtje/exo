@@ -1,0 +1,7 @@
+{
+  "id": "value-add-field-migration",
+  "claim": "multi-step stateful change: a new invoice field must pass through the migration order, the HTTP serializer, the CLI formatter and the account currency fallback",
+  "timeoutMinutes": 20,
+  "estimateUsd": 0.35,
+  "maxBudgetUsd": 1.5
+}

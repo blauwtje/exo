@@ -1,0 +1,26 @@
+{
+  "invoices": {
+    "inv_1": "EUR",
+    "inv_2": "USD",
+    "inv_3": "USD",
+    "inv_4": "EUR",
+    "inv_5": "EUR",
+    "inv_6": "SEK",
+    "inv_7": "SEK",
+    "inv_8": "GBP",
+    "inv_9": "GBP",
+    "inv_10": "EUR",
+    "inv_11": "EUR",
+    "inv_12": "NOK",
+    "inv_13": "NOK"
+  },
+  "accounts": {
+    "acc_1": "EUR",
+    "acc_2": "USD",
+    "acc_3": "EUR",
+    "acc_4": "SEK",
+    "acc_5": "GBP",
+    "acc_6": "EUR",
+    "acc_7": "NOK"
+  }
+}

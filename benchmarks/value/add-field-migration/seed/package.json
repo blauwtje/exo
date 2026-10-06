@@ -1,0 +1,11 @@
+{
+  "name": "ledgerline",
+  "version": "2.7.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "node bin/cli.mjs migrate",
+    "serve": "node bin/serve.mjs",
+    "test": "node --test"
+  }
+}

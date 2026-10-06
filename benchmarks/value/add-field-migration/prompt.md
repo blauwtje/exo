@@ -1,0 +1,1 @@
+Add a `currency` field to invoices. Existing invoices should take their account's currency, new invoices should default to it, and both `GET /invoices/:id` and `node bin/cli.mjs show <id>` should show it. Production is on migration 9 today.
