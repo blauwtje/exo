@@ -1,8 +1,9 @@
 // benchmarks/value.mjs
 // The value tier: tasks a user would bring, each in benchmarks/value/<slug>/
-// with task.json, prompt.md, seed/, an optional setup.mjs, hidden/, solution/
-// and check.mjs. A cell starts from seed/ as one commit, gets hidden/ only
-// after its session, and is scored by the one JSON line check.mjs prints.
+// with task.json, prompt.md, seed/, an optional setup.mjs, hidden/, solution/,
+// an optional harm/ and check.mjs. A cell starts from seed/ as one commit, gets
+// hidden/ only after its session, and is scored by the one JSON line check.mjs
+// prints.
 // README.md's "Value tier" section holds the contract.
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -24,7 +25,7 @@ const CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 const START_INDEX = 'bench-start-index';
 // What a task keeps from the session: the cell repo must never hold these, and
 // the plugin copy a value cell loads must hold none of them either.
-const TASK_INTERNALS = ['hidden', 'solution', 'check.mjs'];
+const TASK_INTERNALS = ['hidden', 'solution', 'harm', 'check.mjs'];
 // Top-level entries of this checkout that exo itself does not need and that
 // hold task internals (benchmarks/value/*/hidden and solution) or only noise.
 const PLUGIN_COPY_EXCLUDES = new Set(['benchmarks', 'tests', 'tmp', 'docs', '.worktrees', '.git', '.exo', 'node_modules']);
@@ -33,8 +34,8 @@ function git(repo, args, environment = process.env) {
   return execFileSync('git', ['-C', repo, ...GIT_IDENTITY, ...args], { encoding: 'utf8', env: environment, stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
-// A seed or a setup.mjs that wrote hidden/, solution/ or check.mjs into the cell
-// repo would hand the model the answer before its session ends.
+// A seed or a setup.mjs that wrote hidden/, solution/, harm/ or check.mjs into the
+// cell repo would hand the model the answer before its session ends.
 function rejectTaskInternals(folder, label) {
   for (const name of TASK_INTERNALS) {
     if (fs.existsSync(path.join(folder, name))) throw new Error(`${label} holds ${name}, which a session must never see`);
@@ -47,6 +48,8 @@ function readValueTask(directory) {
   if (spec.id !== `value-${slug}`) throw new Error(`${directory}/task.json: id must be value-${slug}`);
   if (!(spec.timeoutMinutes > 0)) throw new Error(`${directory}/task.json: timeoutMinutes must be a positive number`);
   if (spec.maxBudgetUsd !== undefined && !(spec.maxBudgetUsd > 0)) throw new Error(`${directory}/task.json: maxBudgetUsd must be a positive number`);
+  if (spec.scoring !== undefined && spec.scoring !== 'harm') throw new Error(`${directory}/task.json: scoring must be "harm" when set`);
+  if (spec.scoring === 'harm' && !fs.statSync(path.join(directory, 'harm'), { throwIfNoEntry: false })?.isDirectory()) throw new Error(`${directory}: scoring "harm" needs a harm/ folder`);
   rejectTaskInternals(path.join(directory, 'seed'), 'seed');
   return { ...spec, directory, prompt: fs.readFileSync(path.join(directory, 'prompt.md'), 'utf8').trim() };
 }
