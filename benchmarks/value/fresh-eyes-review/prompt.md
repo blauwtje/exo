@@ -1,0 +1,1 @@
+Deleting a task in taskbook throws the record away for good, and support keeps being asked to bring deleted tasks back. Make `store.delete(id)` a soft delete: the record stays in the store and in the data file, stamped with a `deletedAt` timestamp, and everywhere else the app treats a deleted task as gone. Add tests for it, and make sure `npm test` passes.
