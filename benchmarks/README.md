@@ -60,6 +60,34 @@ Raw cells land in `benchmarks/runs/<date>-<mode>/`, which is git-ignored. Each c
 
 Each directory under `benchmarks/safe/` holds a seed, a reference solution and a check. `npm test` runs every check twice: it must fail against the seed and pass against the solution.
 
+## Value tier
+
+Tasks a user would bring, each in `benchmarks/value/<slug>/`. A cell copies `seed/` into a fresh repository as one commit, runs one `claude -p` session with Bash allowed, copies `hidden/` over the result and scores it with `check.mjs`. `solution/` and `hidden/` never reach a session: the harness refuses a seed or `setup.mjs` that writes `hidden/`, `solution/` or `check.mjs` into the cell repository, and the exo arm loads exo from a temporary copy of this checkout without `benchmarks/`, `tests/`, `tmp/`, `docs/`, `.worktrees/`, `.git/`, `.exo/` and `node_modules/`, made once per run.
+
+| File | What it holds |
+|---|---|
+| `task.json` | `id` (must be `value-<slug>`), `claim` (what the task measures, for readers), `timeoutMinutes` (positive, the session's wall-clock cap), optional `exoPrompt` (replaces `prompt.md` in the `exo` arm only), optional `estimateUsd` (cost per cell for the dry-run projection, default $1.50), optional `maxBudgetUsd` (the cell's `--max-budget-usd`, default 3). |
+| `prompt.md` | The prompt every arm gets. |
+| `seed/` | The starting repository. |
+| `setup.mjs` | Optional. Runs as `node setup.mjs <repo>` with the repository as the working directory after the seed commit; what it writes is starting state, not the session's work. |
+| `hidden/` | Files copied over the repository after the session, such as the tests the check runs. |
+| `solution/` | The reference change, laid over the seed. Optional `solution/DELETE` lists repo-relative paths, one per line, removed after the overlay; it is never copied. |
+| `check.mjs` | Run as `node check.mjs <repo>` with the repository as the working directory, 5 minutes at most. It prints exactly one JSON line `{ "pass": boolean, "defects": integer, "total": integer, "detail": [string] }` on stdout and sends anything else to stderr. A crash or any other output is a harness error, recorded apart from a fail. |
+
+`tests/benchmark-value.test.mjs` runs every task twice: the check must fail on seed, setup and hidden, and pass once `solution/` is laid over them.
+
+The harness writes `.claude/exo.local.json` as `{ "workspace": "current", "ship": "local" }` in every cell, so exo commits on the checked-out branch and nothing leaves the cell, and keeps it and `.exo/` out of git through `.git/info/exclude`. The baseline arm ignores the file. Like the git tier, a cell sets `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` and `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`.
+
+`checks.json` holds `pass`, `defects`, `total`, `detail`, `loc` (code lines added and removed against the start state, tests apart), `wallMs` and `worktreesLeft` (build worktrees a cut-off session left, removed and not scored), or `harnessError` in place of the verdict. A run keys cells by task, arm and run, so give each model its own `--out`.
+
+```bash
+node benchmarks/run.mjs --tier value --arms baseline,exo --model sonnet --runs 2 --dry-run   # one argv line per cell, then the cell count and projected cost; no session
+node benchmarks/run.mjs --tasks value-<slug> --arms baseline,exo --model sonnet --runs 4 --out benchmarks/runs/<dir>
+node benchmarks/score.mjs benchmarks/runs/<dir>   # one row per task and arm: pass rate, defects, LOC, tokens, cost and wall time, each mean with its standard error
+```
+
+The projection takes each cell's cost from the mean of its finished twins under `benchmarks/runs/`, else the task's `estimateUsd`, else $1.50. `score.mjs --publish` refuses a run of value tasks alone.
+
 ## Model and effort sweep
 
 `node benchmarks/sweep.mjs` measures exo's routing on the models it names. Every cell is its own `claude -p --plugin-dir <this clone> --model <id> --effort <level>` process in a fresh repository:

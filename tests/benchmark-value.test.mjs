@@ -10,20 +10,37 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
-import { EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from '../benchmarks/value.mjs';
+import { copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from '../benchmarks/value.mjs';
 
 const SCHEMA = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const SCORE = fileURLToPath(new URL('../benchmarks/score.mjs', import.meta.url));
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function git(repo, args) {
   return execFileSync('git', ['-C', repo, ...GIT_IDENTITY, ...args], { encoding: 'utf8' });
+}
+
+// A variant folder laid over the repo; solution/DELETE, when present, is not
+// copied and names the repo-relative paths removed after the overlay.
+async function overlay(task, variant, repo) {
+  const folder = path.join(task.directory, variant);
+  const deleteList = path.join(folder, 'DELETE');
+  await fs.cp(folder, repo, { recursive: true, filter: (source) => source !== deleteList });
+  if (variant !== 'solution') return;
+  const names = await fs.readFile(deleteList, 'utf8').catch((error) => {
+    if (error.code !== 'ENOENT') throw error;
+    return '';
+  });
+  for (const name of names.split('\n').map((line) => line.trim()).filter(Boolean)) {
+    await fs.rm(path.join(repo, name), { recursive: true, force: true });
+  }
 }
 
 // Seed, settings and setup.mjs as a cell gets them, then each variant laid over.
 async function scoredRepo(task, variants) {
   const repo = await fixture();
   const startTree = prepareValueRepo(task, repo);
-  for (const variant of variants) await fs.cp(path.join(task.directory, variant), repo, { recursive: true });
+  for (const variant of variants) await overlay(task, variant, repo);
   return { repo, verdict: await scoreValueRepo(task, repo, startTree) };
 }
 
@@ -80,6 +97,62 @@ test('a temporary task: seed fails, solution passes, LOC counts only what change
   assert.deepEqual(seeded.verdict, { loc: seeded.verdict.loc, pass: false, defects: 2, total: 2, detail: ['sum(1, 2) is not 3', 'sum(2, 2) is not 4'] });
   assert.equal(seeded.verdict.loc.added, 0, 'files setup.mjs wrote are starting state');
   assert.deepEqual([solved.verdict.loc.added, solved.verdict.loc.removed], [1, 1]);
+});
+
+const GONE_CHECK = `import fs from 'node:fs';
+import path from 'node:path';
+const gone = !fs.existsSync(path.join(process.argv[2], 'legacy', 'old.mjs'));
+console.log(JSON.stringify({ pass: gone, defects: gone ? 0 : 1, total: 1, detail: gone ? [] : ['legacy/old.mjs is still there'] }));
+`;
+
+test('solution/DELETE removes each named path after the overlay and is never copied', async () => {
+  const task = await temporaryTask({
+    'seed/legacy/old.mjs': 'export const old = 1;\n',
+    'solution/DELETE': 'legacy/old.mjs\n\n  \n',
+    'check.mjs': GONE_CHECK
+  });
+  const { seeded, solved } = await selfTest(task);
+  assert.deepEqual(seeded.verdict.detail, ['legacy/old.mjs is still there']);
+  await assert.rejects(fs.access(path.join(solved.repo, 'DELETE')), { code: 'ENOENT' });
+  assert.deepEqual([solved.verdict.loc.added, solved.verdict.loc.removed], [1, 2]);
+});
+
+test('a cell repo never holds hidden/, solution/ or check.mjs, from the seed or from setup.mjs', async () => {
+  for (const name of ['hidden/cases.json', 'solution/sum.mjs', 'check.mjs']) {
+    await assert.rejects(temporaryTask({ [`seed/${name}`]: 'x' }), new RegExp(`seed holds ${name.split('/')[0]}`));
+  }
+  const leaking = await temporaryTask({ 'setup.mjs': "import fs from 'node:fs';\nfs.mkdirSync(`${process.argv[2]}/hidden`);\n" });
+  assert.throws(() => prepareValueRepo(leaking, path.join(leaking.directory, '..', 'repo')), /holds hidden/);
+});
+
+test('maxBudgetUsd is optional and must be positive', async () => {
+  assert.equal((await temporaryTask({})).maxBudgetUsd, undefined);
+  const task = await temporaryTask({ 'task.json': JSON.stringify({ id: 'value-sum', timeoutMinutes: 1, maxBudgetUsd: 5 }) });
+  assert.equal(task.maxBudgetUsd, 5);
+  await assert.rejects(temporaryTask({ 'task.json': JSON.stringify({ id: 'value-sum', timeoutMinutes: 1, maxBudgetUsd: 0 }) }), /maxBudgetUsd/);
+});
+
+test('the plugin copy a value cell loads keeps what exo needs and drops the excluded entries', async () => {
+  const root = await fixture();
+  const files = [
+    '.claude-plugin/plugin.json', 'hooks/hooks.json', 'skills/a/SKILL.md', 'agents/b.md', 'lib/c.mjs', 'package.json',
+    'benchmarks/value/t/hidden/h.mjs', 'benchmarks/value/t/solution/s.mjs', 'tests/a.test.mjs', 'tmp/n.md', 'docs/d.md',
+    '.worktrees/w/f', '.git/HEAD', '.exo/state', 'node_modules/m/i.js'
+  ];
+  for (const file of files) {
+    await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
+    await fs.writeFile(path.join(root, file), 'x');
+  }
+  const copy = copyPluginWithoutTasks(root, await fixture());
+  assert.deepEqual((await fs.readdir(copy)).sort(), ['.claude-plugin', 'agents', 'hooks', 'lib', 'package.json', 'skills']);
+});
+
+test('the copy of this checkout carries the plugin and no hidden/, solution/ or check.mjs', async () => {
+  const copy = copyPluginWithoutTasks(ROOT, await fixture());
+  const entries = await fs.readdir(copy, { recursive: true });
+  for (const needed of ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'skills', 'agents', 'lib']) assert.ok(entries.includes(needed), needed);
+  const leaks = entries.filter((entry) => entry.split(path.sep).some((part) => ['benchmarks', 'hidden', 'solution', 'check.mjs'].includes(part)));
+  assert.deepEqual(leaks, []);
 });
 
 test('LOC counts committed and uncommitted work and never the exo settings', async () => {

@@ -22,9 +22,23 @@ export const DEFAULT_ESTIMATE_USD = 1.5;
 // A check may run the hidden tests, so it gets longer than a safe check.
 const CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 const START_INDEX = 'bench-start-index';
+// What a task keeps from the session: the cell repo must never hold these, and
+// the plugin copy a value cell loads must hold none of them either.
+const TASK_INTERNALS = ['hidden', 'solution', 'check.mjs'];
+// Top-level entries of this checkout that exo itself does not need and that
+// hold task internals (benchmarks/value/*/hidden and solution) or only noise.
+const PLUGIN_COPY_EXCLUDES = new Set(['benchmarks', 'tests', 'tmp', 'docs', '.worktrees', '.git', '.exo', 'node_modules']);
 
 function git(repo, args, environment = process.env) {
   return execFileSync('git', ['-C', repo, ...GIT_IDENTITY, ...args], { encoding: 'utf8', env: environment, stdio: ['ignore', 'pipe', 'pipe'] });
+}
+
+// A seed or a setup.mjs that wrote hidden/, solution/ or check.mjs into the cell
+// repo would hand the model the answer before its session ends.
+function rejectTaskInternals(folder, label) {
+  for (const name of TASK_INTERNALS) {
+    if (fs.existsSync(path.join(folder, name))) throw new Error(`${label} holds ${name}, which a session must never see`);
+  }
 }
 
 function readValueTask(directory) {
@@ -32,6 +46,8 @@ function readValueTask(directory) {
   const spec = JSON.parse(fs.readFileSync(path.join(directory, 'task.json'), 'utf8'));
   if (spec.id !== `value-${slug}`) throw new Error(`${directory}/task.json: id must be value-${slug}`);
   if (!(spec.timeoutMinutes > 0)) throw new Error(`${directory}/task.json: timeoutMinutes must be a positive number`);
+  if (spec.maxBudgetUsd !== undefined && !(spec.maxBudgetUsd > 0)) throw new Error(`${directory}/task.json: maxBudgetUsd must be a positive number`);
+  rejectTaskInternals(path.join(directory, 'seed'), 'seed');
   return { ...spec, directory, prompt: fs.readFileSync(path.join(directory, 'prompt.md'), 'utf8').trim() };
 }
 
@@ -42,6 +58,17 @@ export function loadValueTasks(root = VALUE_ROOT) {
   return fs.readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => readValueTask(path.join(root, entry.name)));
+}
+
+// A copy of the plugin at root without benchmarks/, tests/, tmp/, docs/ and the
+// other entries of PLUGIN_COPY_EXCLUDES, so the exo arm of a value cell loads
+// exo from a folder that holds no hidden/ or solution/. Made once per run.
+export function copyPluginWithoutTasks(root, destination) {
+  fs.cpSync(root, destination, {
+    recursive: true,
+    filter: (source) => !PLUGIN_COPY_EXCLUDES.has(path.relative(root, source).split(path.sep)[0])
+  });
+  return destination;
 }
 
 function writeExoSettings(repo) {
@@ -64,6 +91,7 @@ export function prepareValueRepo(task, repo) {
   writeExoSettings(repo);
   const setup = path.join(task.directory, 'setup.mjs');
   if (fs.existsSync(setup)) execFileSync(process.execPath, [setup, repo], { cwd: repo, stdio: ['ignore', 'pipe', 'pipe'] });
+  rejectTaskInternals(repo, `cell repo ${repo}`);
   const startIndex = { ...process.env, GIT_INDEX_FILE: path.join(repo, '.git', START_INDEX) };
   git(repo, ['add', '-A'], startIndex);
   const tree = git(repo, ['write-tree'], startIndex).trim();

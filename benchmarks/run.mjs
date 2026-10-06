@@ -29,13 +29,15 @@ import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
-import { DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from './value.mjs';
+import { copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
 const RUNS = path.join(BENCHMARKS, 'runs');
 const CELL_TIMEOUT_MS = 20 * 60 * 1000;
+// The cap per cell; a value task's maxBudgetUsd replaces it.
 const CELL_BUDGET_USD = '3';
+const EXO_COPY_LABEL = '<copy of this checkout without benchmarks/>';
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const FULL_RUNS = 4;
 const HEARTBEAT_MS = 60 * 1000;
@@ -132,8 +134,9 @@ function workdirFor(task, fixtureDirectory) {
 
 // The git tier lets the model run Bash, which is where its hazard lives, and a
 // value task needs it to finish the job, so neither gets the Bash ban or NO_RUN.
-// A value task's exoPrompt replaces its prompt in the exo arm only.
-function claudeArguments(armName, task, model, effort) {
+// A value task's exoPrompt replaces its prompt in the exo arm only, and its
+// exo arm loads exoCopy, not this checkout, which holds the task's hidden files.
+function claudeArguments(armName, task, model, effort, exoCopy) {
   const arm = ARMS[armName];
   const open = OPEN_TIERS.has(task.tier);
   const systemPrompt = open ? arm.prompt : arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
@@ -148,10 +151,12 @@ function claudeArguments(armName, task, model, effort) {
     '--strict-mcp-config'
   ];
   if (!open) args.push('--disallowedTools', 'Bash');
-  args.push('--max-budget-usd', CELL_BUDGET_USD);
+  args.push('--max-budget-usd', String(task.maxBudgetUsd ?? CELL_BUDGET_USD));
   if (systemPrompt !== null) args.push('--append-system-prompt', systemPrompt);
   if (effort !== null) args.push('--effort', effort);
-  for (const pluginDirectory of arm.pluginDirs) args.push('--plugin-dir', pluginDirectory);
+  for (const pluginDirectory of arm.pluginDirs) {
+    args.push('--plugin-dir', task.tier === 'value' && pluginDirectory === ROOT ? exoCopy : pluginDirectory);
+  }
   return args;
 }
 
@@ -259,7 +264,7 @@ function denyMessages(result) {
   return [...denials, ...lines];
 }
 
-async function runCell(cell, fixtureDirectory, effort, cellHome) {
+async function runCell(cell, fixtureDirectory, effort, cellHome, exoCopy) {
   const { task, arm, run, model, cellDirectory } = cell;
   fs.mkdirSync(cellDirectory, { recursive: true });
   let workdir = workdirFor(task, fixtureDirectory);
@@ -273,7 +278,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome) {
     const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
     const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
     const environment = { ...cellIsolation(task), HOME: cellHome };
-    const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, environment, timeoutMs);
+    const outcome = await runClaude(claudeArguments(arm, task, model, effort, exoCopy), workdir, cellDirectory, environment, timeoutMs);
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
@@ -356,7 +361,7 @@ function printDryRun(cells, effort) {
     const arm = ARMS[cell.arm];
     const missing = arm.pluginDirs.filter((directory) => !fs.existsSync(directory)).map((directory) => ` [missing: ${directory}]`);
     if (arm.missing) missing.push(` [missing: ${arm.missing}]`);
-    const argv = claudeArguments(cell.arm, cell.task, cell.model, effort).map((argument) => JSON.stringify(argument));
+    const argv = claudeArguments(cell.arm, cell.task, cell.model, effort, EXO_COPY_LABEL).map((argument) => JSON.stringify(argument));
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, 'claude', ...argv].join(' ')}`);
   }
   const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS);
@@ -419,6 +424,9 @@ async function main() {
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
   const cellHome = makeDefaultOptionsHome();
+  // One copy per run, made only when a value cell loads exo.
+  const copiesExo = cells.some((cell) => cell.task.tier === 'value' && ARMS[cell.arm].pluginDirs.includes(ROOT));
+  const exoCopy = copiesExo ? copyPluginWithoutTasks(ROOT, fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-plugin-'))) : null;
   const heartbeat = setInterval(() => console.log(`running: ${done}/${cells.length} cells done`), HEARTBEAT_MS);
   try {
     await runPool(cells, options.concurrency, async (cell) => {
@@ -427,7 +435,7 @@ async function main() {
         console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
         return;
       }
-      const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome);
+      const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome, exoCopy);
       done += 1;
       const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
@@ -438,6 +446,7 @@ async function main() {
   } finally {
     clearInterval(heartbeat);
     fs.rmSync(cellHome, { recursive: true, force: true });
+    if (exoCopy !== null) fs.rmSync(exoCopy, { recursive: true, force: true });
   }
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);
 }
