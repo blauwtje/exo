@@ -28,4 +28,3 @@
    - No such tool: never shell it; report `Unverified: <command> (no mcp__*__<tool> in this session)`, no Done.
    - A failed call goes to the bug fixer; rerun, then `land-task.mjs --fix`.
    - Loop to step 3; only a block, failure or question earns a message.
-   - An `exo: context` line: keep working once the task in flight lands.

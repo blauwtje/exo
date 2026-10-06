@@ -19,7 +19,7 @@ d. **Report.** Read only status lines and Report's fields. After compaction, re-
 5. **Prove.** Re-run the repro, isolated case and suite per Step 1. Return to Step 1 when the repair reaches a second owner or resists one reading.
 6. **Retain project knowledge.** Per the table.
 7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../verify/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`); fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain; else end on `ship`.
-   - Past `exo: context`: keep the letters, hand on via a fresh delegate; stage- or workflow-invoked: ask nothing, return to it.
+   - Invoked by another stage or a workflow: ask nothing, return to the caller.
 
 ## References
 
