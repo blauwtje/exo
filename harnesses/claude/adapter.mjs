@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { onPath } from '../on-path.mjs';
 
 export const name = 'claude';
 export const label = 'Claude Code';
@@ -86,17 +87,6 @@ function claude(args, cwd, env) {
     const detail = (result.stderr || result.stdout || '').trim();
     throw new Error(`${command} exited ${result.status}${detail === '' ? '' : `: ${detail}`}`);
   }
-}
-
-function onPath(command, env) {
-  const extensions = process.platform === 'win32' ? (env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';') : [''];
-  for (const folder of (env.PATH ?? '').split(path.delimiter)) {
-    if (folder === '') continue;
-    for (const extension of extensions) {
-      if (fs.statSync(path.join(folder, `${command}${extension}`), { throwIfNoEntry: false })?.isFile()) return true;
-    }
-  }
-  return false;
 }
 
 export function detect(env) {
