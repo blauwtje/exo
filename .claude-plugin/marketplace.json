@@ -8,7 +8,7 @@
     {
       "name": "exo",
       "description": "Claude Code plugin with four stages and hooks that refuse risky commands.",
-      "version": "0.93.0",
+      "version": "0.93.1",
       "license": "MIT",
       "source": "./"
     }
