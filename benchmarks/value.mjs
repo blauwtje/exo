@@ -117,9 +117,16 @@ function checkVerdict(stdout, stderr, code, signal) {
   return { pass, defects, total, detail };
 }
 
+// The environment check.mjs runs in: a check that runs `node --test` or
+// `npm test` inside a `node --test` parent would inherit NODE_TEST_CONTEXT and
+// print no result it can parse, so no NODE_TEST_* variable reaches it.
+function checkEnvironment() {
+  return Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('NODE_TEST_')));
+}
+
 function runValueCheck(task, repo) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [path.join(task.directory, 'check.mjs'), repo], { cwd: repo, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [path.join(task.directory, 'check.mjs'), repo], { cwd: repo, env: checkEnvironment(), stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk; });
@@ -134,8 +141,11 @@ function runValueCheck(task, repo) {
 
 // What the session left against startTree, committed and uncommitted, counted
 // before hidden/ is copied in; then hidden/ over the repo and check.mjs's verdict.
+// countLines stages everything to count it; the index goes back to HEAD so the
+// check sees the repo as the session left it, not a new file as a tracked change.
 export async function scoreValueRepo(task, repo, startTree) {
   const loc = countLines(repo, startTree);
+  git(repo, ['reset', '-q']);
   const hidden = path.join(task.directory, 'hidden');
   if (fs.existsSync(hidden)) fs.cpSync(hidden, repo, { recursive: true, force: true });
   return { loc, ...(await runValueCheck(task, repo)) };

@@ -20,19 +20,25 @@ function git(repo, args) {
   return execFileSync('git', ['-C', repo, ...GIT_IDENTITY, ...args], { encoding: 'utf8' });
 }
 
-// A variant folder laid over the repo; solution/DELETE, when present, is not
-// copied and names the repo-relative paths removed after the overlay.
+// A variant folder laid over the repo. solution/DELETE, when present, names the
+// repo-relative paths removed after the overlay; solution/COMMIT_MSG, when
+// present, is the message the overlaid solution is committed with. Neither file
+// is copied.
 async function overlay(task, variant, repo) {
   const folder = path.join(task.directory, variant);
-  const deleteList = path.join(folder, 'DELETE');
-  await fs.cp(folder, repo, { recursive: true, filter: (source) => source !== deleteList });
+  const control = ['DELETE', 'COMMIT_MSG'].map((name) => path.join(folder, name));
+  await fs.cp(folder, repo, { recursive: true, filter: (source) => !control.includes(source) });
   if (variant !== 'solution') return;
-  const names = await fs.readFile(deleteList, 'utf8').catch((error) => {
+  const [names, message] = await Promise.all(control.map((file) => fs.readFile(file, 'utf8').catch((error) => {
     if (error.code !== 'ENOENT') throw error;
     return '';
-  });
+  })));
   for (const name of names.split('\n').map((line) => line.trim()).filter(Boolean)) {
     await fs.rm(path.join(repo, name), { recursive: true, force: true });
+  }
+  if (message.trim()) {
+    git(repo, ['add', '-A']);
+    git(repo, ['commit', '-q', '-m', message.trim()]);
   }
 }
 
@@ -115,6 +121,22 @@ test('solution/DELETE removes each named path after the overlay and is never cop
   assert.deepEqual(seeded.verdict.detail, ['legacy/old.mjs is still there']);
   await assert.rejects(fs.access(path.join(solved.repo, 'DELETE')), { code: 'ENOENT' });
   assert.deepEqual([solved.verdict.loc.added, solved.verdict.loc.removed], [1, 2]);
+});
+
+const COMMITTED_CHECK = `import { execFileSync } from 'node:child_process';
+const repo = process.argv[2];
+const subjects = execFileSync('git', ['-C', repo, 'log', '--format=%s'], { encoding: 'utf8' }).trim().split('\\n');
+const clean = execFileSync('git', ['-C', repo, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }) === '';
+const pass = subjects[0] === 'fix(sum): add' && subjects.length === 2 && clean;
+console.log(JSON.stringify({ pass, defects: pass ? 0 : 1, total: 1, detail: pass ? [] : [\`subjects: \${subjects.join(' | ')}, clean: \${clean}\`] }));
+`;
+
+test('solution/COMMIT_MSG commits the overlaid solution with that message and is never copied', async () => {
+  const task = await temporaryTask({ 'solution/COMMIT_MSG': 'fix(sum): add\n', 'check.mjs': COMMITTED_CHECK });
+  const { seeded, solved } = await selfTest(task);
+  assert.match(seeded.verdict.detail[0], /subjects: seed, clean: true/);
+  await assert.rejects(fs.access(path.join(solved.repo, 'COMMIT_MSG')), { code: 'ENOENT' });
+  assert.deepEqual([solved.verdict.loc.added, solved.verdict.loc.removed], [1, 1]);
 });
 
 test('a cell repo never holds hidden/, solution/ or check.mjs, from the seed or from setup.mjs', async () => {

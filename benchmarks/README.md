@@ -71,10 +71,10 @@ Tasks a user would bring, each in `benchmarks/value/<slug>/`. A cell copies `see
 | `seed/` | The starting repository. |
 | `setup.mjs` | Optional. Runs as `node setup.mjs <repo>` with the repository as the working directory after the seed commit; what it writes is starting state, not the session's work. |
 | `hidden/` | Files copied over the repository after the session, such as the tests the check runs. |
-| `solution/` | The reference change, laid over the seed. Optional `solution/DELETE` lists repo-relative paths, one per line, removed after the overlay; it is never copied. |
+| `solution/` | The reference change, laid over the seed. Optional `solution/DELETE` lists repo-relative paths, one per line, removed after the overlay; optional `solution/COMMIT_MSG` is the message the overlaid solution is committed with, for a check that reads the history. Neither file is copied. |
 | `check.mjs` | Run as `node check.mjs <repo>` with the repository as the working directory, 5 minutes at most. It prints exactly one JSON line `{ "pass": boolean, "defects": integer, "total": integer, "detail": [string] }` on stdout and sends anything else to stderr. A crash or any other output is a harness error, recorded apart from a fail. |
 
-`tests/benchmark-value.test.mjs` runs every task twice: the check must fail on seed, setup and hidden, and pass once `solution/` is laid over them.
+`tests/benchmark-value.test.mjs` runs every task twice: the check must fail on seed, setup and hidden, and pass once `solution/` is laid over them. `check.mjs` runs without any `NODE_TEST_*` variable, so a check that spawns `node --test` or `npm test` prints its own result under the self-test's `node --test` parent and in a cell alike.
 
 The harness writes `.claude/exo.local.json` as `{ "workspace": "current", "ship": "local" }` in every cell, so exo commits on the checked-out branch and nothing leaves the cell, and keeps it and `.exo/` out of git through `.git/info/exclude`. The baseline arm ignores the file. Like the git tier, a cell sets `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` and `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`.
 
