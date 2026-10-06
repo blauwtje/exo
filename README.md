@@ -29,9 +29,9 @@ Restart Claude Code, then run `/exo:configure` in a new session. A list of exo s
 exo also runs on Codex, in the CLI and the IDE extension, on ChatGPT models priced and sized like their Claude counterparts. Claude Code stays the primary host and behaves as before.
 
 - **Plan:** exo's agents run on `gpt-6.1-sol` and `gpt-6-luna`, so you need a plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. Free and Go have only Luna and are unsupported.
-- **Install:** from a clone of this repository, run `node codex/install.mjs`. It links each skill into `~/.agents/skills`, copies the agent files into `~/.codex/agents/` and merges exo's hook entries into `~/.codex/hooks.json`, under `$CODEX_HOME` when set. It records what it wrote in `~/.codex/exo/installed.json`. It never overwrites a file, link or hook entry it did not write, never edits `config.toml`, and writes nothing when `hooks.json` does not parse.
-- **Update:** run `git pull` in the clone, then rerun `node codex/install.mjs`. Skills follow the links at once; agents and hooks need the rerun.
-- **Remove:** run `node codex/install.mjs --remove`. It deletes exactly the entries recorded in `installed.json`.
+- **Install:** from a clone of this repository, run `node harnesses/codex/install.mjs`. It links each skill into `~/.agents/skills`, copies the agent files into `~/.codex/agents/` and merges exo's hook entries into `~/.codex/hooks.json`, under `$CODEX_HOME` when set. It records what it wrote in `~/.codex/exo/installed.json`. It never overwrites a file, link or hook entry it did not write, never edits `config.toml`, and writes nothing when `hooks.json` does not parse.
+- **Update:** run `git pull` in the clone, then rerun `node harnesses/codex/install.mjs`. Skills follow the links at once; agents and hooks need the rerun.
+- **Remove:** run `node harnesses/codex/install.mjs --remove`. It deletes exactly the entries recorded in `installed.json`.
 - **Settings:** `$configure` writes the global layer to `~/.codex/exo/settings.json`; the project and local layers stay `.claude/exo.json` and `.claude/exo.local.json`.
 
 Codex has no equivalent for some Claude Code features, so exo drops or approximates them:

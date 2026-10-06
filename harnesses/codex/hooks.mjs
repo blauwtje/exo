@@ -2,7 +2,7 @@
 // `hooks/hooks.json` by an allowlist: the events and matchers Codex can serve
 // (SessionStart, UserPromptSubmit, PreToolUse Bash, PostToolUse Bash). Each
 // entry keeps only the handler fields Codex documents, so Claude's `shell` is
-// dropped, and runs `codex/hook-entry.mjs`, which sets the host and plugin root
+// dropped, and runs `harnesses/codex/hook-entry.mjs`, which sets the host and plugin root
 // before it imports the script the source entry named.
 
 import fs from 'node:fs';
@@ -32,7 +32,7 @@ const WINDOWS_UNQUOTABLE = /["%$`^&!]/;
 // Ceiling: a root with such a character gets no `commandWindows`, so a Windows
 // host would run the POSIX `command`; lift it once Codex documents its Windows shell.
 function quotedCommands(root, target) {
-  const entryScript = path.join(root, 'codex', 'hook-entry.mjs');
+  const entryScript = path.join(root, 'harnesses', 'codex', 'hook-entry.mjs');
   const posixQuoted = `'${entryScript.replaceAll("'", "'\\''")}'`;
   const commands = { command: `node ${posixQuoted} ${target}` };
   if (!WINDOWS_UNQUOTABLE.test(entryScript)) commands.commandWindows = `node "${entryScript}" ${target}`;

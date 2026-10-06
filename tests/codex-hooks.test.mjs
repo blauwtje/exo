@@ -1,5 +1,5 @@
 // The Codex hook entries come from an allowlist over hooks/hooks.json, carry
-// only documented handler fields, and run codex/hook-entry.mjs, which fixes the
+// only documented handler fields, and run harnesses/codex/hook-entry.mjs, which fixes the
 // host and root, refuses an unlisted script and keeps a hostile root as data.
 
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { codexHookEntries, codexHookTargets, DOCUMENTED_FIELDS } from '../codex/hooks.mjs';
+import { codexHookEntries, codexHookTargets, DOCUMENTED_FIELDS } from '../harnesses/codex/hooks.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const TARGETS = ['hooks/session-start.mjs', 'hooks/dispatch-prompt.mjs', 'hooks/dispatch-bash.mjs', 'hooks/record-runtime.mjs'];
@@ -21,9 +21,9 @@ function handlersOf(entries) {
 function stubRoot(name) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-hooks-'));
   const root = path.join(base, name);
-  fs.mkdirSync(path.join(root, 'codex'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'harnesses', 'codex'), { recursive: true });
   fs.mkdirSync(path.join(root, 'hooks'), { recursive: true });
-  for (const file of ['hook-entry.mjs', 'hooks.mjs']) fs.copyFileSync(path.join(ROOT, 'codex', file), path.join(root, 'codex', file));
+  for (const file of ['hook-entry.mjs', 'hooks.mjs']) fs.copyFileSync(path.join(ROOT, 'harnesses', 'codex', file), path.join(root, 'harnesses', 'codex', file));
   fs.copyFileSync(path.join(ROOT, 'hooks', 'hooks.json'), path.join(root, 'hooks', 'hooks.json'));
   const stub = [
     "import process from 'node:process';",
@@ -70,7 +70,7 @@ test('the session entry raises the token limit and no other entry sets one', () 
 
 test('every command runs the wrapper with a listed script', () => {
   const handlers = handlersOf(codexHookEntries(ROOT));
-  const wrapper = path.join(ROOT, 'codex', 'hook-entry.mjs');
+  const wrapper = path.join(ROOT, 'harnesses', 'codex', 'hook-entry.mjs');
   assert.deepEqual(handlers.map((handler) => handler.command), TARGETS.map((target) => `node '${wrapper}' ${target}`));
   assert.deepEqual(handlers.map((handler) => handler.commandWindows), TARGETS.map((target) => `node "${wrapper}" ${target}`));
 });
@@ -102,7 +102,7 @@ test('a root Windows cannot quote gets no commandWindows entry', () => {
 
 test('the wrapper sets the host and the root over inherited values and passes the script no arguments', () => {
   const { root } = stubRoot('plain');
-  const run = runCommand(`node '${path.join(root, 'codex', 'hook-entry.mjs')}' hooks/dispatch-bash.mjs`, { EXO_HOST: 'claude', CLAUDE_PLUGIN_ROOT: '/elsewhere', CLAUDECODE: '1' });
+  const run = runCommand(`node '${path.join(root, 'harnesses', 'codex', 'hook-entry.mjs')}' hooks/dispatch-bash.mjs`, { EXO_HOST: 'claude', CLAUDE_PLUGIN_ROOT: '/elsewhere', CLAUDECODE: '1' });
   assert.equal(run.status, 0, run.stderr);
   const seen = JSON.parse(run.stdout);
   assert.equal(seen.host, 'codex');
@@ -113,7 +113,7 @@ test('the wrapper sets the host and the root over inherited values and passes th
 
 test('the wrapper refuses an unlisted script before running anything (trust boundary)', () => {
   const { root } = stubRoot('plain');
-  const wrapper = path.join(root, 'codex', 'hook-entry.mjs');
+  const wrapper = path.join(root, 'harnesses', 'codex', 'hook-entry.mjs');
   const refused = ['hooks/hooks.mjs', 'hooks/hooks.json', 'hooks/guards/read-guard.mjs', '../hooks/session-start.mjs', 'hooks/../hooks/hooks.mjs', path.join(root, 'hooks', 'dispatch-bash.mjs'), '/etc/passwd', ''];
   for (const target of refused) {
     const run = spawnSync('node', [wrapper, target], { encoding: 'utf8' });
@@ -132,7 +132,7 @@ test('the wrapper refuses an unlisted script before running anything (trust boun
 test('the wrapper fails closed when the source hooks file does not parse', () => {
   const { root } = stubRoot('plain');
   fs.writeFileSync(path.join(root, 'hooks', 'hooks.json'), '{ not json');
-  const run = spawnSync('node', [path.join(root, 'codex', 'hook-entry.mjs'), 'hooks/dispatch-bash.mjs'], { encoding: 'utf8' });
+  const run = spawnSync('node', [path.join(root, 'harnesses', 'codex', 'hook-entry.mjs'), 'hooks/dispatch-bash.mjs'], { encoding: 'utf8' });
   assert.equal(run.status, 1);
   assert.equal(run.stdout, '');
 });

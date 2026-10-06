@@ -332,7 +332,7 @@ test('on Codex the replies rule is the same as on Claude Code', async () => {
 
 test('the Codex budget rules name only twins that exist as generated agent files', () => {
   for (const rule of Object.values(SCHEMA.budget.codexRules)) {
-    for (const [name] of rule.matchAll(/exo-[a-z-]+/g)) assert.ok(existsSync(new URL(`../codex/agents/${name}.toml`, import.meta.url)), name);
+    for (const [name] of rule.matchAll(/exo-[a-z-]+/g)) assert.ok(existsSync(new URL(`../harnesses/codex/agents/${name}.toml`, import.meta.url)), name);
   }
 });
 

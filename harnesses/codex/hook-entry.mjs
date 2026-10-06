@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// The command every Codex hook entry runs: `node codex/hook-entry.mjs <script>`.
+// The command every Codex hook entry runs: `node harnesses/codex/hook-entry.mjs <script>`.
 // Codex gives hook commands neither the exo root nor the host, so this sets
 // EXO_HOST=codex and CLAUDE_PLUGIN_ROOT (which hooks/guards/bash-output-guard.mjs
 // exempts from its output cap), then imports the script as the process entry.
 // The root is this file's own location, never an argument or an inherited
-// variable, and the script must be one of the entries `codex/hooks.mjs` lists:
+// variable, and the script must be one of the entries `harnesses/codex/hooks.mjs` lists:
 // anything else is refused before it runs, with exit 1.
 
 import path from 'node:path';
@@ -12,7 +12,7 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { codexHookTargets } from './hooks.mjs';
 
-const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const root = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 const target = process.argv[2];
 
 let listed = [];

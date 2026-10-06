@@ -116,7 +116,7 @@ function skillBody(skillFile) {
 // last, so the cap cuts the context before them: the note maps every tool the
 // skills name, and the cut falls on the tail of the route-skills body.
 function withCodexNote(context) {
-  const note = fs.readFileSync(path.join(root, 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd();
+  const note = fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd();
   const style = skillBody(path.join(root, 'output-styles', 'scannable.md')).trim();
   const tail = `\n\n${note}\n\n${style}`;
   const bytesRoom = CODEX_TOKEN_CAP * 4 - Buffer.byteLength(tail);

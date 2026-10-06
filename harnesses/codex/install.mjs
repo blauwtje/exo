@@ -1,13 +1,13 @@
 // Installs exo into Codex's user folders from this clone; the CLI and the IDE
 // extension both read them.
 //
-//   node codex/install.mjs [--codex-home <dir>] [--skills-dir <dir>]
-//   node codex/install.mjs --remove [--codex-home <dir>] [--skills-dir <dir>]
+//   node harnesses/codex/install.mjs [--codex-home <dir>] [--skills-dir <dir>]
+//   node harnesses/codex/install.mjs --remove [--codex-home <dir>] [--skills-dir <dir>]
 //
 // It links each skill folder (except route-skills, whose body the session hook
 // injects) into the skills folder (default ~/.agents/skills), copies
-// `codex/agents/*.toml` into `<codex home>/agents/` (default ~/.codex, or
-// $CODEX_HOME), and merges the entries of `codex/hooks.mjs` into
+// `harnesses/codex/agents/*.toml` into `<codex home>/agents/` (default ~/.codex, or
+// $CODEX_HOME), and merges the entries of `harnesses/codex/hooks.mjs` into
 // `<codex home>/hooks.json`. What it wrote goes to `<codex home>/exo/installed.json`;
 // `--remove` deletes exactly those entries.
 //
@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
 import { codexHookEntries } from './hooks.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const NOT_LINKED = ['route-skills'];
 const SKILL_NAME = /^[a-z0-9][a-z0-9-]*$/;
 const AGENT_FILE = /^[a-z0-9][a-z0-9-]*\.toml$/;
@@ -178,7 +178,7 @@ function planInstall({ root, codexHome, skillsDir }) {
   const staleSkills = old.skills.filter((entry) => !wanted.includes(entry.name));
   releaseSkills(staleSkills, skillsDir, writes, notes);
 
-  const agentsSource = path.join(root, 'codex', 'agents');
+  const agentsSource = path.join(root, 'harnesses', 'codex', 'agents');
   const agentFiles = fs.readdirSync(agentsSource).filter((name) => name.endsWith('.toml'));
   const interimAgents = [];
   for (const name of agentFiles) {

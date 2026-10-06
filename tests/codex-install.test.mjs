@@ -1,4 +1,4 @@
-// `codex/install.mjs` links skills, copies agents and merges hook groups into
+// `harnesses/codex/install.mjs` links skills, copies agents and merges hook groups into
 // Codex's user folders, records them, and removes exactly those. It refuses a
 // file, link or hook group it did not write, and an unparseable hooks.json or
 // install record, before any write; a forged record cannot name a path outside
@@ -11,11 +11,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { codexHookEntries } from '../codex/hooks.mjs';
+import { codexHookEntries } from '../harnesses/codex/hooks.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname.replace(/\/$/, '');
-const INSTALL = path.join(ROOT, 'codex', 'install.mjs');
-const AGENT_NAMES = fs.readdirSync(path.join(ROOT, 'codex', 'agents')).filter((name) => name.endsWith('.toml'));
+const INSTALL = path.join(ROOT, 'harnesses', 'codex', 'install.mjs');
+const AGENT_NAMES = fs.readdirSync(path.join(ROOT, 'harnesses', 'codex', 'agents')).filter((name) => name.endsWith('.toml'));
 const SKILL_NAMES = fs.readdirSync(path.join(ROOT, 'skills'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== 'route-skills')
   .map((entry) => entry.name);
@@ -72,7 +72,7 @@ test('a fresh install links skills, copies agents, merges hooks and records them
   }
   assert.equal(fs.existsSync(path.join(paths.skills, 'route-skills')), false);
   for (const name of AGENT_NAMES) {
-    assert.deepEqual(fs.readFileSync(path.join(paths.home, 'agents', name)), fs.readFileSync(path.join(ROOT, 'codex', 'agents', name)));
+    assert.deepEqual(fs.readFileSync(path.join(paths.home, 'agents', name)), fs.readFileSync(path.join(ROOT, 'harnesses', 'codex', 'agents', name)));
   }
   assert.deepEqual(readJson(hooksPath(paths)), { hooks: codexHookEntries(ROOT) });
   const record = readJson(recordPath(paths));
@@ -219,7 +219,7 @@ test('an update rewrites an agent file the record says exo wrote', () => {
   record.agents.find((entry) => entry.name === AGENT_NAMES[0]).sha256 = crypto.createHash('sha256').update(old).digest('hex');
   fs.writeFileSync(recordPath(paths), JSON.stringify(record));
   assert.equal(run(paths).status, 0);
-  assert.deepEqual(fs.readFileSync(file), fs.readFileSync(path.join(ROOT, 'codex', 'agents', AGENT_NAMES[0])));
+  assert.deepEqual(fs.readFileSync(file), fs.readFileSync(path.join(ROOT, 'harnesses', 'codex', 'agents', AGENT_NAMES[0])));
 });
 
 test('the defaults come from CODEX_HOME and the home folder', () => {
