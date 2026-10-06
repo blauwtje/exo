@@ -15,8 +15,8 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
-| `node harnesses/codex/write-agents.mjs` | Writes `harnesses/codex/agents/exo-<agent>.toml` for each `agents/*.md` entry and each `-low` twin, from the `providers.codex` block of `lib/model-kinds.json`. `npm run codex-agents` runs the same command. `--check` lists drift and exits 1. |
-| `node harnesses/codex/install.mjs` | Installs exo into Codex's user folders from this clone; `--remove` undoes it. `--codex-home <dir>` and `--skills-dir <dir>` point it at a scratch folder. |
+| `npm run generate` | Writes `harnesses/codex/generated/` from `skills/`, `agents/`, `hooks/hooks.json` and `lib/model-kinds.json` by the rules in `harnesses/codex/rules.mjs`: every skill's Markdown rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` for each agent and each `-low` twin. `npm run check` fails on a missing, differing or stray generated file. |
+| `node install.mjs [--harness claude,codex] [--scope user\|project\|local] [--project <dir>] [--yes] [--update] [--remove]` | Installs exo into every detected harness from this clone, or updates or removes what it recorded. It generates in memory from the sources, so an install never uses a stale tree. |
 | `node verify/skill-graph.mjs <command> [args]` | A read-only index over the skills, agents, hooks, root docs, `verify/` and `tests/`: `size`, `range`, `inbound`, `pins`, `refs`, `overlap` and `json`, each printing a compact answer instead of a whole file. |
 
 CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every pull request.
@@ -77,9 +77,15 @@ Each hook entry pins `"shell": "bash"` so a Windows host without Git Bash does n
 
 ## Codex
 
-`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/write-agents.mjs` resolves each agent's kind through that block and writes the committed `harnesses/codex/agents/*.toml`, each holding `harnesses/codex/agent-preamble.md` and the agent body. Edit an agent or the table, then run `node harnesses/codex/write-agents.mjs` and commit the files. The `codex agents` check in `verify/checks/codex-agents.mjs` fails `npm run check` on a missing, stale or unlisted file.
+`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/generate.mjs` applies `harnesses/codex/rules.mjs` to the Claude sources and writes the committed `harnesses/codex/generated/skills/<name>/` and `harnesses/codex/generated/agents/exo-<agent>.toml`, each agent file holding `harnesses/codex/agent-preamble.md` and the agent body. Edit a source or the table, then run `npm run generate` and commit the files. The `codex generated` check in `verify/checks/codex-generated.mjs` fails `npm run check` on a missing, differing or stray file.
 
-`harnesses/codex/install.mjs` links the skills, copies the agent files and merges the hook entries listed in `harnesses/codex/hooks.mjs`, which takes them from `hooks/hooks.json` through an allowlist and drops `shell`. Each hook runs through `harnesses/codex/hook-entry.mjs`, which sets `EXO_HOST=codex` and `CLAUDE_PLUGIN_ROOT`. `harnesses/codex/host-note.md` is injected at session start with the `scannable` style. The host is `EXO_HOST` when set, else Codex when `CLAUDECODE` is not `1` and a `CODEX_` variable is set, else Claude Code. The release ships the committed agent files, so no Codex manifest or workflow step exists. Try an install against a scratch folder with `node harnesses/codex/install.mjs --codex-home <dir> --skills-dir <dir>`.
+`harnesses/codex/overrides/<path under generated>` replaces one generated file and opens with `<!-- exo:override source-sha256=<hash> -->`, naming the hash of its Claude source. exo ships none; add one only after a skill reads wrong in a real Codex run. A changed source hash fails `npm run check`, never warns.
+
+`install.mjs` at the root runs one adapter per harness, listed in `harnesses/registry.mjs`. An adapter is `harnesses/<name>/adapter.mjs` exporting `name`, `label`, `detect(env)`, `install(plan)`, `update(record)` and `remove(record)`; a new harness is one adapter folder plus one registry line. The Claude adapter runs `claude plugin install exo@blauwtje -s <scope>` and records each install in `${CLAUDE_CONFIG_DIR:-~/.claude}/exo/installed.json`.
+
+The Codex adapter copies the generated skills with `{{EXO_ROOT}}` and `{{SKILL_DIR}}` filled, copies the agent files and merges the hook entries listed in `harnesses/codex/hooks.mjs`, which takes them from `hooks/hooks.json` through an allowlist and drops `shell`. It records each install in `${CODEX_HOME:-~/.codex}/exo/installed.json`.
+
+Each install fixes its own host through its entry. Codex hooks run `harnesses/codex/hook-entry.mjs`, and every script command in a generated skill or agent runs `harnesses/codex/run.mjs`; both set `EXO_HOST=codex` and `CLAUDE_PLUGIN_ROOT`. Claude Code's entries set nothing. `lib/host.mjs` reads only `EXO_HOST`, and a missing or unknown value means Claude Code. `harnesses/codex/host-note.md` is injected at session start with the `scannable` style. Try an install against a scratch folder with `HOME=<dir> CODEX_HOME=<dir>/.codex node install.mjs --harness codex --yes`.
 
 ## Guard internals
 

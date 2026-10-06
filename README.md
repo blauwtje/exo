@@ -24,14 +24,30 @@ exo is a Claude Code plugin that gives Claude this one way of working. It is bui
 
 Restart Claude Code, then run `/exo:configure` in a new session. A list of exo settings means it loaded. exo needs `bash` and `node` on `PATH`. On Windows, see [Requirements](#requirements).
 
+To install into every harness on the machine in one step, clone the repository and run its installer. The [Codex](#codex) section has the Codex line, and `node install.mjs` alone asks which harnesses and which scope.
+
+```text
+git clone https://github.com/blauwtje/exo ~/.exo
+node ~/.exo/install.mjs
+```
+
+The installer lists a harness whose config folder exists but whose CLI is missing as not installable. Its scopes follow Claude Code's `-s` values: `user` for every project, `project` for chosen projects shared through git, `local` for chosen projects kept private. Pass `--harness claude,codex`, `--scope`, `--project <dir>` and `--yes` to skip the prompts.
+
 ## Codex
 
-exo also runs on Codex, in the CLI and the IDE extension, on ChatGPT models priced and sized like their Claude counterparts. Claude Code stays the primary host and behaves as before.
+exo also runs on Codex, in the Codex CLI, on ChatGPT models priced and sized like their Claude counterparts. Claude Code stays the primary host and behaves as before.
 
 - **Plan:** exo's agents run on `gpt-6.1-sol` and `gpt-6-luna`, so you need a plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. Free and Go have only Luna and are unsupported.
-- **Install:** from a clone of this repository, run `node harnesses/codex/install.mjs`. It links each skill into `~/.agents/skills`, copies the agent files into `~/.codex/agents/` and merges exo's hook entries into `~/.codex/hooks.json`, under `$CODEX_HOME` when set. It records what it wrote in `~/.codex/exo/installed.json`. It never overwrites a file, link or hook entry it did not write, never edits `config.toml`, and writes nothing when `hooks.json` does not parse.
-- **Update:** run `git pull` in the clone, then rerun `node harnesses/codex/install.mjs`. Skills follow the links at once; agents and hooks need the rerun.
-- **Remove:** run `node harnesses/codex/install.mjs --remove`. It deletes exactly the entries recorded in `installed.json`.
+- **Install:** run the command below. A Codex plugin carries no custom agents and does not run in the IDE extension, so Codex runs exo from a clone, by default `~/.exo`.
+
+```text
+git clone https://github.com/blauwtje/exo ~/.exo && node ~/.exo/install.mjs --harness codex
+```
+
+- **Writes:** `user` scope writes skills to `~/.agents/skills/`, agents to `~/.codex/agents/` and hook entries to `~/.codex/hooks.json`, under `$CODEX_HOME` when set. `project` and `local` write the same under `<project>/.agents/` and `<project>/.codex/`, and `local` adds each path to `<project>/.git/info/exclude`. The `project` scope needs the clone at `~/.exo`.
+- **Safety:** it records each install in `~/.codex/exo/installed.json`. It never overwrites or removes a file, folder or hook entry it did not write, never edits `config.toml`, and writes nothing when `hooks.json` does not parse.
+- **Update:** run `node ~/.exo/install.mjs --update`. It pulls the clone with `git pull --ff-only`, then updates every install it recorded, in Codex and in Claude Code.
+- **Remove:** run `node ~/.exo/install.mjs --remove`. It removes every install it recorded, or only those matching `--harness`, `--scope` and `--project`.
 - **Settings:** `$configure` writes the global layer to `~/.codex/exo/settings.json`; the project and local layers stay `.claude/exo.json` and `.claude/exo.local.json`.
 
 Codex has no equivalent for some Claude Code features, so exo drops or approximates them:
