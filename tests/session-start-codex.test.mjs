@@ -33,7 +33,7 @@ test('a Codex run injects the note and the style after the existing context and 
     assert.ok(settings >= 0 && settings < note && note < style, `${settings} ${note} ${style}`);
     assert.ok(context.includes(`The exo root is \`${REPOSITORY}\``), 'root not filled');
     assert.ok(!context.includes('{root}'), 'a placeholder is left');
-    assert.match(context, /Start every command that runs a script under `[^`]+` with `EXO_HOST=codex`/);
+    assert.ok(!context.includes('EXO_HOST=codex'), 'the note still names the host prefix');
     assert.ok(Buffer.byteLength(context) / 4 <= 5000, `${Buffer.byteLength(context)} bytes`);
     assert.match(output.systemMessage, /run \$start .*\$configure/);
     const folder = path.join(home, '.codex', 'exo');
