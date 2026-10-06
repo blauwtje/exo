@@ -15,7 +15,13 @@
 // outside the plugin.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
 // directory outside the repository, matching pressure-scenarios.md; cells
-// run one after another.
+// run one after another. --setup <script> (resolved against the caller's cwd)
+// runs `bash <script>` right before every single run instead, and the runs go
+// one after another, alternating arms (comparison 1, with 1, comparison 2,
+// ...), so each run starts from a fixture the script just rebuilt and no other
+// run touches. A setup that exits non-zero skips its run: the answer file
+// holds a note with the setup's stderr, the arm line reads
+// `[setup failed: exit <code>]` and the runner ends with exit 1.
 //
 // Each run's full final answer, untruncated, goes to its own file
 // `<model>-<effort>-<arm>-<run>.md` in the --out directory (default a fresh
@@ -29,9 +35,9 @@
 // `  WRONG COPY <arm> <run>: <skill dir> is not under <plugin dir>` and
 // ends the runner with exit 1, so that run never counts as a pass.
 //
-//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--runs 3] [--out <dir>]
+//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--setup <script>] [--runs 3] [--out <dir>]
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -44,10 +50,10 @@ const DEFAULT_RUNS = 1;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
-const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--runs <n>] [--out <dir>]';
+const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--setup <script>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', runs: 'value', out: 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', setup: 'value', runs: 'value', out: 'value' });
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
   if (!flags['plugin-dir']) throw new UsageError('--plugin-dir needs a clone of the plugin');
@@ -60,6 +66,10 @@ function readFlags(argv) {
     return { model: match[1], effort: match[2] };
   });
   const pluginDir = resolvePluginDir('--plugin-dir', flags['plugin-dir'], process.cwd());
+  const setupScript = flags.setup === undefined ? undefined : path.resolve(flags.setup);
+  if (setupScript !== undefined && !fs.existsSync(setupScript)) {
+    throw new UsageError(`--setup needs an existing script, got '${setupScript}'`);
+  }
   return {
     promptFile: flags.prompt,
     cells,
@@ -67,6 +77,7 @@ function readFlags(argv) {
     pluginId: installedPluginId(pluginDir, '--plugin-dir'),
     mainDir: flags['main-dir'] === undefined ? undefined : resolvePluginDir('--main-dir', flags['main-dir'], process.cwd()),
     settingSources: flags['setting-sources'],
+    setupScript,
     runs: flags.runs === undefined ? DEFAULT_RUNS : Number(flags.runs),
     outDir: flags.out
   };
@@ -139,10 +150,19 @@ function runArm(args, cwd) {
   });
 }
 
+// Rebuilds the fixture for the next run; its stdout is dropped so it never
+// mixes into the runner's own lines.
+function runSetup(setupScript) {
+  const setup = spawnSync('bash', [setupScript], { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
+  if (setup.error) throw setup.error;
+  return { exit: setup.status ?? setup.signal, stderr: setup.stderr };
+}
+
 // The answer file's content: the full final answer, or a note holding the
-// full stderr when the run timed out or produced no result.
+// full stderr when the setup failed, the run timed out or produced no result.
 function answerText(outcome) {
   const stderr = outcome.stderr.trim() || 'empty';
+  if (outcome.setupExit !== undefined) return `(setup failed: exit ${outcome.setupExit})\n\nstderr:\n${stderr}\n`;
   if (outcome.timedOut) return `(timed out after ${TIMEOUT_MS / 1000}s)\n\nstderr:\n${stderr}\n`;
   if (outcome.finalText === undefined) return `(no result)\n\nstderr:\n${stderr}\n`;
   return outcome.finalText;
@@ -154,31 +174,54 @@ function fileSafe(value) {
   return value.replace(/[^A-Za-z0-9._-]/g, '_');
 }
 
-// Runs one cell and prints its lines; true when some run loaded a wrong copy.
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, runs, outDir }) {
+// Runs the planned runs one after another, alternating arms, and returns
+// their outcomes in planned order.
+async function runInSequence(planned, startRun) {
+  const order = planned.map((_, index) => index)
+    .sort((left, right) => planned[left].runNumber - planned[right].runNumber || left - right);
+  const outcomes = new Array(planned.length);
+  for (const index of order) outcomes[index] = await startRun(planned[index]);
+  return outcomes;
+}
+
+// Runs one cell and prints its lines; true when some setup failed or some
+// run loaded a wrong copy.
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, setupScript, runs, outDir }) {
   const arms = [
     comparisonArm({ pluginId, mainDir }),
     { name: 'with', pluginDir, flags: ['--plugin-dir', pluginDir] }
   ];
   const planned = arms.flatMap((arm) => Array.from({ length: runs }, (_, index) => ({ arm, runNumber: index + 1 })));
-  const outcomes = await Promise.all(planned.map(({ arm }) => {
+  const startRun = ({ arm }) => {
+    if (setupScript !== undefined) {
+      const setup = runSetup(setupScript);
+      if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
+    }
     const scratch = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
     return runArm(claudeArguments({ model, effort, promptText, settingSources, armFlags: arm.flags }), scratch);
-  }));
+  };
+  const outcomes = setupScript === undefined
+    ? await Promise.all(planned.map(startRun))
+    : await runInSequence(planned, startRun);
   console.log(`${model}:${effort}`);
-  let loadedWrongCopy = false;
+  let failed = false;
   planned.forEach(({ arm, runNumber }, index) => {
     const outcome = outcomes[index];
     const file = path.join(outDir, `${fileSafe(model)}-${fileSafe(effort)}-${arm.name}-${runNumber}.md`);
     fs.writeFileSync(file, answerText(outcome));
+    if (outcome.setupExit !== undefined) {
+      failed = true;
+      console.log(`  ${arm.name} ${runNumber}: ${file} [setup failed: exit ${outcome.setupExit}]`);
+      return;
+    }
     const skills = outcome.skills.length > 0 ? outcome.skills.join(', ') : 'none';
     console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]`);
     for (const dir of wrongCopies(outcome.skillDirs, arm.pluginDir)) {
-      loadedWrongCopy = true;
+      failed = true;
       console.log(`  WRONG COPY ${arm.name} ${runNumber}: ${dir} is not under ${arm.pluginDir}`);
     }
   });
-  return loadedWrongCopy;
+  return failed;
 }
 
 async function main() {

@@ -5,6 +5,7 @@
 // the installed copy of the clone's plugin through --settings, the with arm
 // always gets --plugin-dir and no --settings, and each arm line names the
 // first Edit or Write tool call and every Skill tool call in the stream.
+// --setup runs its script before every run and runs them one at a time.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -32,6 +33,7 @@ const STAND_IN = [
   "if (mode === 'skills') { console.log(JSON.stringify(assistantWithSkill('exo:find-cause'))); console.log(JSON.stringify(assistantWithSkill('exo:edit-skills'))); console.log(JSON.stringify(resultLine('used two skills'))); process.exit(0); }",
   "if (mode === 'long') { console.log(JSON.stringify(resultLine('a'.repeat(400) + ' middle ' + 'b'.repeat(400) + ' the end'))); process.exit(0); }",
   "if (mode === 'loads') { const dir = process.env.STAND_IN_BASE ?? process.argv[process.argv.indexOf('--plugin-dir') + 1] + '/skills/spec'; console.log(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'Base directory for this skill: ' + dir + '\\n\\n# Skill' }] } })); console.log(JSON.stringify(resultLine('loaded a skill'))); process.exit(0); }",
+  "if (mode === 'paced') { setTimeout(() => { fs.appendFileSync(process.env.STAND_IN_LOG, 'end\\n'); console.log(JSON.stringify(resultLine('paced answer'))); }, 100); return; }",
   "if (mode === 'fails') { process.stderr.write('e'.repeat(400) + ' stderr tail'); process.exit(1); }",
   'process.exit(0);'
 ].join('\n');
@@ -300,4 +302,55 @@ test('a skill loaded from outside the arm\'s copy prints a WRONG COPY line and e
   const right = await runPressure('loads', args);
   assert.equal(right.code, 0, right.stderr);
   assert.doesNotMatch(right.stdout, /WRONG COPY/);
+});
+
+// A setup script, in its own directory, that runs `body` under bash.
+async function setupScript(body) {
+  const script = path.join(await fixture(), 'setup.sh');
+  await fs.writeFile(script, body);
+  return script;
+}
+
+test('--setup runs the script right before every run, and the runs go one at a time, alternating arms', async () => {
+  const clone = await pluginClone();
+  const out = await fixture();
+  const script = await setupScript('echo setup >> "$STAND_IN_LOG"\necho rebuilt\n');
+  const outcome = await runPressure('paced', (cwd) => ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out, '--runs', '2', '--setup', path.relative(cwd, script)]);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  const steps = outcome.calls.map((call) => {
+    if (call === 'setup' || call === 'end') return call;
+    return call.includes('--plugin-dir') ? 'with' : 'without';
+  });
+  assert.deepEqual(steps, [
+    'setup', 'without', 'end', 'setup', 'with', 'end', 'setup', 'without', 'end', 'setup', 'with', 'end'
+  ], outcome.calls.join('\n'));
+  const lines = armLines(outcome.stdout);
+  assert.deepEqual(lines.map((line) => `${line.arm} ${line.run}`), ['without 1', 'without 2', 'with 1', 'with 2']);
+  assert.doesNotMatch(outcome.stdout, /rebuilt/);
+  for (const line of lines) assert.equal(await fs.readFile(line.file, 'utf8'), 'paced answer');
+});
+
+test('a --setup that exits non-zero skips its run, notes its stderr, marks the line failed and exits 1', async () => {
+  const clone = await pluginClone();
+  const out = await fixture();
+  const script = await setupScript('echo broken fixture >&2\nexit 3\n');
+  const outcome = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out, '--runs', '1', '--setup', script]);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.deepEqual(outcome.calls, []);
+  for (const arm of ['without', 'with']) {
+    const file = path.join(out, `sonnet-high-${arm}-1.md`);
+    assert.ok(outcome.stdout.includes(`  ${arm} 1: ${file} [setup failed: exit 3]`), outcome.stdout);
+    const note = await fs.readFile(file, 'utf8');
+    assert.ok(note.includes('broken fixture'), note);
+  }
+});
+
+test('a --setup naming no file is a usage error that runs no claude', async () => {
+  const clone = await pluginClone();
+  const missing = path.join(await fixture(), 'no-such-setup.sh');
+  const outcome = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--setup', missing]);
+  assert.equal(outcome.code, 2, outcome.stderr);
+  assert.ok(outcome.stderr.includes(missing), outcome.stderr);
+  assert.equal(outcome.stdout, '');
+  assert.deepEqual(outcome.calls, []);
 });
