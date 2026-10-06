@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/value/` holds a value tier of 13 headless tasks, each a seed repository with a hidden check and a reference solution, run through `node benchmarks/run.mjs --tier value`; its contract sits in `benchmarks/README.md` and `tests/benchmark-value.test.mjs` proves every check fails on its seed and passes on its solution.
+- `benchmarks/results/2026-10-06-value-hard.md` records baseline against exo on the two value tasks baseline failed in the pilots, Sonnet 5, 5 runs each: value-test-pollution 0/5 in both arms and value-context-guards 4/5 baseline against 2/5 exo, so exo shows no advantage beyond 2 standard errors, at about 65% more weighted tokens on value-context-guards.
+
 ## 0.96.0 - 2026-10-06
 
 ### Added
