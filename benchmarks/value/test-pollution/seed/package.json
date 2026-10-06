@@ -1,0 +1,13 @@
+{
+  "name": "tenant-pricing",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-tenant pricing, quoting and invoicing service",
+  "engines": {
+    "node": ">=22.8"
+  },
+  "scripts": {
+    "test": "node --test --test-isolation=none tests/*.test.mjs"
+  }
+}

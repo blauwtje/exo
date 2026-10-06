@@ -1,0 +1,7 @@
+{
+  "id": "value-test-pollution",
+  "claim": "find-cause: one visible order-dependent failure hides three cross-tenant state leaks, and a runner or single-leak fix leaves the suite order-dependent",
+  "timeoutMinutes": 20,
+  "estimateUsd": 0.35,
+  "maxBudgetUsd": 1.5
+}
