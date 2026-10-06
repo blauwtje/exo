@@ -1,0 +1,11 @@
+{
+  "lang": "en",
+  "waiting": "The first sketch is on its way.",
+  "fallbackQuestion": "Which one fits best?",
+  "hint": "Click the one you like. This tab stays open for the next sketch.",
+  "steer": "Want anything changed?",
+  "send": "Send note",
+  "received": "Got it. The next sketch appears here.",
+  "failed": "Your answer did not arrive. Say it in the conversation instead.",
+  "lost": "This tab lost its session. Say your answer in the conversation instead."
+}

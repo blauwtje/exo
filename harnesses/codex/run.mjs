@@ -4,10 +4,10 @@
 // Codex gives those commands neither the exo root nor the host, so this sets
 // EXO_HOST=codex and CLAUDE_PLUGIN_ROOT, then imports the script as the process entry.
 // The root is this file's own location, never an argument or an inherited variable.
-// Only a `skills/<name>/scripts/*.mjs` file is run: the argument, given relative to
-// the root or as the absolute path the generated skills carry (`{{EXO_ROOT}}/skills/...`
-// filled in), must have that shape and its real path, after symlinks, must have it
-// inside the real root, else exit 1 before any import.
+// Only a `skills/<name>/scripts/*.mjs` file or one of the LIB_ENTRIES is run: the
+// argument, given relative to the root or as the absolute path the generated skills
+// carry (`{{EXO_ROOT}}/skills/...` filled in), must have that shape and its real path,
+// after symlinks, must have it inside the real root, else exit 1 before any import.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,6 +16,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 const SKILL_SCRIPT = /^skills\/[^/\\]+\/scripts\/[^/\\]+\.mjs$/;
+// The lib files skills run as commands; each needs the codex host (lib/workspace.mjs
+// reads the settings file of the host), so a new one is added here when a skill runs it.
+const LIB_ENTRIES = new Set([
+  'lib/mcp-tool-call.mjs',
+  'lib/scratch-exclude.mjs',
+  'lib/scratch-path.mjs',
+  'lib/size-facts.mjs',
+  'lib/workspace.mjs'
+]);
 
 function refuse(reason) {
   console.error(`run: ${reason}`);
@@ -24,7 +33,7 @@ function refuse(reason) {
 
 function isSkillScript(relative) {
   const parts = relative.split('/');
-  return SKILL_SCRIPT.test(relative) && !parts.includes('..') && !parts.includes('.');
+  return (SKILL_SCRIPT.test(relative) || LIB_ENTRIES.has(relative)) && !parts.includes('..') && !parts.includes('.');
 }
 
 let realRoot;
@@ -48,7 +57,7 @@ function relativeToRoot(argument) {
 
 const target = relativeToRoot(process.argv[2]);
 if (typeof target !== 'string' || !isSkillScript(target)) {
-  refuse(`refused ${JSON.stringify(target)}, which is not a skills/<name>/scripts/*.mjs path`);
+  refuse(`refused ${JSON.stringify(target)}, which is not a skill script or a listed lib entry`);
 }
 
 let real;
@@ -60,7 +69,7 @@ try {
 }
 const inside = path.relative(realRoot, real).split(path.sep).join('/');
 if (!isSkillScript(inside)) {
-  refuse(`refused ${JSON.stringify(target)}, which resolves outside the skill scripts`);
+  refuse(`refused ${JSON.stringify(target)}, which resolves outside the skill scripts and lib entries`);
 }
 
 process.env.EXO_HOST = 'codex';

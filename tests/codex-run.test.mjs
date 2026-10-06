@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { generateTree } from '../harnesses/codex/generate.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 
@@ -62,6 +63,26 @@ test('runs a skill script as codex with the root and the remaining arguments', (
   assert.equal(seen.entry, path.join(fixture.root, 'skills', 'demo', 'scripts', 'ok.mjs'));
   assert.deepEqual(seen.args, ['--flag', payload, '']);
   assert.equal(fs.existsSync(path.join(process.cwd(), 'pwned')), false);
+});
+
+test('runs a listed lib entry as codex and refuses an unlisted lib file', () => {
+  const fixture = stubRoot();
+  fs.mkdirSync(path.join(fixture.root, 'lib'));
+  fs.writeFileSync(path.join(fixture.root, 'lib', 'workspace.mjs'), STUB);
+  fs.writeFileSync(path.join(fixture.root, 'lib', 'helper.mjs'), STUB);
+  const result = run(fixture, ['lib/workspace.mjs', 'decide'], { EXO_HOST: 'claude' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).host, 'codex');
+  fs.rmSync(fixture.marker);
+  assertRefused(fixture, ['lib/helper.mjs']);
+});
+
+test('every lib file a generated command runs is a launcher entry', () => {
+  const launcher = fs.readFileSync(path.join(ROOT, 'harnesses', 'codex', 'run.mjs'), 'utf8');
+  const command = /run\.mjs" "\{\{EXO_ROOT\}\}\/(lib\/[^"]+\.mjs)"/g;
+  for (const [file, text] of generateTree(ROOT)) {
+    for (const [, entry] of text.matchAll(command)) assert.ok(launcher.includes(`'${entry}'`), `${file} runs ${entry}, which run.mjs does not list`);
+  }
 });
 
 test('refuses a path outside the root', () => {

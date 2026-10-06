@@ -86,15 +86,18 @@ function readKnown(root) {
   return { skills, agents };
 }
 
-// Adds each skill's rewritten Markdown and policy file; `sources` maps each
+// Adds each skill's rewritten Markdown, its other non-script files verbatim and its policy file; `sources` maps each
 // generated path to the Claude file whose hash an override must name.
 function addSkills(root, known, files, sources) {
   for (const name of known.skills) {
     const directory = path.join(root, 'skills', name);
-    for (const location of listFiles(directory).filter((file) => file.endsWith('.md'))) {
+    for (const location of listFiles(directory)) {
+      // Scripts stay in the clone, which the installed text reaches through {{EXO_ROOT}}.
+      if (location.endsWith('.mjs')) continue;
       const source = posix(path.relative(root, location));
       const generated = path.posix.join(GENERATED, source);
-      files.set(generated, codexMarkdown(source, fs.readFileSync(location, 'utf8'), known));
+      const text = fs.readFileSync(location, 'utf8');
+      files.set(generated, location.endsWith('.md') ? codexMarkdown(source, text, known) : text);
       sources.set(generated, source);
     }
     const skillSource = `skills/${name}/SKILL.md`;
@@ -171,9 +174,18 @@ function build(root) {
   return { files, problems };
 }
 
-// Returns a Map of path relative to `root` to the file's expected text.
+function buildOrThrow(root) {
+  const built = build(root);
+  if (built.problems.length > 0) {
+    throw new Error(built.problems.map((record) => `${record.file}: ${record.problem}`).join('\n'));
+  }
+  return built.files;
+}
+
+// Returns a Map of path relative to `root` to the file's expected text; a stale or
+// malformed override throws instead of falling back to the plain rule output.
 export function generateTree(root = ROOT) {
-  return build(root).files;
+  return buildOrThrow(root);
 }
 
 // Lists drift as { file, problem } records, empty when every generated file
@@ -195,11 +207,7 @@ export function findGeneratedDrift(root = ROOT) {
 
 // A stray file stays: `--check` names it, and the user decides whether to delete it.
 export function writeGenerated(root = ROOT) {
-  const { files, problems } = build(root);
-  if (problems.length > 0) {
-    throw new Error(problems.map((record) => `${record.file}: ${record.problem}`).join('\n'));
-  }
-  for (const [file, text] of files) {
+  for (const [file, text] of buildOrThrow(root)) {
     const location = path.join(root, file);
     fs.mkdirSync(path.dirname(location), { recursive: true });
     fs.writeFileSync(location, text);

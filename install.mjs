@@ -46,7 +46,9 @@ function parse(argv) {
       project: { type: 'string', multiple: true },
       yes: { type: 'boolean' },
       update: { type: 'boolean' },
-      remove: { type: 'boolean' }
+      remove: { type: 'boolean' },
+      // Set by the update itself on the child it starts after the pull; never typed.
+      pulled: { type: 'boolean' }
     }
   });
   if (values.update && values.remove) throw new Error('--update and --remove cannot be combined');
@@ -179,7 +181,8 @@ function pullClone(root) {
 }
 
 // Returns the exit code. `context` lets a test inject the adapter list, the
-// streams, the environment and the clone root.
+// streams, the environment and the clone root; `restartAfterPull` makes --update
+// finish in a new process, so the pulled adapters are the ones that run.
 export async function run(argv, context = {}) {
   const {
     root = ROOT,
@@ -197,7 +200,17 @@ export async function run(argv, context = {}) {
     const selected = pickAdapters(options.harness, adapters);
     // A filter names a project that may be gone, so it is resolved but not checked.
     const projects = options.project?.map((folder) => path.resolve(cwd, folder)) ?? [undefined];
-    if (options.update) stdout.write(`${pullClone(root)}\n`);
+    if (options.update && !options.pulled) {
+      stdout.write(`${pullClone(root)}\n`);
+      // This process imported the adapters before the pull, so the pulled sources
+      // would be written by the old rules; a fresh process imports the new ones.
+      // Only the command line asks for the restart; a caller of run() keeps its own adapters.
+      if (context.restartAfterPull) {
+        const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url), ...argv, '--pulled'], { stdio: 'inherit' });
+        if (child.error) throw new Error(`update after the pull failed to start: ${child.error.message}`);
+        return child.status ?? 1;
+      }
+    }
     const jobs = selected.flatMap((adapter) => projects.map((project) => ({
       adapter,
       target: project,
@@ -219,7 +232,7 @@ export async function run(argv, context = {}) {
 
 if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    process.exitCode = await run(process.argv.slice(2));
+    process.exitCode = await run(process.argv.slice(2), { restartAfterPull: true });
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;

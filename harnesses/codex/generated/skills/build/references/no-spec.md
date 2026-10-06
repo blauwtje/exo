@@ -2,9 +2,9 @@
 
 A decided change with no plan file runs these steps instead of the loop above.
 
-1. **Orient.** A main session runs `node "{{EXO_ROOT}}/lib/scratch-exclude.mjs"`.
+1. **Orient.** A main session runs `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/lib/scratch-exclude.mjs"`.
    - Read only ranges a plan task's `Files:` lines or the request name.
-   - Resume from `<scratch>/implement-next.md` if present (`<scratch>` is what `node "{{EXO_ROOT}}/lib/scratch-path.mjs"` prints), deleting it once edits land.
+   - Resume from `<scratch>/implement-next.md` if present (`<scratch>` is what `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/lib/scratch-path.mjs"` prints), deleting it once edits land.
    - Otherwise, or when one direct search failed, dispatch `exo-locate-code` and read only its `Read next` ranges plus direct callers or callees.
    - Treat upstream Decisions as settled.
 2. **Gate.**

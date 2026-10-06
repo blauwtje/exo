@@ -14,7 +14,8 @@ export const DESCRIPTION_CAP = 1024;
 export const EMPHASIS_WORDS = ['MUST', 'NEVER', 'ALWAYS', 'IMPORTANT', 'CRITICAL', 'REQUIRED'];
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
-const SCRIPT_PATH = /^skills\/[a-z0-9-]+\/scripts\/[^/]+\.mjs$/;
+// Every lib file reaches the launcher, which refuses one outside its LIB_ENTRIES list.
+const SCRIPT_PATH = /^(skills\/[a-z0-9-]+\/scripts|lib)\/[^/]+\.mjs$/;
 const RUN_ENTRY = 'node "{{EXO_ROOT}}/harnesses/codex/run.mjs"';
 
 // Plain-text phrases, longest first so a longer phrase wins over its part.
@@ -67,7 +68,7 @@ function skillOf(file) {
 }
 
 // `node "${CLAUDE_SKILL_DIR}/scripts/x.mjs"` runs through the launcher, which
-// sets the host and takes only a skill script; any other root file keeps a plain path.
+// sets the host and takes only a skill script or a lib entry; any other root file keeps a plain path.
 function mapScriptCommands(file, text) {
   const command = /node "\$\{CLAUDE_(SKILL_DIR|PLUGIN_ROOT)\}\/([^"]+\.mjs)"/g;
   return text.replace(command, (whole, variable, relative) => {

@@ -7,6 +7,24 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `node ~/.exo/install.mjs` is one installer for every detected harness (Claude Code, Codex) at user, shared-project or private-project scope, with `--update` and a remove path; each harness sits behind an adapter registered in `harnesses/registry.mjs`.
+- `harnesses/claude/adapter.mjs` installs exo into Claude Code through its `claude plugin` CLI and records each install in `${CLAUDE_CONFIG_DIR:-~/.claude}/exo/installed.json`.
+- `npm run generate` builds the Codex skill and agent tree under `harnesses/codex/generated/` from the Claude sources by rule (`harnesses/codex/rules.mjs`), with hash-pinned overrides in `harnesses/codex/overrides/`; `npm run check` fails on a stale tree, a stray file or a changed override.
+- `harnesses/codex/run.mjs` runs skill scripts as Codex and refuses any path outside the plugin root's `skills/*/scripts/`.
+
+### Changed
+
+- `codex/` moved to `harnesses/codex/` with no shim, and `codex/install.mjs` became the Codex adapter behind the shared installer.
+- The host comes only from `EXO_HOST`; `CLAUDECODE` and `CODEX_HOME` no longer change it.
+- Codex installs copy the generated tree instead of linking the Claude `skills/`, and the install record holds several installs, reading the old single-target record as one `user` install.
+- README gives one install command per harness.
+
+### Removed
+
+- `npm run codex-agents` and `harnesses/codex/write-agents.mjs`, folded into `npm run generate`.
+
 ## 0.89.0 - 2026-10-06
 
 ### Added

@@ -205,6 +205,11 @@ function releaseLinks(entries, skillsDir, writes, notes) {
 }
 
 function releaseFiles(skillDir, entries, writes, notes) {
+  // A skill folder swapped for a link would lead the deletes below outside it.
+  if (statOf(skillDir)?.isSymbolicLink()) {
+    notes.push(`kept ${skillDir}: it is a link, not the folder exo wrote`);
+    return;
+  }
   const folders = new Set([skillDir]);
   for (const entry of entries) {
     const parts = safeParts(entry.path);

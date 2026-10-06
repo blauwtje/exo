@@ -31,9 +31,14 @@ test('a sibling skill script and a plugin-root script resolve to their skill', (
   assert.equal(codexBody('agents/build-task.md', rooted, KNOWN), expected);
 });
 
-test('a lib script keeps a plain root path, because the launcher runs only skill scripts', () => {
-  const text = 'node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug';
-  assert.equal(codexBody(SKILL, text, KNOWN), 'node "{{EXO_ROOT}}/lib/scratch-path.mjs" debug');
+test('a lib script runs through the launcher, which fixes the host it reads settings for', () => {
+  const text = 'node "${CLAUDE_SKILL_DIR}/../../lib/workspace.mjs" decide';
+  assert.equal(codexBody(SKILL, text, KNOWN), 'node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/lib/workspace.mjs" decide');
+});
+
+test('a root file outside skills and lib keeps a plain root path', () => {
+  const text = 'node "${CLAUDE_PLUGIN_ROOT}/hooks/x.mjs"';
+  assert.equal(codexBody(SKILL, text, KNOWN), 'node "{{EXO_ROOT}}/hooks/x.mjs"');
 });
 
 test('a script path that leaves the root throws', () => {

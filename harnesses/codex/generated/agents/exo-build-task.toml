@@ -21,7 +21,7 @@ You run on Codex, and the instructions below were written for Claude Code. Read 
 ## Build
 
 - Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first with project tools only.
-- Run `node "{{EXO_ROOT}}/lib/mcp-tool-call.mjs" "<proof>"` on each Proof first; on `DEFER` skip it, write `<command>: deferred`.
+- Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/lib/mcp-tool-call.mjs" "<proof>"` on each Proof first; on `DEFER` skip it, write `<command>: deferred`.
 - No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
 - Long task: code each step; green is each `Run:` printing its `Expected:`.
 - Test-first: `{{EXO_ROOT}}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
