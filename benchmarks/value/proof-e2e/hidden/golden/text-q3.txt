@@ -1,0 +1,10 @@
+Expenses from data/2024-q3.csv (46 rows)
+
+Category  Count         Total
+Hardware      9      5,764.75
+Training      8      4,223.62
+Software     11        460.04
+Meals         5        380.15
+Office        8        298.28
+Travel        5        173.19
+Total        46     11,300.03

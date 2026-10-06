@@ -1,0 +1,7 @@
+{
+  "id": "value-proof-e2e",
+  "claim": "proof-e2e",
+  "timeoutMinutes": 15,
+  "exoPrompt": "Load the exo:build skill and use it for this change.\n\nAdd a `--format json` option to the `expenses` CLI so I can pipe the report into jq. With it, stdout should be a JSON array with one object per category, `{ \"category\": ..., \"count\": ..., \"total\": ... }`, carrying the same totals the text report shows, and it should honor the same options as the text report. Keep the default text output as it is, reject unknown formats the way the CLI already rejects other bad values, add tests, and document the flag in the README.",
+  "estimateUsd": 1.0
+}

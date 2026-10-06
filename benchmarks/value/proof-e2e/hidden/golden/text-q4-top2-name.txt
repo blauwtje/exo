@@ -1,0 +1,7 @@
+Expenses from check-data/q4.csv (38 rows)
+
+Category  Count         Total
+Hardware      5      5,160.09
+Meals         6        243.29
+... and 4 more categories
+Total        38      9,900.14
