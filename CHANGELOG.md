@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.96.0 - 2026-10-06
+
 ### Added
 
 - `verify/budgets.mjs` locks `skills/route-skills/references/lean.md` at its measured 1030 bytes, so the file can only shrink with the lock following.
