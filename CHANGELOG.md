@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- exo gains a Codex host: a Codex provider block in the model kind table, host detection, and explicit-only invocation of `start`, `save-session` and `remember` on Codex.
+
 ## 0.88.2 - 2026-10-05
 
 ### Fixed
