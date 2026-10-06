@@ -17,7 +17,7 @@ import process from 'node:process';
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
   'ABOUT.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md',
-  'docs/skills/build.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json',
+  'docs/skills/build.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json', 'codex',
 ];
 
 function read(root, relative) {
