@@ -1,15 +1,21 @@
-// The Codex harness for install.mjs: installs exo into Codex's user folders from
-// this clone; the CLI and the IDE extension both read them.
+// The Codex harness for install.mjs: installs exo into Codex's folders from this
+// clone; the CLI and the IDE extension both read them.
 //
 // It copies each generated skill (harnesses/codex/generate.mjs, built in memory
-// from the sources, so an install never uses a stale tree) into the skills folder
-// (default ~/.agents/skills), copies the generated agents into `<codex home>/agents/`
-// (default ~/.codex, or $CODEX_HOME), and merges the entries of
-// `harnesses/codex/hooks.mjs` into `<codex home>/hooks.json`. Both placeholders
-// are filled at install: `{{EXO_ROOT}}` with the clone's path, `{{SKILL_DIR}}`
-// with the installed skill folder. What it wrote, with a sha256 per file, goes to
-// `<codex home>/exo/installed.json`, one entry per install; update and remove
-// act only on what that record lists.
+// from the sources, so an install never uses a stale tree) into a skills folder,
+// copies the generated agents into an agents folder, and merges the entries of
+// `harnesses/codex/hooks.mjs` into a hooks.json. Scope `user` writes
+// ~/.agents/skills, `<codex home>/agents` and `<codex home>/hooks.json` (codex home
+// is $CODEX_HOME or ~/.codex); `project` and `local` write
+// `<project>/.agents/skills`, `<project>/.codex/agents` and `<project>/.codex/hooks.json`.
+// `local` adds each file it wrote to `<project>/.git/info/exclude` and removes
+// those lines again. Both placeholders are filled at install: `{{EXO_ROOT}}` with
+// the clone's path (for `project`, shared through git, `$HOME/.exo`, so the clone
+// must live at ~/.exo), `{{SKILL_DIR}}` with the installed skill folder (for
+// `project`, relative to the project, so it holds for every teammate). What it
+// wrote, with a sha256 per file, goes to `<codex home>/exo/installed.json`, one
+// entry per install (scope and project folder); update and remove act only on
+// what that record lists.
 //
 // Every check runs before the first write, and any failure aborts. A file, link,
 // folder or hook group that this adapter did not write is never replaced or
@@ -35,6 +41,7 @@ const SCOPES = ['user', 'project', 'local'];
 const SKILL_NAME = /^[a-z0-9][a-z0-9-]*$/;
 const AGENT_FILE = /^[a-z0-9][a-z0-9-]*\.toml$/;
 const PATH_PART = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const EXCLUDE_LINE = /^\/\.agents\/skills\/[a-z0-9][a-z0-9-]*\/$|^\/\.codex\/agents\/[a-z0-9][a-z0-9-]*\.toml$|^\/\.codex\/hooks\.json$/;
 const SKILL_PREFIX = 'harnesses/codex/generated/skills/';
 const AGENT_PREFIX = 'harnesses/codex/generated/agents/';
 
@@ -78,12 +85,13 @@ function writeAtomic(file, text) {
   fs.renameSync(temporary, file);
 }
 
-const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [] });
+const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [] });
 
 function validInstall(entry) {
   return isPlain(entry)
     && SCOPES.includes(entry.scope)
-    && (entry.scope === 'user' || typeof entry.project === 'string')
+    && (entry.scope === 'user' ? entry.project === undefined : typeof entry.project === 'string' && path.isAbsolute(entry.project))
+    && Array.isArray(entry.excludes) && entry.excludes.every((line) => typeof line === 'string' && EXCLUDE_LINE.test(line))
     && Array.isArray(entry.skills) && entry.skills.every((skill) => isPlain(skill) && SKILL_NAME.test(skill.name)
       && Array.isArray(skill.files) && skill.files.every((file) => isPlain(file) && typeof file.path === 'string' && typeof file.sha256 === 'string'))
     && Array.isArray(entry.links) && entry.links.every((link) => isPlain(link) && SKILL_NAME.test(link.name) && typeof link.source === 'string')
@@ -98,10 +106,11 @@ function readInstalls(file) {
   const notRecord = new Error(`${file} is not an exo install record; fix or move it, nothing was written`);
   if (!isPlain(record)) throw notRecord;
   if (Array.isArray(record.installs)) {
-    if (!record.installs.every(validInstall)) throw notRecord;
-    return record.installs;
+    const installs = record.installs.map((entry) => (isPlain(entry) ? { excludes: [], ...entry } : entry));
+    if (!installs.every(validInstall)) throw notRecord;
+    return installs;
   }
-  const old = { scope: 'user', skills: [], links: record.skills, agents: record.agents, hooks: record.hooks };
+  const old = { scope: 'user', skills: [], links: record.skills, agents: record.agents, hooks: record.hooks, excludes: [] };
   if (!validInstall(old)) throw notRecord;
   return [old];
 }
@@ -111,16 +120,47 @@ const matches = (install, selector) => (selector.scope === undefined || install.
   && (selector.project === undefined || install.project === selector.project);
 const withInstall = (installs, install) => [...installs.filter((entry) => !sameInstall(entry, install)), install];
 
-function locations(env) {
+// The folders of one install; the record file is the same for every scope.
+function locations(env, scope = 'user', project) {
   const home = env.HOME || env.USERPROFILE || os.homedir();
   const codexHome = path.resolve(env.CODEX_HOME || path.join(home, '.codex'));
+  const recordFile = path.join(codexHome, 'exo', 'installed.json');
+  if (scope === 'user') {
+    return { home, codexHome, recordFile, skillsDir: path.join(home, '.agents', 'skills'), agentsDir: path.join(codexHome, 'agents'), hooksFile: path.join(codexHome, 'hooks.json') };
+  }
   return {
+    home,
     codexHome,
-    skillsDir: path.join(home, '.agents', 'skills'),
-    agentsDir: path.join(codexHome, 'agents'),
-    hooksFile: path.join(codexHome, 'hooks.json'),
-    recordFile: path.join(codexHome, 'exo', 'installed.json')
+    recordFile,
+    skillsDir: path.join(project, '.agents', 'skills'),
+    agentsDir: path.join(project, '.codex', 'agents'),
+    hooksFile: path.join(project, '.codex', 'hooks.json'),
+    excludeFile: path.join(project, '.git', 'info', 'exclude')
   };
+}
+
+// Checks before the first write of a per-project install: the folder exists, a
+// `project` install runs from a clone at ~/.exo (its text says `$HOME/.exo`), and
+// no folder or file the install writes through is a link, so a repository cannot
+// lead a write outside itself. Ceiling: `local` needs `.git` to be a folder, not
+// the file a worktree or submodule has; lift it by resolving `gitdir:` from that file.
+function checkProject({ root, env, scope, project }) {
+  if (typeof project !== 'string' || !path.isAbsolute(project)) throw new Error(`Codex ${scope} scope needs an absolute project folder, got ${JSON.stringify(project)}`);
+  if (!fs.statSync(project, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`project folder ${project} is not a folder`);
+  if (scope === 'project') {
+    const clone = path.join(locations(env).home, '.exo');
+    const sameClone = fs.existsSync(clone) && fs.realpathSync(clone) === fs.realpathSync(root);
+    if (!sameClone) throw new Error(`Codex project scope runs exo from ${clone}, so the clone must live there (this one is ${root}); clone it to ${clone} or use --scope local`);
+  }
+  const written = [['.agents'], ['.agents', 'skills'], ['.codex'], ['.codex', 'agents'], ['.codex', 'hooks.json']];
+  if (scope === 'local') {
+    if (!statOf(path.join(project, '.git'))?.isDirectory()) throw new Error(`local scope needs ${path.join(project, '.git')} to be a folder to hold info/exclude`);
+    written.push(['.git', 'info'], ['.git', 'info', 'exclude']);
+  }
+  for (const parts of written) {
+    const where = path.join(project, ...parts);
+    if (statOf(where)?.isSymbolicLink()) throw new Error(`${where} is a link; exo does not write through links in a project`);
+  }
 }
 
 // True when `link` is a symlink or junction whose target is `source`.
@@ -222,6 +262,36 @@ function mergeHooks(config, removed, additions) {
   return { config: isDeepStrictEqual(nextEvents, events) ? config : { ...config, hooks: nextEvents }, added };
 }
 
+// Entries for a `project` install, which a repository shares: the clone's absolute
+// path becomes `$HOME/.exo`. Ceiling: no `commandWindows`, so a Windows host runs
+// the POSIX `command`; lift it once Codex documents its Windows shell.
+function projectHookEntries(exoRoot) {
+  const entryScript = path.join(exoRoot, 'harnesses', 'codex', 'hook-entry.mjs');
+  const quoted = `'${entryScript.replaceAll("'", "'\\''")}'`;
+  const entries = codexHookEntries(exoRoot);
+  for (const groups of Object.values(entries)) {
+    for (const group of groups) {
+      group.hooks = group.hooks.map(({ commandWindows, ...handler }) => {
+        if (!handler.command.includes(quoted)) throw new Error('a Codex hook command does not name the hook entry; nothing was written');
+        return { ...handler, command: handler.command.replace(quoted, () => '"$HOME/.exo/harnesses/codex/hook-entry.mjs"') };
+      });
+    }
+  }
+  return entries;
+}
+
+// The lines `.git/info/exclude` has, or none when the file is missing.
+function readExclude(file) {
+  const stat = statOf(file);
+  if (stat === undefined) return [];
+  if (!stat.isFile()) throw new Error(`${file} is not a plain file; nothing was written`);
+  return fs.readFileSync(file, 'utf8').split('\n');
+}
+
+function writeExclude(file, lines) {
+  writeAtomic(file, `${lines.join('\n').replace(/\n+$/, '')}\n`);
+}
+
 function planHooks(hooksFile, removed, additions, writes) {
   const current = readJson(hooksFile);
   if (current === undefined && Object.keys(additions).length === 0) return [];
@@ -232,11 +302,11 @@ function planHooks(hooksFile, removed, additions, writes) {
 
 // The generated tree as skill name to (relative path to text) and agent file to text,
 // each with {{EXO_ROOT}} filled, and {{SKILL_DIR}} filled in a skill.
-function generated(root, skillsDir) {
+function generated(root, exoRoot, skillDirOf) {
   const skills = new Map();
   const agents = new Map();
   for (const [file, text] of generateTree(root)) {
-    const rooted = text.replaceAll('{{EXO_ROOT}}', root);
+    const rooted = text.replaceAll('{{EXO_ROOT}}', exoRoot);
     if (file.startsWith(AGENT_PREFIX)) {
       agents.set(safeName(file.slice(AGENT_PREFIX.length), AGENT_FILE, 'agent file'), rooted);
       continue;
@@ -246,7 +316,7 @@ function generated(root, skillsDir) {
     safeName(skill, SKILL_NAME, 'skill');
     const parts = safeParts(rest.join('/'));
     if (!skills.has(skill)) skills.set(skill, new Map());
-    skills.get(skill).set(parts.join('/'), rooted.replaceAll('{{SKILL_DIR}}', path.join(skillsDir, skill)));
+    skills.get(skill).set(parts.join('/'), rooted.replaceAll('{{SKILL_DIR}}', skillDirOf(skill)));
   }
   return { skills, agents };
 }
@@ -290,14 +360,19 @@ function planSkill({ skillDir, files, oldSkill, oldLink, writes, conflicts }) {
   return { entry, interim };
 }
 
-function planInstall({ root, env, scope }) {
-  if (scope !== 'user') throw new Error(`Codex ${scope} scope is not supported yet; use --scope user`);
-  const where = locations(env);
+function planInstall({ root, env, scope, project }) {
+  if (!SCOPES.includes(scope)) throw new Error(`Codex scope must be one of ${SCOPES.join(', ')}, got ${JSON.stringify(scope)}`);
+  if (scope === 'user' && project !== undefined) throw new Error('Codex user scope takes no project folder');
+  if (scope !== 'user') checkProject({ root, env, scope, project });
+  const where = locations(env, scope, project);
   const installs = readInstalls(where.recordFile);
-  const old = installs.find((entry) => entry.scope === scope) ?? emptyInstall(scope);
-  const { skills, agents } = generated(root, where.skillsDir);
-  const next = emptyInstall(scope);
-  const interim = emptyInstall(scope);
+  const target = { scope, project };
+  const old = installs.find((entry) => sameInstall(entry, target)) ?? emptyInstall(scope, project);
+  const exoRoot = scope === 'project' ? '$HOME/.exo' : root;
+  const skillDirOf = (skill) => (scope === 'project' ? `.agents/skills/${skill}` : path.join(where.skillsDir, skill));
+  const { skills, agents } = generated(root, exoRoot, skillDirOf);
+  const next = emptyInstall(scope, project);
+  const interim = emptyInstall(scope, project);
   const conflicts = [];
   const notes = [];
   const writes = [];
@@ -345,8 +420,25 @@ function planInstall({ root, env, scope }) {
   const staleAgents = old.agents.filter((entry) => !agents.has(entry.name));
   releaseAgents(staleAgents, where.agentsDir, writes, notes);
 
-  const added = planHooks(where.hooksFile, old.hooks, codexHookEntries(root), writes);
+  const hookEntries = scope === 'project' ? projectHookEntries(path.join(where.home, '.exo')) : codexHookEntries(root);
+  const added = planHooks(where.hooksFile, old.hooks, hookEntries, writes);
   next.hooks.push(...added);
+
+  // `local`: every file this install wrote is listed in .git/info/exclude, and the
+  // record keeps the lines it added, so a removal takes back only those.
+  const excludes = [...old.excludes];
+  if (scope === 'local') {
+    const present = readExclude(where.excludeFile);
+    const wanted = [
+      ...next.skills.map((skill) => `/.agents/skills/${skill.name}/`),
+      ...next.agents.map((agent) => `/.codex/agents/${agent.name}`),
+      ...(next.hooks.length > 0 || old.hooks.length > 0 ? ['/.codex/hooks.json'] : [])
+    ];
+    const fresh = wanted.filter((line) => !present.includes(line));
+    for (const line of fresh) if (!excludes.includes(line)) excludes.push(line);
+    if (fresh.length > 0) writes.push(() => writeExclude(where.excludeFile, [...readExclude(where.excludeFile), ...fresh]));
+  }
+  next.excludes.push(...excludes);
 
   if (conflicts.length > 0) throw new Error(`${conflicts.join('\n')}\nNothing was written. Move those aside, or remove them, then rerun.`);
   // The interim record lists everything either state may hold, so a rerun after a
@@ -355,6 +447,7 @@ function planInstall({ root, env, scope }) {
   interim.agents.push(...staleAgents);
   interim.hooks.push(...old.hooks, ...next.hooks);
   interim.links.push(...old.links);
+  interim.excludes.push(...excludes);
   const fileCount = next.skills.reduce((total, skill) => total + skill.files.length, 0);
   return {
     writes: [
@@ -363,14 +456,26 @@ function planInstall({ root, env, scope }) {
       () => writeAtomic(where.recordFile, jsonText({ version: 2, installs: withInstall(installs, next) }))
     ],
     notes,
-    summary: `installed ${next.skills.length} skills (${fileCount} files), ${next.agents.length} agents and ${next.hooks.length} hook groups into ${where.codexHome}`
+    summary: `installed ${next.skills.length} skills (${fileCount} files), ${next.agents.length} agents and ${next.hooks.length} hook groups into ${scope === 'user' ? where.codexHome : project}`
   };
 }
 
 function planRemove(install, installs, env) {
-  const where = locations(env);
+  const where = locations(env, install.scope, install.project);
   const writes = [];
   const notes = [];
+  if (install.scope !== 'user') {
+    // A recorded project is untrusted: a link on the way would lead a delete outside it.
+    for (const parts of [['.agents'], ['.agents', 'skills'], ['.codex'], ['.codex', 'agents'], ['.codex', 'hooks.json'], ['.git', 'info'], ['.git', 'info', 'exclude']]) {
+      const here = path.join(install.project, ...parts);
+      if (statOf(here)?.isSymbolicLink()) throw new Error(`${here} is a link; exo does not remove through links in a project`);
+    }
+  }
+  if (install.scope === 'local' && install.excludes.length > 0 && statOf(where.excludeFile) !== undefined) {
+    const lines = readExclude(where.excludeFile);
+    const kept = lines.filter((line) => !install.excludes.includes(line));
+    if (kept.length !== lines.length) writes.push(() => writeExclude(where.excludeFile, kept));
+  }
   releaseLinks(install.links, where.skillsDir, writes, notes);
   for (const skill of install.skills) releaseFiles(path.join(where.skillsDir, safeName(skill.name, SKILL_NAME, 'skill')), skill.files, writes, notes);
   releaseAgents(install.agents, where.agentsDir, writes, notes);
@@ -425,7 +530,11 @@ export function install(plan) {
 export function update(record) {
   const installs = readInstalls(locations(record.env).recordFile).filter((entry) => matches(entry, record));
   if (installs.length === 0) return 'nothing to update: no Codex install recorded';
-  return combine(installs.map((entry) => apply(planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }))));
+  return combine(installs.map((entry) => {
+    // A project folder deleted since the install has nothing to update; --remove drops its record.
+    if (entry.scope !== 'user' && !statOf(entry.project)?.isDirectory()) return { summary: `skipped ${entry.scope} install in ${entry.project}`, notes: [`${entry.project} is not a folder; run --remove to drop its record`] };
+    return apply(planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }));
+  }));
 }
 
 export function remove(record) {

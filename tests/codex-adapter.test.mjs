@@ -175,13 +175,250 @@ test('remove narrowed to another scope or project removes nothing', () => {
   assert.deepEqual(snapshot(paths.base), before);
 });
 
-test('project and local scope are refused before any write', () => {
+// A project folder with a `.git` folder, the only shape `local` accepts.
+function projectIn(paths, name = 'proj') {
+  const project = path.join(paths.base, name);
+  fs.mkdirSync(path.join(project, '.git', 'info'), { recursive: true });
+  return project;
+}
+
+// `project` scope needs the clone at $HOME/.exo; the sandbox home gets a link to this checkout.
+function cloneAtHome(paths) {
+  fs.symlinkSync(ROOT, path.join(paths.base, '.exo'), 'dir');
+}
+
+const installIn = (paths, scope, project) => install({ root: ROOT, env: paths.env, scope, project });
+const installsOf = (paths) => readJson(recordPath(paths)).installs;
+const excludeOf = (project) => fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8').split('\n').filter(Boolean);
+
+test('local scope writes into the project, fills both placeholders and excludes what it wrote', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  fs.writeFileSync(path.join(project, '.git', 'info', 'exclude'), '# mine\n*.log');
+  installIn(paths, 'local', project);
+  const skill = fs.readFileSync(path.join(project, '.agents', 'skills', SKILL, 'SKILL.md'), 'utf8');
+  assert.equal(skill, TREE.get(path.posix.join('harnesses/codex/generated/skills', SKILL, 'SKILL.md')).replaceAll('{{EXO_ROOT}}', ROOT).replaceAll('{{SKILL_DIR}}', path.join(project, '.agents', 'skills', SKILL)));
+  for (const name of AGENT_NAMES) {
+    const expected = TREE.get(`harnesses/codex/generated/agents/${name}`).replaceAll('{{EXO_ROOT}}', ROOT);
+    assert.equal(fs.readFileSync(path.join(project, '.codex', 'agents', name), 'utf8'), expected);
+  }
+  assert.deepEqual(readJson(path.join(project, '.codex', 'hooks.json')), { hooks: codexHookEntries(ROOT) });
+  assert.equal(fs.existsSync(path.join(paths.skills, SKILL)), false);
+  assert.equal(fs.existsSync(hooksPath(paths)), false);
+  const lines = excludeOf(project);
+  assert.deepEqual(lines.slice(0, 2), ['# mine', '*.log']);
+  for (const name of SKILL_NAMES) assert.ok(lines.includes(`/.agents/skills/${name}/`), name);
+  for (const name of AGENT_NAMES) assert.ok(lines.includes(`/.codex/agents/${name}`), name);
+  assert.ok(lines.includes('/.codex/hooks.json'));
+  const entry = installsOf(paths).find((install) => install.scope === 'local');
+  assert.equal(entry.project, project);
+  assert.equal(entry.excludes.length, lines.length - 2);
+});
+
+test('a local rerun changes nothing, and remove takes back its files and only its exclude lines', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  fs.writeFileSync(path.join(project, '.git', 'info', 'exclude'), '*.log\n');
+  const foreign = { matcher: 'Bash', hooks: [{ type: 'command', command: 'echo mine' }] };
+  fs.mkdirSync(path.join(project, '.codex'));
+  fs.writeFileSync(path.join(project, '.codex', 'hooks.json'), JSON.stringify({ hooks: { PreToolUse: [foreign] } }));
+  installIn(paths, 'local', project);
+  const first = snapshot(paths.base);
+  installIn(paths, 'local', project);
+  assert.deepEqual(snapshot(paths.base), first);
+  remove(selector(paths, { scope: 'local', project }));
+  assert.deepEqual(excludeOf(project), ['*.log']);
+  assert.deepEqual(readJson(path.join(project, '.codex', 'hooks.json')), { hooks: { PreToolUse: [foreign] } });
+  assert.deepEqual(fs.readdirSync(path.join(project, '.agents', 'skills')), []);
+  assert.deepEqual(fs.readdirSync(path.join(project, '.codex', 'agents')), []);
+  assert.equal(fs.existsSync(recordPath(paths)), false);
+});
+
+test('project scope runs from $HOME/.exo, writes no exclude and fills paths that hold for a teammate', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  cloneAtHome(paths);
+  installIn(paths, 'project', project);
+  const skillsFolder = path.join(project, '.agents', 'skills');
+  const texts = SKILL_NAMES.flatMap((name) => fs.readdirSync(path.join(skillsFolder, name), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => fs.readFileSync(path.join(entry.parentPath, entry.name), 'utf8')));
+  for (const text of texts) {
+    assert.doesNotMatch(text, /\{\{/);
+    assert.equal(text.includes(ROOT), false);
+    assert.equal(text.includes(project), false);
+  }
+  assert.equal(texts.some((text) => text.includes('node "$HOME/.exo/harnesses/codex/run.mjs"')), true);
+  for (const name of AGENT_NAMES) {
+    const text = fs.readFileSync(path.join(project, '.codex', 'agents', name), 'utf8');
+    assert.equal(text.includes(ROOT), false, name);
+    // An agent file keeps its {{SKILL_DIR}} words: the placeholder is a skill's.
+    assert.equal(text.includes('{{EXO_ROOT}}'), false, name);
+  }
+  const config = readJson(path.join(project, '.codex', 'hooks.json'));
+  const handlers = Object.values(config.hooks).flat().flatMap((group) => group.hooks);
+  assert.equal(handlers.length > 0, true);
+  for (const handler of handlers) {
+    assert.match(handler.command, /^node "\$HOME\/\.exo\/harnesses\/codex\/hook-entry\.mjs" /);
+    assert.equal(handler.commandWindows, undefined);
+  }
+  assert.equal(JSON.stringify(config).includes(ROOT), false);
+  assert.equal(fs.existsSync(path.join(project, '.git', 'info', 'exclude')), false);
+  assert.deepEqual(installsOf(paths)[0].excludes, []);
+  remove(selector(paths, { scope: 'project', project }));
+  assert.equal(fs.existsSync(recordPath(paths)), false);
+});
+
+test('project scope refuses a clone that is not at $HOME/.exo before any write', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  const before = snapshot(paths.base);
+  assert.throws(() => installIn(paths, 'project', project), /clone must live there/);
+  fs.mkdirSync(path.join(paths.base, '.exo'));
+  assert.throws(() => installIn(paths, 'project', project), /clone must live there/);
+  assert.deepEqual(snapshot(paths.base).filter((row) => !row.includes('.exo')), before);
+});
+
+for (const [label, scope, setup, expected] of [
+  ['a missing folder', 'local', (paths) => path.join(paths.base, 'absent'), /is not a folder/],
+  ['a relative folder', 'local', () => 'proj', /absolute project folder/],
+  ['a project with no folder to hold info/exclude', 'local', (paths) => {
+    const project = path.join(paths.base, 'bare');
+    fs.mkdirSync(project);
+    return project;
+  }, /to be a folder/],
+  ['a linked .agents', 'local', (paths) => {
+    const project = projectIn(paths);
+    fs.symlinkSync(paths.outside, path.join(project, '.agents'), 'dir');
+    return project;
+  }, /is a link/],
+  ['a linked .codex', 'project', (paths) => {
+    cloneAtHome(paths);
+    const project = projectIn(paths);
+    fs.symlinkSync(paths.outside, path.join(project, '.codex'), 'dir');
+    return project;
+  }, /is a link/],
+  ['a linked hooks.json', 'project', (paths) => {
+    cloneAtHome(paths);
+    const project = projectIn(paths);
+    fs.mkdirSync(path.join(project, '.codex'));
+    fs.writeFileSync(path.join(paths.outside, 'hooks.json'), '{}');
+    fs.symlinkSync(path.join(paths.outside, 'hooks.json'), path.join(project, '.codex', 'hooks.json'));
+    return project;
+  }, /is a link/],
+  ['a linked info/exclude', 'local', (paths) => {
+    const project = projectIn(paths);
+    fs.writeFileSync(path.join(paths.outside, 'exclude'), 'theirs\n');
+    fs.symlinkSync(path.join(paths.outside, 'exclude'), path.join(project, '.git', 'info', 'exclude'));
+    return project;
+  }, /is a link/],
+  ['a skill folder it did not write', 'local', (paths) => {
+    const project = projectIn(paths);
+    fs.mkdirSync(path.join(project, '.agents', 'skills', SKILL), { recursive: true });
+    return project;
+  }, /exo did not write it/]
+]) {
+  test(`${scope} scope refuses ${label} before any write`, () => {
+    const paths = sandbox();
+    const project = setup(paths);
+    const before = snapshot(paths.base);
+    assert.throws(() => installIn(paths, scope, project), expected);
+    assert.deepEqual(snapshot(paths.base), before);
+  });
+}
+
+test('user scope takes no project folder and an unknown scope is refused', () => {
   const paths = sandbox();
   const before = snapshot(paths.base);
-  for (const scope of ['project', 'local']) {
-    assert.throws(() => install({ root: ROOT, env: paths.env, scope, project: paths.base }), /not supported yet/);
-  }
+  assert.throws(() => installIn(paths, 'user', paths.base), /takes no project folder/);
+  assert.throws(() => installIn(paths, 'world', paths.base), /scope must be one of/);
   assert.deepEqual(snapshot(paths.base), before);
+});
+
+test('user, local and project installs share one record and are removed one by one', () => {
+  const paths = sandbox();
+  cloneAtHome(paths);
+  const one = projectIn(paths, 'one');
+  const two = projectIn(paths, 'two');
+  const three = projectIn(paths, 'three');
+  apply(paths);
+  installIn(paths, 'local', one);
+  installIn(paths, 'project', two);
+  installIn(paths, 'local', three);
+  assert.deepEqual(installsOf(paths).map((entry) => [entry.scope, entry.project]).sort(), [['local', one], ['local', three], ['project', two], ['user', undefined]].sort());
+  assert.match(remove(selector(paths, { project: three, scope: 'local' })).summary, /removed the local install/);
+  assert.equal(installsOf(paths).length, 3);
+  remove(selector(paths, { project: two }));
+  assert.deepEqual(installsOf(paths).map((entry) => entry.project).sort(), [undefined, one].sort());
+  assert.equal(fs.existsSync(path.join(paths.skills, SKILL)), true);
+  assert.equal(fs.existsSync(path.join(one, '.agents', 'skills', SKILL)), true);
+  remove(selector(paths));
+  assert.equal(fs.existsSync(recordPath(paths)), false);
+  assert.deepEqual(fs.readdirSync(path.join(one, '.agents', 'skills')), []);
+});
+
+test('the old single-target record stays one user install beside a new local install', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  fs.mkdirSync(path.join(paths.home, 'exo'));
+  fs.writeFileSync(recordPath(paths), JSON.stringify({ version: 1, skills: [], agents: [], hooks: [] }));
+  installIn(paths, 'local', project);
+  assert.deepEqual(installsOf(paths).map((entry) => entry.scope).sort(), ['local', 'user']);
+  assert.equal(readJson(recordPath(paths)).version, 2);
+});
+
+test('update re-applies a project install, and skips one whose folder is gone', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  const gone = projectIn(paths, 'gone');
+  installIn(paths, 'local', project);
+  installIn(paths, 'local', gone);
+  const file = path.join(project, '.agents', 'skills', SKILL, 'SKILL.md');
+  const old = 'older exo text\n';
+  const record = readJson(recordPath(paths));
+  fs.writeFileSync(file, old);
+  record.installs.find((entry) => entry.project === project).skills.find((entry) => entry.name === SKILL).files.find((entry) => entry.path === 'SKILL.md').sha256 = hash(old);
+  fs.writeFileSync(recordPath(paths), JSON.stringify(record));
+  fs.rmSync(gone, { recursive: true });
+  const result = update(selector(paths));
+  assert.notEqual(fs.readFileSync(file, 'utf8'), old);
+  assert.match(result.notes.join('\n'), /is not a folder; run --remove/);
+  assert.equal(installsOf(paths).length, 2);
+  remove(selector(paths, { project: gone }));
+  assert.equal(installsOf(paths).length, 1);
+});
+
+test('a forged record cannot make remove leave its project, touch a link or edit another exclude line', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  fs.writeFileSync(path.join(project, '.git', 'info', 'exclude'), '/.codex/hooks.json\n/keep\n');
+  fs.mkdirSync(path.join(paths.home, 'exo'));
+  const write = (patch) => fs.writeFileSync(recordPath(paths), JSON.stringify({ version: 2, installs: [{ scope: 'local', project, skills: [], links: [], agents: [], hooks: [], excludes: [], ...patch }] }));
+  for (const patch of [{ project: 'relative/dir' }, { project: undefined }, { excludes: ['/keep'] }, { excludes: ['/../../etc/passwd'] }, { excludes: [1] }]) {
+    write(patch);
+    assert.throws(() => remove(selector(paths)), /not an exo install record/);
+  }
+  write({ excludes: ['/.codex/hooks.json'] });
+  remove(selector(paths));
+  assert.deepEqual(excludeOf(project), ['/keep']);
+  fs.mkdirSync(path.join(paths.home, 'exo'), { recursive: true });
+  write({});
+  fs.symlinkSync(paths.outside, path.join(project, '.agents'), 'dir');
+  assert.throws(() => remove(selector(paths)), /is a link/);
+  assert.equal(fs.existsSync(recordPath(paths)), true);
+});
+
+test('install.mjs reaches a local install through --scope and --project', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  const result = runInstaller(paths, ['--scope', 'local', '--project', project]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.existsSync(path.join(project, '.agents', 'skills', SKILL, 'SKILL.md')), true);
+  assert.equal(runInstaller(paths, ['--remove', '--scope', 'local', '--project', project]).status, 0);
+  assert.equal(fs.existsSync(recordPath(paths)), false);
+  const refused = runInstaller(paths, ['--scope', 'project', '--project', project]);
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /clone must live there/);
 });
 
 for (const [label, setup] of [

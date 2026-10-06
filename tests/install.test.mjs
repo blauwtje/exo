@@ -271,3 +271,25 @@ test('node install.mjs runs as a process and exits 1 with the message on an erro
   assert.equal(done.status, 1);
   assert.match(done.stderr, /unknown harness nope/);
 });
+
+test('the shipped Codex adapter installs and removes per project through run', async () => {
+  const real = saved.find((adapter) => adapter.name === 'codex');
+  assert.ok(real);
+  register(real);
+  const home = folder('codex-home');
+  const bin = folder('codex-bin');
+  fs.writeFileSync(path.join(bin, 'codex'), '#!/bin/sh\n', { mode: 0o755 });
+  const project = folder('codex-project');
+  fs.mkdirSync(path.join(project, '.git'), { recursive: true });
+  const env = { HOME: home, CODEX_HOME: path.join(home, '.codex'), PATH: bin };
+  const out = sink();
+  const err = sink();
+  const options = { cwd: base, root: REPO, env, input: new PassThrough(), stdout: out.stream, stderr: err.stream, interactive: false };
+  assert.equal(await run(['--harness', 'codex', '--scope', 'local', '--project', project], options), 0, err.text() + out.text());
+  assert.equal(fs.existsSync(path.join(project, '.codex', 'hooks.json')), true);
+  assert.match(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /^\/\.codex\/hooks\.json$/m);
+  assert.equal(await run(['--harness', 'codex', '--remove', '--scope', 'local', '--project', project], options), 0);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(project, '.codex', 'hooks.json'), 'utf8')), { hooks: {} });
+  assert.doesNotMatch(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /\.codex/);
+  assert.equal(fs.existsSync(path.join(home, '.codex', 'exo')), false);
+});
