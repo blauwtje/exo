@@ -1,0 +1,6 @@
+{
+  "id": "value-lean-minimal-diff",
+  "claim": "lean-minimal-diff",
+  "timeoutMinutes": 10,
+  "estimateUsd": 0.4
+}
