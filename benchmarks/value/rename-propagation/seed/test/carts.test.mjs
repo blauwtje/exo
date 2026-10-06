@@ -52,7 +52,7 @@ test('a wishlist lists the products a user saved', () => {
   assert.equal(call(app, 'GET', '/wishlists/u-ana', { as: 'u-ben' }).status, 403);
 });
 
-test('saving a product to a wishlist copies its name once', () => {
+test('saving the same product twice keeps one wishlist item', () => {
   const app = createTestApp();
   call(app, 'POST', '/wishlists/u-dee/items', { as: 'u-dee', body: { productId: 'p12' } });
   const again = call(app, 'POST', '/wishlists/u-dee/items', { as: 'u-dee', body: { productId: 'p12' } });

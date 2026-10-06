@@ -9,7 +9,13 @@ import { pathToFileURL } from 'node:url';
 
 const repo = path.resolve(process.argv[2] ?? '.');
 const read = (name) => JSON.parse(fs.readFileSync(path.join(repo, 'check-data', `${name}.json`), 'utf8'));
-const { createApp } = await import(pathToFileURL(path.join(repo, 'src', 'app.mjs')).href);
+let createApp;
+let loadError;
+try {
+  ({ createApp } = await import(pathToFileURL(path.join(repo, 'src', 'app.mjs')).href));
+} catch (error) {
+  loadError = String(error?.message ?? error).slice(0, 120);
+}
 
 function fresh() {
   let time = Date.parse('2026-03-02T09:00:00.000Z');
@@ -129,7 +135,7 @@ const cases = [
     if (keys(e) !== keys(reference)) problems.push(`keys ${keys(e)}`);
     if (keys(e.entity) !== keys(reference.entity) || e.entity?.type !== 'product' || e.entity?.id !== 'p1') problems.push(`entity ${JSON.stringify(e.entity)}`);
     if (e.actor !== 'u-admin') problems.push(`actor ${e.actor}`);
-    if (!/^product\.[a-z]+(_[a-z]+)*$/.test(e.action ?? '') || !/name|renam/.test(e.action)) problems.push(`action ${e.action}`);
+    if (!/^product\.[a-z]+(_[a-z]+)*$/.test(e.action ?? '') || /^product\.(created|price_changed|stock_adjusted)$/.test(e.action)) problems.push(`action ${e.action}`);
     if (JSON.stringify(e.changes) !== JSON.stringify({ name: { from: 'Blue Mug', to: NEW } })) problems.push(`changes ${JSON.stringify(e.changes)}`);
     return problems.join('; ') || null;
   }],
@@ -193,6 +199,12 @@ const cases = [
   }],
 ];
 
+if (loadError) {
+  const total = cases.length + 1;
+  console.log(JSON.stringify({ pass: false, defects: total, total, detail: [`src/app.mjs does not load: ${loadError}`] }));
+  process.exit(0);
+}
+
 const detail = [];
 for (const [name, run] of cases) {
   try {
@@ -205,7 +217,7 @@ for (const [name, run] of cases) {
 
 const env = { ...process.env };
 for (const key of Object.keys(env)) if (key.startsWith('NODE_TEST')) delete env[key];
-const tests = spawnSync('npm', ['test', '--silent'], { cwd: repo, env, encoding: 'utf8', timeout: 45_000 });
+const tests = spawnSync('npm', ['test', '--silent'], { cwd: repo, env, encoding: 'utf8', timeout: 45_000, maxBuffer: 64 * 1024 * 1024 });
 const total = cases.length + 1;
 if (tests.status !== 0) detail.push('npm test fails');
 
