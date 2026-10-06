@@ -9,17 +9,20 @@
 //   node settings.mjs menu [<topic> | <key>]                 that overview, then the question that picks a topic, a key or a value
 //   node settings.mjs get <key>                              the effective value
 //   node settings.mjs set <key> <value> --scope project|local
+//   node settings.mjs set <key> <value> --scope global       on Codex only
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { currentHost } from '#host';
 import { readKindTable } from '#model-kinds';
 import {
-  GLOBAL_SOURCE,
   LOCAL_FILE,
   PROJECT_FILE,
   SCHEMA,
+  codexSettingsFile,
+  globalSource,
   invalidReason,
   layers,
   projectRoot,
@@ -98,7 +101,7 @@ function settingBlock(key, stack) {
   const entry = SCHEMA[key];
   const { value, layer } = resolve(key, stack);
   const number = Object.keys(SCHEMA).indexOf(key) + 1;
-  const origin = layer === 'global' ? `global, changed via ${GLOBAL_SOURCE}` : layer;
+  const origin = layer === 'global' ? `global, changed via ${globalSource()}` : layer;
   const head = wrapped(`${number}. ${entry.label}: ${plainValue(key, value)}  (${key} = ${value}, ${origin})`, BLOCK_INDENT);
   head[0] = head[0].slice(BLOCK_INDENT.length);
   const block = [...head, ...wrapped(entry.about, BLOCK_INDENT)];
@@ -118,7 +121,7 @@ function settingBlock(key, stack) {
 
 function overview(keys, stack) {
   const blocks = keys.flatMap((key) => [...settingBlock(key, stack), '']);
-  const legend = `[x] is the current value. This skill writes project and local; global is changed via ${GLOBAL_SOURCE}.`;
+  const legend = `[x] is the current value. This skill writes project and local; global is changed via ${globalSource()}.`;
   const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
   return ['```text', ...blocks, ...wrapped(legend, ''), '```', ...notes];
 }
@@ -207,16 +210,19 @@ function gitignoreEntry(root, relative) {
 
 function set(root, key, value, scope) {
   if (!Object.hasOwn(SCHEMA, key ?? '')) throw unknownKey(key);
-  if (scope === 'global') {
+  const onCodex = currentHost() === 'codex';
+  if (scope === 'global' && !onCodex) {
     throw new Error('a global value is set in /config under the exo plugin, not by this script');
   }
-  if (scope !== 'project' && scope !== 'local') throw new Error('--scope must be project or local');
+  if (scope !== 'project' && scope !== 'local' && !(scope === 'global' && onCodex)) {
+    throw new Error(`--scope must be project, local${onCodex ? ' or global' : ''}`);
+  }
   const typed = typedValue(key, value);
   const problem = invalidReason(key, typed);
   if (problem) throw new Error(problem);
 
-  const relative = scope === 'local' ? LOCAL_FILE : PROJECT_FILE;
-  const file = path.join(root, relative);
+  const relative = { local: LOCAL_FILE, project: PROJECT_FILE, global: codexSettingsFile() }[scope];
+  const file = scope === 'global' ? relative : path.join(root, relative);
   const values = readLayer(file);
   values[key] = typed;
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -224,6 +230,8 @@ function set(root, key, value, scope) {
   fs.writeFileSync(temporary, `${JSON.stringify(values, null, 2)}\n`);
   fs.renameSync(temporary, file);
   console.log(`${key}=${typed} set in ${relative}`);
+
+  if (scope === 'global') return;
 
   // check-ignore exits 0 for an ignored path, 1 for a tracked one, 128 outside git.
   const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);

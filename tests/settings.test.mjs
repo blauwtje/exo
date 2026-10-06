@@ -30,7 +30,7 @@ async function workspace({ project, local, global } = {}) {
   if (global) {
     await writeJson(path.join(configDirectory, 'settings.json'), { pluginConfigs: { 'exo@blauwtje': { options: global } } });
   }
-  const env = { CLAUDE_PROJECT_DIR: root, CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_BUDGET: '', CLAUDE_PLUGIN_OPTION_SHIP: '', CLAUDE_PLUGIN_OPTION_WORKSPACE: '', CLAUDE_PLUGIN_OPTION_GUARDS: '' };
+  const env = { EXO_HOST: 'claude', CLAUDE_PROJECT_DIR: root, CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_BUDGET: '', CLAUDE_PLUGIN_OPTION_SHIP: '', CLAUDE_PLUGIN_OPTION_WORKSPACE: '', CLAUDE_PLUGIN_OPTION_GUARDS: '' };
   return { root, env };
 }
 
@@ -108,6 +108,64 @@ test('set refuses the global scope and points at /config', async () => {
   const result = await settings(await workspace(), ['set', 'specs', 'issues', '--scope', 'global']);
   assert.equal(result.code, 1);
   assert.match(result.stderr, /\/config/);
+});
+
+async function codexWorkspace(global) {
+  const space = await workspace();
+  const codexHome = await fixture();
+  if (global !== undefined) await writeJson(path.join(codexHome, 'exo', 'settings.json'), global);
+  space.env = { ...space.env, EXO_HOST: 'codex', CODEX_HOME: codexHome };
+  space.file = path.join(codexHome, 'exo', 'settings.json');
+  return space;
+}
+
+test('on Codex the global layer is the flat file in the Codex exo folder, and the Claude file is ignored', async () => {
+  const space = await codexWorkspace({ specs: 'both' });
+  await writeJson(path.join(space.env.CLAUDE_CONFIG_DIR, 'settings.json'), { pluginConfigs: { 'exo@blauwtje': { options: { specs: 'issues' } } } });
+  const result = await settings(space, ['show']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^1\. Plans: Both {2}\(specs = both, global, changed via\s+\S*exo.settings\.json\)$/m);
+  assert.equal((await settings(space, ['get', 'specs'])).stdout.trim(), 'both');
+  const project = await workspace({ project: { specs: 'issues' } });
+  project.env = { ...space.env, CLAUDE_PROJECT_DIR: project.root };
+  assert.equal((await settings(project, ['get', 'specs'])).stdout.trim(), 'issues');
+});
+
+test('on Codex, set --scope global writes the flat file and keeps its other keys', async () => {
+  const space = await codexWorkspace({ replies: 'standard' });
+  const result = await settings(space, ['set', 'specs', 'issues', '--scope', 'global']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(JSON.parse(await fs.readFile(space.file, 'utf8')), { replies: 'standard', specs: 'issues' });
+  assert.equal((await settings(space, ['get', 'specs'])).stdout.trim(), 'issues');
+  const refused = await settings(space, ['set', 'specs', 'nonsense', '--scope', 'global']);
+  assert.equal(refused.code, 1);
+});
+
+test('on Codex, set --scope global creates the exo folder when it is missing', async () => {
+  const space = await codexWorkspace();
+  const result = await settings(space, ['set', 'guard_lines', '250', '--scope', 'global']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(JSON.parse(await fs.readFile(space.file, 'utf8')), { guard_lines: 250 });
+});
+
+test('on Codex a malformed global file gives defaults plus a note naming it, and set leaves it alone', async () => {
+  const space = await codexWorkspace();
+  await fs.mkdir(path.dirname(space.file), { recursive: true });
+  await fs.writeFile(space.file, '{ not json');
+  const result = await settings(space, ['context']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\).*; .*settings\.json is not valid JSON/);
+  const written = await settings(space, ['set', 'specs', 'both', '--scope', 'global']);
+  assert.equal(written.code, 1);
+  assert.equal(await fs.readFile(space.file, 'utf8'), '{ not json');
+});
+
+test('CODEX_HOME defaults to .codex under the home directory', async () => {
+  const space = await codexWorkspace();
+  const home = await fixture();
+  await writeJson(path.join(home, '.codex', 'exo', 'settings.json'), { specs: 'both' });
+  const env = { ...space.env, HOME: home, USERPROFILE: home, CODEX_HOME: '' };
+  assert.equal((await settings({ ...space, env }, ['get', 'specs'])).stdout.trim(), 'both');
 });
 
 test('a local value in a git repository adds its file to .gitignore', async () => {
