@@ -175,14 +175,20 @@ export function transcriptDirectory(cwd) {
   return path.join(configDirectory(), 'projects', fs.realpathSync(cwd).replace(/[^a-zA-Z0-9]/g, '-'));
 }
 
-// The parent's Claude Code session leaks its id, effort and child markers
-// through the environment; the run starts clean of them.
-export function childEnvironment(base, runDirectory) {
+// The parent's Claude Code session leaks its id, effort, child markers and
+// settings env (such as CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS) through the
+// environment; every benchmark child starts clean of them.
+export function withoutParentSession(base) {
   const env = {};
   for (const [key, value] of Object.entries(base)) {
     if (key === 'CLAUDECODE' || key === 'CLAUDE_EFFORT' || key.startsWith('CLAUDE_CODE_')) continue;
     env[key] = value;
   }
+  return env;
+}
+
+export function childEnvironment(base, runDirectory) {
+  const env = withoutParentSession(base);
   Object.assign(env, ISOLATION_ENV);
   env.BENCH_SUITE_LOG = path.join(runDirectory, 'suite-runs.jsonl');
   env.EXO_SESSIONS_DIR = path.join(runDirectory, 'sessions');

@@ -61,6 +61,7 @@ import { fileURLToPath } from 'node:url';
 import { exportSignatures } from '#export-signatures';
 import { sumCounts, usageCounts } from '#token-weights';
 import { findTranscript } from './cell-usage.mjs';
+import { withoutParentSession } from './lean-gates.mjs';
 import { countsCost } from './pricing.mjs';
 import { meanAndSd } from './statistics.mjs';
 
@@ -466,7 +467,7 @@ function recheck(repo, runDirectory, head, force) {
   // The fixture's test script may log to suite-runs.jsonl; the recheck must not count.
   const suiteLog = path.join(runDirectory, 'suite-runs.jsonl');
   const saved = fs.existsSync(suiteLog) ? fs.readFileSync(suiteLog) : null;
-  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^(CLAUDECODE|CLAUDE_CODE_.*|CLAUDE_EFFORT)$/.test(name)));
+  const env = withoutParentSession(process.env);
   env.LEAN_GATES_RECHECK = '1';
   const results = {};
   try {

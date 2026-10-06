@@ -25,6 +25,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
+import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
@@ -145,10 +146,6 @@ function gitIsolation(task) {
   return task.tier === 'git' ? { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } : {};
 }
 
-function usesExo(armName) {
-  return ARMS[armName].pluginDirs.includes(ROOT);
-}
-
 // The user's settings.json with the options of every exo@ plugin config
 // removed, so exo falls back to its schema defaults.
 function withoutExoOptions(settingsText) {
@@ -159,9 +156,11 @@ function withoutExoOptions(settingsText) {
   return `${JSON.stringify(settings, null, 2)}\n`;
 }
 
-// A HOME for exo-arm cells: a symlink to every entry of the real home except
-// .claude, and a real .claude holding a symlink to every entry of ~/.claude
-// except settings.json, which is a copy without exo's options. HOME, not
+// A HOME for every cell, so arms differ only by what they load and none picks
+// up the user's global exo options, whichever directory exo loads from: a
+// symlink to every entry of the real home except .claude, and a real .claude
+// holding a symlink to every entry of ~/.claude except settings.json, which is
+// a copy without exo's options. HOME, not
 // CLAUDE_CONFIG_DIR: a moved config directory loses the login (the keychain
 // entry keys on it) and moves the transcripts away from where findTranscript
 // in cell-usage.mjs looks; through the symlink they still land in the real
@@ -191,7 +190,7 @@ function runClaude(args, workdir, cellDirectory, extraEnvironment) {
     const startedAt = Date.now();
     const child = spawn('claude', args, {
       cwd: workdir,
-      env: { ...process.env, ...extraEnvironment, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
+      env: { ...withoutParentSession(process.env), ...extraEnvironment, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
@@ -244,7 +243,7 @@ function denyMessages(result) {
   return [...denials, ...lines];
 }
 
-async function runCell(cell, fixtureDirectory, effort, exoHome) {
+async function runCell(cell, fixtureDirectory, effort, cellHome) {
   const { task, arm, run, model, cellDirectory } = cell;
   fs.mkdirSync(cellDirectory, { recursive: true });
   let workdir = workdirFor(task, fixtureDirectory);
@@ -255,7 +254,7 @@ async function runCell(cell, fixtureDirectory, effort, exoHome) {
     workdir = path.join(cellRoot, 'repo');
   }
   try {
-    const environment = usesExo(arm) ? { ...gitIsolation(task), HOME: exoHome } : gitIsolation(task);
+    const environment = { ...gitIsolation(task), HOME: cellHome };
     const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, environment);
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
@@ -380,9 +379,8 @@ async function main() {
     return;
   }
   requirePluginDirectories(options.arms);
-  const exoArms = options.arms.filter(usesExo);
-  if (exoArms.length > 0 && process.env.CLAUDE_CONFIG_DIR) {
-    throw new Error(`arm ${exoArms.join(', ')}: CLAUDE_CONFIG_DIR is set, but the default-options mirror covers only ~/.claude; unset it`);
+  if (process.env.CLAUDE_CONFIG_DIR) {
+    throw new Error('CLAUDE_CONFIG_DIR is set, but the default-options mirror covers only ~/.claude; unset it');
   }
   costGate(options, cells.length);
   const fixtureDirectory = tasks.some((task) => task.tier === 'template') ? ensureTemplateFixture() : null;
@@ -394,7 +392,7 @@ async function main() {
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
-  const exoHome = exoArms.length > 0 ? makeDefaultOptionsHome() : null;
+  const cellHome = makeDefaultOptionsHome();
   const heartbeat = setInterval(() => console.log(`running: ${done}/${cells.length} cells done`), HEARTBEAT_MS);
   try {
     await runPool(cells, options.concurrency, async (cell) => {
@@ -403,7 +401,7 @@ async function main() {
         console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
         return;
       }
-      const checks = await runCell(cell, fixtureDirectory, options.effort, exoHome);
+      const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome);
       done += 1;
       const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
@@ -413,7 +411,7 @@ async function main() {
     });
   } finally {
     clearInterval(heartbeat);
-    if (exoHome !== null) fs.rmSync(exoHome, { recursive: true, force: true });
+    fs.rmSync(cellHome, { recursive: true, force: true });
   }
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);
 }

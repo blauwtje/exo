@@ -10,7 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { BRANCH, EXO_SETTINGS, ISOLATION_ENV, PLAN_PATH, PROBE_PROMPT, PROMPT, childEnvironment, claudeArguments, contextAncestors, environmentDiff, parseArguments, refuseContaminatedOut, runDirectoryName, transcriptLeaks } from '../benchmarks/lean-gates.mjs';
+import { BRANCH, EXO_SETTINGS, ISOLATION_ENV, PLAN_PATH, PROBE_PROMPT, PROMPT, childEnvironment, claudeArguments, contextAncestors, environmentDiff, parseArguments, refuseContaminatedOut, runDirectoryName, transcriptLeaks, withoutParentSession } from '../benchmarks/lean-gates.mjs';
 
 const SCHEMA = fileURLToPath(new URL('../skills/configure/schema.json', import.meta.url));
 
@@ -42,6 +42,12 @@ test('--probe needs no run and pins haiku at fifty cents', () => {
   const argv = claudeArguments(options, '/plugins/old', 'sid', PROBE_PROMPT);
   assert.equal(argv[1], PROBE_PROMPT);
   assert.equal(argv[argv.indexOf('--setting-sources') + 1], 'project,local');
+});
+
+test('the parent-session filter drops CLAUDECODE, CLAUDE_EFFORT and every CLAUDE_CODE_ name, and keeps the rest', () => {
+  const base = { PATH: '/bin', HOME: '/home/u', CLAUDECODE: '1', CLAUDE_EFFORT: 'xhigh', CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS: '1', CLAUDE_CODE_ENTRYPOINT: 'cli', CLAUDE_CONFIG_DIR: '/c', ANTHROPIC_MODEL: 'm' };
+  assert.deepEqual(withoutParentSession(base), { PATH: '/bin', HOME: '/home/u', CLAUDE_CONFIG_DIR: '/c', ANTHROPIC_MODEL: 'm' });
+  assert.equal(base.CLAUDECODE, '1');
 });
 
 test('the child env drops the parent session, turns off CLAUDE.md and memory, and adds the run logs', () => {
