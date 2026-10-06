@@ -127,6 +127,19 @@ test('50 fewer chars pass and the check re-locks nothing', (t) => {
   assert.match(run.detail, new RegExp(`${DESCRIPTION_TOTAL_LOCK.chars} locked`));
 });
 
+test('a description at the per-skill ceiling passes and one char past it fails', (t) => {
+  const root = skillsFixture(t);
+  // A user-invoked skill stays out of the total, so only the per-skill cap can fire.
+  editDescription(root, 'skills/remember/SKILL.md', () => `Use when ${'x'.repeat(DESCRIPTION_CHARS.ceiling - 9)}`);
+  assert.equal(verdict(root, checkDescriptionBudgets).counts.PASS, 1);
+
+  editDescription(root, 'skills/remember/SKILL.md', (value) => `${value}x`);
+  const run = verdict(root, checkDescriptionBudgets);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.match(run.detail, new RegExp(`${DESCRIPTION_CHARS.ceiling + 1} chars \\(> ${DESCRIPTION_CHARS.ceiling}\\)`));
+});
+
 test('a paragraph below the route-skills frontmatter fails the injected lock', (t) => {
   const root = skillsFixture(t);
   const baseline = injectedBytes(verdict(root, checkInjectedContext).detail);

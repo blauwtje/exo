@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Use when a session opens on a plan file to run, after a clear, or the user says to run or resume a plan, or a decided change this session touches over two files, a dependency, a public signature, a persisted format or security boundary, or is test-first. Not for authoring or repairing a plan, another change of at most two files, a version bump, or an unproven failure."
+description: "Use when a plan is to run or resume, or a decided change touches over two files, a dependency, a public signature, a persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure."
 ---
 
 # Implementing a plan

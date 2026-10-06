@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Use when a code-changing run ends with commits that may leave the machine, or the user asks to push, open, watch or merge a pull request, fix its failing checks or conflicts, or address its review comments. Not for reviewing code, a PR the user did not name or list, deleting a branch, or cutting a release."
+description: "Use when a run ends with commits that may leave the machine, or the user asks to push, open, watch or merge a pull request, or fix its failing checks, conflicts or review comments. Not for reviewing code, a PR the user did not name, or a release."
 ---
 
 # Shipping

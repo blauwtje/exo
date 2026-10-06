@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: "Use when a named refactor, rename, move or internal API reshape must keep behavior unchanged, or a shim or compatibility re-export tempts. Not for finding what to refactor, a behavior change, which build builds, or an unproven failure, which find-cause owns."
+description: "Use when a named refactor, rename, move or internal API reshape must keep behavior unchanged, or a shim or compatibility re-export tempts. Not for finding what to refactor, a behavior change (build), or an unproven failure (find-cause)."
 ---
 
 # Refactor

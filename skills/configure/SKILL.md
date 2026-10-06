@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Use when the user asks to set up or configure exo, or to see or change one exo setting, such as where specs go or the read guard, for every project, one repository or this machine. Not for the harness's own settings.json, permissions or hooks.
+description: Use when the user asks to set up or configure exo, or to see or change one exo setting, such as where specs go or the read guard. Not for the harness's own settings.json, permissions or hooks.
 argument-hint: "[nothing to walk every setting, or a key, a value and --scope project|local]"
 allowed-tools: Bash(node *settings.mjs*), Bash(git remote get-url origin), Bash(git rev-parse *), Bash(gh auth status)
 model: sonnet

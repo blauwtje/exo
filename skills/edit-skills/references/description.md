@@ -15,7 +15,7 @@
 
 ## Bounds
 
-- Aim at 300 characters and stay within 375, so the sum across the corpus stays inside what the harness shows the model.
+- Aim at 200 characters and stay within 250, so the sum across the corpus stays inside what the harness shows the model.
 - No angle brackets and no line breaks; the harness rejects both.
 - The name is an imperative verb phrase of one or two words naming what it does (`spec`, `check-docs`).
 
