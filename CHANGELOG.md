@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.92.0 - 2026-10-06
+
 ### Added
 
 - `install.sh` updates and uninstalls exo too: `curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update` or `-- --remove`. `--remove` deletes `~/.exo` once no harness records an install and the clone has no local changes, and says why when it keeps the clone.
