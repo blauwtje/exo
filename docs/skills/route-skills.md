@@ -1,18 +1,18 @@
 # route-skills
 
-The one skill you never have to invoke: the session hook hands its body to every session.
+The rules every session starts with. You never call it.
 
-## When it fires
+## When it runs
 
-At every session start, resume, clear and compaction. A long session hears the routing part of it again as the transcript grows, because rules read 200,000 tokens ago no longer reach the turn that needs them.
+At every session start, resume, `/clear` and compaction.
 
 ## What you get
 
-- The map of which skill owns which request, and which one wins when two of them fire.
-- The right-sizing ladder that runs before every edit adding code, and the floors that are never traded away: trust-boundary checks, failure handling, security, accessibility and anything you asked for by name.
-- One shape for how a reply, a report and a question are written, so an answer is a letter rather than a paragraph.
-- The settings line, and a pointer to a handoff or a project memory when one exists for your branch.
+- Which skill handles which request, and which wins when two fit.
+- A size check before each code edit, with minimums that are never skipped: trust-boundary checks, error handling, security and accessibility.
+- One format for replies, reports and questions.
+- Your current settings, and a pointer to a saved session or memory for your branch.
 
-## Where its rules live
+## Source
 
-`skills/route-skills/SKILL.md`. `hooks/session-start.mjs` injects its body, and `verify/checks/injected-context.mjs` locks the size of what it injects, because that text is the most expensive thing exo owns. The full question format lives in `skills/route-skills/references/question.md`, which the skills that ask a question read from their reference tables. The next-stage question and the fresh-chat lines come from `skills/route-skills/scripts/next-stage.mjs`, which takes each model and effort from the kinds in `lib/model-kinds.json`. The `replies` rule rides on the settings line, from `skills/configure/schema.json`.
+`skills/route-skills/SKILL.md`, loaded by `hooks/session-start.mjs`.

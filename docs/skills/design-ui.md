@@ -1,18 +1,21 @@
 # design-ui
 
-Owns how a surface looks, so the result reads polished, modern and cleanly finished in the chosen mood.
+Designs how a page or component looks.
 
-## When it fires
+## When it runs
 
-A page, component or visual axis changes: typography, color, spacing, motion or copy. It fires on a new surface, a redesign, and on a report that an existing surface is empty, boring or generic, at any file count. When a new surface has not had its data, settings or behavior decided, spec decides those first and design-ui follows for presentation.
+- A page, component, or its type, color, spacing, motion or copy changes.
+- You call a screen empty, boring or generic.
+
+If the data or behavior of a new screen is still open, `spec` decides that first.
 
 ## What you get
 
-- A short plan before anything is built: the colors, the fonts and an ASCII layout, checked against your request.
-- The whole page built in one pass by your own session, then screenshotted at 390 and 1440 wide, looked at, and fixed once.
-- Accessibility, contrast, reflow and reduced-motion floors met, never traded for the look.
-- Only when you ask: looks to choose between in a browser tab, a survey of the existing surface, parallel builders, a separate critique and a QA check.
+- A short plan first: colors, fonts and an ASCII layout, checked against your request.
+- The page built in one pass, screenshotted at 390 and 1440 px wide, then fixed once.
+- Accessibility and contrast minimums, never traded for looks.
+- Only when you ask: several looks to choose from, a critique, or a full multi-step run.
 
-## Where its rules live
+## Source
 
-`skills/design-ui/SKILL.md` carries the routing, the one pass and what runs only on request. Its `references/` folder holds the axis rules the phase that needs them opens: typography, color, composition, motion, accessibility, performance and the critique checklists.
+`skills/design-ui/SKILL.md` and its `references/`.

@@ -1,18 +1,19 @@
 # ship
 
-Ends a code-changing run by carrying its commits as far as you pick: kept local, pushed, a pull request, or a pull request merged once its checks pass.
+Takes finished commits as far as you choose: keep local, push, open a pull request, or merge it.
 
-## When it fires
+## When it runs
 
-When `build` or `find-cause` has committed a change, and when you ask to push, open a pull request, or merge open pull requests.
+- `build` or `find-cause` has committed a change.
+- You ask to push, open or merge a pull request, fix its failing checks, or answer review comments.
 
 ## What you get
 
-- One overview and one lettered question with the recommended route as A, answered by its letter; the route you pick runs to its end with no follow-up command.
-- A check wait bounded at 20 minutes, then a merge only when the GitHub API reads the pull request as clean with every check passed, confirmed merged before it is reported.
-- A red check, a failed gate or a timeout leaves the pull request open, with the reason in the report.
-- No branch deletion, no forced merge and no release: those stay yours or the repository workflow's.
+- One summary and one lettered question. The route you pick runs to the end.
+- A merge only after every check passes. The wait stops after 20 minutes.
+- A failed check leaves the pull request open, with the reason.
+- No branch deletion, forced merge or release.
 
-## Where its rules live
+## Source
 
-`skills/ship/SKILL.md`, with the route steps and the bounded wait in `skills/ship/scripts/ship.mjs` and the pull-request fields in `skills/file-issues/references/fields.md`.
+`skills/ship/SKILL.md` and `skills/ship/scripts/ship.mjs`.

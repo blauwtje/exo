@@ -1,17 +1,18 @@
 # file-issues
 
-Writes and files GitHub issues for this repository as specs.
+Writes GitHub issues for this repository and files them.
 
-## When it fires
+## When it runs
 
-When you ask in plain words to file, open, write or split issues. The request is the approval: the issues are created and their links reported, with one question only when exo proposes a split you did not ask for.
+You ask in plain words to file, open, write or split issues. Asking is the approval. exo asks once more only when it wants to split an issue you asked for as one.
 
 ## What you get
 
-- One issue per scope, in the body shape this repository uses, with the labels, type, relations, milestone and project fields the repository actually defines.
-- Nothing invented: a label, type or milestone the repository does not define is left unset and named in the report.
-- No existing issue closed, deleted or edited, except a parent or blocker relation you named.
+- One issue per goal, each saying what must become true.
+- Labels, type, milestone and project fields the repository already has. exo invents none.
+- A link and one summary line per issue.
+- No existing issue closed, deleted or edited, except to link a parent or blocker you named.
 
-## Where its rules live
+## Source
 
-`skills/file-issues/SKILL.md`, with the field and body standard in its `references/fields.md`, which spec and ship read as well.
+`skills/file-issues/SKILL.md` and `skills/file-issues/references/fields.md`.

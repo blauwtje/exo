@@ -1,18 +1,20 @@
 # configure
 
-Shows and changes exo's settings: one at a time, or all of them in one walk.
+Shows and changes exo's settings.
 
-## When it fires
+## When it runs
 
-When you run `/exo:configure`, ask to set up or configure exo, or ask to see or change one setting, for every project, one repository, or this machine only.
+You run `/exo:configure`, or ask to see or change a setting, such as where specs go or the read guard.
+
+Not for Claude Code's own `settings.json`, permissions or hooks.
 
 ## What you get
 
-- With nothing named, a walk through every setting in the chat, one question per message, where keeping what you have is always answer A and nothing is saved before you confirm the review.
-- With a setting named, one question for the value and one for the layer, then the new overview.
-- `specs` and `replies`, plus the read guard and its big-file limit.
-- The two repository files written for you, one committed so collaborators share it, one git-ignored; a value for every project is named for you to pick in `/config`.
+- `/exo:configure` alone walks through every setting, one question at a time. Nothing is saved until you confirm.
+- A named setting takes two questions: the value, then who it applies to.
+- Three scopes: the whole team in this repository, only you in this repository, or you in every project.
+- A value for every project goes through `/config`. exo tells you which row to pick.
 
-## Where its rules live
+## Source
 
-`skills/configure/SKILL.md`, with the schema beside it and the walk's steps in `skills/configure/references/setup-map.md`. The harness's own `settings.json`, its permissions and its hooks are not exo's to change.
+`skills/configure/SKILL.md` and `skills/configure/references/setup-map.md`.

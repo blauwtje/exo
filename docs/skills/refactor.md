@@ -1,18 +1,21 @@
 # refactor
 
-Runs a named refactor with behavior pinned, and finishes it by deleting the old path rather than keeping it beside the new one.
+Restructures code without changing what it does, and deletes the old version.
 
-## When it fires
+## When it runs
 
-A rename, move, extraction, split or reshape of an internal API has been decided and its results must not change. It also fires when a shim, a signature that accepts both shapes, or a re-export kept "for compatibility" is tempting. Refactor does not choose what to refactor, because the user or the request names it. A change that alters behavior belongs to build, and a failure with an unproven cause to find-cause.
+- You name a rename, move, split or API reshape that must keep behavior the same.
+- Someone wants to keep a shim or a re-export "for compatibility".
+
+Not for choosing what to refactor, changing behavior (`build`), or an unexplained failure (`find-cause`).
 
 ## What you get
 
-- Current behavior pinned in a test, snapshot or before/after script before the first structural edit; a green type check or lint never counts as the pin.
-- Every internal caller migrated in the same change and the old API deleted, with no shim, deprecated wrapper or re-export left behind. Persisted data and consumers outside the repository keep their compatibility through build.
-- No new base class, registry or flag for a need that has no second implementation yet.
-- A report naming the structure that changed, the pin, the old-against-new comparison, lines removed against added, and what was reverted.
+- Current behavior captured in a test or script before the first edit. A passing type check does not count.
+- Every caller moved and the old API deleted in the same change.
+- No new layers for needs that do not exist yet.
+- A report: what changed, the before and after comparison, lines removed against added.
 
-## Where its rules live
+## Source
 
-`skills/refactor/SKILL.md`, with `references/behavior-pin.md` and `references/legacy-api.md`.
+`skills/refactor/SKILL.md`, `references/behavior-pin.md` and `references/legacy-api.md`.

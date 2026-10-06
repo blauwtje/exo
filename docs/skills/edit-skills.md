@@ -1,19 +1,20 @@
 # edit-skills
 
-Decides whether a skill earns its words, and fixes its shape when it does not.
+Writes and trims skills and agents, and tests that each rule changes what the model does.
 
-## When it fires
+## When it runs
 
-A skill or agent is created, changed, or judged too long. It is not for a one-off fix, a habit of a single project, or a limit a check can enforce: a commit, `CLAUDE.md` or the verifier holds those.
+You create, change or shorten a skill or agent.
+
+Not for a rule or `CLAUDE.md`, a one-off fix, or a limit a script can check.
 
 ## What you get
 
-- The skill written to one shape: a trigger-only description, an opening that names the enemy and the overcorrection, numbered steps that each carry their reason, and a judgment ladder.
-- Bulk moved out of the body into `references/`, with the moment to open each one named.
-- Several runs of the same prompt without the skill and with it, each full answer kept in its own file with the skills the run called, so a rule exists only where the runs without it failed.
-- A green `node verify.mjs`, which enforces the shape rather than describing it.
-- A skill moved to a new name in one pass, with its docs page, pressure folder and every mention rewritten.
+- The same prompt run with and without the skill. A rule stays only if the run without it went wrong.
+- Long material moved out of the skill into `references/`.
+- A green `node verify.mjs`.
+- A rename in one pass: folder, docs page and every mention.
 
-## Where its rules live
+## Source
 
-`skills/edit-skills/SKILL.md`, with its `references/` holding the description standard, the wording register, the shape template and the pressure scenarios.
+`skills/edit-skills/SKILL.md` and its `references/`.

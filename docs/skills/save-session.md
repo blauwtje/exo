@@ -1,17 +1,19 @@
 # save-session
 
-Saves an unfinished session's live state to a file the next session reads.
+Saves unfinished work to a file so a fresh session can pick it up.
 
-## When it fires
+## When it runs
 
-Only when you invoke it. Claude never starts it, because only you know the session is about to end.
+Only when you type `/exo:save-session`, usually before `/clear`.
+
+Not for finished work. The commit and pull request already record it.
 
 ## What you get
 
-- One file holding the goal, the current state, the decisions and who made them, what is proven, and the single next step.
-- The file stored beside the branch it belongs to, so a session on that branch is pointed at it on startup.
-- A commit recorded in it, so a session reading it later can say whether the tree has moved on.
+- One file with the goal, current state, decisions, what is proven, and the next step.
+- Paths and commands, not pasted logs or diffs.
+- The file is tied to your branch, so the next session on that branch is pointed to it.
 
-## Where its rules live
+## Source
 
-`skills/save-session/SKILL.md`. Finished work needs no handoff: the commit and the pull request already record it.
+`skills/save-session/SKILL.md`.

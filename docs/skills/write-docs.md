@@ -1,19 +1,20 @@
 # write-docs
 
-Words the prose exo writes for a later reader in one documentation mode, with the actor, the mechanism and the codebase's own names, and scans it against a catalogue of machine-written tics.
+Writes docs, pull requests, issues, commit messages and changelog lines in plain, specific words.
 
-## When it fires
+## When it runs
 
-A README or doc page, an ADR, a pull request, issue or commit body, a changelog line, a brief or a spec is being written or edited, or such a text is reviewed because it reads as machine-written. The fields of a pull request, issue, commit subject or brief stay with ship, file-issues and spec; this skill words the text inside them. Chat replies belong to the output style and code comments to the code standard.
+You write or edit text someone reads later: a README, doc page, PR, issue or commit body, changelog line or brief.
+
+Not for chat replies or code comments.
 
 ## What you get
 
-- One mode per document: a Usage section opens on the command, not on a welcome.
-- The fact in place of the benefit: the number, the behavior or the error that changed, never "more robust" or "ensuring stability".
-- The actor and the mechanism named, with the real file, option, flag and command, one name per thing.
-- Whole sentences in plain words, with no symbol-speak, and periods in place of dashes and semicolons.
-- A scan of every draft against the catalogue, whose tics carry stable ids a review cites.
+- Facts and numbers instead of claims like "more robust".
+- Real file, option and command names, one name per thing.
+- Whole sentences in plain words.
+- A check against a list of AI writing tells, each with an id a review can cite.
 
-## Where its rules live
+## Source
 
-`skills/write-docs/SKILL.md`, with `references/ai-tics.md`.
+`skills/write-docs/SKILL.md` and `references/ai-tics.md`.

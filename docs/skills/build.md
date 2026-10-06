@@ -1,29 +1,23 @@
 # build
 
-Runs a plan file, one task per fresh context, or, with no plan file, builds a decided change in this session.
+Runs a plan, one task per fresh context. Without a plan, it builds a decided change in this session.
 
-## When it fires
+## When it runs
 
-A session opens on a plan to run, or you say to run or resume one. It does not author or repair a plan.
+- A session opens on a plan, or you say to run or resume one.
+- A decided change with no plan touches more than two files, adds a dependency, changes a public signature, or crosses a persisted format or security boundary.
+- You ask for a change test-first, at any size.
 
-With no plan file, it fires when the change is decided and inspection shows it modifies more than two source, test or config files, adds a dependency, changes a public signature, crosses a persisted format or a security boundary, or reaches a file nobody inspected. A change you ask for test-first, or a bug with a reproduction, fires it at any file count.
+Not for writing or repairing a plan, or a change of two files or fewer.
 
 ## What you get
 
-- One commit per task, carrying the task number, so a resumed session knows what has landed.
-- On a restart, one line in your language naming the tasks already done, then silence between tasks.
-- Independent tasks built together in worktrees of their own; a plan of three tasks or fewer built in the session instead.
-- For a test-first plan task: its report quotes the failing run before the production edit and the passing run after, and a missing failing run is a defect for the branch review.
-- A final report that ends with the brief's `## Manual checks`, the checks only you can make, listed once.
-- The loop ends by handing to `verify`, which reviews the branch against the plan and the written code standard with the deep reviewer when a landed task carries a `Risk:` field, a manifest or lockfile changed or a public signature changed, repairs its findings, then asks the finish question `ship` carries out to its end.
+- One commit per task, so a resumed run knows what landed.
+- Independent tasks built in parallel in their own worktrees.
+- Test-first work shows the failing test before the fix and the passing test after.
+- A final report ending with the brief's `## Manual checks`, the checks only you can make.
+- A handoff to `verify`. It picks the deep reviewer when a landed task carries a `Risk:` field, a manifest or lockfile changed or a public signature changed.
 
-With no plan file:
+## Source
 
-- The change built, proven and reported in one pass, with one report at the end.
-- For a test-first change: the observable boundaries confirmed, a failing test quoted before each production edit, then the least code that passes it.
-- The migration, security and performance rules opened only when the change touches those boundaries.
-- A critique of the result before it is called done, then the finish question `ship` asks.
-
-## Where its rules live
-
-`skills/build/SKILL.md`, with the delegate prompts and its `references/` beside it, including the test, test-first, migration, security and performance rules the `## No spec` section borrows.
+`skills/build/SKILL.md` and its `references/`.

@@ -1,17 +1,19 @@
 # remember
 
-Records what this repository taught exo, once and only when you approve it.
+Saves a correction about this repository so later sessions follow it.
 
-## When it fires
+## When it runs
 
-Only when you invoke it. A correction you just made is booked silently by a hook; writing it into the project memory waits for you.
+Only when you type `/exo:remember`, to save a correction, see what exo remembers, or forget a line.
+
+Not for build or test commands, which go in `AGENTS.md` or `CLAUDE.md`.
 
 ## What you get
 
-- A claim proposed only after two separate sessions booked it, so one offhand remark is not a rule.
-- The line written into the project memory beside the repository, under a size ceiling, because one irrelevant line measurably lowers accuracy.
-- A line dropped when the files it names are gone.
+- A line is proposed only after two separate sessions recorded the same correction, and written only after you approve it.
+- A size limit on the memory file.
+- Lines dropped when the files they mention are gone.
 
-## Where its rules live
+## Source
 
-`skills/remember/SKILL.md`, with its scripts beside it. A build or test command belongs in `AGENTS.md` or `CLAUDE.md`, not here.
+`skills/remember/SKILL.md`.

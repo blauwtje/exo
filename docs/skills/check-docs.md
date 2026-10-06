@@ -1,17 +1,20 @@
 # check-docs
 
-Confirms how a pinned external version actually behaves.
+Looks up how the exact version of a library you have installed behaves, instead of guessing.
 
-## When it fires
+## When it runs
 
-A code decision hinges on a library, framework, API or service, and a wrong recalled answer would still compile or type-check yet fail at runtime or at the provider's boundary. It does not answer what this repository's own code answers, and it is not a concept explanation.
+A code decision depends on an external library, framework, API or service, and a wrong guess would still compile but fail at runtime.
+
+Not for questions this repository's own code answers, or general concepts.
 
 ## What you get
 
-- The answer taken from current first-party, version-specific documentation.
-- What the documentation could not confirm, named rather than filled in.
-- Control handed back to the stage that borrowed it, never a turn that ends on the research alone.
+- The installed version, read from the lockfile or manifest.
+- The answer from that version's official docs, with a URL for each claim.
+- What it could not confirm, said plainly.
+- The work it was called from continues with the answer.
 
-## Where its rules live
+## Source
 
-`skills/check-docs/SKILL.md`, with the delegate prompt beside it.
+`skills/check-docs/SKILL.md`.

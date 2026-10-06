@@ -1,18 +1,18 @@
 # start
 
-The one door in when no skill name comes to mind.
+Picks the right skill when you do not remember its name.
 
-## When it fires
+## When it runs
 
-Only when you invoke it: `/exo:start` alone, `/exo:start <goal>`, or `/exo:start <spec-path>`.
+Only when you type `/exo:start`, `/exo:start <goal>` or `/exo:start <spec-path>`.
 
 ## What you get
 
-- With no goal, the cheat sheet: every exo skill in plain words, what it does, and what to just say instead of typing it.
-- With a goal, exo picks the one skill that fits and runs it, or tells you the exact command when that skill only runs when typed.
-- With a spec path, or a spec or big wish to build, `spec` writes the brief with its task list, then offers to `build` it.
-- No skill picked when none fits: exo does the work itself, the same way it would without `start`.
+- No goal: a cheat sheet of every exo skill in plain words.
+- A goal: exo picks the skill and runs it. For a skill you must type yourself, it gives you the command.
+- A spec path or big wish: `spec` writes the brief, then offers to `build` it.
+- No skill fits: exo does the work without one.
 
-## Where its rules live
+## Source
 
-`skills/start/SKILL.md`, with the cheat sheet at `skills/start/references/cheat-sheet.md`.
+`skills/start/SKILL.md` and `skills/start/references/cheat-sheet.md`.

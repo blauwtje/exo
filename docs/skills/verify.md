@@ -1,19 +1,21 @@
 # verify
 
-Runs a landed plan's gate, reviews the branch and repairs what the review finds.
+Checks a finished plan's branch, reviews it and fixes what the review finds.
 
-## When it fires
+## When it runs
 
-A plan's tasks are all landed and the branch needs the scripted checks and a review before a pull request. It does not land a task itself, and it does not fire for a decided change with no plan.
+Every task in a plan has landed and the branch needs checking before a pull request.
+
+Not for a change without a plan.
 
 ## What you get
 
-- Each landed task's own Proof command, the plan's success criterion and a stray-path check, run once and reported.
-- Every task listed as done or open, then the checks only you can make from the plan's `## Manual checks`, at the end of the gate's output.
-- One branch review, dispatched to the model the gate printed.
-- Findings repaired by a delegate and landed in one commit.
-- The finish question `ship` asks, whose pick is carried out to its end.
+- Each task's proof command and the plan's success check, run once.
+- Every task marked done or open, plus the checks only you can make.
+- One review of the whole branch.
+- Review findings fixed in one commit.
+- A handoff to `ship`.
 
-## Where its rules live
+## Source
 
-`skills/verify/SKILL.md`, with `scripts/verify.mjs` beside it.
+`skills/verify/SKILL.md` and `skills/verify/scripts/verify.mjs`.

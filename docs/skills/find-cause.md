@@ -1,18 +1,20 @@
 # find-cause
 
-Finds the cause of a failure before anything is changed.
+Finds why something broke before changing any code.
 
-## When it fires
+## When it runs
 
-Existing behavior is reported wrong as a bug, error, crash, regression, broken output or slowdown, and the evidence does not yet name one causal line or boundary plus a mechanism that predicts the symptom. It outranks every other stage until the cause is proven. It stays out when a diagnostic already names the exact file, line and symbol and matches the source.
+Something that used to work is wrong: a bug, error, crash, regression or slowdown, and the cause is not yet proven.
+
+Not when an error message already points at the exact file and line.
 
 ## What you get
 
-- A reproduction that fails on demand.
-- One named cause with the mechanism that explains the symptom, and the predicted fix applied.
-- The output lines that prove it, at most ten, with a log path for the rest.
-- A handoff file under `<git-dir>/exo/debug/` recording the reproduction, the cause and the proof.
+- A command that reproduces the failure.
+- One proven cause, the mechanism behind it, and the fix.
+- Up to ten lines of proof, with a log file for the rest.
+- A handoff file in `.exo/debug/`.
 
-## Where its rules live
+## Source
 
 `skills/find-cause/SKILL.md`.
