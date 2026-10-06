@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const TIGHT_RULE = `. ${SCHEMA.replies.rules.tight}`;
@@ -311,6 +311,29 @@ test('the high rule names both twins and carries no placeholder', async () => {
   assert.ok(result.stdout.includes('exo:critique-ui-high'), result.stdout);
   assert.ok(result.stdout.includes('exo:solve-hard-high'), result.stdout);
   assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
+});
+
+test('on Codex the budget rules dispatch the generated high and low twins by name', async () => {
+  const high = await codexWorkspace({ budget: 'high' });
+  const highLine = (await settings(high, ['context'])).stdout;
+  for (const twin of ['exo-review-branch-deep-high', 'exo-critique-ui-high', 'exo-solve-hard-high']) assert.ok(highLine.includes(twin), highLine);
+  assert.ok(!highLine.includes('exo:solve-hard-high'), highLine);
+  const low = await codexWorkspace({ budget: 'low' });
+  const lowLine = (await settings(low, ['context'])).stdout;
+  for (const twin of ['exo-review-branch-deep-low', 'exo-critique-ui-low', 'exo-solve-hard-low']) assert.ok(lowLine.includes(twin), lowLine);
+  assert.doesNotMatch(lowLine, /\{from\}|\{to\}|Task call|model parameter/);
+  assert.ok(!lowLine.includes('exo:solve-hard-low'), lowLine);
+});
+
+test('on Codex the replies rule is the same as on Claude Code', async () => {
+  const space = await codexWorkspace({ replies: 'terse' });
+  assert.ok((await settings(space, ['context'])).stdout.trim().endsWith(`. ${SCHEMA.replies.rules.terse}`));
+});
+
+test('the Codex budget rules name only twins that exist as generated agent files', () => {
+  for (const rule of Object.values(SCHEMA.budget.codexRules)) {
+    for (const [name] of rule.matchAll(/exo-[a-z-]+/g)) assert.ok(existsSync(new URL(`../codex/agents/${name}.toml`, import.meta.url)), name);
+  }
 });
 
 test('the low rule text holds no model name of any provider', () => {

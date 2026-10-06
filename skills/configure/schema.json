@@ -41,6 +41,10 @@
       "high": "Budget is high: when you dispatch exo:review-branch-deep, exo:critique-ui or exo:solve-hard, dispatch exo:review-branch-deep-high, exo:critique-ui-high or exo:solve-hard-high in its place, with the same prompt; no model is replaced.",
       "low": "Budget is low: when you dispatch exo:solve-hard, dispatch exo:solve-hard-low in its place, with the same prompt, and leave its model as the agent sets it. When the Task tool dispatches any other plugin agent whose kind in lib/model-kinds.json resolves to model {from} (the kind is the agent's entry under agents, looked up under kinds, whose tier the provider named at the top maps to a model under providers), pass {to} as the Task call's own model parameter instead."
     },
+    "codexRules": {
+      "high": "Budget is high: when you spawn exo-review-branch-deep, exo-critique-ui or exo-solve-hard, spawn exo-review-branch-deep-high, exo-critique-ui-high or exo-solve-hard-high in its place, with the same prompt.",
+      "low": "Budget is low: when you spawn exo-review-branch-deep, exo-critique-ui or exo-solve-hard, spawn exo-review-branch-deep-low, exo-critique-ui-low or exo-solve-hard-low in its place, with the same prompt."
+    },
     "aliases": { "full": "high", "normal": "medium", "lean": "low" },
     "label": "Effort",
     "about": "how much care and cost each task gets",

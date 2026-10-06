@@ -50,10 +50,16 @@ function filledRule(rule, value) {
 
 // A schema key with a `rules` map contributes its current value's rule text to
 // the injected settings line; a value with no entry there (such as budget's
-// default `medium`) adds nothing.
+// default `medium`) adds nothing. On Codex a `codexRules` map takes the place
+// of `rules` for its key, because Codex spawns a twin by name where Claude
+// Code passes the Task call a model.
 function activeRules(values) {
+  const onCodex = currentHost() === 'codex';
   return Object.entries(SCHEMA)
-    .map(([key, entry]) => (entry.rules?.[values[key]] ? filledRule(entry.rules[values[key]], values[key]) : ''))
+    .map(([key, entry]) => {
+      const rules = (onCodex && entry.codexRules) || entry.rules;
+      return rules?.[values[key]] ? filledRule(rules[values[key]], values[key]) : '';
+    })
     .filter(Boolean)
     .join(' ');
 }
