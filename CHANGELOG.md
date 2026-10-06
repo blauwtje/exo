@@ -9,7 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
-- exo gains a Codex host: a Codex provider block in the model kind table, host detection, and explicit-only invocation of `start`, `save-session` and `remember` on Codex.
+- `node codex/install.mjs` installs exo into Codex. It links the skills into `~/.agents/skills`, copies agent files generated from the model kind table into `~/.codex/agents`, and merges exo's hooks into `~/.codex/hooks.json`; `--remove` takes out exactly what it wrote. `npm run check` fails when the generated agent files drift from the table.
 
 ## 0.88.2 - 2026-10-05
 
