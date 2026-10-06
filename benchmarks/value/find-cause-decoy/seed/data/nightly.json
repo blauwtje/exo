@@ -1,0 +1,18 @@
+[
+  {"id":"A-1036","type":"invoice","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"PEN-04","unitCents":349,"qty":7}],"coupon":"VIP15"},
+  {"id":"A-1037","type":"invoice","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"STK-06","unitCents":125,"qty":5}],"coupon":"WELCOME"},
+  {"id":"A-1038","type":"quote","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"BAG-05","unitCents":3299,"qty":2},{"sku":"PEN-04","unitCents":349,"qty":2}]},
+  {"id":"A-1039","type":"quote","placedOn":"2026-03-03","taxBps":825,"coupon":"SPRING5","items":[{"sku":"MUG-01","unitCents":1499,"qty":1},{"sku":"PEN-04","unitCents":349,"qty":2}]},
+  {"id":"A-1040","type":"invoice","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"STK-06","unitCents":125,"qty":1},{"sku":"CAP-03","unitCents":1875,"qty":6},{"sku":"TEE-02","unitCents":2450,"qty":3}],"coupon":"WELCOME"},
+  {"id":"A-1041","type":"shipping","items":[{"sku":"CAP-03","unitCents":1875,"qty":6},{"sku":"TEE-02","unitCents":2450,"qty":2}]},
+  {"id":"A-1042","type":"invoice","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"TEE-02","unitCents":2450,"qty":4},{"sku":"STK-06","unitCents":125,"qty":5},{"sku":"MUG-01","unitCents":1499,"qty":5}]},
+  {"id":"A-1043","type":"refund","order":{"placedOn":"2026-03-03","taxBps":700,"items":[{"sku":"TEE-02","unitCents":2450,"qty":2},{"sku":"PEN-04","unitCents":349,"qty":5}]},"returns":[{"sku":"TEE-02","qty":3}]},
+  {"id":"A-1044","type":"invoice","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"BAG-05","unitCents":3299,"qty":2},{"sku":"CAP-03","unitCents":1875,"qty":3}],"coupon":"SAVE10"},
+  {"id":"A-1045","type":"quote","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"MUG-01","unitCents":1499,"qty":2},{"sku":"BAG-05","unitCents":3299,"qty":1}]},
+  {"id":"A-1046","type":"late-fee","invoiceCents":21981,"daysLate":2},
+  {"id":"A-1047","type":"refund","order":{"placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"PEN-04","unitCents":349,"qty":5},{"sku":"TEE-02","unitCents":2450,"qty":4}],"coupon":"WELCOME"},"returns":[{"sku":"PEN-04","qty":2},{"sku":"TEE-02","qty":3}]},
+  {"id":"A-1048","type":"invoice","placedOn":"2026-03-03","taxBps":825,"items":[{"sku":"BAG-05","unitCents":3299,"qty":7}],"coupon":"SAVE10"},
+  {"id":"A-1049","type":"quote","placedOn":"2026-03-03","taxBps":825,"items":[]},
+  {"id":"A-1050","type":"shipping","items":[{"sku":"BAG-05","unitCents":3299,"qty":7},{"sku":"PEN-04","unitCents":349,"qty":5}]},
+  {"id":"A-1051","type":"invoice","placedOn":"2026-03-03","taxBps":700,"items":[{"sku":"TEE-02","unitCents":2450,"qty":6},{"sku":"CAP-03","unitCents":1875,"qty":4},{"sku":"MUG-01","unitCents":1499,"qty":3}],"coupon":"VIP15"}
+]

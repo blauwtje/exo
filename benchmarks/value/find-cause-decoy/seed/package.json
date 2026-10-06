@@ -1,0 +1,11 @@
+{
+  "name": "order-totals",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Invoice, refund and quote totals for the shop back office",
+  "scripts": {
+    "test": "node --test",
+    "batch": "node bin/orders.mjs data/nightly.json"
+  }
+}
