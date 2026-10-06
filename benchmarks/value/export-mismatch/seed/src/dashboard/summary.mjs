@@ -4,9 +4,7 @@ import { convertMinor, formatMinor } from '../lib/money.mjs';
 import { loadCustomers } from '../model/customers.mjs';
 import { loadRates, rateFor, REPORTING_CURRENCY } from '../model/fx.mjs';
 
-// Per-customer totals for a month, straight from the sources: each settled row
-// counts once per source and id, at the rate of the day it was booked in the
-// customer's own time zone.
+// Per-customer totals for a month, straight from the sources.
 export function monthSummary({ dataDir, month }) {
   const customers = loadCustomers(dataDir);
   const rates = loadRates(dataDir, month);

@@ -16,7 +16,7 @@ Everything the tools read sits under `data/` (or the folder `--data` names):
 
 | Path | Content |
 |---|---|
-| `customers.csv` | `id,name,timezone,currency,plan`; the timezone is the account's own |
+| `customers.csv` | `id,name,timezone,currency,plan` |
 | `fx/<month>.csv` | `date,currency,rate`: EUR per one unit of the currency, one row per day |
 | `sources/cardsvc/<month>.jsonl` | one JSON event per line: charges and refunds |
 | `sources/ledger/<month>.csv` | invoices and credit notes, amounts in major units |

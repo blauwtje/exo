@@ -21,9 +21,13 @@ const NAMED = { month: '2026-03', id: 'C004', name: 'Kestrel Analytics' };
 
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('NODE_TEST')));
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'export-mismatch-'));
+// One deadline bounds the whole check, so a hanging fix cannot add up to minutes.
+const deadline = Date.now() + 45_000;
 
 function run(command, args) {
-  const result = spawnSync(command, args, { cwd: repo, env, encoding: 'utf8', timeout: 25_000, maxBuffer: 64 * 1024 * 1024 });
+  const remaining = deadline - Date.now();
+  if (remaining < 1_000) throw new Error(`${command} ${args.join(' ')}: not started, the 45 s check deadline passed`);
+  const result = spawnSync(command, args, { cwd: repo, env, encoding: 'utf8', timeout: Math.min(25_000, remaining), maxBuffer: 64 * 1024 * 1024 });
   if (result.error) throw new Error(`${command} ${args.join(' ')}: ${result.error.message}`);
   return result;
 }
