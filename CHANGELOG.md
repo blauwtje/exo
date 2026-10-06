@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.90.0 - 2026-10-06
+
 ### Added
 
 - `node ~/.exo/install.mjs` is one installer for every detected harness (Claude Code, Codex) at user, shared-project or private-project scope, with `--update` and a remove path; each harness sits behind an adapter registered in `harnesses/registry.mjs`.
