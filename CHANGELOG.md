@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- Agent descriptions shrink to the routing text a dispatch needs, cutting the agent listing every session pays from 2,769 to 956 characters, and a new lock in `verify/budgets.mjs` holds the total there.
+
 ## 0.92.0 - 2026-10-06
 
 ### Added
