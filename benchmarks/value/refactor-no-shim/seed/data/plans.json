@@ -1,0 +1,5 @@
+[
+  { "code": "free", "seats": 1, "priceCents": 0 },
+  { "code": "pro", "seats": 1, "priceCents": 900 },
+  { "code": "team", "seats": 5, "priceCents": 4000 }
+]

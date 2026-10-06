@@ -1,0 +1,4 @@
+# Model changes need a members-team review.
+/src/models/user.js   @acme/members
+/src/models/plan.js   @acme/billing
+/docs/                @acme/members

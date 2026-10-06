@@ -1,0 +1,4 @@
+{
+  "files": ["user", "plan"],
+  "exportModel": "UserRecord"
+}

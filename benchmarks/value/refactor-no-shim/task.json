@@ -1,0 +1,6 @@
+{
+  "id": "value-refactor-no-shim",
+  "claim": "refactor-no-shim",
+  "timeoutMinutes": 12,
+  "estimateUsd": 0.6
+}

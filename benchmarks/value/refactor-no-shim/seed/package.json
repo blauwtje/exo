@@ -1,0 +1,13 @@
+{
+  "name": "members-tool",
+  "version": "2.3.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "bin": { "members": "bin/members.mjs" },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "export": "node bin/members.mjs export",
+    "demo": "node scripts/seed-demo.mjs"
+  }
+}
