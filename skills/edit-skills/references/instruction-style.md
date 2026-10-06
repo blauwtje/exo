@@ -18,8 +18,7 @@ This style applies to `CLAUDE.md`, rules, skills, agents, output styles and hook
 - Give a reason only where it sets the rule's boundary, in one clause.
 - Put an exception beside its rule.
 - Define by contrast: "X, not Y".
-- Make a ladder stop at the first match.
-- Make a ladder's first step ask whether the thing needs to exist.
+- When a list's order could read as precedence, say whether the first match wins or every item applies.
 - Keep a rule the system prompt also states, because sessions switch models.
 - Make what must happen every time without exception a hook, not a rule.
 - A hook never rewrites a command inside a pipeline; a guard denies or allows and leaves the command unchanged.
