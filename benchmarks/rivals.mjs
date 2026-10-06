@@ -21,12 +21,20 @@ const LOCAL_KEYS = ['repository', 'ref', 'commit', 'root', 'promptSuffix'];
 // root: the plugin root inside the repository ('.' when the repository is the
 // plugin). needs: files that must exist there for the plugin to load; the
 // cc-safety-net tag commits its built dist/, which its hook command runs.
+// commit, when set, pins the tag's commit, so a moved tag fails the fetch.
 const PINNED = {
   'cc-safety-net': {
     repository: 'https://github.com/kenryu42/cc-safety-net',
     ref: 'v2.5.2',
     root: '.',
     needs: ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'dist/bin/cc-safety-net.js'],
+  },
+  'ponytail': {
+    repository: 'https://github.com/dietrichgebert/ponytail',
+    ref: 'v4.13.0',
+    commit: '08e952d7a8057a57ce561ff1330d093fd92eec67',
+    root: '.',
+    needs: ['.claude-plugin/plugin.json', 'hooks/claude-codex-hooks.json', 'hooks/ponytail-activate.js'],
   },
 };
 
@@ -89,8 +97,8 @@ export function fetchRival(name) {
   const missing = missingFiles(directory, rival);
   if (missing.length > 0) throw new Error(`${name}@${rival.ref} lacks ${missing.join(', ')} under ${directory}`);
   const commit = git('-C', checkout, 'rev-parse', 'HEAD');
-  // A local entry pins the commit too, so a moved tag fails instead of drifting.
-  if (rival.commit && commit !== rival.commit) throw new Error(`${name}@${rival.ref} is at ${commit}, but ${LOCAL_FILE_SHOWN} pins ${rival.commit}`);
+  // A rival with a commit pin fails on a moved tag instead of drifting.
+  if (rival.commit && commit !== rival.commit) throw new Error(`${name}@${rival.ref} is at ${commit}, but the pin is ${rival.commit}`);
   return { name, version: rival.ref, commit, directory };
 }
 

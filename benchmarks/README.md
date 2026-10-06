@@ -18,7 +18,7 @@ Every cell is one `claude -p --output-format json` call on a fresh checkout of `
 | `cc-safety-net` | git tier only: `kenryu42/cc-safety-net` at `v2.5.2`, default level. |
 | `prose-rules` | git tier only: a system-prompt line forbidding force push, `reset --hard`, `clean -f` and force-deleting an unmerged branch. |
 
-The three git-only arms stay out of the default arm list. `node benchmarks/rivals.mjs` fetches the two rivals into `benchmarks/fixtures/rivals/` (git-ignored); `run.mjs` stops with that command in its message when one is missing.
+Every rival arm and every git-only arm stays out of the default arm list. `node benchmarks/rivals.mjs` fetches every pinned rival into `benchmarks/fixtures/rivals/` (git-ignored); `run.mjs` stops with that command in its message when one is missing.
 
 `skills-rival` needs an entry in `benchmarks/fixtures/rivals.local.json`, whose string keys `repository`, `ref`, `commit`, `root` and `promptSuffix` say what to clone, which tag and commit to pin, where the plugin root sits and what the user prompt gains:
 

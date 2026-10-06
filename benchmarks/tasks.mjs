@@ -68,6 +68,8 @@ export const ARMS = {
   // rivals.local.json names the skill.
   'skills-rival': rivalArm('skills-rival'),
   'cc-safety-net': rivalArm('cc-safety-net'),
+  // ponytail is a hooks-based rival that loads unforced; run it on the template tier.
+  ponytail: rivalArm('ponytail'),
   'prose-rules': { prompt: PROSE_RULES, pluginDirs: [], promptSuffix: null, gitOnly: true }
 };
 
