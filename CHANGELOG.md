@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.93.0 - 2026-10-06
+
 ### Added
 
 - `pressure.mjs --setup <script>` rebuilds a case's fixture right before every run and runs the runs one after another, alternating arms, so no two runs share a fixture; `drive.mjs` clears its run directory before it copies the fixture in.
