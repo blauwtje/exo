@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `install.sh` updates and uninstalls exo too: `curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update` or `-- --remove`. `--remove` deletes `~/.exo` once no harness records an install and the clone has no local changes, and says why when it keeps the clone.
+
+### Changed
+
+- The README's Install section has one expandable block per harness, Claude Code and Codex, followed by update and uninstall commands. No install, update or uninstall step asks the user to type `git` or `node`, in the README or in `docs/codex.md`.
+
 ## 0.91.0 - 2026-10-06
 
 ### Highlights
