@@ -121,6 +121,6 @@ if (cd "$scratch/red/app" && node "$verify" --plan docs/plans/greeting.md --root
   echo "setup.sh: the red variant passed the gate" >&2
   exit 1
 fi
-grep -q '^PASS Task 2$' "$scratch/green.out"
-grep -q '^FAIL Task 2$' "$scratch/red.out"
+grep -Eq '^PASS Task 2( |$)' "$scratch/green.out" || { echo "setup.sh: the green variant printed no PASS Task 2 line" >&2; exit 1; }
+grep -Eq '^FAIL Task 2( |$)' "$scratch/red.out" || { echo "setup.sh: the red variant printed no FAIL Task 2 line" >&2; exit 1; }
 echo "fixture script placed in $root; green passes the gate, red fails Task 2"
