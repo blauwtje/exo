@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.95.0 - 2026-10-06
+
 ### Added
 
 - `benchmarks/rivals.mjs` pins a hooks-based code-size rival by tag and commit, and `benchmarks/tasks.mjs` gives it an arm outside the default list.
