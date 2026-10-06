@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createReport } from '../verify/report.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { AGENT_DESCRIPTION_TOTAL_LOCK, DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../verify/budgets.mjs';
+import { AGENT_DESCRIPTION_TOTAL_LOCK, DESCRIPTION_CHARS, DESCRIPTION_TOTAL_LOCK, INJECTED_CONTEXT_LOCK, AGENT_BODY_TOKENS, REFERENCE_TOKEN_LOCKS, LEAN_REFERENCE_LOCK } from '../verify/budgets.mjs';
 import { checkAgentDescriptionBudgets, checkDescriptionBudgets } from '../verify/checks/description-budgets.mjs';
 import { checkInjectedContext } from '../verify/checks/injected-context.mjs';
 import { checkBodyBudgets } from '../verify/checks/body-budgets.mjs';
@@ -229,6 +229,32 @@ test('an unannounced shrink below a reference lock also fails', (t) => {
   assert.equal(run.counts.FAIL, 1, run.detail);
   const lock = REFERENCE_TOKEN_LOCKS[LOCKED_REFERENCE];
   assert.match(run.detail, new RegExp(`${LOCKED_REFERENCE.replace(/\//g, '\\/')} is \\d+ tokens, under its ${lock}-token lock`));
+});
+
+// LEAN_REFERENCE_LOCK holds lean.md the same two ways in bytes; the untouched
+// corpus passing above already covers lean.md at its exact lock.
+const LEAN_REFERENCE = 'skills/route-skills/references/lean.md';
+
+test('one byte past the lean.md lock fails and names the lock', (t) => {
+  const root = skillsFixture(t);
+  fs.appendFileSync(path.join(root, LEAN_REFERENCE), 'x', 'utf8');
+
+  const run = verdict(root, checkReferenceShape);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.match(run.detail, new RegExp(`lean\\.md is ${LEAN_REFERENCE_LOCK.bytes + 1} bytes, over its ${LEAN_REFERENCE_LOCK.bytes}-byte lock`));
+});
+
+test('one byte under the lean.md lock also fails', (t) => {
+  const root = skillsFixture(t);
+  const file = path.join(root, LEAN_REFERENCE);
+  const text = fs.readFileSync(file, 'utf8');
+  fs.writeFileSync(file, text.slice(0, -1), 'utf8');
+
+  const run = verdict(root, checkReferenceShape);
+
+  assert.equal(run.counts.FAIL, 1, run.detail);
+  assert.match(run.detail, new RegExp(`lean\\.md is ${LEAN_REFERENCE_LOCK.bytes - 1} bytes, under its ${LEAN_REFERENCE_LOCK.bytes}-byte lock`));
 });
 
 // AGENT_DESCRIPTION_TOTAL_LOCK works like DESCRIPTION_TOTAL_LOCK over agents/:

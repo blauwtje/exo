@@ -10,11 +10,12 @@ import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 import { referenceTableEntries } from './reference-tables.mjs';
-import { REFERENCE_CONTENTS_LINES, BYTES_PER_TOKEN, STAGE_BODY_TOKENS, REFERENCE_TOKEN_LOCKS } from '../budgets.mjs';
+import { REFERENCE_CONTENTS_LINES, BYTES_PER_TOKEN, STAGE_BODY_TOKENS, REFERENCE_TOKEN_LOCKS, LEAN_REFERENCE_LOCK } from '../budgets.mjs';
 
 const FENCE = /^\s*(`{3,}|~{3,})/;
 const REFERENCE_TOKEN_CEILING = 750;
 const STAGE_SKILLS = Object.keys(STAGE_BODY_TOKENS);
+const LEAN_REFERENCE = 'skills/route-skills/references/lean.md';
 
 function referenceFiles(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -80,6 +81,14 @@ function sizeProblem(relative, tokens) {
     : null;
 }
 
+// lean.md must land on its byte lock exactly, the same two ways as sizeProblem.
+function leanSizeProblem(bytes) {
+  const lock = LEAN_REFERENCE_LOCK.bytes;
+  if (bytes > lock) return `${LEAN_REFERENCE} is ${bytes} bytes, over its ${lock}-byte lock`;
+  if (bytes < lock) return `${LEAN_REFERENCE} is ${bytes} bytes, under its ${lock}-byte lock: update LEAN_REFERENCE_LOCK in verify/budgets.mjs`;
+  return null;
+}
+
 function namedReferences(file, text) {
   return markdownTargets(text).filter((target) => {
     const resolved = resolveMarkdownTarget(file, target);
@@ -116,6 +125,10 @@ export function checkReferenceShape(report, repository) {
       if (isStageSkill) {
         const sizeIssue = sizeProblem(relative, tokensOf(repository, file));
         if (sizeIssue !== null) shapeProblems.push(sizeIssue);
+      }
+      if (relative === LEAN_REFERENCE) {
+        const leanIssue = leanSizeProblem(Buffer.byteLength(repository.text(file), 'utf8'));
+        if (leanIssue !== null) shapeProblems.push(leanIssue);
       }
     }
     if (isStageSkill) {

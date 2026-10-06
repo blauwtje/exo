@@ -63,6 +63,11 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/wave-worktrees.md': 962,
   'skills/ship/references/pr-prep.md': 830,
 };
+// skills/route-skills/references/lean.md, read before every code edit, sits
+// under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
+// bytes, the same two ways: growth fails and so does a shrink the lock does
+// not follow.
+export const LEAN_REFERENCE_LOCK = { bytes: 1030, measured: '2026-10-06' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 export const REFERENCE_CONTENTS_LINES = 100;
