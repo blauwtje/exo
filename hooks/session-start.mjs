@@ -3,14 +3,17 @@
 // additionalContext string, in order: a handoff pointer, a project-memory
 // pointer, the settings line, the book-command sentence, then the body of the
 // route-skills skill (frontmatter dropped), the only skill invoked this way
-// because its frontmatter blocks model invocation.
+// because its frontmatter blocks model invocation. On Codex the Codex host note
+// and the body of the scannable output style follow, since Codex has neither.
 // It runs in Node so a host without `jq` still gets the injection.
 
+import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
 import { bookSentence } from '../skills/remember/scripts/approve-book.mjs';
 import { reset as resetReadGuard } from './guards/read-guard.mjs';
@@ -23,8 +26,18 @@ import { reset as resetRepeatGuard } from './guards/repeat-guard.mjs';
 // verify/budgets.mjs holds the same number as HOOK_OUTPUT_CAP.
 const OUTPUT_CAP = 10000;
 
+// Codex counts additionalContextLimit in tokens, so its context is capped at
+// this many tokens, estimated as UTF-8 bytes divided by 4; the installer sets
+// the limit higher, which leaves room for the estimate's error.
+const CODEX_TOKEN_CAP = 5000;
+
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
-const configDirectory = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
+const onCodex = currentHost() === 'codex';
+// A Codex session keeps its pointer and marker under Codex's own folder, so it
+// cannot repoint Claude's copy of the plugin root.
+const configDirectory = onCodex
+  ? path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'exo')
+  : path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
 
 // Runs a script of this plugin in its own process, for the one that is not
 // importable: settings.mjs runs its command at load. Lift it by exporting
@@ -99,6 +112,21 @@ function skillBody(skillFile) {
   return kept.join('\n').replace(/\n+$/, '');
 }
 
+// The Codex note and the scannable style follow the context above, whole and
+// last, so the cap cuts the context before them: the note maps every tool the
+// skills name, and the cut falls on the tail of the route-skills body.
+function withCodexNote(context) {
+  const note = fs.readFileSync(path.join(root, 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd();
+  const style = skillBody(path.join(root, 'output-styles', 'scannable.md')).trim();
+  const tail = `\n\n${note}\n\n${style}`;
+  const bytesRoom = CODEX_TOKEN_CAP * 4 - Buffer.byteLength(tail);
+  const bytes = Buffer.from(context);
+  if (bytes.length <= bytesRoom) return `${context}${tail}`;
+  console.error(`exo: session context cut by ${bytes.length - bytesRoom} bytes, it would pass ${CODEX_TOKEN_CAP} tokens`);
+  const cut = bytes.subarray(0, Math.max(bytesRoom, 0)).toString('utf8').replace(/\uFFFD+$/, '');
+  return `${cut}${tail}`;
+}
+
 let input = {};
 try {
   input = JSON.parse((await readHookText()) || '{}');
@@ -130,12 +158,18 @@ function welcomeMessage() {
     console.error(`exo: welcome marker not written, ${error.message}`);
     return undefined;
   }
+  if (onCodex) return 'exo is installed: run $start to see what it can do, or $configure to set your choices.';
   return 'exo is installed: run /exo:start to see what it can do, or /exo:configure to set your choices.';
 }
 
 // A clear or a compaction empties the context, so the read guard forgets which
 // ranges the model still holds and the repeat guard forgets which calls it saw.
 let pointers = '';
+// The guards keep their session files under the Claude config folder, so a
+// Codex reset points them at the Codex folder instead. Shortcut: the other
+// hooks do not yet share this path; lift it by making #session-record-path
+// pick the folder from #host.
+if (onCodex) process.env.EXO_SESSIONS_DIR ??= path.join(configDirectory, 'sessions');
 if (input.source === 'clear' || input.source === 'compact') {
   try {
     resetReadGuard(input);
@@ -166,7 +200,8 @@ if (fs.existsSync(skillFile)) {
     console.error(`exo: route-skills cut by ${body.length - room} characters, the session context would pass ${OUTPUT_CAP}`);
     body = body.slice(0, Math.max(room, 0));
   }
-  const additionalContext = `${headText}${body}`;
+  let additionalContext = `${headText}${body}`;
+  if (onCodex) additionalContext = withCodexNote(additionalContext);
   const systemMessage = welcomeMessage();
   process.stdout.write(`${JSON.stringify({ systemMessage, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);
 }
