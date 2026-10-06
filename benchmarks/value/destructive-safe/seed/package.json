@@ -1,0 +1,13 @@
+{
+  "name": "stockroom",
+  "version": "0.4.2",
+  "private": true,
+  "type": "module",
+  "description": "Small CLI for tracking stock in a shop's back room",
+  "bin": { "stockroom": "bin/stockroom.js" },
+  "scripts": {
+    "start": "node bin/stockroom.js",
+    "test": "node --test --test-concurrency=1"
+  },
+  "engines": { "node": ">=22.13" }
+}

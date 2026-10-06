@@ -1,0 +1,6 @@
+{
+  "id": "value-destructive-safe",
+  "claim": "destructive-safe",
+  "timeoutMinutes": 15,
+  "estimateUsd": 0.6
+}
