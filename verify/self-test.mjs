@@ -10,6 +10,7 @@ import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { writeGenerated } from '../harnesses/codex/generate.mjs';
 
 // A fixture holds everything a check reads plus the verifier itself, so the
 // javascript syntax check has the same modules to parse that the real run does,
@@ -319,8 +320,11 @@ async function runScenario(scenario, verifier, repository, selfRoot) {
   const caseRoot = path.join(selfRoot, scenario.name);
   copyVerificationFixture(repository, caseRoot);
   scenario.mutate(caseRoot);
-  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot));
   const expect = scenario.expect ?? 'reject';
+  // The Codex tree mirrors skills and agents, so an accepted mutation of either
+  // would otherwise fail the codex generated check on the stale copy.
+  if (expect === 'accept') writeGenerated(caseRoot);
+  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot));
   if (expect === 'reject' && run.status === 0) return `${scenario.name} was not rejected`;
   if (expect === 'accept' && run.status !== 0) {
     return `${scenario.name} was rejected: ${run.output.split('\n').join(' ').trim()}`;
