@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.93.2 - 2026-10-06
+
 ### Fixed
 
 - `benchmarks/run.mjs` starts every cell clean of the launching Claude Code session (`CLAUDECODE`, `CLAUDE_EFFORT`, `CLAUDE_CODE_*`), so a parent's settings env such as `CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS` no longer drops built-in agents from the cells, and gives every arm the default-options HOME, not only the exo arm.
