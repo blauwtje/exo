@@ -1,23 +1,23 @@
-// One FAIL per Codex agent file that is missing, differs from what the kind
-// table generates, or has no table entry. `node harnesses/codex/write-agents.mjs`
-// rewrites them.
+// One FAIL per generated Codex file that is missing, differs from what the
+// sources generate, has no source, or sits behind a stale override.
+// `node harnesses/codex/generate.mjs` rewrites them.
 
-import { findAgentDrift } from '../../harnesses/codex/write-agents.mjs';
+import { findGeneratedDrift } from '../../harnesses/codex/generate.mjs';
 
 export function checkCodexAgents(report, repository) {
-  const name = 'codex agents';
+  const name = 'codex generated';
   let drift;
   try {
-    drift = findAgentDrift(repository.root);
+    drift = findGeneratedDrift(repository.root);
   } catch (error) {
     report.result('FAIL', name, error.message);
     return;
   }
   if (drift.length === 0) {
-    report.result('PASS', name, 'every Codex agent file matches the kind table');
+    report.result('PASS', name, 'every generated Codex file matches the sources');
     return;
   }
   for (const record of drift) {
-    report.result('FAIL', name, `${record.file} ${record.problem}: run node harnesses/codex/write-agents.mjs`);
+    report.result('FAIL', name, `${record.file} ${record.problem}: run npm run generate`);
   }
 }

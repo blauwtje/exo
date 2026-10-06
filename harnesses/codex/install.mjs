@@ -6,7 +6,7 @@
 //
 // It links each skill folder (except route-skills, whose body the session hook
 // injects) into the skills folder (default ~/.agents/skills), copies
-// `harnesses/codex/agents/*.toml` into `<codex home>/agents/` (default ~/.codex, or
+// `harnesses/codex/generated/agents/*.toml` into `<codex home>/agents/` (default ~/.codex, or
 // $CODEX_HOME), and merges the entries of `harnesses/codex/hooks.mjs` into
 // `<codex home>/hooks.json`. What it wrote goes to `<codex home>/exo/installed.json`;
 // `--remove` deletes exactly those entries.
@@ -178,7 +178,7 @@ function planInstall({ root, codexHome, skillsDir }) {
   const staleSkills = old.skills.filter((entry) => !wanted.includes(entry.name));
   releaseSkills(staleSkills, skillsDir, writes, notes);
 
-  const agentsSource = path.join(root, 'harnesses', 'codex', 'agents');
+  const agentsSource = path.join(root, 'harnesses', 'codex', 'generated', 'agents');
   const agentFiles = fs.readdirSync(agentsSource).filter((name) => name.endsWith('.toml'));
   const interimAgents = [];
   for (const name of agentFiles) {

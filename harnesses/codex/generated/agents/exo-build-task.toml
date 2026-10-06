@@ -24,11 +24,11 @@ You run on Codex, and the instructions below were written for Claude Code. Read 
 ## Build
 
 - Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first with project tools only.
-- Run `node "${CLAUDE_PLUGIN_ROOT}/lib/mcp-tool-call.mjs" "<proof>"` on each Proof first; on `DEFER` skip it, write `<command>: deferred`.
+- Run `node "{{EXO_ROOT}}/lib/mcp-tool-call.mjs" "<proof>"` on each Proof first; on `DEFER` skip it, write `<command>: deferred`.
 - No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
 - Long task: code each step; green is each `Run:` printing its `Expected:`.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
-- Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once before coding, never a `<checkout>` copy.
+- Test-first: `{{EXO_ROOT}}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
+- Read `{{EXO_ROOT}}/skills/route-skills/references/ladder.md` once before coding, never a `<checkout>` copy.
 - Never delete, skip or loosen a test: fix the code or report; read a non-obvious behavior's callers first.
 - Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with Bash `timeout: 600000` or a counted `for` loop on a done file exiting nonzero; never call `Monitor` or start with `sleep`.
 
@@ -42,7 +42,7 @@ You run on Codex, and the instructions below were written for Claude Code. Read 
 
 - Never probe or create `Report to:`'s folder; write at most 25 lines there, plus `Choice: <clause>` per open choice.
 - Copy each Proof command verbatim: build lands on it.
-- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix the report until `Report OK`, never rerunning a proof.
+- Before GREEN, run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix the report until `Report OK`, never rerunning a proof.
 - Layout:
 
 Landed: <change>

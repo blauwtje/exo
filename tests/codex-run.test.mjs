@@ -1,6 +1,7 @@
 // harnesses/codex/run.mjs fixes the host and root, then runs only a
-// skills/<name>/scripts/*.mjs file inside its own root: a path outside, a symlink
-// escaping the root or any other file exits 1 before the file is imported.
+// skills/<name>/scripts/*.mjs file inside its own root, named relative to it or by
+// its absolute path: a path outside, a symlink escaping the root or any other file
+// exits 1 before the file is imported.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -68,7 +69,36 @@ test('refuses a path outside the root', () => {
   assertRefused(fixture, ['skills/demo/scripts/../../../../outside.mjs']);
   assertRefused(fixture, ['../outside.mjs']);
   assertRefused(fixture, [path.join(fixture.base, 'outside.mjs')]);
-  assertRefused(fixture, [path.join(fixture.root, 'skills', 'demo', 'scripts', 'ok.mjs')]);
+  assertRefused(fixture, [path.join(fixture.root, 'skills', 'demo', 'scripts', '..', '..', '..', '..', 'outside.mjs')]);
+  assertRefused(fixture, [`${fixture.root}-sibling/skills/demo/scripts/ok.mjs`]);
+});
+
+test('runs the absolute root-prefixed path the generated skills carry', () => {
+  const fixture = stubRoot();
+  const script = path.join(fixture.root, 'skills', 'demo', 'scripts', 'ok.mjs');
+  const result = run(fixture, [script, '--flag']);
+  assert.equal(result.status, 0, result.stderr);
+  const seen = JSON.parse(result.stdout);
+  assert.equal(seen.host, 'codex');
+  assert.equal(seen.entry, script);
+  assert.deepEqual(seen.args, ['--flag']);
+});
+
+test('runs an absolute path that reaches the root through a symlink', () => {
+  const fixture = stubRoot();
+  const alias = path.join(fixture.base, 'alias');
+  fs.symlinkSync(fixture.root, alias);
+  const result = run(fixture, [path.join(alias, 'skills', 'demo', 'scripts', 'ok.mjs')]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).entry, path.join(fixture.root, 'skills', 'demo', 'scripts', 'ok.mjs'));
+});
+
+test('refuses an absolute path to any other file in the root', () => {
+  const fixture = stubRoot();
+  assertRefused(fixture, [path.join(fixture.root, 'hooks', 'other.mjs')]);
+  assertRefused(fixture, [path.join(fixture.root, 'harnesses', 'codex', 'run.mjs')]);
+  assertRefused(fixture, [path.join(fixture.root, 'skills', 'demo', 'scripts', 'data.json')]);
+  assertRefused(fixture, [path.join(fixture.root, 'skills', 'demo', 'scripts', 'missing.mjs')]);
 });
 
 test('refuses a symlink that escapes the root', () => {
@@ -84,6 +114,13 @@ test('refuses a symlinked folder that escapes the root', () => {
   fs.mkdirSync(path.join(fixture.root, 'skills', 'evil'));
   fs.symlinkSync(path.join(fixture.base, 'scripts'), path.join(fixture.root, 'skills', 'evil', 'scripts'));
   assertRefused(fixture, ['skills/evil/scripts/ok.mjs']);
+});
+
+test('refuses an absolute path through a symlink that escapes the root', () => {
+  const fixture = stubRoot();
+  const evil = path.join(fixture.root, 'skills', 'demo', 'scripts', 'evil.mjs');
+  fs.symlinkSync(path.join(fixture.base, 'outside.mjs'), evil);
+  assertRefused(fixture, [evil]);
 });
 
 test('refuses a symlink that stays in the root but leaves the skill scripts', () => {

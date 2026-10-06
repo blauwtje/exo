@@ -45,7 +45,7 @@
     "release-pending": "node release-pending.mjs",
     "release-notes": "node release-notes.mjs",
     "models": "node verify/model-kinds.mjs --write",
-    "codex-agents": "node harnesses/codex/write-agents.mjs",
+    "generate": "node harnesses/codex/generate.mjs",
     "overlap": "node verify/phrase-overlap.mjs"
   }
 }
