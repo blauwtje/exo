@@ -15,6 +15,8 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
+| `node codex/write-agents.mjs` | Writes `codex/agents/exo-<agent>.toml` for each `agents/*.md` entry and each `-low` twin, from the `providers.codex` block of `lib/model-kinds.json`. `npm run codex-agents` runs the same command. `--check` lists drift and exits 1. |
+| `node codex/install.mjs` | Installs exo into Codex's user folders from this clone; `--remove` undoes it. `--codex-home <dir>` and `--skills-dir <dir>` point it at a scratch folder. |
 | `node verify/skill-graph.mjs <command> [args]` | A read-only index over the skills, agents, hooks, root docs, `verify/` and `tests/`: `size`, `range`, `inbound`, `pins`, `refs`, `overlap` and `json`, each printing a compact answer instead of a whole file. |
 
 CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every pull request.
@@ -72,6 +74,12 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 - **Stop**: the terse score check, in `skills/configure/scripts/terse-check.mjs`. Only when `replies` resolves to `terse`, it scores `last_assistant_message` with `scoreProse` from `lib/prose-density.mjs`, and over `ARTICLE_LIMIT` (2.0 articles per 100 words) writes the rate, up to five article phrases and the first article-bearing sentence, articles removed, to `<config directory>/exo/terse/<session id>.json` through `lib/terse-feedback.mjs`. It skips a turn with `stop_hook_active`, under 25 chat words, a last sentence ending in `?`, or a lone-`?` reply (the state's `expand` flag). `skills/configure/scripts/expand-reply.mjs` appends the note of at most 360 characters (`Last reply: … Stray: … Tighter: "…"`) to the next prompt's reminder and clears the state. It never emits a `decision`; a fault exits 0 with nothing on stdout.
 
 Each hook entry pins `"shell": "bash"` so a Windows host without Git Bash does not fall back to PowerShell, and `.gitattributes` forces LF so the shebang survives a Windows checkout. The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration. The booking approval caps nothing, because it allows one command of the plugin's own and leaves every other to that configuration.
+
+## Codex
+
+`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `codex/write-agents.mjs` resolves each agent's kind through that block and writes the committed `codex/agents/*.toml`, each holding `codex/agent-preamble.md` and the agent body. Edit an agent or the table, then run `node codex/write-agents.mjs` and commit the files. The `codex agents` check in `verify/checks/codex-agents.mjs` fails `npm run check` on a missing, stale or unlisted file.
+
+`codex/install.mjs` links the skills, copies the agent files and merges the hook entries listed in `codex/hooks.mjs`, which takes them from `hooks/hooks.json` through an allowlist and drops `shell`. Each hook runs through `codex/hook-entry.mjs`, which sets `EXO_HOST=codex` and `CLAUDE_PLUGIN_ROOT`. `codex/host-note.md` is injected at session start with the `scannable` style. The host is `EXO_HOST` when set, else Codex when `CLAUDECODE` is not `1` and a `CODEX_` variable is set, else Claude Code. The release ships the committed agent files, so no Codex manifest or workflow step exists. Try an install against a scratch folder with `node codex/install.mjs --codex-home <dir> --skills-dir <dir>`.
 
 ## Guard internals
 
