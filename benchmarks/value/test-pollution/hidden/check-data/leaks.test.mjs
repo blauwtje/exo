@@ -38,8 +38,8 @@ test('options of one tenant do not become the defaults of the next', () => {
 
 test('a caller changing resolved options does not change later results', () => {
   const options = resolveOptions(acme);
-  options.maxLines = 1;
-  options.quoteTtlDays = 1;
+  try { options.maxLines = 1; } catch {}
+  try { options.quoteTtlDays = 1; } catch {}
   assert.equal(resolveOptions(acme).maxLines, 25);
   assert.equal(resolveOptions(acme).quoteTtlDays, 14);
 });

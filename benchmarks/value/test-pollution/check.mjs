@@ -15,7 +15,7 @@ const { tests: expected } = JSON.parse(fs.readFileSync(path.join(data, 'manifest
 const detail = [];
 let total = 0;
 let defects = 0;
-const deadline = Date.now() + 50_000;
+const deadline = Date.now() + 45_000;
 
 fs.cpSync(path.join(data, 'tests-original'), path.join(repo, 'tests'), { recursive: true, force: true });
 
@@ -34,7 +34,7 @@ const ORDERS = {
 };
 
 function run(args) {
-  const budget = Math.max(2_000, Math.min(15_000, deadline - Date.now()));
+  const budget = Math.min(15_000, deadline - Date.now());
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('NODE_TEST_')));
   return spawnSync(process.execPath, ['--test', '--test-isolation=none', '--test-reporter=tap', ...args], { cwd: repo, env, encoding: 'utf8', timeout: budget, maxBuffer: 64 * 1024 * 1024 });
 }
@@ -44,6 +44,11 @@ const failures = (out) => [...out.matchAll(/^\s*not ok \d+ - (.+)$/gm)].map((mat
 
 for (const [name, order] of Object.entries(ORDERS)) {
   total += 1;
+  if (Date.now() >= deadline) {
+    defects += 1;
+    detail.push(`order "${name}" not run: deadline`);
+    continue;
+  }
   const wrappers = fs.mkdtempSync(path.join(os.tmpdir(), 'order-'));
   const list = order.map((file, index) => {
     const wrapper = path.join(wrappers, `${String(index).padStart(2, '0')}-${file}`);
@@ -64,7 +69,7 @@ for (const [name, order] of Object.entries(ORDERS)) {
   }
 }
 
-const hidden = run([path.join(data, 'leaks.test.mjs')]);
+const hidden = Date.now() >= deadline ? { status: null, stdout: '', stderr: 'deadline reached' } : run([path.join(data, 'leaks.test.mjs')]);
 const leakOut = hidden.stdout ?? '';
 const leakTotal = summary(leakOut, 'tests');
 total += Number.isNaN(leakTotal) ? 1 : leakTotal;
