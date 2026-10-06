@@ -133,3 +133,63 @@ test('the fresh-chat route names the model of the kind the table gives the build
   const report = freshReport({ after: 'spec', artifact: planPath });
   assert.ok(report.includes(`\`/model ${model}\``), report);
 });
+
+test('the codex block lists its models, tiers, identity efforts, shift, null effort and low twins', () => {
+  const { codex } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8')).providers;
+  assert.deepEqual(codex.models, ['gpt-6.1-sol', 'gpt-6-luna']);
+  assert.deepEqual(codex.tiers, { strong: 'gpt-6.1-sol', standard: 'gpt-6.1-sol', fast: 'gpt-6-luna' });
+  assert.deepEqual(codex.efforts, { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' });
+  assert.deepEqual(codex.effortShift, { strong: 1 });
+  assert.equal(codex.nullEffort, 'medium');
+  assert.deepEqual(codex.lowTwins, {
+    'agents/critique-ui.md': 'exo-critique-ui-low',
+    'agents/review-branch-deep.md': 'exo-review-branch-deep-low'
+  });
+});
+
+test('the default provider stays claude and carries no low twins', () => {
+  assert.equal(readKindTable().provider, 'claude');
+  assert.deepEqual(readKindTable().lowTwins, {});
+  assert.deepEqual(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds, table.kinds);
+});
+
+test('the codex provider shifts a strong kind up one effort step, clamped at max, and gives a null effort medium', () => {
+  const codex = readKindTable(TABLE_PATH, { provider: 'codex' });
+  assert.equal(codex.provider, 'codex');
+  assert.deepEqual(codex.kinds.build, { model: 'gpt-6.1-sol', effort: 'high' });
+  assert.deepEqual(codex.kinds.research, { model: 'gpt-6.1-sol', effort: 'medium' });
+  assert.deepEqual(codex.kinds.lookup, { model: 'gpt-6-luna', effort: 'medium' });
+  assert.deepEqual(codex.kinds['review-deep'], { model: 'gpt-6.1-sol', effort: 'xhigh' });
+  assert.deepEqual(codex.kinds['review-deep-high'], { model: 'gpt-6.1-sol', effort: 'max' });
+  assert.deepEqual(codex.kinds['hardest-low'], { model: 'gpt-6.1-sol', effort: 'high' });
+  assert.deepEqual(codex.kinds.handover, { model: 'inherit', effort: null });
+  assert.equal(codex.kinds.prose.effort, 'xhigh');
+});
+
+test('a strong kind at max stays at max under the codex shift', () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'table.json');
+  const copy = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
+  copy.kinds.prose.effort = 'max';
+  fs.writeFileSync(file, JSON.stringify(copy));
+  assert.equal(readKindTable(file, { provider: 'codex' }).kinds.prose.effort, 'max');
+});
+
+test('the codex low twins resolve at the low budget tier swap, without the effort shift', () => {
+  const { lowTwins } = readKindTable(TABLE_PATH, { provider: 'codex' });
+  assert.deepEqual(lowTwins, {
+    'agents/critique-ui.md': { name: 'exo-critique-ui-low', model: 'gpt-6.1-sol', effort: 'high' },
+    'agents/review-branch-deep.md': { name: 'exo-review-branch-deep-low', model: 'gpt-6.1-sol', effort: 'high' }
+  });
+});
+
+test('the reader rejects a bad codex shift, null effort or low twin', () => {
+  const codex = (change) => () => {
+    const read = readTableWith((copy) => { copy.provider = 'codex'; change(copy.providers.codex); });
+    return read();
+  };
+  assert.throws(readKindTable.bind(null, TABLE_PATH, { provider: 'nope' }), /unknown provider nope/);
+  assert.throws(codex((block) => { block.effortShift = { strong: 1, huge: 1 }; }), /effortShift names unknown tier huge/);
+  assert.throws(codex((block) => { block.nullEffort = 'huge'; }), /nullEffort names unknown effort huge/);
+  assert.throws(codex((block) => { block.lowTwins['agents/nope.md'] = 'exo-nope-low'; }), /lowTwins names agents\/nope\.md, which agents does not list/);
+  assert.throws(codex((block) => { block.lowTwins['agents/build-task.md'] = 'exo-build-task-low'; }), /agents\/build-task\.md: kind build is not on a tier the low budget swaps/);
+});

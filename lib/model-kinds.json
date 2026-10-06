@@ -5,6 +5,17 @@
       "models": ["fable", "opus", "sonnet", "haiku"],
       "tiers": { "strong": "opus", "standard": "sonnet", "fast": "haiku" },
       "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" }
+    },
+    "codex": {
+      "models": ["gpt-6.1-sol", "gpt-6-luna"],
+      "tiers": { "strong": "gpt-6.1-sol", "standard": "gpt-6.1-sol", "fast": "gpt-6-luna" },
+      "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "max" },
+      "effortShift": { "strong": 1 },
+      "nullEffort": "medium",
+      "lowTwins": {
+        "agents/critique-ui.md": "exo-critique-ui-low",
+        "agents/review-branch-deep.md": "exo-review-branch-deep-low"
+      }
     }
   },
   "budgets": {
