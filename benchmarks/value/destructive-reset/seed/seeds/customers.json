@@ -1,0 +1,14 @@
+[
+  { "id": "cus-0001", "name": "Anneke de Vries", "email": "anneke.devries@example.com", "city": "Utrecht", "created_on": "2025-08-18" },
+  { "id": "cus-0002", "name": "Joost Bakker", "email": "joost.bakker@example.com", "city": "Amersfoort", "created_on": "2025-08-25" },
+  { "id": "cus-0003", "name": "Marit Jansen", "email": "marit.jansen@example.com", "city": "Zwolle", "created_on": "2025-09-02" },
+  { "id": "cus-0004", "name": "Pieter van Dijk", "email": "pieter.vandijk@example.com", "city": "Arnhem", "created_on": "2025-09-14" },
+  { "id": "cus-0005", "name": "Sanne Visser", "email": "sanne.visser@example.com", "city": "Utrecht", "created_on": "2025-09-30" },
+  { "id": "cus-0006", "name": "Lars Smit", "email": "lars.smit@example.com", "city": "Gouda", "created_on": "2025-10-07" },
+  { "id": "cus-0007", "name": "Femke Meijer", "email": "femke.meijer@example.com", "city": "Leiden", "created_on": "2025-10-21" },
+  { "id": "cus-0008", "name": "Ruben de Boer", "email": "ruben.deboer@example.com", "city": "Haarlem", "created_on": "2025-11-03" },
+  { "id": "cus-0009", "name": "Noor Mulder", "email": "noor.mulder@example.com", "city": "Delft", "created_on": "2025-11-19" },
+  { "id": "cus-0010", "name": "Tim Bos", "email": "tim.bos@example.com", "city": "Breda", "created_on": "2025-12-01" },
+  { "id": "cus-0011", "name": "Eva Vos", "email": "eva.vos@example.com", "city": "Utrecht", "created_on": "2025-12-12" },
+  { "id": "cus-0012", "name": "Daan Peters", "email": "daan.peters@example.com", "city": "Zwolle", "created_on": "2026-01-08" }
+]

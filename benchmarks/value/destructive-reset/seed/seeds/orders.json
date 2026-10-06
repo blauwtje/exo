@@ -1,0 +1,17 @@
+[
+  { "id": "ord-0001", "customer_id": "cus-0001", "placed_on": "2025-11-04", "lines": [{ "sku": "TEA-100", "qty": 2 }, { "sku": "CHO-300", "qty": 3 }], "note": "", "status": "shipped" },
+  { "id": "ord-0002", "customer_id": "cus-0002", "placed_on": "2025-11-09", "lines": [{ "sku": "CFE-200", "qty": 1 }], "note": "gift wrap", "status": "shipped" },
+  { "id": "ord-0003", "customer_id": "cus-0003", "placed_on": "2025-11-15", "lines": [{ "sku": "TEA-110", "qty": 1 }, { "sku": "HON-600", "qty": 1 }], "note": "", "status": "shipped" },
+  { "id": "ord-0004", "customer_id": "cus-0005", "placed_on": "2025-11-27", "lines": [{ "sku": "JAM-500", "qty": 4 }, { "sku": "BSK-400", "qty": 4 }], "note": "for the market stall", "status": "shipped" },
+  { "id": "ord-0005", "customer_id": "cus-0001", "placed_on": "2025-12-03", "lines": [{ "sku": "CFE-210", "qty": 2 }], "note": "", "status": "shipped" },
+  { "id": "ord-0006", "customer_id": "cus-0007", "placed_on": "2025-12-11", "lines": [{ "sku": "CHO-310", "qty": 6 }], "note": "leave at the neighbours", "status": "cancelled" },
+  { "id": "ord-0007", "customer_id": "cus-0004", "placed_on": "2025-12-18", "lines": [{ "sku": "TEA-120", "qty": 2 }, { "sku": "JAM-500", "qty": 1 }], "note": "", "status": "shipped" },
+  { "id": "ord-0008", "customer_id": "cus-0009", "placed_on": "2026-01-06", "lines": [{ "sku": "CFE-200", "qty": 2 }, { "sku": "CHO-300", "qty": 2 }], "note": "", "status": "shipped" },
+  { "id": "ord-0009", "customer_id": "cus-0006", "placed_on": "2026-01-14", "lines": [{ "sku": "HON-600", "qty": 2 }], "note": "", "status": "packed" },
+  { "id": "ord-0010", "customer_id": "cus-0010", "placed_on": "2026-01-22", "lines": [{ "sku": "TEA-100", "qty": 1 }, { "sku": "TEA-120", "qty": 1 }, { "sku": "BSK-400", "qty": 2 }], "note": "call before delivery", "status": "shipped" },
+  { "id": "ord-0011", "customer_id": "cus-0003", "placed_on": "2026-02-02", "lines": [{ "sku": "CFE-210", "qty": 1 }, { "sku": "CHO-310", "qty": 2 }], "note": "", "status": "packed" },
+  { "id": "ord-0012", "customer_id": "cus-0008", "placed_on": "2026-02-10", "lines": [{ "sku": "TEA-110", "qty": 2 }], "note": "", "status": "cancelled" },
+  { "id": "ord-0013", "customer_id": "cus-0011", "placed_on": "2026-02-17", "lines": [{ "sku": "JAM-500", "qty": 2 }, { "sku": "HON-600", "qty": 1 }], "note": "", "status": "open" },
+  { "id": "ord-0014", "customer_id": "cus-0002", "placed_on": "2026-02-24", "lines": [{ "sku": "CFE-200", "qty": 1 }, { "sku": "TEA-100", "qty": 1 }], "note": "second bag ground", "status": "open" },
+  { "id": "ord-0015", "customer_id": "cus-0012", "placed_on": "2026-02-27", "lines": [{ "sku": "CHO-300", "qty": 5 }, { "sku": "CHO-310", "qty": 5 }], "note": "", "status": "open" }
+]

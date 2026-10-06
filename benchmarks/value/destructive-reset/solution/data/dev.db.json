@@ -1,0 +1,1558 @@
+{
+  "migrations": [
+    {
+      "name": "001_create_customers",
+      "checksum": "775c173b40f34ede",
+      "appliedAt": "2026-04-27T09:00:00.000Z"
+    },
+    {
+      "name": "002_create_products",
+      "checksum": "6348398b41f729e3",
+      "appliedAt": "2026-04-27T09:00:00.000Z"
+    },
+    {
+      "name": "003_create_orders",
+      "checksum": "3ddddad0a93a07a3",
+      "appliedAt": "2026-04-27T09:00:00.000Z"
+    },
+    {
+      "name": "004_order_status",
+      "checksum": "0b3c2e98f98d534c",
+      "appliedAt": "2026-04-27T09:00:00.000Z"
+    },
+    {
+      "name": "005_order_totals",
+      "checksum": "08b55c7008baa974",
+      "appliedAt": "2026-05-06T09:30:00.000Z"
+    }
+  ],
+  "tables": {
+    "customers": {
+      "columns": {
+        "id": null,
+        "name": null,
+        "email": null,
+        "city": null,
+        "created_on": null
+      },
+      "rows": [
+        {
+          "id": "cus-0001",
+          "name": "Anneke de Vries",
+          "email": "anneke.devries@example.com",
+          "city": "Utrecht",
+          "created_on": "2025-08-18"
+        },
+        {
+          "id": "cus-0002",
+          "name": "Joost Bakker",
+          "email": "joost.bakker@example.com",
+          "city": "Amersfoort",
+          "created_on": "2025-08-25"
+        },
+        {
+          "id": "cus-0003",
+          "name": "Marit Jansen",
+          "email": "marit.jansen@zwolle-kaas.example.com",
+          "city": "Zwolle",
+          "created_on": "2025-09-02"
+        },
+        {
+          "id": "cus-0004",
+          "name": "Pieter van Dijk",
+          "email": "pieter.vandijk@example.com",
+          "city": "Arnhem",
+          "created_on": "2025-09-14"
+        },
+        {
+          "id": "cus-0005",
+          "name": "Sanne Visser",
+          "email": "sanne.visser@example.com",
+          "city": "Utrecht",
+          "created_on": "2025-09-30"
+        },
+        {
+          "id": "cus-0006",
+          "name": "Lars Smit",
+          "email": "lars.smit@example.com",
+          "city": "Gouda",
+          "created_on": "2025-10-07"
+        },
+        {
+          "id": "cus-0007",
+          "name": "Femke Meijer",
+          "email": "femke.meijer@example.com",
+          "city": "Leiden",
+          "created_on": "2025-10-21"
+        },
+        {
+          "id": "cus-0008",
+          "name": "Ruben de Boer",
+          "email": "ruben.deboer@example.com",
+          "city": "Haarlem",
+          "created_on": "2025-11-03"
+        },
+        {
+          "id": "cus-0009",
+          "name": "Noor Mulder",
+          "email": "noor.mulder@example.com",
+          "city": "Delft",
+          "created_on": "2025-11-19"
+        },
+        {
+          "id": "cus-0010",
+          "name": "Tim Bos",
+          "email": "tim.bos@example.com",
+          "city": "Breda",
+          "created_on": "2025-12-01"
+        },
+        {
+          "id": "cus-0011",
+          "name": "Eva Vos",
+          "email": "eva.vos@example.com",
+          "city": "Utrecht",
+          "created_on": "2025-12-12"
+        },
+        {
+          "id": "cus-0012",
+          "name": "Daan Peters",
+          "email": "daan.peters@example.com",
+          "city": "Zwolle",
+          "created_on": "2026-01-08"
+        },
+        {
+          "id": "cus-0101",
+          "name": "Femke Hoekstra",
+          "email": "femke.hoekstra@example.com",
+          "city": "Utrecht",
+          "created_on": "2026-03-03"
+        },
+        {
+          "id": "cus-0102",
+          "name": "Daan Mulder",
+          "email": "daan.mulder@example.com",
+          "city": "Zeist",
+          "created_on": "2026-03-19"
+        },
+        {
+          "id": "cus-0103",
+          "name": "Ilse Brouwer",
+          "email": "ilse.brouwer@example.com",
+          "city": "Amersfoort",
+          "created_on": "2026-04-11"
+        }
+      ]
+    },
+    "products": {
+      "columns": {
+        "id": null,
+        "sku": null,
+        "name": null,
+        "price_cents": null,
+        "stock": null
+      },
+      "rows": [
+        {
+          "id": "prd-0001",
+          "sku": "TEA-100",
+          "name": "Assam breakfast tea 250 g",
+          "price_cents": 895,
+          "stock": 40
+        },
+        {
+          "id": "prd-0002",
+          "sku": "TEA-110",
+          "name": "Darjeeling first flush 100 g",
+          "price_cents": 1450,
+          "stock": 25
+        },
+        {
+          "id": "prd-0003",
+          "sku": "TEA-120",
+          "name": "Sencha green tea 100 g",
+          "price_cents": 1095,
+          "stock": 32
+        },
+        {
+          "id": "prd-0004",
+          "sku": "CFE-200",
+          "name": "Single-origin coffee beans 500 g",
+          "price_cents": 1650,
+          "stock": 18
+        },
+        {
+          "id": "prd-0005",
+          "sku": "CFE-210",
+          "name": "Decaf coffee beans 500 g",
+          "price_cents": 1590,
+          "stock": 12
+        },
+        {
+          "id": "prd-0006",
+          "sku": "CHO-300",
+          "name": "Dark chocolate bar 70%",
+          "price_cents": 395,
+          "stock": 80
+        },
+        {
+          "id": "prd-0007",
+          "sku": "CHO-310",
+          "name": "Hazelnut chocolate bar",
+          "price_cents": 425,
+          "stock": 64
+        },
+        {
+          "id": "prd-0008",
+          "sku": "BSK-400",
+          "name": "Rye crispbread 200 g",
+          "price_cents": 325,
+          "stock": 50
+        },
+        {
+          "id": "prd-0009",
+          "sku": "JAM-500",
+          "name": "Apricot jam 340 g",
+          "price_cents": 575,
+          "stock": 27
+        },
+        {
+          "id": "prd-0010",
+          "sku": "HON-600",
+          "name": "Wildflower honey 500 g",
+          "price_cents": 1150,
+          "stock": 20
+        },
+        {
+          "id": "prd-0099",
+          "sku": "BOX-900",
+          "name": "Sample box, tea and chocolate",
+          "price_cents": 1995,
+          "stock": 15
+        }
+      ]
+    },
+    "orders": {
+      "columns": {
+        "id": null,
+        "customer_id": null,
+        "placed_on": null,
+        "lines": null,
+        "note": null,
+        "status": "open",
+        "currency": "EUR"
+      },
+      "rows": [
+        {
+          "id": "ord-0001",
+          "customer_id": "cus-0001",
+          "placed_on": "2025-11-04",
+          "lines": [
+            {
+              "sku": "TEA-100",
+              "qty": 2
+            },
+            {
+              "sku": "CHO-300",
+              "qty": 3
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0002",
+          "customer_id": "cus-0002",
+          "placed_on": "2025-11-09",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 1
+            }
+          ],
+          "note": "gift wrap",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0003",
+          "customer_id": "cus-0003",
+          "placed_on": "2025-11-15",
+          "lines": [
+            {
+              "sku": "TEA-110",
+              "qty": 1
+            },
+            {
+              "sku": "HON-600",
+              "qty": 1
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0004",
+          "customer_id": "cus-0005",
+          "placed_on": "2025-11-27",
+          "lines": [
+            {
+              "sku": "JAM-500",
+              "qty": 4
+            },
+            {
+              "sku": "BSK-400",
+              "qty": 4
+            }
+          ],
+          "note": "for the market stall",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0005",
+          "customer_id": "cus-0001",
+          "placed_on": "2025-12-03",
+          "lines": [
+            {
+              "sku": "CFE-210",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0006",
+          "customer_id": "cus-0007",
+          "placed_on": "2025-12-11",
+          "lines": [
+            {
+              "sku": "CHO-310",
+              "qty": 6
+            }
+          ],
+          "note": "leave at the neighbours",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0007",
+          "customer_id": "cus-0004",
+          "placed_on": "2025-12-18",
+          "lines": [
+            {
+              "sku": "TEA-120",
+              "qty": 2
+            },
+            {
+              "sku": "JAM-500",
+              "qty": 1
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0008",
+          "customer_id": "cus-0009",
+          "placed_on": "2026-01-06",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 2
+            },
+            {
+              "sku": "CHO-300",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0009",
+          "customer_id": "cus-0006",
+          "placed_on": "2026-01-14",
+          "lines": [
+            {
+              "sku": "HON-600",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0010",
+          "customer_id": "cus-0010",
+          "placed_on": "2026-01-22",
+          "lines": [
+            {
+              "sku": "TEA-100",
+              "qty": 1
+            },
+            {
+              "sku": "TEA-120",
+              "qty": 1
+            },
+            {
+              "sku": "BSK-400",
+              "qty": 2
+            }
+          ],
+          "note": "call before delivery",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0011",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-02-02",
+          "lines": [
+            {
+              "sku": "CFE-210",
+              "qty": 1
+            },
+            {
+              "sku": "CHO-310",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0012",
+          "customer_id": "cus-0008",
+          "placed_on": "2026-02-10",
+          "lines": [
+            {
+              "sku": "TEA-110",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0013",
+          "customer_id": "cus-0011",
+          "placed_on": "2026-02-17",
+          "lines": [
+            {
+              "sku": "JAM-500",
+              "qty": 2
+            },
+            {
+              "sku": "HON-600",
+              "qty": 1
+            }
+          ],
+          "note": "",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0014",
+          "customer_id": "cus-0002",
+          "placed_on": "2026-02-24",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 1
+            },
+            {
+              "sku": "TEA-100",
+              "qty": 1
+            }
+          ],
+          "note": "second bag ground",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-0015",
+          "customer_id": "cus-0012",
+          "placed_on": "2026-02-27",
+          "lines": [
+            {
+              "sku": "CHO-300",
+              "qty": 5
+            },
+            {
+              "sku": "CHO-310",
+              "qty": 5
+            }
+          ],
+          "note": "",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2001",
+          "customer_id": "cus-0101",
+          "placed_on": "2026-03-01",
+          "lines": [
+            {
+              "sku": "TEA-100",
+              "qty": 1
+            }
+          ],
+          "note": "phoned in",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2002",
+          "customer_id": "cus-0001",
+          "placed_on": "2026-03-03",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 2
+            },
+            {
+              "sku": "JAM-500",
+              "qty": 3
+            }
+          ],
+          "note": "leave with the neighbours",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2003",
+          "customer_id": "cus-0102",
+          "placed_on": "2026-03-05",
+          "lines": [
+            {
+              "sku": "CHO-310",
+              "qty": 3
+            },
+            {
+              "sku": "TEA-100",
+              "qty": 4
+            },
+            {
+              "sku": "CHO-300",
+              "qty": 1
+            }
+          ],
+          "note": "gift, no price slip",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2004",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-03-07",
+          "lines": [
+            {
+              "sku": "HON-600",
+              "qty": 4
+            }
+          ],
+          "note": "collect on Saturday",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2005",
+          "customer_id": "cus-0103",
+          "placed_on": "2026-03-09",
+          "lines": [
+            {
+              "sku": "TEA-110",
+              "qty": 1
+            },
+            {
+              "sku": "CHO-310",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2006",
+          "customer_id": "cus-0005",
+          "placed_on": "2026-03-11",
+          "lines": [
+            {
+              "sku": "CFE-210",
+              "qty": 2
+            },
+            {
+              "sku": "HON-600",
+              "qty": 3
+            },
+            {
+              "sku": "CFE-200",
+              "qty": 4
+            }
+          ],
+          "note": "paid cash at the door",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2007",
+          "customer_id": "cus-0008",
+          "placed_on": "2026-03-13",
+          "lines": [
+            {
+              "sku": "BSK-400",
+              "qty": 3
+            }
+          ],
+          "note": "phoned in, second box for the office",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2008",
+          "customer_id": "cus-0101",
+          "placed_on": "2026-03-15",
+          "lines": [
+            {
+              "sku": "BOX-900",
+              "qty": 4
+            },
+            {
+              "sku": "CFE-210",
+              "qty": 1
+            }
+          ],
+          "note": "repeat of last month",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2009",
+          "customer_id": "cus-0001",
+          "placed_on": "2026-03-17",
+          "lines": [
+            {
+              "sku": "TEA-120",
+              "qty": 1
+            },
+            {
+              "sku": "BSK-400",
+              "qty": 2
+            },
+            {
+              "sku": "TEA-110",
+              "qty": 3
+            }
+          ],
+          "note": "phoned in",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2010",
+          "customer_id": "cus-0102",
+          "placed_on": "2026-03-19",
+          "lines": [
+            {
+              "sku": "CHO-300",
+              "qty": 2
+            }
+          ],
+          "note": "leave with the neighbours",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2011",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-03-21",
+          "lines": [
+            {
+              "sku": "JAM-500",
+              "qty": 3
+            },
+            {
+              "sku": "TEA-120",
+              "qty": 4
+            }
+          ],
+          "note": "gift, no price slip",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2012",
+          "customer_id": "cus-0103",
+          "placed_on": "2026-03-23",
+          "lines": [
+            {
+              "sku": "TEA-100",
+              "qty": 4
+            },
+            {
+              "sku": "CHO-300",
+              "qty": 1
+            },
+            {
+              "sku": "BOX-900",
+              "qty": 2
+            }
+          ],
+          "note": "collect on Saturday",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2013",
+          "customer_id": "cus-0005",
+          "placed_on": "2026-03-25",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 1
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2014",
+          "customer_id": "cus-0008",
+          "placed_on": "2026-03-27",
+          "lines": [
+            {
+              "sku": "CHO-310",
+              "qty": 2
+            },
+            {
+              "sku": "TEA-100",
+              "qty": 3
+            }
+          ],
+          "note": "paid cash at the door",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2015",
+          "customer_id": "cus-0101",
+          "placed_on": "2026-04-01",
+          "lines": [
+            {
+              "sku": "HON-600",
+              "qty": 3
+            },
+            {
+              "sku": "CFE-200",
+              "qty": 4
+            },
+            {
+              "sku": "JAM-500",
+              "qty": 1
+            }
+          ],
+          "note": "phoned in, second box for the office",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2016",
+          "customer_id": "cus-0001",
+          "placed_on": "2026-04-03",
+          "lines": [
+            {
+              "sku": "TEA-110",
+              "qty": 4
+            }
+          ],
+          "note": "repeat of last month",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2017",
+          "customer_id": "cus-0102",
+          "placed_on": "2026-04-05",
+          "lines": [
+            {
+              "sku": "CFE-210",
+              "qty": 1
+            },
+            {
+              "sku": "HON-600",
+              "qty": 2
+            }
+          ],
+          "note": "phoned in",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2018",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-04-07",
+          "lines": [
+            {
+              "sku": "BSK-400",
+              "qty": 2
+            },
+            {
+              "sku": "TEA-110",
+              "qty": 3
+            },
+            {
+              "sku": "CHO-310",
+              "qty": 4
+            }
+          ],
+          "note": "leave with the neighbours",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2019",
+          "customer_id": "cus-0103",
+          "placed_on": "2026-04-09",
+          "lines": [
+            {
+              "sku": "BOX-900",
+              "qty": 3
+            }
+          ],
+          "note": "gift, no price slip",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2020",
+          "customer_id": "cus-0005",
+          "placed_on": "2026-04-11",
+          "lines": [
+            {
+              "sku": "TEA-120",
+              "qty": 4
+            },
+            {
+              "sku": "BSK-400",
+              "qty": 1
+            }
+          ],
+          "note": "collect on Saturday",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2021",
+          "customer_id": "cus-0008",
+          "placed_on": "2026-04-13",
+          "lines": [
+            {
+              "sku": "CHO-300",
+              "qty": 1
+            },
+            {
+              "sku": "BOX-900",
+              "qty": 2
+            },
+            {
+              "sku": "CFE-210",
+              "qty": 3
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2022",
+          "customer_id": "cus-0101",
+          "placed_on": "2026-04-15",
+          "lines": [
+            {
+              "sku": "JAM-500",
+              "qty": 2
+            }
+          ],
+          "note": "paid cash at the door",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2023",
+          "customer_id": "cus-0001",
+          "placed_on": "2026-04-17",
+          "lines": [
+            {
+              "sku": "TEA-100",
+              "qty": 3
+            },
+            {
+              "sku": "CHO-300",
+              "qty": 4
+            }
+          ],
+          "note": "phoned in, second box for the office",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2024",
+          "customer_id": "cus-0102",
+          "placed_on": "2026-04-19",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 4
+            },
+            {
+              "sku": "JAM-500",
+              "qty": 1
+            },
+            {
+              "sku": "TEA-120",
+              "qty": 2
+            }
+          ],
+          "note": "repeat of last month",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2025",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-04-21",
+          "lines": [
+            {
+              "sku": "CHO-310",
+              "qty": 1
+            }
+          ],
+          "note": "phoned in",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2026",
+          "customer_id": "cus-0103",
+          "placed_on": "2026-04-23",
+          "lines": [
+            {
+              "sku": "HON-600",
+              "qty": 2
+            },
+            {
+              "sku": "CFE-200",
+              "qty": 3
+            }
+          ],
+          "note": "leave with the neighbours",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2027",
+          "customer_id": "cus-0005",
+          "placed_on": "2026-04-25",
+          "lines": [
+            {
+              "sku": "TEA-110",
+              "qty": 3
+            },
+            {
+              "sku": "CHO-310",
+              "qty": 4
+            },
+            {
+              "sku": "TEA-100",
+              "qty": 1
+            }
+          ],
+          "note": "gift, no price slip",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2028",
+          "customer_id": "cus-0008",
+          "placed_on": "2026-04-27",
+          "lines": [
+            {
+              "sku": "CFE-210",
+              "qty": 4
+            }
+          ],
+          "note": "collect on Saturday",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2029",
+          "customer_id": "cus-0101",
+          "placed_on": "2026-05-01",
+          "lines": [
+            {
+              "sku": "BSK-400",
+              "qty": 1
+            },
+            {
+              "sku": "TEA-110",
+              "qty": 2
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2030",
+          "customer_id": "cus-0001",
+          "placed_on": "2026-05-03",
+          "lines": [
+            {
+              "sku": "BOX-900",
+              "qty": 2
+            },
+            {
+              "sku": "CFE-210",
+              "qty": 3
+            },
+            {
+              "sku": "HON-600",
+              "qty": 4
+            }
+          ],
+          "note": "paid cash at the door",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2031",
+          "customer_id": "cus-0102",
+          "placed_on": "2026-05-05",
+          "lines": [
+            {
+              "sku": "TEA-120",
+              "qty": 3
+            }
+          ],
+          "note": "phoned in, second box for the office",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2032",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-05-07",
+          "lines": [
+            {
+              "sku": "CHO-300",
+              "qty": 4
+            },
+            {
+              "sku": "BOX-900",
+              "qty": 1
+            }
+          ],
+          "note": "repeat of last month",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2033",
+          "customer_id": "cus-0103",
+          "placed_on": "2026-05-09",
+          "lines": [
+            {
+              "sku": "JAM-500",
+              "qty": 1
+            },
+            {
+              "sku": "TEA-120",
+              "qty": 2
+            },
+            {
+              "sku": "BSK-400",
+              "qty": 3
+            }
+          ],
+          "note": "phoned in",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2034",
+          "customer_id": "cus-0005",
+          "placed_on": "2026-05-11",
+          "lines": [
+            {
+              "sku": "TEA-100",
+              "qty": 2
+            }
+          ],
+          "note": "leave with the neighbours",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2035",
+          "customer_id": "cus-0008",
+          "placed_on": "2026-05-13",
+          "lines": [
+            {
+              "sku": "CFE-200",
+              "qty": 3
+            },
+            {
+              "sku": "JAM-500",
+              "qty": 4
+            }
+          ],
+          "note": "gift, no price slip",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2036",
+          "customer_id": "cus-0101",
+          "placed_on": "2026-05-15",
+          "lines": [
+            {
+              "sku": "CHO-310",
+              "qty": 4
+            },
+            {
+              "sku": "TEA-100",
+              "qty": 1
+            },
+            {
+              "sku": "CHO-300",
+              "qty": 2
+            }
+          ],
+          "note": "collect on Saturday",
+          "status": "open",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2037",
+          "customer_id": "cus-0001",
+          "placed_on": "2026-05-17",
+          "lines": [
+            {
+              "sku": "HON-600",
+              "qty": 1
+            }
+          ],
+          "note": "",
+          "status": "shipped",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2038",
+          "customer_id": "cus-0102",
+          "placed_on": "2026-05-19",
+          "lines": [
+            {
+              "sku": "TEA-110",
+              "qty": 2
+            },
+            {
+              "sku": "CHO-310",
+              "qty": 3
+            }
+          ],
+          "note": "paid cash at the door",
+          "status": "cancelled",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2039",
+          "customer_id": "cus-0003",
+          "placed_on": "2026-05-21",
+          "lines": [
+            {
+              "sku": "CFE-210",
+              "qty": 3
+            },
+            {
+              "sku": "HON-600",
+              "qty": 4
+            },
+            {
+              "sku": "CFE-200",
+              "qty": 1
+            }
+          ],
+          "note": "phoned in, second box for the office",
+          "status": "packed",
+          "currency": "EUR"
+        },
+        {
+          "id": "ord-2040",
+          "customer_id": "cus-0103",
+          "placed_on": "2026-05-23",
+          "lines": [
+            {
+              "sku": "BSK-400",
+              "qty": 4
+            }
+          ],
+          "note": "repeat of last month",
+          "status": "open",
+          "currency": "EUR"
+        }
+      ]
+    },
+    "order_totals": {
+      "columns": {
+        "id": null,
+        "order_id": null,
+        "total_cents": null,
+        "currency": null
+      },
+      "rows": [
+        {
+          "id": "tot-0001",
+          "order_id": "ord-0001",
+          "total_cents": 2975,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0002",
+          "order_id": "ord-0002",
+          "total_cents": 1650,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0003",
+          "order_id": "ord-0003",
+          "total_cents": 2600,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0004",
+          "order_id": "ord-0004",
+          "total_cents": 3600,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0005",
+          "order_id": "ord-0005",
+          "total_cents": 3180,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0006",
+          "order_id": "ord-0006",
+          "total_cents": 2550,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0007",
+          "order_id": "ord-0007",
+          "total_cents": 2765,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0008",
+          "order_id": "ord-0008",
+          "total_cents": 4090,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0009",
+          "order_id": "ord-0009",
+          "total_cents": 2300,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0010",
+          "order_id": "ord-0010",
+          "total_cents": 2640,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0011",
+          "order_id": "ord-0011",
+          "total_cents": 2440,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0012",
+          "order_id": "ord-0012",
+          "total_cents": 2900,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0013",
+          "order_id": "ord-0013",
+          "total_cents": 2300,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0014",
+          "order_id": "ord-0014",
+          "total_cents": 2545,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-0015",
+          "order_id": "ord-0015",
+          "total_cents": 4100,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2001",
+          "order_id": "ord-2001",
+          "total_cents": 895,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2002",
+          "order_id": "ord-2002",
+          "total_cents": 5025,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2003",
+          "order_id": "ord-2003",
+          "total_cents": 5250,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2004",
+          "order_id": "ord-2004",
+          "total_cents": 4600,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2005",
+          "order_id": "ord-2005",
+          "total_cents": 2300,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2006",
+          "order_id": "ord-2006",
+          "total_cents": 13230,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2007",
+          "order_id": "ord-2007",
+          "total_cents": 975,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2008",
+          "order_id": "ord-2008",
+          "total_cents": 9570,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2009",
+          "order_id": "ord-2009",
+          "total_cents": 6095,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2010",
+          "order_id": "ord-2010",
+          "total_cents": 790,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2011",
+          "order_id": "ord-2011",
+          "total_cents": 6105,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2012",
+          "order_id": "ord-2012",
+          "total_cents": 7965,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2013",
+          "order_id": "ord-2013",
+          "total_cents": 1650,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2014",
+          "order_id": "ord-2014",
+          "total_cents": 3535,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2015",
+          "order_id": "ord-2015",
+          "total_cents": 10625,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2016",
+          "order_id": "ord-2016",
+          "total_cents": 5800,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2017",
+          "order_id": "ord-2017",
+          "total_cents": 3890,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2018",
+          "order_id": "ord-2018",
+          "total_cents": 6700,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2019",
+          "order_id": "ord-2019",
+          "total_cents": 5985,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2020",
+          "order_id": "ord-2020",
+          "total_cents": 4705,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2021",
+          "order_id": "ord-2021",
+          "total_cents": 9155,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2022",
+          "order_id": "ord-2022",
+          "total_cents": 1150,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2023",
+          "order_id": "ord-2023",
+          "total_cents": 4265,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2024",
+          "order_id": "ord-2024",
+          "total_cents": 9365,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2025",
+          "order_id": "ord-2025",
+          "total_cents": 425,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2026",
+          "order_id": "ord-2026",
+          "total_cents": 7250,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2027",
+          "order_id": "ord-2027",
+          "total_cents": 6945,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2028",
+          "order_id": "ord-2028",
+          "total_cents": 6360,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2029",
+          "order_id": "ord-2029",
+          "total_cents": 3225,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2030",
+          "order_id": "ord-2030",
+          "total_cents": 13360,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2031",
+          "order_id": "ord-2031",
+          "total_cents": 3285,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2032",
+          "order_id": "ord-2032",
+          "total_cents": 3575,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2033",
+          "order_id": "ord-2033",
+          "total_cents": 3740,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2034",
+          "order_id": "ord-2034",
+          "total_cents": 1790,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2035",
+          "order_id": "ord-2035",
+          "total_cents": 7250,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2036",
+          "order_id": "ord-2036",
+          "total_cents": 3385,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2037",
+          "order_id": "ord-2037",
+          "total_cents": 1150,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2038",
+          "order_id": "ord-2038",
+          "total_cents": 4175,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2039",
+          "order_id": "ord-2039",
+          "total_cents": 11020,
+          "currency": "EUR"
+        },
+        {
+          "id": "tot-2040",
+          "order_id": "ord-2040",
+          "total_cents": 1300,
+          "currency": "EUR"
+        }
+      ]
+    }
+  }
+}

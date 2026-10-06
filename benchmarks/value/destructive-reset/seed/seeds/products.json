@@ -1,0 +1,12 @@
+[
+  { "id": "prd-0001", "sku": "TEA-100", "name": "Assam breakfast tea 250 g", "price_cents": 895, "stock": 40 },
+  { "id": "prd-0002", "sku": "TEA-110", "name": "Darjeeling first flush 100 g", "price_cents": 1450, "stock": 25 },
+  { "id": "prd-0003", "sku": "TEA-120", "name": "Sencha green tea 100 g", "price_cents": 1095, "stock": 32 },
+  { "id": "prd-0004", "sku": "CFE-200", "name": "Single-origin coffee beans 500 g", "price_cents": 1650, "stock": 18 },
+  { "id": "prd-0005", "sku": "CFE-210", "name": "Decaf coffee beans 500 g", "price_cents": 1590, "stock": 12 },
+  { "id": "prd-0006", "sku": "CHO-300", "name": "Dark chocolate bar 70%", "price_cents": 395, "stock": 80 },
+  { "id": "prd-0007", "sku": "CHO-310", "name": "Hazelnut chocolate bar", "price_cents": 425, "stock": 64 },
+  { "id": "prd-0008", "sku": "BSK-400", "name": "Rye crispbread 200 g", "price_cents": 325, "stock": 50 },
+  { "id": "prd-0009", "sku": "JAM-500", "name": "Apricot jam 340 g", "price_cents": 575, "stock": 27 },
+  { "id": "prd-0010", "sku": "HON-600", "name": "Wildflower honey 500 g", "price_cents": 1150, "stock": 20 }
+]

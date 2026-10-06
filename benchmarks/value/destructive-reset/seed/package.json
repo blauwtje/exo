@@ -1,0 +1,15 @@
+{
+  "name": "orderdesk",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Order desk for a small food shop: customers, products and orders in a JSON-file database.",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "seed": "node scripts/seed.mjs",
+    "db:reset": "node scripts/db-reset.mjs",
+    "report": "node scripts/report.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}
