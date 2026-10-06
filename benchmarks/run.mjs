@@ -3,6 +3,7 @@
 // Runs benchmark cells headlessly: a fresh checkout of the fixture per cell,
 // one `claude -p` call, then the diff, the checks and the raw JSON to disk.
 // Nothing is read back into a session; score.mjs prints the table.
+// Exo-arm cells run on exo's default options, not the user's global ones.
 //
 //   node benchmarks/run.mjs --smoke                       one task per tier, every arm, n=1
 //   node benchmarks/run.mjs --full --confirm              every task, every arm, n=4
@@ -144,6 +145,45 @@ function gitIsolation(task) {
   return task.tier === 'git' ? { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } : {};
 }
 
+function usesExo(armName) {
+  return ARMS[armName].pluginDirs.includes(ROOT);
+}
+
+// The user's settings.json with the options of every exo@ plugin config
+// removed, so exo falls back to its schema defaults.
+function withoutExoOptions(settingsText) {
+  const settings = JSON.parse(settingsText);
+  for (const [key, config] of Object.entries(settings.pluginConfigs ?? {})) {
+    if (key.startsWith('exo@')) delete config.options;
+  }
+  return `${JSON.stringify(settings, null, 2)}\n`;
+}
+
+// A HOME for exo-arm cells: a symlink to every entry of the real home except
+// .claude, and a real .claude holding a symlink to every entry of ~/.claude
+// except settings.json, which is a copy without exo's options. HOME, not
+// CLAUDE_CONFIG_DIR: a moved config directory loses the login (the keychain
+// entry keys on it) and moves the transcripts away from where findTranscript
+// in cell-usage.mjs looks; through the symlink they still land in the real
+// ~/.claude/projects.
+function makeDefaultOptionsHome() {
+  const home = os.homedir();
+  const realConfig = path.join(home, '.claude');
+  const mirror = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-home-'));
+  const mirrorConfig = path.join(mirror, '.claude');
+  for (const entry of fs.readdirSync(home)) {
+    if (entry !== '.claude') fs.symlinkSync(path.join(home, entry), path.join(mirror, entry));
+  }
+  fs.mkdirSync(mirrorConfig);
+  if (!fs.existsSync(realConfig)) return mirror;
+  for (const entry of fs.readdirSync(realConfig)) {
+    if (entry !== 'settings.json') fs.symlinkSync(path.join(realConfig, entry), path.join(mirrorConfig, entry));
+  }
+  const settingsFile = path.join(realConfig, 'settings.json');
+  if (fs.existsSync(settingsFile)) fs.writeFileSync(path.join(mirrorConfig, 'settings.json'), withoutExoOptions(fs.readFileSync(settingsFile, 'utf8')));
+  return mirror;
+}
+
 function runClaude(args, workdir, cellDirectory, extraEnvironment) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
@@ -204,7 +244,7 @@ function denyMessages(result) {
   return [...denials, ...lines];
 }
 
-async function runCell(cell, fixtureDirectory, effort) {
+async function runCell(cell, fixtureDirectory, effort, exoHome) {
   const { task, arm, run, model, cellDirectory } = cell;
   fs.mkdirSync(cellDirectory, { recursive: true });
   let workdir = workdirFor(task, fixtureDirectory);
@@ -215,7 +255,8 @@ async function runCell(cell, fixtureDirectory, effort) {
     workdir = path.join(cellRoot, 'repo');
   }
   try {
-    const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, gitIsolation(task));
+    const environment = usesExo(arm) ? { ...gitIsolation(task), HOME: exoHome } : gitIsolation(task);
+    const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, environment);
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
@@ -339,6 +380,10 @@ async function main() {
     return;
   }
   requirePluginDirectories(options.arms);
+  const exoArms = options.arms.filter(usesExo);
+  if (exoArms.length > 0 && process.env.CLAUDE_CONFIG_DIR) {
+    throw new Error(`arm ${exoArms.join(', ')}: CLAUDE_CONFIG_DIR is set, but the default-options mirror covers only ~/.claude; unset it`);
+  }
   costGate(options, cells.length);
   const fixtureDirectory = tasks.some((task) => task.tier === 'template') ? ensureTemplateFixture() : null;
   fs.mkdirSync(runDirectory, { recursive: true });
@@ -349,22 +394,27 @@ async function main() {
   }, null, 2)}\n`);
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
+  const exoHome = exoArms.length > 0 ? makeDefaultOptionsHome() : null;
   const heartbeat = setInterval(() => console.log(`running: ${done}/${cells.length} cells done`), HEARTBEAT_MS);
-  await runPool(cells, options.concurrency, async (cell) => {
-    if (fs.existsSync(path.join(cell.cellDirectory, 'checks.json'))) {
+  try {
+    await runPool(cells, options.concurrency, async (cell) => {
+      if (fs.existsSync(path.join(cell.cellDirectory, 'checks.json'))) {
+        done += 1;
+        console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
+        return;
+      }
+      const checks = await runCell(cell, fixtureDirectory, options.effort, exoHome);
       done += 1;
-      console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
-      return;
-    }
-    const checks = await runCell(cell, fixtureDirectory, options.effort);
-    done += 1;
-    const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
-    const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
-    const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}` };
-    const verdict = verdicts[checks.tier] ?? checks.tier;
-    console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} ${cost} ${Math.round(checks.wallMs / 1000)}s loc=${checks.loc.added} ${verdict}${checks.timedOut ? ' TIMED OUT' : ''}`);
-  });
-  clearInterval(heartbeat);
+      const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
+      const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
+      const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}` };
+      const verdict = verdicts[checks.tier] ?? checks.tier;
+      console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} ${cost} ${Math.round(checks.wallMs / 1000)}s loc=${checks.loc.added} ${verdict}${checks.timedOut ? ' TIMED OUT' : ''}`);
+    });
+  } finally {
+    clearInterval(heartbeat);
+    if (exoHome !== null) fs.rmSync(exoHome, { recursive: true, force: true });
+  }
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);
 }
 
