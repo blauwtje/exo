@@ -14,6 +14,8 @@
 //                                                         the git tier; --dry-run prints each cell's argv and spends nothing
 //                                                         (rival plugins first: node benchmarks/rivals.mjs, after
 //                                                         benchmarks/fixtures/rivals.local.json names the local-only ones)
+//   node benchmarks/run.mjs --tier value --arms baseline,exo --model sonnet --runs 2 --dry-run
+//                                                         every task of a tier; a dry run ends with the cell count and projected cost
 //
 // A run above smoke size costs money: --full prints the projection from the
 // latest smoke run and stops unless --confirm is given.
@@ -27,6 +29,7 @@ import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
+import { DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -36,10 +39,21 @@ const CELL_BUDGET_USD = '3';
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const FULL_RUNS = 4;
 const HEARTBEAT_MS = 60 * 1000;
-const GIT_IDENTITY = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com'];
+// Tiers whose cells run as a real session: Bash allowed, no NO_RUN, and the
+// user's CLAUDE.md files and auto memory dropped.
+const OPEN_TIERS = new Set(['git', 'value']);
+const TIERS = { template: TEMPLATE_TASKS, safe: SAFE_TASKS, git: GIT_TASKS, calibration: CALIBRATION_TASKS };
+
+// Value tasks are read from disk only when asked for, so a task directory still
+// being written never stops a run of another tier.
+function tierTasks(tier) {
+  if (tier === 'value') return loadValueTasks();
+  if (!(tier in TIERS)) throw new Error(`unknown tier ${tier}; one of ${[...Object.keys(TIERS), 'value'].join(', ')}`);
+  return TIERS[tier];
+}
 
 function parseArguments(argv) {
-  const options = { mode: 'custom', tasks: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, confirm: false, out: null, effort: null, dryRun: false };
+  const options = { mode: 'custom', tasks: null, tier: null, arms: DEFAULT_ARMS, runs: 1, model: 'haiku', concurrency: 2, confirm: false, out: null, effort: null, dryRun: false };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = () => argv[++index];
@@ -47,6 +61,7 @@ function parseArguments(argv) {
     else if (flag === '--full') options.mode = 'full';
     else if (flag === '--confirm') options.confirm = true;
     else if (flag === '--tasks') options.tasks = value().split(',');
+    else if (flag === '--tier') options.tier = value();
     else if (flag === '--arms') options.arms = value().split(',');
     else if (flag === '--runs') options.runs = Number(value());
     else if (flag === '--model') options.model = value();
@@ -56,26 +71,24 @@ function parseArguments(argv) {
     else if (flag === '--dry-run') options.dryRun = true;
     else throw new Error(`unknown flag ${flag}`);
   }
+  if (options.tier !== null) options.tasks = options.tasks ?? tierTasks(options.tier).map((task) => task.id);
   if (options.mode === 'smoke') options.tasks = options.tasks ?? SMOKE_TASKS;
   if (options.mode === 'full') {
     options.tasks = options.tasks ?? [...TEMPLATE_TASKS, ...SAFE_TASKS].map((task) => task.id);
     options.runs = FULL_RUNS;
   }
-  if (options.tasks === null) throw new Error('name --tasks, or pick --smoke or --full');
+  if (options.tasks === null) throw new Error('name --tasks or --tier, or pick --smoke or --full');
+  if (options.tasks.length === 0) throw new Error(`tier ${options.tier} has no tasks`);
   if (!(options.model in MODELS)) throw new Error(`unknown model ${options.model}; one of ${Object.keys(MODELS).join(', ')}`);
   for (const arm of options.arms) if (!(arm in ARMS)) throw new Error(`unknown arm ${arm}`);
   return options;
 }
 
 function findTask(taskId) {
-  const template = TEMPLATE_TASKS.find((task) => task.id === taskId);
-  if (template) return { ...template, tier: 'template' };
-  const safe = SAFE_TASKS.find((task) => task.id === taskId);
-  if (safe) return { ...safe, tier: 'safe' };
-  const gitTask = GIT_TASKS.find((task) => task.id === taskId);
-  if (gitTask) return { ...gitTask, tier: 'git' };
-  const calibration = CALIBRATION_TASKS.find((task) => task.id === taskId);
-  if (calibration) return { ...calibration, tier: 'calibration' };
+  for (const tier of [...Object.keys(TIERS), 'value']) {
+    const task = tierTasks(tier).find((candidate) => candidate.id === taskId);
+    if (task) return { ...task, tier };
+  }
   throw new Error(`unknown task ${taskId}`);
 }
 
@@ -95,10 +108,11 @@ function ensureTemplateFixture() {
 }
 
 // A calibration cell writes nothing, so its workdir is an empty repository
-// with one commit for the diff to compare against.
+// with one commit for the diff to compare against. A git or value cell starts
+// empty and runCell builds it.
 function workdirFor(task, fixtureDirectory) {
   const workdir = fs.mkdtempSync(path.join(os.tmpdir(), `exo-bench-${task.id}-`));
-  if (task.tier === 'git') return workdir;
+  if (task.tier === 'git' || task.tier === 'value') return workdir;
   if (task.tier === 'template') {
     execFileSync('git', ['clone', '-q', fixtureDirectory, workdir], { stdio: 'ignore' });
     git(workdir, ['checkout', '-q', FIXTURE.commit]);
@@ -116,13 +130,15 @@ function workdirFor(task, fixtureDirectory) {
   return workdir;
 }
 
-// The git tier lets the model run Bash, which is where its hazard lives, so it
-// gets neither the Bash ban nor NO_RUN.
+// The git tier lets the model run Bash, which is where its hazard lives, and a
+// value task needs it to finish the job, so neither gets the Bash ban or NO_RUN.
+// A value task's exoPrompt replaces its prompt in the exo arm only.
 function claudeArguments(armName, task, model, effort) {
   const arm = ARMS[armName];
-  const git = task.tier === 'git';
-  const systemPrompt = git ? arm.prompt : arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
-  const prompt = arm.promptSuffix === null ? task.prompt : `${task.prompt} ${arm.promptSuffix}`;
+  const open = OPEN_TIERS.has(task.tier);
+  const systemPrompt = open ? arm.prompt : arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
+  const taskPrompt = armName === 'exo' && task.exoPrompt ? task.exoPrompt : task.prompt;
+  const prompt = arm.promptSuffix === null ? taskPrompt : `${taskPrompt} ${arm.promptSuffix}`;
   const args = [
     '-p', prompt,
     '--model', MODELS[model],
@@ -131,7 +147,7 @@ function claudeArguments(armName, task, model, effort) {
     '--setting-sources', 'project,local',
     '--strict-mcp-config'
   ];
-  if (!git) args.push('--disallowedTools', 'Bash');
+  if (!open) args.push('--disallowedTools', 'Bash');
   args.push('--max-budget-usd', CELL_BUDGET_USD);
   if (systemPrompt !== null) args.push('--append-system-prompt', systemPrompt);
   if (effort !== null) args.push('--effort', effort);
@@ -139,11 +155,11 @@ function claudeArguments(armName, task, model, effort) {
   return args;
 }
 
-// Git-tier cells drop the user's CLAUDE.md files and auto memory, which carry a
-// push rule of their own and would load into every arm; other tiers keep the
-// environment their past results were measured in.
-function gitIsolation(task) {
-  return task.tier === 'git' ? { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } : {};
+// Git- and value-tier cells drop the user's CLAUDE.md files and auto memory,
+// which carry a push rule of their own and would load into every arm; other
+// tiers keep the environment their past results were measured in.
+function cellIsolation(task) {
+  return OPEN_TIERS.has(task.tier) ? { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } : {};
 }
 
 // The user's settings.json with the options of every exo@ plugin config
@@ -183,7 +199,7 @@ function makeDefaultOptionsHome() {
   return mirror;
 }
 
-function runClaude(args, workdir, cellDirectory, extraEnvironment) {
+function runClaude(args, workdir, cellDirectory, extraEnvironment, timeoutMs) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
@@ -197,7 +213,7 @@ function runClaude(args, workdir, cellDirectory, extraEnvironment) {
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill('SIGKILL');
-    }, CELL_TIMEOUT_MS);
+    }, timeoutMs);
     child.on('close', (exitCode) => {
       clearTimeout(timer);
       fs.closeSync(stdout);
@@ -254,8 +270,10 @@ async function runCell(cell, fixtureDirectory, effort, cellHome) {
     workdir = path.join(cellRoot, 'repo');
   }
   try {
-    const environment = { ...gitIsolation(task), HOME: cellHome };
-    const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, environment);
+    const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
+    const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
+    const environment = { ...cellIsolation(task), HOME: cellHome };
+    const outcome = await runClaude(claudeArguments(arm, task, model, effort), workdir, cellDirectory, environment, timeoutMs);
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
@@ -268,6 +286,12 @@ async function runCell(cell, fixtureDirectory, effort, cellHome) {
       Object.assign(checks, measureWorkdir(workdir, task));
     } else if (task.tier === 'safe') {
       Object.assign(checks, { loc: measureWorkdir(workdir, { kind: 'safe' }).loc }, await runSafeCheck(task, workdir));
+    } else if (task.tier === 'value') {
+      // The final work is the checked-out branch; a worktree still registered
+      // is a build cut off mid-wave, counted and removed with the cell.
+      const worktrees = linkedWorktrees(workdir);
+      for (const worktree of worktrees) fs.rmSync(worktree, { recursive: true, force: true });
+      Object.assign(checks, { worktreesLeft: worktrees.length }, await scoreValueRepo(task, workdir, startTree));
     } else {
       Object.assign(checks, { loc: countLines(workdir) });
     }
@@ -277,7 +301,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome) {
       const { harm, pushed, suiteGreen, outcome: gitOutcome } = checkCell(cellRoot, cellDirectory);
       Object.assign(checks, { harm, pushed, suiteGreen, outcome: gitOutcome, denyMessages: denyMessages(result) });
     }
-    fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(workdir, ['diff', '--cached', 'HEAD']));
+    fs.writeFileSync(path.join(cellDirectory, 'diff.patch'), git(workdir, ['diff', '--cached', startTree]));
     fs.writeFileSync(path.join(cellDirectory, 'checks.json'), `${JSON.stringify(checks, null, 2)}\n`);
     return checks;
   } finally {
@@ -324,17 +348,19 @@ function costGate(options, cellCount) {
   process.exit(2);
 }
 
-// Prints one line per cell: the environment additions, then the argv. Starts no
-// session and builds no cell.
+// Prints one line per cell: the environment additions, then the argv; then the
+// cell count and projected cost. Starts no session and builds no cell.
 function printDryRun(cells, effort) {
   for (const cell of cells) {
-    const environment = Object.entries(gitIsolation(cell.task)).map(([name, value]) => `${name}=${value}`);
+    const environment = Object.entries(cellIsolation(cell.task)).map(([name, value]) => `${name}=${value}`);
     const arm = ARMS[cell.arm];
     const missing = arm.pluginDirs.filter((directory) => !fs.existsSync(directory)).map((directory) => ` [missing: ${directory}]`);
     if (arm.missing) missing.push(` [missing: ${arm.missing}]`);
     const argv = claudeArguments(cell.arm, cell.task, cell.model, effort).map((argument) => JSON.stringify(argument));
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, 'claude', ...argv].join(' ')}`);
   }
+  const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS);
+  console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default)`);
 }
 
 function requirePluginDirectories(arms) {
@@ -405,7 +431,7 @@ async function main() {
       done += 1;
       const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
-      const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}` };
+      const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}`, value: checks.harnessError ? 'HARNESS ERROR' : `pass=${checks.pass} defects=${checks.defects}/${checks.total}` };
       const verdict = verdicts[checks.tier] ?? checks.tier;
       console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} ${cost} ${Math.round(checks.wallMs / 1000)}s loc=${checks.loc.added} ${verdict}${checks.timedOut ? ' TIMED OUT' : ''}`);
     });

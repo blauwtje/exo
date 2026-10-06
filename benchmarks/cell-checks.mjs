@@ -7,7 +7,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const CODE_EXTENSIONS = new Set(['.css', '.go', '.html', '.java', '.js', '.jsx', '.py', '.rb', '.rs', '.sh', '.ts', '.tsx']);
+const CODE_EXTENSIONS = new Set(['.cjs', '.css', '.go', '.html', '.java', '.js', '.jsx', '.mjs', '.py', '.rb', '.rs', '.sh', '.ts', '.tsx']);
 const LOCKFILES = new Set(['bun.lock', 'package-lock.json', 'pnpm-lock.yaml', 'poetry.lock', 'uv.lock', 'yarn.lock']);
 const ROUTE_MARKER = /^\+\s*@router\.(get|post|put|patch|delete)\(/m;
 
@@ -23,11 +23,12 @@ function isTestFile(relativePath) {
   return parts.slice(0, -1).some((part) => ['test', 'tests', '__tests__'].includes(part.toLowerCase()));
 }
 
-// Stages everything the agent wrote and counts the diff against HEAD.
-export function countLines(workdir) {
+// Stages everything the agent wrote and counts the diff against base, a
+// commit or tree: HEAD for a cell that never commits.
+export function countLines(workdir, base = 'HEAD') {
   git(workdir, ['add', '-A']);
   const loc = { added: 0, removed: 0, testAdded: 0, files: [] };
-  for (const row of git(workdir, ['diff', '--cached', '--numstat', 'HEAD']).trim().split('\n')) {
+  for (const row of git(workdir, ['diff', '--cached', '--numstat', base]).trim().split('\n')) {
     if (row === '') continue;
     const [added, removed, file] = row.split('\t');
     if (added === '-' || LOCKFILES.has(path.basename(file)) || !CODE_EXTENSIONS.has(path.extname(file))) continue;

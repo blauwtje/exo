@@ -8,6 +8,9 @@
 //
 //   node benchmarks/score.mjs benchmarks/runs/<dir>
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>]
+//
+// Value-tier cells get a table of their own: per task and arm, each mean with
+// its standard error; a run of value cells alone prints only that table.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -160,6 +163,54 @@ function detailLine(arm, summary) {
   return `- ${arm}: cost per correct cell ${models}; subagents ${subagents}; exo loaded ${rate(summary.exoLoaded)}`;
 }
 
+// A value cell's measures; a cell without result.json or usage.json drops out
+// of the cost or tokens mean only.
+const VALUE_METRICS = {
+  pass: (cell) => (cell.checks.pass ? 1 : 0),
+  defects: (cell) => cell.checks.defects,
+  loc: (cell) => cell.checks.loc.added,
+  tokens: (cell) => (cell.usage === null ? null : cell.usage.counts.weightedInput + cell.usage.counts.output),
+  cost: (cell) => cell.result?.total_cost_usd ?? null,
+  time: (cell) => cell.checks.wallMs
+};
+
+const VALUE_FORMAT = {
+  pass: (value) => `${Math.round(value * 100)}%`,
+  defects: (value) => value.toFixed(1),
+  ...FORMAT
+};
+
+function meanWithError(values) {
+  const stat = meanAndSd(values.filter((value) => value !== null));
+  return stat.n === 0 ? null : { mean: stat.mean, error: stat.sd / Math.sqrt(stat.n) };
+}
+
+// One row per task and arm. A cell whose check.mjs broke (harnessError) is a
+// harness fault, not the arm's: it counts under errors and in no mean.
+function valueLines(meta, cells) {
+  const groups = new Map();
+  for (const cell of cells) {
+    const key = `${cell.task}\t${cell.arm}`;
+    groups.set(key, [...(groups.get(key) ?? []), cell]);
+  }
+  const lines = [
+    `value tier · model ${meta.model} · Claude Code ${meta.claudeVersion} · ${meta.date} · mean ±standard error`,
+    '',
+    '| task | arm | n | errors | pass | defects | LOC added | tokens | cost | wall time |',
+    '|---|---|---|---|---|---|---|---|---|---|'
+  ];
+  for (const [key, group] of [...groups].sort(([left], [right]) => left.localeCompare(right))) {
+    const [task, arm] = key.split('\t');
+    const scored = group.filter((cell) => cell.checks.harnessError === undefined);
+    const columns = Object.entries(VALUE_METRICS).map(([metric, read]) => {
+      const stat = meanWithError(scored.map(read));
+      return stat === null ? '-' : `${VALUE_FORMAT[metric](stat.mean)} ±${VALUE_FORMAT[metric](stat.error)}`;
+    });
+    lines.push(`| ${task} | ${arm} | ${scored.length} | ${group.length - scored.length} | ${columns.join(' | ')} |`);
+  }
+  return lines;
+}
+
 function roundedCent(value) {
   return Math.round(value * 100) / 100;
 }
@@ -194,12 +245,19 @@ function main() {
   const options = parseArguments(process.argv.slice(2));
   const meta = JSON.parse(fs.readFileSync(path.join(options.directory, 'meta.json'), 'utf8'));
   const cells = readCells(options.directory);
+  const valueCells = cells.filter((cell) => cell.checks.tier === 'value');
+  if (valueCells.length > 0 && valueCells.length === cells.length) {
+    if (options.publish) throw new Error('--publish covers the template tier; this run holds value cells only');
+    process.stdout.write(`${valueLines(meta, valueCells).join('\n')}\n`);
+    return;
+  }
   const byArm = {};
   for (const arm of meta.arms) byArm[arm] = cells.filter((cell) => cell.arm === arm);
   const summaries = {};
   for (const [arm, armCells] of Object.entries(byArm)) summaries[arm] = summarizeArm(armCells);
   const details = Object.entries(summaries).map(([arm, summary]) => detailLine(arm, summary));
-  const lines = [...tableLines(meta, summaries), '', ...details];
+  const valueSection = valueCells.length === 0 ? [] : ['', ...valueLines(meta, valueCells)];
+  const lines = [...tableLines(meta, summaries), '', ...details, ...valueSection];
   process.stdout.write(`${lines.join('\n')}\n`);
   if (!options.publish) return;
   const resultsFile = options.results ?? path.join(ROOT, 'benchmarks', 'results', `${meta.date}.md`);
