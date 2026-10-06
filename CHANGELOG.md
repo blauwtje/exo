@@ -7,6 +7,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The Claude Code and Codex adapters share one `PATH` lookup in `harnesses/on-path.mjs`.
+
+### Fixed
+
+- `install.mjs` and `verify/model-kinds.mjs` now run when the path that starts them passes through a symlink, such as a symlinked home folder or a clone under `/tmp` on macOS. Before, they exited 0 with no output and no writes.
+- `harnesses/codex/rules.mjs` rewrites the Claude-only terms left in generated Codex skills and agents into Codex wording. These are `` !`cmd` `` load-time commands, background runs, follow-up messages, the `general-purpose` agent type, `TaskStop`, `maxTurns` and Bash timeouts. Generation now fails when an agent still holds `{{SKILL_DIR}}`.
+- `find-cause`, `spec` and `build`'s run loop drop their rule for the `exo: context` notice, which no hook has emitted since the context warning was removed.
+- `tests/readme-install.test.mjs` turns off git's automatic maintenance in its fixture repository. The maintenance run packed and deleted loose objects while the README clone line copied them, and the test failed in about 5 runs out of 8.
+
 ## 0.90.0 - 2026-10-06
 
 ### Added
