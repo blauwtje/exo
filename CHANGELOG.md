@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `benchmarks/run.mjs` runs exo-arm cells on exo's default options: each cell gets a mirrored HOME whose `settings.json` drops the user's global exo options, so a benchmark no longer measures the user's own settings.
+
 ## 0.93.0 - 2026-10-06
 
 ### Added
