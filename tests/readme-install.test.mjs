@@ -1,5 +1,6 @@
-// README's clone-and-install line, run for Codex from a fresh clone under a
-// temporary home, installs exo into that home, and its remove line undoes the install.
+// README's Codex install line, run through this checkout's install.sh under a
+// temporary home, clones exo into that home and installs it, and README's remove
+// line undoes the install.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -7,9 +8,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { pathToFileURL } from 'node:url';
 
 const ROOT = new URL('../', import.meta.url).pathname.replace(/\/$/, '');
-const CLONE_URL = 'https://github.com/blauwtje/exo';
+const SCRIPT_URL = 'https://raw.githubusercontent.com/blauwtje/exo/main/install.sh';
 
 function installSection() {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
@@ -19,13 +21,18 @@ function installSection() {
   return readme.slice(start, end === -1 ? undefined : end);
 }
 
-function readmeLine(section, pattern) {
-  const line = section.split('\n').find((candidate) => pattern.test(candidate));
-  assert.ok(line, `README names a line matching ${pattern}`);
-  return line.match(/`([^`]+)`/)?.[1] ?? line;
+// The README's `curl -fsSL <url> | bash -s -- <args>` line matching the pattern,
+// rewritten to run this checkout's install.sh with the same arguments.
+function readmeCommand(section, pattern) {
+  const line = section.split('\n').find((candidate) => pattern.test(candidate) && candidate.includes(SCRIPT_URL));
+  assert.ok(line, `README names a curl line matching ${pattern}`);
+  const command = (line.match(/`([^`]+)`/)?.[1] ?? line).trim();
+  const piped = `curl -fsSL ${SCRIPT_URL} | bash -s --`;
+  assert.ok(command.startsWith(piped), `the line pipes install.sh into bash: ${command}`);
+  return `bash ${path.join(ROOT, 'install.sh')}${command.slice(piped.length)}`;
 }
 
-// A repository holding this checkout's files, so the README's clone line has a
+// A repository holding this checkout's files, so install.sh has a clone
 // source that carries uncommitted work too.
 function sourceRepository(base) {
   const source = path.join(base, 'source');
@@ -37,7 +44,7 @@ function sourceRepository(base) {
     fs.copyFileSync(path.join(ROOT, file), path.join(source, file));
   }
   // maintenance.auto=false: the commit would otherwise detach a `git maintenance run --auto` that
-  // packs the ~900 loose objects and deletes them while the README's clone line copies them.
+  // packs the ~900 loose objects and deletes them while install.sh clones them.
   const git = (...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'maintenance.auto=false', ...args], { cwd: source, encoding: 'utf8' });
   for (const args of [['init', '-q'], ['add', '-A'], ['commit', '-q', '-m', 'fixture']]) {
     const result = git(...args);
@@ -46,11 +53,13 @@ function sourceRepository(base) {
   return source;
 }
 
+// detached: a new session has no controlling terminal, so install.sh cannot
+// open /dev/tty and install.mjs takes its defaults instead of prompting.
 function run(command, environment, cwd) {
-  return spawnSync('sh', ['-c', command], { cwd, env: environment, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return spawnSync('sh', ['-c', command], { cwd, env: environment, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], detached: true });
 }
 
-test('README clone line installs Codex from a fresh clone and the remove line undoes it', () => {
+test('README Codex line installs exo through install.sh and the remove line undoes it', () => {
   const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'readme-install-')));
   try {
     const home = path.join(base, 'home');
@@ -65,25 +74,22 @@ test('README clone line installs Codex from a fresh clone and the remove line un
     };
 
     const section = installSection();
-    const cloneLine = readmeLine(section, /git clone .*install\.mjs/);
-    assert.ok(cloneLine.includes(CLONE_URL), 'the install line clones the public repository');
-    // The line installs into every detected harness; --harness codex keeps a
-    // `claude` on this PATH from installing into the real Claude Code.
-    const install = /--harness/.test(cloneLine) ? cloneLine : `${cloneLine} --harness codex`;
+    const install = readmeCommand(section, /--harness codex/);
     const source = sourceRepository(base);
-    const installed = run(install.replace(CLONE_URL, source).replaceAll('~', home), environment, base);
+    environment.EXO_REPO = pathToFileURL(source).href;
+    environment.EXO_DIR = path.join(home, '.exo');
+    const installed = run(install, environment, base);
     assert.equal(installed.status, 0, installed.stderr + installed.stdout);
 
     const clone = path.join(home, '.exo');
-    assert.ok(fs.existsSync(path.join(clone, '.git')), 'the line clones into ~/.exo');
+    assert.ok(fs.existsSync(path.join(clone, '.git')), 'install.sh clones into EXO_DIR');
     assert.ok(fs.existsSync(path.join(home, '.agents', 'skills', 'build', 'SKILL.md')), 'a skill is installed');
     assert.ok(fs.readdirSync(path.join(home, '.codex', 'agents')).some((name) => /^exo-.*\.toml$/.test(name)), 'an agent is installed');
     const hooks = JSON.parse(fs.readFileSync(path.join(home, '.codex', 'hooks.json'), 'utf8'));
     assert.ok(JSON.stringify(hooks).includes('harnesses/codex/hook-entry.mjs'), 'hooks run through the Codex entry');
     assert.ok(fs.existsSync(path.join(home, '.codex', 'exo', 'installed.json')), 'the install is recorded');
 
-    const removal = readmeLine(section, /--remove/);
-    const removed = run(removal.replaceAll('~', home), environment, base);
+    const removed = run(readmeCommand(section, /--remove/), environment, base);
     assert.equal(removed.status, 0, removed.stderr + removed.stdout);
     assert.ok(!fs.existsSync(path.join(home, '.agents', 'skills', 'build')), 'the skill is removed');
     const left = fs.existsSync(path.join(home, '.codex', 'agents')) ? fs.readdirSync(path.join(home, '.codex', 'agents')) : [];

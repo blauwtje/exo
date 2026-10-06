@@ -2,6 +2,8 @@
 
 exo runs in the Codex CLI on ChatGPT models priced and sized like their Claude counterparts. Claude Code stays the primary host.
 
+The Codex desktop app loads the same skills from `~/.agents/skills/`, but whether it runs exo's hooks and agents is untested.
+
 ## Plan
 
 exo's agents run on `gpt-6.1-sol` and `gpt-6-luna`, so you need a plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. Free and Go have only Luna and are unsupported.

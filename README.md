@@ -14,21 +14,60 @@
 
 ## Install
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash
+Open the block for the harness you use and run its commands.
+
+<details>
+<summary>Claude Code (CLI)</summary>
+
+Inside Claude Code, run these two commands, then restart Claude Code:
+
+```text
+/plugin marketplace add blauwtje/exo
+/plugin install exo@blauwtje
 ```
 
-The script clones exo to `~/.exo`, checks for git and Node 22 or newer, then asks which harnesses get exo (Claude Code, Codex) and for which projects. Start a new session and run `/exo:configure` (`$configure` in Codex). A list of exo settings means it loaded.
+Or run this in a terminal:
 
-| Other ways | Command |
-|---|---|
-| Codex only | `curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh \| bash -s -- --harness codex` |
-| Claude Code only, from inside it | `/plugin marketplace add blauwtje/exo`, then `/plugin install exo@blauwtje` |
-| Without piping a script | `git clone https://github.com/blauwtje/exo ~/.exo && node ~/.exo/install.mjs` |
-| Update | `node ~/.exo/install.mjs --update` |
-| Remove | `node ~/.exo/install.mjs --remove` |
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness claude
+```
 
-The hooks need `bash` on `PATH`. On Windows, Git Bash runs them, and support is best effort. Codex needs a ChatGPT plan with Sol and drops a few Claude-only features: see [docs/codex.md](docs/codex.md).
+To check, run `/exo:configure` in a new session. If it lists exo's settings, exo is loaded.
+
+</details>
+
+<details>
+<summary>Codex (CLI)</summary>
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness codex
+```
+
+To check, run `$configure` in a new session. If it lists exo's settings, exo is loaded.
+
+Codex needs a ChatGPT plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. The Codex desktop app loads the same skills, but whether it runs exo's hooks and agents is untested. [docs/codex.md](docs/codex.md) lists what differs from Claude Code.
+
+</details>
+
+`curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash` with no arguments asks which harnesses and projects get exo. The script needs git and Node 22 or newer on the machine, and keeps its copy of exo in `~/.exo`.
+
+### Update and uninstall
+
+These commands cover every harness the script installed. To update exo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update
+```
+
+To uninstall exo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --remove
+```
+
+`--update` and `--remove` act on every install the script made. `--remove` then deletes `~/.exo` when no install is left and the folder has no local changes. If you installed from inside Claude Code, update with `claude plugin update exo@blauwtje` in a terminal and then restart Claude Code. Uninstall with `/plugin uninstall exo@blauwtje` inside Claude Code.
+
+The hooks need `bash` on `PATH`. On Windows, Git Bash runs them, and support is best effort.
 
 ## Use
 
