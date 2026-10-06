@@ -82,4 +82,4 @@ Follow `references/setup-map.md` from its first step. Never pick an answer for t
 - When the user picks every project for a key such a layer holds, the report names that layer, because the new value stays hidden there.
 - The scripts' output outranks any value in the context, including the session's `exo settings:` line, which was read when the session started.
 - A setting, value or layer the request names outranks its question.
-- The right-sizing ladder has no switch and rides in every session, whatever `guards` holds: a request to switch it off gets that answer and runs nothing.
+- The pointer to `../route-skills/references/lean.md` has no switch and rides in every session, whatever `guards` holds: a request to switch it off gets that answer and runs nothing.

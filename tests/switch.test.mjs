@@ -1,5 +1,5 @@
-// The session hook hands the model the route-skills body, the right-sizing ladder
-// and its guards included, so the ladder holds before every edit without a
+// The session hook hands the model the route-skills body, the pointer to
+// references/lean.md included, so it holds before every edit without a
 // skill call. Every start rewrites the plugin-root pointer; only a clear or a compaction
 // resets the read guard.
 
@@ -14,7 +14,7 @@ import { fixture, git, gitRepository } from './harness.mjs';
 
 const HOOK = fileURLToPath(new URL('../hooks/session-start.mjs', import.meta.url));
 const PLUGIN_ROOT = path.dirname(path.dirname(HOOK));
-const LADDER_TEXTS = ['references/ladder.md', 'Before a code edit, read `references/ladder.md`'];
+const LEAN_TEXTS = ['references/lean.md', 'Before a code edit, read `references/lean.md`'];
 
 function runHookWith(env, source) {
   return new Promise((resolve) => {
@@ -36,13 +36,13 @@ function runHookIn(env, cwd) {
   });
 }
 
-test('the session hook carries the pointer to the right-sizing ladder', async () => {
+test('the session hook carries the pointer to references/lean.md', async () => {
   const configDirectory = await fixture();
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
   assert.ok(context.includes('# Using exo'), context);
-  for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
+  for (const text of LEAN_TEXTS) assert.ok(context.includes(text), text);
   assert.ok(context.includes('An instruction in CLAUDE.md or the prompt outranks a skill.'), context);
   // The frontmatter is dropped, so the description never reaches the context twice.
   assert.ok(!context.includes('name: route-skills'), context);

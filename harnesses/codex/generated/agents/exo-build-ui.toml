@@ -140,19 +140,13 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 - `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration.
 - The shapes live in `$SKILL/references/craft-recipes.md`.
 
-**The ladder.**
+**Lean code.**
 
-```text
-The ladder, before every edit that adds or replaces code: read the ranges the edit touches first, then take the first rung that fits; when two rungs hold, the lower number wins.
-1. Need: build only for a use the request names today, first deleting the branch, duplicate or path it obsoletes; a later use stays out and is listed in the report.
-2. Reuse: when a symbol, pattern or type in this repository already does the job, found with one search by name or role, reuse it rather than writing a second.
-3. Borrow: otherwise take the first source that does it: the standard library, a native platform feature, CSS over script or a database constraint over application code, then a dependency the manifest lists, with no new dependency for what ten lines cover.
-4. Write: then write it: the fewest statements the checks accept, one action per line, no call chained into a call into an index, full-word names, guard clauses over nesting.
+Make the smallest change that fully does what the user asked.
 
-Trust-boundary checks, failure handling that prevents data loss, what security depends on, accessibility, and every part the user named are built completely on any rung. A shortcut with a known limit carries one comment naming it and how to lift it.
-```
+Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
 
-In a project with no pages and no UI framework, a job `$SKILL/references/stack.md` maps to a package takes that package before any other Borrow source, native platform features included, and the new-dependency limit never holds it back. A native `<button>` or hand-drawn SVG chart passes the rung yet misses the focus, keyboard and screen-reader work the package ships.
+In a project with no pages and no UI framework, a job `$SKILL/references/stack.md` maps to a package takes that package over a native platform feature, and no lean-code rule holds it back. A native `<button>` or hand-drawn SVG chart misses the focus, keyboard and screen-reader work the package ships.
 
 **Rules.**
 

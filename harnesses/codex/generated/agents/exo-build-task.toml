@@ -25,7 +25,7 @@ You run on Codex, and the instructions below were written for Claude Code. Read 
 - No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
 - Long task: code each step; green is each `Run:` printing its `Expected:`.
 - Test-first: `{{EXO_ROOT}}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
-- Read `{{EXO_ROOT}}/skills/route-skills/references/ladder.md` once before coding, never a `<checkout>` copy.
+- Read `{{EXO_ROOT}}/skills/route-skills/references/lean.md` once before coding, never a `<checkout>` copy.
 - Never delete, skip or loosen a test: fix the code or report; read a non-obvious behavior's callers first.
 - Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with `exec_command`, polling its session with `write_stdin` until it exits, or a counted `for` loop on a done file exiting nonzero; never call `Monitor` or start with `sleep`.
 

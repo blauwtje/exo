@@ -12,7 +12,6 @@ exo writes the word in the first column. It understands the second but does not 
 | skill | command, prompt | One file you call as `/exo:<name>`, or that Claude starts when its trigger fits. |
 | trigger | activation, routing rule | A skill's `description`, which tells Claude when to start it. Renaming one is a breaking change. |
 | stage | phase | spec, build, verify or find-cause. `design-ui` uses phase for its own steps. |
-| rung | level, tier | One level of the right-sizing ladder. A step is a numbered line inside a task. |
 | brief | spec document, requirements | What `spec` writes: a file, an issue, or both. |
 | plan, task, step | ticket, story, epic | A plan holds tasks, a task holds steps. One task lands in one commit. |
 | artifact | deliverable, output | The file a stage leaves behind for the next stage to open. |

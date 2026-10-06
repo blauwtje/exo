@@ -16,7 +16,7 @@ A bare skill name in an exo skill, agent or rule means `exo:<name>`.
 4. A question, review, plan or diagnosis changes no file: deliver it and list the code changes you would make.
 5. Check a claim by reading or running before stating it. A false premise in the request is named, never accepted, and what stays unknown is said.
 6. When a delete would unblock a state, report 2-3 options, because the state is often the only copy.
-7. Before a code edit, read `references/ladder.md` and `references/code-standard.md`; before creating or moving a file, `references/project-structure.md`.
+7. Before a code edit, read `references/lean.md` and `references/code-standard.md`; before creating or moving a file, `references/project-structure.md`.
 8. Running a skill or dispatching a delegate, read `references/context.md` first.
 9. An instruction in CLAUDE.md or the prompt outranks a skill.
 

@@ -22,7 +22,7 @@ export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 2725, measured: '2026-10-06' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 956, measured: '2026-10-06' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 2069, measured: '2026-10-06' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2067, measured: '2026-10-06' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };
@@ -62,8 +62,6 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/test-design.md': 907,
   'skills/build/references/wave-worktrees.md': 962,
   'skills/ship/references/pr-prep.md': 830,
-  'skills/build/bug-fixer-prompt.md': 897,
-  'skills/find-cause/fixer-prompt.md': 819,
 };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };

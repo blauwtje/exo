@@ -6,7 +6,7 @@ Build a page with no framework on a maintained component stack, so it ships test
 
 - Existing pages keep their stack, plain HTML included, and every rule below yields to it, because a second framework splits the codebase.
 - A project with no pages and no UI framework in its manifest, an empty folder included, gets Vite, React, TypeScript, Tailwind CSS, shadcn/ui and lucide-react.
-- In that project every package this file names counts as a dependency the manifest lists, so neither the ladder's Borrow rung nor a build-on-the-platform rule holds one back.
+- In that project every package this file names counts as a dependency the manifest lists, so neither the reuse rules of route-skills' lean-code reference nor a build-on-the-platform rule holds one back.
 - The plan names the package for each job its screens carry, because the build installs only what the plan names.
 
 ## Scaffold

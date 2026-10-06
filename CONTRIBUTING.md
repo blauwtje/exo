@@ -57,7 +57,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251.
 - Effort does not travel with a dispatch: a delegate runs at the effort of the turn that dispatched it. `design-ui`, `check-docs`, `file-issues` and `build` pin `effort` in their frontmatter, with each value from `lib/model-kinds.json`; that sets the turn and its delegates only when the skill starts from its slash command. A skill the model starts mid-turn keeps the session's effort, which is why the fresh-chat route ends on the `/exo:build` slash command.
 - The stage skills pin no model. The fresh-chat route after `spec` names one, and a pinned model would override that pick and rebuild the prompt cache mid-session. `model` and `effort` are set only where a skill's work always needs that tier.
-- A delegate never sees the session hook, so the five delegate prompts and agents that write code carry the right-sizing ladder in their own text: `agents/build-task.md`, `skills/build/bug-fixer-prompt.md`, `skills/build/review-fixer-prompt.md`, `agents/build-ui.md` and `skills/find-cause/fixer-prompt.md`.
+- A delegate never sees the session hook, so the five delegate prompts and agents that write code point to `skills/route-skills/references/lean.md` or carry lines from it: `agents/build-task.md`, `skills/build/bug-fixer-prompt.md`, `skills/build/review-fixer-prompt.md`, `agents/build-ui.md` and `skills/find-cause/fixer-prompt.md`.
 
 ## Hooks
 
@@ -91,7 +91,7 @@ Each install fixes its own host through its entry. Codex hooks run `harnesses/co
 
 - The read guard refuses an unbounded read of a file over `guard_lines` lines, 400 unless set, with a reason that asks for a located range, and a second read of a range unchanged since the first in this context window. The guards keep their reads and call counts per session in `~/.claude/exo/sessions/<id>.json`, which `EXO_SESSIONS_DIR` relocates, and prune files older than 30 days. The guard hooks `Read` only: a file read through Bash, as `cat` or `sed` reads it, is not refused.
 - The repeat guard denies the third identical `Bash` command or `Edit` in one context window, and the second `WebFetch` of one URL or `WebSearch` of one query: identical is the command with its whitespace collapsed and its `.log` redirect dropped, the file path with a hash of the text the edit replaces, the trimmed URL whatever the fetch prompt, or the query with its whitespace collapsed. A successful `Edit` or `Write` clears the `Bash` counts of the reader that made it, the main thread or one `agent_id`, so a red, green and final run of one test passes; a failed edit clears nothing, because `PostToolUse` runs only after the tool succeeded. Denials are booked under `guard.denials`, apart from the read guard's refusals, so the report's read counts keep their meaning; the report gains no line for them.
-- The read guard's big-file limit is the `guard_lines` setting, a value that is not a whole number of at least 1 reads as 400. The ladder is never switched off: it rides in every session.
+- The read guard's big-file limit is the `guard_lines` setting, a value that is not a whole number of at least 1 reads as 400. The pointer to `lean.md` is never switched off: it rides in every session.
 
 ## Releasing
 

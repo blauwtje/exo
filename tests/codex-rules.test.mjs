@@ -47,10 +47,10 @@ test('a script path that leaves the root throws', () => {
 });
 
 test('the plain variables map to the install placeholders', () => {
-  const text = 'Read ${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md and ${CLAUDE_SKILL_DIR}/references/a.md.';
+  const text = 'Read ${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md and ${CLAUDE_SKILL_DIR}/references/a.md.';
   assert.equal(
     codexBody(SKILL, text, KNOWN),
-    'Read {{EXO_ROOT}}/skills/route-skills/references/ladder.md and {{SKILL_DIR}}/references/a.md.'
+    'Read {{EXO_ROOT}}/skills/route-skills/references/lean.md and {{SKILL_DIR}}/references/a.md.'
   );
 });
 

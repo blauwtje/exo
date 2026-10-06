@@ -30,7 +30,7 @@ The opt-in `exo:scannable` output style sets the layout instead: the answer firs
 A session hook loads these rules at startup, resume, clear and compaction. They hold without calling a skill.
 
 - Searches, builds and reviews run in a helper, a separate Claude context with its own model, so its file dumps never reach your session.
-- Before every edit that adds code, Claude checks whether the code is needed and whether something already does it. The rungs are in [ladder.md](../skills/route-skills/references/ladder.md).
+- Before every edit that adds code, Claude checks whether the code is needed and whether something already does it. The rules are in [lean.md](../skills/route-skills/references/lean.md).
 - The read guard refuses a `Read` of a file over `guard_lines` lines in one go, and a second read of lines unchanged since the last one. Reads through Bash, such as `cat`, are not covered.
 - The repeat guard refuses the third identical `Bash` command or `Edit` in one context window.
 

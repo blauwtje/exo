@@ -20,7 +20,7 @@ tools: Read, Edit, Write, Grep, Bash
 - No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
 - Long task: code each step; green is each `Run:` printing its `Expected:`.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
-- Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/ladder.md` once before coding, never a `<checkout>` copy.
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once before coding, never a `<checkout>` copy.
 - Never delete, skip or loosen a test: fix the code or report; read a non-obvious behavior's callers first.
 - Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with Bash `timeout: 600000` or a counted `for` loop on a done file exiting nonzero; never call `Monitor` or start with `sleep`.
 
