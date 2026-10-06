@@ -4,7 +4,7 @@
 
 import { findGeneratedDrift } from '../../harnesses/codex/generate.mjs';
 
-export function checkCodexAgents(report, repository) {
+export function checkCodexGenerated(report, repository) {
   const name = 'codex generated';
   let drift;
   try {
