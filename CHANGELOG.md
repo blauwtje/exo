@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/rivals.mjs` pins a hooks-based code-size rival by tag and commit, and `benchmarks/tasks.mjs` gives it an arm outside the default list.
+- `benchmarks/results/2026-10-06-rivals.md` records the four template tasks on Sonnet 5, baseline, exo and the code-size rival, 3 runs each: the rival wrote 10% fewer lines than baseline but spent no fewer tokens, and a short ladder in the session text did not fit the injected-context lock, so exo stayed unchanged.
+
 ## 0.94.0 - 2026-10-06
 
 ### Added
