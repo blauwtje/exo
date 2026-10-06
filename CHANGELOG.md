@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.90.1 - 2026-10-06
+
 ### Changed
 
 - The Claude Code and Codex adapters share one `PATH` lookup in `harnesses/on-path.mjs`.
