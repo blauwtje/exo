@@ -3,4 +3,6 @@
 // `update(record)` and `remove(record)` (see install.mjs for the arguments);
 // adding one is an import and a line in this list.
 
-export const adapters = [];
+import * as codex from './codex/adapter.mjs';
+
+export const adapters = [codex];
