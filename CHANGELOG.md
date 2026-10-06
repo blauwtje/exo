@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.91.0 - 2026-10-06
+
 ### Highlights
 
 - **exo installs with one command: `curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash`.** The README is now short enough to read in a minute.
