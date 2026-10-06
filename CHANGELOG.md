@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.89.0 - 2026-10-06
+
 ### Added
 
 - `node codex/install.mjs` installs exo into Codex. It links the skills into `~/.agents/skills`, copies agent files generated from the model kind table into `~/.codex/agents`, and merges exo's hooks into `~/.codex/hooks.json`; `--remove` takes out exactly what it wrote. `npm run check` fails when the generated agent files drift from the table.
