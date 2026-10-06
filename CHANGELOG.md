@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.97.0 - 2026-10-06
+
 ### Added
 
 - `benchmarks/value/` holds a value tier of 13 headless tasks, each a seed repository with a hidden check and a reference solution, run through `node benchmarks/run.mjs --tier value`; its contract sits in `benchmarks/README.md` and `tests/benchmark-value.test.mjs` proves every check fails on its seed and passes on its solution.
