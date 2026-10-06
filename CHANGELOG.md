@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.95.1 - 2026-10-06
+
 ### Changed
 
 - `benchmarks/README.md` states which parts of the benchmark (fixture, task set, task names, no-run instruction and run settings) follow an external MIT-licensed benchmark.
