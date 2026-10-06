@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `verify/budgets.mjs` locks `skills/route-skills/references/lean.md` at its measured 1030 bytes, so the file can only shrink with the lock following.
+
+### Fixed
+
+- The instruction style no longer describes the old code-size ladder; its two ladder lines become one rule: say whether the first match in a list wins or every item applies.
+
 ## 0.95.2 - 2026-10-06
 
 ### Changed
