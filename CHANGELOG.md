@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **exo installs with one command: `curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash`.** The README is now short enough to read in a minute.
+
+### Added
+
+- `install.sh` clones exo to `~/.exo`, or pulls that clone, checks for git and Node 22 or newer, then runs the interactive `install.mjs`, reading its prompts from the terminal under `curl | bash`. Arguments pass through, and a folder at `~/.exo` that is not a git clone is refused.
+- `docs/codex.md` and `docs/settings.md` hold the Codex details, the settings and the guards that left the README.
+
+### Changed
+
+- The README drops from 182 to 74 lines: one install block, a table of other install routes, one skills table and one before-and-after table, with nothing told twice.
+- The skill pages under `docs/skills/` and `ABOUT.md` use plain, shorter wording in one layout, and drop four claims the skills did not back.
+
 ## 0.90.1 - 2026-10-06
 
 ### Changed
