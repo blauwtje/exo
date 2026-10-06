@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The code-size guidance is a new, independently written `skills/route-skills/references/lean.md` in place of `ladder.md`: four sections that apply together (size, reuse, what is never traded away, known limits), and the fixer prompts and `build-ui` carry two of its lines instead of the old copied rules.
+
 ## 0.95.1 - 2026-10-06
 
 ### Changed
