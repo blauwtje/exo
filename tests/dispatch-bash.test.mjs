@@ -158,7 +158,8 @@ test('an awaited async step is merged like a sync one', async () => {
   assert.equal(await dispatchBash({}, [], [broken]), null);
 });
 
-test('a Bash call inside a delegate past the hard limit is denied by the dispatcher', async () => {
+// A Bash call from a delegate whose transcript is 120k tokens deep, run under `host`.
+async function delegateCall(host) {
   const directory = await fixture();
   const transcript = path.join(directory, 'session.jsonl');
   const subagents = path.join(directory, 'session', 'subagents');
@@ -170,12 +171,23 @@ test('a Bash call inside a delegate past the hard limit is denied by the dispatc
   const outcome = await run(DISPATCHER, [], {
     cwd: directory,
     input: JSON.stringify(hookInput),
-    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory }
+    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory, EXO_HOST: host }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
-  const decision = JSON.parse(outcome.stdout).hookSpecificOutput;
+  return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;
+}
+
+test('a Bash call inside a delegate past the hard limit is denied by the dispatcher', async () => {
+  const decision = await delegateCall('claude');
   assert.equal(decision.permissionDecision, 'deny');
   assert.match(decision.permissionDecisionReason, /BUDGET/);
+});
+
+test('on Codex the delegate budget step is skipped and every guard is kept', async () => {
+  assert.equal(await delegateCall('codex'), null);
+  const decision = await output('git reset --hard', { env: { EXO_HOST: 'codex' } });
+  assert.equal(decision.permissionDecision, 'deny');
+  assert.match(decision.permissionDecisionReason, /git-guard/);
 });
 
 // A main-session transcript at 120k prompt tokens, which nothing measures.

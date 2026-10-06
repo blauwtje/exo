@@ -8,6 +8,7 @@
 // contexts of the steps that ran are joined into the same output.
 // A fault reading or parsing the input exits 0 with no output.
 
+import { currentHost } from '#host';
 import { approve } from '../skills/remember/scripts/approve-book.mjs';
 import { delegateBudget } from './guards/delegate-budget.mjs';
 import { denialFor as outputDenial } from './guards/bash-output-guard.mjs';
@@ -46,8 +47,14 @@ const BOOKKEEPING = [
   { name: 'heavy-command', run: heavyCommandStep }
 ];
 
+// The delegate budget counts from a Claude transcript, so Codex skips it.
+function bookkeepingFor(host) {
+  if (host === 'codex') return BOOKKEEPING.filter((step) => step.name !== 'delegate-budget');
+  return BOOKKEEPING;
+}
+
 // The one output for `hookInput`, or null when no step has anything to say.
-export function dispatchBash(hookInput, guards = GUARDS, bookkeeping = BOOKKEEPING) {
+export function dispatchBash(hookInput, guards = GUARDS, bookkeeping = bookkeepingFor(currentHost())) {
   return runSteps(hookInput, guards, bookkeeping);
 }
 
