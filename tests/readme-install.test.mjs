@@ -36,7 +36,9 @@ function sourceRepository(base) {
     fs.mkdirSync(path.dirname(path.join(source, file)), { recursive: true });
     fs.copyFileSync(path.join(ROOT, file), path.join(source, file));
   }
-  const git = (...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: source, encoding: 'utf8' });
+  // maintenance.auto=false: the commit would otherwise detach a `git maintenance run --auto` that
+  // packs the ~900 loose objects and deletes them while the README's clone line copies them.
+  const git = (...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'maintenance.auto=false', ...args], { cwd: source, encoding: 'utf8' });
   for (const args of [['init', '-q'], ['add', '-A'], ['commit', '-q', '-m', 'fixture']]) {
     const result = git(...args);
     assert.equal(result.status, 0, result.stderr);
