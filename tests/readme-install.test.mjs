@@ -1,5 +1,5 @@
-// README's Codex install line, run from a fresh clone under a temporary home,
-// installs exo into that home, and its remove line undoes the install.
+// README's clone-and-install line, run for Codex from a fresh clone under a
+// temporary home, installs exo into that home, and its remove line undoes the install.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -11,10 +11,10 @@ import { test } from 'node:test';
 const ROOT = new URL('../', import.meta.url).pathname.replace(/\/$/, '');
 const CLONE_URL = 'https://github.com/blauwtje/exo';
 
-function codexSection() {
+function installSection() {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
-  const start = readme.indexOf('\n## Codex');
-  assert.notEqual(start, -1, 'README has a Codex section');
+  const start = readme.indexOf('\n## Install');
+  assert.notEqual(start, -1, 'README has an Install section');
   const end = readme.indexOf('\n## ', start + 1);
   return readme.slice(start, end === -1 ? undefined : end);
 }
@@ -50,7 +50,7 @@ function run(command, environment, cwd) {
   return spawnSync('sh', ['-c', command], { cwd, env: environment, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
-test('README Codex install line installs from a fresh clone and the remove line undoes it', () => {
+test('README clone line installs Codex from a fresh clone and the remove line undoes it', () => {
   const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'readme-install-')));
   try {
     const home = path.join(base, 'home');
@@ -64,9 +64,12 @@ test('README Codex install line installs from a fresh clone and the remove line 
       PATH: [bin, path.dirname(process.execPath), '/usr/bin', '/bin'].join(path.delimiter)
     };
 
-    const section = codexSection();
-    const install = readmeLine(section, /git clone .*install\.mjs/);
-    assert.ok(install.includes(CLONE_URL), 'the install line clones the public repository');
+    const section = installSection();
+    const cloneLine = readmeLine(section, /git clone .*install\.mjs/);
+    assert.ok(cloneLine.includes(CLONE_URL), 'the install line clones the public repository');
+    // The line installs into every detected harness; --harness codex keeps a
+    // `claude` on this PATH from installing into the real Claude Code.
+    const install = /--harness/.test(cloneLine) ? cloneLine : `${cloneLine} --harness codex`;
     const source = sourceRepository(base);
     const installed = run(install.replace(CLONE_URL, source).replaceAll('~', home), environment, base);
     assert.equal(installed.status, 0, installed.stderr + installed.stdout);

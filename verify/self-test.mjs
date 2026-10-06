@@ -18,7 +18,7 @@ import { writeGenerated } from '../harnesses/codex/generate.mjs';
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
   'ABOUT.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md',
-  'docs/skills/build.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json', 'harnesses',
+  'docs/skills/build.md', 'docs/codex.md', 'docs/settings.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json', 'harnesses',
 ];
 
 function read(root, relative) {

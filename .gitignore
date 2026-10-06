@@ -4,6 +4,8 @@ node_modules/
 .DS_Store
 docs/*
 !docs/skills/
+!docs/codex.md
+!docs/settings.md
 benchmarks/fixtures/
 benchmarks/runs/
 /tmp
