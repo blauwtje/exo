@@ -14,15 +14,23 @@ exo's agents run on `gpt-6.1-sol` and `gpt-6-luna`, so you need a plan that incl
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness codex
 ```
 
-Without the script, clone and run the installer yourself:
-
-```bash
-git clone https://github.com/blauwtje/exo ~/.exo && node ~/.exo/install.mjs --harness codex
-```
-
 A Codex plugin carries no custom agents and does not run in the IDE extension, so exo installs from a clone, by default `~/.exo`, and ships no Codex plugin.
 
-`node ~/.exo/install.mjs --update` pulls the clone with `git pull --ff-only`, then updates every install it recorded, in Codex and in Claude Code. `node ~/.exo/install.mjs --remove` removes every install it recorded, or only those matching `--harness`, `--scope` and `--project`.
+To update exo, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update
+```
+
+The script pulls the clone with `git pull --ff-only`, then updates every install exo recorded, in Codex and in Claude Code.
+
+To uninstall exo, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --remove
+```
+
+The script removes every install exo recorded, or only those matching `--harness`, `--scope` and `--project` when you add them. It then deletes `~/.exo` when no install is left and the clone has no local changes.
 
 ## What the installer writes
 
