@@ -1,0 +1,326 @@
+{
+ "2026-03": {
+  "C001": {
+   "totalMinor": 540722,
+   "transactions": 6
+  },
+  "C002": {
+   "totalMinor": 1198118,
+   "transactions": 11
+  },
+  "C003": {
+   "totalMinor": 144455,
+   "transactions": 1
+  },
+  "C004": {
+   "totalMinor": 1038677,
+   "transactions": 7
+  },
+  "C005": {
+   "totalMinor": 2063301,
+   "transactions": 13
+  },
+  "C006": {
+   "totalMinor": 365501,
+   "transactions": 13
+  },
+  "C007": {
+   "totalMinor": 1415979,
+   "transactions": 9
+  },
+  "C008": {
+   "totalMinor": 496892,
+   "transactions": 3
+  },
+  "C009": {
+   "totalMinor": 230173,
+   "transactions": 5
+  },
+  "C010": {
+   "totalMinor": 904554,
+   "transactions": 13
+  },
+  "C011": {
+   "totalMinor": 63292,
+   "transactions": 6
+  },
+  "C012": {
+   "totalMinor": 1899602,
+   "transactions": 12
+  },
+  "C013": {
+   "totalMinor": 774140,
+   "transactions": 5
+  },
+  "C014": {
+   "totalMinor": 468030,
+   "transactions": 10
+  },
+  "C015": {
+   "totalMinor": 962673,
+   "transactions": 11
+  },
+  "C016": {
+   "totalMinor": 1654218,
+   "transactions": 9
+  },
+  "C017": {
+   "totalMinor": 712362,
+   "transactions": 12
+  },
+  "C018": {
+   "totalMinor": 581993,
+   "transactions": 8
+  },
+  "C019": {
+   "totalMinor": 1952185,
+   "transactions": 6
+  },
+  "C020": {
+   "totalMinor": 41533,
+   "transactions": 1
+  },
+  "C021": {
+   "totalMinor": 972474,
+   "transactions": 8
+  },
+  "C022": {
+   "totalMinor": 2149699,
+   "transactions": 10
+  },
+  "C023": {
+   "totalMinor": 422002,
+   "transactions": 9
+  },
+  "C024": {
+   "totalMinor": 1566180,
+   "transactions": 11
+  },
+  "C025": {
+   "totalMinor": 800205,
+   "transactions": 7
+  },
+  "C026": {
+   "totalMinor": 868820,
+   "transactions": 8
+  },
+  "C027": {
+   "totalMinor": 151265,
+   "transactions": 10
+  },
+  "C028": {
+   "totalMinor": 1291505,
+   "transactions": 11
+  },
+  "C029": {
+   "totalMinor": 632334,
+   "transactions": 3
+  },
+  "C030": {
+   "totalMinor": 625561,
+   "transactions": 9
+  },
+  "C031": {
+   "totalMinor": 512033,
+   "transactions": 7
+  },
+  "C032": {
+   "totalMinor": 1885571,
+   "transactions": 11
+  },
+  "C033": {
+   "totalMinor": 476164,
+   "transactions": 3
+  },
+  "C034": {
+   "totalMinor": 614872,
+   "transactions": 8
+  },
+  "C035": {
+   "totalMinor": 787847,
+   "transactions": 7
+  },
+  "C036": {
+   "totalMinor": 686917,
+   "transactions": 9
+  },
+  "C037": {
+   "totalMinor": 1473693,
+   "transactions": 11
+  },
+  "C038": {
+   "totalMinor": 386968,
+   "transactions": 2
+  },
+  "C039": {
+   "totalMinor": 830074,
+   "transactions": 8
+  },
+  "C040": {
+   "totalMinor": 430934,
+   "transactions": 11
+  }
+ },
+ "2026-04": {
+  "C001": {
+   "totalMinor": 424577,
+   "transactions": 2
+  },
+  "C002": {
+   "totalMinor": -100462,
+   "transactions": 3
+  },
+  "C003": {
+   "totalMinor": 483445,
+   "transactions": 7
+  },
+  "C004": {
+   "totalMinor": 1529324,
+   "transactions": 14
+  },
+  "C005": {
+   "totalMinor": 1605746,
+   "transactions": 13
+  },
+  "C006": {
+   "totalMinor": 627957,
+   "transactions": 6
+  },
+  "C007": {
+   "totalMinor": 639615,
+   "transactions": 9
+  },
+  "C008": {
+   "totalMinor": 2478379,
+   "transactions": 14
+  },
+  "C009": {
+   "totalMinor": 1719268,
+   "transactions": 7
+  },
+  "C010": {
+   "totalMinor": 216376,
+   "transactions": 7
+  },
+  "C011": {
+   "totalMinor": 993564,
+   "transactions": 9
+  },
+  "C012": {
+   "totalMinor": 460945,
+   "transactions": 11
+  },
+  "C013": {
+   "totalMinor": 42799,
+   "transactions": 3
+  },
+  "C014": {
+   "totalMinor": 876027,
+   "transactions": 8
+  },
+  "C015": {
+   "totalMinor": 465219,
+   "transactions": 9
+  },
+  "C016": {
+   "totalMinor": 3505725,
+   "transactions": 12
+  },
+  "C017": {
+   "totalMinor": 420594,
+   "transactions": 3
+  },
+  "C018": {
+   "totalMinor": 531287,
+   "transactions": 9
+  },
+  "C019": {
+   "totalMinor": 717950,
+   "transactions": 4
+  },
+  "C020": {
+   "totalMinor": 273446,
+   "transactions": 5
+  },
+  "C021": {
+   "totalMinor": 1258914,
+   "transactions": 11
+  },
+  "C022": {
+   "totalMinor": 2037564,
+   "transactions": 12
+  },
+  "C023": {
+   "totalMinor": 719296,
+   "transactions": 6
+  },
+  "C024": {
+   "totalMinor": 82615,
+   "transactions": 8
+  },
+  "C025": {
+   "totalMinor": 379638,
+   "transactions": 10
+  },
+  "C026": {
+   "totalMinor": 882182,
+   "transactions": 9
+  },
+  "C027": {
+   "totalMinor": 183020,
+   "transactions": 8
+  },
+  "C028": {
+   "totalMinor": 747615,
+   "transactions": 9
+  },
+  "C029": {
+   "totalMinor": 543949,
+   "transactions": 1
+  },
+  "C030": {
+   "totalMinor": 985680,
+   "transactions": 12
+  },
+  "C031": {
+   "totalMinor": 40008,
+   "transactions": 1
+  },
+  "C032": {
+   "totalMinor": 771213,
+   "transactions": 10
+  },
+  "C033": {
+   "totalMinor": 1302969,
+   "transactions": 10
+  },
+  "C034": {
+   "totalMinor": 1521024,
+   "transactions": 9
+  },
+  "C035": {
+   "totalMinor": 70214,
+   "transactions": 4
+  },
+  "C036": {
+   "totalMinor": 373252,
+   "transactions": 6
+  },
+  "C037": {
+   "totalMinor": 307866,
+   "transactions": 6
+  },
+  "C038": {
+   "totalMinor": 702052,
+   "transactions": 2
+  },
+  "C039": {
+   "totalMinor": 1517994,
+   "transactions": 13
+  },
+  "C040": {
+   "totalMinor": 207498,
+   "transactions": 1
+  }
+ }
+}

@@ -1,0 +1,41 @@
+customer_id,customer,billing_currency,transactions,total_eur
+C001,"Nordlicht Foods, GmbH",EUR,6,5407.22
+C002,Pallas Logistics,EUR,9,12963.48
+C003,Brightwater Dental,GBP,1,1444.55
+C004,Kestrel Analytics,USD,7,10375.23
+C005,Orchard & Vine,EUR,11,7908.76
+C006,Harbourline Marine,AUD,13,3658.74
+C007,Sable Studio,USD,9,14161.38
+C008,Quill & Anchor Books,GBP,1,5305.49
+C009,Tessellate Labs,USD,5,2299.55
+C010,Lumen Optics,EUR,11,9829.04
+C011,Fernhill Veterinary,AUD,6,632.92
+C012,Granite Peak Outfitters,USD,12,19028.16
+C013,Moss & Co Bakery,EUR,5,7741.40
+C014,Cobalt Freight,USD,10,4681.70
+C015,Daybreak Coffee Roasters,CAD,11,9626.65
+C016,Ironbridge Fabrication,GBP,7,11235.05
+C017,Juniper Health,CAD,12,7116.51
+C018,Tidewater Surf Co,AUD,8,5823.03
+C019,Aurora Textiles,EUR,4,20143.48
+C020,Willow Creek Farms,USD,1,415.33
+C021,Pinecone Interactive,USD,8,9751.40
+C022,Meridian Clinics,EUR,8,18067.17
+C023,Saffron Kitchen Supply,EUR,9,4220.02
+C024,Blue Heron Press,USD,9,16416.80
+C025,Copperleaf Energy,USD,7,8002.05
+C026,Stonebridge Legal,GBP,8,8688.20
+C027,Evergreen Pharmacy,AUD,8,2080.35
+C028,Halcyon Travel,EUR,9,5301.97
+C029,Ridgeway Builders,USD,3,6323.34
+C030,Marlowe Print Works,EUR,9,6255.61
+C031,Kingfisher Outdoor,AUD,7,5120.33
+C032,Larkspur Design,EUR,11,18855.71
+C033,Redwood Analytics,USD,3,4761.64
+C034,Thistle & Thorn,GBP,8,6148.72
+C035,Vantage Surveying,CAD,7,7878.47
+C036,Wren Electronics,EUR,9,6869.17
+C037,Zephyr Air Freight,EUR,11,14736.93
+C038,Alpenglow Guides,EUR,2,3869.68
+C039,Bellwether Insurance,USD,8,8300.74
+C040,Citrine Software,EUR,11,4309.34

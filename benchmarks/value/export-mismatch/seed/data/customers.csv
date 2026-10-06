@@ -1,0 +1,41 @@
+id,name,timezone,currency,plan
+C001,"Nordlicht Foods, GmbH",Europe/Berlin,EUR,enterprise
+C002,Pallas Logistics,Europe/Athens,EUR,standard
+C003,Brightwater Dental,Europe/London,GBP,standard
+C004,Kestrel Analytics,America/Los_Angeles,USD,enterprise
+C005,Orchard & Vine,Europe/Dublin,EUR,standard
+C006,Harbourline Marine,Australia/Sydney,AUD,standard
+C007,Sable Studio,America/New_York,USD,enterprise
+C008,Quill & Anchor Books,Europe/London,GBP,standard
+C009,Tessellate Labs,America/Chicago,USD,standard
+C010,Lumen Optics,Europe/Paris,EUR,enterprise
+C011,Fernhill Veterinary,Australia/Melbourne,AUD,standard
+C012,Granite Peak Outfitters,America/Denver,USD,standard
+C013,Moss & Co Bakery,Europe/Amsterdam,EUR,enterprise
+C014,Cobalt Freight,Asia/Singapore,USD,standard
+C015,Daybreak Coffee Roasters,America/Toronto,CAD,standard
+C016,Ironbridge Fabrication,Europe/London,GBP,enterprise
+C017,Juniper Health,America/Vancouver,CAD,standard
+C018,Tidewater Surf Co,Australia/Perth,AUD,standard
+C019,Aurora Textiles,Europe/Madrid,EUR,enterprise
+C020,Willow Creek Farms,America/Chicago,USD,standard
+C021,Pinecone Interactive,Asia/Tokyo,USD,standard
+C022,Meridian Clinics,Europe/Rome,EUR,enterprise
+C023,Saffron Kitchen Supply,Europe/Lisbon,EUR,standard
+C024,Blue Heron Press,America/New_York,USD,standard
+C025,Copperleaf Energy,America/Los_Angeles,USD,enterprise
+C026,Stonebridge Legal,Europe/London,GBP,standard
+C027,Evergreen Pharmacy,Australia/Sydney,AUD,standard
+C028,Halcyon Travel,Europe/Berlin,EUR,enterprise
+C029,Ridgeway Builders,America/Denver,USD,standard
+C030,Marlowe Print Works,Europe/Dublin,EUR,standard
+C031,Kingfisher Outdoor,Australia/Brisbane,AUD,enterprise
+C032,Larkspur Design,Europe/Paris,EUR,standard
+C033,Redwood Analytics,America/Los_Angeles,USD,standard
+C034,Thistle & Thorn,Europe/London,GBP,enterprise
+C035,Vantage Surveying,America/Toronto,CAD,standard
+C036,Wren Electronics,Europe/Amsterdam,EUR,standard
+C037,Zephyr Air Freight,Europe/Madrid,EUR,enterprise
+C038,Alpenglow Guides,Europe/Vienna,EUR,standard
+C039,Bellwether Insurance,America/New_York,USD,standard
+C040,Citrine Software,Europe/Berlin,EUR,enterprise

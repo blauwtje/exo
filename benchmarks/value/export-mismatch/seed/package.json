@@ -1,0 +1,11 @@
+{
+  "name": "billing-export",
+  "version": "2.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "export": "node bin/export.mjs",
+    "dashboard": "node bin/dashboard.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

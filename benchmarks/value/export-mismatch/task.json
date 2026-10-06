@@ -1,0 +1,7 @@
+{
+  "id": "value-export-mismatch",
+  "claim": "proof beyond the reported instance: one customer is reported, three silent faults on the export path hit different customers",
+  "timeoutMinutes": 20,
+  "estimateUsd": 0.35,
+  "maxBudgetUsd": 1.5
+}
