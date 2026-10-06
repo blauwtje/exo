@@ -50,7 +50,7 @@ Each job takes its package, because a hand-written one misses the focus, gesture
 
 ## Preview
 
-- Once the scaffold exists, this session starts `npm run dev > "$RUN/dev.log" 2>&1` under the Bash tool's `run_in_background`, never a builder, because a TSX page does not open from a `file://` url.
+- Once the scaffold exists, this session starts `npm run dev > "$RUN/dev.log" 2>&1` in a background `exec_command` session polled with `write_stdin`, never a builder, because a TSX page does not open from a `file://` url.
 - Wait for the url with a bounded loop, then read it from the log:
 
 ```bash
@@ -59,7 +59,7 @@ grep -o 'http://localhost:[0-9]*/' "$RUN/dev.log" | head -1
 ```
 
 - Pass that url as `--url` to capture, check-ui and checkpoint, and as `URL` to every builder, because Vite takes the next free port when 5173 is busy.
-- Stop the background task with TaskStop before the report, because a server left running holds its port into the next run.
+- Stop the background task by killing its process before the report, because a server left running holds its port into the next run.
 
 ## Judgment
 

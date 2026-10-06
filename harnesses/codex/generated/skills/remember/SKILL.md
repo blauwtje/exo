@@ -16,7 +16,7 @@ Keep only what two sessions attested and the repository still supports. The enem
 
 The claims two separate sessions had booked when this skill loaded, before this session's booking:
 
-!`node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/remember/scripts/memory.mjs" propose`
+Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/remember/scripts/memory.mjs" propose` first and use its output here.
 
 ## The loop
 

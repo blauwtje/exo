@@ -30,7 +30,7 @@ Hard boundaries:
 - Never commit, push, branch, stash, reset, check out or run `gh`.
 - Never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
 - Two fix attempts leaving the symptom end the work: report both and stop.
-- Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
+- Run a long proof in the foreground with `exec_command`, polling its session with `write_stdin` until it exits, or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
 - Ask nothing; record what is missing under Unresolved.
 
 Handoff file: <root>/.exo/debug/task-<n>.md.

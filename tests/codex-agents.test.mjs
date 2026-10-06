@@ -141,6 +141,12 @@ test('an override whose source changed, or that names no generated file, is drif
   assert.match(result.stdout, /SKILL\.md: source hash changed/);
 });
 
+test('an agent source that leaves a skill placeholder fails generation', () => {
+  const root = copyOfRepository();
+  fs.appendFileSync(path.join(root, 'agents', 'run-unit.md'), '\nOpen {{SKILL_DIR}}/a.md.\n');
+  assert.throws(() => generateTree(root), /agents\/run-unit\.md: left unmapped: \{\{SKILL_DIR\}\}/);
+});
+
 test('--check exits 1 and names a changed, a missing and a stray file', () => {
   const root = copyOfRepository();
   const directory = path.join(root, 'harnesses', 'codex', 'generated', 'agents');

@@ -14,9 +14,9 @@ node scripts/sketch-tab.mjs --wait "$RUN/sketches" --sketch <file.html> > "$RUN/
 - On exit 3 (no browser, no tab server, or no answer within 600 seconds), the recommended option is the choice, stated in one line.
 - On exit 3, ask no question in the terminal.
 - When exit 3 says no tab server runs, start `--serve` once more with the next sketch, because the server leaves after 30 minutes without a tab.
-- `--serve` runs once per session under the Bash tool's `run_in_background`.
+- `--serve` runs once per session in a background `exec_command` session polled with `write_stdin`.
 - `--serve` opens the tab at once, pushes every newer sketch into it, and opens it again when a sketch lands after the user closed it.
-- `--wait` runs under `run_in_background` after each sketch is written. Its one stdout line is `{"sketch","choice","label","steer"}`.
+- `--wait` runs in a background `exec_command` session polled with `write_stdin` after each sketch is written. Its one stdout line is `{"sketch","choice","label","steer"}`.
 - Exit 2 is a usage error, and the flag it names is the fix.
 
 ## The labels

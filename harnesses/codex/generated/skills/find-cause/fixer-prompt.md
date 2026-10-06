@@ -1,6 +1,6 @@
 # Fixer prompt
 
-The text `find-cause` hands a `general-purpose` delegate on `sonnet` for phase (c) once the handoff names a proven cause.
+The text `find-cause` hands a built-in `default` delegate on `sonnet` for phase (c) once the handoff names a proven cause.
 
 ```text
 Fix the proven cause in the handoff below, repository <root>. Load the `$find-cause` skill first and run only Steps 4 and 5 of its loop: predict, fix, prove. Read only the handoff file and its `Ranges`.
@@ -27,7 +27,7 @@ Hard boundaries:
 - Never delete a file, container, volume, database, branch or credential to get past a blocked state: report it with 2-3 options.
 - Ask no questions; record what is missing under `Unresolved`.
 - Two fix attempts that leave the symptom standing end the work: report both and stop.
-- Run a long proof in the foreground with Bash `timeout: 600000` or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
+- Run a long proof in the foreground with `exec_command`, polling its session with `write_stdin` until it exits, or a bounded `for` loop on a done file; never call `Monitor` or start with `sleep`.
 
 Append a `## Fix` section to the handoff file and write nothing elsewhere: `Tests` (the files holding only the new failing test, else `none`), `Edits` (each path with one line on what changed), `Proof` (the failing output before the edit and the same command re-run after it, at most 10 lines each, with the log path for the rest), `Unresolved` (what remains, or `none`).
 

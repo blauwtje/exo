@@ -14,7 +14,7 @@
    - Under `Route: unit`, the block is the current and later unlanded tasks in plan order, max eight, ending before a `Design:` task or an unlanded `Depends on:` outside the block.
    - A current `Design:` task routes, then step 3 repeats.
    - An open choice the user would miss stops with a question; any other is ruled, recorded in the commit.
-5. **Dispatch.** Dispatch silently, then end the turn; each completion notification resumes it.
+5. **Dispatch.** Dispatch silently, then wait for each agent with `wait_agent`.
    - Until all returns are in, never call ScheduleWakeup, ListAgents, Monitor or sleep or read a worktree or report.
    - A wave lands only after every sibling returned.
    - `Route: unit`: **dispatch the unit**, never build a `Wave:` here.

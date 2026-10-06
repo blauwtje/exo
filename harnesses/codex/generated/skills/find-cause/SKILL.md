@@ -6,7 +6,7 @@ description: "Use when existing behavior is reported wrong (bug, error, crash, r
 
 a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/lib/scratch-exclude.mjs"`; no symbol: `exo-locate-code`.
 b. **Investigate.** Proven needs a causal line and a mechanism predicting it or holding in the source: write `Status: proven`; else dispatch `exo-solve-hard` from `investigator-prompt.md`.
-c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch `general-purpose` on `sonnet` from `fixer-prompt.md`; resume `failed` via SendMessage.
+c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Dispatch the built-in `default` agent on `sonnet` from `fixer-prompt.md`; resume `failed` by a follow-up message.
 d. **Report.** Read only status lines and Report's fields. After compaction, re-run `Repro`.
 
 1. **Reproduce.** One command reproduces it, else evidence, no fix.

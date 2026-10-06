@@ -23,7 +23,7 @@ This file owns the screen that asks for a direction; the `visual-direction` refe
 - Fix each fault they show: horizontal overflow, a section cut off or missing, overlapping text, unreadable contrast, an empty band, a broken image or font.
 - Rerun `pick.mjs --check` after every fix, and read the new captures, until none of those faults is left.
 - The picker refuses to start, exit 2, while a variant lacks a capture at 390 or 1440 newer than its own files, so any edit after a check needs another check.
-- Only then write the labels file and start `pick.mjs` under the Bash tool's `run_in_background`.
+- Only then write the labels file and start `pick.mjs` in a background `exec_command` session polled with `write_stdin`.
 - When `pick.mjs --check` exits 3, no capture engine exists: start the picker with `--unchecked` and tell the user in one line that the comps were not checked.
 - `--unchecked` answers that exit 3 alone, never a failing or unread check.
 - Write each comp's source directly from its contract: no template, generator, or patch script stands between the two, because a pipeline costs the minutes it was meant to save.
@@ -57,7 +57,7 @@ Each comp is the real surface in one direction, not a sketch: real content, buil
 - Before the builders start, write a direction entry beside the app's own: a page that mounts the folder `src/directions/<n>/` its `?direction=<n>` names.
 - That entry leaves the app's own entry and routes untouched, so the app runs unchanged while the directions are compared.
 - In a Vite project the entry is `directions.html` at the project root, loading a `src/directions/main.tsx` that mounts the `import.meta.glob('./*/index.tsx')` match the query names; Vite serves it in dev with no config.
-- Start the dev server under the Bash tool's `run_in_background`, then pass `pick.mjs` `--url "http://localhost:<port>/directions.html?direction={n}"` and `--source "src/directions/{n}"`.
+- Start the dev server in a background `exec_command` session polled with `write_stdin`, then pass `pick.mjs` `--url "http://localhost:<port>/directions.html?direction={n}"` and `--source "src/directions/{n}"`.
 
 ## After the click
 

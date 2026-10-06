@@ -16,7 +16,7 @@ Change exo's settings only through its own scripts, one named setting or every s
 
 The values when this skill loaded, each with its layer:
 
-!`node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" show`
+Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" show` first and use its output here.
 
 ## One setting
 

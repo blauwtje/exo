@@ -79,6 +79,50 @@ test('tool phrases become spawning an agent and reading a SKILL.md', () => {
   assert.equal(codexBody(SKILL, 'Run the Agent or Task tool.', KNOWN), 'Run a spawn of the custom agent.');
 });
 
+test('a load-time command line becomes an instruction to run it first', () => {
+  assert.equal(
+    codexBody(SKILL, 'Values:\n\n!`node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" show`\n\n## Next', KNOWN),
+    'Values:\n\nRun `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/spec/scripts/settings.mjs" show` first and use its output here.\n\n## Next'
+  );
+});
+
+test('a dispatch that waits on completion notifications waits with wait_agent', () => {
+  assert.equal(
+    codexBody(SKILL, 'Dispatch silently, then end the turn; each completion notification resumes it.', KNOWN),
+    'Dispatch silently, then wait for each agent with `wait_agent`.'
+  );
+});
+
+test('Claude-only tool terms map to their Codex equivalents', () => {
+  const cases = [
+    ['starts `npm run dev` under the Bash tool\'s `run_in_background`, never', 'starts `npm run dev` in a background `exec_command` session polled with `write_stdin`, never'],
+    ['`--merge <n>` under `run_in_background` gates', '`--merge <n>` in a background `exec_command` session polled with `write_stdin` gates'],
+    ['agent from `x.md`, with `run_in_background: false`, in one message', 'agent from `x.md`, then waits for it with `wait_agent`, in one message'],
+    ['resume `failed` via SendMessage.', 'resume `failed` by a follow-up message.'],
+    ['goes by SendMessage to its writer', 'goes by a follow-up message to its writer'],
+    ['A `SendMessage` from the session lists faults', 'A follow-up message from the session lists faults'],
+    ['list each fault, and `SendMessage` it to the builder to repair.', 'list each fault, and send it as a follow-up message to the builder to repair.'],
+    ['Dispatch `general-purpose` on `sonnet`', 'Dispatch the built-in `default` agent on `sonnet`'],
+    ['hands a `general-purpose` delegate on', 'hands a built-in `default` delegate on'],
+    ['Stop the background task with TaskStop before the report', 'Stop the background task by killing its process before the report'],
+    ['its own cap through the build-ui agent\'s maxTurns; this', 'its own cap through the build-ui agent\'s turn budget, which Codex does not enforce; this'],
+    ['in the foreground with Bash `timeout: 600000` or a counted `for` loop', 'in the foreground with `exec_command`, polling its session with `write_stdin` until it exits, or a counted `for` loop'],
+    ['verbatim on its own line, so the delegate-budget hook uses it over the shared default.', 'verbatim on its own line, so the delegate keeps to it.'],
+    ['A bare skill name in an exo skill, agent or rule means `exo:<name>`.', 'A bare skill name in an exo skill, agent or rule means `$<name>`, a bare agent name `exo-<name>`.']
+  ];
+  for (const [text, expected] of cases) assert.equal(codexBody(SKILL, text, KNOWN), expected);
+});
+
+test('an agent names the skill folder path for the skill variable, and a skill placeholder left in an agent throws', () => {
+  const agent = 'agents/build-task.md';
+  assert.equal(
+    codexBody(agent, 'a wave builds per `<skill>/w.md`, reading its `${CLAUDE_SKILL_DIR}` as `<skill>`.', KNOWN),
+    'a wave builds per `<skill>/w.md`, reading its skill folder path as `<skill>`.'
+  );
+  assert.equal(codexBody(agent, 'Open ${CLAUDE_SKILL_DIR}/a.md.', KNOWN), 'Open the skill folder path the dispatch passes/a.md.');
+  assert.throws(() => codexBody(agent, 'Open {{SKILL_DIR}}/a.md.', KNOWN), /left unmapped: \{\{SKILL_DIR\}\}/);
+});
+
 test('emphasis words go lowercase outside code spans and fences only', () => {
   const text = [
     'You MUST read it and NEVER guess; ALWAYS, IMPORTANT, CRITICAL, REQUIRED.',

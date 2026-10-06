@@ -32,7 +32,7 @@ The full run starts only when the user asks for a survey, parallel builders, a c
 - Build hands `$RUN/files.md` to each builder as `FILES`, under `## Full run builders` of the `phase-build` reference.
 - Phase 3 rows of the skill's References table are read by the surface builder, never the main session, except the build row, which decides who builds.
 - Phase 4 follows `## The critique dispatch` after the build and the post-build checkpoint.
-- Phase 5 is a `general-purpose` delegate on `sonnet` running `## QA`; this session reads only that section's last two bullets, the close and the ignore entry, and quotes qa.md.
+- Phase 5 is a built-in `default` delegate on `sonnet` running `## QA`; this session reads only that section's last two bullets, the close and the ignore entry, and quotes qa.md.
 
 ## The build floor
 
@@ -84,7 +84,7 @@ The numeric floor:
 - No probe page against the engine.
 - No repair for an engine quirk the source does not show; when a capture contradicts a rule the source follows, report it and move on.
 - No MCP browser tool inside this skill — no `browser_screenshot`, `browser_evaluate`, or snapshot against the surface: the render path is `scripts/capture.mjs` and the critic.
-- Each repair dispatch carries its own cap through the build-ui agent's maxTurns; this session keeps no separate tool-call cap on its own repair work.
+- Each repair dispatch carries its own cap through the build-ui agent's turn budget, which Codex does not enforce; this session keeps no separate tool-call cap on its own repair work.
 
 ## QA
 
@@ -93,7 +93,7 @@ The numeric floor:
 - Never quote a count this session filtered itself.
 - When no stage called this skill, the checks line also names each type-check, lint and test command run before check-ui, with its result.
 - The report lists each default the build fell back on that check-ui did not flag, such as a stock font, a template ground or a row of identical cards, as a candidate rule for exo.
-- A `general-purpose` delegate on `sonnet`, dispatched with `RUN`, `SKILL` and `REPO`, reads this section and runs it.
+- A the built-in `default` agent delegate on `sonnet`, dispatched with `RUN`, `SKILL` and `REPO`, reads this section and runs it.
 - It writes `$RUN/qa.md`, at most 20 lines, and returns only the qa.md path and line 1.
 - Line 1 of qa.md is `qa=complete|incomplete|blocked`; line 2 is the checks line.
 - Then come one line per open item, the performance numbers each tagged `measured`, `unthrottled` or `not measured`, and the candidate-rule lines.

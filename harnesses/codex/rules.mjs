@@ -25,7 +25,32 @@ const PHRASES = [
   ['the Agent tool', 'a spawn of the custom agent'],
   ['the Task tool', 'a spawn of the custom agent'],
   ['through the Skill tool', "by reading that skill's `SKILL.md`"],
-  ['the Skill tool', "a read of that skill's `SKILL.md`"]
+  ['the Skill tool', "a read of that skill's `SKILL.md`"],
+  // Whether Codex wakes the parent when a spawned agent finishes is unconfirmed, so it waits.
+  ['end the turn; each completion notification resumes it', 'wait for each agent with `wait_agent`'],
+  ["under the Bash tool's `run_in_background`", 'in a background `exec_command` session polled with `write_stdin`'],
+  ['with `run_in_background: false`', 'then waits for it with `wait_agent`'],
+  ['under `run_in_background`', 'in a background `exec_command` session polled with `write_stdin`'],
+  ['A `SendMessage`', 'A follow-up message'],
+  ['`SendMessage` it to', 'send it as a follow-up message to'],
+  ['via SendMessage', 'by a follow-up message'],
+  ['by SendMessage', 'by a follow-up message'],
+  ['a `general-purpose` delegate', 'a built-in `default` delegate'],
+  ['`general-purpose`', 'the built-in `default` agent'],
+  ['with TaskStop', 'by killing its process'],
+  ["agent's maxTurns", "agent's turn budget, which Codex does not enforce"],
+  ['with Bash `timeout: 600000`', 'with `exec_command`, polling its session with `write_stdin` until it exits,'],
+  ['so the delegate-budget hook uses it over the shared default', 'so the delegate keeps to it'],
+  ['means `exo:<name>`', 'means `$<name>`, a bare agent name `exo-<name>`']
+];
+
+// Claude runs a line `` !`cmd` `` when the skill loads; Codex passes the line as text.
+const LOAD_COMMAND = /^!`([^`\n]+)`$/gm;
+
+// An agent has no skill folder of its own: the dispatch passes one.
+const AGENT_SKILL_DIR = [
+  ['`${CLAUDE_SKILL_DIR}`', 'skill folder path'],
+  ['${CLAUDE_SKILL_DIR}', 'the skill folder path the dispatch passes']
 ];
 
 export function splitFrontmatter(text) {
@@ -100,13 +125,20 @@ export function codexBody(file, text, known) {
   // Codex has no session id variable; start-run falls back to none.
   mapped = mapped.replaceAll(' --session "${CLAUDE_SESSION_ID}"', '');
   mapped = mapped.replaceAll('${CLAUDE_PLUGIN_ROOT}', '{{EXO_ROOT}}');
-  mapped = mapped.replaceAll('${CLAUDE_SKILL_DIR}', '{{SKILL_DIR}}');
+  const inSkill = skillOf(file) !== null;
+  if (inSkill) mapped = mapped.replaceAll('${CLAUDE_SKILL_DIR}', '{{SKILL_DIR}}');
+  else for (const [token, wording] of AGENT_SKILL_DIR) mapped = mapped.replaceAll(token, wording);
   mapped = mapNames(file, mapped, known);
   for (const [phrase, replacement] of PHRASES) mapped = mapped.replaceAll(phrase, replacement);
+  mapped = mapped.replace(LOAD_COMMAND, 'Run `$1` first and use its output here.');
   mapped = lowerEmphasis(mapped);
-  const left = mapped.indexOf('${CLAUDE_');
-  if (left !== -1) {
-    throw new Error(`${file}: left unmapped: ${mapped.slice(left, left + 40).split('\n')[0]}`);
+  // The installer fills {{SKILL_DIR}} only in a skill folder.
+  const leftovers = inSkill ? ['${CLAUDE_'] : ['${CLAUDE_', '{{SKILL_DIR}}'];
+  for (const leftover of leftovers) {
+    const left = mapped.indexOf(leftover);
+    if (left !== -1) {
+      throw new Error(`${file}: left unmapped: ${mapped.slice(left, left + 40).split('\n')[0]}`);
+    }
   }
   return mapped;
 }

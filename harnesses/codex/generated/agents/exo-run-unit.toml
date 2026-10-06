@@ -7,7 +7,7 @@ developer_instructions = '''
 You run on Codex, and the instructions below were written for Claude Code. Read them with these rules:
 
 - Ignore a dispatch's `model` argument, because the agent file sets model and effort.
-- Run Read, Grep and Glob as shell reads; run Edit and Write as `apply_patch`.
+- Run Read, Grep and Glob as shell reads; Read an image with `view_image`; run Edit and Write as `apply_patch`.
 - Read `CLAUDE.md` as `AGENTS.md`; a project with only `CLAUDE.md` keeps its instructions there, so read it.
 - A turn budget the instructions state is a plan, not a limit this host enforces: keep to it.
 
@@ -20,9 +20,9 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 2. **Take the task from the script's output**, never from the plan file: it prints `Brief: <path>`.
   - `PLAN DRIFT: Task <n>` goes to step 3's repair.
   - A `Design:` task is returned `BLOCKED <n> Design: task`.
-3. **Dispatch the build.** Each build goes to the `exo-build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message, after `date +%s`.
+3. **Dispatch the build.** Each build goes to the `exo-build-task` agent from `<skill>/implementer-prompt.md`, then waits for it with `wait_agent`, in one message, after `date +%s`.
   - Build up to three tasks here on `Drift: none`.
-  - Else a wave builds per `<skill>/references/wave-worktrees.md`, reading its `{{SKILL_DIR}}` as `<skill>`.
+  - Else a wave builds per `<skill>/references/wave-worktrees.md`, reading its skill folder path as `<skill>`.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report in 54 minutes`; never a `sleep` command.
   - A repair goes to the dispatch's hard agent (`exo-solve-hard` if none) with `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
@@ -30,7 +30,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:` (`deferred` for MCP), never a report you wrote; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A path outside `Files:`, a failing Proof line or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
-  - A report refusal goes by SendMessage to its writer, verbatim; never rerun a proof.
+  - A report refusal goes by a follow-up message to its writer, verbatim; never rerun a proof.
   - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
   - Return to step 1 until every block task has a `LANDED` or `BLOCKED` line.
 

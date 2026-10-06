@@ -5,7 +5,7 @@ description: "Use when the user invokes it to see how the exo skills are named, 
 
 # Using exo
 
-A bare skill name in an exo skill, agent or rule means `exo:<name>`.
+A bare skill name in an exo skill, agent or rule means `$<name>`, a bare agent name `exo-<name>`.
 
 ## Before acting
 

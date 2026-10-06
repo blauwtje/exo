@@ -42,7 +42,7 @@ The default for every rung but 1 and 4; `exo-build-ui` writes the code, since co
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise until none is missing.
 4. **Build pass.** Read `references/build-pass.md` whole.
 5. **Build.** Dispatch fresh `exo-build-ui`, `model: "opus"`, `SCOPE: page`, with the rung 3 comp; read its report only.
-6. **Capture, look, fix once.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`. Read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and `SendMessage` it to the builder to repair.
+6. **Capture, look, fix once.** Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders`. Read both, list each fault against the plan, a named or saved product's finish and `references/build-pass.md`, and send it as a follow-up message to the builder to repair.
 7. **Finish on a fresh capture.** Rerun only step 6's capture, with `--label final`, and read both; a page is done only on a capture after its last edit, and later changes go to the builder.
 
 Read only the post-build and final pairs, never a state capture, because each image costs context; a fault under repair adds one.
