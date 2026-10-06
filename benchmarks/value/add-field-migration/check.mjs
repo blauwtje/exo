@@ -16,6 +16,15 @@ const expected = JSON.parse(fs.readFileSync(path.join(data, 'expected.json'), 'u
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'add-field-check-'));
 const CODES = ['EUR', 'USD', 'GBP', 'SEK', 'NOK', 'CHF'];
 let counter = 0;
+// The whole check stays under 50 s: every child process and fetch gets at most
+// the time left before this deadline, and cases that start after it are skipped.
+const deadline = Date.now() + 45_000;
+
+function budget(limit) {
+  const left = deadline - Date.now();
+  if (left <= 0) throw new Error('the 45 s deadline of the check passed');
+  return Math.min(limit, left);
+}
 
 function freshPath() {
   counter += 1;
@@ -30,7 +39,7 @@ function copyFixture() {
 }
 
 function cli(db, ...args) {
-  const run = spawnSync(process.execPath, ['bin/cli.mjs', '--db', db, ...args], { cwd: repo, encoding: 'utf8', timeout: 15_000 });
+  const run = spawnSync(process.execPath, ['bin/cli.mjs', '--db', db, ...args], { cwd: repo, encoding: 'utf8', timeout: budget(15_000), killSignal: 'SIGKILL' });
   return { status: run.status, out: run.stdout ?? '', err: (run.stderr ?? '').trim().slice(-200) };
 }
 
@@ -45,7 +54,7 @@ async function withServer(db, body) {
   try {
     const base = await new Promise((resolve, reject) => {
       let seen = '';
-      const timer = setTimeout(() => reject(new Error('the server printed no address in 10 s')), 10_000);
+      const timer = setTimeout(() => reject(new Error('the server printed no address in time')), budget(10_000));
       child.stdout.on('data', (chunk) => {
         seen += chunk;
         const found = /http:\/\/127\.0\.0\.1:\d+/.exec(seen);
@@ -60,7 +69,7 @@ async function withServer(db, body) {
 }
 
 async function httpInvoice(base, id) {
-  const response = await fetch(`${base}/invoices/${id}`);
+  const response = await fetch(`${base}/invoices/${id}`, { signal: AbortSignal.timeout(budget(5_000)) });
   const body = await response.json();
   return body.invoice ?? {};
 }
@@ -68,6 +77,7 @@ async function httpInvoice(base, id) {
 async function httpCreate(base, accountId) {
   const response = await fetch(`${base}/invoices`, {
     method: 'POST',
+    signal: AbortSignal.timeout(budget(5_000)),
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ accountId, lines: [{ description: 'Check run', quantity: 1, unitPriceMinor: 10000 }] }),
   });
@@ -77,7 +87,7 @@ async function httpCreate(base, accountId) {
 function showError(db, id, want) {
   const run = cli(db, 'show', id);
   if (run.status !== 0) return `show ${id} exited ${run.status}: ${run.err}`;
-  const shown = CODES.filter((code) => new RegExp(`\\b${code}\\b`).test(run.out));
+  const shown = CODES.filter((code) => new RegExp(`(?<![A-Z])${code}(?![A-Z])`).test(run.out));
   return isDeepStrictEqual(shown, [want]) ? null : `show ${id} prints [${shown.join(', ')}], want ${want}`;
 }
 
@@ -189,7 +199,7 @@ const detail = [];
 for (const [name, run] of cases) {
   let error;
   try {
-    error = await run();
+    error = Date.now() > deadline ? 'skipped, the 45 s deadline of the check passed' : await run();
   } catch (caught) {
     error = caught.message;
   }
