@@ -1,0 +1,9 @@
+txn_id,date,merchant_id,amount,currency,status
+C1,2026-03-02,M001,50.00,EUR,settled
+C1,2026-03-02,M001,50.00,EUR,settled
+C2,2026-03-02,M002,20.00,EUR,pending
+C3,2026-03-02,M002,20.00,EUR,failed
+C4,2026-03-03,M002,-10.00,EUR,settled
+C5,2026-03-03,M002,abc,EUR,settled
+C6,2026-03-03,M001,,EUR,settled
+C7,2026-03-03,M001,25.00,USD,settled

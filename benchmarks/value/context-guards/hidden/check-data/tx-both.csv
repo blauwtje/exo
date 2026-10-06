@@ -1,0 +1,4 @@
+txn_id,date,merchant_id,amount,currency,status
+B1,2026-03-16,M003,"(1,204.50)",EUR,settled
+B2,2026-03-16,M003,10.00,EUR,settled
+B3,2026-03-10,M003,"(12,000.00)",USD,settled

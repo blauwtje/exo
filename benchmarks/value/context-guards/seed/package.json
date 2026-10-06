@@ -1,0 +1,10 @@
+{
+  "name": "settlement-report",
+  "version": "1.4.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "report": "node bin/report.mjs",
+    "test": "node --test"
+  }
+}

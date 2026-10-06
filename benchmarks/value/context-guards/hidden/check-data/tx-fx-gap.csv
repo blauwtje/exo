@@ -1,0 +1,7 @@
+txn_id,date,merchant_id,amount,currency,status
+F1,2026-03-02,M001,100.00,NOK,settled
+F2,2026-03-07,M001,100.00,NOK,settled
+F3,2026-03-08,M001,100.00,NOK,settled
+F4,2026-03-09,M001,100.00,NOK,settled
+F5,2026-03-05,M002,40.00,USD,settled
+F6,2026-03-14,M002,50.00,USD,settled

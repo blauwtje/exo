@@ -1,0 +1,5 @@
+txn_id,date,merchant_id,amount,currency,status
+K1,2026-03-16,M003,"1,204.50",EUR,settled
+K2,2026-03-16,M003,"12,345,678.90",EUR,settled
+K3,2026-03-17,M003,"-1,000.00",EUR,settled
+K4,2026-03-17,M003,999.99,EUR,settled

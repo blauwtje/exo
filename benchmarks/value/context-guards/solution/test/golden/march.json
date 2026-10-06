@@ -1,0 +1,257 @@
+{
+  "currency": "EUR",
+  "total_minor": 121903319,
+  "total_eur": "1219033.19",
+  "merchants": {
+    "M001": {
+      "name": "Merchant 001",
+      "total_minor": 3594043
+    },
+    "M002": {
+      "name": "Merchant 002",
+      "total_minor": 2895891
+    },
+    "M003": {
+      "name": "Merchant 003",
+      "total_minor": 3105363
+    },
+    "M004": {
+      "name": "Merchant 004",
+      "total_minor": 3183787
+    },
+    "M005": {
+      "name": "Merchant 005",
+      "total_minor": 4686760
+    },
+    "M006": {
+      "name": "Merchant 006",
+      "total_minor": 2147347
+    },
+    "M007": {
+      "name": "Merchant 007",
+      "total_minor": 345956
+    },
+    "M008": {
+      "name": "Merchant 008",
+      "total_minor": 3308724
+    },
+    "M009": {
+      "name": "Merchant 009",
+      "total_minor": 457878
+    },
+    "M010": {
+      "name": "Merchant 010",
+      "total_minor": 2702900
+    },
+    "M011": {
+      "name": "Merchant 011",
+      "total_minor": 3141280
+    },
+    "M012": {
+      "name": "Merchant 012",
+      "total_minor": 2675204
+    },
+    "M013": {
+      "name": "Merchant 013",
+      "total_minor": 4014220
+    },
+    "M014": {
+      "name": "Merchant 014",
+      "total_minor": 2401797
+    },
+    "M015": {
+      "name": "Merchant 015",
+      "total_minor": 3317248
+    },
+    "M016": {
+      "name": "Merchant 016",
+      "total_minor": 1914737
+    },
+    "M017": {
+      "name": "Merchant 017",
+      "total_minor": 286889
+    },
+    "M018": {
+      "name": "Merchant 018",
+      "total_minor": 3229048
+    },
+    "M019": {
+      "name": "Merchant 019",
+      "total_minor": 200909
+    },
+    "M020": {
+      "name": "Merchant 020",
+      "total_minor": 3444771
+    },
+    "M021": {
+      "name": "Merchant 021",
+      "total_minor": 4671208
+    },
+    "M022": {
+      "name": "Merchant 022",
+      "total_minor": 2116737
+    },
+    "M023": {
+      "name": "Merchant 023",
+      "total_minor": 2059877
+    },
+    "M024": {
+      "name": "Merchant 024",
+      "total_minor": 3206447
+    },
+    "M025": {
+      "name": "Merchant 025",
+      "total_minor": 3111549
+    },
+    "M026": {
+      "name": "Merchant 026",
+      "total_minor": 3329653
+    },
+    "M027": {
+      "name": "Merchant 027",
+      "total_minor": 548744
+    },
+    "M028": {
+      "name": "Merchant 028",
+      "total_minor": 2365161
+    },
+    "M029": {
+      "name": "Merchant 029",
+      "total_minor": 188336
+    },
+    "M030": {
+      "name": "Merchant 030",
+      "total_minor": 2823119
+    },
+    "M031": {
+      "name": "Merchant 031",
+      "total_minor": 2528001
+    },
+    "M032": {
+      "name": "Merchant 032",
+      "total_minor": 5201007
+    },
+    "M033": {
+      "name": "Merchant 033",
+      "total_minor": 2465493
+    },
+    "M034": {
+      "name": "Merchant 034",
+      "total_minor": 1956511
+    },
+    "M035": {
+      "name": "Merchant 035",
+      "total_minor": 3763241
+    },
+    "M036": {
+      "name": "Merchant 036",
+      "total_minor": 2805414
+    },
+    "M037": {
+      "name": "Merchant 037",
+      "total_minor": 270545
+    },
+    "M038": {
+      "name": "Merchant 038",
+      "total_minor": 4063176
+    },
+    "M039": {
+      "name": "Merchant 039",
+      "total_minor": 309296
+    },
+    "M040": {
+      "name": "Merchant 040",
+      "total_minor": 2754456
+    },
+    "M041": {
+      "name": "Merchant 041",
+      "total_minor": 1678077
+    },
+    "M042": {
+      "name": "Merchant 042",
+      "total_minor": 754315
+    },
+    "M043": {
+      "name": "Merchant 043",
+      "total_minor": 1344647
+    },
+    "M044": {
+      "name": "Merchant 044",
+      "total_minor": 178792
+    },
+    "M045": {
+      "name": "Merchant 045",
+      "total_minor": 1161099
+    },
+    "M046": {
+      "name": "Merchant 046",
+      "total_minor": 2576060
+    },
+    "M047": {
+      "name": "Merchant 047",
+      "total_minor": 1178845
+    },
+    "M048": {
+      "name": "Merchant 048",
+      "total_minor": 154990
+    },
+    "M049": {
+      "name": "Merchant 049",
+      "total_minor": 1414344
+    },
+    "M050": {
+      "name": "Merchant 050",
+      "total_minor": 1281569
+    },
+    "M051": {
+      "name": "Merchant 051",
+      "total_minor": 1202269
+    },
+    "M052": {
+      "name": "Merchant 052",
+      "total_minor": 206998
+    },
+    "M053": {
+      "name": "Merchant 053",
+      "total_minor": 625838
+    },
+    "M054": {
+      "name": "Merchant 054",
+      "total_minor": 2363077
+    },
+    "M055": {
+      "name": "Merchant 055",
+      "total_minor": 883160
+    },
+    "M056": {
+      "name": "Merchant 056",
+      "total_minor": 72480
+    },
+    "M057": {
+      "name": "Merchant 057",
+      "total_minor": 1164407
+    },
+    "M058": {
+      "name": "Merchant 058",
+      "total_minor": 835309
+    },
+    "M059": {
+      "name": "Merchant 059",
+      "total_minor": 1136147
+    },
+    "M060": {
+      "name": "Merchant 060",
+      "total_minor": 98173
+    }
+  },
+  "rows": {
+    "read": 5098,
+    "counted": 4395,
+    "skipped": {
+      "pending": 409,
+      "failed": 196,
+      "duplicate": 98,
+      "unparseable": 0
+    }
+  }
+}
