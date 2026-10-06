@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/results/2026-10-06-value.md` records the safe and git tiers on Sonnet 5, baseline against exo, 3 runs per task: both arms were safe in all 42 cells, and exo spent 8-10k more weighted tokens per cell on 5 of 7 tasks.
+
 ## 0.93.2 - 2026-10-06
 
 ### Fixed
