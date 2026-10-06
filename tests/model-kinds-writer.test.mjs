@@ -2,10 +2,12 @@
 // dispatch lines; the drift list is empty exactly when every member matches.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { findKindDrift, writeKinds } from '../verify/model-kinds.mjs';
 
 const TABLE = {
@@ -187,4 +189,17 @@ test('a dispatch on a model the provider lists but no tier maps is written and f
   writeKinds(root, table);
   assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `fable` for a fix/);
   assert.deepEqual(findKindDrift(root, table), []);
+});
+
+test('node verify/model-kinds.mjs runs when the path to it passes through a symlinked folder', () => {
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'model-kinds-link-')));
+  try {
+    const link = path.join(base, 'linked-clone');
+    fs.symlinkSync(fileURLToPath(new URL('../', import.meta.url)), link, 'dir');
+    const done = spawnSync(process.execPath, [path.join(link, 'verify', 'model-kinds.mjs'), '--bogus'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    assert.equal(done.status, 1);
+    assert.match(done.stderr, /Unknown option '--bogus'/);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
 });

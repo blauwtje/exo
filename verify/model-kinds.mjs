@@ -15,6 +15,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
+import { isMain } from '../lib/script-flags.mjs';
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
 
@@ -176,4 +177,4 @@ function main() {
   if (!values.write && drift.length > 0) process.exitCode = 1;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+if (isMain(import.meta.url)) main();

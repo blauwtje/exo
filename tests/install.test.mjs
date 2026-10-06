@@ -272,6 +272,14 @@ test('node install.mjs runs as a process and exits 1 with the message on an erro
   assert.match(done.stderr, /unknown harness nope/);
 });
 
+test('node install.mjs runs when the path to it passes through a symlinked folder', () => {
+  const link = path.join(base, 'linked-clone');
+  fs.symlinkSync(REPO, link, 'dir');
+  const done = spawnSync(process.execPath, [path.join(link, 'install.mjs'), '--bogus'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  assert.equal(done.status, 1);
+  assert.match(done.stderr, /Unknown option '--bogus'/);
+});
+
 test('the shipped Codex adapter installs and removes per project through run', async () => {
   const real = saved.find((adapter) => adapter.name === 'codex');
   assert.ok(real);

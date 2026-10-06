@@ -33,6 +33,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { adapters as registered } from './harnesses/registry.mjs';
+import { isMain } from './lib/script-flags.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const SCOPES = ['user', 'project', 'local'];
@@ -230,7 +231,7 @@ export async function run(argv, context = {}) {
   return runAll(jobs, stdout, stderr);
 }
 
-if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     process.exitCode = await run(process.argv.slice(2), { restartAfterPull: true });
   } catch (error) {
