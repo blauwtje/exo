@@ -1,6 +1,8 @@
 // install.sh, run under a temporary home with EXO_REPO pointing at a local copy
 // of this checkout, clones and installs, pulls on a second run, refuses a
 // folder that is not a clone, and stops before writing when node is missing.
+// --update pulls once and updates; --remove removes and deletes the clone only
+// when no install is recorded and the clone holds no work of its own.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -107,4 +109,74 @@ test('a missing or old node is named and nothing is written', (t) => {
   assert.equal(old.status, 1);
   assert.match(old.stderr, /is too old; install Node\.js 22 or newer/);
   assert.ok(!fs.existsSync(path.join(home, '.exo')), 'nothing is cloned');
+});
+
+// A sandbox with exo cloned from a fresh source repository and installed into Codex.
+function installedCodex(t) {
+  const box = sandbox(t);
+  const source = sourceRepository(box.base);
+  const env = { ...box.environment, EXO_REPO: `file://${source}` };
+  const first = install(env, box.base, '--harness', 'codex', '--yes');
+  assert.equal(first.status, 0, first.stderr + first.stdout);
+  return { ...box, source, env, clone: path.join(box.home, '.exo'), skill: path.join(box.home, '.agents', 'skills', 'build', 'SKILL.md') };
+}
+
+test('--update on a missing clone says how to install and clones nothing', (t) => {
+  const { base, home, environment } = sandbox(t);
+  const result = install({ ...environment, EXO_REPO: path.join(base, 'nowhere') }, base, '--update');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /exo is not installed in .*\.exo; install it with: curl -fsSL \S+install\.sh \| bash/);
+  assert.equal(result.stderr.trim().split('\n').length, 1, 'one line');
+  assert.ok(!fs.existsSync(path.join(home, '.exo')), 'nothing is cloned');
+});
+
+test('--update pulls the new commit once and updates the Codex install', (t) => {
+  const { base, source, env, skill } = installedCodex(t);
+  fs.appendFileSync(path.join(source, 'skills', 'build', 'SKILL.md'), '\nPULLED-MARKER\n');
+  git(source, 'commit', '-q', '-am', 'test: change a skill');
+
+  const result = install(env, base, '--update', '--harness', 'codex');
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(fs.readFileSync(skill, 'utf8'), /PULLED-MARKER/, 'the installed skill carries the pulled change');
+  // install.mjs prints its own pull's output; --pulled skips that second pull.
+  assert.doesNotMatch(result.stdout, /Already up to date|Fast-forward/);
+});
+
+test('--remove on a missing clone exits 0 without cloning', (t) => {
+  const { base, home, environment } = sandbox(t);
+  const result = install({ ...environment, EXO_REPO: path.join(base, 'nowhere') }, base, '--remove');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /exo is not installed in .*\.exo/);
+  assert.ok(!fs.existsSync(path.join(home, '.exo')), 'nothing is cloned');
+});
+
+test('--remove after a Codex install removes the skills and deletes the clean clone', (t) => {
+  const { base, env, clone, skill } = installedCodex(t);
+  const result = install(env, base, '--remove');
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.ok(!fs.existsSync(skill), 'the skill is removed');
+  assert.ok(!fs.existsSync(clone), 'the clone is deleted');
+  assert.match(result.stdout, /Deleted .*\.exo/);
+});
+
+test('--remove keeps a clone with an uncommitted change and says so', (t) => {
+  const { base, env, clone, skill } = installedCodex(t);
+  fs.appendFileSync(path.join(clone, 'install.mjs'), '// mine\n');
+  const result = install(env, base, '--remove');
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.ok(!fs.existsSync(skill), 'the skill is removed');
+  assert.ok(fs.existsSync(path.join(clone, '.git')), 'the clone stays');
+  assert.match(result.stdout, /Kept .*\.exo: it has uncommitted or untracked changes/);
+});
+
+test('--remove --harness codex keeps the clone while a Claude Code install is recorded', (t) => {
+  const { base, home, env, clone, skill } = installedCodex(t);
+  const record = path.join(home, '.claude', 'exo', 'installed.json');
+  fs.mkdirSync(path.dirname(record), { recursive: true });
+  fs.writeFileSync(record, `${JSON.stringify({ version: 2, installs: [{ scope: 'user' }] })}\n`);
+  const result = install(env, base, '--remove', '--harness', 'codex');
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.ok(!fs.existsSync(skill), 'the Codex skill is removed');
+  assert.ok(fs.existsSync(path.join(clone, '.git')), 'the clone stays');
+  assert.match(result.stdout, /Kept .*\.exo: Claude Code still records an install/);
 });

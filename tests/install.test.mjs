@@ -19,12 +19,14 @@ after(() => fs.rmSync(base, { recursive: true, force: true }));
 
 const calls = [];
 
-// `state` is what detect() answers for the stub; `fail` makes install throw.
-function stub(name, label, state = { detected: true, installable: true }, fail = false) {
+// `state` is what detect() answers for the stub; `fail` makes install throw;
+// `count` is how many installs recorded() reports.
+function stub(name, label, state = { detected: true, installable: true }, fail = false, count = 0) {
   return {
     name,
     label,
     detect: () => state,
+    recorded: () => count,
     install: (plan) => {
       calls.push(['install', name, plan.scope, plan.project]);
       if (fail) throw new Error(`${name} exploded`);
@@ -259,6 +261,24 @@ test('--remove asks every adapter, or only the matching ones, to remove what the
   const gone = path.join(base, 'gone-project');
   await exo(['--remove', '--harness', 'two', '--scope', 'local', '--project', gone]);
   assert.deepEqual(calls, [['remove', 'two', 'local', gone]]);
+});
+
+test('--recorded prints the label of each adapter that still records an install', async () => {
+  register(stub('one', 'First', undefined, false, 2), stub('two', 'Second'), stub('three', 'Third', undefined, false, 1));
+  const result = await exo(['--recorded']);
+  assert.equal(result.code, 0);
+  assert.equal(result.out, 'First\nThird\n');
+  assert.deepEqual(calls, []);
+});
+
+test('the shipped adapters count the installs their record files list', async () => {
+  const home = folder('recorded-home');
+  const env = { HOME: home };
+  for (const adapter of saved) assert.equal(await adapter.recorded(env), 0, `${adapter.name} with no record`);
+  const claudeRecord = path.join(home, '.claude', 'exo', 'installed.json');
+  fs.mkdirSync(path.dirname(claudeRecord), { recursive: true });
+  fs.writeFileSync(claudeRecord, JSON.stringify({ version: 2, installs: [{ scope: 'user' }, { scope: 'local', project: home }] }));
+  assert.equal(await saved.find((adapter) => adapter.name === 'claude').recorded(env), 2);
 });
 
 test('--update and --remove cannot be combined', async () => {

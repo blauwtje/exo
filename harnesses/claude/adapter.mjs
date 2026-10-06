@@ -136,6 +136,11 @@ function eachMatch(record, { action, verb, past, keep }) {
   return `${past} ${done.length} Claude Code install${done.length === 1 ? '' : 's'}`;
 }
 
+// How many installs the record lists; install.sh deletes the clone only when every adapter says 0.
+export function recorded(env) {
+  return readInstalls(recordFileOf(env)).length;
+}
+
 export function update(record) {
   return eachMatch(record, { action: 'update', verb: 'update', past: 'updated', keep: true });
 }

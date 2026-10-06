@@ -14,7 +14,7 @@
 // every adapter to remove it, narrowed by `--harness`, `--scope` and `--project`.
 //
 // Adapters (harnesses/registry.mjs) export `name`, `label`, `detect(env)`,
-// `install(plan)`, `update(record)` and `remove(record)`:
+// `install(plan)`, `update(record)`, `remove(record)` and `recorded(env)`:
 //   detect(env)  -> { detected, installable, reason? }; a detected harness that
 //                   is not installable carries the reason and is listed with it.
 //   install(plan) with plan = { root, env, scope, project }, once per project
@@ -22,8 +22,12 @@
 //   update(record) / remove(record) with record = { root, env, scope?, project? }:
 //                   the adapter walks its own installed.json and applies every
 //                   install the optional `scope` and `project` match.
-// Each returns a summary string or { summary, notes? }, or throws to abort that
-// install; the installer carries on with the rest and exits 1 at the end.
+//   recorded(env) -> the number of installs its installed.json lists; the
+//                   internal `--recorded` prints the label of each adapter above 0,
+//                   so install.sh keeps the clone while any install is left.
+// install, update and remove return a summary string or { summary, notes? },
+// or throw to abort that install; the installer carries on with the rest and
+// exits 1 at the end.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -49,7 +53,9 @@ function parse(argv) {
       update: { type: 'boolean' },
       remove: { type: 'boolean' },
       // Set by the update itself on the child it starts after the pull; never typed.
-      pulled: { type: 'boolean' }
+      pulled: { type: 'boolean' },
+      // Asked by install.sh --remove before it deletes the clone; never typed.
+      recorded: { type: 'boolean' }
     }
   });
   if (values.update && values.remove) throw new Error('--update and --remove cannot be combined');
@@ -196,6 +202,10 @@ export async function run(argv, context = {}) {
   } = context;
   const interactive = context.interactive ?? Boolean(input.isTTY);
   const options = parse(argv);
+  if (options.recorded) {
+    for (const adapter of adapters) if (await adapter.recorded(env) > 0) stdout.write(`${adapter.label}\n`);
+    return 0;
+  }
   if (options.update || options.remove) {
     const verb = options.update ? 'update' : 'remove';
     const selected = pickAdapters(options.harness, adapters);

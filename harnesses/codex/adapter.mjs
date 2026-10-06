@@ -521,6 +521,11 @@ export function install(plan) {
   return apply(planInstall(plan));
 }
 
+// How many installs the record lists; install.sh deletes the clone only when every adapter says 0.
+export function recorded(env) {
+  return readInstalls(locations(env).recordFile).length;
+}
+
 // An update re-applies each install the selector matches, from the clone as it is now.
 export function update(record) {
   const installs = readInstalls(locations(record.env).recordFile).filter((entry) => matches(entry, record));

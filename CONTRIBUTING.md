@@ -81,7 +81,7 @@ Each hook entry pins `"shell": "bash"` so a Windows host without Git Bash does n
 
 `harnesses/codex/overrides/<path under generated>` replaces one generated file and opens with `<!-- exo:override source-sha256=<hash> -->`, naming the hash of its Claude source. exo ships none; add one only after a skill reads wrong in a real Codex run. A changed source hash fails `npm run check`, never warns.
 
-`install.mjs` at the root runs one adapter per harness, listed in `harnesses/registry.mjs`. An adapter is `harnesses/<name>/adapter.mjs` exporting `name`, `label`, `detect(env)`, `install(plan)`, `update(record)` and `remove(record)`; a new harness is one adapter folder plus one registry line. The Claude adapter runs `claude plugin install exo@blauwtje -s <scope>` and records each install in `${CLAUDE_CONFIG_DIR:-~/.claude}/exo/installed.json`.
+`install.mjs` at the root runs one adapter per harness, listed in `harnesses/registry.mjs`. An adapter is `harnesses/<name>/adapter.mjs` exporting `name`, `label`, `detect(env)`, `install(plan)`, `update(record)`, `remove(record)` and `recorded(env)`; a new harness is one adapter folder plus one registry line. The Claude adapter runs `claude plugin install exo@blauwtje -s <scope>` and records each install in `${CLAUDE_CONFIG_DIR:-~/.claude}/exo/installed.json`.
 
 The Codex adapter copies the generated skills with `{{EXO_ROOT}}` and `{{SKILL_DIR}}` filled, copies the agent files and merges the hook entries listed in `harnesses/codex/hooks.mjs`, which takes them from `hooks/hooks.json` through an allowlist and drops `shell`. It records each install in `${CODEX_HOME:-~/.codex}/exo/installed.json`.
 
