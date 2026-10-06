@@ -22,7 +22,7 @@ export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 3321, measured: '2026-10-01' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 956, measured: '2026-10-06' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 2532, measured: '2026-10-02' };
+export const INJECTED_CONTEXT_LOCK = { bytes: 2069, measured: '2026-10-06' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };
@@ -39,7 +39,7 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 // ceiling because hooks/session-start.mjs injects its body into every session.
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
-export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 636 };
+export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 518 };
 // The six stage-path skills, capped at 750 tokens each. spec sits above the
 // cap because its pinned gate sentences hold it at its measured 760.
 export const STAGE_BODY_TOKENS = {

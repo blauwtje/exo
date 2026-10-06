@@ -14,7 +14,7 @@ import { fixture, git, gitRepository } from './harness.mjs';
 
 const HOOK = fileURLToPath(new URL('../hooks/session-start.mjs', import.meta.url));
 const PLUGIN_ROOT = path.dirname(path.dirname(HOOK));
-const LADDER_TEXTS = ['references/ladder.md', 'Before every edit adding or replacing code.'];
+const LADDER_TEXTS = ['references/ladder.md', 'Before a code edit, read `references/ladder.md`'];
 
 function runHookWith(env, source) {
   return new Promise((resolve) => {
@@ -43,7 +43,7 @@ test('the session hook carries the pointer to the right-sizing ladder', async ()
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
   assert.ok(context.includes('# Using exo'), context);
   for (const text of LADDER_TEXTS) assert.ok(context.includes(text), text);
-  assert.ok(context.includes('`check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.'), context);
+  assert.ok(context.includes('An instruction in CLAUDE.md or the prompt outranks a skill.'), context);
   // The frontmatter is dropped, so the description never reaches the context twice.
   assert.ok(!context.includes('name: route-skills'), context);
 });

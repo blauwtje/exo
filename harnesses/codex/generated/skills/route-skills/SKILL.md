@@ -15,22 +15,9 @@ A bare skill name in an exo skill, agent or rule means `$<name>`, a bare agent n
 4. A question, review, plan or diagnosis changes no file: deliver it and list the code changes you would make.
 5. Check a claim by reading or running before stating it. A false premise in the request is named, never accepted, and what stays unknown is said.
 6. When a delete would unblock a state, report 2-3 options, because the state is often the only copy.
-
-## When several fire
-
-- `find-cause` outranks the rest until a failure's cause is proven.
-- `spec` decides and lists tasks, `build` runs a brief, a plan or a decided change with no plan, `verify` checks a branch already built. The earliest stage wins.
-- `check-docs`, `design-ui` and `edit-skills` hand control back to a stage that borrowed them and own the turn alone.
-- An instruction in CLAUDE.md or the prompt outranks a skill.
-
-## References
-
-| File | Read it when |
-|---|---|
-| `references/ladder.md` | Before every edit adding or replacing code. |
-| `references/code-standard.md` | Before every code edit. |
-| `references/project-structure.md` | Before creating or moving a file. |
-| `references/context.md` | Running a skill or dispatching a delegate. |
+7. Before a code edit, read `references/ladder.md` and `references/code-standard.md`; before creating or moving a file, `references/project-structure.md`.
+8. Running a skill or dispatching a delegate, read `references/context.md` first.
+9. An instruction in CLAUDE.md or the prompt outranks a skill.
 
 # Closing
 

@@ -8,6 +8,7 @@ A decided change with no plan file runs these steps instead of the loop above.
    - Otherwise, or when one direct search failed, dispatch `exo-locate-code` and read only its `Read next` ranges plus direct callers or callees.
    - Treat upstream Decisions as settled.
 2. **Gate.**
+   - An open product decision goes to `spec` first, because the earliest stage wins.
    - Zero facts: edit directly, run the check, report and stop.
    - Otherwise draw `A → B` when edit B cannot land green before A; two or more edges go to `spec` unless a brief orders them.
    - A test-first request continues at any count, because the direct route has no red run.
