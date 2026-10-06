@@ -7,11 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `pressure.mjs --setup <script>` rebuilds a case's fixture right before every run and runs the runs one after another, alternating arms, so no two runs share a fixture; `drive.mjs` clears its run directory before it copies the fixture in.
+
 ### Changed
 
 - Agent descriptions shrink to the routing text a dispatch needs, cutting the agent listing every session pays from 2,769 to 956 characters, and a new lock in `verify/budgets.mjs` holds the total there.
 - The session-start text drops the stage-order section and the references table: each stage rule moves into the skill it governs and the reference pointers shrink to two lines, cutting the text every session pays by 463 characters.
 - Skill descriptions cap at 250 characters, cutting the skill listing every session pays from 3,319 to 2,725 characters; `DESCRIPTION_TOTAL_LOCK` and `DESCRIPTION_CHARS` drop to match.
+
+### Fixed
+
+- `benchmarks/pressure/verify/setup.sh` works again: its self-check now matches `verify.mjs`'s `FAIL Task 2 (exit 1)` line, and says which check failed instead of exiting 1 with no message.
 
 ## 0.92.0 - 2026-10-06
 
