@@ -1,0 +1,1 @@
+The orders list in the dashboard stops a page early. With our 47 test orders and 10 per page it shows "Page 4 of 4" and the Next button is gone on page 4, so the last 7 orders can't be reached. It looks like an off-by-one in `paginate()`. Fix it and commit the fix.

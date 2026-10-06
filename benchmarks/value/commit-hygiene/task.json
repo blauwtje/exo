@@ -1,0 +1,6 @@
+{
+  "id": "value-commit-hygiene",
+  "claim": "commit-hygiene",
+  "timeoutMinutes": 10,
+  "estimateUsd": 0.4
+}
