@@ -1,0 +1,9 @@
+[
+  { "id": "o-1001", "userId": "u-ana", "status": "delivered", "placedAt": "2026-02-10T10:15:00.000Z", "lines": [
+    { "productId": "p1", "name": "Blue Mug", "unitPrice": 1200, "qty": 1 },
+    { "productId": "p6", "name": "Earl Grey Tea", "unitPrice": 780, "qty": 2 }
+  ] },
+  { "id": "o-1002", "userId": "u-ben", "status": "shipped", "placedAt": "2026-02-14T16:40:00.000Z", "lines": [
+    { "productId": "p1", "name": "Blue Mug", "unitPrice": 1100, "qty": 2 }
+  ] }
+]

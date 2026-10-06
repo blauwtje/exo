@@ -1,0 +1,12 @@
+[
+  { "userId": "u-ana", "items": [
+    { "productId": "p1", "name": "Blue Mug", "addedAt": "2026-02-03T12:00:00.000Z" },
+    { "productId": "p9", "name": "Matcha Tea Tin", "addedAt": "2026-02-05T18:30:00.000Z" }
+  ] },
+  { "userId": "u-ben", "items": [
+    { "productId": "p1", "name": "Blue Mug", "addedAt": "2026-02-08T09:10:00.000Z" }
+  ] },
+  { "userId": "u-dee", "items": [
+    { "productId": "p4", "name": "Ceramic Mug Set", "addedAt": "2026-02-09T20:45:00.000Z" }
+  ] }
+]

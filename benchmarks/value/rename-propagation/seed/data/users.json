@@ -1,0 +1,7 @@
+[
+  { "id": "u-admin", "name": "Ravi Shah", "role": "admin" },
+  { "id": "u-ops", "name": "Mina Okafor", "role": "admin" },
+  { "id": "u-ana", "name": "Ana Lopes", "role": "customer" },
+  { "id": "u-ben", "name": "Ben Idris", "role": "customer" },
+  { "id": "u-dee", "name": "Dee Marsh", "role": "customer" }
+]

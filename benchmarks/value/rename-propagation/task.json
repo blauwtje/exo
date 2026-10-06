@@ -1,0 +1,7 @@
+{
+  "id": "value-rename-propagation",
+  "claim": "fresh-eyes review; a rename feature whose obvious implementation misses repository conventions and denormalized copies",
+  "timeoutMinutes": 20,
+  "estimateUsd": 0.35,
+  "maxBudgetUsd": 1.5
+}

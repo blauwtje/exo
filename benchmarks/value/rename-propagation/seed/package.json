@@ -1,0 +1,14 @@
+{
+  "name": "shopfront",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Catalogue, carts and orders for the Shopfront storefront",
+  "scripts": {
+    "start": "node bin/server.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

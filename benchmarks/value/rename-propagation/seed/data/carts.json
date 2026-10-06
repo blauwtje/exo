@@ -1,0 +1,13 @@
+[
+  { "id": "c-ana", "userId": "u-ana", "lines": [
+    { "productId": "p1", "name": "Blue Mug", "unitPrice": 1200, "qty": 2 },
+    { "productId": "p3", "name": "Green Tea Sampler", "unitPrice": 1850, "qty": 1 }
+  ] },
+  { "id": "c-ben", "userId": "u-ben", "lines": [
+    { "productId": "p1", "name": "Blue Mug", "unitPrice": 1200, "qty": 1 },
+    { "productId": "p5", "name": "Dot Grid Notebook", "unitPrice": 1100, "qty": 3 }
+  ] },
+  { "id": "c-dee", "userId": "u-dee", "lines": [
+    { "productId": "p6", "name": "Earl Grey Tea", "unitPrice": 780, "qty": 2 }
+  ] }
+]

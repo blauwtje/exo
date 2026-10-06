@@ -1,0 +1,14 @@
+[
+  { "id": "p1", "name": "Blue Mug", "category": "mugs", "price": 1200, "stock": 40, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p2", "name": "Blue Notebook", "category": "notebooks", "price": 900, "stock": 25, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p3", "name": "Green Tea Sampler", "category": "tea", "price": 1850, "stock": 60, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p4", "name": "Ceramic Mug Set", "category": "mugs", "price": 3400, "stock": 12, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p5", "name": "Dot Grid Notebook", "category": "notebooks", "price": 1100, "stock": 80, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p6", "name": "Earl Grey Tea", "category": "tea", "price": 780, "stock": 100, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p7", "name": "Travel Mug", "category": "mugs", "price": 2100, "stock": 30, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p8", "name": "Linen Notebook", "category": "notebooks", "price": 1450, "stock": 0, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p9", "name": "Matcha Tea Tin", "category": "tea", "price": 2250, "stock": 18, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p10", "name": "Enamel Mug", "category": "mugs", "price": 1300, "stock": 55, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p11", "name": "Pocket Notebook", "category": "notebooks", "price": 650, "stock": 120, "updatedAt": "2026-02-01T08:00:00.000Z" },
+  { "id": "p12", "name": "Jasmine Tea", "category": "tea", "price": 820, "stock": 45, "updatedAt": "2026-02-01T08:00:00.000Z" }
+]

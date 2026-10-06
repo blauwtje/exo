@@ -1,0 +1,1 @@
+Our admins can't change a product's name once it exists. Add `PATCH /products/:id` taking a `name` in the JSON body so an admin can rename a product. After a rename, every place that shows the product's current name should show the new one. `npm test` should stay green.
