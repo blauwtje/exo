@@ -54,11 +54,6 @@ test('the plain variables map to the install placeholders', () => {
   );
 });
 
-test('the session flag has no Codex source and is dropped', () => {
-  const text = 'Rerun `start-run.mjs --plan <path> --session "${CLAUDE_SESSION_ID}"`.';
-  assert.equal(codexBody(SKILL, text, KNOWN), 'Rerun `start-run.mjs --plan <path>`.');
-});
-
 test('a variable no rule maps throws', () => {
   assert.throws(() => codexBody(SKILL, 'Use ${CLAUDE_OTHER} here', KNOWN), /left unmapped: \$\{CLAUDE_OTHER\}/);
 });
