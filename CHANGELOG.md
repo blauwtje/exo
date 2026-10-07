@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.101.0 - 2026-10-07
+
 ### Added
 
 - build runs a small plan inline: `planRoute` in `lib/plan-tasks.mjs` picks `Route: inline` only for a plan of at most 4 tasks, each with pasted code and its own files, and no `Design:` task, so the lead builds the tasks itself with no worktrees, waves or unit dispatch (`skills/build/references/run-loop-inline.md`); `next-task.mjs` and `land-task.mjs` print the route taken, or why inline was refused.
