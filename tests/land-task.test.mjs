@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { checkTask, fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
@@ -876,6 +876,58 @@ test('--check validates the stray paths and the report, and commits nothing', as
   const stray = await check();
   assert.equal(stray.code, 1);
   assert.match(stray.stderr, /outside Files: `src\/extra\.js`/);
+});
+
+// A block's builders share one checkout: task 2's files sit uncommitted while
+// task 1 checks and lands.
+const SIBLING_PLAN = compactPlanFixture({ tasks: [
+  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' }),
+  compactTask({ number: 2, title: 'feat(app): left', files: ['src/left.js', 'tests/left.test.mjs'], proof: 'node tests/left.test.mjs' })
+] });
+
+async function siblingCheckout() {
+  const { root, planPath } = await compactCheckout(SIBLING_PLAN);
+  await fs.writeFile(path.join(root, 'src/left.js'), 'export const left = 1;\n');
+  await fs.writeFile(path.join(root, 'tests/left.test.mjs'), "console.log('# pass 1');\n");
+  await writeReport(root, PASS_REPORT);
+  return { root, planPath };
+}
+
+test('--check passes beside an unlanded sibling task\'s files and still refuses a path no task names', async () => {
+  const { root, planPath } = await siblingCheckout();
+  const check = () => run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, '--check'], { cwd: root });
+  const ok = await check();
+  assert.equal(ok.code, 0, ok.stderr);
+  assert.equal(ok.stdout, 'Report OK: Task 1\n');
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  const stray = await check();
+  assert.equal(stray.code, 1);
+  assert.match(stray.stderr, /outside Files: `src\/extra\.js`$/m);
+});
+
+test('a landing beside a sibling task\'s files commits only its own Files:, and a landed task\'s path is a stray again', async () => {
+  const { root, planPath } = await siblingCheckout();
+  const output = landTask({ planPath, planText: SIBLING_PLAN, number: 1, root, reportText: PASS_REPORT });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), ['src/app.js']);
+  assert.match(git(root, 'status', '--porcelain'), /src\/left\.js/);
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {\n  return "hello!";\n}\n');
+  assert.throws(() => checkTask({ planPath, planText: SIBLING_PLAN, number: 2, root, reportText: 'Proof:\n- `node tests/left.test.mjs`: pass\n' }), /Task 2 changed a path outside Files: `src\/app\.js`/);
+});
+
+test('a landing refuses a staged sibling path, which its commit would take', async () => {
+  const { root, planPath } = await siblingCheckout();
+  git(root, 'add', 'src/left.js');
+  assert.throws(() => landTask({ planPath, planText: SIBLING_PLAN, number: 1, root, reportText: PASS_REPORT }), /outside Files: `src\/left\.js`/);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+});
+
+test('a plan-written Commit: block lands beside no sibling path, since it may stage anything', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
+  assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Task 1 changed a path outside Files: `src\/note\.md`/);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
 test('--check on an mcp: Proof task reads the deferred line', async () => {

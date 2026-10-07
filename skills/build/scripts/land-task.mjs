@@ -308,9 +308,25 @@ function isCovered(entries, changed) {
   return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
 }
 
-function strayPaths(task, root, planPath) {
+function strayPaths(task, root, planPath, siblingWork = () => false) {
   const entries = task.files.map((file) => file.path);
-  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed));
+  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !siblingWork(changed));
+}
+
+// In a block several builders share one checkout, so a path an unlanded task
+// of the plan names in its `Files:` is that sibling's work, not this task's
+// stray; a landed task's path is committed, so a change to it stays a stray.
+// A landing exempts one only on a derived commit, whose `git add` stages this
+// task's `Files:` alone, and only while it is unstaged, since `git commit`
+// takes the whole index; a plan-written Commit: block may stage anything.
+function siblingWorkOf(plan, task, root, planPath, landing) {
+  if (landing && (task.commitBlock !== null || !task.compact)) return () => false;
+  const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
+  const entries = plan.tasks
+    .filter((other) => other.number !== task.number && !landed.includes(other.number))
+    .flatMap((other) => other.files.map((file) => file.path));
+  const staged = landing ? execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only'], { encoding: 'utf8' }).split('\n') : [];
+  return (changed) => isCovered(entries, changed) && !staged.includes(changed);
 }
 
 // The file's source at HEAD, or null when HEAD holds no such file.
@@ -433,8 +449,8 @@ function writeProofRecord({ root, planId, number, proofs }) {
   fs.writeFileSync(record, lines.join(''));
 }
 
-function refuseStrayPaths(task, root, planPath) {
-  const stray = strayPaths(task, root, planPath);
+function refuseStrayPaths(task, root, planPath, siblingWork) {
+  const stray = strayPaths(task, root, planPath, siblingWork);
   if (stray.length > 0) {
     throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
@@ -462,7 +478,7 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   const plan = parsePlan(planText);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  refuseStrayPaths(task, root, planPath);
+  refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, false));
   checkReport(task, reportText, reportPath);
   return `Report OK: Task ${number}\n`;
 }
@@ -473,7 +489,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const planId = planIdOf(planPath);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  refuseStrayPaths(task, root, planPath);
+  refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, true));
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
