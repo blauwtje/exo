@@ -4,7 +4,10 @@
 // merges work: land-task.mjs, or git merge, cherry-pick, apply, am, pull or
 // rebase. A run qualifies when it is a test runner, a verify.mjs run, a start
 // script, or a call a `Proof: <command or MCP tool> -> <result>` line names, and
-// went green: no tool error, no nonzero `Exit code` and no failing count. A
+// went green: no tool error, no nonzero `Exit code` and no failing count. When
+// the project's package.json, the hook cwd's, else the one at the root of the
+// git checkout holding the cwd, names a `bin` or `scripts.start`, only a product
+// run qualifies: a test runner or verify.mjs run never does, named or not. A
 // named call whose output holds the Proof's quote also qualifies, so an
 // intended error exit can prove; a named call never qualifies when its command
 // names input this session wrote. Commands match after dropping a leading
@@ -34,6 +37,7 @@ import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
 import { mcpToolCall } from '#mcp-tool-call';
+import { packageEntryPoints } from '#package-entry-point';
 
 const BUILD_SKILL = /(^|:)build$/i;
 const TEST_RUNNER = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
@@ -384,6 +388,26 @@ function isCheckRun(call) {
   return call.command !== undefined && [TEST_RUNNER, VERIFY_RUN, START_RUN].some((pattern) => pattern.test(call.command));
 }
 
+function isTestRun(command) {
+  return command !== undefined && (TEST_RUNNER.test(command) || VERIFY_RUN.test(command));
+}
+
+// The directory whose package.json says how the project runs: the cwd when it
+// holds one, else the root of the git checkout holding the cwd, else null.
+function projectDirectory(cwd) {
+  if (fs.existsSync(path.join(cwd, 'package.json'))) return cwd;
+  for (let directory = cwd; path.dirname(directory) !== directory; directory = path.dirname(directory)) {
+    if (fs.existsSync(path.join(directory, '.git'))) return directory;
+  }
+  return null;
+}
+
+// The entry points of the project's package.json; empty when it names none or is missing.
+function projectEntryPoints(cwd) {
+  const directory = projectDirectory(cwd);
+  return (directory === null ? null : packageEntryPoints(directory)) ?? [];
+}
+
 // A named call qualifies once green, or holding its quote, after the last
 // edit, unless the Proof command names input this session wrote.
 function namesQualifyingRun(proof, lastEdit, writtenPaths) {
@@ -392,23 +416,37 @@ function namesQualifyingRun(proof, lastEdit, writtenPaths) {
   return proof.matching.some((call) => call.seq >= lastEdit && (call.green || (quoted && quoteInOutput(proof.quote, call.output))));
 }
 
-function proofProblem(proof, writtenPaths) {
+function proofProblem(proof, writtenPaths, entryPoints) {
   const quoted = `The Proof line "${proof.line.slice(0, 80)}"`;
   if (proof.matching.length === 0) return `${quoted} names a command or MCP tool this build turn never ran.`;
+  if (entryPoints.length > 0 && isTestRun(proof.command)) return `${quoted} names a test run, not the product.`;
   if (proofNamesWrittenInput(proof.command, writtenPaths)) {
     return `${quoted} ran the product on input this session wrote, not the repository's or the user's real input.`;
   }
   return `${quoted} has no green run after the last edit.`;
 }
 
+// The block reason's opening and fix: a package with entry points needs a
+// product run, else any test or product run does.
+function noGreenRunText(entryPoints) {
+  if (entryPoints.length === 0) return [NO_GREEN_RUN, NO_GREEN_RUN_FIX];
+  const runs = entryPoints.map((entryPoint) => `\`${entryPoint}\``).join(' or ');
+  return [
+    `The report claims Done, but no product run went green after the last edit; this package names a bin or start script, so it needs a green run of ${runs}, and a test run does not count.`,
+    `Run ${runs} on real input after the last edit, then report "Proof: <command> -> <result>", or report "Unverified: <reason>" without claiming Done.`
+  ];
+}
+
 // The report's outcome: null when it may end the turn, else the block reason
-// and the commands of the Proof lines that left it unproven.
-function verdict(report, rows, skillIndex) {
+// and the commands of the Proof lines that left it unproven. With entry points
+// a test run never qualifies.
+function verdict(report, rows, skillIndex, entryPoints) {
   const { calls, lastEdit } = scanTurn(rows, skillIndex);
   const writtenPaths = sessionWrittenPaths(rows, skillIndex);
   const proofs = proofLines(report).map((proof) => ({ ...proof, matching: matchingCalls(proof.command, calls) }));
-  const qualifying = calls.some((call) => call.seq >= lastEdit && call.green && isCheckRun(call))
-    || proofs.some((proof) => namesQualifyingRun(proof, lastEdit, writtenPaths));
+  const counts = (command) => entryPoints.length === 0 || !isTestRun(command);
+  const qualifying = calls.some((call) => call.seq >= lastEdit && call.green && isCheckRun(call) && counts(call.command))
+    || proofs.some((proof) => counts(proof.command) && namesQualifyingRun(proof, lastEdit, writtenPaths));
   if (!claimsDone(report)) {
     return qualifying || proofs.length > 0 || hasUnverifiedLine(report) ? null : { reason: MISSING_UNVERIFIED, named: [] };
   }
@@ -418,8 +456,9 @@ function verdict(report, rows, skillIndex) {
     return { reason: [FEEDBACK_MARKER, ...problems, CONTRADICTION_FIX].join(' '), named: contradicted.map((proof) => proof.command) };
   }
   if (qualifying) return null;
-  const problems = proofs.map((proof) => proofProblem(proof, writtenPaths));
-  return { reason: [FEEDBACK_MARKER, NO_GREEN_RUN, ...problems, NO_GREEN_RUN_FIX].join(' '), named: proofs.map((proof) => proof.command) };
+  const problems = proofs.map((proof) => proofProblem(proof, writtenPaths, entryPoints));
+  const [opening, fix] = noGreenRunText(entryPoints);
+  return { reason: [FEEDBACK_MARKER, opening, ...problems, fix].join(' '), named: proofs.map((proof) => proof.command) };
 }
 
 // The last assistant text in rows from the build call up to endIndex, or ''.
@@ -456,7 +495,7 @@ export function stopHook(input) {
   const lastMessage = input.last_assistant_message;
   const report = typeof lastMessage === 'string' && lastMessage.trim() ? lastMessage : lastReportBefore(rows, rows.length, skillIndex);
   if (!report) return null;
-  const outcome = verdict(report, rows, skillIndex);
+  const outcome = verdict(report, rows, skillIndex, projectEntryPoints(input.cwd || process.cwd()));
   if (outcome === null) return null;
   if (proofCheckBlockIndexes(rows, skillIndex).length < BLOCK_CEILING) return { decision: 'block', reason: outcome.reason };
   const named = outcome.named.length > 0 ? `Unverified: ${outcome.named.join(', ')} (no matching call after ${BLOCK_CEILING} blocks)` : `no Proof line backs its Done claim after ${BLOCK_CEILING} blocks`;

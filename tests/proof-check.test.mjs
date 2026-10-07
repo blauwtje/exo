@@ -52,11 +52,32 @@ function testRunnerTurn(report) {
   return transcript([SKILL_CALL, bashCall('toolu_bash1', 'npm test'), bashResult('toolu_bash1', '# tests 5\n# pass 5\n# fail 0'), finalReport(report)]);
 }
 
-test('passes a Done claim a green test run backs, whatever package.json names', () => {
+test('passes a Done claim a green test run backs when package.json names no bin and no start script', () => {
   const file = testRunnerTurn('**Done:** wired --status into bin/report.js.\nProof: npm test -> # pass 5');
-  for (const manifest of ['{"bin":"bin/report.js"}', '{"scripts":{"start":"node bin/report.js","test":"node --test"}}', LIBRARY, null, '{not json']) {
+  for (const manifest of [LIBRARY, null, '{not json']) {
     assert.equal(stopOutput({ transcript_path: file, cwd: project(manifest) }), '');
   }
+});
+
+test('blocks a Done claim only a test run backs when package.json names a bin or start script, naming the run it needs', () => {
+  const file = testRunnerTurn('**Done:** wired --status into bin/report.js.\nProof: npm test -> # pass 5');
+  const cases = [['{"bin":"bin/report.js"}', /`bin\/report\.js`/], ['{"bin":{"report":"bin/report.js"}}', /`report`/], ['{"scripts":{"start":"node bin/report.js","test":"node --test"}}', /`npm start`/]];
+  for (const [manifest, needed] of cases) {
+    const result = JSON.parse(stopOutput({ transcript_path: file, cwd: project(manifest) }));
+    assert.equal(result.decision, 'block');
+    assert.match(result.reason, /no product run went green after the last edit/);
+    assert.match(result.reason, needed);
+    assert.match(result.reason, /names a test run, not the product/);
+  }
+});
+
+test('reads the git checkout root\'s package.json when the cwd holds none', () => {
+  const root = project('{"bin":"bin/report.js"}');
+  fs.mkdirSync(path.join(root, '.git'));
+  fs.mkdirSync(path.join(root, 'src'));
+  const result = JSON.parse(stopOutput({ transcript_path: testRunnerTurn('**Done:** wired --status.\nProof: npm test -> # pass 5'), cwd: path.join(root, 'src') }));
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /`bin\/report\.js`/);
 });
 
 test('blocks an unrun or contradicted test-runner Proof', () => {
