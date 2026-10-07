@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Use when the user asks to set up or configure exo, or to see or change one exo setting, such as where specs go or the read guard. Not for the harness's own settings.json, permissions or hooks.
+description: Use when the user asks to set up or configure exo, or to see or change one exo setting, such as where specs go or the guards. Not for the harness's own settings.json, permissions or hooks.
 argument-hint: "[nothing to walk every setting, or a key, a value and --scope project|local]"
 allowed-tools: Bash(node *settings.mjs*), Bash(git remote get-url origin), Bash(git rev-parse *), Bash(gh auth status)
 model: sonnet
@@ -28,13 +28,7 @@ Take the first step whose answer the request and the letters so far leave open.
 1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
    - A topic letter runs `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
-   - The Slow commands letter in `menu safety` runs `menu slow`, relayed the same way.
-   - That menu's options follow the order of the blocks above them.
-3. **Ask the value** once the setting is known but no value: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts, by key:
-   - `guard_lines`: a whole number of at least 1.
-   - `heavy_after_seconds`: a whole number of at least 0.
-   - `heavy_commands`: command prefixes joined by `;`.
-   - `ship`: a value its context line names.
+3. **Ask the value** once the setting is known but no value: run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts for `ship`: a value its context line names.
 4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
    ```text
    **Who should this apply to?**
@@ -50,13 +44,6 @@ Take the first step whose answer the request and the letters so far leave open.
    - Relay a rejection as the script printed it and change nothing by hand.
    - A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
 6. **Point** a global value at `/config`, where each exo option is a row, and run nothing.
-
-- `heavy_commands` runs a Bash command that starts with a listed prefix once per code state across sessions.
-- A second session waits for the first, and a green result holds 24 hours.
-- `EXO_HEAVY_FORCE=1 <command>` forces a run.
-- `heavy_after_seconds` (default 60, `0` off) treats a test-like Bash command as heavy once its last run in the project took longer.
-- A command is test-like when its program or script name holds `test`, `e2e`, `check`, `lint` or `verify`; a path, URL or later argument does not count.
-- It never learns `--watch`, `--ui`, `--headed`, `dev`, `serve`, `start`, `install`, `deploy`, `build`, `EXO_HEAVY_FORCE`, `until`, `while` or `sleep` loops, or remote-state programs (`gh`, `curl`, `ssh`, `git`, `docker`, …), because their result does not follow the code.
 
 ## The walk
 
