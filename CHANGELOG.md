@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.98.0 - 2026-10-07
+
 ### Added
 
 - The sweep's flow set gains `flow-base`, a no-plugin baseline cell on the same plan as `flow-c7`; `benchmarks/flow-check.mjs` scores both against 17 hidden tests in `benchmarks/flow-hidden/` (proven to fail on the seed and pass on the reference), and `benchmarks/flow-report.mjs` prints per-arm landed tasks, hidden pass, defects, tokens, cost and wall time with a 2-standard-error verdict.
