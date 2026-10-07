@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.104.0 - 2026-10-07
+
 ### Added
 
 - `verify.mjs` checks each landed task's claims against its commit: it fails a task whose `Files:` paths did not change or whose test-first commit touches no test file, and warns on a removed `expect(` or `assert` line and an added `.skip` or `.only`.
