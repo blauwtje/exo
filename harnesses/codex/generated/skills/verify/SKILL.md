@@ -8,13 +8,13 @@ description: "Use when a plan's tasks are landed and its branch needs the gate b
 ## The loop
 
 1. **Run the gate.** Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/verify/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
+   - With no plan file, end the turn: ask for its path and name `build`'s no-plan route, never hand-run checks or `ship`.
    - It runs each landed task's Proof command, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate.
    - It then runs the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, or `npm test` with no `check` script.
    - `Land gate: none` prints `UNRUN success-criterion`, not `PASS`.
-   - It runs the stray-path check against `base`.
-   - It prints one `REVIEWER: <agent>` or `REVIEWER: none (inline route)` line, then one `DONE` or `OPEN` line per task and one `MANUAL` line per `## Manual checks` bullet.
+   - It prints one `REVIEWER: <agent>` or `REVIEWER: none (inline route)` line, then `DONE` or `OPEN` per task and `MANUAL` per manual check.
    - A `FAIL` or `STRAY` line ends the turn with the script's own report, and nothing here reruns its checks.
-   - A `SESSION <check>` line, `<check>` being `Task <n>` or `success-criterion`, names an `mcp:<tool> <args>` call the script never runs: call the `mcp__<server>__<tool>` tool with those args yourself, never through Bash.
+   - A `SESSION <check>` line names an `mcp:<tool> <args>` call the script never runs: call the `mcp__<server>__<tool>` tool with those args yourself, never through Bash.
    - Record that call as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; a `FAIL` ends the turn like the script's own.
    - With no `mcp__*__<tool>` tool in this session, record `UNRUN <check>`, not `PASS`, and list it in the turn's report.
 2. **Review the branch.** `REVIEWER: none` skips steps 2-3, never step 1; go to step 4.
