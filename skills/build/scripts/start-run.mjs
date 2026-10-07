@@ -12,7 +12,9 @@
 // `--find-only` only resolves and prints the plan: the workspace decision
 // reads the plan's `Repository:` and `Branch:` lines before the run's
 // checkout is known, so it runs before the starting call.
-// `--find-only` prints the picked plan's absolute path. The starting call
+// `--find-only` prints the picked plan's absolute path, then its
+// `Repository:` and `Branch:` lines (`none` when absent), so the session
+// never opens the plan for them. The starting call
 // prints one `run started` line naming the plan, checkout and branch, plus a
 // note when the checkout's branch is not the plan's `Branch:`. A refusal
 // (zero or several plans, a `--checkout` that is not a checkout) exits 1 with
@@ -90,7 +92,8 @@ function main(argv) {
   const root = flags.root ?? process.cwd();
   const planPath = flags.plan ? path.resolve(flags.plan) : resolvePlan(root);
   if (flags['find-only']) {
-    process.stdout.write(`${planPath}\n`);
+    const frame = planFrame(planPath);
+    process.stdout.write(`${planPath}\nRepository: ${frame?.repository ?? 'none'}\nBranch: ${frame?.branch ?? 'none'}\n`);
     return;
   }
   const checkout = flags.checkout ?? root;

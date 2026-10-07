@@ -48,13 +48,13 @@ test('every review dispatch names the agents the printed reviewer picks and no m
   }
 });
 
-test('every build goes to the implementer agent, and a design build with a named direction loads design-ui in-session', () => {
+test('every build goes to the implementer agent, and a design build with a named direction goes to one design-ui delegate', () => {
   const unit = fs.readFileSync(path.join(skillsRoot, '..', 'agents', 'run-unit.md'), 'utf8');
   const dispatchStep = unit.match(/^3\. \*\*Dispatch the build\.\*\*.+$/m)[0];
   assert.ok(dispatchStep.includes('Each build goes to the `exo:build-task` agent'));
   const designTasks = fs.readFileSync(path.join(skillsRoot, 'build', 'references', 'design-tasks.md'), 'utf8');
-  const designRoute = designTasks.match(/^- \*\*It names the chosen direction\.\*\*.+$/m)[0];
+  const designRoute = designTasks.match(/^- \*\*`direction named`\.\*\*.+$/m)[0];
   assert.ok(!designRoute.includes('`exo:build-task` agent'), 'a design build with a named direction does not go to the implementer agent');
-  assert.ok(designRoute.includes('This session loads `design-ui` itself'), 'a design build with a named direction loads design-ui in-session');
-  assert.ok(designRoute.includes('Route rung 2'), 'a design build with a named direction enters design-ui at rung 2');
+  assert.ok(designRoute.includes('Dispatch one `general-purpose` delegate'), 'a design build with a named direction goes to one delegate');
+  assert.ok(designTasks.includes('Load `design-ui` and enter it at Route rung 2.'), 'the delegate enters design-ui at rung 2');
 });

@@ -259,7 +259,7 @@ test('the implementer pins its kind\'s model and effort whatever the session run
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
-test('a Design: task with a named direction stays in the build session, not the implementer', () => {
+test('a Design: task with a named direction goes to a design-ui delegate, not the implementer', () => {
   const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
   assert.ok(implementer, 'agents/build-task.md exists');
   assert.doesNotMatch(implementer.body, /enter it at its Build phase/);

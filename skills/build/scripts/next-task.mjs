@@ -158,16 +158,26 @@ function parseTasks(planPath, planText) {
   return plan;
 }
 
-// The line `--block` prints: the next block, a `Design:` task the session
-// routes itself, or none when every task landed.
-function blockLine(block) {
+// How settled the plan's `## Visual direction` is, so the build session
+// routes a `Design:` task without reading that section: `named` for a frozen
+// `Contract:`, the `pending at rung <n>` design-ui recorded, else `none`.
+function directionOf(visualDirection) {
+  const pending = visualDirection?.match(/Direction: (pending at rung \d+)/);
+  if (pending) return pending[1];
+  return /Contract: /.test(visualDirection ?? '') ? 'named' : 'none';
+}
+
+// The line `--block` prints: the next block, a `Design:` task with its
+// direction, or none when every task landed.
+function blockLine(block, visualDirection) {
   if (block.length === 0) return waveLine(block);
-  if (block[0].design) return `Design: Task ${block[0].number}`;
+  if (block[0].design) return `Design: Task ${block[0].number}, direction ${directionOf(visualDirection)}`;
   return `Block: ${block.map((task) => `Task ${task.number}`).join(', ')}`;
 }
 
 // Reads no task section and writes no brief: the build session dispatches
-// the block to run-unit, which runs this script without `--block`.
+// the block to run-unit, which runs this script without `--block`, and a
+// `Design:` task by its direction per design-tasks.md.
 export function blockReport({ planPath, planText, root }) {
   const plan = parseTasks(planPath, planText);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
@@ -175,7 +185,7 @@ export function blockReport({ planPath, planText, root }) {
     `Plan: ${planPath}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
     routeLine(planRoute(plan.tasks)),
-    blockLine(nextBlock(plan.tasks, landed))
+    blockLine(nextBlock(plan.tasks, landed), frameOf(plan.frame).visualDirection)
   ].join('\n')}\n`;
 }
 

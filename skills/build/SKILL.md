@@ -40,9 +40,9 @@ effort: medium
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line; `exo:run-unit` reads it too. |
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
-| `bug-fixer-prompt.md` | Never here: the loop's step 5 reads it, on a failed check. |
+| `bug-fixer-prompt.md` | Step 6, on a failed deferred MCP call; the unit reads it too. |
 | `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
-| `references/design-tasks.md` | Step 4, for a task with a `Design:` line. |
+| `references/design-tasks.md` | Step 4, for a `Design:` line; its `## The delegate` is never here. |
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
 | `references/critique.md` | No spec step 7's last fallback. |

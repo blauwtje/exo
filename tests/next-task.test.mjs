@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
+import { blockReport, frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
 import { BLOCK_TASK_LIMIT } from '#plan-tasks';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
@@ -320,3 +320,21 @@ test('with every task landed, the report reads Next: none and never Next phase:'
   assert.doesNotMatch(report, /^Next phase:/m);
 });
 
+
+test('--block prints a Design: task with its direction, so the session never reads the Visual direction', async () => {
+  const { root, planPath } = await checkout();
+  land(root, 1, 'feat(app): greet');
+  land(root, 3, 'feat(app): wave');
+  const directions = [
+    ['Quiet record.', 'none'],
+    ['Contract: docs/design/direction.json', 'named'],
+    ['Direction: pending at rung 3, the brief names the user as chooser.', 'pending at rung 3']
+  ];
+  for (const [section, direction] of directions) {
+    const planText = PLAN.replace('Quiet record.', section);
+    const report = blockReport({ planPath, planText, root });
+    assert.match(report, new RegExp(`^Design: Task 2, direction ${direction}$`, 'm'));
+    assert.doesNotMatch(report, /Quiet record|Contract:|Brief:/);
+  }
+  await assert.rejects(fs.access(briefPath(root, 2)), { code: 'ENOENT' });
+});
