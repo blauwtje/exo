@@ -66,6 +66,10 @@ test('the tail pushes only through the finish question', () => {
   const firstRoute = SHIPPING.indexOf('scripts/ship.mjs" --route ');
   const firstMerge = SHIPPING.indexOf('scripts/ship.mjs" --merge ');
   assert.ok(question !== -1 && firstRoute > question && firstMerge > question, 'the commands that push or merge are named only after the question');
+  const finishStep = loopStep(4, VERIFY);
+  assert.ok(finishStep.includes('End on `ship`, unless a request or plan rules out a push'), 'verify loads no ship when nothing may leave the machine');
+  assert.ok(finishStep.includes('nothing left the machine'), 'the skipped finish reports that nothing left the machine');
+  assert.ok(NO_SPEC.includes('end on `ship`, unless the request rules out a push'), 'the no-spec route skips ship the same way');
   // The routes and their order come from `ship.mjs --routes`, run against
   // real repositories in tests/ship-routes.test.mjs ('--routes: a feature
   // branch with gh auth ok offers the full menu').
