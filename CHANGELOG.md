@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.99.0 - 2026-10-07
+
 ### Added
 
 - `benchmarks/score.mjs` and `benchmarks/flow-report.mjs` print cost per success per arm: the spend of every cell, failed and timed-out cells included, divided by the passing cells, or `none` when no cell passes.
