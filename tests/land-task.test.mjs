@@ -411,12 +411,35 @@ test('a long-format task lands on its passing Run: commands, skipping a red step
   assert.deepEqual(record.proofs, ['node tests/app.test.mjs']);
 });
 
-test('a landing records each passed proof as the report\'s Proof line, its command and last output line', async () => {
+test('a landing records each passed proof as the report\'s Proof line, its command, exit status and pass count', async () => {
   const { root, planPath } = await compactCheckout(LONG_PLAN);
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   const record = await fs.readFile(path.join(root, '.exo/proof-compact-task-1.txt'), 'utf8');
-  assert.equal(record, 'Proof: `node tests/app.test.mjs` -> # fail 0\n');
+  assert.equal(record, 'Proof: `node tests/app.test.mjs` -> exit 0, # pass 3\n');
+});
+
+// The proof record of a long-format task whose passing Run: command prints `output`.
+async function proofRecordFor(output) {
+  const command = output === '' ? 'true' : `printf '${output}'`;
+  const { root, planPath } = await compactCheckout(LONG_PLAN.replace('Run: `node tests/app.test.mjs`', `Run: \`${command}\``));
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  return fs.readFile(path.join(root, '.exo/proof-compact-task-1.txt'), 'utf8');
+}
+
+test('a node --test proof records its pass count, not the closing duration line', async () => {
+  const record = await proofRecordFor('✔ greet\\nℹ tests 3\\nℹ pass 3\\nℹ fail 0\\nℹ duration_ms 41.2\\n');
+  assert.equal(record, "Proof: `printf '✔ greet\\nℹ tests 3\\nℹ pass 3\\nℹ fail 0\\nℹ duration_ms 41.2\\n'` -> exit 0, ℹ pass 3\n");
+});
+
+test('a proof with no pass count records its last output line that is not timing', async () => {
+  const record = await proofRecordFor('built 2 files\\nDone in 0.4s\\n');
+  assert.equal(record, "Proof: `printf 'built 2 files\\nDone in 0.4s\\n'` -> exit 0, built 2 files\n");
+});
+
+test('a proof with no output records its exit status alone', async () => {
+  assert.equal(await proofRecordFor(''), 'Proof: `true` -> exit 0, no output\n');
 });
 
 test('a long-format task whose Run: command fails is refused with its exit status and output, and commits nothing', async () => {

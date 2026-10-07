@@ -327,16 +327,16 @@ test('--proofs prints each landed task\'s recorded Proof lines and the decision 
   land(root, 1, 'feat(app): greet');
   land(root, 3, 'feat(app): wave');
   await fs.mkdir(path.join(root, '.exo'), { recursive: true });
-  await fs.writeFile(path.join(root, '.exo/proof-fixture-task-1.txt'), 'Proof: `node --test` -> # fail 0\n');
+  await fs.writeFile(path.join(root, '.exo/proof-fixture-task-1.txt'), 'Proof: `node --test` -> exit 0, ℹ pass 3\n');
   const decisions = path.join(root, 'docs/plans/fixture-decisions.md');
   await fs.writeFile(decisions, 'Task 1 abc1234: kept the default\n');
   assert.equal(proofsReport({ planPath, planText: PLAN, root }), [
-    'Proof: `node --test` -> # fail 0',
+    'Proof: `node --test` -> exit 0, ℹ pass 3',
     'No proof: Task 3 landed with no land-task record',
     `Decisions: ${decisions}`
   ].join('\n') + '\n');
   const result = await run(SCRIPT, ['--proofs', '--plan', planPath, '--root', root], { cwd: root });
-  assert.match(result.stdout, /^Proof: `node --test` -> # fail 0$/m);
+  assert.match(result.stdout, /^Proof: `node --test` -> exit 0, ℹ pass 3$/m);
 });
 
 test('--block prints a Design: task with its direction, so the session never reads the Visual direction', async () => {

@@ -10,7 +10,7 @@
 // `Run:` command a step expects to pass passes the same way; its report is not read. A
 // `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short name,
 // lands on its `<command>: deferred` line instead and prints `Pending: mcp:<tool> <args>`
-// for the session to run. Each passed proof's command and last output line go to
+// for the session to run. Each passed proof's command, exit status and outcome line go to
 // `.exo/proof-<plan id>-task-<n>.txt`, which `next-task.mjs --proofs` prints. Above eight tasks each `Choice:` line of the
 // report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
@@ -410,11 +410,24 @@ function writeLandGateRecord({ root, planId, gate, proofs }) {
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
 
-// The report's `Proof: <command> -> <output>` line for each proof this landing passed, its output the
-// last line the command printed, so the session reports proofs from script output and never reruns them.
+// A test runner's pass count (`ℹ pass 3`, `# pass 3`, `3 passing`, `Tests: 3 passed`), the line
+// that says what the proof showed; a timing line (`ℹ duration_ms 41`, `Done in 0.4s`) says nothing.
+const PASS_SUMMARY_LINE = /^(?:ℹ |# )?pass \d+\b|\b\d+ (?:passing|passed)\b|^Tests:/;
+const TIMING_LINE = /^(?:ℹ |# )?duration_ms\b|^(?:Time|Duration|Done in)\b/;
+
+// A passed proof's outcome in one line: its exit status, then its pass-count line, else its
+// last line that is not timing.
+function proofOutcomeOf(tail) {
+  const lines = tail.map((line) => line.trim()).filter((line) => !TIMING_LINE.test(line));
+  const outcome = lines.findLast((line) => PASS_SUMMARY_LINE.test(line)) ?? lines.at(-1) ?? 'no output';
+  return `exit 0, ${outcome}`;
+}
+
+// The report's `Proof: <command> -> <outcome>` line for each proof this landing passed, so the
+// session reports proofs from script output and never reruns them.
 function writeProofRecord({ root, planId, number, proofs }) {
   if (proofs.length === 0) return;
-  const lines = proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${tail.at(-1)?.trim() ?? 'exit 0, no output'}\n`);
+  const lines = proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${proofOutcomeOf(tail)}\n`);
   const record = proofRecordPath(root, planId, number);
   fs.mkdirSync(path.dirname(record), { recursive: true });
   fs.writeFileSync(record, lines.join(''));
