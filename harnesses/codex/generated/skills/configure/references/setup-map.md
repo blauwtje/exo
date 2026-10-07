@@ -12,7 +12,7 @@
 
 ## The order
 
-`scope`, `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`, `guard_lines`, `heavy_commands`, `heavy_after_seconds`. `scope` decides the layer for every setting after it.
+`scope`, `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`. `scope` decides the layer for every setting after it.
 
 | Option of `scope` | What it gives |
 |---|---|
@@ -28,7 +28,6 @@ Ask each setting with the plain texts its entry in `../schema.json` holds, never
 - The first option is the current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry, because a recommended answer that changes a value turns the answer `a` into a change the user never read; a value with no entry shows as written.
 - Every other `choices` entry follows as `- **(<letter>) <label>**: <gives>`, then `Keep the rest`, which keeps every setting not yet asked.
 - `scope` has no `Keep the rest`.
-- An unset `guard_lines` shows `400` (the default) as its current value.
 
 A value that is the current one appears only as the keep answer.
 

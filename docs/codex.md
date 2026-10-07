@@ -50,7 +50,7 @@ Codex has no equivalent for some Claude Code features, so exo drops or approxima
 
 | Feature | On Codex |
 |---|---|
-| Read guard, repeat guard on `Edit` and `Write`, delegate budget, terse display filter | Dropped. Codex has no `Read` tool, no `MessageDisplay` event and a different transcript. |
+| Delegate budget | Dropped. Codex has a different transcript. |
 | Output style `scannable` | Injected at session start, because Codex has no output styles. |
 | An agent's tool allowlist | Becomes a `read-only` or `workspace-write` sandbox. |
 | `maxTurns` | No field. |

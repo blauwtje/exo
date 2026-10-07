@@ -94,12 +94,11 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 
 | When Claude | exo answers |
 |---|---|
-| tries to read a 1,812-line file in one go | `exo read guard: src/server.ts has 1812 lines and a read above 400 lines is refused (this one asks the whole file); locate the range first, then read it with offset and a limit of at most 400.` |
 | tries `git push --force` | `git-guard: force push discards remote history. Use --force-with-lease, or ask the user to run it.` |
 | writes "The hook is not reading the setting, so the reminder never fires." | Under `replies=terse`, that reply reads "Hook not reading setting → reminder never fires." |
 | gets a bug report | `find-cause` builds a reproduction that fails on demand and names one cause before anything is fixed. |
 
-These hold in every session without a skill. Searches and reviews run in helpers, so their file dumps stay out of your context. The read guard refuses a file over 400 lines in one go, and six Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all nine settings.
+These hold in every session without a skill. Searches and reviews run in helpers, so their file dumps stay out of your context. Five Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all six settings.
 
 ## More
 

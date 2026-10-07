@@ -15,7 +15,6 @@ exo writes the word in the first column. It understands the second but does not 
 | brief | spec document, requirements | What `spec` writes: a file, an issue, or both. |
 | plan, task, step | ticket, story, epic | A plan holds tasks, a task holds steps. One task lands in one commit. |
 | artifact | deliverable, output | The file a stage leaves behind for the next stage to open. |
-| read guard | file limit, truncation | Refuses to read a large file and says so. It never returns part of a file as if it were all of it. |
 | direction | theme, style, look | The one visual direction `design-ui` picks and builds against. |
 | observable boundary | test surface, hook point | The point a test-first `build` reads its results from, agreed before the first test. |
 | decision map | question list, backlog | Every open decision in `spec`, with what it waits on and who closed it. |
