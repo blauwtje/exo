@@ -20,6 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
+import { checkFlow } from './flow-check.mjs';
 import { claudeArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
@@ -130,10 +131,27 @@ function landedTasks(repository) {
   return new Set(messages.match(/^Plan-task: \d+$/gm) ?? []).size;
 }
 
-function measureFlow(repository, review, usage) {
+// The hidden check reads the finished code, so it runs before the repository
+// is removed; a check that throws leaves the cell a record with no landed count.
+async function measureFlow(repository, review, usage) {
   const transcript = usage === null ? '' : fs.readFileSync(usage.transcript, 'utf8');
-  const detail = `${landedTasks(repository)}/${FLOW_TASK_COUNT} tasks landed, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}`;
-  return { defectsFound: review.counts === null ? null : review.counts.defect, falseAlarms: null, detail };
+  let check;
+  try {
+    check = await checkFlow(repository);
+  } catch (error) {
+    check = { total: FLOW_TASK_COUNT, landed: null, pass: false, defects: [`flow check failed: ${error.message}`] };
+  }
+  const landed = check.landed === null ? 'unknown' : `${check.landed}/${check.total}`;
+  const detail = `${landed} tasks landed (${landedTasks(repository)}/${FLOW_TASK_COUNT} Plan-task trailers), hidden check ${check.pass ? 'pass' : 'fail'}, ${countDriftReports(transcript)} drift reports, review verdict ${review.verdict ?? 'none'}`;
+  return {
+    defectsFound: review.counts === null ? null : review.counts.defect,
+    falseAlarms: null,
+    detail,
+    landed: check.landed,
+    total: check.total,
+    hiddenPass: check.pass,
+    defects: check.defects
+  };
 }
 
 // A plan cell starts without docs/plans/, so the newest file there is its plan.

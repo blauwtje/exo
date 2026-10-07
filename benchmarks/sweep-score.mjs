@@ -120,7 +120,7 @@ function planLine(records) {
 }
 
 function flowLine(records) {
-  const flow = records.find((record) => record.kind === 'flow');
+  const flow = records.find((record) => record.id === 'flow-c7');
   if (flow === undefined) return 'The whole-flow cell did not run.';
   return `Whole flow (C7) on ${flow.model} at ${flow.effort}: ${flow.detail}; ${shown(flow.defectsFound)} review defects, ${money(flow.costUsd)}, ${seconds(flow)}.`;
 }

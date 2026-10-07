@@ -184,25 +184,38 @@ function planCells() {
   }));
 }
 
-function flowCell() {
-  return {
-    id: 'flow-c7',
+// The exo arm runs the plan through build; the baseline arm gets the same plan
+// and branch with no plugin loaded, so the pair differ only in exo.
+function flowCells() {
+  const shared = {
     kind: 'flow',
     task: null,
     variant: null,
     source: null,
     model: SWEEP_MODELS.sonnet,
     effort: 'high',
-    prompt: `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`,
     appendSystemPrompt: null,
     disallowedTools: [],
     budgetUsd: '25',
     timeoutMs: 120 * MINUTE_MS
   };
+  return [
+    {
+      ...shared,
+      id: 'flow-c7',
+      prompt: `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
+    },
+    {
+      ...shared,
+      id: 'flow-base',
+      plugin: false,
+      prompt: `Implement every task in ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
+    }
+  ];
 }
 
 export function sweepCells() {
-  return [...reviewCells(reviewerPrompt()), ...buildCells(), ...fixerCells(), ...planCells(), flowCell()];
+  return [...reviewCells(reviewerPrompt()), ...buildCells(), ...fixerCells(), ...planCells(), ...flowCells()];
 }
 
 export function selectCells(cells, setNames) {
@@ -213,12 +226,13 @@ export function selectCells(cells, setNames) {
   return cells.filter((cell) => setNames.includes(cell.kind));
 }
 
-// Every call names this clone as its plugin and the cell's own model and
-// effort, so no cell falls back to an effort a settings file or session holds.
+// Every call names this clone as its plugin, except a cell marked `plugin: false`,
+// and the cell's own model and effort, so no cell falls back to an effort a
+// settings file or session holds.
 export function claudeArguments(cell) {
   const args = [
     '-p', cell.prompt,
-    '--plugin-dir', ROOT,
+    ...(cell.plugin === false ? [] : ['--plugin-dir', ROOT]),
     '--model', cell.model,
     '--effort', cell.effort,
     '--permission-mode', 'bypassPermissions',

@@ -14,14 +14,14 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 47 calls: 33 review, 5 build, 5 fixer, 3 plan and 1 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 47);
+test('the full set makes 48 calls: 33 review, 5 build, 5 fixer, 3 plan and 2 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 48);
   assert.equal(selectCells(cells, ['review']).length, 33);
   assert.equal(selectCells(cells, ['build']).length, 5);
   assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
-  assert.equal(selectCells(cells, ['flow']).length, 1);
-  assert.equal(selectCells(cells, ['plan', 'flow']).length, 4);
+  assert.equal(selectCells(cells, ['flow']).length, 2);
+  assert.equal(selectCells(cells, ['plan', 'flow']).length, 5);
 });
 
 test('an unknown set name stops the selection', () => {
@@ -29,7 +29,7 @@ test('an unknown set name stops the selection', () => {
 });
 
 test('every call names this clone as plugin, the cell model and the cell effort', () => {
-  for (const cell of cells) {
+  for (const cell of cells.filter((candidate) => candidate.id !== 'flow-base')) {
     const args = claudeArguments(cell);
     assert.equal(flagValue(args, '--plugin-dir'), ROOT, cell.id);
     assert.equal(flagValue(args, '--model'), cell.model, cell.id);
@@ -43,7 +43,19 @@ test('the cells follow the routing under test', () => {
   assert.deepEqual([...new Set(pairs('build'))], [`${SWEEP_MODELS.sonnet} high`]);
   assert.deepEqual([...new Set(pairs('fixer'))], [`${SWEEP_MODELS.sonnet} high`]);
   assert.deepEqual(pairs('plan'), [`${SWEEP_MODELS.opus} high`, `${SWEEP_MODELS.fable} high`, `${SWEEP_MODELS.fable} xhigh`]);
-  assert.deepEqual(pairs('flow'), [`${SWEEP_MODELS.sonnet} high`]);
+  assert.deepEqual(pairs('flow'), [`${SWEEP_MODELS.sonnet} high`, `${SWEEP_MODELS.sonnet} high`]);
+});
+
+test('the flow baseline runs the plan with no plugin and the exo flow cell keeps it', () => {
+  const [exo, baseline] = selectCells(cells, ['flow']);
+  assert.deepEqual([exo.id, baseline.id], ['flow-c7', 'flow-base']);
+  assert.equal(flagValue(claudeArguments(exo), '--plugin-dir'), ROOT);
+  assert.equal(claudeArguments(baseline).includes('--plugin-dir'), false);
+  assert.equal(claudeArguments(baseline).includes(ROOT), false);
+  for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(baseline[key], exo[key], key);
+  assert.ok(baseline.prompt.startsWith(`Implement every task in ${FLOW_PLAN}.`));
+  assert.ok(!baseline.prompt.includes('exo:'));
+  assert.ok(cells.filter((cell) => cell.id !== 'flow-base').every((cell) => cell.plugin !== false));
 });
 
 test('every fixture is reviewed seeded and as a control at each effort', () => {
