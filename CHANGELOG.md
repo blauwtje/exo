@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.103.1 - 2026-10-07
+
 ### Changed
 
 - A plan of at most four long-format tasks with pasted code, disjoint files and no `Design:` takes the inline route again, built by the lead with no `exo:run-unit` dispatch; every larger plan keeps `Route: unit`.
