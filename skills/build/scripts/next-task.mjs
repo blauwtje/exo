@@ -6,12 +6,14 @@
 // the checkout's scratch directory, so the section reaches only build-task
 // and stays out of the session. `--block` prints only the landed set and the
 // next run-unit block, for the build session, which never reads the plan.
+// `--proofs` prints each landed task's `Proof:` lines as land-task recorded
+// them and the decision log's path, for the build report.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, taskSize, waveLine } from '#plan-tasks';
+import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, taskSize, waveLine } from '#plan-tasks';
 
 // lib/delegate-budgets.json holds the build-task delegate's budget, its default
 // entry merged with its exo:build-task override; reading it here keeps one
@@ -189,6 +191,20 @@ export function blockReport({ planPath, planText, root }) {
   ].join('\n')}\n`;
 }
 
+// The report's proof lines, read from land-task's records instead of rerun, so
+// the session reads no plan, test or script to name a landed task's proof.
+export function proofsReport({ planPath, planText, root }) {
+  const plan = parseTasks(planPath, planText);
+  const planId = planIdOf(planPath);
+  const lines = landedTasks(plan.tasks, root, planId).map((number) => {
+    const record = proofRecordPath(root, planId, number);
+    return fs.existsSync(record) ? fs.readFileSync(record, 'utf8').trimEnd() : `No proof: Task ${number} landed with no land-task record`;
+  });
+  const decisions = decisionsPathOf(planPath);
+  if (fs.existsSync(decisions)) lines.push(`Decisions: ${decisions}`);
+  return lines.length === 0 ? 'Landed: none\n' : `${lines.join('\n')}\n`;
+}
+
 // Writes a brief file for each task of the next wave and returns the report
 // that names them.
 export function nextTaskReport({ planPath, planText, root }) {
@@ -211,7 +227,7 @@ export function nextTaskReport({ planPath, planText, root }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
@@ -219,7 +235,9 @@ function main(argv) {
     process.stdout.write(frameOnlyReport(planText));
     return;
   }
-  const report = flags.block ? blockReport : nextTaskReport;
+  let report = nextTaskReport;
+  if (flags.block) report = blockReport;
+  if (flags.proofs) report = proofsReport;
   process.stdout.write(report({ planPath: flags.plan, planText, root: flags.root ?? process.cwd() }));
 }
 

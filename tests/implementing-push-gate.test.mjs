@@ -105,3 +105,10 @@ test('find-cause settles the workspace and ends on ship', () => {
   assert.ok(text.includes('ends on `ship`') || text.includes('end on `ship`'), 'find-cause names the finish');
   assert.ok(!text.includes('git push'), 'find-cause runs no push of its own');
 });
+
+test('the tail takes its Proof lines and the decision log path from next-task --proofs, not from the plan or checkout', () => {
+  const tailStep = loopStep(7, TAIL);
+  assert.ok(tailStep.includes('next-task.mjs" --proofs'), 'step 7 names the script that prints the landed proofs');
+  assert.ok(tailStep.includes('Never rerun a proof'), 'step 7 bans rerunning or reading for proofs');
+  assert.ok(tailStep.includes('`Decisions:` line goes in the report as a path, unread'), 'step 7 names the decision log by path only');
+});

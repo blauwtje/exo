@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { blockReport, frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
+import { blockReport, frameOnlyReport, nextTaskReport, proofsReport } from '../skills/build/scripts/next-task.mjs';
 import { BLOCK_TASK_LIMIT } from '#plan-tasks';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
@@ -320,6 +320,24 @@ test('with every task landed, the report reads Next: none and never Next phase:'
   assert.doesNotMatch(report, /^Next phase:/m);
 });
 
+
+test('--proofs prints each landed task\'s recorded Proof lines and the decision log path, so the session reads neither plan nor log', async () => {
+  const { root, planPath } = await checkout();
+  assert.equal(proofsReport({ planPath, planText: PLAN, root }), 'Landed: none\n');
+  land(root, 1, 'feat(app): greet');
+  land(root, 3, 'feat(app): wave');
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/proof-fixture-task-1.txt'), 'Proof: `node --test` -> # fail 0\n');
+  const decisions = path.join(root, 'docs/plans/fixture-decisions.md');
+  await fs.writeFile(decisions, 'Task 1 abc1234: kept the default\n');
+  assert.equal(proofsReport({ planPath, planText: PLAN, root }), [
+    'Proof: `node --test` -> # fail 0',
+    'No proof: Task 3 landed with no land-task record',
+    `Decisions: ${decisions}`
+  ].join('\n') + '\n');
+  const result = await run(SCRIPT, ['--proofs', '--plan', planPath, '--root', root], { cwd: root });
+  assert.match(result.stdout, /^Proof: `node --test` -> # fail 0$/m);
+});
 
 test('--block prints a Design: task with its direction, so the session never reads the Visual direction', async () => {
   const { root, planPath } = await checkout();

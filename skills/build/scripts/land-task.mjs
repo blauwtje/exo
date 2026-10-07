@@ -10,7 +10,8 @@
 // `Run:` command a step expects to pass passes the same way; its report is not read. A
 // `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short name,
 // lands on its `<command>: deferred` line instead and prints `Pending: mcp:<tool> <args>`
-// for the session to run. Above eight tasks each `Choice:` line of the
+// for the session to run. Each passed proof's command and last output line go to
+// `.exo/proof-<plan id>-task-<n>.txt`, which `next-task.mjs --proofs` prints. Above eight tasks each `Choice:` line of the
 // report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
 // review-fix or bug-fix commit: it stages every changed path and commits it
 // with the given subject, no task, plan or trailer needed. A task whose
@@ -24,7 +25,7 @@ import { realpathSync } from 'node:fs';
 import { exportSignatures } from '#export-signatures';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, routeLine, waveLine } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
 
@@ -253,18 +254,12 @@ function runProof(task, command, root, field) {
     cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
   });
   const tail = (proofRun.stdout ?? '').split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
-  if (proofRun.status === 0) return [`${command}: pass (exit 0)`, ...tail].join('\n');
+  if (proofRun.status === 0) return { command, tail };
   let reason = `exit ${proofRun.status}`;
   if (proofRun.error?.code === 'ETIMEDOUT') reason = `timed out after ${PROOF_TIMEOUT_MS / 1000}s`;
   else if (proofRun.error !== undefined) reason = `spawn error ${proofRun.error.message}`;
   else if (proofRun.signal !== null) reason = `signal ${proofRun.signal}`;
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${reason}):`, ...tail].join('\n'));
-}
-
-// `<plan stem>-decisions.md` beside the plan.
-function decisionsPathOf(planPath) {
-  const { dir, name } = path.parse(planPath);
-  return path.join(dir, `${name}-decisions.md`);
 }
 
 const CHOICE_LINE = /^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
@@ -415,6 +410,16 @@ function writeLandGateRecord({ root, planId, gate, proofs }) {
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
 
+// The report's `Proof: <command> -> <output>` line for each proof this landing passed, its output the
+// last line the command printed, so the session reports proofs from script output and never reruns them.
+function writeProofRecord({ root, planId, number, proofs }) {
+  if (proofs.length === 0) return;
+  const lines = proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${tail.at(-1)?.trim() ?? 'exit 0, no output'}\n`);
+  const record = proofRecordPath(root, planId, number);
+  fs.mkdirSync(path.dirname(record), { recursive: true });
+  fs.writeFileSync(record, lines.join(''));
+}
+
 function refuseStrayPaths(task, root, planPath) {
   const stray = strayPaths(task, root, planPath);
   if (stray.length > 0) {
@@ -485,7 +490,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proofs: proofCommands });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
-  const proofLines = proofs.map((proof) => `Proof: ${proof}\n`).join('');
+  writeProofRecord({ root, planId, number, proofs });
+  const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (exit 0)`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
   return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(planRoute(plan.tasks))}\n${waveLine(wave)}\n`;

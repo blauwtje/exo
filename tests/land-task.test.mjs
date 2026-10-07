@@ -42,7 +42,7 @@ test('a green task lands with its trailer and the landed set grows', async () =>
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1\nRoute: unit \(\d+ tasks\)\nNext: Task 2$/m);
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
 test('a landing in a checkout under .claude/worktrees/ names the next task, while a main checkout names the wave', async () => {
@@ -93,7 +93,7 @@ test('a task whose changes match every Files: path lands clean', async () => {
   await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
   const output = landTask({ planPath, planText: PLAN, number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
 // planFixture carries no Land gate line; this inserts one into the same
@@ -411,6 +411,14 @@ test('a long-format task lands on its passing Run: commands, skipping a red step
   assert.deepEqual(record.proofs, ['node tests/app.test.mjs']);
 });
 
+test('a landing records each passed proof as the report\'s Proof line, its command and last output line', async () => {
+  const { root, planPath } = await compactCheckout(LONG_PLAN);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const record = await fs.readFile(path.join(root, '.exo/proof-compact-task-1.txt'), 'utf8');
+  assert.equal(record, 'Proof: `node tests/app.test.mjs` -> # fail 0\n');
+});
+
 test('a long-format task whose Run: command fails is refused with its exit status and output, and commits nothing', async () => {
   const { root, planPath } = await compactCheckout(LONG_PLAN);
   await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {\n  return "bye";\n}\n');
@@ -528,7 +536,7 @@ test('--fix commits every changed path, tracked or not, with the given subject',
   assert.match(output, /^Committed: [0-9a-f]+$/m);
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'fix(app): address the branch review');
   assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n').sort(), ['src/app.js', 'src/extra.js']);
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
 async function lintPlan(linterBody) {
@@ -548,7 +556,7 @@ test('--fix with a plan lints the changed script paths that still exist, then co
   const { planPath } = await lintPlan(`#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\n`);
   fixLand({ root, subject: 'fix(app): address the branch review', plan: planPath });
   assert.equal(await fs.readFile(record, 'utf8'), '--quiet\nsrc/app.js\n');
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
 test('--fix with a plan whose Lint fails refuses the commit and leaves the changes', async () => {
@@ -585,7 +593,7 @@ test('the command line --fix commits every changed path with that subject', asyn
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Committed: [0-9a-f]+$/m);
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'fix(app): address the branch review');
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
 test('a --root whose toplevel matches the checkout lands clean', async () => {
@@ -756,7 +764,7 @@ test('an mcp: Proof reported deferred lands and prints it pending for the sessio
   const output = landTask({ planPath, planText: MCP_PLAN, number: 1, root, reportText: report });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1\nPending: mcp:run_playtest mode=play\nLanded: 1$/m);
   assert.doesNotMatch(output, /^Proof:/m);
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
 test('not done without proof: an mcp: Proof with no deferred line, a claimed pass, or a failing command beside it is refused', async () => {
@@ -792,7 +800,7 @@ test('an unprefixed known MCP tool Proof is never spawned and lands deferred lik
     const output = landTask({ planPath, planText: UNPREFIXED_MCP_PLAN, number: 1, root, reportText: report });
     assert.match(output, /^Committed: [0-9a-f]+ Task 1\nPending: mcp:run_playtest mode=play; touch spawned\.txt\nLanded: 1$/m);
     await assert.rejects(fs.access(path.join(root, 'spawned.txt')));
-    assert.equal(git(root, 'status', '--porcelain'), '');
+    assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
   }
   const { root, planPath } = await compactCheckout(UNPREFIXED_MCP_PLAN);
   await writeReport(root, 'Proof:\nnpm run lint: pass\n  0 problems\n');
@@ -868,5 +876,5 @@ test('a Files: entry ending in / covers every changed path under that folder', a
   await fs.writeFile(path.join(root, 'src/snaps/deep/b.png'), 'b');
   const output = landTask({ planPath: path.join(root, 'docs/plans/fixture.md'), planText: plan, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.equal(git(root, 'status', '--porcelain'), '');
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
