@@ -43,7 +43,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 
 ## Return
 
-One line per task, no report text:
+One line per task, no report text, at most eight lines:
 
 - `LANDED <n>` for a committed task, plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> <reason> <report path>` for any other task, the path `none` without a report.
