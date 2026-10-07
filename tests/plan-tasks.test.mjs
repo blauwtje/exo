@@ -306,6 +306,44 @@ test('a Proof: command with a shell pipe keeps the whole pipeline', () => {
   assert.equal(plan.tasks[0].proof, 'node --test | tail -5');
 });
 
+test('a long-format task reads each Run: command outside a fence and whether its Expected: expects a pass', () => {
+  const section = [
+    '### Task 1: Greet',
+    '',
+    'Depends on: none',
+    '',
+    'Files:',
+    '- Modify: `src/app.js` (`greet`)',
+    '',
+    'Step 1: Write the failing test',
+    '```md',
+    'Run: `inside a fence`',
+    '```',
+    'Run: `node --test tests/app.test.mjs`',
+    'Expected: FAIL with "greet is not defined"',
+    '',
+    'Step 2: Make it pass',
+    'Run: `node --test tests/app.test.mjs`',
+    'Expected: `# fail 0`',
+    'Run: node scripts/demo.mjs --bad',
+    'Expected: prints usage, exits 2',
+    'Run: `npm run lint`',
+    ''
+  ].join('\n');
+  const plan = parsePlan(planFixture({ tasks: [section] }));
+  assert.deepEqual(plan.tasks[0].runs, [
+    { command: 'node --test tests/app.test.mjs', expectsPass: false },
+    { command: 'node --test tests/app.test.mjs', expectsPass: true },
+    { command: 'node scripts/demo.mjs --bad', expectsPass: false },
+    { command: 'npm run lint', expectsPass: true }
+  ]);
+});
+
+test('a compact task reads no Run: steps', () => {
+  const plan = parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'] })] }));
+  assert.deepEqual(plan.tasks[0].runs, []);
+});
+
 test('an old-format task still parses beside a compact one in the same plan', () => {
   const plan = parsePlan(compactPlanFixture({ tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),

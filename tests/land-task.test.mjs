@@ -394,6 +394,29 @@ test('a passing Proof lands and records the SHA, the exit status and the output 
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
 });
 
+// A long-format task whose red step runs a command that always fails, and
+// whose green step runs the app test, so only the green run may decide.
+const LONG_PLAN = planFixture({ tasks: [
+  taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
+    .replace('Run: `node --test`\nExpected: `pass`', 'Run: `false`\nExpected: FAIL, greet returns undefined\nRun: `node tests/app.test.mjs`\nExpected: `# fail 0`')
+] }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nLand gate: true');
+
+test('a long-format task lands on its passing Run: commands, skipping a red step, and records them', async () => {
+  const { root, planPath } = await compactCheckout(LONG_PLAN);
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
+  assert.doesNotMatch(result.stdout, /^Proof: false/m);
+  const record = JSON.parse(await fs.readFile(path.join(root, '.exo/land-gate-compact.json'), 'utf8'));
+  assert.deepEqual(record.proofs, ['node tests/app.test.mjs']);
+});
+
+test('a long-format task whose Run: command fails is refused with its exit status and output, and commits nothing', async () => {
+  const { root, planPath } = await compactCheckout(LONG_PLAN);
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {\n  return "bye";\n}\n');
+  await assertRefused(root, planPath, [], /^land-task: Task 1: the Run: command "node tests\/app\.test\.mjs" failed \(exit 1\):\n {2}# pass 2\n {2}✖ greet returns "hello", got "bye"$/m);
+});
+
 test('a one-line report with the pass line after a Proof: prefix still lands', async () => {
   const { root, planPath } = await compactCheckout();
   await writeReport(root, 'Landed: src/app.js\nProof: node tests/app.test.mjs: pass\n  # pass 3\nUnresolved: none\n');
@@ -638,7 +661,7 @@ test('above eight tasks a report with no Choice: line writes no decision log', a
 const SIGNATURE_PLAN = planFixture({ tasks: [
   taskSection({ number: 1, title: 'Book date', files: ['- Modify: `src/ledger/create-entry.js`'], subject: 'feat(ledger): book date' }),
   taskSection({ number: 2, title: 'Book date everywhere', files: ['- Modify: `src/ledger/create-entry.js`', '- Modify: `src/import/import-rows.js`'], subject: 'feat(ledger): book date everywhere' })
-] });
+] }).replaceAll('Run: `node --test`', 'Run: `true`');
 
 async function signatureCheckout() {
   const root = await gitRepository({
@@ -673,7 +696,7 @@ test('a changed export signature with every caller inside Files: lands', async (
   await requireBookedOn(root);
   await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 2, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\nRoute: unit \(.+\)\nNext: Task 1\n$/);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nProof: true: pass \(exit 0\)\nLanded: 2\nRoute: unit \(.+\)\nNext: Task 1\n$/);
   const message = git(root, 'log', '-1', '--format=%B');
   assert.match(message, /^Plan-task: fixture\/2\nSignature: src\/ledger\/create-entry\.js:createEntry\(id, description, amount\) -> \(id, description, amount, bookedOn\)$/m);
 });
@@ -692,7 +715,7 @@ for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
     const { root, planPath } = await signatureCheckout();
     await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), `export function createEntry${parameters} {\n  return {};\n}\n`);
     const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
-    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nRoute: unit \(.+\)\nNext: Task 2\n$/);
+    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nProof: true: pass \(exit 0\)\nLanded: 1\nRoute: unit \(.+\)\nNext: Task 2\n$/);
   });
 }
 
@@ -717,7 +740,7 @@ test('a body-only change to an export with an outside caller lands and prints no
   const { root, planPath } = await signatureCheckout();
   await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nRoute: unit \(.+\)\nNext: Task 2\n$/);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nProof: true: pass \(exit 0\)\nLanded: 1\nRoute: unit \(.+\)\nNext: Task 2\n$/);
 });
 
 // The builder holds no MCP tool, so a `Proof: mcp:<tool> <args>` task lands on

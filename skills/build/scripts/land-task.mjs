@@ -6,7 +6,8 @@
 // command, or with none the Success-criterion test its build report names,
 // passes when this script runs it in the checkout, and the report lists no
 // command as failing under Proof; the printout carries that run's exit status
-// and last output lines. A
+// and last output lines. A long-format task lands only when each distinct
+// `Run:` command a step expects to pass passes the same way; its report is not read. A
 // `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short name,
 // lands on its `<command>: deferred` line instead and prints `Pending: mcp:<tool> <args>`
 // for the session to run. Above eight tasks each `Choice:` line of the
@@ -243,11 +244,11 @@ function proofCommandOf(task, reportText, reportPath) {
 }
 
 // A task is done only on proof from the real product, never on the report's
-// word: the Proof runs in the checkout under bash, as the Land gate does, with
+// word: the Proof, or a long-format task's `Run:` command (`field`), runs in the checkout under bash, as the Land gate does, with
 // stderr merged into stdout so the tail keeps their order. A nonzero exit, a
 // signal or the timeout refuses the landing with the output's last lines; a
 // pass returns its exit status and those lines for the printout.
-function runProof(task, command, root) {
+function runProof(task, command, root, field) {
   const proofRun = spawnSync('bash', ['-e', '-c', `exec 2>&1\n${command}`], {
     cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -257,7 +258,7 @@ function runProof(task, command, root) {
   if (proofRun.error?.code === 'ETIMEDOUT') reason = `timed out after ${PROOF_TIMEOUT_MS / 1000}s`;
   else if (proofRun.error !== undefined) reason = `spawn error ${proofRun.error.message}`;
   else if (proofRun.signal !== null) reason = `signal ${proofRun.signal}`;
-  throw new LandingError([`Task ${task.number}: the Proof: command "${command}" failed (${reason}):`, ...tail].join('\n'));
+  throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${reason}):`, ...tail].join('\n'));
 }
 
 // `<plan stem>-decisions.md` beside the plan.
@@ -403,14 +404,13 @@ function runLandGate(landGate, root) {
 }
 
 // The record verify.mjs reads to skip what this landing just ran and passed:
-// the landed commit's tree, the gate command and the task's Proof. It holds
-// only the latest landing, so an earlier task's Proof, passed on an older
+// the landed commit's tree, the gate command and the task's proof commands. It holds
+// only the latest landing, so an earlier task's proof, passed on an older
 // tree, is never skipped; a later landing or edit changes the tree, and
 // verify then reruns everything. Lift the one-landing limit by keying proofs
 // per tree.
-function writeLandGateRecord({ root, planId, gate, proofCommand }) {
+function writeLandGateRecord({ root, planId, gate, proofs }) {
   const tree = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
-  const proofs = proofCommand === null ? [] : [proofCommand];
   fs.mkdirSync(path.join(root, SCRATCH_FOLDER), { recursive: true });
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
@@ -420,6 +420,13 @@ function refuseStrayPaths(task, root, planPath) {
   if (stray.length > 0) {
     throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
+}
+
+// A long-format task's proof: each distinct `Run:` command some step expects
+// to pass, never one only a test-first red step or a failure demo runs, nor an
+// MCP call only the session can make.
+function passingRunsOf(task) {
+  return [...new Set(task.runs.filter((run) => run.expectsPass && mcpToolCall(run.command) === null).map((run) => run.command))];
 }
 
 function checkReport(task, reportText, reportPath) {
@@ -450,11 +457,9 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseStrayPaths(task, root, planPath);
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
-  // A long-format task's `Run:` steps may expect a failure (a test-first
-  // step), judged against their `Expected:` lines, which this script does not
-  // parse, so only a compact task's report is read here.
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
-  const proof = proofCommand === null ? null : runProof(task, proofCommand, root);
+  const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
+  const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
   const gateRan = runLandGate(frame.landGate, root);
@@ -477,10 +482,10 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (subject !== expectedSubject) {
     throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   }
-  if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proofCommand });
+  if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proofs: proofCommands });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
-  const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
+  const proofLines = proofs.map((proof) => `Proof: ${proof}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
   return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(planRoute(plan.tasks))}\n${waveLine(wave)}\n`;
