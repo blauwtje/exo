@@ -5,7 +5,7 @@
 // The brief, the frame fields and the section verbatim, goes to a file under
 // the checkout's scratch directory, so the section reaches only build-task
 // and stays out of the session. `--block` prints only the landed set and the
-// next run-unit block, for the build session, which never reads the plan.
+// next run-unit block, for the build session, which leaves the plan to the unit.
 // `--proofs` prints each landed task's `Proof:` lines as land-task recorded
 // them and the decision log's path, for the build report.
 

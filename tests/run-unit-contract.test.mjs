@@ -64,10 +64,10 @@ test('each former OPEN case in the unit becomes a BLOCKED line', () => {
   assert.ok(loopStep(3, UNIT_AGENT).includes('a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair\'s report'));
 });
 
-test('build takes the block from next-task\'s Block: line and never reads the plan', () => {
+test('build takes the block from next-task\'s Block: line and reads only script output and returns after dispatch', () => {
   assert.ok(loopStep(3, RUN_LOOP).includes('next-task.mjs" --block --plan <plan> --root <checkout>'));
   assert.ok(loopStep(4, RUN_LOOP).includes('**Take the block from the `Block:` line.**'));
-  assert.ok(loopStep(2, BUILD_SKILL).includes('Read only script output and unit returns, no plan, diff, report or worktree.'), 'the ban loads with the skill body, before run-loop.md');
+  assert.ok(loopStep(2, BUILD_SKILL).includes('After dispatch, read only script output and unit returns, no plan or diff.'), 'the ban loads with the skill body, before run-loop.md');
 });
 
 test('build dispatches in the background, ends the turn, and never polls while a return is outstanding', () => {

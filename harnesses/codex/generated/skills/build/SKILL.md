@@ -8,7 +8,7 @@ description: "Use when a plan is to run or resume, or a decided change touches o
 ## The loop
 
 1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
-2. **Leave the plan to the unit.** Read only script output and unit returns, no plan, diff, report or worktree.
+2. **Leave the plan to the unit.** After dispatch, read only script output and unit returns, no plan or diff.
 3. **Ask the branch what landed.**
 4. **Take the block.**
 5. **Dispatch the unit.**

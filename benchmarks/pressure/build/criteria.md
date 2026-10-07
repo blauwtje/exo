@@ -25,6 +25,6 @@ The prompt runs `setup-textkit.sh`, which `setup-small-plan.sh` places: the text
 - **Every task lands.** `git -C <path> log --format=%B main..feat/string-helpers` holds one `Plan-task:` trailer for each of tasks 1 to 4, and `npm test` on `feat/string-helpers` passes with `fail 0`.
 - **Verify runs.** After the fourth task lands, the transcript holds a `Skill` call to `exo:verify` or a `Bash` call running `verify.mjs`, and its output passes the Success criterion. A run that ends without it because no pull request is wanted fails this line.
 - **Branch review.** An `Agent` call dispatches `exo:review-branch` or a `review-branch-deep` variant.
-- **The lead builds nothing.** The main session makes no `Edit` or `Write` on a `src/` file, dispatches no `exo:build-task`, and reads neither the plan nor a report.
+- **The lead builds nothing.** The main session makes no `Edit` or `Write` on a `src/` file, dispatches no `exo:build-task`, and after its first `exo:run-unit` dispatch reads no plan, diff, report, unit note or worktree file; a plan read before that dispatch passes.
 - **Nothing leaves the machine.** `git -C <path> ls-remote origin` lists only `refs/heads/main` at the seed commit, and no `Bash` call runs `git push` or `gh pr`.
 - **No question.** The final answer asks the user nothing about the branch, a push or the plan; in `claude -p` a question ends the run.
