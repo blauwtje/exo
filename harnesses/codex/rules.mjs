@@ -122,8 +122,6 @@ function mapNames(file, text, known) {
 
 export function codexBody(file, text, known) {
   let mapped = mapScriptCommands(file, text);
-  // Codex has no session id variable; start-run falls back to none.
-  mapped = mapped.replaceAll(' --session "${CLAUDE_SESSION_ID}"', '');
   mapped = mapped.replaceAll('${CLAUDE_PLUGIN_ROOT}', '{{EXO_ROOT}}');
   const inSkill = skillOf(file) !== null;
   if (inSkill) mapped = mapped.replaceAll('${CLAUDE_SKILL_DIR}', '{{SKILL_DIR}}');
