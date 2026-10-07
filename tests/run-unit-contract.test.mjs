@@ -8,6 +8,7 @@ import test from 'node:test';
 
 const RUN_LOOP = fs.readFileSync(new URL('../skills/build/references/run-loop.md', import.meta.url), 'utf8');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
+const IMPLEMENTER_PROMPT = fs.readFileSync(new URL('../skills/build/implementer-prompt.md', import.meta.url), 'utf8');
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
 
 function loopStep(number, text) {
@@ -27,6 +28,7 @@ test('the unit dispatches every build in the foreground, a wave still in one mes
   const dispatchStep = loopStep(3, UNIT_AGENT);
   assert.ok(dispatchStep.includes('Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`'));
   assert.ok(dispatchStep.includes('in one message'));
+  assert.ok(IMPLEMENTER_PROMPT.includes('Report to: <report directory>/implementer-<n>.md\nReturn: one line\n'), 'the unit\'s build-task returns a pointer, not its report');
 });
 
 test('the unit waits for every dispatched report with wait-report.mjs, at most six runs, never sleep', () => {
@@ -44,10 +46,13 @@ test('the unit ends its turn only with every block task LANDED or BLOCKED, or at
   assert.ok(loopStep(4, UNIT_AGENT).includes('until every block task has a `LANDED` or `BLOCKED` line'));
 });
 
-test('the unit returns LANDED or BLOCKED per task, never OPEN, and never BUDGET as a completion report', () => {
+test('the unit returns one LANDED or BLOCKED line per task with no report text, never OPEN, and never BUDGET as a completion report', () => {
   const unitReturn = section(UNIT_AGENT, 'Return');
-  assert.ok(unitReturn.includes('`LANDED <n> <sha>`'));
-  assert.ok(unitReturn.includes('`BLOCKED <n> <reason or question for the user>`'));
+  assert.ok(unitReturn.includes('One line per task, no report text'));
+  assert.ok(unitReturn.includes('`LANDED <n>` for a committed task'));
+  assert.ok(unitReturn.includes('`BLOCKED <n> <reason> <report path>`'));
+  assert.ok(unitReturn.includes('the path `none` without a report'));
+  assert.doesNotMatch(unitReturn, /LANDED <n> <sha>/);
   assert.ok(unitReturn.includes('With every block task landed or blocked, return these lines, never a `BUDGET:` line'));
   assert.doesNotMatch(UNIT_AGENT, /`OPEN/);
 });
@@ -55,7 +60,7 @@ test('the unit returns LANDED or BLOCKED per task, never OPEN, and never BUDGET 
 test('each former OPEN case in the unit becomes a BLOCKED line', () => {
   assert.ok(loopStep(1, UNIT_AGENT).includes('return each `BLOCKED <n> waits on <m>`'));
   assert.ok(loopStep(2, UNIT_AGENT).includes('is returned `BLOCKED <n> Design: task`'));
-  assert.ok(loopStep(3, UNIT_AGENT).includes('a second drift or failure on one task returns it `BLOCKED` with both report paths and two or three options'));
+  assert.ok(loopStep(3, UNIT_AGENT).includes('a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair\'s report'));
 });
 
 test('build takes the block from next-task\'s Block: line and never reads the plan', () => {

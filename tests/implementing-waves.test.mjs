@@ -44,10 +44,9 @@ test('the implementer brief carries only the task fields, and the agent still wr
   assert.ok(!IMPLEMENTER_BRIEF.includes('Your brief:'), 'the brief is named by path, never pasted');
 });
 
-test('the build session\'s own dispatch adds `Return: one line`, and the agent answers with a diff and log pointer', () => {
-  assert.ok(IMPLEMENTER_BRIEF.includes('`Return: one line`'), 'the field is named in the prompt file');
-  assert.ok(IMPLEMENTER_BRIEF.includes('run-loop.md` step 5'), 'only the direct dispatch adds the field');
-  assert.ok(IMPLEMENTER_BRIEF.includes('run-unit'), 'run-unit keeps the report-pasting return');
+test('every build-task dispatch, run-unit\'s included, carries `Return: one line`, and the agent answers with a diff and log pointer', () => {
+  assert.ok(IMPLEMENTER_BRIEF.includes('implementer-<n>.md\nReturn: one line\n```'), 'the template itself carries the field');
+  assert.ok(IMPLEMENTER_BRIEF.includes('Every dispatch keeps `Return: one line`, `exo:run-unit`\'s included'), 'run-unit gets no report-pasting return');
   assert.ok(IMPLEMENTER_AGENT.includes('Task <n>: GREEN | diff: <diff path> | log: <log path>'));
   assert.ok(IMPLEMENTER_AGENT.includes('Task <n>: <BLOCKED, PLAN DRIFT or FAIL> <what stopped, one clause> | diff: <diff path> | log: <log path>'));
 });
