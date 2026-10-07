@@ -339,6 +339,19 @@ test('--proofs prints each landed task\'s recorded Proof lines and the decision 
   assert.match(result.stdout, /^Proof: `node --test` -> exit 0, ℹ pass 3$/m);
 });
 
+test('--block prints each landed task\'s recorded Proof lines after the block, so the report has them however verify ends', async () => {
+  const { root, planPath } = await checkout();
+  assert.doesNotMatch(blockReport({ planPath, planText: PLAN, root }), /^(Proof|No proof|Decisions):/m);
+  land(root, 1, 'feat(app): greet');
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/proof-fixture-task-1.txt'), 'Proof: `node --test` -> exit 0, ℹ pass 3\n');
+  const decisions = path.join(root, 'docs/plans/fixture-decisions.md');
+  await fs.writeFile(decisions, 'Task 1 abc1234: kept the default\n');
+  const report = blockReport({ planPath, planText: PLAN, root });
+  assert.ok(report.endsWith(`\nProof: \`node --test\` -> exit 0, ℹ pass 3\nDecisions: ${decisions}\n`), report);
+  assert.match(report, /^Landed: 1$/m);
+});
+
 test('--block prints a Design: task with its direction, so the session never reads the Visual direction', async () => {
   const { root, planPath } = await checkout();
   land(root, 1, 'feat(app): greet');

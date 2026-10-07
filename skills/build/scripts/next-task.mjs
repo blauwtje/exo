@@ -5,7 +5,10 @@
 // The brief, the frame fields and the section verbatim, goes to a file under
 // the checkout's scratch directory, so the section reaches only build-task
 // and stays out of the session. `--block` prints only the landed set and the
-// next run-unit block, for the build session, which leaves the plan to the unit.
+// next run-unit block, for the build session, which leaves the plan to the unit,
+// then each landed task's proof lines as `--proofs` prints them, so the
+// session holds them for its report before `verify`, whose failed gate ends the
+// turn.
 // On the inline route, where the session builds each task itself, both print
 // the inline steps and each unlanded task's section instead.
 // `--proofs` prints each landed task's `Proof:` lines as land-task recorded
@@ -214,21 +217,27 @@ export function blockReport({ planPath, planText, root }) {
     `Plan: ${planPath}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
     routeLine(planRoute(plan.tasks)),
-    blockLine(nextBlock(plan.tasks, landed), frameOf(plan.frame).visualDirection)
+    blockLine(nextBlock(plan.tasks, landed), frameOf(plan.frame).visualDirection),
+    ...(landed.length === 0 ? [] : proofLines(planPath, landed, root))
   ].join('\n')}\n`;
 }
 
 // The report's proof lines, read from land-task's records instead of rerun, so
 // the session reads no plan, test or script to name a landed task's proof.
-export function proofsReport({ planPath, planText, root }) {
-  const plan = parseTasks(planPath, planText);
+function proofLines(planPath, landed, root) {
   const planId = planIdOf(planPath);
-  const lines = landedTasks(plan.tasks, root, planId).map((number) => {
+  const lines = landed.map((number) => {
     const record = proofRecordPath(root, planId, number);
     return fs.existsSync(record) ? fs.readFileSync(record, 'utf8').trimEnd() : `No proof: Task ${number} landed with no land-task record`;
   });
   const decisions = decisionsPathOf(planPath);
   if (fs.existsSync(decisions)) lines.push(`Decisions: ${decisions}`);
+  return lines;
+}
+
+export function proofsReport({ planPath, planText, root }) {
+  const plan = parseTasks(planPath, planText);
+  const lines = proofLines(planPath, landedTasks(plan.tasks, root, planIdOf(planPath)), root);
   return lines.length === 0 ? 'Landed: none\n' : `${lines.join('\n')}\n`;
 }
 

@@ -114,9 +114,11 @@ test('find-cause settles the workspace and ends on ship', () => {
   assert.ok(!text.includes('git push'), 'find-cause runs no push of its own');
 });
 
-test('the tail takes its Proof lines and the decision log path from next-task --proofs, not from the plan or checkout', () => {
+test('the tail takes its Proof lines and the decision log path from next-task output, not from the plan or checkout', () => {
   const tailStep = loopStep(7, TAIL);
-  assert.ok(tailStep.includes('next-task.mjs" --proofs'), 'step 7 names the script that prints the landed proofs');
+  assert.ok(tailStep.includes('step 3\'s last `--block` printed'), 'step 7 takes the proofs from the --block output the loop already read');
+  assert.ok(tailStep.includes('next-task.mjs" --proofs') && tailStep.includes('before `verify`'), 'the inline route prints the landed proofs before verify');
+  assert.ok(tailStep.includes('however `verify` ends, a `FAIL` that ends its turn included'), 'a failed gate keeps the Proof lines in the report');
   assert.ok(tailStep.includes('Never rerun a proof'), 'step 7 bans rerunning or reading for proofs');
   assert.ok(tailStep.includes('`Decisions:` line goes in the report as a path, unread'), 'step 7 names the decision log by path only');
 });
