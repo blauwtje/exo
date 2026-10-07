@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.101.1 - 2026-10-07
+
 ### Changed
 
 - On the inline route, `next-task.mjs` prints the build steps and each task's section, so the lead reads neither `run-loop-inline.md` nor the task briefs.
