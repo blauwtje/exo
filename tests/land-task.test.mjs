@@ -251,7 +251,7 @@ test('a passing Land gate leaves a record of the landed tree, the gate and the p
   const plan = await fs.readFile(planPath, 'utf8');
   landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
   const record = JSON.parse(await fs.readFile(path.join(root, '.exo/land-gate-compact.json'), 'utf8'));
-  assert.deepEqual(record, { tree: git(root, 'rev-parse', 'HEAD^{tree}'), gate: 'true', proofs: ['node --test tests/app.test.mjs'] });
+  assert.deepEqual(record, { tree: git(root, 'rev-parse', 'HEAD^{tree}'), gate: 'true', proofs: ['node tests/app.test.mjs'] });
 });
 
 test('no record is written when no Land gate ran', async () => {
@@ -316,21 +316,41 @@ test('the command line lands a task, and a refusal leaves stdout empty', async (
 });
 
 const COMPACT_PLAN = compactPlanFixture({ tasks: [
-  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })
+  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' })
 ] });
 
 const PASS_REPORT = [
   'Landed: src/app.js',
   'Proof:',
-  '- `node --test tests/app.test.mjs`: pass',
+  '- `node tests/app.test.mjs`: pass',
   '  # pass 3',
   '  # fail 0',
   'Unresolved: none',
   ''
 ].join('\n');
 
+// The Proof land-task runs: a plain script, since a nested `node --test`
+// inherits this runner's NODE_TEST_CONTEXT and exits 0 whatever it ran.
+const APP_PROOF = [
+  "import { greet } from '../src/app.js';",
+  "if (greet() !== 'hello') {",
+  "  console.log('# pass 2');",
+  "  console.error(`✖ greet returns \"hello\", got \"${greet()}\"`);",
+  '  process.exit(1);',
+  '}',
+  "console.log('# pass 3');",
+  "console.log('# fail 0');",
+  ''
+].join('\n');
+
 async function compactCheckout(plan = COMPACT_PLAN) {
-  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', 'docs/plans/compact.md': plan });
+  const root = await gitRepository({
+    'src/app.js': 'export function greet() {}\n',
+    'docs/plans/compact.md': plan,
+    'package.json': '{ "type": "module" }\n',
+    'tests/app.test.mjs': APP_PROOF,
+    'tests/greet.test.mjs': "console.log('# pass 1');\n"
+  });
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
@@ -342,6 +362,15 @@ async function writeReport(root, text) {
   await fs.mkdir(path.join(root, '.exo'), { recursive: true });
   await fs.writeFile(path.join(root, '.exo/implementer-1.md'), text);
 }
+
+// land-task runs the Proof itself in the checkout, so the report's word never
+// lands a task.
+test('a failing Proof refuses the landing with its exit status and output, and commits nothing', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.writeFile(path.join(root, 'src/app.js'), 'export function greet() {\n  return "bye";\n}\n');
+  await writeReport(root, PASS_REPORT);
+  await assertRefused(root, planPath, [], /^land-task: Task 1: the Proof: command "node tests\/app\.test\.mjs" failed \(exit 1\):\n {2}# pass 2\n {2}✖ greet returns "hello", got "bye"$/m);
+});
 
 test('a compact task with no Commit: block lands on a derived commit and trailer', async () => {
   const { root, planPath } = await compactCheckout();
@@ -371,38 +400,12 @@ test('not done without proof: a compact task with no build report is refused', a
   await assertRefused(root, planPath, ['--report', path.join(root, 'missing.md')], /no build report/);
 });
 
-test('not done without proof: a report without a pass line for the Proof: command is refused', async () => {
-  const { root, planPath } = await compactCheckout();
-  await writeReport(root, 'Landed: src/app.js\nProof: the tests look fine\nnode --test: pass\n  # pass 1\n');
-  await assertRefused(root, planPath, [], /no "node --test tests\/app\.test\.mjs: pass" line/);
-});
-
-test('not done without proof: a skipped or unclear proof is refused', async () => {
-  const { root, planPath } = await compactCheckout();
-  for (const outcome of ['skipped', 'skip', 'todo', 'pending']) {
-    await writeReport(root, `node --test tests/app.test.mjs: ${outcome}\n  # tests 0\n`);
-    await assertRefused(root, planPath, [], /was skipped/);
-  }
-  for (const outcome of ['fail', 'passed?', 'unclear']) {
-    await writeReport(root, `node --test tests/app.test.mjs: ${outcome}\n  # tests 1\n`);
-    await assertRefused(root, planPath, [], /no clear pass/);
-  }
-  await writeReport(root, `${PASS_REPORT}node --test tests/app.test.mjs: skipped\n`);
-  await assertRefused(root, planPath, [], /was skipped/);
-});
-
-test('not done without proof: a pass line with no output under it is refused', async () => {
-  const { root, planPath } = await compactCheckout();
-  await writeReport(root, 'node --test tests/app.test.mjs: pass\n\nUnresolved: none\n');
-  await assertRefused(root, planPath, [], /no output under/);
-});
-
 test('not done without proof: a passing Proof: beside another failing command in the Proof section is refused', async () => {
   const { root, planPath } = await compactCheckout();
   await writeReport(root, [
     'Landed: src/app.js',
     'Proof:',
-    'node --test tests/app.test.mjs: pass',
+    'node tests/app.test.mjs: pass',
     '  # pass 3',
     'npm test: fail (13 of 14 pass; the one failure is outside Files, see Unresolved)',
     '  ✖ importRows turns each bank row into an entry',
@@ -416,7 +419,7 @@ test('not done without proof: a passing Proof: beside another failing command in
 
 test('not done without proof: a bare "fail" line or a backticked failing word in the Proof section is refused', async () => {
   const { root, planPath } = await compactCheckout();
-  const passing = 'Proof:\n- `node --test tests/app.test.mjs`: pass\n  # pass 3\n';
+  const passing = 'Proof:\n- `node tests/app.test.mjs`: pass\n  # pass 3\n';
   await writeReport(root, `${passing}npm test: fail\n  ✖ importRows\nUnresolved: none\n`);
   await assertRefused(root, planPath, [], /^land-task: Task 1: the build report lists "npm test: fail" under Proof, no clear pass$/m);
   await writeReport(root, `${passing}- \`npm test\`: failing on importRows\n  ✖ importRows\nUnresolved: none\n`);
@@ -428,7 +431,7 @@ test('not done without proof: a bare "fail" line or a backticked failing word in
 test('a passing proof whose output names a failing case still lands', async () => {
   for (const outputLine of ['ok 3 - parser: fails on empty input', '✔ importRows: failed rows are skipped (2ms)']) {
     const { root, planPath } = await compactCheckout();
-    const report = `Proof:\n- \`node --test tests/app.test.mjs\`: pass\n  ${outputLine}\n  # fail 0\nUnresolved: none\n`;
+    const report = `Proof:\n- \`node tests/app.test.mjs\`: pass\n  ${outputLine}\n  # fail 0\nUnresolved: none\n`;
     const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: report });
     assert.match(output, /^Landed: 1$/m, outputLine);
   }
@@ -436,29 +439,29 @@ test('a passing proof whose output names a failing case still lands', async () =
 
 test('a Proof section whose every command passes still lands', async () => {
   const { root, planPath } = await compactCheckout();
-  const report = 'Proof:\n- `node --test tests/app.test.mjs`: pass\n  # pass 3\n  # fail 0\n- `npm test`: pass\n  # fail 0\nUnresolved: none\n';
+  const report = 'Proof:\n- `node tests/app.test.mjs`: pass\n  # pass 3\n  # fail 0\n- `npm test`: pass\n  # fail 0\nUnresolved: none\n';
   const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: report });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(output, /^Landed: 1$/m);
 });
 
-test('a report with a clear pass lands and records the SHA and the proof output', async () => {
+test('a passing Proof lands and records the SHA, the exit status and the output land-task observed', async () => {
   const { root, planPath } = await compactCheckout();
   await writeReport(root, PASS_REPORT);
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   const sha = git(root, 'rev-parse', '--short', 'HEAD');
   assert.match(result.stdout, new RegExp(`^Committed: ${sha} Task 1$`, 'm'));
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3\n {2}# fail 0$/m);
+  assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'feat(app): greet');
 });
 
 test('a one-line report with the pass line after a Proof: prefix still lands', async () => {
   const { root, planPath } = await compactCheckout();
-  await writeReport(root, 'Landed: src/app.js\nProof: node --test tests/app.test.mjs: pass\n  # pass 3\nUnresolved: none\n');
+  await writeReport(root, 'Landed: src/app.js\nProof: node tests/app.test.mjs: pass\n  # pass 3\nUnresolved: none\n');
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+  assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
 });
 
 // A test-first report quotes its failing run on a `Red:` line before `Proof:`;
@@ -466,32 +469,32 @@ test('a one-line report with the pass line after a Proof: prefix still lands', a
 const RED_REPORT_HEAD = [
   'Landed: src/app.js',
   'Test first: yes, logic',
-  'Red: node --test tests/app.test.mjs: fail',
+  'Red: node tests/app.test.mjs: fail',
   '  AssertionError: expected "hi" but got undefined',
   'Proof:'
 ];
 
 test('a report with a Red: line before Proof: lands on the Proof: pass', async () => {
   const { root, planPath } = await compactCheckout();
-  await writeReport(root, [...RED_REPORT_HEAD, '- `node --test tests/app.test.mjs`: pass', '  # pass 3', 'Unresolved: none', ''].join('\n'));
+  await writeReport(root, [...RED_REPORT_HEAD, '- `node tests/app.test.mjs`: pass', '  # pass 3', 'Unresolved: none', ''].join('\n'));
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+  assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
 });
 
 test('a Red: line before Proof: in a report with no Proof: field never counts as the proof or a failing command', async () => {
   const { root, planPath } = await compactCheckout(OLDER_PLAN);
-  const report = [...RED_REPORT_HEAD.slice(0, -1), 'node --test tests/app.test.mjs: pass', '  # pass 3', 'Unresolved: none', ''].join('\n');
+  const report = [...RED_REPORT_HEAD.slice(0, -1), 'node tests/app.test.mjs: pass', '  # pass 3', 'Unresolved: none', ''].join('\n');
   await writeReport(root, report);
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
+  assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
 });
 
 test('a backticked Red: command and a Red: none line both land', async () => {
-  for (const red of ['Red: `node --test tests/app.test.mjs`: fail', 'Red: none, the test cannot fail before the edit']) {
+  for (const red of ['Red: `node tests/app.test.mjs`: fail', 'Red: none, the test cannot fail before the edit']) {
     const { root, planPath } = await compactCheckout(OLDER_PLAN);
-    await writeReport(root, ['Landed: src/app.js', 'Test first: yes, logic', red, 'node --test tests/app.test.mjs: pass', '  # pass 3', 'Unresolved: none', ''].join('\n'));
+    await writeReport(root, ['Landed: src/app.js', 'Test first: yes, logic', red, 'node tests/app.test.mjs: pass', '  # pass 3', 'Unresolved: none', ''].join('\n'));
     const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
     assert.equal(result.code, 0, result.stderr);
   }
@@ -531,10 +534,10 @@ const OLDER_PLAN = compactPlanFixture({ tasks: [
 
 test('a compact task without Proof: lands on the pass line of the test the builder ran', async () => {
   const { root, planPath } = await compactCheckout(OLDER_PLAN);
-  await writeReport(root, 'Landed: src/app.js\nProof:\n- `node --test tests/greet.test.mjs`: pass\n  # pass 1\nUnresolved: none\n');
+  await writeReport(root, 'Landed: src/app.js\nProof:\n- `node tests/greet.test.mjs`: pass\n  # pass 1\nUnresolved: none\n');
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/greet\.test\.mjs: pass\n {2}# pass 1$/m);
+  assert.match(result.stdout, /^Proof: node tests\/greet\.test\.mjs: pass \(exit 0\)\n {2}# pass 1$/m);
   assert.match(result.stdout, /^Landed: 1$/m);
 });
 
@@ -543,57 +546,10 @@ test('not done without proof: a compact task without Proof: and no passing test 
   await assertRefused(root, planPath, [], /no build report/);
   await writeReport(root, 'Landed: src/app.js\nProof: the tests look fine\nUnresolved: none\n');
   await assertRefused(root, planPath, [], /no "<test>: pass" line/);
-  await writeReport(root, 'node --test tests/greet.test.mjs: fail\n  # fail 1\n');
+  await writeReport(root, 'node tests/greet.test.mjs: fail\n  # fail 1\n');
   await assertRefused(root, planPath, [], /no clear pass/);
-  await writeReport(root, 'node --test tests/greet.test.mjs: skipped\n  # tests 0\n');
-  await assertRefused(root, planPath, [], /was skipped/);
-  await writeReport(root, 'node --test tests/greet.test.mjs: pass\n\nUnresolved: none\n');
-  await assertRefused(root, planPath, [], /no output under/);
 });
 
-test('the proof output stops at the next outcome line in an indented Proof list', async () => {
-  const { root, planPath } = await compactCheckout();
-  const report = 'Proof:\n  - `node --test tests/app.test.mjs`: pass\n    # pass 3\n  - `npm run lint`: pass\n    0 problems\n';
-  const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: report });
-  assert.match(output, /^Proof: node --test tests\/app\.test\.mjs: pass\n {4}# pass 3\nLanded: 1$/m);
-});
-
-// land-task.mjs refused these four shapes from a real run (tasks 7, 9, 10, 11
-// of a second run-unit): the report was genuinely green, but its pass line
-// and output shared the same indentation, so the old "output must sit deeper
-// than its outcome line" rule read the report as having no output at all.
-test('a report whose output sits at the same indentation as its pass line still lands', async () => {
-  const { root, planPath } = await compactCheckout();
-  await writeReport(root, 'Task 1: GREEN\nnode --test tests/app.test.mjs: pass\npass: 3 cases\nReport: /tmp/implementer-1.md\n');
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\npass: 3 cases$/m);
-});
-
-test('a pass line indented inside a markdown list, with output at no indentation, still lands', async () => {
-  const { root, planPath } = await compactCheckout();
-  await writeReport(root, '- `node --test tests/app.test.mjs`: pass\n# pass 3\nUnresolved: none\n');
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n# pass 3$/m);
-});
-
-test('a blank line between the pass line and its output still lands', async () => {
-  const { root, planPath } = await compactCheckout();
-  await writeReport(root, 'node --test tests/app.test.mjs: pass\n\n  # pass 3\nUnresolved: none\n');
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
-});
-
-test('trailing whitespace and CRLF line endings on the report still land', async () => {
-  const { root, planPath } = await compactCheckout();
-  const report = 'node --test tests/app.test.mjs: pass  \r\n  # pass 3\r\nUnresolved: none\r\n';
-  await writeReport(root, report);
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
-});
 
 async function fixCheckout() {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
@@ -671,15 +627,6 @@ test('the command line --fix commits every changed path with that subject', asyn
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
-test('the next report field ends the output with no blank line between them', async () => {
-  const { root, planPath } = await compactCheckout();
-  await writeReport(root, 'node --test tests/app.test.mjs: pass\n  # pass 3\nUnresolved: none\n');
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Proof: node --test tests\/app\.test\.mjs: pass\n {2}# pass 3$/m);
-  assert.doesNotMatch(result.stdout, /Unresolved/);
-});
-
 test('a --root whose toplevel matches the checkout lands clean', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
@@ -708,7 +655,7 @@ function planOfTasks(count) {
     number: index + 1,
     title: `feat(app): step ${index + 1}`,
     files: index === 0 ? ['src/app.js'] : [`src/step-${index + 1}.js`],
-    proof: 'node --test tests/app.test.mjs'
+    proof: 'node tests/app.test.mjs'
   }));
   return compactPlanFixture({ tasks });
 }
@@ -896,25 +843,19 @@ test('an unprefixed known MCP tool Proof is never spawned and lands deferred lik
 
 // A report refusal ends with the whole expected layout, so one round fixes
 // every report fault.
-function assertLayout(stderr, { deferred = false, command = 'node --test tests/app.test.mjs' } = {}) {
+function assertLayout(stderr, { deferred = false, command = 'node tests/app.test.mjs' } = {}) {
   assert.match(stderr, /^Expected under Proof: in .+:$/m);
   const outcome = deferred ? 'deferred' : 'pass';
   assert.ok(stderr.includes(`\n${command}: ${outcome}`), stderr);
-  assert.equal(stderr.includes('<last output lines of that exact command>'), !deferred, stderr);
 }
 
 test('every report refusal ends with the expected layout filled with the task command', async () => {
   const { root, planPath } = await compactCheckout();
-  const refuse = async (extraArgs) => (await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root, ...extraArgs], { cwd: root })).stderr;
-  assertLayout(await refuse([]));
-  await writeReport(root, 'Proof: fine\n');
-  assertLayout(await refuse([]));
-  await writeReport(root, 'node --test tests/app.test.mjs: skipped\n  # tests 0\n');
-  assertLayout(await refuse([]));
-  await writeReport(root, 'node --test tests/app.test.mjs: unclear\n  # tests 1\n');
-  assertLayout(await refuse([]));
-  await writeReport(root, 'node --test tests/app.test.mjs: pass\n\nUnresolved: none\n');
-  assertLayout(await refuse([]));
+  const refuse = async () => (await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root })).stderr;
+  assertLayout(await refuse());
+  const older = await compactCheckout(OLDER_PLAN);
+  await writeReport(older.root, 'Proof: fine\n');
+  assertLayout((await run(SCRIPT, ['--plan', older.planPath, '--task', '1', '--root', older.root], { cwd: older.root })).stderr, { command: '<test command>' });
 });
 
 test('an mcp: Proof refusal ends with the deferred layout and no output lines', async () => {
