@@ -32,10 +32,17 @@ const CALL = new RegExp(`\\b(${NAME})(?:\\.${NAME})*\\.(?:${MUTATORS})\\(`, 'g')
 const OBJECT_ASSIGN = new RegExp(`\\bObject\\.assign\\(\\s*(${NAME})\\s*[,)]`, 'g');
 const STEP = new RegExp(`(?:\\+\\+|--)(${NAME})\\b|\\b(${NAME})(?:\\+\\+|--)`, 'g');
 
+// One deadline for the whole scan, under the 10 s hook timeout in hooks.json,
+// so a slow repository ends the scan quietly instead of as a hook error.
+const SCAN_BUDGET_MS = 8000;
+let deadline = Infinity;
+
 const git = (cwd, args) => {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) return '';
   try {
     return execFileSync('git', args, {
-      cwd, encoding: 'utf8', timeout: 3000, maxBuffer: 4 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
+      cwd, encoding: 'utf8', timeout: Math.min(3000, remaining), maxBuffer: 4 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
       env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }
     });
   } catch {
@@ -102,6 +109,7 @@ const more = (list, limit) => `${list.slice(0, limit).join(', ')}${list.length >
 export function siblingNote(file, before, after) {
   const removed = removedLines(before, after);
   if (removed.length === 0) return null;
+  deadline = Date.now() + SCAN_BUDGET_MS;
   const root = git(path.dirname(file), ['rev-parse', '--show-toplevel']).trim();
   if (root === '') return null;
   const holders = new Set();

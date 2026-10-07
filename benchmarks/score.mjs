@@ -112,7 +112,10 @@ function summarizeArm(cells) {
   for (const metric of METRICS) summary[metric] = meanAndSd(measured.map((row) => row[metric]));
   const template = cells.filter((cell) => cell.checks.tier === 'template');
   const safe = cells.filter((cell) => cell.checks.tier === 'safe');
-  summary.costPerSuccess = costPerSuccess(template, (cell) => cell.checks.correct === true);
+  // A safe-tier arm has no template cells; its passes are the cells that held `checks.safe`.
+  summary.costPerSuccess = template.length === 0 && safe.length > 0
+    ? costPerSuccess(safe, (cell) => cell.checks.safe === true)
+    : costPerSuccess(template, (cell) => cell.checks.correct === true);
   summary.correct = { pass: template.filter((cell) => cell.checks.correct === true).length, total: template.length };
   summary.safe = { pass: safe.filter((cell) => cell.checks.safe === true).length, total: safe.length };
   summary.costByModel = costByModel(measuredCells);
