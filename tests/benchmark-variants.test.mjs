@@ -20,7 +20,7 @@ function freshCopy(t) {
 }
 
 test('every variant builds from this checkout and checks clean', () => {
-  assert.deepEqual(Object.keys(VARIANTS), ['session-pointer', 'no-find-cause', 'session-build', 'session-build-no-proof']);
+  assert.deepEqual(Object.keys(VARIANTS), ['session-pointer', 'no-find-cause', 'session-build']);
   for (const name of Object.keys(VARIANTS)) assert.deepEqual(checkVariant(name), [], name);
 });
 
@@ -28,17 +28,6 @@ test('no-find-cause removes the skill folder and the route clause', (t) => {
   const copy = applyVariant('no-find-cause', freshCopy(t));
   assert.ok(!fs.existsSync(path.join(copy, 'skills', 'find-cause')));
   assert.ok(!fs.readFileSync(path.join(copy, 'skills', 'route-skills', 'SKILL.md'), 'utf8').includes('find-cause'));
-});
-
-test('session-build-no-proof swaps the loop and drops only the proof-check handler', (t) => {
-  const copy = applyVariant('session-build-no-proof', freshCopy(t));
-  const stop = fs.readFileSync(path.join(copy, 'hooks', 'dispatch-stop.mjs'), 'utf8');
-  assert.ok(!stop.includes("['proof-check'"));
-  assert.ok(stop.includes("['resume-plan'") && stop.includes("['terse-check'"));
-  assert.equal(
-    fs.readFileSync(path.join(copy, 'skills', 'build', 'references', 'run-loop-direct.md'), 'utf8'),
-    fs.readFileSync(path.join(ROOT, 'benchmarks', 'arms', 'build-session.md'), 'utf8')
-  );
 });
 
 test('a missing target text stops with an error naming the variant', (t) => {

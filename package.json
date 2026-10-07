@@ -6,7 +6,6 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#background-tasks": "./lib/background-tasks.mjs",
     "#budgets": "./verify/budgets.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",

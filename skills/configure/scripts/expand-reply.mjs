@@ -5,8 +5,7 @@
 // level, because the session rule fades over a long chat and after compaction.
 // With any other level, any other prompt prints nothing.
 //
-// The prompt also keeps the per-session terse state that the Stop hook reads
-// and writes: a lone `?` sets `expand` so the reply to it goes unscored, and
+// The prompt also keeps the per-session terse state: a lone `?` sets `expand`, and
 // any other prompt clears `expand` and the pending feedback. Under terse that
 // feedback is appended to the reminder once, as a note naming the last score.
 //

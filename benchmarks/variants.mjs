@@ -21,7 +21,6 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const SKILL_LINE = 'exo skills, invoked as `exo:<name>`: build, check-docs, configure, design-ui, edit-skills, file-issues, find-cause, refactor, remember, save-session, ship, spec, start, verify, write-docs. Invoke the one whose description matches before the first tool call.';
 const SESSION_FILE = 'hooks/session-start.mjs';
-const STOP_FILE = 'hooks/dispatch-stop.mjs';
 const ROUTE_FILE = 'skills/route-skills/SKILL.md';
 const DIRECT_LOOP = 'skills/build/references/run-loop-direct.md';
 
@@ -32,13 +31,11 @@ const POINTER_EDIT = {
 };
 const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: ', an unproven failure to `find-cause`', to: '' };
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
-const PROOF_EDIT = { file: STOP_FILE, from: "  ['proof-check', proofCheck],\n", to: '' };
 
 export const VARIANTS = {
   'session-pointer': { edits: [POINTER_EDIT], remove: [], swap: [] },
   'no-find-cause': { edits: [FIND_CAUSE_EDIT], remove: ['skills/find-cause'], swap: [] },
-  'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] },
-  'session-build-no-proof': { edits: [PROOF_EDIT], remove: [], swap: [BUILD_SWAP] }
+  'session-build': { edits: [], remove: [], swap: [BUILD_SWAP] }
 };
 
 // Applies one variant to the plugin copy at `copy`; `source` is the checkout
@@ -96,7 +93,6 @@ export function checkVariant(name) {
       const swapped = fs.readFileSync(path.join(copy, DIRECT_LOOP), 'utf8') === fs.readFileSync(path.join(ROOT, BUILD_SWAP.source), 'utf8');
       if (!swapped) problems.push('the direct loop is not the session-build arm file');
     }
-    if (name === 'session-build-no-proof' && fs.readFileSync(path.join(copy, STOP_FILE), 'utf8').includes("'proof-check'")) problems.push('proof-check is still a stop handler');
   } catch (error) {
     problems.push(error.message);
   } finally {

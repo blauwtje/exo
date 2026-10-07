@@ -23,7 +23,7 @@
    - `Route: inline`: follow next-task's `Steps:` lines.
 6. **Route the return.**
    - `BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.
-   - `BLOCKED` with a question runs `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/build/scripts/resume-plan.mjs" wait` before asking it.
+   - `BLOCKED` with a question ends the turn asking it.
    - `BLOCKED all nested dispatch unavailable` ends the turn asking to set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 2+.
    - `LANDED` and `GREEN` need nothing bar pending `mcp:<tool>`: call `mcp__*__<tool>`.
    - No such tool: never shell it; report `Unverified: <command> (no mcp__*__<tool> in this session)`, no Done.

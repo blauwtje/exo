@@ -14,14 +14,14 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 50 calls: 33 review, 5 build, 5 fixer, 3 plan and 4 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 50);
+test('the full set makes 49 calls: 33 review, 5 build, 5 fixer, 3 plan and 3 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 49);
   assert.equal(selectCells(cells, ['review']).length, 33);
   assert.equal(selectCells(cells, ['build']).length, 5);
   assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
-  assert.equal(selectCells(cells, ['flow']).length, 4);
-  assert.equal(selectCells(cells, ['plan', 'flow']).length, 7);
+  assert.equal(selectCells(cells, ['flow']).length, 3);
+  assert.equal(selectCells(cells, ['plan', 'flow']).length, 6);
 });
 
 test('an unknown set name stops the selection', () => {
@@ -47,7 +47,7 @@ test('the cells follow the routing under test', () => {
 });
 
 test('the flow baseline runs the plan with no plugin and the exo flow cell keeps it', () => {
-  const [exo, , , baseline] = selectCells(cells, ['flow']);
+  const [exo, , baseline] = selectCells(cells, ['flow']);
   assert.deepEqual([exo.id, baseline.id], ['flow-c7', 'flow-base']);
   assert.equal(flagValue(claudeArguments(exo), '--plugin-dir'), ROOT);
   assert.equal(claudeArguments(baseline).includes('--plugin-dir'), false);
@@ -82,12 +82,11 @@ test('a fixer cell dispatches the review-fixer prompt naming the plan, base and 
 });
 
 test('the session flow cells run flow-c7 prompt on a cut variant and load the copy given', () => {
-  const [exo, session, noProof] = selectCells(cells, ['flow']);
+  const [exo, session] = selectCells(cells, ['flow']);
   assert.deepEqual([session.id, session.pluginVariant], ['flow-session', 'session-build']);
-  assert.deepEqual([noProof.id, noProof.pluginVariant], ['flow-session-no-proof', 'session-build-no-proof']);
   assert.equal(exo.pluginVariant, null);
-  for (const cell of [exo, session, noProof]) assert.equal(cell.variant, null, cell.id);
-  for (const cell of [session, noProof]) {
+  for (const cell of [exo, session]) assert.equal(cell.variant, null, cell.id);
+  for (const cell of [session]) {
     assert.equal(cell.prompt, exo.prompt, cell.id);
     for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(cell[key], exo[key], `${cell.id} ${key}`);
     assert.equal(flagValue(claudeArguments(cell, '/tmp/copy'), '--plugin-dir'), '/tmp/copy', cell.id);
@@ -96,7 +95,7 @@ test('the session flow cells run flow-c7 prompt on a cut variant and load the co
 
 test('the sweep names each plugin variant once, however many cells load it', () => {
   const flow = selectCells(cells, ['flow']);
-  assert.deepEqual(pluginVariants([...flow, ...flow, ...selectCells(cells, ['review'])]), ['session-build', 'session-build-no-proof']);
+  assert.deepEqual(pluginVariants([...flow, ...flow, ...selectCells(cells, ['review'])]), ['session-build']);
   assert.deepEqual(pluginVariants(selectCells(cells, ['review', 'build', 'fixer', 'plan'])), []);
 });
 

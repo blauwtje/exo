@@ -339,7 +339,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     // SUMMARY line as the reason.
     if (successCriterionPasses(gateRun) && testScriptGate) {
       // A ready Proof line for build's report, quoting this command and a line it printed,
-      // only where proof-check takes a test-runner Proof, so a suite never stands in for the product.
+      // only for a library, so a suite never stands in for the product.
       lines.push(TEST_SCRIPT_PASS);
       if (!packageHasEntryPoint(root)) lines.push(`Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);
     } else if (successCriterionPasses(gateRun)) {

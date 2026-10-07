@@ -23,7 +23,7 @@ test('without --confirm the sweep prints its call count and starts no claude pro
   const { env, marker } = await fakeClaude();
   const result = await run(SWEEP, ['--set', 'all'], { env });
   assert.equal(result.code, 2, result.stderr);
-  assert.match(result.stdout, /^50 claude -p calls planned, one per cell:/);
+  assert.match(result.stdout, /^49 claude -p calls planned, one per cell:/);
   assert.match(result.stdout, /review-safe-path-seeded-low: --model claude-opus-5-5 --effort low/);
   assert.match(result.stdout, /plan-fable-xhigh: --model claude-fable-5-1 --effort xhigh/);
   assert.match(result.stdout, /Re-run with --confirm/);
@@ -34,7 +34,7 @@ test('a named set counts only its cells', async () => {
   const { env, marker } = await fakeClaude();
   const result = await run(SWEEP, ['--set', 'plan,flow'], { env });
   assert.equal(result.code, 2, result.stderr);
-  assert.match(result.stdout, /^7 claude -p calls planned/);
+  assert.match(result.stdout, /^6 claude -p calls planned/);
   await assert.rejects(fs.access(marker));
 });
 
@@ -72,7 +72,7 @@ test('a fixer cell prepares a branch carrying a real branch-review.md fixture', 
 });
 
 // A stand-in `claude` that records the plugin folder each call loads, whether
-// that folder holds the session build loop and the proof-check stop handler.
+// that folder holds the session build loop.
 async function loggingClaude() {
   const bin = await fixture();
   const log = path.join(bin, 'log.jsonl');
@@ -83,7 +83,7 @@ async function loggingClaude() {
     "const at = process.argv.indexOf('--plugin-dir');",
     "const plugin = at === -1 ? null : process.argv[at + 1];",
     "const read = (file) => plugin === null ? null : fs.readFileSync(`${plugin}/${file}`, 'utf8');",
-    `fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ plugin, loop: read('skills/build/references/run-loop-direct.md'), stop: read('hooks/dispatch-stop.mjs') }) + '\\n');`,
+    `fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ plugin, loop: read('skills/build/references/run-loop-direct.md') }) + '\\n');`,
     "console.log(JSON.stringify({ result: 'done', total_cost_usd: 0 }));"
   ].join('\n'), { mode: 0o755 });
   return { env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` }, log };
@@ -95,18 +95,14 @@ test('a session flow cell loads its variant copy and every other flow cell keeps
   const results = await fixture();
   const result = await run(SWEEP, ['--set', 'flow', '--confirm', '--concurrency', '1', '--out', out, '--results', results], { env });
   assert.equal(result.code, 0, result.stderr);
-  const [exo, session, noProof, base] = (await fs.readFile(log, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
+  const [exo, session, base] = (await fs.readFile(log, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
   const sessionLoop = await fs.readFile(path.join(ROOT, 'benchmarks', 'arms', 'build-session.md'), 'utf8');
   assert.equal(exo.plugin, ROOT);
   assert.equal(base.plugin, null);
   assert.notEqual(session.plugin, ROOT);
-  assert.notEqual(noProof.plugin, ROOT);
-  assert.notEqual(session.plugin, noProof.plugin);
   assert.notEqual(exo.loop, sessionLoop);
-  assert.deepEqual([session.loop, noProof.loop], [sessionLoop, sessionLoop]);
-  assert.match(session.stop, /\['proof-check', proofCheck\]/);
-  assert.doesNotMatch(noProof.stop, /\['proof-check', proofCheck\]/);
-  for (const copy of [session.plugin, noProof.plugin]) await assert.rejects(fs.access(copy), copy);
+  assert.equal(session.loop, sessionLoop);
+  for (const copy of [session.plugin]) await assert.rejects(fs.access(copy), copy);
 });
 
 test('an unknown flag stops before any call', async () => {

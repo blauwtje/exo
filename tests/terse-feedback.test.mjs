@@ -1,6 +1,5 @@
 // The per-session terse feedback state: one `{ expand, feedback }` JSON file per
-// session under `<configDirectory()>/exo/terse/`, deleted once both are empty,
-// and the scoring that turns a reply into the `{ rate, sentence }` feedback.
+// session under `<configDirectory()>/exo/terse/`, deleted once both are empty.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,13 +8,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { afterEach, beforeEach, test } from 'node:test';
 import {
-  ARTICLE_LIMIT,
   clearTerseState,
-  feedbackFor,
   readTerseState,
-  strayPhrases,
   terseStateFile,
-  tightenSentence,
   writeTerseState,
 } from '#terse-feedback';
 
@@ -96,50 +91,6 @@ test('a malformed or misshapen file reads as empty state', () => {
   assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display: null });
 });
 
-test('tightenSentence takes the first sentence with an article and drops its articles', () => {
-  const text = 'Build failed. The test fails because of a typo in the parser. The end.';
-  assert.equal(tightenSentence(text), 'test fails because of typo in parser.');
-});
-
-test('tightenSentence ignores code, quotes and paths when picking the sentence', () => {
-  const text = 'Run `the thing` now. See "the docs" and lib/the-file.mjs now. Then check the log.';
-  assert.equal(tightenSentence(text), 'Then check log.');
-});
-
-test('tightenSentence cuts to 120 characters and marks the cut', () => {
-  const text = `The ${'word '.repeat(60)}ends.`;
-  const sentence = tightenSentence(text);
-  assert.equal(sentence.length, 120);
-  assert.ok(sentence.endsWith('…'));
-});
-
-test('tightenSentence returns null when no sentence holds an article', () => {
-  assert.equal(tightenSentence('Build failed. Fix parser.'), null);
-});
-
-test('feedbackFor returns the rate and sentence over the limit', () => {
-  assert.equal(ARTICLE_LIMIT, 2.0);
-  const text = 'The build is broken because the parser reads the wrong file and the cache holds a stale copy of the output.';
-  const feedback = feedbackFor(text);
-  assert.ok(feedback.rate > ARTICLE_LIMIT);
-  assert.equal(
-    feedback.sentence,
-    'build is broken because parser reads wrong file and cache holds stale copy of output.',
-  );
-});
-
-test('feedbackFor carries the stray article phrases', () => {
-  const text = 'The build is broken because the parser reads the wrong file and the cache holds a stale copy of the output.';
-  assert.deepEqual(feedbackFor(text).phrases, ['the build', 'the parser', 'the wrong', 'the cache', 'a stale']);
-});
-
-test('strayPhrases keeps the next word with its apostrophe, skips repeats and quoted text, and stops at five', () => {
-  assert.deepEqual(strayPhrases("Check the other's array, then The other's array. See \"the docs\" and `the code`."), ["the other's"]);
-  assert.deepEqual(strayPhrases('A cat, an owl, the dog, a fox, the bee, an ant, a gnu.'), ['a cat', 'an owl', 'the dog', 'a fox', 'the bee']);
-  assert.deepEqual(strayPhrases('Fix parser. Rerun tests.'), []);
-  assert.deepEqual(strayPhrases('Ends with the'), []);
-});
-
 test('phrases read back, and feedback without phrases or with misshapen phrases is handled', () => {
   const feedback = { rate: 6.4, sentence: 'build fails.', phrases: ['the build'] };
   writeTerseState('abc-1', { expand: false, feedback });
@@ -148,8 +99,3 @@ test('phrases read back, and feedback without phrases or with misshapen phrases 
   assert.deepEqual(readTerseState('abc-1'), { expand: false, feedback: null, display: null });
 });
 
-test('feedbackFor returns null at or under the limit', () => {
-  assert.equal(feedbackFor('Parser reads wrong file. Cache holds stale copy. Fix both, rerun tests.'), null);
-  const atLimit = `The ${'word '.repeat(48)}end.`;
-  assert.equal(feedbackFor(atLimit), null);
-});
