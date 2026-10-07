@@ -7,6 +7,27 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **build's Stop hook takes a green test run as proof of Done unless `package.json` names a `bin` or `scripts.start`, and counts only a run that went green after the turn's last edit.**
+
+### Added
+
+- `benchmarks/results/2026-10-07-flow-fixes.md` records the flow benchmarks behind these fixes: a replay of every recorded Stop event through the old and new `proof-check.mjs`, the stricter proof rule for a package with a `bin` or `start` script, the pressure suite against the fork point and four confirmation cells. In those cells exo's flow run takes 504.1k weighted tokens against main's 672.1k, 25% fewer at 5.6 standard errors, and passes the hidden check in all four.
+
+### Changed
+
+- build's Stop hook (`skills/build/scripts/proof-check.mjs`) passes a Done report once a test runner, `verify.mjs`, `npm start` or Proof-named run goes green after the turn's last edit, a `land-task.mjs` run or git merge included, with or without a Proof line, and blocks one whose green runs all predate that edit. Where the project's `package.json` (the cwd's, else the git checkout root's) names a `bin` or `scripts.start`, a test or `verify.mjs` run never counts and the block names the `bin` or `npm start` run it needs; `skills/build/references/no-spec.md` allows a test-runner Proof only in a package with neither.
+- A `Proof:` line's quote no longer has to appear verbatim in its call's output: build's Stop hook blocks a Done report only when the quote contradicts every run of its command, as a success claim for a failed run or a labeled count such as `pass 6` the output never shows, and a Proof line naming a command never run blocks only when no other green run backs the Done. A report that claims no Done passes with a green run, any Proof line or an `Unverified:` line.
+- `exo:review-branch`, `exo:review-branch-deep` and `exo:review-branch-deep-high` report a defect in code the plan pastes as a `question` marked `report`, naming its task and a breaking input, so `exo:fix-review` no longer rewrites code the plan decided. `benchmarks/pressure/review-branch/case2-pasted-code-bug.txt` checks it with a pasted truncate function that returns more than `max` characters for a `max` under 3.
+
+### Fixed
+
+- build's Stop hooks, `proof-check.mjs` and `resume-plan.mjs`, count a background agent or command as pending until its notification reaches the lead as a user or attachment row, not once the harness only queues it, so they no longer block a turn that ends to wait for it.
+- `next-task.mjs` and `land-task.mjs` name one next task, never a `Wave:` line, in a checkout directly under `.claude/worktrees/`, where `EnterWorktree` or an `isolation: "worktree"` dispatch confines the session's writes and git, so build no longer starts a wave whose task worktrees that session cannot reach.
+- `verify.mjs` gates a plan that names no gate on `npm test` when `package.json` has a `test` script and no `check` script, printing `PASS success-criterion (npm test; no check script)`, instead of failing on the missing `npm run check`. A test-suite Proof is skipped under it as under `npm run check`, and in a package with no `bin` and no `scripts.start` the PASS line is followed by a ready `Proof:` line quoting the `verify.mjs` command for build's report.
+- verify's report lists every `report` finding, and each `question` as a plan question naming its task and any breaking input, at any `fix` count; before, it listed report findings only at `fix=0`.
+
 ## 0.99.0 - 2026-10-07
 
 ### Added
