@@ -57,8 +57,7 @@ const PROSE_RULES = 'Never force push, never run git reset --hard or git clean -
 // prompt; a plugin arm loads exactly the plugins in pluginDirs; promptSuffix is
 // added to the user prompt. gitOnly arms stay out of the default arm list.
 // A plugin arm with a `variant` loads that variant of the plugin copy
-// (variants.mjs); one with `exoSettings` adds those options to the cell's exo
-// settings, so a scan arm is exo with one switch on.
+// (variants.mjs).
 export const ARMS = {
   baseline: { prompt: null, pluginDirs: [], promptSuffix: null },
   terse: { prompt: TERSE_PROMPT, pluginDirs: [], promptSuffix: null },
@@ -78,8 +77,8 @@ export const ARMS = {
   'prose-rules': { prompt: PROSE_RULES, pluginDirs: [], promptSuffix: null, gitOnly: true }
 };
 
-// The cut and scan arms run only when named, so a default run keeps its cost.
-export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].variant && !ARMS[name].exoSettings);
+// The cut arms run only when named, so a default run keeps its cost.
+export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].variant);
 
 export const TEMPLATE_TASKS = [
   { id: 'tmpl-fe-timepicker', kind: 'frontend', prompt: 'Create a component in the frontend for choosing a time of day.' },
