@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const RUN_LOOP = fs.readFileSync(new URL('../skills/build/references/run-loop.md', import.meta.url), 'utf8');
+const BUILD_SKILL = fs.readFileSync(new URL('../skills/build/SKILL.md', import.meta.url), 'utf8');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 const IMPLEMENTER_PROMPT = fs.readFileSync(new URL('../skills/build/implementer-prompt.md', import.meta.url), 'utf8');
 const BUDGETS = JSON.parse(fs.readFileSync(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
@@ -66,7 +67,7 @@ test('each former OPEN case in the unit becomes a BLOCKED line', () => {
 test('build takes the block from next-task\'s Block: line and never reads the plan', () => {
   assert.ok(loopStep(3, RUN_LOOP).includes('next-task.mjs" --block --plan <plan> --root <checkout>'));
   assert.ok(loopStep(4, RUN_LOOP).includes('**Take the block from the `Block:` line.**'));
-  assert.ok(loopStep(2, RUN_LOOP).includes('This session never reads the plan body, a diff, a report or a worktree'));
+  assert.ok(loopStep(2, BUILD_SKILL).includes('Read only script output and unit returns, no plan, diff, report or worktree.'), 'the ban loads with the skill body, before run-loop.md');
 });
 
 test('build dispatches in the background, ends the turn, and never polls while a return is outstanding', () => {

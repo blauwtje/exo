@@ -10,8 +10,8 @@ effort: medium
 ## The loop
 
 1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
-2. **Leave the plan to the unit.**
-3. **Ask the branch what landed.** A `Next: none` result goes to step 7.
+2. **Leave the plan to the unit.** Read only script output and unit returns, no plan, diff, report or worktree.
+3. **Ask the branch what landed.**
 4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
@@ -19,7 +19,7 @@ effort: medium
 
 ## No spec
 
-1. **Orient.** A decided change with no plan file reads `references/no-spec.md` for steps 1-8 instead of the loop above. After a compaction, rebuild what landed from the working-tree diff, not memory.
+1. **Orient.** A decided change with no plan file reads `references/no-spec.md` for steps 1-8. After a compaction, rebuild what landed from the working-tree diff, not memory.
 2. **Gate.** Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.
 3. **Workspace, then baseline.**
 4. **Build.**
