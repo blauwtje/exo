@@ -1,26 +1,32 @@
-// Guards build's *Done* verdict: a green test suite must never stand
-// in for running the product on real input (see SKILL.md step 5). A Proof
-// naming a test runner blocks, unless the package.json in the hook's cwd names
-// no `bin` and no `scripts.start`: a library's tests are the one way to run
-// it. A missing or unreadable package.json keeps that block. Blocks the
-// turn at Stop when a `Proof: <command or MCP tool> -> <output>` line of the
-// session's final report names a Bash command or MCP tool call this build turn
-// did not make, or quotes output that call did not return. An unbacked proof,
-// in this report or in one an earlier block of this build turn stopped, passes
-// only as an `Unverified: <command> (<reason>)` line in a report that claims
-// no Done. A report with no Proof line and no earlier unbacked proof blocks
-// when it claims Done or lacks an `Unverified: <reason>` line.
+// Guards build's *Done* verdict: a report that claims Done needs a test or
+// product run that went green after the build turn's last edit. An edit is a
+// Write, Edit, MultiEdit or NotebookEdit call, or a Bash call that lands or
+// merges work: land-task.mjs, or git merge, cherry-pick, apply, am, pull or
+// rebase. A run qualifies when it is a test runner, a verify.mjs run, a start
+// script, or a call a `Proof: <command or MCP tool> -> <result>` line names, and
+// went green: no tool error, no nonzero `Exit code` and no failing count. A
+// named call whose output holds the Proof's quote also qualifies, so an
+// intended error exit can prove; a named call never qualifies when its command
+// names input this session wrote. Commands match after dropping a leading
+// `cd <dir> &&`, every `2>&1`, a trailing `| tail`, `head`, `grep` or `tee`
+// filter, quotes and extra whitespace; a quote matches as a substring of the
+// output after the same cleanup. A Done report blocks first when a Proof's
+// quote contradicts every call of its command: a success claim for a failed
+// run, or a labeled count, such as `pass 6` against `pass 5`, the output never
+// shows. A report that claims no Done passes with a qualifying run, a Proof
+// line or an `Unverified: <reason>` line.
 //
 //   node proof-check.mjs stop   Stop hook: stdin is the hook JSON
 //
 // The report judged is the Stop input's `last_assistant_message`, else the
 // transcript's last text row. Silent unless the exo:build skill was called
 // since the last message the human typed, so it never fires for a later
-// unrelated turn. Only that build call's turn is checked. After BLOCK_CEILING blocks in one build turn a
-// report that would block ends the turn with a systemMessage naming what
-// stayed unverified, never as Done, so this never loops. Also silent while a
-// background task the session launched has not notified, since the turn then
-// ends to wait. A hook failure never blocks the turn.
+// unrelated turn. Only that build call's turn is checked. After BLOCK_CEILING
+// blocks in one build turn a report that would block ends the turn with a
+// systemMessage naming what stayed unverified, never as Done, so this never
+// loops. Also silent while a background task the session launched has not
+// notified, since the turn then ends to wait. A hook failure never blocks the
+// turn.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,10 +34,20 @@ import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
 import { mcpToolCall } from '#mcp-tool-call';
-import { packageHasEntryPoint } from '#package-entry-point';
 
 const BUILD_SKILL = /(^|:)build$/i;
-const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
+const TEST_RUNNER = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
+const VERIFY_RUN = /^node\s+\S*\bverify\.mjs\b/;
+const START_RUN = /^(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?start\b/i;
+// A Bash call that changes the checkout: it lands a task or merges commits.
+const BASH_EDIT = /\bland-task\.mjs\b|\bgit\s+(?:-C\s+\S+\s+)?(?:merge|cherry-pick|apply|am|pull|rebase)(?![\w-])/;
+const FILE_EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+const EXIT_FAILURE = /(^|\n)Exit code [1-9]/;
+const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;?]*[ -/]*[@-~]`, 'g');
+// A labeled count, label first (`pass 5`, `fail: 0`, `FAIL=0`) unless the
+// number labels the next word (`Tests: 1 failed`), else number first (`4 passed`).
+const LABELED_COUNT = /\b([A-Za-z]+)\b[\s:=]*(\d+(?:\.\d+)?)(?!\.?\d)(?!\s+[A-Za-z]+\b(?![\s:=]*\d))|(\d+(?:\.\d+)?)\s+([A-Za-z]+)\b/g;
+const SUCCESS_WORD = /\b(?:pass(?:e[sd]|ing)?|ok|green|succe(?:ss(?:ful(?:ly)?)?|ed(?:ed|s)?))\b|[✓✔]/i;
 // A Proof line, optionally bulleted and bold: `- **Proof:** <body>`.
 const PROOF_LINE = /^\s*(?:[-*]\s+)?(?:\*\*)?Proof(?:\*\*)?:(?:\*\*)?\s*(.*)$/;
 const UNVERIFIED_LINE = /^\s*(?:[-*]\s+)?(?:\*\*)?Unverified(?:\*\*)?:(?:\*\*)?\s*(\S.*)$/;
@@ -96,8 +112,44 @@ function isTypedMessage(entry) {
   return !text.startsWith('<task-notification>') && !text.startsWith('Stop hook feedback:');
 }
 
+// Text as compared: no ANSI codes, no quote characters, single spaces.
+function normalizeText(text) {
+  return text.replace(ANSI_ESCAPE, '').replace(/["'`‘’“”]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// A command as compared: without leading `cd <dir> &&` steps, `2>&1` or a
+// trailing `| tail`, `head`, `grep` or `tee` filter, then normalized as text.
 function normalizeCommand(command) {
-  return command.replace(/`/g, '').trim().replace(/\s+/g, ' ');
+  return normalizeText(command
+    .replace(/`/g, '')
+    .replace(/^\s*(?:cd\s+(?:"[^"]*"|'[^']*'|[^\s;&|]+)\s*(?:&&|;)\s*)+/, '')
+    .replace(/2>&1/g, ' ')
+    .replace(/(?<!\|)\|(?!\|)\s*(?:tail|head|grep|tee)\b[\s\S]*$/, ''));
+}
+
+// Every labeled count in text as { key, value }; the key is the lowercase
+// label, `pass` or `fail` for any label starting so, else without one final `s`.
+function labeledCounts(text) {
+  return [...normalizeText(text).matchAll(LABELED_COUNT)].map((match) => {
+    const label = (match[1] ?? match[4]).toLowerCase();
+    const key = label.startsWith('pass') ? 'pass' : label.startsWith('fail') ? 'fail' : label.replace(/s$/, '');
+    return { key, value: Number(match[2] ?? match[3]) };
+  });
+}
+
+function isFailingCount({ key, value }) {
+  return value > 0 && (key === 'fail' || key.startsWith('error'));
+}
+
+// A `not ok` line, or a fail or error count above 0 on a line that is no
+// passing test's name.
+function hasFailingCount(output) {
+  return output.split('\n').some((rawLine) => {
+    const line = normalizeText(rawLine);
+    if (/^not ok\b/.test(line)) return true;
+    if (/^(?:[✓✔]|ok\b)/.test(line)) return false;
+    return labeledCounts(line).some(isFailingCount);
+  });
 }
 
 function resultTextOf(block) {
@@ -109,33 +161,38 @@ function resultTextOf(block) {
   return '';
 }
 
-// The product calls the session made after the build call: `bash` maps a
-// normalized Bash command to its tool_result text (a later call to the same
-// command overwrites), `mcp` maps an MCP tool name, `<tool>` of
-// `mcp__<server>__<tool>`, to the tool_result text of every call to it.
-function productCallsAfter(rows, startIndex) {
-  const resultsByToolUseId = new Map();
+// One pass over the build turn's main-thread tool calls, numbered in order:
+// `calls` holds each foreground Bash call as { seq, command, output, green }
+// and each MCP call as { seq, tool, output, green }; `lastEdit` is the number
+// of the last edit, or -1.
+function scanTurn(rows, skillIndex) {
+  const results = new Map();
   for (const entry of rows) {
     for (const block of contentBlocks(entry)) {
       if (block?.type === 'tool_result' && typeof block.tool_use_id === 'string') {
-        resultsByToolUseId.set(block.tool_use_id, resultTextOf(block));
+        results.set(block.tool_use_id, { text: resultTextOf(block), isError: block.is_error === true });
       }
     }
   }
-  const bash = new Map();
-  const mcp = new Map();
-  for (let index = startIndex + 1; index < rows.length; index += 1) {
+  const calls = [];
+  let lastEdit = -1;
+  let seq = 0;
+  for (let index = skillIndex + 1; index < rows.length; index += 1) {
+    if (rows[index]?.isSidechain === true) continue;
     for (const block of contentBlocks(rows[index])) {
       if (block?.type !== 'tool_use' || typeof block.name !== 'string') continue;
-      const result = resultsByToolUseId.get(block.id) ?? '';
-      if (block.name === 'Bash' && typeof block.input?.command === 'string') {
-        bash.set(normalizeCommand(block.input.command), result);
-      }
+      seq += 1;
+      const command = block.name === 'Bash' && typeof block.input?.command === 'string' ? block.input.command : null;
+      if (FILE_EDIT_TOOLS.has(block.name) || (command !== null && BASH_EDIT.test(command))) lastEdit = seq;
+      const result = results.get(block.id);
+      const output = result?.text ?? '';
+      const green = result !== undefined && !result.isError && !EXIT_FAILURE.test(output) && !hasFailingCount(output);
+      if (command !== null && block.input.run_in_background !== true) calls.push({ seq, command: normalizeCommand(command), output, green });
       const mcpTool = block.name.match(MCP_TOOL_NAME);
-      if (mcpTool) mcp.set(mcpTool[1], [...(mcp.get(mcpTool[1]) ?? []), result]);
+      if (mcpTool) calls.push({ seq, tool: mcpTool[1], output, green });
     }
   }
-  return { bash, mcp };
+  return { calls, lastEdit };
 }
 
 // A Bash command's redirection/copy destination: `> path`, `>> path`,
@@ -229,9 +286,10 @@ function claimsDone(text) {
 // Opens every block reason and the ceiling systemMessage; a Stop hook
 // feedback row holding it is a proof-check block.
 const FEEDBACK_MARKER = 'exo proof-check:';
-const MISSING_PROOF = `${FEEDBACK_MARKER} The report claims Done with no Proof line backed by a product command this session ran. Run the product's entry point or MCP tool on real input in this build turn and report one "Proof: <command or MCP tool> -> <output line>" per proof, or report "Unverified: <reason>" without claiming Done.`;
 const MISSING_UNVERIFIED = `${FEEDBACK_MARKER} The report has no Proof line backed by a product command this session ran and no Unverified line. Run the product's entry point or MCP tool on real input in this build turn and report one "Proof: <command or MCP tool> -> <output line>" per proof, or report "Unverified: <reason>".`;
-const UNBACKED_FIX = 'Run each on real input and report "Proof: <command> -> <output line>", or turn each into "Unverified: <command> (<reason>)" and drop the Done claim.';
+const NO_GREEN_RUN = 'The report claims Done, but no test or product run went green after the last edit.';
+const NO_GREEN_RUN_FIX = 'Run the tests, or the product\'s entry point or MCP tool on real input, after the last edit, then report "Proof: <command or MCP tool> -> <result>", or report "Unverified: <reason>" without claiming Done.';
+const CONTRADICTION_FIX = 'Quote the result that run printed, or rerun it and quote the new one.';
 
 // Splits a Proof line's body at its first `->` or `→` outside a backtick
 // span, else at its first one anywhere; null when it has none.
@@ -254,9 +312,9 @@ function commandOf(beforeArrow) {
   return normalizeCommand(span ? span[1] : beforeArrow);
 }
 
-// Every Proof line of the report as { line, command, output }; command and
-// output are null on a line with no arrow. Output loses one wrapping pair of
-// backticks.
+// Every Proof line of the report as { line, command, quote }; a line with no
+// arrow is all command with an empty quote. The quote loses one wrapping pair
+// of backticks.
 function proofLines(text) {
   const proofs = [];
   for (const line of text.split('\n')) {
@@ -265,11 +323,15 @@ function proofLines(text) {
     const parts = splitAtArrow(match[1]);
     proofs.push({
       line: match[1].trim(),
-      command: parts ? commandOf(parts[0]) : null,
-      output: parts ? parts[1].trim().replace(/^`(.*)`$/, '$1') : null
+      command: parts ? commandOf(parts[0]) : normalizeCommand(match[1]),
+      quote: parts ? parts[1].trim().replace(/^`(.*)`$/, '$1') : ''
     });
   }
   return proofs;
+}
+
+function hasUnverifiedLine(text) {
+  return text.split('\n').some((line) => UNVERIFIED_LINE.test(line));
 }
 
 // The MCP tool a Proof command names: its first word, without an `mcp:`
@@ -279,52 +341,85 @@ function mcpToolOf(command) {
   return word.match(MCP_TOOL_NAME)?.[1] ?? word;
 }
 
-function proofProblem(proof, calls, writtenPaths, hasEntryPoint) {
+// The calls a Proof command names: Bash calls of that command unless it names
+// an MCP tool, else, or with none, the calls of its MCP tool.
+function matchingCalls(command, calls) {
+  if (mcpToolCall(command) === null) {
+    const bash = calls.filter((call) => call.command === command);
+    if (bash.length > 0) return bash;
+  }
+  const tool = mcpToolOf(command);
+  return calls.filter((call) => call.tool === tool);
+}
+
+function quoteInOutput(quote, output) {
+  return normalizeText(output).includes(normalizeText(quote));
+}
+
+function isSuccessClaim(quote) {
+  const counts = labeledCounts(quote);
+  if (counts.some(isFailingCount)) return false;
+  return SUCCESS_WORD.test(quote) || counts.some(({ key, value }) => key === 'fail' && value === 0);
+}
+
+function countsByKey(lines) {
+  const byKey = new Map();
+  for (const line of lines) {
+    for (const { key, value } of labeledCounts(line)) byKey.set(key, [...(byKey.get(key) ?? []), value]);
+  }
+  return byKey;
+}
+
+// True when the quote contradicts this call: a success claim for a run that
+// failed, or, when the output lacks the quote, a label both count with no
+// number in common.
+function contradicts(quote, call) {
+  if (!call.green && isSuccessClaim(quote)) return true;
+  if (quoteInOutput(quote, call.output)) return false;
+  const printed = countsByKey(call.output.split('\n'));
+  return [...countsByKey([quote])].some(([key, values]) => printed.has(key) && !values.some((value) => printed.get(key).includes(value)));
+}
+
+function isCheckRun(call) {
+  return call.command !== undefined && [TEST_RUNNER, VERIFY_RUN, START_RUN].some((pattern) => pattern.test(call.command));
+}
+
+// A named call qualifies once green, or holding its quote, after the last
+// edit, unless the Proof command names input this session wrote.
+function namesQualifyingRun(proof, lastEdit, writtenPaths) {
+  if (proofNamesWrittenInput(proof.command, writtenPaths)) return false;
+  const quoted = normalizeText(proof.quote) !== '';
+  return proof.matching.some((call) => call.seq >= lastEdit && (call.green || (quoted && quoteInOutput(proof.quote, call.output))));
+}
+
+function proofProblem(proof, writtenPaths) {
   const quoted = `The Proof line "${proof.line.slice(0, 80)}"`;
-  if (proof.command === null) return `${quoted} has no "->" between its command and output.`;
-  if (hasEntryPoint && TEST_RUNNER_DENYLIST.test(proof.command)) return `${quoted} names a test runner, not the product.`;
-  // A Proof naming an MCP tool, prefixed or known, is matched against that
-  // tool's calls only, never a Bash call the shell could not run.
-  const bashOutput = mcpToolCall(proof.command) === null ? calls.bash.get(proof.command) : undefined;
-  if (bashOutput !== undefined) {
-    if (proofNamesWrittenInput(proof.command, writtenPaths)) {
-      return `${quoted} ran the product on input this session wrote, not the repository's or the user's real input.`;
-    }
-    return bashOutput.includes(proof.output) ? null : `${quoted} quotes output its Bash call did not print.`;
+  if (proof.matching.length === 0) return `${quoted} names a command or MCP tool this build turn never ran.`;
+  if (proofNamesWrittenInput(proof.command, writtenPaths)) {
+    return `${quoted} ran the product on input this session wrote, not the repository's or the user's real input.`;
   }
-  const tool = mcpToolOf(proof.command);
-  const mcpResults = calls.mcp.get(tool);
-  if (mcpResults !== undefined) {
-    return mcpResults.some((result) => result.includes(proof.output)) ? null : `${quoted} quotes output no ${tool} call returned.`;
-  }
-  return `${quoted} names a command or MCP tool this build turn never ran.`;
+  return `${quoted} has no green run after the last edit.`;
 }
 
-// The command an Unverified line or Proof command names, for matching one to
-// the other: its first word or MCP tool name, without `mcp:` or end punctuation.
-function namedCommandKey(text) {
-  return mcpToolOf(normalizeCommand(text)).replace(/[,:;.]+$/, '');
-}
-
-function unverifiedKeys(text) {
-  const keys = new Set();
-  for (const line of text.split('\n')) {
-    const match = line.match(UNVERIFIED_LINE);
-    if (match) keys.add(namedCommandKey(match[1]));
-  }
-  return keys;
-}
-
-// Every Proof line of a report as { command, problem }, checked against the
-// calls in rows after the build call; problem is null for a backed proof. A
-// line with no arrow stands for its command.
-function assessProofs(text, rows, skillIndex, hasEntryPoint) {
-  const calls = productCallsAfter(rows, skillIndex);
+// The report's outcome: null when it may end the turn, else the block reason
+// and the commands of the Proof lines that left it unproven.
+function verdict(report, rows, skillIndex) {
+  const { calls, lastEdit } = scanTurn(rows, skillIndex);
   const writtenPaths = sessionWrittenPaths(rows, skillIndex);
-  return proofLines(text).map((proof) => ({
-    command: proof.command ?? normalizeCommand(proof.line),
-    problem: proofProblem(proof, calls, writtenPaths, hasEntryPoint)
-  }));
+  const proofs = proofLines(report).map((proof) => ({ ...proof, matching: matchingCalls(proof.command, calls) }));
+  const qualifying = calls.some((call) => call.seq >= lastEdit && call.green && isCheckRun(call))
+    || proofs.some((proof) => namesQualifyingRun(proof, lastEdit, writtenPaths));
+  if (!claimsDone(report)) {
+    return qualifying || proofs.length > 0 || hasUnverifiedLine(report) ? null : { reason: MISSING_UNVERIFIED, named: [] };
+  }
+  const contradicted = proofs.filter((proof) => proof.matching.length > 0 && proof.matching.every((call) => contradicts(proof.quote, call)));
+  if (contradicted.length > 0) {
+    const problems = contradicted.map((proof) => `The Proof line "${proof.line.slice(0, 80)}" quotes a result its run contradicts.`);
+    return { reason: [FEEDBACK_MARKER, ...problems, CONTRADICTION_FIX].join(' '), named: contradicted.map((proof) => proof.command) };
+  }
+  if (qualifying) return null;
+  const problems = proofs.map((proof) => proofProblem(proof, writtenPaths));
+  return { reason: [FEEDBACK_MARKER, NO_GREEN_RUN, ...problems, NO_GREEN_RUN_FIX].join(' '), named: proofs.map((proof) => proof.command) };
 }
 
 // The last assistant text in rows from the build call up to endIndex, or ''.
@@ -348,40 +443,6 @@ function proofCheckBlockIndexes(rows, skillIndex) {
   return indexes;
 }
 
-// The commands of the unbacked proofs the report still owes: its own, plus
-// those of each earlier blocked report that no backed Proof line now covers.
-function unbackedCommands(current, rows, skillIndex, blockIndexes, hasEntryPoint) {
-  const backed = new Set(current.filter((proof) => proof.problem === null).map((proof) => proof.command));
-  const unbacked = new Set(current.filter((proof) => proof.problem !== null).map((proof) => proof.command));
-  for (const blockIndex of blockIndexes) {
-    const earlier = lastReportBefore(rows, blockIndex, skillIndex);
-    for (const proof of assessProofs(earlier, rows.slice(0, blockIndex), skillIndex, hasEntryPoint)) {
-      if (proof.problem !== null && !backed.has(proof.command)) unbacked.add(proof.command);
-    }
-  }
-  return [...unbacked];
-}
-
-function quoteCommand(command) {
-  return `"${command.slice(0, 80)}"`;
-}
-
-// The block reason for the report, or null when it may end the turn.
-function blockReason(report, current, unbacked) {
-  if (unbacked.length === 0) {
-    if (current.length > 0) return null;
-    if (claimsDone(report)) return MISSING_PROOF;
-    return unverifiedKeys(report).size > 0 ? null : MISSING_UNVERIFIED;
-  }
-  const covered = unverifiedKeys(report);
-  const missing = unbacked.filter((command) => !covered.has(namedCommandKey(command)));
-  if (missing.length === 0) {
-    return claimsDone(report) ? `${FEEDBACK_MARKER} Every unbacked proof has an Unverified line, but the report still claims Done; drop the Done claim.` : null;
-  }
-  const problems = current.filter((proof) => proof.problem !== null && missing.includes(proof.command)).map((proof) => proof.problem);
-  return [FEEDBACK_MARKER, ...problems, `No call this build turn backs ${missing.map(quoteCommand).join(', ')}.`, UNBACKED_FIX].join(' ');
-}
-
 // The Stop hook output object: a block, the ceiling's systemMessage, or null to let the turn end.
 export function stopHook(input) {
   if (hasPendingBackgroundTask(input.transcript_path)) return null;
@@ -395,14 +456,10 @@ export function stopHook(input) {
   const lastMessage = input.last_assistant_message;
   const report = typeof lastMessage === 'string' && lastMessage.trim() ? lastMessage : lastReportBefore(rows, rows.length, skillIndex);
   if (!report) return null;
-  const hasEntryPoint = packageHasEntryPoint(input.cwd || process.cwd());
-  const blockIndexes = proofCheckBlockIndexes(rows, skillIndex);
-  const current = assessProofs(report, rows, skillIndex, hasEntryPoint);
-  const unbacked = unbackedCommands(current, rows, skillIndex, blockIndexes, hasEntryPoint);
-  const reason = blockReason(report, current, unbacked);
-  if (reason === null) return null;
-  if (blockIndexes.length < BLOCK_CEILING) return { decision: 'block', reason };
-  const named = unbacked.length > 0 ? `Unverified: ${unbacked.join(', ')} (no matching call after ${BLOCK_CEILING} blocks)` : `no Proof line backs its Done claim after ${BLOCK_CEILING} blocks`;
+  const outcome = verdict(report, rows, skillIndex);
+  if (outcome === null) return null;
+  if (proofCheckBlockIndexes(rows, skillIndex).length < BLOCK_CEILING) return { decision: 'block', reason: outcome.reason };
+  const named = outcome.named.length > 0 ? `Unverified: ${outcome.named.join(', ')} (no matching call after ${BLOCK_CEILING} blocks)` : `no Proof line backs its Done claim after ${BLOCK_CEILING} blocks`;
   return { systemMessage: `${FEEDBACK_MARKER} report not verified; ${named}` };
 }
 

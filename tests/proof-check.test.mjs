@@ -52,33 +52,17 @@ function testRunnerTurn(report) {
   return transcript([SKILL_CALL, bashCall('toolu_bash1', 'npm test'), bashResult('toolu_bash1', '# tests 5\n# pass 5\n# fail 0'), finalReport(report)]);
 }
 
-test('blocks a Done claim proven only by a test runner when package.json names a bin or a start script', () => {
+test('passes a Done claim a green test run backs, whatever package.json names', () => {
   const file = testRunnerTurn('**Done:** wired --status into bin/report.js.\nProof: npm test -> # pass 5');
-  for (const manifest of ['{"bin":"bin/report.js"}', '{"bin":{"report":"bin/report.js"}}', '{"scripts":{"start":"node bin/report.js","test":"node --test"}}']) {
-    const result = JSON.parse(stopOutput({ transcript_path: file, cwd: project(manifest) }));
-    assert.equal(result.decision, 'block');
-    assert.match(result.reason, /names a test runner, not the product/);
+  for (const manifest of ['{"bin":"bin/report.js"}', '{"scripts":{"start":"node bin/report.js","test":"node --test"}}', LIBRARY, null, '{not json']) {
+    assert.equal(stopOutput({ transcript_path: file, cwd: project(manifest) }), '');
   }
 });
 
-test('keeps blocking a test-runner Proof when the cwd has no readable package.json', () => {
-  const file = testRunnerTurn('**Done:** titleCase handles mixed case.\nProof: npm test -> # pass 5');
-  for (const manifest of [null, '{not json']) {
-    const result = JSON.parse(stopOutput({ transcript_path: file, cwd: project(manifest) }));
-    assert.equal(result.decision, 'block');
-    assert.match(result.reason, /names a test runner, not the product/);
-  }
-});
-
-test('passes a backed test-runner Proof when package.json names no bin and no start script', () => {
-  const file = testRunnerTurn('**Done:** titleCase handles mixed case.\nProof: npm test -> # pass 5');
-  assert.equal(stopOutput({ transcript_path: file, cwd: project(LIBRARY) }), '');
-});
-
-test('blocks an unrun or misquoted test-runner Proof when package.json names no bin and no start script', () => {
+test('blocks an unrun or contradicted test-runner Proof', () => {
   const unrun = transcript([SKILL_CALL, finalReport('**Done:** titleCase handles mixed case.\nProof: npm test -> # pass 5')]);
-  const misquoted = testRunnerTurn('**Done:** titleCase handles mixed case.\nProof: npm test -> tests 5, pass 5, fail 0');
-  for (const [file, problem] of [[unrun, /never ran/], [misquoted, /quotes output its Bash call did not print/]]) {
+  const contradicted = testRunnerTurn('**Done:** titleCase handles mixed case.\nProof: npm test -> tests 5, pass 6, fail 0');
+  for (const [file, problem] of [[unrun, /never ran/], [contradicted, /quotes a result its run contradicts/]]) {
     const result = JSON.parse(stopOutput({ transcript_path: file, cwd: project(LIBRARY) }));
     assert.equal(result.decision, 'block');
     assert.match(result.reason, problem);
@@ -90,10 +74,12 @@ test('blocks a Proof line whose command was never run', () => {
     SKILL_CALL,
     bashCall('toolu_bash1', 'npm test'),
     bashResult('toolu_bash1', '# pass 5'),
+    writeCall('/repo/src/report.js'),
     finalReport('**Done:** wired --status into bin/report.js.\nProof: node bin/report.js --status paid -> orders: 4, total: 913.50 EUR')
   ]);
   const result = JSON.parse(stopOutput({ transcript_path: file }));
   assert.equal(result.decision, 'block');
+  assert.match(result.reason, /never ran/);
 });
 
 test('blocks a Proof line whose output does not match the real tool result', () => {
@@ -133,7 +119,7 @@ test('blocks a Done report with no Proof line on stop_hook_active', () => {
   ]);
   const result = JSON.parse(stopOutput({ transcript_path: file, stop_hook_active: true }));
   assert.equal(result.decision, 'block');
-  assert.match(result.reason, /no Proof line/);
+  assert.match(result.reason, /claims Done/);
 });
 
 test('blocks a Proof run on a fixture this session wrote with Write', () => {
@@ -229,7 +215,7 @@ function notifiedAgentTurn(notification, beforeReport) {
 test('checks the build turn across the skill body, a launch and its task notification', () => {
   const result = JSON.parse(stopOutput({ transcript_path: transcript(notifiedAgentTurn(NOTIFICATION, [])) }));
   assert.equal(result.decision, 'block');
-  assert.match(result.reason, /no Proof line/);
+  assert.match(result.reason, /claims Done/);
 });
 
 test('checks the build turn after Stop hook feedback', () => {
@@ -296,16 +282,18 @@ test('blocks a Proof line naming a never-run command on stop_hook_active', () =>
   assert.match(result.reason, /never ran/);
 });
 
-test('blocks a never-run second Proof line after a valid one', () => {
+test('blocks a Done report whose named runs all predate the last edit, naming each Proof\'s problem', () => {
   const file = transcript([
     SKILL_CALL,
     bashCall('toolu_bash1', 'node bin/report.js --status paid'),
     bashResult('toolu_bash1', 'orders: 4, total: 913.50 EUR'),
+    writeCall('/repo/src/report.js'),
     finalReport('**Done:** wired --status.\nProof: node bin/report.js --status paid -> orders: 4\nProof: node bin/report.js --status open -> orders: 1')
   ]);
   for (const active of [false, true]) {
     const result = JSON.parse(stopOutput({ transcript_path: file, stop_hook_active: active }));
     assert.equal(result.decision, 'block');
+    assert.match(result.reason, /--status paid -> orders: 4" has no green run after the last edit/);
     assert.match(result.reason, /--status open -> orders: 1" names a command or MCP tool this build turn never ran/);
   }
 });
@@ -344,18 +332,18 @@ test('matches an unprefixed known MCP tool Proof against that tool\'s calls, nev
   assert.match(result.reason, /names a command or MCP tool this build turn never ran/);
 });
 
-test('blocks an MCP Proof whose output is not in that tool\'s result', () => {
+test('blocks an MCP Proof whose quote that tool\'s result contradicts', () => {
   const file = transcript([
     SKILL_CALL,
     mcpCall('toolu_mcp1', 'mcp__plugin_kit_studio__user_mouse_input'),
-    bashResult('toolu_mcp1', 'Success'),
+    bashResult('toolu_mcp1', 'Coins: 0, WalkSpeed: 16'),
     mcpCall('toolu_mcp2', 'mcp__plugin_kit_studio__execute_luau'),
     bashResult('toolu_mcp2', 'Coins: 0, WalkSpeed: 32'),
     finalReport('**Done:** shop built.\n- Proof: `user_mouse_input` click on BuyButton → `Coins: 0, WalkSpeed: 32`')
   ]);
   const result = JSON.parse(stopOutput({ transcript_path: file }));
   assert.equal(result.decision, 'block');
-  assert.match(result.reason, /no user_mouse_input call returned/);
+  assert.match(result.reason, /quotes a result its run contradicts/);
 });
 
 // The build turn after `blocks` proof-check blocks, each stopping UNRUN_PROOF, ending on `report`.
@@ -368,11 +356,12 @@ function blockedTurn(blocks, report, before = []) {
 test('still blocks a Done report with an unbacked Proof after two blocks', () => {
   const result = JSON.parse(stopOutput({ transcript_path: blockedTurn(2, UNRUN_PROOF), stop_hook_active: true }));
   assert.equal(result.decision, 'block');
-  assert.match(result.reason, /No call this build turn backs "node bin\/report\.js --status open"/);
-  assert.match(result.reason, /turn each into "Unverified: <command> \(<reason>\)" and drop the Done claim/);
+  assert.match(result.reason, /claims Done, but no test or product run went green after the last edit/);
+  assert.match(result.reason, /"node bin\/report\.js --status open -> orders: 1" names a command or MCP tool this build turn never ran/);
+  assert.match(result.reason, /report "Unverified: <reason>" without claiming Done/);
 });
 
-test('passes a report that turns each earlier unbacked proof into an Unverified line without Done', () => {
+test('passes a report without Done that keeps a Proof or Unverified line, and blocks one that still claims Done unbacked', () => {
   const paid = [bashCall('toolu_bash1', 'node bin/report.js --status paid'), bashResult('toolu_bash1', 'orders: 4')];
   const earlier = '**Done:** wired.\nProof: node bin/report.js --status paid -> orders: 4\nProof: mcp:run_playtest mode=play -> passed';
   const file = transcript([
@@ -381,16 +370,7 @@ test('passes a report that turns each earlier unbacked proof into an Unverified 
   ]);
   assert.equal(stopOutput({ transcript_path: file, stop_hook_active: true }), '');
   const stillDone = transcript([SKILL_CALL, finalReport(UNRUN_PROOF), PROOF_FEEDBACK, finalReport('**Done:** wired.\nUnverified: node bin/report.js --status open (no open orders)')]);
-  assert.match(JSON.parse(stopOutput({ transcript_path: stillDone, stop_hook_active: true })).reason, /drop the Done claim/);
-});
-
-test('blocks a report that drops an unbacked Proof line without an Unverified line', () => {
-  const paid = [bashCall('toolu_bash1', 'node bin/report.js --status paid'), bashResult('toolu_bash1', 'orders: 4')];
-  for (const report of ['**Done:** wired.\nProof: node bin/report.js --status paid -> orders: 4', 'Wired.\nProof: node bin/report.js --status paid -> orders: 4']) {
-    const result = JSON.parse(stopOutput({ transcript_path: blockedTurn(1, report, paid), stop_hook_active: true }));
-    assert.equal(result.decision, 'block');
-    assert.match(result.reason, /backs "node bin\/report\.js --status open"/);
-  }
+  assert.match(JSON.parse(stopOutput({ transcript_path: stillDone, stop_hook_active: true })).reason, /claims Done/);
 });
 
 test('ends the turn with a systemMessage, not a block, at the ceiling of proof-check blocks', () => {
