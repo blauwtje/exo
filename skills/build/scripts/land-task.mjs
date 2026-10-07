@@ -3,9 +3,11 @@
 // an untracked one a later, unlanded task names, else runs the task's `Commit:` block as the plan wrote it, its bare trailer
 // swapped for one naming the plan, checks that the new commit carries the `Plan-task: <plan-id>/<n>` trailer and that the landed set now
 // holds the task, and prints that set and next-task's `Next:` or `Wave:` line, so the session neither pastes the
-// block nor reads the log. A compact task lands only on a build report whose
-// `Proof:` command, or with none its Success-criterion test, passed, and that
-// lists no command as failing under Proof; the printout carries that output. A
+// block nor reads the log. A compact task lands only when its `Proof:`
+// command, or with none the Success-criterion test its build report names,
+// passes when this script runs it in the checkout, and the report lists no
+// command as failing under Proof; the printout carries that run's exit status
+// and last output lines. A
 // `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short name,
 // lands on its `<command>: deferred` line instead and prints `Pending: mcp:<tool> <args>`
 // for the session to run. Above eight tasks each `Choice:` line of the
@@ -104,8 +106,6 @@ export function commitBlockOf(plan, number, planId, signatures = []) {
   throw new LandingError(`Task ${number} has no Commit: block`);
 }
 
-const SKIPPED_OUTCOME = /^(?:skip|skipped|todo|pending)\b/;
-
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -116,17 +116,16 @@ function escapeRegExp(text) {
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
 // The build report's own field names, never a command.
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
+// A Proof run past this counts as failed; it stays under the 600-second cap of
+// the Bash call that runs land-task, as wait-report's 540 seconds does.
+const PROOF_TIMEOUT_MS = 540_000;
+// The last non-empty output lines of the Proof run that the printout or the
+// refusal carries.
+const PROOF_TAIL_LINES = 20;
 // A test-first report's `Test first:` and `Red: <command>: fail` lines come before `Proof:`;
 // the red run's `fail` is the step before the edit, never a command outcome, so the lines read
 // drop each of them and the more indented lines under it, the assertion and observed value.
 const RED_FIELD_LINE = /^\s*(?:[-*]\s+)?(?:Test first|Red):/;
-// Lines that end a command's output: the report's own fields (including
-// `Report:`, the GREEN template's last line) or another backticked
-// `command`: outcome line. A bare line with a colon, or one starting with
-// `#`, stays output, since either is as likely to be the command's own text
-// (for example "pass kebab-case: 4 cases..." or a TAP "# pass 3" count).
-const OUTPUT_END_LINE = new RegExp(`^\\s*(?:[-*]\\s+)?(?:${[...REPORT_FIELDS, 'Report'].join('|')}):|^\\s*(?:[-*]\\s+)?\`[^\`]+\`:\\s*\\S`);
-
 // The command whose outcome proves the task: the plan's `Proof:`, or for an
 // older compact plan with none, the first command the report gives an outcome
 // for, which is the Success-criterion test build-task wrote or picked.
@@ -175,18 +174,11 @@ function refuseFailedCommand(task, lines) {
 
 // What every report refusal ends with, so one round fixes every report fault:
 // the layout the report must have under Proof, filled with the task's command.
-// An MCP Proof is only ever deferred, so it has no output lines.
 function expectedLayout(task, reportPath, command = null) {
-  const deferred = mcpProofOf(task) !== null;
   const written = command ?? (task.proof === null ? '<test command>' : task.proof.replace(/^`(.*)`$/, '$1'));
-  const lines = deferred ? [`${written}: deferred`] : [`${written}: pass`, '  <last output lines of that exact command>'];
-  return `\nExpected under Proof: in ${reportPath}:\n${lines.join('\n')}`;
+  const outcome = mcpProofOf(task) === null ? 'pass' : 'deferred';
+  return `\nExpected under Proof: in ${reportPath}:\n${written}: ${outcome}`;
 }
-
-// A task is done only on proof from the real product: the report's
-// `<command>: pass` line with the command's own output under it, at any
-// indentation. Any other outcome for that command, or none, leaves the task
-// not done.
 
 function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
@@ -241,33 +233,32 @@ export function deferredProofOf(task, call, reportText, reportPath) {
   return call;
 }
 
-export function proofOf(task, reportText, reportPath) {
+// The Bash command land-task runs as the task's Proof, once the report lists
+// no command as failing under Proof: the builder saw that break, whatever the
+// Proof's own run shows.
+function proofCommandOf(task, reportText, reportPath) {
   const lines = reportLinesOf(task, reportText, reportPath);
   const command = provedCommand(task, lines, reportPath);
-  const outcomes = outcomesOf(command, lines);
-  if (outcomes.length === 0) {
-    throw new LandingError(`Task ${task.number}: the build report has no "${command}: pass" line${expectedLayout(task, reportPath, command)}`);
-  }
-  const skipped = outcomes.find(({ outcome }) => SKIPPED_OUTCOME.test(outcome));
-  if (skipped !== undefined) throw new LandingError(`Task ${task.number}: the Proof: command "${command}" was skipped${expectedLayout(task, reportPath, command)}`);
-  const unclear = outcomes.find(({ outcome }) => outcome !== 'pass');
-  if (unclear !== undefined) {
-    throw new LandingError(`Task ${task.number}: the build report reads "${command}: ${unclear.outcome}", no clear pass${expectedLayout(task, reportPath, command)}`);
-  }
-  // Blank lines before the output, and any indentation the output carries
-  // relative to its outcome line, are the report writer's style, not a rule:
-  // only an end-of-output line closes the loop.
-  const output = [];
-  for (const line of lines.slice(outcomes[0].index + 1)) {
-    if (line.trim() === '') continue;
-    if (OUTPUT_END_LINE.test(line)) break;
-    output.push(line);
-  }
-  if (output.length === 0) {
-    throw new LandingError(`Task ${task.number}: the build report shows no output under "${command}: pass"${expectedLayout(task, reportPath, command)}`);
-  }
   refuseFailedCommand(task, lines);
-  return [`${command}: pass`, ...output].join('\n');
+  return command;
+}
+
+// A task is done only on proof from the real product, never on the report's
+// word: the Proof runs in the checkout under bash, as the Land gate does, with
+// stderr merged into stdout so the tail keeps their order. A nonzero exit, a
+// signal or the timeout refuses the landing with the output's last lines; a
+// pass returns its exit status and those lines for the printout.
+function runProof(task, command, root) {
+  const proofRun = spawnSync('bash', ['-e', '-c', `exec 2>&1\n${command}`], {
+    cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
+  });
+  const tail = (proofRun.stdout ?? '').split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
+  if (proofRun.status === 0) return [`${command}: pass (exit 0)`, ...tail].join('\n');
+  let reason = `exit ${proofRun.status}`;
+  if (proofRun.error?.code === 'ETIMEDOUT') reason = `timed out after ${PROOF_TIMEOUT_MS / 1000}s`;
+  else if (proofRun.error !== undefined) reason = `spawn error ${proofRun.error.message}`;
+  else if (proofRun.signal !== null) reason = `signal ${proofRun.signal}`;
+  throw new LandingError([`Task ${task.number}: the Proof: command "${command}" failed (${reason}):`, ...tail].join('\n'));
 }
 
 // `<plan stem>-decisions.md` beside the plan.
@@ -433,16 +424,15 @@ function runLandGate(landGate, root) {
   return true;
 }
 
-// The record verify.mjs reads to skip what this landing just passed: the
-// landed commit's tree, the gate command and the task's passed Proof. It holds
+// The record verify.mjs reads to skip what this landing just ran and passed:
+// the landed commit's tree, the gate command and the task's Proof. It holds
 // only the latest landing, so an earlier task's Proof, passed on an older
 // tree, is never skipped; a later landing or edit changes the tree, and
 // verify then reruns everything. Lift the one-landing limit by keying proofs
 // per tree.
-function writeLandGateRecord({ root, planId, gate, proof }) {
+function writeLandGateRecord({ root, planId, gate, proofCommand }) {
   const tree = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
-  // proofOf's first line reads `<command>: pass`.
-  const proofs = proof === null ? [] : [proof.split('\n')[0].replace(/: pass$/, '')];
+  const proofs = proofCommand === null ? [] : [proofCommand];
   fs.mkdirSync(path.join(root, SCRATCH_FOLDER), { recursive: true });
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
@@ -457,12 +447,13 @@ function refuseStrayPaths(plan, task, root, planPath) {
 function checkReport(task, reportText, reportPath) {
   const mcpCall = task.compact ? mcpProofOf(task) : null;
   const pending = mcpCall === null ? null : deferredProofOf(task, mcpCall, reportText, reportPath);
-  const proof = task.compact && pending === null ? proofOf(task, reportText, reportPath) : null;
-  return { proof, pending };
+  const proofCommand = task.compact && pending === null ? proofCommandOf(task, reportText, reportPath) : null;
+  return { proofCommand, pending };
 }
 
-// The stray-path and report checks landTask runs first, alone: nothing
-// commits, lints, gates or records, so a builder can run it before it reports.
+// The stray-path and report checks landTask runs first, alone: nothing runs
+// the Proof, commits, lints, gates or records, so a builder can run it before
+// it reports.
 export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
@@ -484,7 +475,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
   // parse, so only a compact task's report is read here.
-  const { proof, pending } = checkReport(task, reportText, reportPath);
+  const { proofCommand, pending } = checkReport(task, reportText, reportPath);
+  const proof = proofCommand === null ? null : runProof(task, proofCommand, root);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
   const gateRan = runLandGate(frame.landGate, root);
@@ -507,7 +499,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (subject !== expectedSubject) {
     throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   }
-  if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proof });
+  if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proofCommand });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
