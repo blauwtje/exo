@@ -85,6 +85,48 @@ test('a line per arm gives cost per correct cell by model, the subagents spawned
   assert.match(scored.stdout, /^- exo: cost per correct cell claude-haiku-4-5-20251001 \$0\.250, claude-sonnet-5 \$0\.050; subagents general-purpose 1\/2; exo loaded 100% \(2\/2\)$/m);
 });
 
+test('cost per success divides every template cell\'s spend, failed ones included, by the correct cells', async () => {
+  const root = await runsFixture();
+  const scored = await runScore([root]);
+  assert.equal(scored.code, 0, scored.stderr);
+  assert.match(scored.stdout, /\| cost \/ success \|$/m);
+  // baseline: $0.4 + $0.6 over 2 correct cells; exo: $0.3 + $0.5 over 1 correct cell
+  assert.match(scored.stdout, /^\| baseline \|.* \| \$0\.50 \|$/m);
+  assert.match(scored.stdout, /^\| exo \|.* \| \$0\.80 \|$/m);
+});
+
+test('cost per success is none when no cell passes', async () => {
+  const root = await fixture();
+  await writeMeta(root, ['t1'], 1, 2);
+  await cell(root, 't1', 'baseline', 1, result(0.4, 100000), template(100, true), cellUsage(100, 1000, 500));
+  await cell(root, 't1', 'exo', 1, result(0.3, 60000), template(80, false, true));
+  const scored = await runScore([root]);
+  assert.equal(scored.code, 0, scored.stderr);
+  assert.match(scored.stdout, /^\| exo \|.* \| none \|$/m);
+});
+
+test('a value row gives cost per success over every scored cell\'s spend', async () => {
+  const runs = await fixture();
+  await fs.writeFile(path.join(runs, 'meta.json'), JSON.stringify({ model: 'm', claudeVersion: 'v', date: 'd', arms: ['exo', 'baseline'], runs: 2 }));
+  const cells = [
+    ['exo', 1, true, 1], ['exo', 2, false, 3], ['exo', 3, 'error', 9],
+    ['baseline', 1, false, 2], ['baseline', 2, false, 2]
+  ];
+  for (const [arm, run, pass, cost] of cells) {
+    const directory = path.join(runs, 'value-a', arm, String(run));
+    await fs.mkdir(directory, { recursive: true });
+    const verdict = pass === 'error' ? { harnessError: 'boom' } : { pass, defects: 0 };
+    await fs.writeFile(path.join(directory, 'checks.json'), JSON.stringify({ tier: 'value', wallMs: 60000, loc: { added: 1 }, ...verdict }));
+    await fs.writeFile(path.join(directory, 'result.json'), JSON.stringify({ total_cost_usd: cost }));
+    await fs.writeFile(path.join(directory, 'usage.json'), JSON.stringify({ counts: { weightedInput: 1000, output: 0 } }));
+  }
+  const scored = await runScore([runs]);
+  assert.equal(scored.code, 0, scored.stderr);
+  assert.match(scored.stdout, /cost \/ success \|$/m);
+  assert.match(scored.stdout, /^\| value-a \| exo \|.* \| \$4\.00 \|$/m);
+  assert.match(scored.stdout, /^\| value-a \| baseline \|.* \| none \|$/m);
+});
+
 test('a correct template cell without usage.json stops the score', async () => {
   const root = await fixture();
   await writeMeta(root, ['t1'], 1, 2);

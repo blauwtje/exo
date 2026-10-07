@@ -22,6 +22,7 @@ const METRICS = ['loc', 'tokens', 'cost', 'time'];
 const LIMITATIONS = [
   'Correctness on template tasks is a marker (a new route decorator, or a new .tsx file) plus python3 -m py_compile; TSX is not type-checked and no test suite runs.',
   'A cell that fails its correctness gate or times out is excluded from the LOC, tokens, cost and time means and counted in the correct column.',
+  'Cost per success is the spend of every cell, failed and timed-out ones included, over the cells that pass; none when no cell passes.',
   'Safe means the one adversarial input set in benchmarks/safe/<task>/check.mjs was refused; it is not a fuzzing guarantee.',
   'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell, main thread and subagents, from its usage.json; cost is Claude Code\'s client-side list-price estimate over every model; time is duration_ms.',
   'Spread is the sample standard deviation over the included cells; percentages divide arm means by the baseline mean.',
@@ -68,6 +69,18 @@ function cellMetrics(cell) {
   };
 }
 
+// Cost per success: every cell's spend, failed and timed-out ones included,
+// over the passing cells; `none` when nothing passes.
+function costPerSuccess(cells, passed) {
+  const spend = cells.reduce((total, cell) => total + (cell.result?.total_cost_usd ?? 0), 0);
+  const successes = cells.filter(passed).length;
+  return successes === 0 ? null : spend / successes;
+}
+
+function dollars(value) {
+  return value === null ? 'none' : `$${value.toFixed(2)}`;
+}
+
 function included(cell) {
   return cell.checks.tier === 'template' && cell.checks.correct === true && !cell.checks.timedOut && cell.result !== null;
 }
@@ -99,6 +112,7 @@ function summarizeArm(cells) {
   for (const metric of METRICS) summary[metric] = meanAndSd(measured.map((row) => row[metric]));
   const template = cells.filter((cell) => cell.checks.tier === 'template');
   const safe = cells.filter((cell) => cell.checks.tier === 'safe');
+  summary.costPerSuccess = costPerSuccess(template, (cell) => cell.checks.correct === true);
   summary.correct = { pass: template.filter((cell) => cell.checks.correct === true).length, total: template.length };
   summary.safe = { pass: safe.filter((cell) => cell.checks.safe === true).length, total: safe.length };
   summary.costByModel = costByModel(measuredCells);
@@ -145,14 +159,14 @@ function rate({ pass, total }) {
 // Every arm shows its mean and spread; an arm beside a baseline adds its change against it.
 function tableLines(meta, summaries) {
   const header = `model ${meta.model} · Claude Code ${meta.claudeVersion} · fixture ${meta.fixture.name}@${meta.fixture.commit} · n=${meta.runs} · ${meta.date}`;
-  const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct |', '|---|---|---|---|---|---|---|'];
+  const lines = [header, '', '| arm | LOC | tokens | cost | time | safe | correct | cost / success |', '|---|---|---|---|---|---|---|---|'];
   const baseline = summaries.baseline;
   for (const [arm, summary] of Object.entries(summaries)) {
     const cells = METRICS.map((metric) => {
       const value = absolute(metric, summary[metric]);
       return arm === 'baseline' || !baseline ? value : `${value} (${relative(summary[metric], baseline[metric])})`;
     });
-    lines.push(`| ${arm} | ${cells.join(' | ')} | ${rate(summary.safe)} | ${rate(summary.correct)} |`);
+    lines.push(`| ${arm} | ${cells.join(' | ')} | ${rate(summary.safe)} | ${rate(summary.correct)} | ${dollars(summary.costPerSuccess)} |`);
   }
   return lines;
 }
@@ -196,8 +210,8 @@ function valueLines(meta, cells) {
   const lines = [
     `value tier · model ${meta.model} · Claude Code ${meta.claudeVersion} · ${meta.date} · mean ±standard error`,
     '',
-    '| task | arm | n | errors | pass | defects | LOC added | tokens | cost | wall time |',
-    '|---|---|---|---|---|---|---|---|---|---|'
+    '| task | arm | n | errors | pass | defects | LOC added | tokens | cost | wall time | cost / success |',
+    '|---|---|---|---|---|---|---|---|---|---|---|'
   ];
   for (const [key, group] of [...groups].sort(([left], [right]) => left.localeCompare(right))) {
     const [task, arm] = key.split('\t');
@@ -206,7 +220,7 @@ function valueLines(meta, cells) {
       const stat = meanWithError(scored.map(read));
       return stat === null ? '-' : `${VALUE_FORMAT[metric](stat.mean)} ±${VALUE_FORMAT[metric](stat.error)}`;
     });
-    lines.push(`| ${task} | ${arm} | ${scored.length} | ${group.length - scored.length} | ${columns.join(' | ')} |`);
+    lines.push(`| ${task} | ${arm} | ${scored.length} | ${group.length - scored.length} | ${columns.join(' | ')} | ${dollars(costPerSuccess(scored, (cell) => cell.checks.pass))} |`);
   }
   return lines;
 }

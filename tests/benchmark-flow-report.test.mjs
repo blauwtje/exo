@@ -48,6 +48,19 @@ test('aggregation groups records by arm and averages each figure', () => {
   assert.equal(baseline.defectsTotal, 2);
 });
 
+test('cost per success is every record\'s cost over the hidden-check passes, none when nothing passes', () => {
+  const [exo, baseline] = aggregateFlow([
+    record('flow-c7', { hiddenPass: true, costUsd: 2 }),
+    record('flow-c7', { hiddenPass: false, costUsd: 4 }),
+    record('flow-base', { hiddenPass: false, costUsd: 1 })
+  ]);
+  assert.equal(exo.costPerSuccess, 6);
+  assert.equal(baseline.costPerSuccess, null);
+  const report = flowReport([record('flow-c7', { costUsd: 2 }), record('flow-c7', { hiddenPass: false, costUsd: 4 }), record('flow-base', { hiddenPass: false })]);
+  assert.match(report, /^flow-c7:[\s\S]*cost per success \$6\.000/m);
+  assert.match(report, /^flow-base:[\s\S]*cost per success none/m);
+});
+
 test('a record from before the hidden check drops out of the landed and pass figures only', () => {
   const [arm] = aggregateFlow([record('flow-c7', { landed: undefined, total: undefined, hiddenPass: undefined, defects: undefined }), record('flow-c7', {})]);
   assert.equal(arm.n, 2);

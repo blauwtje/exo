@@ -7,7 +7,7 @@
 //   node benchmarks/flow-report.mjs <outDir>...
 //
 // Prints per arm the runs, tasks landed, hidden-check passes, defects, tokens,
-// cost and wall time, then the pass-rate difference exo minus baseline with
+// cost, cost per success and wall time, then the pass-rate difference exo minus baseline with
 // two standard errors, and `exo better` only when the difference exceeds them.
 
 import fs from 'node:fs';
@@ -68,6 +68,8 @@ export function aggregateFlow(records) {
       tokensMean: mean(runs.map((run) => run.tokens)),
       costMean: mean(runs.map((run) => run.costUsd)),
       costTotal: sum(runs.map((run) => run.costUsd)),
+      // Every record's spend over the hidden-check passes; null when none passes.
+      costPerSuccess: checked.some((run) => run.hiddenPass) ? sum(runs.map((run) => run.costUsd)) / checked.filter((run) => run.hiddenPass).length : null,
       wallMeanMs: mean(runs.map((run) => run.wallMs))
     };
   });
@@ -103,6 +105,7 @@ function armLines(arm) {
     `  defects total ${arm.defectsTotal ?? '-'}, mean ${fixed(arm.defectsMean, 2)}`,
     `  weighted tokens mean ${fixed(arm.tokensMean, 0)}`,
     `  cost mean $${fixed(arm.costMean, 3)}, total $${fixed(arm.costTotal, 3)}`,
+    `  cost per success ${arm.costPerSuccess === null ? 'none' : `$${fixed(arm.costPerSuccess, 3)}`}`,
     `  wall time mean ${fixed(arm.wallMeanMs === null ? null : arm.wallMeanMs / 60000, 1)} min`
   ];
 }
