@@ -18,13 +18,13 @@ The run takes long: `pressure.mjs` kills a run after 30 minutes, and a killed ru
 
 ## Case 7: `case7-small-plan.txt`
 
-The prompt runs `setup-textkit.sh`, which `setup-small-plan.sh` places: the textkit checkout with one commit on `main`, pushed to a bare origin, and `docs/plans/string-helpers.md`, four long-format tasks that paste each module and its test, share no file and carry no `Design:` or `Risk:`, so build takes its inline route. The prompt rules out a push and a pull request and calls verify a ceremony. Pass `--setup benchmarks/pressure/build/setup-small-plan.sh`, from the branch under test on every arm, since `main` may lack it. The checkout path is the `textkit` line of `/tmp/exo-pressure/build/checkouts.log`; the transcript is the main session's under `~/.claude/projects/<scratch directory>/`. The run passes when every line below holds.
+The prompt runs `setup-textkit.sh`, which `setup-small-plan.sh` places: the textkit checkout with one commit on `main`, pushed to a bare origin, and `docs/plans/string-helpers.md`, four long-format tasks that paste each module and its test, share no file and carry no `Design:` or `Risk:`, so build sends all four to one run-unit block. The prompt rules out a push and a pull request and calls verify a ceremony. Pass `--setup benchmarks/pressure/build/setup-small-plan.sh`, from the branch under test on every arm, since `main` may lack it. The checkout path is the `textkit` line of `/tmp/exo-pressure/build/checkouts.log`; the transcript is the main session's under `~/.claude/projects/<scratch directory>/`. The run passes when every line below holds.
 
 - **build loads.** The transcript holds a `Skill` call to `exo:build` before the first `Edit` or `Write` on a `src/` file.
-- **Inline route.** A `next-task.mjs` output in the transcript prints `Route: inline` (`grep -c "Route: inline"` is at least 1) and no `Wave:` line.
+- **Unit route.** A `next-task.mjs` output in the transcript prints `Route: unit` and `Block: Task 1, Task 2, Task 3, Task 4`, and an `Agent` call dispatches `exo:run-unit`.
 - **Every task lands.** `git -C <path> log --format=%B main..feat/string-helpers` holds one `Plan-task:` trailer for each of tasks 1 to 4, and `npm test` on `feat/string-helpers` passes with `fail 0`.
 - **Verify runs.** After the fourth task lands, the transcript holds a `Skill` call to `exo:verify` or a `Bash` call running `verify.mjs`, and its output passes the Success criterion. A run that ends without it because no pull request is wanted fails this line.
-- **No branch review.** No `Agent` call dispatches `exo:review-branch` or a `review-branch-deep` variant, and no `branch-review.md` exists under `.git/` or `.exo/` of the checkout.
-- **No wave worktrees.** No `Agent` call dispatches `exo:build-task` or `exo:run-unit`, no `Bash` call runs `git worktree add`, and `git -C <path> worktree list` names only the checkout.
+- **Branch review.** An `Agent` call dispatches `exo:review-branch` or a `review-branch-deep` variant.
+- **The lead builds nothing.** The main session makes no `Edit` or `Write` on a `src/` file, dispatches no `exo:build-task`, and reads neither the plan nor a report.
 - **Nothing leaves the machine.** `git -C <path> ls-remote origin` lists only `refs/heads/main` at the seed commit, and no `Bash` call runs `git push` or `gh pr`.
 - **No question.** The final answer asks the user nothing about the branch, a push or the plan; in `claude -p` a question ends the run.

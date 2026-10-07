@@ -126,22 +126,20 @@ test('a wave lands each green task past a failed sibling and saves every diff be
 });
 
 const BUILD_SKILL = read('build/SKILL.md');
-const NEXT_TASK_CALL = 'node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>';
+const BLOCK_CALL = 'node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --block --plan <plan> --root <checkout>';
 
-test('the at-most-eight route asks next-task.mjs for a wave, never one task at a time', () => {
+test('the lead asks next-task.mjs for the block, never one task at a time', () => {
   const askStep = loopStep(3);
-  assert.ok(askStep.includes(NEXT_TASK_CALL));
-  assert.ok(!askStep.includes('--one'), 'a printed wave reaches step 5 whole');
-  assert.ok(askStep.includes('`Route:` picks step 5\'s route'), 'the printed route, not a Wave: line, picks the dispatch');
+  assert.ok(askStep.includes(BLOCK_CALL));
   assert.ok(!RUN_LOOP.includes('--one'));
 });
 
-test('the at-most-eight route builds a printed wave per wave-worktrees.md and keeps every green task', () => {
+test('the direct fallback builds a printed wave per wave-worktrees.md and keeps every green task', () => {
   const dispatchStep = loopStep(5);
   const directRoute = RUN_LOOP_DIRECT;
-  assert.ok(dispatchStep.includes('`Wave:` line'), 'a Wave: line is handled');
-  assert.ok(dispatchStep.indexOf('`Route: unit`: **dispatch the unit**, never build a `Wave:` here.') < dispatchStep.indexOf('`Route: direct`: read the direct route reference'), 'the unit route precedes the direct recipe');
-  assert.ok(dispatchStep.indexOf('`Route: unit`') !== -1);
+  assert.ok(dispatchStep.includes('`exo:run-unit`'), 'the lead dispatches the unit');
+  assert.ok(directRoute.includes('a `Wave:` line each task'), 'a Wave: line is handled');
+  assert.ok(directRoute.includes('without `--block`'), 'the fallback reads the full next-task output');
   assert.ok(directRoute.includes('per the wave worktrees reference'), 'the wave is built per its reference, which SKILL.md links');
   assert.ok(directRoute.includes('one message'), 'the wave builds in parallel');
   assert.ok(directRoute.includes('a failed sibling never discards a green task'));

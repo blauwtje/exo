@@ -10,9 +10,9 @@ effort: medium
 ## The loop
 
 1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
-2. **Read the frame.**
+2. **Leave the plan to the unit.**
 3. **Ask the branch what landed.** A `Next: none` result goes to step 7.
-4. **Form the block.**
+4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
 7. **The tail.** Read `references/tail.md`: it ends this loop on `verify`.
@@ -33,8 +33,7 @@ effort: medium
 | File | Read it when |
 |---|---|
 | `references/run-loop.md` | The loop, steps 1-6. |
-| `references/run-loop-direct.md` | Step 5, under `Route: direct`. |
-| `references/run-loop-inline.md` | Never here: next-task prints it. |
+| `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | The loop, step 7, once step 3 reports `Next: none`. |
 | `references/no-spec.md` | No spec, when there is no plan file. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange } from '#plan-tasks';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
@@ -358,22 +358,27 @@ function routeOf(tasks) {
   return planRoute(parsePlan(planFixture({ tasks })).tasks);
 }
 
-test('four tasks with pasted code and disjoint files take the inline route', () => {
-  assert.deepEqual(routeOf([1, 2, 3, 4].map((number) => pastedTask(number))), { route: 'inline', reason: '4 tasks, code pasted, files disjoint' });
-});
-
-test('a plan breaking an inline rule takes the direct route, naming the first rule it breaks', () => {
-  assert.deepEqual(routeOf([1, 2, 3, 4, 5].map((number) => pastedTask(number))), { route: 'direct', reason: 'inline refused: 5 tasks' });
-  assert.deepEqual(routeOf([pastedTask(1), pastedTask(2, { code: '' })]), { route: 'direct', reason: 'inline refused: Task 2: no pasted code' });
-  const twoFilesOneBlock = pastedTask(1, { files: ['- Create: `src/a.js`', '- Test: `src/a.test.js`'] });
-  assert.deepEqual(routeOf([twoFilesOneBlock]), { route: 'direct', reason: 'inline refused: Task 1: no pasted code' });
-  assert.deepEqual(routeOf([pastedTask(1), pastedTask(2, { files: ['- Modify: `src/part-1.js`'] })]), { route: 'direct', reason: 'inline refused: Task 1 and Task 2 share src/part-1.js' });
-  assert.deepEqual(routeOf([pastedTask(1, { files: [] })]), { route: 'direct', reason: 'inline refused: Task 1: no Files: entries' });
-  assert.deepEqual(routeOf([pastedTask(1, { design: true })]), { route: 'direct', reason: 'inline refused: Task 1: a Design: task' });
-  const compact = parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): a', files: ['src/a.js'] })] })).tasks;
-  assert.deepEqual(planRoute(compact), { route: 'direct', reason: 'inline refused: Task 1: no pasted code' });
-});
-
-test('a plan past BLOCK_TASK_LIMIT takes the unit route', () => {
+test('every plan takes the unit route, whatever its size or code', () => {
+  assert.deepEqual(routeOf([1, 2, 3, 4].map((number) => pastedTask(number))), { route: 'unit', reason: '4 tasks' });
   assert.equal(routeOf(Array.from({ length: 9 }, (_, index) => pastedTask(index + 1))).route, 'unit');
+});
+
+function blockOf(tasks, landed = []) {
+  return nextBlock(parsePlan(planFixture({ tasks })).tasks, landed).map((task) => task.number);
+}
+
+test('the next block runs from the first ready task, up to BLOCK_TASK_LIMIT, ending before a Design: task', () => {
+  assert.deepEqual(blockOf(Array.from({ length: 10 }, (_, index) => pastedTask(index + 1))), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(blockOf([1, 2, 3, 4].map((number) => pastedTask(number)), [1, 2]), [3, 4]);
+  assert.deepEqual(blockOf([pastedTask(1), pastedTask(2), pastedTask(3, { design: true }), pastedTask(4)]), [1, 2]);
+  assert.deepEqual(blockOf([pastedTask(1, { design: true }), pastedTask(2)]), [1], 'a Design: task first is its own block');
+  assert.deepEqual(blockOf([pastedTask(1)], [1]), []);
+});
+
+test('the next block ends before a task that depends on an unlanded task outside it', () => {
+  const dependsOn = (text, number, on) => text.replace(new RegExp(`(### Task ${number}:[\\s\\S]*?)Depends on: none`), `$1Depends on: Task ${on}`);
+  const inside = parsePlan(dependsOn(planFixture({ tasks: [pastedTask(1), pastedTask(2), pastedTask(3)] }), 3, 2)).tasks;
+  assert.deepEqual(nextBlock(inside, []).map((task) => task.number), [1, 2, 3], 'a dependency inside the block keeps it whole');
+  const outside = parsePlan(dependsOn(planFixture({ tasks: [pastedTask(1), pastedTask(2), pastedTask(3)] }), 2, 3)).tasks;
+  assert.deepEqual(nextBlock(outside, []).map((task) => task.number), [1], 'a task waiting on a later task ends the block');
 });

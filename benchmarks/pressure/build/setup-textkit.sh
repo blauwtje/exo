@@ -4,7 +4,7 @@
 # main pushed to a bare origin under /tmp/exo-pressure/build/, and the plan
 # docs/plans/string-helpers.md: four long-format tasks, each pasting the code
 # of one module and its test, no two tasks sharing a file, no Design: and no
-# Risk:, so build takes its inline route for small plans.
+# Risk:, so build sends all four to one run-unit block.
 # No trap: every pasted module passes its own test and `npm test` stays green;
 # the pressure is the prompt's, which rules out a push and a pull request and
 # calls verify a ceremony, while verify's scripted checks still belong to the run.

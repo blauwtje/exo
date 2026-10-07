@@ -1,6 +1,5 @@
 // Lands one green task: refuses before it stages or commits anything when
-// the checkout has changed or added a path outside the task's `Files:`, bar
-// an untracked one a later, unlanded task names, else runs the task's `Commit:` block as the plan wrote it, its bare trailer
+// the checkout has changed or added a path outside the task's `Files:`, else runs the task's `Commit:` block as the plan wrote it, its bare trailer
 // swapped for one naming the plan, checks that the new commit carries the `Plan-task: <plan-id>/<n>` trailer and that the landed set now
 // holds the task, and prints that set and next-task's `Next:` or `Wave:` line, so the session neither pastes the
 // block nor reads the log. A compact task lands only when its `Proof:`
@@ -313,30 +312,9 @@ function isCovered(entries, changed) {
   return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
 }
 
-// A `git add` of `.`, `-A`, `--all` or `:/` stages every untracked path.
-const STAGES_ALL = /\bgit\s+add\b[^\n]*\s(?:\.|-A|--all|:\/)(?=\s|$)/m;
-
-// The inline route writes every task's files before it lands the first, so
-// an untracked path a later, unlanded task's `Files:` names is not a stray:
-// it waits, unstaged, for its own landing. A path only an earlier or landed
-// task names, a tracked change, or a Commit: block that stages everything
-// still refuses.
-function waitingPaths(plan, task, root, planPath) {
-  if (task.commitBlock !== null && STAGES_ALL.test(task.commitBlock)) return () => false;
-  const later = plan.tasks.filter((entry) => entry.number > task.number);
-  if (later.length === 0) return () => false;
-  const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
-  const laterEntries = later.filter((entry) => !landed.includes(entry.number)).flatMap((entry) => entry.files.map((file) => file.path));
-  const untracked = new Set(untrackedPaths(root));
-  return (changed) => untracked.has(changed) && isCovered(laterEntries, changed);
-}
-
-function strayPaths(plan, task, root, planPath) {
+function strayPaths(task, root, planPath) {
   const entries = task.files.map((file) => file.path);
-  const outside = changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed));
-  if (outside.length === 0) return outside;
-  const waiting = waitingPaths(plan, task, root, planPath);
-  return outside.filter((changed) => !waiting(changed));
+  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed));
 }
 
 // The file's source at HEAD, or null when HEAD holds no such file.
@@ -437,8 +415,8 @@ function writeLandGateRecord({ root, planId, gate, proofCommand }) {
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
 
-function refuseStrayPaths(plan, task, root, planPath) {
-  const stray = strayPaths(plan, task, root, planPath);
+function refuseStrayPaths(task, root, planPath) {
+  const stray = strayPaths(task, root, planPath);
   if (stray.length > 0) {
     throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
@@ -459,7 +437,7 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   const plan = parsePlan(planText);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  refuseStrayPaths(plan, task, root, planPath);
+  refuseStrayPaths(task, root, planPath);
   checkReport(task, reportText, reportPath);
   return `Report OK: Task ${number}\n`;
 }
@@ -470,7 +448,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const planId = planIdOf(planPath);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  refuseStrayPaths(plan, task, root, planPath);
+  refuseStrayPaths(task, root, planPath);
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not
@@ -504,10 +482,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
-  const route = planRoute(plan.tasks);
-  // The inline route builds in the run checkout, never in a wave's worktrees.
-  const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
-  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${waveLine(wave)}\n`;
+  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(planRoute(plan.tasks))}\n${waveLine(wave)}\n`;
 }
 
 function main(argv) {

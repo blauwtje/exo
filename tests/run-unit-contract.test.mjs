@@ -58,21 +58,22 @@ test('each former OPEN case in the unit becomes a BLOCKED line', () => {
   assert.ok(loopStep(3, UNIT_AGENT).includes('a second drift or failure on one task returns it `BLOCKED` with both report paths and two or three options'));
 });
 
-test('build forms no block around an unlanded dependency outside it', () => {
-  assert.ok(loopStep(4, RUN_LOOP).includes('ending before a `Design:` task or an unlanded `Depends on:` outside the block'));
+test('build takes the block from next-task\'s Block: line and never reads the plan', () => {
+  assert.ok(loopStep(3, RUN_LOOP).includes('next-task.mjs" --block --plan <plan> --root <checkout>'));
+  assert.ok(loopStep(4, RUN_LOOP).includes('**Take the block from the `Block:` line.**'));
+  assert.ok(loopStep(2, RUN_LOOP).includes('This session never reads the plan body, a diff, a report or a worktree'));
 });
 
 test('build dispatches in the background, ends the turn, and never polls while a return is outstanding', () => {
   const dispatchStep = loopStep(5, RUN_LOOP);
-  assert.ok(dispatchStep.startsWith('5. **Dispatch.** Dispatch silently, then end the turn; each completion notification resumes it.'), 'step 5 ends the turn on dispatch');
+  assert.ok(dispatchStep.startsWith('5. **Dispatch the unit.** Send the `Block:` tasks to the `exo:run-unit` agent, silently, then end the turn; its completion notification resumes it.'), 'step 5 ends the turn on dispatch');
   for (const tool of ['ScheduleWakeup', 'ListAgents', 'Monitor', 'sleep']) assert.ok(dispatchStep.includes(tool), `step 5 forbids ${tool}`);
   assert.ok(dispatchStep.includes('never call'), 'the polling tools are forbidden');
-  assert.ok(dispatchStep.includes('A wave lands only after every sibling returned'), 'a wave lands after every sibling returned');
   assert.ok(!dispatchStep.includes('run_in_background'), 'the lead demands no foreground flag');
   assert.ok(UNIT_AGENT.includes('`run_in_background: false`'), 'run-unit still dispatches build-task in the foreground');
-  assert.ok(dispatchStep.includes('a `Wave:` line each task'));
   const routeStep = loopStep(6, RUN_LOOP);
   for (const line of ['`LANDED`', '`BUDGET:`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
+  assert.ok(routeStep.includes('never read the report here'), 'a BLOCKED report path is passed on unread');
   assert.doesNotMatch(RUN_LOOP, /`OPEN`/);
 });
 
