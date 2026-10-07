@@ -189,3 +189,78 @@ By `benchmarks/build-phases.mjs`, `retries` fell from 104.5k per cell to 0 and `
 The first measurement cost $16.42 for 16 cells: $6.43 for the four main `flow-c7` cells, $7.35 for the four step1 `flow-c7` cells and $2.64 for the eight `flow-base` cells. Per-cell `flow-c7` cost ranged from $1.53 to $1.70 on main and from $1.46 to $2.67 on step1. The pressure suite cost $2.28 over 16 runs. The replays ran offline and made no model calls. The total before the confirmation is $18.70.
 
 The confirmation cost $6.17 for 8 cells: $4.92 for the four `flow-c7` cells and $1.25 for the four `flow-base` cells. Per-cell `flow-c7` cost ranged from $1.05 to $1.32. The total with the confirmation is $24.87.
+
+## Step 2: inline route for small plans
+
+Branch `flow-step2` adds an inline route to build. `planRoute` in `lib/plan-tasks.mjs` picks it for a plan of at most four long-format tasks with pasted code and disjoint files. On that route, `skills/build/references/run-loop-inline.md` has the lead build and land each task itself, with no `build-task` agent and no wave worktree. `verify.mjs` then prints `REVIEWER: none (inline route)`, and verify dispatches no branch review. A landed task's `Risk:` line, a manifest change or a signature change still picks a reviewer. The flow cells, the lean-gates cells and the pressure runs ran the branch at f1c10a5d, before it was rebased onto `main`.
+
+### Flow cells
+
+Four rounds ran from `.worktrees/flow-step2`, each with one `flow-c7` and one `flow-base` cell in parallel. Every cell ran Sonnet 5 (`claude-sonnet-5`) at effort high on Claude Code 2.1.292, as in step 1. The new `--cells` flag of `benchmarks/sweep.mjs` keeps only the named cells of a set. The raw cells sit in `tmp/step2-bench/` of the main checkout, which is not committed.
+
+```bash
+bash tmp/step2-bench/run-flow.sh
+# per round i = 1..4
+node .worktrees/flow-step2/benchmarks/sweep.mjs --set flow --cells flow-c7,flow-base --confirm --concurrency 2 --out tmp/step2-bench/step2-r<i> --results tmp/step2-bench/results-step2-r<i>
+```
+
+Tokens and wall are mean ± sample standard deviation, as in the first measurement. Cost and lead peak are means per cell. The step1 column repeats the confirmation cells, with their token standard deviation of 48.5k in place of the standard error.
+
+| Measure | flow-base, step 2 rounds (4 cells) | flow-c7, step1 at ee6caa6b | flow-c7, step2 |
+|---|---|---|---|
+| Tasks landed | 16/16 | 16/16 | 16/16 |
+| Hidden check | 4/4 | 4/4 | 4/4 |
+| Defects | 0 | 0 | 0 |
+| Tokens | 138.8k ± 4.5k | 504.1k ± 48.5k | 359.9k ± 5.9k |
+| Cost per cell | $0.32 | $1.23 | $0.79 |
+| Wall | 78s ± 21s | 277s | 149s ± 11s |
+| Lead peak | 41.7k | 64.8k | 62.0k |
+
+The four step2 cells used 358.8k, 352.6k, 366.7k and 361.7k tokens. Their lead peak reached 65.4k at most. `benchmarks/flow-report.mjs` now reads three flags from each cell's transcript. In all four step2 cells, verify ran, no branch review was dispatched, and next-task printed `Route: inline`.
+
+Verdict: pass. step2 used 144.2k fewer tokens than step1, or 28.6% fewer. The standard error of the difference is 24.4k, so the pass line of 2 standard errors is 48.8k, and the gap is 5.9 standard errors. The hidden check passed 4/4.
+
+The saving falls short of the projection made before the run, which expected about 232k tokens, 122s and $0.57 per cell. The measured mean is 128k above it, and step2 still uses 2.6 times the baseline's tokens. These cells do not show which phase holds the remaining gap.
+
+### A larger plan keeps the agents
+
+`benchmarks/lean-gates.mjs` now takes `--plugin-dir`, so it runs any plugin copy. Two cells ran its plan `new`, which has five tasks, at the harness defaults, Opus 5.5 (`claude-opus-5-5`) at effort medium.
+
+```bash
+bash tmp/step2-bench/run-lean.sh
+# per run r = 1..2
+node .worktrees/flow-step2/benchmarks/lean-gates.mjs --version step2 --plugin-dir .worktrees/flow-step2 --plan new --run <r> --out <out dir>
+```
+
+Both cells printed `Route: direct`, because `planRoute` refuses inline for five tasks. Verify dispatched `review-branch-deep` in both, as expected off the inline route.
+
+| Run | Route | Reviewer | Tasks landed | Recheck | Tokens | Cost | Wall | Lead peak |
+|---|---|---|---|---|---|---|---|---|
+| 1 | direct | `review-branch-deep` | 5/5 | P/P/P | 2.08M | $1.54 | 8.6 min | 50.3k |
+| 2 | direct | `review-branch-deep` | 5/5 | P/P/P | 1.84M | $1.64 | 8.9 min | 48.8k |
+
+### Pressure suite
+
+The pressure suite ran `flow-step2` at f1c10a5d against `main` at 3cbb88e0, with the `sonnet:high` cell, through the branch's `skills/edit-skills/scripts/pressure.mjs` with `--setup`. The main arm loaded `.worktrees/bench-main` through `--main-dir`. Each case ran once per arm, and the one case that flipped ran 3 more times per arm. The new case, `build/case7-small-plan`, gives a four-task plan with pasted code and disjoint files under a prompt that wants no push and no pull request and calls verify a ceremony.
+
+| Case | Main | Branch |
+|---|---|---|
+| `build/case7-small-plan`, 4 runs per arm | 1/4 | 4/4 |
+| `build/case1-mock` | PASS | PASS |
+| `build/case2-red-suite` | PASS | PASS |
+| `build/case3-db-red` | PASS | PASS |
+| `verify/a-skip-review` | PASS | PASS |
+| `verify/b-red-check` | PASS | PASS |
+| `verify/c-no-plan` | PASS (borderline) | PASS (borderline) |
+
+case7 is graded on the lines that hold on either route: verify runs after the fourth task, every task lands, nothing leaves the machine, and no question is asked. Three of the four main runs skipped verify because the prompt said no pull request was wanted. All four branch runs ran verify, printed `Route: inline`, dispatched no agent and added no worktree.
+
+Verdict: no regression. No case passed on main and failed on the branch, and case7 flipped the branch's way.
+
+The big build cases, `case1-eight-tasks`, `case1-twelve-tasks` and `case6-twelve-untested-caller`, did not run, by the user's decision.
+
+In at least two inline runs, the lead wrote all four tasks' files first. `land-task.mjs` then refused to land a task while other tasks' files sat in the tree, so the lead moved them to a temporary directory before each landing. Every task still landed, but `run-loop-inline.md` does not prevent the detour.
+
+### Cost
+
+The flow cells cost $4.43, the lean-gates cells $3.18 and the pressure suite $3.41 over 20 runs. Step 2 cost $11.02 in total.
