@@ -1,6 +1,8 @@
 // remove-worktree.mjs copies a worktree's .exo/ files into the run's .exo/
-// (or, with --kept, into .exo/kept/<name>/) before it removes the worktree, and
-// refuses to remove it when a copy fails or the kept folder already exists.
+// (or, with --kept, into .exo/kept/<name>/, first moving an existing folder of
+// that name to <name>-<stamp>/) before it removes the worktree, and refuses to
+// remove it, with any moved kept folder back in place, when a copy fails or
+// git refuses.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -66,7 +68,9 @@ test('--kept copies into .exo/kept/<name>/ and leaves the run .exo/ untouched', 
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
-test('--kept refuses a second worktree with the same name and removes nothing', async () => {
+// Two worktrees named `task` under different parents, each holding one
+// `.exo/task-1.patch` that names its own worktree.
+async function runWithTwoSameNamedWorktrees() {
   const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n' });
   excludeScratch(root);
   const first = path.join(`${root}-a`, 'task');
@@ -76,15 +80,38 @@ test('--kept refuses a second worktree with the same name and removes nothing', 
     fs.mkdirSync(path.join(worktree, '.exo'), { recursive: true });
     fs.writeFileSync(path.join(worktree, '.exo', 'task-1.patch'), `from ${worktree}\n`);
   }
+  return { root, first, second };
+}
+
+test('--kept moves an existing same-named folder to a stamped one and removes the second worktree', async () => {
+  const { root, first, second } = await runWithTwoSameNamedWorktrees();
   removeWorktree({ worktree: first, run: root, kept: true });
+
+  const output = removeWorktree({ worktree: second, run: root, kept: true });
+
+  const keptRoot = path.join(root, '.exo', 'kept');
+  const stamped = fs.readdirSync(keptRoot).filter((name) => /^task-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/.test(name));
+  assert.equal(stamped.length, 1);
+  assert.match(output, new RegExp(`moved existing '.*/kept/task/' to '.*/kept/${stamped[0]}/'`));
+  assert.equal(fs.readFileSync(path.join(keptRoot, 'task', 'task-1.patch'), 'utf8'), `from ${second}\n`);
+  assert.equal(fs.readFileSync(path.join(keptRoot, stamped[0], 'task-1.patch'), 'utf8'), `from ${first}\n`);
+  assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(second));
+});
+
+test('--kept git refusal after a move restores the existing folder and leaves no stamped one', async () => {
+  const { root, first, second } = await runWithTwoSameNamedWorktrees();
+  removeWorktree({ worktree: first, run: root, kept: true });
+  fs.writeFileSync(path.join(second, 'src', 'app.js'), 'dirty\n');
 
   assert.throws(() => removeWorktree({ worktree: second, run: root, kept: true }), (error) => {
     assert.ok(error instanceof RemoveWorktreeError);
-    assert.match(error.message, /\.exo\/kept\/task\/' already exists/);
+    assert.match(error.message, /git refused to remove .*contains modified or untracked files/);
     return true;
   });
+  const keptRoot = path.join(root, '.exo', 'kept');
+  assert.deepEqual(fs.readdirSync(keptRoot), ['task']);
+  assert.equal(fs.readFileSync(path.join(keptRoot, 'task', 'task-1.patch'), 'utf8'), `from ${first}\n`);
   assert.match(git(root, 'worktree', 'list'), new RegExp(second));
-  assert.equal(fs.readFileSync(path.join(root, '.exo', 'kept', 'task', 'task-1.patch'), 'utf8'), `from ${first}\n`);
 });
 
 test('--kept with no .exo/ files creates no folder and still removes the worktree', async () => {
