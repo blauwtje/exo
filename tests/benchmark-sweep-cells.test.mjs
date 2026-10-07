@@ -14,14 +14,14 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 48 calls: 33 review, 5 build, 5 fixer, 3 plan and 2 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 48);
+test('the full set makes 50 calls: 33 review, 5 build, 5 fixer, 3 plan and 4 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 50);
   assert.equal(selectCells(cells, ['review']).length, 33);
   assert.equal(selectCells(cells, ['build']).length, 5);
   assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
-  assert.equal(selectCells(cells, ['flow']).length, 2);
-  assert.equal(selectCells(cells, ['plan', 'flow']).length, 5);
+  assert.equal(selectCells(cells, ['flow']).length, 4);
+  assert.equal(selectCells(cells, ['plan', 'flow']).length, 7);
 });
 
 test('an unknown set name stops the selection', () => {
@@ -43,11 +43,11 @@ test('the cells follow the routing under test', () => {
   assert.deepEqual([...new Set(pairs('build'))], [`${SWEEP_MODELS.sonnet} high`]);
   assert.deepEqual([...new Set(pairs('fixer'))], [`${SWEEP_MODELS.sonnet} high`]);
   assert.deepEqual(pairs('plan'), [`${SWEEP_MODELS.opus} high`, `${SWEEP_MODELS.fable} high`, `${SWEEP_MODELS.fable} xhigh`]);
-  assert.deepEqual(pairs('flow'), [`${SWEEP_MODELS.sonnet} high`, `${SWEEP_MODELS.sonnet} high`]);
+  assert.deepEqual([...new Set(pairs('flow'))], [`${SWEEP_MODELS.sonnet} high`]);
 });
 
 test('the flow baseline runs the plan with no plugin and the exo flow cell keeps it', () => {
-  const [exo, baseline] = selectCells(cells, ['flow']);
+  const [exo, , , baseline] = selectCells(cells, ['flow']);
   assert.deepEqual([exo.id, baseline.id], ['flow-c7', 'flow-base']);
   assert.equal(flagValue(claudeArguments(exo), '--plugin-dir'), ROOT);
   assert.equal(claudeArguments(baseline).includes('--plugin-dir'), false);
@@ -79,6 +79,18 @@ test('a fixer cell dispatches the review-fixer prompt naming the plan, base and 
   assert.match(fixer.prompt, /You fix the findings a branch review wrote to the report above/);
   assert.match(fixer.prompt, /Review fix for docs\/plans\/safe-path\.md, repository/);
   assert.doesNotMatch(fixer.prompt, /^# Review fixer prompt/);
+});
+
+test('the session flow cells run flow-c7 prompt on a cut variant and load the copy given', () => {
+  const [exo, session, noProof] = selectCells(cells, ['flow']);
+  assert.deepEqual([session.id, session.variant], ['flow-session', 'session-build']);
+  assert.deepEqual([noProof.id, noProof.variant], ['flow-session-no-proof', 'session-build-no-proof']);
+  assert.equal(exo.variant, null);
+  for (const cell of [session, noProof]) {
+    assert.equal(cell.prompt, exo.prompt, cell.id);
+    for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(cell[key], exo[key], `${cell.id} ${key}`);
+    assert.equal(flagValue(claudeArguments(cell, '/tmp/copy'), '--plugin-dir'), '/tmp/copy', cell.id);
+  }
 });
 
 test('plan cells plan the change the flow cell runs from its fixed plan', () => {

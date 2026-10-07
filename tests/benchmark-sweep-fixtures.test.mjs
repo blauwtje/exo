@@ -73,6 +73,7 @@ test('the flow repository has origin/main, the fixed plan and a passing seed sui
   const plan = await fs.readFile(path.join(repository, FLOW_PLAN), 'utf8');
   assert.ok(plan.includes(`Repository: ${repository}\n`));
   assert.ok(plan.includes(`Branch: ${FLOW_BRANCH}\n`));
+  assert.ok(plan.includes('\n## Success criterion\n\n`npm test` passes.\n'));
   assert.equal(plan.match(/^### Task \d+:/gm).length, FLOW_TASK_COUNT);
   assert.equal(plan.match(/-m "Plan-task: \d+"/g).length, FLOW_TASK_COUNT);
   const suite = await nodeTest(repository);

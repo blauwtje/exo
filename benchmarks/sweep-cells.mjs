@@ -185,7 +185,8 @@ function planCells() {
 }
 
 // The exo arm runs the plan through build; the baseline arm gets the same plan
-// and branch with no plugin loaded, so the pair differ only in exo.
+// and branch with no plugin loaded, so the pair differ only in exo. The two
+// session arms give build's prompt to a cut variant of the plugin copy.
 function flowCells() {
   const shared = {
     kind: 'flow',
@@ -199,12 +200,11 @@ function flowCells() {
     budgetUsd: '25',
     timeoutMs: 120 * MINUTE_MS
   };
+  const buildPrompt = `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
   return [
-    {
-      ...shared,
-      id: 'flow-c7',
-      prompt: `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
-    },
+    { ...shared, id: 'flow-c7', prompt: buildPrompt },
+    { ...shared, id: 'flow-session', variant: 'session-build', prompt: buildPrompt },
+    { ...shared, id: 'flow-session-no-proof', variant: 'session-build-no-proof', prompt: buildPrompt },
     {
       ...shared,
       id: 'flow-base',
@@ -226,13 +226,13 @@ export function selectCells(cells, setNames) {
   return cells.filter((cell) => setNames.includes(cell.kind));
 }
 
-// Every call names this clone as its plugin, except a cell marked `plugin: false`,
-// and the cell's own model and effort, so no cell falls back to an effort a
-// settings file or session holds.
-export function claudeArguments(cell) {
+// Every call names this clone as its plugin, or the variant copy `pluginDir`
+// names, except a cell marked `plugin: false`, and the cell's own model and
+// effort, so no cell falls back to an effort a settings file or session holds.
+export function claudeArguments(cell, pluginDir = ROOT) {
   const args = [
     '-p', cell.prompt,
-    ...(cell.plugin === false ? [] : ['--plugin-dir', ROOT]),
+    ...(cell.plugin === false ? [] : ['--plugin-dir', pluginDir]),
     '--model', cell.model,
     '--effort', cell.effort,
     '--permission-mode', 'bypassPermissions',
