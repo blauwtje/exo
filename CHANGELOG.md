@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.103.0 - 2026-10-07
+
 ### Highlights
 
 **exo now registers four hooks instead of thirteen, and no Stop hook re-prompts a finished turn; the `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `log_scan` and `sibling_scan` settings are gone.**
