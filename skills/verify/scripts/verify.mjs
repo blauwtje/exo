@@ -2,9 +2,11 @@
 // Runs a lean-workflow plan's gate: each landed task's own Proof command
 // (except one equal to the gate command, a repeat of an earlier Proof, or running
 // the test suite or only test files its globs cover when the gate is the default
-// `npm run check`, which runs that suite), the first
+// `npm run check` or its `npm test` stand-in, each of which runs that suite), the first
 // backticked command of the plan's Success criterion (else `none` for `Land gate:
-// none`, else `npm run check`; any other Land gate is the per-task gate, never
+// none`, else `npm run check`, or `npm test` when `package.json` has a `test` script
+// and no `check` script, whose PASS line is followed by a ready `Proof:` line quoting
+// this command; any other Land gate is the per-task gate, never
 // the final check), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
@@ -52,6 +54,11 @@ import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-rev
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
 const DEFAULT_LAND_GATE = 'npm run check';
+// The default gate of a package with a `test` script and no `check` script.
+const TEST_SCRIPT_GATE = 'npm test';
+const TEST_SCRIPT_PASS = 'PASS success-criterion (npm test; no check script)';
+// An argument a shell reads as one word unquoted.
+const PLAIN_SHELL_WORD = /^[\w@%+=:,./-]+$/;
 // A Proof that starts the whole test suite: `npm test`.
 const TEST_SUITE_PROOF = /^npm test( |$)/;
 // A Proof naming only test files: `node --test <file>...`, each a plain path.
@@ -91,16 +98,21 @@ export function unmarkedMcpTool(command, { code, output }) {
   return new RegExp(`\\b${word}: (?:command )?not found`).test(output) ? word : null;
 }
 
-/** The globs `package.json` `scripts.test` hands `node --test`, or [] when there is no `package.json` or it runs no such command; a malformed one throws. */
-function suiteGlobs(root) {
+/** The `scripts` of the root's `package.json`, or {} when it has none or there is no `package.json`; a malformed one throws. */
+function packageScripts(root) {
   let manifest;
   try {
     manifest = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
   } catch (error) {
-    if (error.code === 'ENOENT') return [];
+    if (error.code === 'ENOENT') return {};
     throw error;
   }
-  const script = JSON.parse(manifest).scripts?.test ?? '';
+  return JSON.parse(manifest).scripts ?? {};
+}
+
+/** The globs `scripts.test` hands `node --test`, or [] when it runs no such command. */
+function suiteGlobs(scripts) {
+  const script = scripts.test ?? '';
   if (!script.startsWith('node --test ')) return [];
   const words = script.match(/"[^"]*"|'[^']*'|\S+/g).slice(2);
   return words.filter((word) => !word.startsWith('-')).map((word) => word.replace(/^["']|["']$/g, ''));
@@ -118,6 +130,17 @@ export function filesUnderGlobs(command, globs) {
   if (!TEST_FILES_PROOF.test(command)) return false;
   const files = command.split(' ').slice(2).map((file) => file.replace(/^\.\//, ''));
   return files.every((file) => globs.some((glob) => globMatches(glob, file)));
+}
+
+/**
+ * The command that ran this script, rebuilt from `argv` in the form SKILL.md gives:
+ * `node "<script>"`, then each argument bare, or double-quoted when a shell would split
+ * or expand it. A shell expansion the caller typed, such as `"$(pwd)"`, shows expanded.
+ */
+export function commandLine(argv) {
+  const quoted = (word) => `"${word.replace(/["\\$`]/g, '\\$&')}"`;
+  const args = argv.slice(2).map((word) => (PLAIN_SHELL_WORD.test(word) ? word : quoted(word)));
+  return ['node', quoted(argv[1]), ...args].join(' ');
 }
 
 /** A changed path outside every task's declared Files is a stray edit. */
@@ -227,7 +250,7 @@ async function mapLimited(items, limit, work) {
  * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
  */
-export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base } = {}) {
+export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv) } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
   const planId = planIdOf(planPath);
@@ -236,13 +259,17 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
-  const gateCommand = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone ?? DEFAULT_LAND_GATE;
+  const scripts = packageScripts(root);
+  const namedGate = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone;
+  // With no gate named and no `check` script, the package's own `npm test` is the default gate.
+  const testScriptGate = namedGate === null && scripts.check === undefined && scripts.test !== undefined;
+  const gateCommand = namedGate ?? (testScriptGate ? TEST_SCRIPT_GATE : DEFAULT_LAND_GATE);
   const gateSkipped = gateCommand === 'none';
   const gateMcpCall = mcpToolCall(gateCommand);
 
   const proofRuns = [];
   const queued = new Set();
-  const globs = suiteGlobs(root);
+  const globs = suiteGlobs(scripts);
   for (const task of plan.tasks) {
     if (!landed.has(task.number) || task.proof === null) continue;
     const command = runnableProof(task.proof);
@@ -255,9 +282,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     const mcpCall = mcpToolCall(command);
     const check = mcpCall ?? command;
     // A Proof that is the gate command, or runs the test suite or files its globs
-    // cover under the default gate (which runs that suite), repeats what the gate runs once below. A
+    // cover under the default gate or its `npm test` stand-in (each runs that suite), repeats what the gate runs once below. A
     // custom gate may run no tests, so a suite Proof still runs under it.
-    const suiteUnderDefault = gateCommand === DEFAULT_LAND_GATE && (TEST_SUITE_PROOF.test(command) || filesUnderGlobs(command, globs));
+    const suiteUnderDefault = (gateCommand === DEFAULT_LAND_GATE || testScriptGate) && (TEST_SUITE_PROOF.test(command) || filesUnderGlobs(command, globs));
     if (!gateSkipped && (check === (gateMcpCall ?? gateCommand) || suiteUnderDefault)) {
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
@@ -308,7 +335,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     // the command; a gate that prints none, as another project's `npm run check`
     // does, is judged on its exit code alone. A run that exits 0 yet fails names its
     // SUMMARY line as the reason.
-    if (successCriterionPasses(gateRun)) {
+    if (successCriterionPasses(gateRun) && testScriptGate) {
+      // A ready Proof line for build's report, quoting this command and a line it printed.
+      lines.push(TEST_SCRIPT_PASS, `Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);
+    } else if (successCriterionPasses(gateRun)) {
       lines.push('PASS success-criterion');
     } else {
       const reason = gateRun.ok ? summaryLine(gateRun.output) : failReason(gateRun);

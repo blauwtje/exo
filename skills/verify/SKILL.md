@@ -10,8 +10,8 @@ effort: high
 ## The loop
 
 1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
-   - It runs each landed task's own Proof command, except one equal to the gate command, or running the test suite (`npm test`, `node --test`) under the default `npm run check` gate.
-   - It then runs the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`.
+   - It runs each landed task's own Proof command, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate.
+   - It then runs the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, or `npm test` with no `check` script.
    - `Land gate: none` prints `UNRUN success-criterion`, not `PASS`.
    - It runs the stray-path check against `base`.
    - It prints one `REVIEWER: review-branch` or `REVIEWER: review-branch-deep` line, then one `DONE` or `OPEN` line per task and one `MANUAL` line per `## Manual checks` bullet.

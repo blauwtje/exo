@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
+import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -641,4 +641,55 @@ test('a large diff with no risk and merge commits only prints the light reviewer
   git(root, 'merge', '--no-ff', 'side', '-m', 'merge side');
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
   assert.ok(result.stdout.includes(`REVIEWER: ${REVIEWER_AGENTS.light}`), result.stdout);
+});
+
+test('commandLine rebuilds the command as SKILL.md runs it, quoting only words a shell would split', () => {
+  assert.equal(
+    commandLine(['/usr/bin/node', '/plugin dir/verify.mjs', '--plan', 'docs/plan.md', '--root', '.', '--check-command', 'npm test']),
+    'node "/plugin dir/verify.mjs" --plan docs/plan.md --root . --check-command "npm test"'
+  );
+  assert.equal(commandLine(['node', '/v.mjs', '--check-command', 'echo "$HOME"']), 'node "/v.mjs" --check-command "echo \\"\\$HOME\\""');
+});
+
+// A package whose `test` script appends one line to `runs` per run, so a test can count suite runs.
+async function testScriptRepository(scripts) {
+  const runs = path.join(await mkdtemp(path.join(tmpdir(), 'verify-runs-')), 'runs.log');
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: npm test\n',
+    'count.js': `require('node:fs').appendFileSync(${JSON.stringify(runs)}, 'run\\n');\n`,
+    'check.js': CLEAN_CHECK,
+    'package.json': JSON.stringify({ scripts })
+  });
+  landTask(root, 1);
+  return { root, runs };
+}
+
+test('with no check script the gate runs npm test once and prints a Proof line quoting its own command', async () => {
+  const { root, runs } = await testScriptRepository({ test: 'node count.js' });
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stdout);
+  const lines = result.stdout.trim().split('\n');
+  assert.deepEqual(lines.slice(0, 3), [
+    'SKIP Task 1 (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)',
+    'PASS success-criterion (npm test; no check script)',
+    `Proof: \`node "${SCRIPT}" --plan plan.md\` -> PASS success-criterion (npm test; no check script)`
+  ]);
+  assert.equal(await readFile(runs, 'utf8'), 'run\n');
+});
+
+test('with a check script the gate stays npm run check and prints no Proof line', async () => {
+  const { root, runs } = await testScriptRepository({ check: 'node check.js', test: 'node count.js' });
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+  assert.equal(result.code, 0, result.stdout);
+  const lines = result.stdout.trim().split('\n');
+  assert.deepEqual(lines.slice(0, 3), [
+    'SKIP Task 1 (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)',
+    'PASS success-criterion',
+    'PASS stray-paths'
+  ]);
+  assert.equal(lines.some((line) => line.startsWith('Proof:')), false);
+  await assert.rejects(readFile(runs, 'utf8'), { code: 'ENOENT' });
 });
