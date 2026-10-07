@@ -18,7 +18,7 @@
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
 //
-// Prints one PASS, FAIL, SKIP, SESSION, UNRUN or STRAY line per check, then the REVIEWER line,
+// Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN or STRAY line per check, then the REVIEWER line,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
 // A FAIL line for a Proof or the Success criterion names why in brackets, the
@@ -39,6 +39,10 @@
 // names that likely MCP tool and the `mcp:<tool>` form on its FAIL line.
 // A failed Success criterion whose output blames only unlanded tasks' declared Files,
 // as on a run scoped to some of the plan's tasks, prints a SKIP line naming them, not FAIL.
+// A claims-diff check compares each landed task's claims with its commits' diff: a FAIL line
+// for a `Files:` path no commit of the task changed, and for a test-first task (`Risk:`, or a
+// `fix` with a test file in `Files:`) whose commits change no test file; a WARN line, which
+// does not fail, for each assertion a test file loses and each `.skip` or `.only` it gains.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -47,7 +51,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { frameOf, landedTasks, parsePlan, planIdOf, planRoute } from '#plan-tasks';
+import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -88,6 +92,15 @@ const PROSE_PROOF = /`/;
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
 // The exit code a POSIX shell returns for a command it cannot find.
 const COMMAND_NOT_FOUND = 127;
+// A test file: under a `test`, `tests`, `spec` or `__tests__` folder, named `test_*`, or ending `.test.<ext>` or `_spec.<ext>`.
+const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._-](?:test|spec)\.[^/.]+$/;
+// A line a test file loses that asserts, and a line it gains that skips or isolates a test.
+const REMOVED_ASSERTION = /expect\(|assert/;
+const ADDED_SKIP = /\.(?:skip|only)\b/;
+const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
+const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*)$/;
+// A WARN line quotes at most this much of the changed line.
+const WARN_TEXT_LENGTH = 100;
 
 /** A task's Proof: as a command to run, or null when a backtick marks it as prose instead. */
 export function runnableProof(proof) {
@@ -155,6 +168,81 @@ export function commandLine(argv) {
 export function findStrayPaths(tasks, paths) {
   const declared = new Set(tasks.flatMap((task) => task.files.map((file) => file.path)));
   return paths.filter((path) => !declared.has(path));
+}
+
+/** The paths of `files` that no path in `changed` covers; a `*` path reads as a glob, a path ending `/` as a folder. */
+export function unchangedFiles(files, changed) {
+  return files.map((file) => file.path.replace(/^\.\//, '')).filter((wanted) => {
+    if (wanted.includes('*')) return !changed.some((path) => globMatches(wanted, path));
+    if (wanted.endsWith('/')) return !changed.some((path) => path.startsWith(wanted));
+    return !changed.includes(wanted);
+  });
+}
+
+/** Whether the plan marks a task test-first: a `Risk:` field, or a `fix` that lists a test file in `Files:`. */
+export function isTestFirst(task) {
+  return task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => TEST_FILE.test(file.path)));
+}
+
+/**
+ * What a patch (`git show -U0`) does to the tests it touches: `path:line removed ...` for each
+ * assertion line a test file loses (unless the same line is added back, as a moved test does),
+ * `path:line added ...` for each `.skip` or `.only` line it gains.
+ */
+export function weakenedTests(patch) {
+  const added = new Set();
+  const removed = [];
+  const skips = [];
+  let file = null;
+  let oldLine = 0;
+  let newLine = 0;
+  let oldLeft = 0;
+  let newLeft = 0;
+  for (const line of patch.split('\n')) {
+    const hunk = oldLeft === 0 && newLeft === 0 ? line.match(HUNK_HEADER) : null;
+    const header = oldLeft === 0 && newLeft === 0 ? line.match(FILE_HEADER) : null;
+    if (hunk !== null) {
+      [oldLine, newLine] = [Number(hunk[1]), Number(hunk[3])];
+      [oldLeft, newLeft] = [Number(hunk[2] ?? 1), Number(hunk[4] ?? 1)];
+    } else if (header !== null) {
+      if (header[1] !== '/dev/null') file = header[1];
+    } else if (oldLeft > 0 && line.startsWith('-')) {
+      if (TEST_FILE.test(file) && REMOVED_ASSERTION.test(line)) removed.push({ file, at: oldLine, text: line.slice(1).trim() });
+      oldLeft -= 1;
+      oldLine += 1;
+    } else if (newLeft > 0 && line.startsWith('+')) {
+      added.add(line.slice(1).trim());
+      if (TEST_FILE.test(file) && ADDED_SKIP.test(line)) skips.push({ file, at: newLine, text: line.slice(1).trim() });
+      newLeft -= 1;
+      newLine += 1;
+    }
+  }
+  const quote = (text) => `\`${text.slice(0, WARN_TEXT_LENGTH)}\``;
+  return [
+    ...removed.filter(({ text }) => !added.has(text)).map(({ file: path, at, text }) => `${path}:${at} removed ${quote(text)}`),
+    ...skips.map(({ file: path, at, text }) => `${path}:${at} added ${quote(text)}`)
+  ];
+}
+
+/**
+ * The claims-diff lines for one landed task: a FAIL line for `Files:` paths its commits left
+ * unchanged and for a test-first task whose commits change no test file, a WARN line for each
+ * test weakened in them. Empty when its claims hold.
+ */
+function claimLines(task, root, planId) {
+  const git = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
+  const shas = taskCommits(task, root, planId);
+  const changed = shas.flatMap((sha) => git('--name-only', '-z', sha).split('\0').filter((path) => path !== ''));
+  const lines = [];
+  const unchanged = unchangedFiles(task.files, changed);
+  if (unchanged.length > 0) lines.push(`FAIL claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
+  if (isTestFirst(task) && !changed.some((path) => TEST_FILE.test(path))) {
+    lines.push(`FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`);
+  }
+  for (const sha of shas) {
+    for (const finding of weakenedTests(git('-U0', '--no-color', '--no-ext-diff', sha))) lines.push(`WARN claims-diff Task ${task.number} (${finding})`);
+  }
+  return lines;
 }
 
 /** The last `SUMMARY ` line of `output`, or null when it prints none. */
@@ -393,6 +481,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     for (const path of strays) lines.push(`STRAY ${path}`);
     failed = true;
   }
+
+  const claims = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => claimLines(task, root, planId));
+  lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));
+  if (claims.some((line) => line.startsWith('FAIL '))) failed = true;
 
   const riskTasks = plan.tasks.some((task) => landed.has(task.number) && task.risk !== null);
   // With no base there is no range of commits to read.

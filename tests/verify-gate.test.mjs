@@ -5,18 +5,27 @@
 // `Plan-task: <plan-id>/<n>` commit never runs its Proof here either.
 
 import assert from 'node:assert/strict';
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unlandedBlame, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
+import { parsePlan } from '#plan-tasks';
+import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
 
+// The commit touches every path the task's `Files:` names, as a real landing does.
 function landTask(root, number) {
+  const task = parsePlan(readFileSync(path.join(root, 'plan.md'), 'utf8')).tasks.find((entry) => entry.number === number);
+  for (const { path: file } of task.files) {
+    mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    appendFileSync(path.join(root, file), `// task ${number}\n`);
+  }
+  git(root, 'add', '-A');
   git(root, 'commit', '--allow-empty', '-m', `chore: land task ${number}`, '-m', `Plan-task: plan/${number}`);
 }
 
@@ -79,7 +88,7 @@ test('a landed task, a clean check and no stray paths print PASS lines and the l
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
 });
 
 test('a landed task whose Proof fails prints FAIL and exits 1', async () => {
@@ -201,7 +210,7 @@ test('a failing check-command prints FAIL success-criterion', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', 'PASS claims-diff', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
 });
 
 test('a check that exits 0 and prints no SUMMARY line passes, under any gate command', async () => {
@@ -484,7 +493,7 @@ test('--root points the gate at another checkout, not the caller\'s own cwd', as
     { cwd: path.dirname(root) }
   );
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
 });
 
 test('missing --plan is rejected', async () => {
@@ -791,4 +800,99 @@ test('unlandedBlame blames unlanded tasks only when no line blames landed work',
   assert.deepEqual(unlandedBlame(tasks, landed, `${missing}\nnot ok 1 - case uppercases`), []);
   assert.deepEqual(unlandedBlame(tasks, landed, 'fail: check failed'), []);
   assert.deepEqual(unlandedBlame(tasks, new Set([1, 2]), missing), []);
+});
+
+test('unchangedFiles names each Files path no commit changed, reading a glob and a folder as covering their matches', () => {
+  const files = (...paths) => paths.map((file) => ({ path: file }));
+  assert.deepEqual(unchangedFiles(files('src/a.js', 'src/b.js'), ['src/a.js']), ['src/b.js']);
+  assert.deepEqual(unchangedFiles(files('src/a.js'), ['src/a.js']), []);
+  assert.deepEqual(unchangedFiles(files('src/*.js', 'docs/'), ['src/x.js', 'docs/a.md']), []);
+  assert.deepEqual(unchangedFiles(files('src/*.js', 'docs/'), ['lib/x.js']), ['src/*.js', 'docs/']);
+});
+
+test('isTestFirst reads a Risk: field, or a fix listing a test file, and nothing else', () => {
+  const task = (title, risk, ...paths) => ({ title, risk, files: paths.map((file) => ({ path: file })) });
+  assert.equal(isTestFirst(task('feat(app): x', 'security boundary', 'src/a.js')), true);
+  assert.equal(isTestFirst(task('fix(app): x', null, 'src/a.js', 'tests/a.test.mjs')), true);
+  assert.equal(isTestFirst(task('fix(app): x', null, 'src/a.js')), false);
+  assert.equal(isTestFirst(task('feat(app): x', null, 'tests/a.test.mjs')), false);
+});
+
+test('weakenedTests names the file and line of a removed assertion and of an added skip or only, in test files only', () => {
+  const patch = [
+    'diff --git a/tests/a.test.mjs b/tests/a.test.mjs', '--- a/tests/a.test.mjs', '+++ b/tests/a.test.mjs',
+    '@@ -4,2 +4,2 @@', '-  assert.equal(a, 1);', '-  expect(b).toBe(2);', '+  assert.equal(a, 3);', '+  other();',
+    '@@ -20,0 +21,2 @@', "+it.skip('later', () => {});", "+describe.only('x', () => {});",
+    'diff --git a/src/a.js b/src/a.js', '--- a/src/a.js', '+++ b/src/a.js',
+    '@@ -1,1 +1,1 @@', '-assert(ready);', '+it.skip(ready);', ''
+  ].join('\n');
+  assert.deepEqual(weakenedTests(patch), [
+    'tests/a.test.mjs:4 removed `assert.equal(a, 1);`',
+    'tests/a.test.mjs:5 removed `expect(b).toBe(2);`',
+    "tests/a.test.mjs:21 added `it.skip('later', () => {});`",
+    "tests/a.test.mjs:22 added `describe.only('x', () => {});`"
+  ]);
+  const moved = ['--- a/tests/a.test.mjs', '+++ b/tests/a.test.mjs', '@@ -1,1 +0,0 @@', '-  assert.ok(x);', '@@ -9,0 +9,1 @@', '+assert.ok(x);', ''].join('\n');
+  assert.deepEqual(weakenedTests(moved), []);
+});
+
+const claimsPlan = (title, extra) => `### Task 1: ${title}\nDepends on: none | Files: \`src/a.js\`, \`tests/a.test.mjs\`${extra} | Data: none | Proof: node -e "process.exit(0)"\n`;
+
+// Commits `changes`, a map of path to content, as Task 1, then runs the gate.
+async function claimsRun(plan, changes, seed = {}) {
+  const root = await gitRepository({ 'src/a.js': 'a\n', 'tests/a.test.mjs': 'assert.ok(1);\n', 'check.js': CLEAN_CHECK, 'plan.md': plan, ...seed });
+  for (const [file, content] of Object.entries(changes)) await writeFile(path.join(root, file), content);
+  git(root, 'add', '-A');
+  git(root, 'commit', '--allow-empty', '-m', 'feat: task one', '-m', 'Plan-task: plan/1');
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  return { result, lines: result.stdout.trim().split('\n') };
+}
+
+test('claims-diff passes when every Files path changed in the task commit', async () => {
+  const { result, lines } = await claimsRun(claimsPlan('feat(app): x', ''), { 'src/a.js': 'b\n', 'tests/a.test.mjs': 'assert.ok(1);\nassert.ok(2);\n' });
+  assert.equal(result.code, 0, result.stdout);
+  assert.ok(lines.includes('PASS claims-diff'), result.stdout);
+});
+
+test('claims-diff fails a Files path the task commit left unchanged', async () => {
+  const { result, lines } = await claimsRun(claimsPlan('feat(app): x', ''), { 'src/a.js': 'b\n' });
+  assert.equal(result.code, 1);
+  assert.ok(lines.includes('FAIL claims-diff Task 1 (Files: unchanged in its commit: tests/a.test.mjs)'), result.stdout);
+});
+
+test('claims-diff accepts a deleted path and a glob in Files', async () => {
+  const plan = '### Task 1: refactor(app): x\nDepends on: none | Files: `src/old.js`, `src/*.mjs` | Data: none | Proof: node -e "process.exit(0)"\n';
+  const root = await gitRepository({ 'src/old.js': 'old\n', 'check.js': CLEAN_CHECK, 'plan.md': plan });
+  await writeFile(path.join(root, 'src/new.mjs'), 'new\n');
+  git(root, 'rm', '-q', 'src/old.js');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-m', 'feat: task one', '-m', 'Plan-task: plan/1');
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 0, result.stdout);
+  assert.ok(result.stdout.includes('PASS claims-diff'), result.stdout);
+});
+
+test('claims-diff fails a test-first task whose commit changes no test file, and passes one that does', async () => {
+  const plan = '### Task 1: feat(app): x\nDepends on: none | Files: `src/a.js` | Data: none | Risk: security boundary | Proof: node -e "process.exit(0)"\n';
+  const failing = await claimsRun(plan, { 'src/a.js': 'b\n' });
+  assert.equal(failing.result.code, 1);
+  assert.ok(failing.lines.includes('FAIL claims-diff Task 1 (test-first, but its commit adds or changes no test file)'), failing.result.stdout);
+  const passing = await claimsRun(plan, { 'src/a.js': 'b\n', 'tests/a.test.mjs': 'assert.ok(1);\nassert.ok(2);\n' });
+  assert.equal(passing.result.code, 0, passing.result.stdout);
+  assert.ok(passing.lines.includes('PASS claims-diff'), passing.result.stdout);
+});
+
+test('claims-diff warns, without failing, on a removed assertion and an added skip', async () => {
+  const { result, lines } = await claimsRun(claimsPlan('feat(app): x', ''), { 'src/a.js': 'b\n', 'tests/a.test.mjs': "it.skip('x', () => {});\n" });
+  assert.equal(result.code, 0, result.stdout);
+  assert.ok(lines.includes('WARN claims-diff Task 1 (tests/a.test.mjs:1 removed `assert.ok(1);`)'), result.stdout);
+  assert.ok(lines.includes("WARN claims-diff Task 1 (tests/a.test.mjs:1 added `it.skip('x', () => {});`)"), result.stdout);
+  assert.ok(!lines.includes('PASS claims-diff'));
+});
+
+test('claims-diff holds on the inline route, whose long-format task lists a Modify path', async () => {
+  const { result, lines } = await claimsRun(INLINE_PLAN, { 'src/app.js': 'export const greet = () => "hello";\n' }, { 'src/app.js': 'export const greet = () => "hi";\n' });
+  assert.equal(result.code, 0, result.stdout);
+  assert.ok(lines.includes('PASS claims-diff'), result.stdout);
+  assert.ok(lines.includes('REVIEWER: none (inline route)'), result.stdout);
 });
