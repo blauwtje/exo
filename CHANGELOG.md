@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- build runs a small plan inline: `planRoute` in `lib/plan-tasks.mjs` picks `Route: inline` only for a plan of at most 4 tasks, each with pasted code and its own files, and no `Design:` task, so the lead builds the tasks itself with no worktrees, waves or unit dispatch (`skills/build/references/run-loop-inline.md`); `next-task.mjs` and `land-task.mjs` print the route taken, or why inline was refused.
+- `benchmarks/pressure/build/case7-small-plan.txt` checks the inline route on a 4-task plan whose prompt forbids a push and a pull request: verify still runs, and no branch review or wave worktree is dispatched.
+- Flow benchmark records (`benchmarks/sweep.mjs`, `benchmarks/flow-report.mjs`) carry whether verify ran, whether a branch review was dispatched, the routes taken and the lead's peak tokens per cell; `benchmarks/lean-gates.mjs --plugin-dir <path>` runs the bigger plan against any exo checkout.
+
+### Changed
+
+- verify skips the branch review on the inline route (`REVIEWER: none (inline route)`) unless a task carries `Risk:`, a manifest changed or a public signature changed, and build's tail runs verify even when the prompt forbids a pull request.
+
 ## 0.100.0 - 2026-10-07
 
 ### Highlights
