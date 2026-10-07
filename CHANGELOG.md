@@ -7,6 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/score.mjs` and `benchmarks/flow-report.mjs` print cost per success per arm: the spend of every cell, failed and timed-out cells included, divided by the passing cells, or `none` when no cell passes.
+- `benchmarks/results/2026-10-07-cost-per-success.md` rescores the kept runs. On `value-context-guards` exo costs $1.12 per success against the baseline's $0.36, 3.1 times as much where mean cell cost showed 1.55 times.
+- `benchmarks/build-phases.mjs` splits a build cell's weighted tokens by phase from its kept transcripts, subagents included. `benchmarks/results/2026-10-07-flow.md` gains the split: the lead's turns take 62% of exo's 695.8k mean tokens per flow cell and the `build-task` agents 20%.
+- `benchmarks/variants.mjs` builds four benchmark-only variants of the exo plugin copy: `session-pointer`, `no-find-cause`, `session-build` and `session-build-no-proof`. `node benchmarks/variants.mjs --check` names any variant whose target text is missing.
+- `benchmarks/run.mjs` gains the arms `exo-pointer`, `exo-no-find-cause`, `exo-log-scan` and `exo-sibling-scan`. The sweep's flow set gains `flow-session` and `flow-session-no-proof`, and its plan gains a `## Success criterion` of `npm test`.
+- The settings `log_scan` and `sibling_scan`, both `off` by default. With `log_scan` on, a Bash command that names, or a Read that opens, a log file of 200 lines or more gets a note of at most 5 lines with its error and warning counts. With `sibling_scan` on, an edit that removes lines gets a note naming other files and bindings that may share the fault.
+
+### Fixed
+
+- `node benchmarks/run.mjs --full` keeps an explicit `--runs` instead of forcing 4 runs.
+
 ## 0.98.0 - 2026-10-07
 
 ### Added
