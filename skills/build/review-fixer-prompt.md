@@ -12,10 +12,11 @@ Never cut correctness, security, data safety, accessibility or anything the user
 
 Edit only paths `git diff --name-only <base>...HEAD` lists; a fix that needs another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited, found with `grep -nE 'Files:|Proof:|Run:' <plan>`, unanchored because a compact task puts `Files:` and `Proof:` mid-line.
+Also run the `Probe:` command under each finding you fixed; it must exit 0.
 Redirect output over forty lines to a log beside the report.
-Revert a fix whose command still fails after two attempts; it counts as reported, with both outputs in the report.
+Revert a fix whose command or probe still fails after two attempts; it counts as reported, with both outputs in the report.
 
-Append to each finding line in the report `fixed` or `reported: <one-clause reason>`.
+Append to each finding line, not its `Probe:` line, in the report `fixed` or `reported: <one-clause reason>`.
 Run no git command that writes and commit nothing, because the session reruns the gate and commits.
 Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence.
 Report the situation with two or three options instead.

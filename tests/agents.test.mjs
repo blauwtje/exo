@@ -242,9 +242,12 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.match(verifying, /`FINDINGS`[^\n]*`\.\.\/build\/review-fixer-prompt\.md`/);
   assert.match(implementing, /\| `review-fixer-prompt\.md` \|/);
   const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*[\s\S]*?(?=^4\. )/m)[0];
-  const rerun = repairStep.indexOf('rerun step 1\'s `verify.mjs`');
-  assert.ok(rerun !== -1 && rerun < repairStep.indexOf('land-task.mjs" --fix'), 'verify reruns the gate after the fixer and before the fix commit');
-  assert.ok(repairStep.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
+  const repairAfter = fs.readFileSync(path.join(skillsRoot, 'verify', 'references', 'repair.md'), 'utf8');
+  assert.ok(repairStep.includes('`references/repair.md`'), 'step 3 hands the work after the fixer to repair.md');
+  const order = ["Rerun step 1's `verify.mjs`", 'run-probes.mjs', 'the scope `fix diff`', 'land-task.mjs" --fix'].map((text) => repairAfter.indexOf(text));
+  assert.ok(order.every((index, position) => index !== -1 && (position === 0 || index > order[position - 1])), 'verify reruns the gate, then the probes, then reviews the fix diff, before the fix commit');
+  assert.ok(repairAfter.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
+  assert.ok(repairAfter.includes('a `FAIL probe` line ends the turn'), 'verify stops on a failing probe');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
   assert.match(verifying, /^Report:[^\n]*each `report` finding, each `question` as a plan question naming its task and any breaking input/m, 'verify reports every report finding and each question as a plan question, whatever the fix count');
   assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');

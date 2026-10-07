@@ -21,18 +21,19 @@ description: "Use when a plan's tasks are landed and its branch needs the gate b
    - Otherwise dispatch the `exo-review-branch` agent, or `exo-review-branch-deep` when the `REVIEWER:` line prints that name, with no model override.
    - Pass the plan path, branch, checkout and base.
    - Pass the code standard path from `CLAUDE.md` or `AGENTS.md`, else `{{SKILL_DIR}}/../route-skills/references/code-standard.md`.
+   - Pass `{{SKILL_DIR}}/references/review-rules.md` as the review rules path.
    - Pass `<checkout>/.exo/` as the implementer report directory and `<checkout>/.exo/branch-review.md` as the findings path.
    - `BLOCKED` ends the turn with its report.
 3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo-fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
    - At `fix=0` go to step 4, with no `exo-fix-review` dispatch, rerun or fix commit.
-   - Then rerun step 1's `verify.mjs`.
-   - After that rerun, a `FAIL` or `STRAY` line ends the turn with its report and the fixes uncommitted.
-   - Only then run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/build/scripts/land-task.mjs" --fix "fix(<scope>): address the branch review" --plan <plan path> --root <checkout>` to commit every changed path.
+   - After the dispatch, follow `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
 
 ## References
 
 | File | Read it when |
 |---|---|
+| `references/review-rules.md` | Step 2, the reviewer's rules for a `fix` finding. |
+| `references/repair.md` | Step 3, after the fixer returns. |
 
 Report: `ship`'s overview as this turn's one report, ending with every task as done or open, each `report` finding, each `question` as a plan question naming its task and any breaking input, and the plan's `MANUAL` checks, listed once.
