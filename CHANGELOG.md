@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The benchmarks run sonnet as `claude-sonnet-5-5` instead of `claude-sonnet-5`, in `SWEEP_MODELS` and `MODELS`.
+
 ## 0.102.0 - 2026-10-07
 
 ### Added
