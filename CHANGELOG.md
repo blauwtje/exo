@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/results/2026-10-07-cut-matrix.md` scores the cut matrix, template and hard tiers on 0.99.0 and five flow rounds on 0.100.0. Against full exo, the one-session build cuts 103.0k weighted tokens and the one-session build without proof retries 135.7k, both beyond 2 standard errors, so both read ship; the session pointer and the find-cause cut stay unclear.
+
 ## 0.101.1 - 2026-10-07
 
 ### Changed
