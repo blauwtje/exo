@@ -1,6 +1,6 @@
 # Implementer prompt
 
-The build session (a plan of at most eight tasks) or the `exo-run-unit` agent (a larger plan) dispatches the `exo-build-task` agent for one task, which writes its report, at most 25 lines, to `Report to:`. Fill every field below and paste nothing more: the frame and task sit in the brief file.
+The `exo-run-unit` agent, or the build session on the direct route, dispatches the `exo-build-task` agent for one task, which writes its report, at most 25 lines, to `Report to:`. Fill every field below and paste nothing more: the frame and task sit in the brief file.
 
 - `<brief path>`: the `Brief:` line `next-task.mjs` printed for the task.
 - `<budget>`: that task's `Budget:` line, verbatim on its own line, so the delegate keeps to it.
@@ -12,8 +12,9 @@ Task <n> of <plan path>, branch <branch>, checkout <checkout>.
 <budget>
 Read your brief at <brief path>.
 Report to: <report directory>/implementer-<n>.md
+Return: one line
 ```
 
-The build session's own dispatch (`references/run-loop.md` step 5) appends the line `Return: one line`, so the agent returns a one-line pointer. `exo-run-unit`'s dispatch adds no such line and keeps the report-pasting return.
+Every dispatch keeps `Return: one line`, `exo-run-unit`'s included, so the agent returns a one-line pointer and no report body reaches its dispatcher.
 
 The `Commit:` block is the caller's, never the agent's. Above eight tasks `land-task.mjs` appends each `Choice:` line of the report to the plan's decision log.

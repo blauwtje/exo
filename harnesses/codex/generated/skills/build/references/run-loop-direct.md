@@ -1,5 +1,6 @@
-# Step 5 under `Route: direct`
+# The direct route: the fallback when nested dispatch is unavailable
 
+- Step 3 runs `next-task.mjs` without `--block`, for its `Next:` or `Wave:` line.
 - `GREEN` names a diff path this session reads as `git apply --stat <diff path>` only, never the report and never the full diff; it runs `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/build/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`, ending in the `Next:` or `Wave:` line, a wave's per the wave worktrees reference's step 3.
 - A `Next:` line sends its task, a `Wave:` line each task per the wave worktrees reference in one message, to `exo-build-task` from `../implementer-prompt.md`, which carries `Return: one line`.
 - In a wave, a failed sibling never discards a green task.

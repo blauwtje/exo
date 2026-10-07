@@ -29,7 +29,7 @@ description: "Use when a request leaves done, data, architecture or a trade-off 
 6. **Store it** per `specs` in `exo settings:`, else `docs` (plan mode: the harness plan file).
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/spec/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `$build` unasked.
+8. **Hand off.** End on `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `$build`, even asked, because build starts in a clean chat.
    - Invoked by another stage or a workflow: ask nothing, return to the caller.
 
 ## References

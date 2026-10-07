@@ -11,8 +11,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 **exo now registers four hooks instead of thirteen, and no Stop hook re-prompts a finished turn; the `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `log_scan` and `sibling_scan` settings are gone.**
 
+**Every plan now builds on the unit route, with a build lead that never reads the plan body, diffs or reports, and spec recommends Build fresh (`/clear`, then `/exo:build`) instead of building in the spec session.**
+
 ### Changed
 
+- Every plan takes `Route: unit`; `direct` remains only as the fallback when nested dispatch is unavailable.
+- After spec, option A is Build fresh (`/clear`, then `/exo:build`), and spec never starts build itself.
+- The build lead takes each block from `next-task.mjs --block` and the plan's repository and branch from `start-run.mjs --find-only`, dispatches `exo:run-unit` per block and routes its one-line returns; a design task with a named direction goes to one delegate.
+- `exo:run-unit` returns one line per task, `LANDED <n>` or `BLOCKED <n> <reason> <report path>`, with no report text.
+- land-task also runs a long-format task's `Run:` commands that expect a pass, and refuses to land on a failure, as it does for a compact Proof.
 - land-task now runs a compact task's Proof in the checkout before it commits, records the exit status and output it saw, and refuses to land on a failure or a 540-second timeout; MCP Proofs stay deferred.
 
 ### Fixed
@@ -21,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- The inline build route and `skills/build/references/run-loop-inline.md`.
 - The read, repeat, output and heavy-command guards, the runtime recorder, the log and sibling scans and the terse display filter, with their `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `log_scan` and `sibling_scan` settings.
 - The Stop hook and its proof-check, resume-plan and terse-check handlers, with the saved terse feedback and the `build.active` marker; a build run continues through its own loop and completion notifications.
 
