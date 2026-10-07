@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.104.1 - 2026-10-07
+
 ### Fixed
 
 - `remove-worktree.mjs --kept` moves an existing `.exo/kept/<name>/` aside to `.exo/kept/<name>-<date-time>/` and continues, instead of refusing, and moves it back if the removal then fails.
