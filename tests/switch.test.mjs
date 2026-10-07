@@ -1,7 +1,6 @@
 // The session hook hands the model the route-skills body, the pointer to
 // references/lean.md included, so it holds before every edit without a
-// skill call. Every start rewrites the plugin-root pointer; only a clear or a compaction
-// resets the read guard.
+// skill call. Every start rewrites the plugin-root pointer.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -48,21 +47,12 @@ test('the session hook carries the pointer to references/lean.md', async () => {
   assert.ok(!context.includes('name: route-skills'), context);
 });
 
-test('a resumed session rewrites the plugin-root pointer and only a compaction resets the guards', async () => {
+test('a resumed session rewrites the plugin-root pointer', async () => {
   const configDirectory = await fixture();
-  const hotRecord = path.join(configDirectory, 'exo', 'sessions', 's1.json');
   const resumed = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'resume');
   assert.equal(resumed.code, 0, resumed.stderr);
   const pointer = await fs.readFile(path.join(configDirectory, 'exo', 'plugin-root'), 'utf8');
   assert.equal(pointer.trim(), PLUGIN_ROOT);
-  assert.equal(await fs.access(hotRecord).catch(() => 'absent'), 'absent');
-  await fs.mkdir(path.dirname(hotRecord), { recursive: true });
-  await fs.writeFile(hotRecord, JSON.stringify({ reads: { 'main:/repo/a.ts:0:0': { bytes: 10 } }, calls: { 'main:Bash:abc': 2 } }));
-  const compacted = await runHook({ CLAUDE_CONFIG_DIR: configDirectory }, 'compact');
-  assert.equal(compacted.code, 0, compacted.stderr);
-  const session = JSON.parse(await fs.readFile(hotRecord, 'utf8'));
-  assert.deepEqual(session.reads, {});
-  assert.deepEqual(session.calls, {});
 });
 
 test('with no tool on PATH the hook still injects the route-skills body and writes the plugin-root pointer', async () => {
@@ -84,7 +74,7 @@ test('the session hook leads with the settings line resolved for the project', a
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_OPTION_SPECS: '', CLAUDE_PLUGIN_OPTION_REPLIES: '', CLAUDE_PLUGIN_OPTION_CONTEXT: '' });
   assert.equal(result.code, 0, result.stderr);
   const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default), log_scan=off (default), sibling_scan=off (default). Replies are tight:'), context.slice(0, 200));
+  assert.ok(context.startsWith('exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default). Replies are tight:'), context.slice(0, 200));
 });
 
 test('on a 60-character branch both pointers go first, named from the repository root', async () => {

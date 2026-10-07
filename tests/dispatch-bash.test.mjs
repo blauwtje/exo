@@ -1,5 +1,5 @@
-// The Bash dispatcher runs the repeat guard, the delegate budget, the
-// memory-booking approval and the six Bash guards in one process: it returns the first deny, joins the
+// The Bash dispatcher runs the five Bash guards, the delegate budget and the
+// memory-booking approval in one process: it returns the first deny, joins the
 // contexts of the other steps, lets a faulting step fall through, passes every
 // other tool, and stands the guards down when the guards setting is off.
 
@@ -62,41 +62,6 @@ test('a command no step objects to produces no output', async () => {
 test('the memory-booking command is approved', async () => {
   const decision = await output(`node "${MEMORY_SCRIPT}" book --claim "a fact" --quote "the words" --session "s"`);
   assert.equal(decision.permissionDecision, 'allow');
-});
-
-test('a verbose command is capped through updatedInput with no permission decision', async () => {
-  const decision = await output('npm test');
-  assert.deepEqual(decision, {
-    hookEventName: 'PreToolUse',
-    updatedInput: { command: 'set -o pipefail; npm test 2>&1 | tail -n 200' }
-  });
-});
-
-test('updatedInput passes through only when no step denied', async () => {
-  const rewrite = { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { command: 'capped' } } };
-  assert.deepEqual(await dispatchBash({}, [step('cap', rewrite), step('ctx', context('note'))], []), {
-    hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: 'note', updatedInput: { command: 'capped' } }
-  });
-  const refused = await dispatchBash({}, [step('cap', rewrite), step('no', deny('no'))], []);
-  assert.equal(refused.hookSpecificOutput.permissionDecision, 'deny');
-  assert.equal(refused.hookSpecificOutput.updatedInput, undefined);
-});
-
-test('a later step receives the tool_input of the last rewrite before it and its rewrite wins', async () => {
-  const seen = [];
-  const rewrite = (name, suffix) => ({
-    name,
-    run: (hookInput) => {
-      seen.push(hookInput.tool_input.command);
-      const updatedInput = { ...hookInput.tool_input, command: `${hookInput.tool_input.command}${suffix}` };
-      return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } };
-    }
-  });
-  const hookInput = { tool_name: 'Bash', tool_input: { command: 'a', timeout: 5 } };
-  const merged = await dispatchBash(hookInput, [rewrite('one', '+1')], [rewrite('two', '+2')]);
-  assert.deepEqual(seen, ['a', 'a+1']);
-  assert.deepEqual(merged.hookSpecificOutput.updatedInput, { command: 'a+1+2', timeout: 5 });
-  assert.equal(hookInput.tool_input.command, 'a');
 });
 
 test('a call that is not a Bash command, and input that is not usable, produce no output', async () => {
@@ -200,7 +165,7 @@ async function mainSessionCall(command) {
   const outcome = await run(DISPATCHER, [], {
     cwd: directory,
     input: JSON.stringify(hookInput),
-    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory, EXO_SESSIONS_DIR: path.join(directory, 'sessions') }
+    env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;

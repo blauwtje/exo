@@ -69,8 +69,7 @@ test('the child env drops the parent session, turns off CLAUDE.md and memory, an
     CLAUDE_CONFIG_DIR: '/c',
     CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1',
     CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1',
-    BENCH_SUITE_LOG: path.join('/runs/01-old', 'suite-runs.jsonl'),
-    EXO_SESSIONS_DIR: path.join('/runs/01-old', 'sessions')
+    BENCH_SUITE_LOG: path.join('/runs/01-old', 'suite-runs.jsonl')
   });
   assert.deepEqual(ISOLATION_ENV, { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' });
   const diff = environmentDiff(base, env);

@@ -21,17 +21,15 @@ for (const level of ['tight', 'terse']) {
   });
 }
 
-// The cut and scan arms of the task runner (benchmarks/run.mjs).
+// The cut arms of the task runner (benchmarks/run.mjs).
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const RUN = path.join(ROOT, 'benchmarks', 'run.mjs');
-const ARM_NAMES = ['exo-pointer', 'exo-no-find-cause', 'exo-log-scan', 'exo-sibling-scan'];
+const ARM_NAMES = ['exo-pointer', 'exo-no-find-cause'];
 
-test('the cut arms load exo with a variant and the scan arms with one switch on', () => {
+test('the cut arms load exo with a variant', () => {
   assert.equal(ARMS['exo-pointer'].variant, 'session-pointer');
   assert.equal(ARMS['exo-no-find-cause'].variant, 'no-find-cause');
-  assert.deepEqual(ARMS['exo-log-scan'].exoSettings, { log_scan: 'on' });
-  assert.deepEqual(ARMS['exo-sibling-scan'].exoSettings, { sibling_scan: 'on' });
   for (const name of ARM_NAMES) {
     assert.deepEqual(ARMS[name].pluginDirs, ARMS.exo.pluginDirs, name);
     assert.ok(!DEFAULT_ARMS.includes(name), `${name} stays out of the default arms`);
@@ -43,20 +41,13 @@ function dryRun(...args) {
   return spawnSync(process.execPath, [RUN, '--dry-run', '--model', 'sonnet', ...args], { encoding: 'utf8' });
 }
 
-test('a dry run loads a variant copy for the cut arms and the plain copy for the scan arms', () => {
-  const run = dryRun('--tasks', 'value-test-pollution', '--arms', 'exo,exo-pointer,exo-no-find-cause,exo-log-scan');
+test('a dry run loads a variant copy for the cut arms and the plain copy for exo', () => {
+  const run = dryRun('--tasks', 'value-test-pollution', '--arms', 'exo,exo-pointer,exo-no-find-cause');
   assert.equal(run.status, 0, run.stderr);
   const line = (arm) => run.stdout.split('\n').find((row) => row.startsWith(`value-test-pollution ${arm} `));
   assert.match(line('exo-pointer'), /with variant session-pointer/);
   assert.match(line('exo-no-find-cause'), /with variant no-find-cause/);
-  assert.doesNotMatch(line('exo-log-scan'), /variant/);
   assert.doesNotMatch(line('exo'), /variant/);
-});
-
-test('a scan arm on a task that writes no exo settings stops the run', () => {
-  const run = dryRun('--tasks', 'calib-reply', '--arms', 'exo-log-scan');
-  assert.notEqual(run.status, 0);
-  assert.match(run.stderr, /arm exo-log-scan sets exo options in the cell's settings/);
 });
 
 test('--full keeps an explicit --runs and defaults to four otherwise', () => {
@@ -65,7 +56,7 @@ test('--full keeps an explicit --runs and defaults to four otherwise', () => {
   assert.equal(cells([]), 4);
 });
 
-test('a cell loads the arm\'s variant copy and gets the scan switch in its exo settings', (t) => {
+test('a cell loads the arm\'s variant copy', (t) => {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-arms-test-'));
   t.after(() => fs.rmSync(scratch, { recursive: true, force: true }));
   const bin = path.join(scratch, 'bin');
@@ -83,18 +74,16 @@ test('a cell loads the arm\'s variant copy and gets the scan switch in its exo s
   ].join('\n'));
   fs.chmodSync(path.join(bin, 'claude'), 0o755);
   const log = path.join(scratch, 'log.jsonl');
-  const run = spawnSync(process.execPath, [RUN, '--tasks', 'value-test-pollution', '--arms', 'exo,exo-pointer,exo-sibling-scan', '--model', 'sonnet', '--concurrency', '1', '--out', path.join(scratch, 'out')], {
+  const run = spawnSync(process.execPath, [RUN, '--tasks', 'value-test-pollution', '--arms', 'exo,exo-pointer', '--model', 'sonnet', '--concurrency', '1', '--out', path.join(scratch, 'out')], {
     encoding: 'utf8',
     env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, FAKE_LOG: log }
   });
   assert.equal(run.status, 0, run.stderr + run.stdout);
   const cells = fs.readFileSync(log, 'utf8').trim().split('\n').map((row) => JSON.parse(row));
-  assert.equal(cells.length, 3);
-  const [exo, pointer, sibling] = cells;
+  assert.equal(cells.length, 2);
+  const [exo, pointer] = cells;
   assert.deepEqual(exo.settings, { workspace: 'current', ship: 'local' });
-  assert.deepEqual(sibling.settings, { workspace: 'current', ship: 'local', sibling_scan: 'on' });
-  assert.equal(exo.plugin, sibling.plugin);
   assert.notEqual(exo.plugin, pointer.plugin);
-  assert.deepEqual([exo.pointer, pointer.pointer, sibling.pointer], [false, true, false]);
-  assert.ok(![exo, pointer, sibling].some((cell) => cell.plugin === ROOT.replace(/\/$/, '')));
+  assert.deepEqual([exo.pointer, pointer.pointer], [false, true]);
+  assert.ok(![exo, pointer].some((cell) => cell.plugin === ROOT.replace(/\/$/, '')));
 });

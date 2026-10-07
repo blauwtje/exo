@@ -15,10 +15,8 @@ import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const APPROVE_BOOK = path.join(REPOSITORY, 'skills', 'remember', 'scripts', 'approve-book.mjs');
-const GUARD = path.join(REPOSITORY, 'hooks', 'guards', 'read-guard.mjs');
 const READER = pathToFileURL(path.join(REPOSITORY, 'lib', 'hook-input.mjs')).href;
 const WRITE_DELAY_MS = 200;
-const OVER_CAP = Array.from({ length: 600 }, (_, index) => `line ${index + 1}`).join('\n');
 
 function runScript(script, args, input, { environment = {}, delayMs = 0 } = {}) {
   return new Promise((resolve) => {
@@ -51,16 +49,6 @@ test('approve-book prints its JSON when stdin is written late', async () => {
   const result = await runScript(APPROVE_BOOK, [], input, { delayMs: WRITE_DELAY_MS });
   assert.equal(result.stderr, '');
   assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'allow');
-});
-
-test('read-guard denies an unbounded read of a large file when stdin is written late', async () => {
-  const directory = await fixture();
-  const file = path.join(directory, 'big.ts');
-  await fs.writeFile(file, OVER_CAP);
-  const input = { session_id: 's1', tool_name: 'Read', tool_use_id: 'toolu_1', tool_input: { file_path: file } };
-  const result = await runScript(GUARD, [], input, { environment: { CLAUDE_CONFIG_DIR: directory }, delayMs: WRITE_DELAY_MS });
-  assert.equal(result.stderr, '');
-  assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'deny');
 });
 
 test('the reader returns an empty text at once when stdin is ignored', async () => {
@@ -99,19 +87,6 @@ test('a hook waits 10 s for its input by default, which only a positive integer 
   } finally {
     delete process.env.EXO_TEST_WAIT_MS;
   }
-});
-
-test('a guard given a pipe that never ends exits 1 with the read failure on stderr', async () => {
-  const directory = await fixture();
-  const child = spawn(process.execPath, [GUARD], {
-    env: { ...process.env, CLAUDE_CONFIG_DIR: directory, EXO_READ_GUARD_INPUT_MS: '500' },
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  let stderr = '';
-  child.stderr.on('data', (chunk) => { stderr += chunk; });
-  const code = await new Promise((resolve) => child.on('close', resolve));
-  assert.equal(code, 1);
-  assert.match(stderr, /^read-guard: could not read hook input: no end of hook input on stdin within 500 ms/);
 });
 
 // The isTTY branch (return '' without waiting) is not exercised: a terminal

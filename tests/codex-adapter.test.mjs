@@ -99,7 +99,7 @@ test('install.mjs installs generated skills, agents and hooks into the user fold
   assert.equal(entry.skills.length, SKILL_NAMES.length);
   assert.equal(entry.skills.find((skill) => skill.name === SKILL).files.find((file) => file.path === 'SKILL.md').sha256, hash(text));
   assert.equal(entry.agents.length, AGENT_NAMES.length);
-  assert.equal(entry.hooks.length, 4);
+  assert.equal(entry.hooks.length, 3);
   assert.equal(fs.readFileSync(path.join(paths.home, 'config.toml'), 'utf8'), 'model = "x"\n');
 });
 
