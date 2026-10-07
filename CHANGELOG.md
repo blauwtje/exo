@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `verify.mjs` checks each landed task's claims against its commit: it fails a task whose `Files:` paths did not change or whose test-first commit touches no test file, and warns on a removed `expect(` or `assert` line and an added `.skip` or `.only`.
+- The branch reviewer writes a runnable `Probe:` for each `fix` finding; after the fixer returns, verify reruns every probe through `run-probes.mjs` and reviews only the fix diff before it commits the fixes.
+
+### Fixed
+
+- verify called with no plan file ends the turn, asks for the plan path and names build's no-plan route, instead of running checks by hand and going to ship.
+
 ## 0.103.2 - 2026-10-07
 
 ### Fixed
