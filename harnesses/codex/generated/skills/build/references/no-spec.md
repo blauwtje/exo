@@ -29,4 +29,4 @@ A decided change with no plan file runs these steps instead of the loop above.
    - Run runners unpiped and without `cd &&`, which hide the failing command.
 6. **Project knowledge.**
 7. **Fresh eyes.**
-8. **Commit.** Commit where step 3 placed it, leaving out its pre-existing paths, then end on `ship`.
+8. **Commit.** Commit where step 3 placed it, leaving out its pre-existing paths, then end on `ship`, unless the request rules out a push; then say nothing left the machine.
