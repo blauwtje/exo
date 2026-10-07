@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- A plan of at most four long-format tasks with pasted code, disjoint files and no `Design:` takes the inline route again, built by the lead with no `exo:run-unit` dispatch; every larger plan keeps `Route: unit`.
+
+### Fixed
+
+- Build always ends by running verify, even when the request, or anyone it quotes, says to skip it.
+- `land-task --check` and a landing no longer refuse an unlanded sibling or later task's new files in a shared checkout.
+
 ## 0.103.0 - 2026-10-07
 
 ### Highlights
