@@ -41,22 +41,22 @@ async function settings(space, args, extraEnv = {}) {
 test('with nothing set the schema default applies', async () => {
   const result = await settings(await workspace(), ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default), log_scan=off (default), sibling_scan=off (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=docs (default), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('local outranks project, which outranks global', async () => {
   const layered = await workspace({ project: { specs: 'issues' }, local: { specs: 'both' }, global: { specs: 'docs' } });
   assert.equal((await settings(layered, ['get', 'specs'])).stdout.trim(), 'both');
   const shared = await workspace({ project: { specs: 'issues' }, global: { specs: 'both' } });
-  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default), log_scan=off (default), sibling_scan=off (default)' + TIGHT_RULE);
+  assert.equal((await settings(shared, ['context'])).stdout.trim(), 'exo settings: specs=issues (project), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
   const globalOnly = await workspace({ global: { specs: 'both' } });
-  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default), log_scan=off (default), sibling_scan=off (default)' + TIGHT_RULE);
+  assert.equal((await settings(globalOnly, ['context'])).stdout.trim(), 'exo settings: specs=both (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('the hook environment carries the global value when it is set', async () => {
   const space = await workspace({ global: { specs: 'docs' } });
   const result = await settings(space, ['context'], { CLAUDE_PLUGIN_OPTION_SPECS: 'issues' });
-  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default), guard_lines=400 (default), heavy_after_seconds=60 (default), log_scan=off (default), sibling_scan=off (default)' + TIGHT_RULE);
+  assert.equal(result.stdout.trim(), 'exo settings: specs=issues (global), replies=tight (default), budget=medium (default), ship=ask (default), workspace=ask (default), guards=on (default)' + TIGHT_RULE);
 });
 
 test('replies is tight by default and standard when the project sets it', async () => {
@@ -143,9 +143,9 @@ test('on Codex, set --scope global writes the flat file and keeps its other keys
 
 test('on Codex, set --scope global creates the exo folder when it is missing', async () => {
   const space = await codexWorkspace();
-  const result = await settings(space, ['set', 'guard_lines', '250', '--scope', 'global']);
+  const result = await settings(space, ['set', 'specs', 'issues', '--scope', 'global']);
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(JSON.parse(await fs.readFile(space.file, 'utf8')), { guard_lines: 250 });
+  assert.deepEqual(JSON.parse(await fs.readFile(space.file, 'utf8')), { specs: 'issues' });
 });
 
 test('on Codex a malformed global file gives defaults plus a note naming it, and set leaves it alone', async () => {
@@ -184,7 +184,7 @@ test('a project file that is not JSON is named in the context line, and defaults
   await fs.writeFile(path.join(space.root, '.claude', 'exo.json'), '{ not json');
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), budget=medium \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\), guard_lines=400 \(default\), heavy_after_seconds=60 \(default\), log_scan=off \(default\), sibling_scan=off \(default\); .*exo\.json is not valid JSON/);
+  assert.match(result.stdout, /^exo settings: specs=docs \(default\), replies=tight \(default\), budget=medium \(default\), ship=ask \(default\), workspace=ask \(default\), guards=on \(default\); .*exo\.json is not valid JSON/);
 });
 
 test('a value the schema does not allow is named in the context line, and the default replies rule still applies', async () => {
@@ -226,7 +226,7 @@ test('menu asks for a topic, with a topic for its setting, and with a key for a 
   const space = await workspace({ project: { specs: 'issues' } });
   const topicQuestion = await settings(space, ['menu']);
   assert.equal(topicQuestion.code, 0, topicQuestion.stderr);
-  assert.ok(topicQuestion.stdout.trimEnd().endsWith('**What would you like to change?**\nPick a topic to change one setting in it; the rest stay as they are.\n\n- **(A) Keep as is**: change nothing\n- **(B) How I work**: how I write to you, how much effort tasks get and which short notes I add\n- **(C) Where work goes**: where plans, code changes and finished work end up\n- **(D) Safety and speed**: what I block and which slow commands I skip repeating\n\nRecommended: (A), because your current settings keep working, and the others change how I behave from now on.'), topicQuestion.stdout);
+  assert.ok(topicQuestion.stdout.trimEnd().endsWith('**What would you like to change?**\nPick a topic to change one setting in it; the rest stay as they are.\n\n- **(A) Keep as is**: change nothing\n- **(B) How I work**: how I write to you and how much effort tasks get\n- **(C) Where work goes**: where plans, code changes and finished work end up\n- **(D) Safety**: what I block\n\nRecommended: (A), because your current settings keep working, and the others change how I behave from now on.'), topicQuestion.stdout);
   const settingQuestion = await settings(space, ['menu', 'places']);
   assert.ok(settingQuestion.stdout.trimEnd().endsWith('**Which part of where work goes?**\n\n- **(A) Keep as is**: change nothing\n- **(B) Plans**: where I save the plan for a change (now: GitHub issue)\n- **(C) Code changes**: where I put code changes (now: Ask me)\n- **(D) Finished work**: what happens once work is done (now: Ask me)\n\nRecommended: (A), because nothing changes, and the others each lead to one question about that setting.'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
@@ -239,7 +239,7 @@ test('menu asks for a topic, with a topic for its setting, and with a key for a 
 
 test('the menu, every topic and every setting render a question of the right shape', async () => {
   const space = await workspace();
-  const topics = ['work', 'places', 'safety', 'slow', 'scans'];
+  const topics = ['work', 'places', 'safety'];
   for (const name of [undefined, ...topics, ...Object.keys(SCHEMA)]) {
     const result = await settings(space, name === undefined ? ['menu'] : ['menu', name]);
     assert.equal(result.code, 0, `${name}: ${result.stderr}`);
@@ -251,7 +251,7 @@ test('the menu, every topic and every setting render a question of the right sha
 test('the topics hold every setting once, and every setting has plain question texts', async () => {
   const schema = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
   const space = await workspace();
-  const topics = (await Promise.all(['work', 'places', 'safety', 'slow', 'scans'].map((topic) => settings(space, ['menu', topic])))).map((result) => result.stdout).join('\n');
+  const topics = (await Promise.all(['work', 'places', 'safety'].map((topic) => settings(space, ['menu', topic])))).map((result) => result.stdout).join('\n');
   for (const [key, entry] of Object.entries(schema)) {
     for (const field of ['label', 'about', 'question']) assert.ok(entry[field], `${key} lacks ${field}`);
     assert.equal(topics.split(`**: ${entry.about} (now:`).length - 1, 1, `${key} sits in one topic`);
@@ -355,27 +355,10 @@ test('guards is on by default and off when the project sets it', async () => {
   assert.match(rejected.stderr, /guards=maybe is not one of on, off/);
 });
 
-test('the context line leaves heavy_commands out while empty and prints it once set', async () => {
-  const unset = await workspace();
-  assert.ok(!(await settings(unset, ['context'])).stdout.includes('heavy_commands'));
-  const project = await workspace({ project: { heavy_commands: 'npm run e2e' } });
-  assert.ok((await settings(project, ['context'])).stdout.includes('guard_lines=400 (default), heavy_commands=npm run e2e (project), heavy_after_seconds=60 (default), log_scan=off (default), sibling_scan=off (default)'));
-  assert.ok((await settings(unset, ['menu', 'safety'])).stdout.includes('- **(D) Slow commands**: which commands and tests I run only once per code change\n\nRecommended: (A), because nothing changes, Slow commands leads to a question about which of its settings, and the others each lead to one question about that setting.'));
-  assert.ok((await settings(unset, ['menu', 'slow'])).stdout.includes('- **(B) Slow commands**: commands I run only once per code change (now: None)'));
-  assert.ok((await settings(unset, ['menu', 'heavy_commands'])).stdout.includes('- **(A) Keep None**: every command runs each time\n- **(B) Clear the list**: every command runs each time\n\n'));
-});
-
 test('a value past the third pick is named as a typed answer', async () => {
   const result = await settings(await workspace(), ['menu', 'ship']);
   assert.ok(result.stdout.includes('**What should happen once work is finished?**\nOr type `local` for Keep it here (nothing leaves this machine).\n\n- **(A) Keep Ask me**'), result.stdout);
   assert.doesNotMatch(result.stdout, /\(E\)/);
-});
-
-test('heavy_commands is empty by default and carries the project string whole', async () => {
-  const unset = await workspace();
-  assert.equal((await settings(unset, ['get', 'heavy_commands'])).stdout.trim(), '');
-  const project = await workspace({ project: { heavy_commands: 'npm run e2e:beeld; make e2e' } });
-  assert.equal((await settings(project, ['get', 'heavy_commands'])).stdout.trim(), 'npm run e2e:beeld; make e2e');
 });
 
 test('a stored old budget name reads as its new level', async () => {
@@ -385,20 +368,6 @@ test('a stored old budget name reads as its new level', async () => {
     assert.equal(result.code, 0, result.stderr);
     assert.equal(result.stdout.trim(), level);
   }
-});
-
-test('heavy_after_seconds defaults to 60', async () => {
-  const unset = await workspace({});
-  assert.equal((await settings(unset, ['get', 'heavy_after_seconds'])).stdout.trim(), '60');
-});
-
-test('heavy_after_seconds accepts 0 for off while guard_lines still needs at least 1', async () => {
-  const space = await workspace({ project: { heavy_after_seconds: 0, guard_lines: 0 } });
-  assert.equal((await settings(space, ['get', 'heavy_after_seconds'])).stdout.trim(), '0');
-  assert.equal((await settings(space, ['get', 'guard_lines'])).stdout.trim(), '400');
-  const rejected = await settings(space, ['set', 'guard_lines', '0', '--scope', 'project']);
-  assert.notEqual(rejected.code, 0);
-  assert.match(rejected.stderr, /at least 1/);
 });
 
 test('a stored value named like an object property is not read as an alias', async () => {
@@ -417,19 +386,4 @@ test('a null plugin entry or options in the user settings file is ignored', asyn
     assert.equal(result.code, 0, result.stderr);
     assert.equal(result.stdout.trim(), 'docs');
   }
-});
-
-test('log_scan and sibling_scan default to off, each switches alone, and any other value is refused', async () => {
-  const space = await workspace({});
-  for (const key of ['log_scan', 'sibling_scan']) {
-    assert.equal((await settings(space, ['get', key])).stdout.trim(), 'off');
-  }
-  const set = await settings(space, ['set', 'log_scan', 'on', '--scope', 'project']);
-  assert.equal(set.code, 0, set.stderr);
-  assert.deepEqual(JSON.parse(await fs.readFile(path.join(space.root, '.claude', 'exo.json'), 'utf8')), { log_scan: 'on' });
-  assert.equal((await settings(space, ['get', 'log_scan'])).stdout.trim(), 'on');
-  assert.equal((await settings(space, ['get', 'sibling_scan'])).stdout.trim(), 'off');
-  const refused = await settings(space, ['set', 'sibling_scan', 'maybe', '--scope', 'project']);
-  assert.equal(refused.code, 1);
-  assert.equal((await settings(space, ['get', 'sibling_scan'])).stdout.trim(), 'off');
 });
