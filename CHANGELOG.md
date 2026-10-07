@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**exo now registers four hooks instead of thirteen, and no Stop hook re-prompts a finished turn; the `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `log_scan` and `sibling_scan` settings are gone.**
+
+### Changed
+
+- land-task now runs a compact task's Proof in the checkout before it commits, records the exit status and output it saw, and refuses to land on a failure or a 540-second timeout; MCP Proofs stay deferred.
+
+### Fixed
+
+- destructive-guard denies DROP and TRUNCATE only when a database client (psql, mysql, mariadb, sqlite3, duckdb) receives them, by argument, pipe or heredoc, so flags such as `--truncate` and prose in heredocs or PR bodies pass.
+
+### Removed
+
+- The read, repeat, output and heavy-command guards, the runtime recorder, the log and sibling scans and the terse display filter, with their `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `log_scan` and `sibling_scan` settings.
+- The Stop hook and its proof-check, resume-plan and terse-check handlers, with the saved terse feedback and the `build.active` marker; a build run continues through its own loop and completion notifications.
+
 ## 0.102.1 - 2026-10-07
 
 ### Changed
