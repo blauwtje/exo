@@ -280,9 +280,11 @@ test('the report prints one Budget: line per task of the wave, scaled below buil
   }
 });
 
+// The budget tests drop the Commit: block, so the plan takes the direct route,
+// the one that dispatches build-task with a Budget: line.
 test('a task at or past the plan-check split threshold gets build-task\'s own budget, never more', async () => {
   const bigCode = Array.from({ length: 260 }, (_, index) => `const line${index} = ${index};`).join('\n');
-  const big = taskSection({ number: 1, title: 'Big', files: ['- Create: `src/big.js`'], code: bigCode, subject: 'feat(app): big' });
+  const big = taskSection({ number: 1, title: 'Big', files: ['- Create: `src/big.js`'], code: bigCode, subject: 'feat(app): big', commit: false });
   const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [big] }) });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
@@ -298,7 +300,7 @@ test('a Budget: line stands alone and matches the delegate-budget hook\'s regex'
 });
 
 test('a one-file task of a few lines still gets at least 45k/75k, three quarters of build-task\'s own budget as a floor', async () => {
-  const small = taskSection({ number: 1, title: 'Small', files: ['- Create: `src/small.js`'], code: 'const a = 1;', subject: 'feat(app): small' });
+  const small = taskSection({ number: 1, title: 'Small', files: ['- Create: `src/small.js`'], code: 'const a = 1;', subject: 'feat(app): small', commit: false });
   const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [small] }) });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
@@ -318,17 +320,40 @@ test('with every task landed, the report reads Next: none and never Next phase:'
   assert.doesNotMatch(report, /^Next phase:/m);
 });
 
-test('on the inline route the report names every unlanded task with its brief and never a Wave: line', async () => {
+async function inlineReport() {
   const { root, planPath } = await checkout();
   const tasks = [1, 2, 3].map((number) => taskSection({
     number, title: `Part ${number}`, files: [`- Create: \`src/part-${number}.js\``], code: `export const part${number} = ${number};`, subject: `feat(app): part ${number}`
   }));
   const inlinePlan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks });
   land(root, 1, 'feat(app): part 1');
-  const report = nextTaskReport({ planPath, planText: inlinePlan, root });
+  return { root, planPath, report: nextTaskReport({ planPath, planText: inlinePlan, root }) };
+}
+
+test('on the inline route the report prints every unlanded task\'s section, with no brief, budget or Wave: line', async () => {
+  const { root, report } = await inlineReport();
   assert.match(report, /^Route: inline \(3 tasks, code pasted, files disjoint\)$/m);
   assert.match(report, /^Next: Task 2\nInline: Task 2, Task 3$/m);
   assert.doesNotMatch(report, /^Wave:/m);
-  assert.ok(report.includes(`\nBrief: ${briefPath(root, 2)}\n`), report);
-  assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
+  assert.match(report, /^### Task 2: Part 2$/m);
+  assert.match(report, /^### Task 3: Part 3$/m);
+  assert.match(report, /^export const part3 = 3;$/m);
+  assert.doesNotMatch(report, /^### Task 1:/m);
+  assert.doesNotMatch(report, /^(Brief|Budget):/m);
+  await assert.rejects(fs.access(briefPath(root, 2)), { code: 'ENOENT' });
+});
+
+test('on the inline route the report prints the inline reference\'s steps with the skill, plan and checkout filled in', async () => {
+  const { root, planPath, report } = await inlineReport();
+  const skill = fileURLToPath(new URL('../skills/build', import.meta.url));
+  const reference = await fs.readFile(path.join(skill, 'references/run-loop-inline.md'), 'utf8');
+  const steps = reference.split('\n').filter((line) => line.startsWith('- '));
+  assert.ok(steps.length > 0, reference);
+  assert.match(report, /^Inline: Task 2, Task 3\nSteps:$/m);
+  for (const step of steps) {
+    const filled = step.replaceAll('${CLAUDE_SKILL_DIR}', skill).replaceAll('<plan>', planPath).replaceAll('<checkout>', root);
+    assert.ok(report.includes(`\n${filled}\n`), `${filled}\n---\n${report}`);
+  }
+  assert.ok(report.includes(`node "${skill}/scripts/land-task.mjs" --plan ${planPath} --task <n> --root ${root}`), report);
+  assert.doesNotMatch(report, /CLAUDE_SKILL_DIR/);
 });
