@@ -37,6 +37,8 @@
 // the session runs that tool call.
 // Any other Proof whose first word is a snake_case name the shell cannot find
 // names that likely MCP tool and the `mcp:<tool>` form on its FAIL line.
+// A failed Success criterion whose output blames only unlanded tasks' declared Files,
+// as on a run scoped to some of the plan's tasks, prints a SKIP line naming them, not FAIL.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -73,6 +75,10 @@ const FAIL_TAIL_LINES = 20;
 // A longer output line is cut, so one minified or base64 line cannot flood the report.
 const FAIL_TAIL_LINE_LENGTH = 300;
 const BACKTICKED_COMMAND = /`([^`]+)`/;
+// An output line reporting a pass, or opening a TAP subtest, names a path without blaming it.
+const PASS_REPORT_LINE = /^\s*(?:#\s*Subtest:|ok\b|pass\b|✔|✓)/i;
+// An output line reporting one failed check.
+const FAIL_REPORT_LINE = /^\s*(?:fail\b|not ok\b|✖|✗|×)/i;
 // A Proof: value that carries a backtick reads as prose describing the
 // check (for example "npm run validate, whose output holds no `[FAIL]`
 // line"), not a command; running it through a shell would hand the shell
@@ -169,6 +175,27 @@ export function successCriterionPasses({ ok, output }) {
 /** The first backticked command in the plan's Success criterion text, or null when it has none. */
 export function criterionCommand(successCriterion) {
   return successCriterion?.match(BACKTICKED_COMMAND)?.[1] ?? null;
+}
+
+/** Whether `line` names `file` as a whole path, so `src/case.js` never matches `src/title-case.js`. */
+function namesPath(line, file) {
+  const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\w.-])${escaped}(?![\\w-]|\\.\\w)`).test(line);
+}
+
+/**
+ * The unlanded task numbers a failed Success criterion's `output` blames, or [] when the failure
+ * may lie in landed work. A line blames a task when it names one of the task's declared Files and
+ * reports no pass. It is [] when a line blames a landed task, or a line reporting a failure
+ * (`fail`, `not ok`, `✖`) names no unlanded task's file, since such a failure may be landed work's.
+ */
+export function unlandedBlame(tasks, landed, output) {
+  const blaming = output.split(/\r?\n/).filter((line) => !PASS_REPORT_LINE.test(line));
+  const names = (line, task) => task.files.some((file) => namesPath(line, file.path));
+  const open = tasks.filter((task) => !landed.has(task.number));
+  if (tasks.some((task) => landed.has(task.number) && blaming.some((line) => names(line, task)))) return [];
+  if (blaming.some((line) => FAIL_REPORT_LINE.test(line) && !open.some((task) => names(line, task)))) return [];
+  return open.filter((task) => blaming.some((line) => names(line, task))).map((task) => task.number);
 }
 
 /** Every task of the plan as `{ task, done }`, done when its landed commit exists. */
@@ -346,8 +373,15 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       lines.push('PASS success-criterion');
     } else {
       const reason = gateRun.ok ? summaryLine(gateRun.output) : failReason(gateRun);
-      lines.push(...failLines('success-criterion', reason, gateRun.output));
-      failed = true;
+      // A run scoped to some tasks fails a criterion that covers the rest; with only
+      // unlanded tasks blamed, the landed ones still go on to the branch review.
+      const blamed = unlandedBlame(plan.tasks, landed, gateRun.output);
+      if (blamed.length > 0) {
+        lines.push(`SKIP success-criterion (out of scope: ${reason} names only files of unlanded Task ${blamed.join(', ')})`, ...outputTail(gateRun.output));
+      } else {
+        lines.push(...failLines('success-criterion', reason, gateRun.output));
+        failed = true;
+      }
     }
   }
 

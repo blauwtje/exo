@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
-import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
+import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unlandedBlame, unmarkedMcpTool } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -719,4 +719,76 @@ test('a plan on the inline route with no risk fact prints no reviewer, while a m
   assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat: x', 'Plan-task: plan/1']] }), 'REVIEWER: none (inline route)');
   const manifest = await reviewerOf({ 'plan.md': INLINE_PLAN, 'package.json': '{}\n' }, { commits: [['feat: x', 'Plan-task: plan/1', { 'package.json': '{"name":"a"}\n' }]] });
   assert.equal(manifest, `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+});
+
+// Run pe44LB's shape: the user asked for tasks 1-2 of a three-task plan, and the plan's
+// criterion checks every function, so it fails on the module task 3 has not created yet.
+const SCOPED_PROVE = [
+  "import path from 'node:path';",
+  "import { pathToFileURL } from 'node:url';",
+  'let failed = 0;',
+  "for (const file of ['a', 'b', 'c']) {",
+  '  try {',
+  "    const fn = (await import(pathToFileURL(path.resolve('src', `${file}.mjs`)).href)).default;",
+  "    if (fn() !== file) throw new Error(`${file}() returned ${fn()}`);",
+  "    console.log(`pass ${file}: 1 case and test/${file}.test.mjs`);",
+  '  } catch (error) {',
+  '    failed += 1;',
+  '    console.error(`fail ${file}: ${error.message}`);',
+  '  }',
+  '}',
+  'process.exit(failed === 0 ? 0 : 1);',
+  ''
+].join('\n');
+const SCOPED_PLAN = [
+  '## Plan basis', '', 'Repository: .', 'Branch: main', '',
+  '## Success criterion', '`node prove.mjs` exits 0.', '',
+  ...['a', 'b', 'c'].flatMap((file, index) => [
+    `### Task ${index + 1}: feat(strings): add ${file}`,
+    `Depends on: none | Files: \`src/${file}.mjs\`, \`test/${file}.test.mjs\` | Data: none | Proof: node -e "process.exit(0)"`,
+    ''
+  ])
+].join('\n');
+
+async function scopedRun(landedSources, landedNumbers) {
+  const root = await gitRepository({ 'plan.md': SCOPED_PLAN, 'prove.mjs': SCOPED_PROVE, ...landedSources });
+  for (const number of landedNumbers) landTask(root, number);
+  return run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+}
+
+test('a criterion failing only on an unlanded task\'s missing module prints SKIP out of scope and still names the reviewer', async () => {
+  const result = await scopedRun({ 'src/a.mjs': "export default () => 'a';\n", 'src/b.mjs': "export default () => 'b';\n" }, [1, 2]);
+  assert.equal(result.code, 0, result.stdout);
+  const lines = result.stdout.trim().split('\n');
+  assert.equal(lines[2], 'SKIP success-criterion (out of scope: exit 1 names only files of unlanded Task 3)');
+  assert.ok(!result.stdout.includes('FAIL success-criterion'));
+  assert.ok(lines.includes(`REVIEWER: ${REVIEWER_AGENTS.light}`));
+  assert.ok(lines.includes('OPEN Task 3: feat(strings): add c'));
+});
+
+test('a criterion that also fails on a landed task stays FAIL and exits 1', async () => {
+  const result = await scopedRun({ 'src/a.mjs': "export default () => 'a';\n", 'src/b.mjs': "export default () => 'x';\n" }, [1, 2]);
+  assert.equal(result.code, 1);
+  assert.ok(result.stdout.includes('FAIL success-criterion (exit 1)'));
+  assert.ok(!result.stdout.includes('SKIP success-criterion'));
+});
+
+test('a criterion failing with every task landed stays FAIL', async () => {
+  const result = await scopedRun({ 'src/a.mjs': "export default () => 'a';\n", 'src/b.mjs': "export default () => 'b';\n" }, [1, 2, 3]);
+  assert.equal(result.code, 1);
+  assert.ok(result.stdout.includes('FAIL success-criterion (exit 1)'));
+});
+
+test('unlandedBlame blames unlanded tasks only when no line blames landed work', () => {
+  const tasks = [
+    { number: 1, files: [{ path: 'src/case.js' }, { path: 'test/case.test.js' }] },
+    { number: 2, files: [{ path: 'src/title-case.js' }] }
+  ];
+  const landed = new Set([1]);
+  const missing = "fail title-case: Cannot find module '/x/src/title-case.js' imported from /x/prove.mjs";
+  assert.deepEqual(unlandedBlame(tasks, landed, `pass case: test/case.test.js\n${missing}\n# fail 1`), [2]);
+  assert.deepEqual(unlandedBlame(tasks, landed, `${missing}\n    at load (/x/src/case.js:3:1)`), []);
+  assert.deepEqual(unlandedBlame(tasks, landed, `${missing}\nnot ok 1 - case uppercases`), []);
+  assert.deepEqual(unlandedBlame(tasks, landed, 'fail: check failed'), []);
+  assert.deepEqual(unlandedBlame(tasks, new Set([1, 2]), missing), []);
 });
