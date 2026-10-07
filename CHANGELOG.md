@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.103.2 - 2026-10-07
+
 ### Fixed
 
 - verify reports a success criterion that fails only on files of unlanded tasks as out of scope (`SKIP`) and still runs the branch review of the landed tasks.
