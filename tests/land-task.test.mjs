@@ -10,6 +10,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkTask, fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { proofRecordPath } from '#plan-tasks';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
@@ -922,7 +923,7 @@ test('a landing refuses a staged sibling path, which its commit would take', asy
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
-test('a plan-written Commit: block lands beside no sibling path, since it may stage anything', async () => {
+test('a plan-written Commit: block lands beside no path no task names', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(path.join(root, 'src/note.md'), '# note\n');
@@ -952,4 +953,49 @@ test('a Files: entry ending in / covers every changed path under that folder', a
   const output = landTask({ planPath: path.join(root, 'docs/plans/fixture.md'), planText: plan, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
+});
+
+test('on the inline route a landing names the next task, never a wave, though the plan allows one', async () => {
+  const plan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], code: 'export function greet() {}', subject: 'feat(app): greet' }),
+    taskSection({ number: 2, title: 'Left', files: ['- Create: `src/left.js`'], code: 'export const left = 1;', subject: 'feat(app): left' }),
+    taskSection({ number: 3, title: 'Right', files: ['- Create: `src/right.js`'], code: 'export const right = 1;', subject: 'feat(app): right' })
+  ] });
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  assert.match(landTask({ planPath, planText: plan, number: 1, root }), /\nLanded: 1\nRoute: inline \(3 tasks, code pasted, files disjoint\)\nNext: Task 2\n$/);
+  await fs.access(proofRecordPath(root, 'fixture', 1));
+});
+
+// The inline route's lead tends to write every task's files before landing the
+// first; each task's Commit: block adds only its own Files:.
+function inlineTask(number, file, code, add = file) {
+  const section = taskSection({ number, title: `Part ${number}`, files: [`- ${number === 1 ? 'Modify' : 'Create'}: \`${file}\``], code, subject: `feat(app): part ${number}`, commit: false });
+  return `${section}Commit:\n\`\`\`bash\ngit add ${add}\ngit commit -m "feat(app): part ${number}" -m "Plan-task: ${number}"\n\`\`\`\n`;
+}
+
+const INLINE_FILES = ['src/app.js', 'src/left.js', 'src/right.js', 'src/up.js'];
+
+async function inlineCheckoutAllWritten(adds = INLINE_FILES) {
+  const plan = planFixture({ tasks: INLINE_FILES.map((file, index) => inlineTask(index + 1, file, `export const part${index + 1} = 1;`, adds[index])) });
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  for (const file of INLINE_FILES.slice(1)) await fs.writeFile(path.join(root, file), 'export const part = 1;\n');
+  return { plan, root, planPath };
+}
+
+test('on the inline route each task lands beside every later task\'s written files and commits only its own', async () => {
+  const { plan, root, planPath } = await inlineCheckoutAllWritten();
+  assert.match(landTask({ planPath, planText: plan, number: 1, root }), /Route: inline \(4 tasks, code pasted, files disjoint\)\nNext: Task 2\n$/);
+  for (const [index, file] of INLINE_FILES.entries()) {
+    if (index > 0) assert.match(landTask({ planPath, planText: plan, number: index + 1, root }), /^Committed: [0-9a-f]+ Task \d$/m);
+    assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), [file]);
+  }
+  assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), '');
+});
+
+test('on the inline route a Commit: block whose git add covers a later task\'s file refuses it', async () => {
+  const { plan, root, planPath } = await inlineCheckoutAllWritten(['src/app.js src/', ...INLINE_FILES.slice(1)]);
+  assert.throws(() => landTask({ planPath, planText: plan, number: 1, root }), /Task 1 changed a path outside Files: `src\/left\.js`, `src\/right\.js`, `src\/up\.js`/);
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });

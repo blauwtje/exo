@@ -10,7 +10,7 @@ effort: medium
 ## The loop
 
 1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
-2. **Leave the plan to the unit.** After dispatch, read only script output and unit returns, no plan or diff.
+2. **Leave the plan to the unit.** On `Route: unit`: After dispatch, read only script output and unit returns, no plan or diff.
 3. **Ask the branch what landed.**
 4. **Take the block.**
 5. **Dispatch the unit.**
@@ -32,15 +32,16 @@ effort: medium
 
 | File | Read it when |
 |---|---|
-| `references/run-loop.md` | The loop, steps 1-6. |
+| `references/run-loop.md` | Steps 1-6. |
+| `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7. |
-| `references/no-spec.md` | No spec, when there is no plan file. |
+| `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line. |
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
-| `bug-fixer-prompt.md` | Step 6, on a failed deferred MCP call; the unit reads it too. |
+| `bug-fixer-prompt.md` | Step 6, on a failed deferred MCP call. |
 | `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
 | `references/design-tasks.md` | Step 4, for a `Design:` line; its `## The delegate` is never here. |
 | `reviewer-prompt.md` | No spec step 7. |
@@ -50,7 +51,7 @@ effort: medium
 | `references/data-migration.md` | When its first line applies. |
 | `references/test-design.md` | When its first line applies. |
 | `references/test-first.md` | No spec, test-first work, before naming the first boundary. |
-| `references/project-knowledge.md` | No spec step 6, when its first line applies. |
+| `references/project-knowledge.md` | No spec step 6. |
 | `references/performance.md` | No spec, speed-only work, before measuring. |
 | `../route-skills/references/question.md` | Before asking the user to pick among options. |
 

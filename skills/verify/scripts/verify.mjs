@@ -11,8 +11,9 @@
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
 // risk (a landed task's `Risk:`, a manifest change or a signature change
-// since base), so a caller knows which agent reviews the change without
-// asking. Reads the plan through #plan-tasks, the same
+// since base), or `REVIEWER: none (inline route)` for a plan on build's inline
+// route with none of those risks, so a caller knows which agent reviews
+// the change without asking. Reads the plan through #plan-tasks, the same
 // module land-task.mjs uses, so both agree on which task actually landed.
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
@@ -44,7 +45,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
+import { frameOf, landedTasks, parsePlan, planIdOf, planRoute } from '#plan-tasks';
 import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -363,7 +364,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   // With no base there is no range of commits to read.
   const signatureChanged = base !== undefined && signatureChangedSince(base, root);
   const manifestChanged = touchesManifest(changed);
-  lines.push(`REVIEWER: ${pickReviewer({ riskTasks, manifestChanged, signatureChanged })}`);
+  // The inline route's plan pasted all its code, so with no risk fact the
+  // branch review is skipped; any risk fact keeps the picked reviewer.
+  const unreviewed = planRoute(plan.tasks).route === 'inline' && !riskTasks && !manifestChanged && !signatureChanged;
+  lines.push(`REVIEWER: ${unreviewed ? 'none (inline route)' : pickReviewer({ riskTasks, manifestChanged, signatureChanged })}`);
   for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
   for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
   return { lines, failed };

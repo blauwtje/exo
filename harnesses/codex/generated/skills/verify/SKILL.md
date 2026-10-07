@@ -12,12 +12,13 @@ description: "Use when a plan's tasks are landed and its branch needs the gate b
    - It then runs the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, or `npm test` with no `check` script.
    - `Land gate: none` prints `UNRUN success-criterion`, not `PASS`.
    - It runs the stray-path check against `base`.
-   - It prints one `REVIEWER: <agent>` line, then one `DONE` or `OPEN` line per task and one `MANUAL` line per `## Manual checks` bullet.
+   - It prints one `REVIEWER: <agent>` or `REVIEWER: none (inline route)` line, then one `DONE` or `OPEN` line per task and one `MANUAL` line per `## Manual checks` bullet.
    - A `FAIL` or `STRAY` line ends the turn with the script's own report, and nothing here reruns its checks.
    - A `SESSION <check>` line, `<check>` being `Task <n>` or `success-criterion`, names an `mcp:<tool> <args>` call the script never runs: call the `mcp__<server>__<tool>` tool with those args yourself, never through Bash.
    - Record that call as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; a `FAIL` ends the turn like the script's own.
    - With no `mcp__*__<tool>` tool in this session, record `UNRUN <check>`, not `PASS`, and list it in the turn's report.
-2. **Review the branch.** Dispatch the `exo-review-branch` agent, or `exo-review-branch-deep` when the `REVIEWER:` line prints that name, with no model override.
+2. **Review the branch.** `REVIEWER: none` skips steps 2-3, never step 1; go to step 4.
+   - Otherwise dispatch the `exo-review-branch` agent, or `exo-review-branch-deep` when the `REVIEWER:` line prints that name, with no model override.
    - Pass the plan path, branch, checkout and base.
    - Pass the code standard path from `CLAUDE.md` or `AGENTS.md`, else `{{SKILL_DIR}}/../route-skills/references/code-standard.md`.
    - Pass `<checkout>/.exo/` as the implementer report directory and `<checkout>/.exo/branch-review.md` as the findings path.

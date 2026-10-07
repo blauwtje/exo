@@ -316,17 +316,37 @@ function strayPaths(task, root, planPath, siblingWork = () => false) {
 // In a block several builders share one checkout, so a path an unlanded task
 // of the plan names in its `Files:` is that sibling's work, not this task's
 // stray; a landed task's path is committed, so a change to it stays a stray.
-// A landing exempts one only on a derived commit, whose `git add` stages this
-// task's `Files:` alone, and only while it is unstaged, since `git commit`
-// takes the whole index; a plan-written Commit: block may stage anything.
+// A landing exempts one only while it is unstaged, since `git commit` takes
+// the whole index. A derived commit's `git add` stages this task's `Files:`
+// alone. A plan-written Commit: block (the inline route writes every task's
+// files first) exempts only an untracked path none of its `git add`
+// arguments covers, since `git commit -a` takes tracked changes.
 function siblingWorkOf(plan, task, root, planPath, landing) {
-  if (landing && (task.commitBlock !== null || !task.compact)) return () => false;
+  const written = landing && (task.commitBlock !== null || !task.compact);
+  const added = written ? addedPathspecs(task.commitBlock ?? '') : [];
+  if (added === null) return () => false;
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   const entries = plan.tasks
     .filter((other) => other.number !== task.number && !landed.includes(other.number))
     .flatMap((other) => other.files.map((file) => file.path));
   const staged = landing ? execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only'], { encoding: 'utf8' }).split('\n') : [];
-  return (changed) => isCovered(entries, changed) && !staged.includes(changed);
+  const untracked = written ? new Set(untrackedPaths(root)) : null;
+  return (changed) => isCovered(entries, changed) && !staged.includes(changed)
+    && (!written || (untracked.has(changed) && !isCovered(added, changed)));
+}
+
+// A `git add` of `.`, `-A`, `--all`, `:/` or a glob stages every untracked path.
+const STAGES_ALL = /^(?:\.|\.\/|-A|--all|:\/|.*[*?[].*)$/;
+
+// Every path a Commit: block's `git add` lines name, a folder ending in `/`;
+// null when one stages everything.
+function addedPathspecs(commitBlock) {
+  const specs = [...commitBlock.matchAll(/\bgit\s+add\b([^;&|\n]*)/g)]
+    .flatMap((match) => match[1].trim().split(/\s+/))
+    .map((arg) => arg.replace(/^['"]|['"]$/g, ''))
+    .filter((arg) => arg !== '' && arg !== '--' && !/^-(?!A$|-all$)/.test(arg));
+  if (specs.some((spec) => STAGES_ALL.test(spec))) return null;
+  return specs.flatMap((spec) => [spec, `${spec.replace(/\/$/, '')}/`]);
 }
 
 // The file's source at HEAD, or null when HEAD holds no such file.
@@ -522,8 +542,10 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   writeProofRecord({ root, planId, number, proofs });
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (exit 0)`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
-  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
-  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(planRoute(plan.tasks))}\n${waveLine(wave)}\n`;
+  const route = planRoute(plan.tasks);
+  // The inline route builds in the run checkout, never in a wave's worktrees.
+  const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${waveLine(wave)}\n`;
 }
 
 function main(argv) {

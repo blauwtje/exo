@@ -6,11 +6,14 @@
 // the checkout's scratch directory, so the section reaches only build-task
 // and stays out of the session. `--block` prints only the landed set and the
 // next run-unit block, for the build session, which leaves the plan to the unit.
+// On the inline route, where the session builds each task itself, both print
+// the inline steps and each unlanded task's section instead.
 // `--proofs` prints each landed task's `Proof:` lines as land-task recorded
 // them and the decision log's path, for the build report.
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, taskSize, waveLine } from '#plan-tasks';
@@ -148,6 +151,28 @@ function taskLines(task, frame, root, briefDirectory) {
   ];
 }
 
+// On the inline route the session builds each task itself from its section,
+// so the report carries the section in place of a brief, and no budget, which
+// only a build-task dispatch reads.
+function inlineTaskLines(task, root) {
+  const drift = driftOf(task, root);
+  return [
+    ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
+    task.section
+  ];
+}
+
+// The inline reference's bullets are the steps; reading them here keeps that
+// file their one source, and filling in the paths spares the session reading it.
+const SKILL_DIRECTORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+
+function inlineSteps(planPath, root) {
+  const reference = fs.readFileSync(path.join(SKILL_DIRECTORY, 'references', 'run-loop-inline.md'), 'utf8');
+  return reference.split('\n')
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIRECTORY).replaceAll('<plan>', planPath).replaceAll('<checkout>', root));
+}
+
 // Reads only the plan's frame and prints its header sections; `main` reaches
 // this under `--frame`, before a plan holds a task worth a wave.
 export function frameOnlyReport(planText) {
@@ -182,6 +207,8 @@ function blockLine(block, visualDirection) {
 // `Design:` task by its direction per design-tasks.md.
 export function blockReport({ planPath, planText, root }) {
   const plan = parseTasks(planPath, planText);
+  // The inline route has no block: the session builds every task itself.
+  if (planRoute(plan.tasks).route === 'inline') return nextTaskReport({ planPath, planText, root });
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   return `${[
     `Plan: ${planPath}`,
@@ -211,16 +238,27 @@ export function nextTaskReport({ planPath, planText, root }) {
   const plan = parseTasks(planPath, planText);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
-  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  const route = planRoute(plan.tasks);
+  const inline = route.route === 'inline';
+  // The inline route builds in the run checkout, never in a wave's worktrees.
+  const wave = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
-    routeLine(planRoute(plan.tasks)),
+    routeLine(route),
     waveLine(wave)
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;
+  // On the inline route the lead builds every unlanded task in plan order, so
+  // one call prints them all, with the steps to build them.
+  if (inline) {
+    const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
+    lines.push(`Inline: ${unlanded.map((task) => `Task ${task.number}`).join(', ')}`, 'Steps:', ...inlineSteps(planPath, root));
+    for (const task of unlanded) lines.push('', ...inlineTaskLines(task, root));
+    return `${lines.join('\n')}\n`;
+  }
   const briefDirectory = scratchPath(root, 'briefs');
   for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
   return `${lines.join('\n')}\n`;
