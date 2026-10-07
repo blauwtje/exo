@@ -186,12 +186,14 @@ function planCells() {
 
 // The exo arm runs the plan through build; the baseline arm gets the same plan
 // and branch with no plugin loaded, so the pair differ only in exo. The two
-// session arms give build's prompt to a cut variant of the plugin copy.
+// session arms give build's prompt to a cut variant of the plugin copy, named
+// in `pluginVariant`, since `variant` names a review branch.
 function flowCells() {
   const shared = {
     kind: 'flow',
     task: null,
     variant: null,
+    pluginVariant: null,
     source: null,
     model: SWEEP_MODELS.sonnet,
     effort: 'high',
@@ -203,8 +205,8 @@ function flowCells() {
   const buildPrompt = `Load the exo:build skill and run the plan ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`;
   return [
     { ...shared, id: 'flow-c7', prompt: buildPrompt },
-    { ...shared, id: 'flow-session', variant: 'session-build', prompt: buildPrompt },
-    { ...shared, id: 'flow-session-no-proof', variant: 'session-build-no-proof', prompt: buildPrompt },
+    { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt: buildPrompt },
+    { ...shared, id: 'flow-session-no-proof', pluginVariant: 'session-build-no-proof', prompt: buildPrompt },
     {
       ...shared,
       id: 'flow-base',
@@ -224,6 +226,12 @@ export function selectCells(cells, setNames) {
   }
   if (setNames.includes('all')) return cells;
   return cells.filter((cell) => setNames.includes(cell.kind));
+}
+
+// Each plugin variant the cells load, once, so a sweep makes one copy per
+// variant however many cells load it.
+export function pluginVariants(cells) {
+  return [...new Set(cells.map((cell) => cell.pluginVariant).filter((name) => typeof name === 'string'))];
 }
 
 // Every call names this clone as its plugin, or the variant copy `pluginDir`

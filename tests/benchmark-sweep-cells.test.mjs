@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { claudeArguments, selectCells, sweepCells, SWEEP_MODELS } from '../benchmarks/sweep-cells.mjs';
+import { claudeArguments, pluginVariants, selectCells, sweepCells, SWEEP_MODELS } from '../benchmarks/sweep-cells.mjs';
 import { FLOW_PLAN, FLOW_REQUEST } from '../benchmarks/sweep-fixtures.mjs';
 import { ROOT } from '../benchmarks/tasks.mjs';
 
@@ -83,14 +83,21 @@ test('a fixer cell dispatches the review-fixer prompt naming the plan, base and 
 
 test('the session flow cells run flow-c7 prompt on a cut variant and load the copy given', () => {
   const [exo, session, noProof] = selectCells(cells, ['flow']);
-  assert.deepEqual([session.id, session.variant], ['flow-session', 'session-build']);
-  assert.deepEqual([noProof.id, noProof.variant], ['flow-session-no-proof', 'session-build-no-proof']);
-  assert.equal(exo.variant, null);
+  assert.deepEqual([session.id, session.pluginVariant], ['flow-session', 'session-build']);
+  assert.deepEqual([noProof.id, noProof.pluginVariant], ['flow-session-no-proof', 'session-build-no-proof']);
+  assert.equal(exo.pluginVariant, null);
+  for (const cell of [exo, session, noProof]) assert.equal(cell.variant, null, cell.id);
   for (const cell of [session, noProof]) {
     assert.equal(cell.prompt, exo.prompt, cell.id);
     for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(cell[key], exo[key], `${cell.id} ${key}`);
     assert.equal(flagValue(claudeArguments(cell, '/tmp/copy'), '--plugin-dir'), '/tmp/copy', cell.id);
   }
+});
+
+test('the sweep names each plugin variant once, however many cells load it', () => {
+  const flow = selectCells(cells, ['flow']);
+  assert.deepEqual(pluginVariants([...flow, ...flow, ...selectCells(cells, ['review'])]), ['session-build', 'session-build-no-proof']);
+  assert.deepEqual(pluginVariants(selectCells(cells, ['review', 'build', 'fixer', 'plan'])), []);
 });
 
 test('plan cells plan the change the flow cell runs from its fixed plan', () => {

@@ -21,10 +21,12 @@ import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
-import { claudeArguments, selectCells, sweepCells } from './sweep-cells.mjs';
+import { claudeArguments, pluginVariants, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { ROOT } from './tasks.mjs';
+import { copyPluginWithoutTasks } from './value.mjs';
+import { applyVariant } from './variants.mjs';
 
 const RUNS = path.join(ROOT, 'benchmarks', 'runs');
 const RESULTS = path.join(ROOT, 'benchmarks', 'results');
@@ -50,12 +52,15 @@ function git(directory, args) {
   return execFileSync('git', ['-C', directory, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
-function runClaude(cell, workdir, cellDirectory) {
+// A cell with a plugin variant loads that variant's copy from `copies`; every
+// other cell loads this clone, as before.
+function runClaude(cell, workdir, cellDirectory, copies) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
     const startedAt = Date.now();
-    const child = spawn('claude', claudeArguments(cell), {
+    const pluginDir = cell.pluginVariant ? copies[cell.pluginVariant] : ROOT;
+    const child = spawn('claude', claudeArguments(cell, pluginDir), {
       cwd: workdir,
       env: { ...process.env, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
       stdio: ['ignore', stdout, stderr]
@@ -187,7 +192,7 @@ function prepareRepository(cell, repository, origin) {
   else prepareFlowRepository(repository, origin, cell.kind === 'flow');
 }
 
-async function runCell(cell, runDirectory) {
+async function runCell(cell, runDirectory, copies) {
   const cellDirectory = path.join(runDirectory, cell.id);
   fs.mkdirSync(cellDirectory, { recursive: true });
   const cellRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `exo-sweep-${cell.id}-`)));
@@ -195,7 +200,7 @@ async function runCell(cell, runDirectory) {
   fs.mkdirSync(repository);
   try {
     prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
-    const outcome = await runClaude(cell, repository, cellDirectory);
+    const outcome = await runClaude(cell, repository, cellDirectory, copies);
     const result = readResult(cellDirectory);
     const usage = typeof result?.session_id === 'string' ? writeCellUsage(cellDirectory, result.session_id) : null;
     const measured = await measureCell(cell, repository, usage, cellDirectory);
@@ -267,17 +272,23 @@ async function main() {
   const records = [];
   const running = new Set();
   let done = 0;
+  // One copy per sweep and plugin variant, as run.mjs makes for its cut arms.
+  const copies = {};
   const heartbeat = setInterval(() => {
     console.log(`running: ${done}/${cells.length} cells done, in flight: ${[...running].join(', ')}`);
   }, HEARTBEAT_MS);
   try {
+    for (const name of pluginVariants(cells)) {
+      copies[name] = copyPluginWithoutTasks(ROOT, fs.mkdtempSync(path.join(os.tmpdir(), 'exo-sweep-plugin-')));
+      applyVariant(name, copies[name]);
+    }
     await runPool(cells, options.concurrency, async (cell, index) => {
       const recordFile = path.join(runDirectory, cell.id, 'record.json');
       if (fs.existsSync(recordFile)) {
         records[index] = JSON.parse(fs.readFileSync(recordFile, 'utf8'));
       } else {
         running.add(cell.id);
-        records[index] = await runCell(cell, runDirectory);
+        records[index] = await runCell(cell, runDirectory, copies);
         running.delete(cell.id);
       }
       done += 1;
@@ -286,6 +297,7 @@ async function main() {
     });
   } finally {
     clearInterval(heartbeat);
+    for (const copy of Object.values(copies)) fs.rmSync(copy, { recursive: true, force: true });
   }
   const resultsDirectory = path.resolve(options.results);
   const resultsFile = path.join(resultsDirectory, `${meta.date}-sweep.md`);
