@@ -139,5 +139,31 @@
       "60": { "label": "Over a minute", "gives": "skips only clearly slow tests" },
       "120": { "label": "Over two minutes", "gives": "skips only the slowest tests" }
     }
+  },
+  "log_scan": {
+    "type": "string",
+    "options": ["off", "on"],
+    "default": "off",
+    "description": "on: a Bash command that names, or a Read that opens, a long log file gets a note of at most 5 lines with its error and warning counts and most common messages. off: no note",
+    "label": "Log notes",
+    "about": "whether I add a short summary after I open a long log file",
+    "question": "Should I summarize a long log file after opening it?",
+    "choices": {
+      "off": { "label": "Off", "gives": "no note after a log file" },
+      "on": { "label": "On", "gives": "a note of at most 5 lines with the counts and common messages" }
+    }
+  },
+  "sibling_scan": {
+    "type": "string",
+    "options": ["off", "on"],
+    "default": "off",
+    "description": "on: an edit that removes lines gets a note of at most 5 lines naming other files and bindings that may share the fault. off: no note",
+    "label": "Sibling notes",
+    "about": "whether I add a short note after an edit that removes code, naming places that may share the fault",
+    "question": "Should I name places that may share a fault I just fixed?",
+    "choices": {
+      "off": { "label": "Off", "gives": "no note after an edit" },
+      "on": { "label": "On", "gives": "a note of at most 5 lines naming the other places" }
+    }
   }
 }
