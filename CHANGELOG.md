@@ -12,6 +12,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - build runs a small plan inline: `planRoute` in `lib/plan-tasks.mjs` picks `Route: inline` only for a plan of at most 4 tasks, each with pasted code and its own files, and no `Design:` task, so the lead builds the tasks itself with no worktrees, waves or unit dispatch (`skills/build/references/run-loop-inline.md`); `next-task.mjs` and `land-task.mjs` print the route taken, or why inline was refused.
 - `benchmarks/pressure/build/case7-small-plan.txt` checks the inline route on a 4-task plan whose prompt forbids a push and a pull request: verify still runs, and no branch review or wave worktree is dispatched.
 - Flow benchmark records (`benchmarks/sweep.mjs`, `benchmarks/flow-report.mjs`) carry whether verify ran, whether a branch review was dispatched, the routes taken and the lead's peak tokens per cell; `benchmarks/lean-gates.mjs --plugin-dir <path>` runs the bigger plan against any exo checkout.
+- `benchmarks/sweep.mjs --cells <id,...>` keeps only the named cells of the chosen sets.
+- `benchmarks/results/2026-10-07-flow-fixes.md` records flow step 2: on the flow fixture the inline route takes 359.9k weighted tokens against step 1's 504.1k, passes the hidden check and runs verify in all four cells, dispatches no branch review, and stays off on the 5-task lean-gates plan; the pressure suite shows no regression against main.
 
 ### Changed
 
