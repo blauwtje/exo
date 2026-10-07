@@ -32,7 +32,7 @@ description: "Use when a plan is to run or resume, or a decided change touches o
 |---|---|
 | `references/run-loop.md` | The loop, steps 1-6. |
 | `references/run-loop-direct.md` | Step 5, under `Route: direct`. |
-| `references/run-loop-inline.md` | Step 5, under `Route: inline`. |
+| `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/tail.md` | The loop, step 7, once step 3 reports `Next: none`. |
 | `references/no-spec.md` | No spec, when there is no plan file. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |

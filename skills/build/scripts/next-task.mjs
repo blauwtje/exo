@@ -5,10 +5,12 @@
 // and the path of its brief. The brief, the frame fields and the section
 // verbatim, goes to a file under the
 // checkout's scratch directory, so the section reaches only build-task and
-// stays out of the session.
+// stays out of the session. On the inline route, where the session builds each
+// task itself, it prints the inline steps and each task's section instead.
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { driftOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, taskSize, waveLine } from '#plan-tasks';
@@ -146,6 +148,28 @@ function taskLines(task, frame, root, briefDirectory) {
   ];
 }
 
+// On the inline route the session builds each task itself from its section,
+// so the report carries the section in place of a brief, and no budget, which
+// only a build-task dispatch reads.
+function inlineTaskLines(task, root) {
+  const drift = driftOf(task, root);
+  return [
+    ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
+    task.section
+  ];
+}
+
+// The inline reference's bullets are the steps; reading them here keeps that
+// file their one source, and filling in the paths spares the session reading it.
+const SKILL_DIRECTORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+
+function inlineSteps(planPath, root) {
+  const reference = fs.readFileSync(path.join(SKILL_DIRECTORY, 'references', 'run-loop-inline.md'), 'utf8');
+  return reference.split('\n')
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIRECTORY).replaceAll('<plan>', planPath).replaceAll('<checkout>', root));
+}
+
 // Reads only the plan's frame and prints its header sections; `main` reaches
 // this under `--frame`, before a plan holds a task worth a wave.
 export function frameOnlyReport(planText) {
@@ -173,11 +197,15 @@ export function nextTaskReport({ planPath, planText, root }) {
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;
   // On the inline route the lead builds every unlanded task in plan order, so
-  // one call names them all, each with its brief.
-  const briefed = inline ? plan.tasks.filter((task) => !landed.includes(task.number)) : wave;
-  if (inline) lines.push(`Inline: ${briefed.map((task) => `Task ${task.number}`).join(', ')}`);
+  // one call prints them all, with the steps to build them.
+  if (inline) {
+    const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
+    lines.push(`Inline: ${unlanded.map((task) => `Task ${task.number}`).join(', ')}`, 'Steps:', ...inlineSteps(planPath, root));
+    for (const task of unlanded) lines.push('', ...inlineTaskLines(task, root));
+    return `${lines.join('\n')}\n`;
+  }
   const briefDirectory = scratchPath(root, 'briefs');
-  for (const task of briefed) lines.push('', ...taskLines(task, frame, root, briefDirectory));
+  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
   return `${lines.join('\n')}\n`;
 }
 
