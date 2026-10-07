@@ -246,7 +246,7 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(rerun !== -1 && rerun < repairStep.indexOf('land-task.mjs" --fix'), 'verify reruns the gate after the fixer and before the fix commit');
   assert.ok(repairStep.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
-  assert.match(repairStep, /`fix=0`[^\n]*report findings/, 'verify still shows the report findings at fix=0');
+  assert.match(verifying, /^Report:[^\n]*each `report` finding, each `question` as a plan question naming its task and any breaking input/m, 'verify reports every report finding and each question as a plan question, whatever the fix count');
   assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');
   assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');
 });
