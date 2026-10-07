@@ -11,13 +11,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 **exo now registers four hooks instead of thirteen, and no Stop hook re-prompts a finished turn; the `guard_lines`, `heavy_commands`, `heavy_after_seconds`, `log_scan` and `sibling_scan` settings are gone.**
 
-**Every plan now builds on the unit route, with a build lead that never reads the plan body, diffs or reports, and spec recommends Build fresh (`/clear`, then `/exo:build`) instead of building in the spec session.**
+**Every plan now builds on the unit route, with a build lead that reads no plan, diff or report after its first dispatch, and spec recommends Build fresh (`/clear`, then `/exo:build`) instead of building in the spec session.**
 
 ### Changed
 
 - Every plan takes `Route: unit`; `direct` remains only as the fallback when nested dispatch is unavailable.
 - After spec, option A is Build fresh (`/clear`, then `/exo:build`), and spec never starts build itself.
-- The build lead takes each block from `next-task.mjs --block` and the plan's repository and branch from `start-run.mjs --find-only`, dispatches `exo:run-unit` per block and routes its one-line returns; a design task with a named direction goes to one delegate.
+- The build lead takes each block from `next-task.mjs --block` and the plan's repository and branch from `start-run.mjs --find-only`, dispatches `exo:run-unit` per block and routes its one-line returns, reading no plan or diff after its first dispatch; a design task with a named direction goes to one delegate.
+- The build report takes its Proof lines from `next-task.mjs --proofs`, which prints the exit status and pass count land-task recorded for each landed task.
 - `exo:run-unit` returns one line per task, `LANDED <n>` or `BLOCKED <n> <reason> <report path>`, with no report text.
 - land-task also runs a long-format task's `Run:` commands that expect a pass, and refuses to land on a failure, as it does for a compact Proof.
 - land-task now runs a compact task's Proof in the checkout before it commits, records the exit status and output it saw, and refuses to land on a failure or a 540-second timeout; MCP Proofs stay deferred.
