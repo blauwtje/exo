@@ -22,9 +22,9 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report in 54 minutes`; never a `sleep` command.
   - A repair goes to the dispatch's hard agent (`exo:solve-hard` if none) with `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
-4. **Commit a green task.** Done means `GREEN` with a `pass` line per `Run:` step, or a compact `Proof:` (`deferred` for MCP), never a report you wrote; else step 3.
+4. **Commit a green task.** Done means `GREEN`, never a report you wrote, since land-task runs each `Run:` or `Proof:` itself; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
-  - A path outside `Files:`, a failed Proof run or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
+  - A path outside `Files:`, a failed `Run:` or `Proof:` or a `PLAN DRIFT` line sends it to step 3; else commits; push nothing.
   - A report refusal goes by SendMessage to its writer, verbatim; never rerun a proof.
   - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
   - Return to step 1 until every block task has a `LANDED` or `BLOCKED` line.
