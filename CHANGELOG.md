@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- verify reports a success criterion that fails only on files of unlanded tasks as out of scope (`SKIP`) and still runs the branch review of the landed tasks.
+- `next-task.mjs --block` prints each landed task's Proof lines, so the build report keeps them on a part-plan run and when verify fails.
+
 ## 0.103.1 - 2026-10-07
 
 ### Changed
