@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- On the inline route, `next-task.mjs` prints the build steps and each task's section, so the lead reads neither `run-loop-inline.md` nor the task briefs.
+
+### Fixed
+
+- build's `start-run.mjs` prints a `run started` line naming plan, checkout, branch and session, names the next command in every refusal, and reads the session from the environment, so a run starts it once.
+- `land-task.mjs` leaves an untracked file of a later, unlanded task in place, so the inline route no longer moves the other tasks' files aside before each landing.
+- verify and build's no-spec route skip loading `ship` when the request or plan rules out a push, and report that nothing left the machine.
+
 ## 0.101.0 - 2026-10-07
 
 ### Added
