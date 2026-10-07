@@ -98,6 +98,29 @@ test('SQL words in a read-only command or a commit message pass', async () => {
   ]);
 });
 
+test('SQL fed to a database client is denied, by argument, pipe or heredoc', async () => {
+  await assertDenied([
+    'psql <<EOF\nDROP TABLE users;\nEOF',
+    "cat <<'SQL' | /usr/bin/psql\ndrop schema public\nSQL",
+    'echo "DROP TABLE t;" | sqlite3 app.db',
+    'mysql -e "DROP DATABASE prod"',
+    'sudo -u postgres psql -c "drop table t"',
+    'mariadb -e "drop table t"'
+  ], /destructive-guard.*drop/i);
+  await assertDenied(['psql -c "TRUNCATE users"', 'duckdb x.db "TRUNCATE t"'], /TRUNCATE/);
+});
+
+test('SQL words outside a database client pass', async () => {
+  await assertAllowed([
+    'node cli.js --truncate long',
+    'pytest -k "truncate and text"',
+    "cat > notes.txt <<'EOF'\nwe should truncate strings\nEOF",
+    'gh pr create --body "Truncate table names"',
+    'node migrate.js "drop table users"',
+    'psql -c "select 1" && node x.js "drop table t"'
+  ]);
+});
+
 test('database drop commands and database files are denied', async () => {
   await assertDenied(['dropdb shop', 'mysqladmin -u root drop shop', 'npx prisma migrate reset --force', 'npx drizzle-kit drop', 'rails db:drop'],
     /destructive-guard.*(database|drops)/);

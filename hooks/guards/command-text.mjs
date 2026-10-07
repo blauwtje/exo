@@ -8,7 +8,9 @@
 // variables at run time reads as written, and a quote inside `$((...))`
 // arithmetic is read as a quote.
 
-const HEREDOC_OPERATOR = /<<(-?)[ \t]*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|\\?([A-Za-z_]\w*))/y;
+// A heredoc operator and its delimiter, shared with destructive-guard, which
+// reads the body a database client is fed.
+export const HEREDOC_OPERATOR = /<<(-?)[ \t]*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|\\?([A-Za-z_]\w*))/y;
 
 // The words that start a git invocation, up to and with the whitespace before the
 // subcommand, as regular-expression source for git-guard and writing-guard to

@@ -10,22 +10,25 @@
 // splits nothing. The command word of a segment is read from the blanked text, so
 // a word in a commit message or a heredoc body is not a command. Arguments are
 // read from the raw segment, because SQL in `psql -c "..."` and a quoted path
-// are arguments that the blanking hides.
+// are arguments that the blanking hides. SQL counts only in a pipeline that runs
+// a database client, read from the pipeline's arguments and heredoc bodies, so
+// `--truncate` or a note about dropping a table passes.
 // Ceiling: the command string is matched, not parsed, so a command assembled
-// from variables at run time reads as written. A heredoc body is one segment per
-// line with no command word, so SQL in it is denied even when the heredoc feeds
-// `cat` or a commit message; rewrite it or ask the user.
+// from variables at run time reads as written; SQL a client reads from a file
+// (`psql -f`, `< drop.sql`) is not seen; `|&` ends a pipeline.
 // A fault reading the input exits 0 with no output; the guard never exits 2.
 
-import { blankCommandText } from './command-text.mjs';
+import { blankCommandText, HEREDOC_OPERATOR } from './command-text.mjs';
 import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 const SEGMENT_SEPARATOR = /[;&|\n]/g;
 const START = '(?:^|[ (])';
 const ENGINE = '(?:docker|podman)';
-// A segment that only reads or prints text: searching a file for "drop table" or
-// writing a commit message about it is not a drop.
-const READING_COMMAND = /^ *(?:grep|rg|ag|cat|head|tail|less|find|awk|jq|echo|sed|git)(?: |$)/;
+// A database client that runs the SQL it is given, also after a path, `sudo`,
+// an environment assignment or `docker exec`.
+const SQL_CLIENT = /(?:^|[ (/])(?:psql|mysql|mariadb|sqlite3|duckdb)(?: |$)/;
+// A heredoc operator in the blanked text; `<<<` is a here-string, read as an argument.
+const HEREDOC_START = /(?<!<)<<(?!<)/g;
 
 const CREDENTIAL_REASON = 'destructive-guard: deleting a credential file locks the user out, and the secret often exists nowhere else. Report the path and ask the user.';
 const DATABASE_FILE_REASON = 'destructive-guard: deleting a database file deletes the only copy of its data. Ask the user.';
@@ -103,8 +106,8 @@ const SEGMENT_RULES = [
 ];
 
 // A DDL statement reaches the database the same way from `psql -c`, `mysql -e`,
-// a sqlite3 argument or a heredoc, so it is matched in the segment text rather
-// than per client.
+// a sqlite3 argument, a pipe or a heredoc, so it is matched in the text a client
+// pipeline is fed rather than per client.
 const SQL_RULES = [
   {
     argument: /(?:^|[^a-z_])drop\s+(?:database|schema|table)(?:\s|$)/i,
@@ -116,35 +119,74 @@ const SQL_RULES = [
   }
 ];
 
-// Pairs the blanked and the raw text of each segment. Blanking keeps every
+// Pairs the blanked and the raw text of each segment, grouped into pipelines:
+// a lone `|` joins a segment to the next, `||` does not. Blanking keeps every
 // character position, so the separators found in one cut both.
-function segmentsOf(command) {
+function pipelinesOf(command) {
   const blanked = blankCommandText(command);
-  const segments = [];
+  const pipelines = [[]];
   let start = 0;
   for (const separator of [...blanked.matchAll(SEGMENT_SEPARATOR), { index: blanked.length }]) {
-    segments.push({
-      blanked: blanked.slice(start, separator.index),
-      raw: command.slice(start, separator.index)
-    });
-    start = separator.index + 1;
+    const end = separator.index;
+    pipelines.at(-1).push({ blanked: blanked.slice(start, end), raw: command.slice(start, end), start });
+    const piped = blanked[end] === '|' && blanked[end - 1] !== '|' && blanked[end + 1] !== '|';
+    if (!piped) pipelines.push([]);
+    start = end + 1;
   }
-  return segments;
+  return pipelines;
 }
 
-function ruleReason(segment) {
+function segmentReason(segment) {
   for (const rule of SEGMENT_RULES) {
     if (!rule.command.test(segment.blanked)) continue;
     if (!rule.argument || rule.argument.test(segment.raw)) return rule.reason;
   }
-  if (READING_COMMAND.test(segment.blanked)) return null;
-  const sqlRule = SQL_RULES.find((rule) => rule.argument.test(segment.raw));
-  return sqlRule ? sqlRule.reason : null;
+  return null;
+}
+
+// The body of the heredoc whose operator is at `index`: the lines from `from`, or
+// the line after the operator's when later, up to the delimiter line. `end` is
+// where the next heredoc on the same line starts.
+function heredocBody(command, index, from) {
+  HEREDOC_OPERATOR.lastIndex = index;
+  const match = HEREDOC_OPERATOR.exec(command);
+  const lineEnd = command.indexOf('\n', index);
+  if (!match || lineEnd === -1) return { text: '', end: from };
+  const [, dash, singleQuoted, doubleQuoted, bare] = match;
+  const delimiter = singleQuoted ?? doubleQuoted ?? bare;
+  const bodyStart = Math.max(lineEnd + 1, from);
+  const lines = command.slice(bodyStart).split('\n');
+  const close = lines.findIndex((line) => (dash ? line.replace(/^\t+/, '') : line) === delimiter);
+  if (close === -1) return { text: lines.join('\n'), end: command.length };
+  const text = lines.slice(0, close).join('\n');
+  return { text, end: bodyStart + lines.slice(0, close + 1).join('\n').length + 1 };
+}
+
+// The SQL reason for a pipeline that runs a database client, matched in its
+// arguments and in the heredoc bodies it reads.
+function sqlReason(pipeline, command) {
+  if (!pipeline.some((segment) => SQL_CLIENT.test(segment.blanked))) return null;
+  const texts = pipeline.map((segment) => segment.raw);
+  let from = 0;
+  for (const segment of pipeline) {
+    for (const operator of segment.blanked.matchAll(HEREDOC_START)) {
+      const body = heredocBody(command, segment.start + operator.index, from);
+      texts.push(body.text);
+      from = body.end;
+    }
+  }
+  const text = texts.join('\n');
+  const rule = SQL_RULES.find((sqlRule) => sqlRule.argument.test(text));
+  return rule ? rule.reason : null;
 }
 
 function denialReason(command) {
-  for (const segment of segmentsOf(command)) {
-    const reason = ruleReason(segment);
+  for (const pipeline of pipelinesOf(command)) {
+    for (const segment of pipeline) {
+      const reason = segmentReason(segment);
+      if (reason) return reason;
+    }
+    const reason = sqlReason(pipeline, command);
     if (reason) return reason;
   }
   return null;
