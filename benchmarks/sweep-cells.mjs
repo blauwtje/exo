@@ -10,7 +10,7 @@ import { NO_RUN, ROOT, SAFE_TASKS } from './tasks.mjs';
 
 export const SWEEP_MODELS = {
   opus: 'claude-opus-5-5',
-  sonnet: 'claude-sonnet-5',
+  sonnet: 'claude-sonnet-5-5',
   fable: 'claude-fable-5-1'
 };
 

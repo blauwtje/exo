@@ -115,5 +115,5 @@ test('a plan cell that wrote no plan never wins or beats Opus', () => {
 test('the whole-flow line carries drift, review defects, cost and time', () => {
   const records = [record({ id: 'flow-c7', kind: 'flow', model: SWEEP_MODELS.sonnet, effort: 'high', defectsFound: 0, detail: '4/4 tasks landed, 0 drift reports, review verdict CLEAN' })];
   assert.match(resultsMarkdown(META, records),
-    /Whole flow \(C7\) on claude-sonnet-5 at high: 4\/4 tasks landed, 0 drift reports, review verdict CLEAN; 0 review defects, \$0\.500, 60s\./);
+    /Whole flow \(C7\) on claude-sonnet-5-5 at high: 4\/4 tasks landed, 0 drift reports, review verdict CLEAN; 0 review defects, \$0\.500, 60s\./);
 });
