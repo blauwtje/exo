@@ -44,37 +44,14 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
 
-test('the repeat guard counts Edit and the web tools before the call, in one dispatcher with the delegate budget, and starts over after an Edit or Write', () => {
-  const guards = hookEntries().filter((entry) => entry.hook.command.includes('repeat-guard.mjs'));
-  const wiring = guards.map((entry) => [entry.event, entry.matcher.split('|').sort().join('|'), entry.hook.command.split(' ').pop()]).sort();
-  assert.deepEqual(wiring, [['PostToolUse', 'Edit|Write', 'edited']]);
-  const edit = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Edit|WebFetch|WebSearch');
-  assert.equal(edit.length, 1);
-  assert.ok(edit[0].hook.command.endsWith('hooks/dispatch-edit.mjs"'), edit[0].hook.command);
-  const editDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-edit.mjs'), 'utf8');
-  assert.match(editDispatcher, /name: 'repeat-guard'/, 'the Edit dispatcher does not run the repeat guard');
-  assert.match(editDispatcher, /name: 'delegate-budget'/, 'the Edit dispatcher does not run the delegate budget');
-});
-
-test('one Read hook runs the dispatcher for the read guard and the delegate budget, and the read guard books after the read', () => {
-  const read = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Read');
-  assert.equal(read.length, 1);
-  assert.ok(read[0].hook.command.endsWith('hooks/dispatch-read.mjs"'), read[0].hook.command);
-  const readDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-read.mjs'), 'utf8');
-  assert.match(readDispatcher, /name: 'read-guard'/, 'the Read dispatcher does not run the read guard');
-  assert.match(readDispatcher, /name: 'delegate-budget'/, 'the Read dispatcher does not run the delegate budget');
-  const booking = hookEntries().filter((entry) => entry.event === 'PostToolUse' && entry.hook.command.includes('read-guard.mjs'));
-  assert.deepEqual(booking.map((entry) => [entry.matcher, entry.hook.command.split(' ').pop()]), [['Read', 'book']]);
-});
-
-test('the delegate budget runs before every tool call and after no call, in a dispatcher for Bash, Read, Edit and the web tools', () => {
+test('the delegate budget runs before every tool call and after no call, in the Bash dispatcher for Bash', () => {
   const budgets = hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget.mjs'));
-  assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '^(?!Bash$|Read$|Edit$|WebFetch$|WebSearch$).*']]);
+  assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '^(?!Bash$).*']]);
   const bashDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   assert.match(bashDispatcher, /name: 'delegate-budget'/, 'the Bash dispatcher does not run the delegate budget');
   const matcher = new RegExp(budgets[0].matcher);
-  for (const tool of ['Bash', 'Read', 'Edit', 'WebFetch', 'WebSearch']) assert.equal(matcher.test(tool), false, tool);
-  for (const tool of ['Write', 'MultiEdit', 'ReadFile', 'Task', 'Agent', 'BashOutput', 'mcp__server__Bash', 'TaskUpdate']) assert.equal(matcher.test(tool), true, tool);
+  assert.equal(matcher.test('Bash'), false);
+  for (const tool of ['Read', 'Edit', 'WebFetch', 'WebSearch', 'Write', 'MultiEdit', 'ReadFile', 'Task', 'Agent', 'BashOutput', 'mcp__server__Bash', 'TaskUpdate']) assert.equal(matcher.test(tool), true, tool);
 });
 
 test('no Stop hook is registered', () => {
@@ -92,7 +69,7 @@ test('one prompt hook runs the dispatcher for the reply expander, and takes no m
   }
 });
 
-test('one Bash hook runs the dispatcher for the repeat guard, the delegate budget, the booking approval and the six Bash guards', () => {
+test('one Bash hook runs the dispatcher for the delegate budget, the booking approval and the five Bash guards', () => {
   const bash = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Bash');
   assert.equal(bash.length, 1, JSON.stringify(bash.map((entry) => entry.hook.command)));
   assert.equal(bash[0].hook.shell, 'bash');
@@ -130,17 +107,16 @@ test('no tool name matches more than one PreToolUse entry', () => {
   }
 });
 
-test('the delegate budget is the only hook before every tool no dispatcher covers', () => {
-  const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '^(?!Bash$|Read$|Edit$|WebFetch$|WebSearch$).*');
+test('the delegate budget is the only hook before every tool but Bash', () => {
+  const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '^(?!Bash$).*');
   assert.equal(everyTool.length, 1);
   assert.ok(everyTool[0].hook.command.endsWith('delegate-budget.mjs"'), everyTool[0].hook.command);
 });
 
 test('every shipped guard is a step of the Bash dispatcher and none has a hook of its own', () => {
-  // The read guard has its own hook, and the repeat guard its own hooks besides its dispatcher step.
-  const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs') && !['read-guard.mjs', 'repeat-guard.mjs'].includes(name));
+  const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
   assert.deepEqual(guardFiles.sort(), [
-    'bash-output-guard.mjs', 'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'writing-guard.mjs'
+    'destructive-guard.mjs', 'detach-guard.mjs', 'git-guard.mjs', 'secret-guard.mjs', 'writing-guard.mjs'
   ]);
   const dispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   for (const guardFile of guardFiles) {
@@ -155,19 +131,10 @@ test('the session hook runs the Node file under bash', () => {
   assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
-test('the plugin registers twelve hook commands, each under bash', () => {
+test('the plugin registers four hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 12, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 4, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
-});
-
-test('the terse display filter runs under bash on every message and takes no matcher', () => {
-  const filter = hookEntries().filter((entry) => entry.hook.command.includes('terse-display.mjs'));
-  assert.equal(filter.length, 1);
-  assert.equal(filter[0].event, 'MessageDisplay');
-  assert.equal(filter[0].matcher, undefined);
-  assert.equal(filter[0].hook.shell, 'bash');
-  assert.ok(filter[0].hook.command.endsWith('skills/configure/scripts/terse-display.mjs"'), filter[0].hook.command);
 });
 
 test('the session hook deletes the savings folder an earlier version left and keeps the rest', () => {

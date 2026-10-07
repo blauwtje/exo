@@ -11,7 +11,6 @@
 //   stdout.json        claude's --output-format json result
 //   stderr.log
 //   suite-runs.jsonl   one line per `npm test` call (fixture scripts/test.mjs)
-//   sessions/          EXO_SESSIONS_DIR
 //   exo-settings.txt   `settings.mjs show` in repo/, as the plugin resolves it
 //
 //   node benchmarks/lean-gates.mjs --version old|new --run <n> --out <dir>
@@ -67,12 +66,7 @@ export const EXO_SETTINGS = {
   budget: 'medium',
   ship: 'local',
   workspace: 'branch',
-  guards: 'on',
-  guard_lines: 400,
-  heavy_commands: '',
-  heavy_after_seconds: 60,
-  log_scan: 'off',
-  sibling_scan: 'off'
+  guards: 'on'
 };
 
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];
@@ -203,7 +197,6 @@ export function childEnvironment(base, runDirectory) {
   const env = withoutParentSession(base);
   Object.assign(env, ISOLATION_ENV);
   env.BENCH_SUITE_LOG = path.join(runDirectory, 'suite-runs.jsonl');
-  env.EXO_SESSIONS_DIR = path.join(runDirectory, 'sessions');
   return env;
 }
 
@@ -369,7 +362,6 @@ async function main() {
   refuseContaminatedOut(runDirectory);
   const modules = ensureNodeModules();
   fs.mkdirSync(runDirectory, { recursive: true });
-  fs.mkdirSync(path.join(runDirectory, 'sessions'));
   const repository = prepareRepository(runDirectory, options.plan, modules);
   const env = childEnvironment(process.env, runDirectory);
   fs.writeFileSync(path.join(runDirectory, 'exo-settings.txt'), settingsReport(pluginDir, repository, env));

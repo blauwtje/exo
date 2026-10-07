@@ -27,7 +27,6 @@ import path from 'node:path';
 import process from 'node:process';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
-import { LOCAL_FILE } from '../lib/settings-store.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
@@ -223,7 +222,7 @@ function runClaude(args, workdir, cellDirectory, extraEnvironment, timeoutMs) {
     const startedAt = Date.now();
     const child = spawn('claude', args, {
       cwd: workdir,
-      env: { ...withoutParentSession(process.env), ...extraEnvironment, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
+      env: { ...withoutParentSession(process.env), ...extraEnvironment },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
@@ -276,12 +275,6 @@ function denyMessages(result) {
   return [...denials, ...lines];
 }
 
-// Adds a scan arm's options to the exo settings prepareValueRepo wrote.
-function addExoSettings(repo, options) {
-  const file = path.join(repo, LOCAL_FILE);
-  fs.writeFileSync(file, `${JSON.stringify({ ...JSON.parse(fs.readFileSync(file, 'utf8')), ...options }, null, 2)}\n`);
-}
-
 async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
   const { task, arm, run, model, cellDirectory } = cell;
   fs.mkdirSync(cellDirectory, { recursive: true });
@@ -294,7 +287,6 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
   }
   try {
     const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
-    if (ARMS[arm].exoSettings) addExoSettings(workdir, ARMS[arm].exoSettings);
     const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
     const environment = { ...cellIsolation(task), HOME: cellHome };
     const outcome = await runClaude(claudeArguments(arm, task, model, effort, copies), workdir, cellDirectory, environment, timeoutMs);
@@ -424,9 +416,6 @@ async function main() {
         cells.push({ task, arm, run, model: options.model, cellDirectory: path.join(runDirectory, task.id, arm, String(run)) });
       }
     }
-  }
-  for (const cell of cells) {
-    if (ARMS[cell.arm].exoSettings && cell.task.tier !== 'value') throw new Error(`arm ${cell.arm} sets exo options in the cell's settings, which only a value task writes; ${cell.task.id} is ${cell.task.tier}`);
   }
   if (options.dryRun) {
     printDryRun(cells, options.effort);

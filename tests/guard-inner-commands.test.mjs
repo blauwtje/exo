@@ -61,11 +61,6 @@ test('the first denial wins and an outer denial is kept', () => {
   assert.equal(reasonOf('bash -c "git reset"', guard), 'inner reason');
 });
 
-test('an outer rewrite stays when the inner string is fine', () => {
-  const rewrite = (command) => (command.startsWith('bash') ? { updatedCommand: 'capped' } : null);
-  assert.equal(guardDecision(hookInput('bash -c "ls"'), rewrite).hookSpecificOutput.updatedInput.command, 'capped');
-});
-
 test('a command that is fine inside and out is allowed', () => {
   assert.equal(guardDecision(hookInput('bash -c "git status"'), denyReset), null);
 });

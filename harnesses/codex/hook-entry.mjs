@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // The command every Codex hook entry runs: `node harnesses/codex/hook-entry.mjs <script>`.
 // Codex gives hook commands neither the exo root nor the host, so this sets
-// EXO_HOST=codex and CLAUDE_PLUGIN_ROOT (which hooks/guards/bash-output-guard.mjs
-// exempts from its output cap), then imports the script as the process entry.
+// EXO_HOST=codex and CLAUDE_PLUGIN_ROOT, then imports the script as the process entry.
 // The root is this file's own location, never an argument or an inherited
 // variable, and the script must be one of the entries `harnesses/codex/hooks.mjs` lists:
 // anything else is refused before it runs, with exit 1.

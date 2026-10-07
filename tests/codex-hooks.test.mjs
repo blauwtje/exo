@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { codexHookEntries, codexHookTargets, DOCUMENTED_FIELDS } from '../harnesses/codex/hooks.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
-const TARGETS = ['hooks/session-start.mjs', 'hooks/dispatch-prompt.mjs', 'hooks/dispatch-bash.mjs', 'hooks/record-runtime.mjs'];
+const TARGETS = ['hooks/session-start.mjs', 'hooks/dispatch-prompt.mjs', 'hooks/dispatch-bash.mjs'];
 
 function handlersOf(entries) {
   return Object.values(entries).flatMap((groups) => groups.flatMap((group) => group.hooks));
@@ -40,11 +40,10 @@ function runCommand(command, env = {}) {
 
 test('the entries list exactly the allowlisted events and matchers', () => {
   const entries = codexHookEntries(ROOT);
-  assert.deepEqual(Object.keys(entries), ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse']);
+  assert.deepEqual(Object.keys(entries), ['SessionStart', 'UserPromptSubmit', 'PreToolUse']);
   assert.equal(entries.SessionStart[0].matcher, 'startup|resume|clear|compact');
   assert.equal(entries.UserPromptSubmit[0].matcher, undefined);
   assert.deepEqual(entries.PreToolUse.map((group) => group.matcher), ['Bash']);
-  assert.deepEqual(entries.PostToolUse.map((group) => group.matcher), ['Bash']);
   assert.deepEqual(codexHookTargets(ROOT), TARGETS);
 });
 
@@ -52,7 +51,7 @@ test('an entry carries only documented handler fields and never shell', () => {
   const source = JSON.parse(fs.readFileSync(path.join(ROOT, 'hooks', 'hooks.json'), 'utf8'));
   assert.ok(JSON.stringify(source).includes('"shell"'), 'the source entries still hold shell');
   const handlers = handlersOf(codexHookEntries(ROOT));
-  assert.equal(handlers.length, 4);
+  assert.equal(handlers.length, 3);
   for (const handler of handlers) {
     assert.deepEqual(Object.keys(handler).filter((field) => !DOCUMENTED_FIELDS.includes(field)), []);
     assert.equal(handler.type, 'command');

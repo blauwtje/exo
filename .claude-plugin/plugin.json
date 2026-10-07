@@ -51,40 +51,6 @@
       "description": "on: the safety guards refuse the commands and edits they cover. off: no guard refuses anything. Not sure? Keep on. A project overrides this in .claude/exo.json.",
       "options": ["on", "off"],
       "default": "on"
-    },
-    "guard_lines": {
-      "type": "number",
-      "title": "Read guard line limit",
-      "description": "From how many lines the read guard refuses a whole-file read: a file over that many lines is read in a located range. Not sure? Keep 400. A project overrides this in .claude/exo.json.",
-      "default": 400,
-      "min": 1
-    },
-    "heavy_commands": {
-      "type": "string",
-      "title": "Heavy commands",
-      "description": "Command prefixes separated by ;, such as npm run e2e:beeld. A Bash command starting with one runs at most once per code state across Claude sessions: a repeat on unchanged code returns the earlier green result, and a run waits for the same command already running. Leave empty to turn this off. A project overrides this in .claude/exo.json.",
-      "default": ""
-    },
-    "heavy_after_seconds": {
-      "type": "number",
-      "title": "Heavy after seconds",
-      "description": "A test-like Bash command whose last run in a project took longer than this many seconds counts as heavy from then on and runs through the same dedupe as heavy commands, with nothing listed. Not sure? Keep 60. 0 turns this off. A project overrides this in .claude/exo.json.",
-      "default": 60,
-      "min": 0
-    },
-    "log_scan": {
-      "type": "string",
-      "title": "Log notes",
-      "description": "on: a Bash command that names, or a Read that opens, a long log file gets a note of at most 5 lines with its error and warning counts and most common messages. off: no note. Not sure? Keep off. A project overrides this in .claude/exo.json.",
-      "options": ["off", "on"],
-      "default": "off"
-    },
-    "sibling_scan": {
-      "type": "string",
-      "title": "Sibling notes",
-      "description": "on: an edit that removes lines gets a note of at most 5 lines naming other files and bindings that may share the fault. off: no note. Not sure? Keep off. A project overrides this in .claude/exo.json.",
-      "options": ["off", "on"],
-      "default": "off"
     }
   }
 }

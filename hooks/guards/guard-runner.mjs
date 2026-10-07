@@ -35,8 +35,8 @@ export function isProcessEntry(moduleUrl) {
 const INNER_DEPTH = 3;
 
 // The deny reason (a string) for the string arguments of `bash -c` and `eval`
-// in `command`, each judged as a command of its own, the first denial winning;
-// an inner rewrite is not applied. Ceiling: nesting past INNER_DEPTH passes.
+// in `command`, each judged as a command of its own, the first denial winning.
+// Ceiling: nesting past INNER_DEPTH passes.
 function innerDenial(command, hookInput, denialFor, depth) {
   if (depth > INNER_DEPTH) return null;
   for (const inner of innerCommands(command)) {
@@ -50,8 +50,7 @@ function innerDenial(command, hookInput, denialFor, depth) {
 }
 
 // The output for `hookInput` when `denialFor(command, hookInput)` returns a
-// reason, which denies, or `{ updatedCommand }`, which runs that command in
-// place of the original, or null to allow: a call that is not a Bash command,
+// reason, which denies, or null to allow: a call that is not a Bash command,
 // or the `guards` setting off, allows. A `bash -c` or `eval` string argument
 // is judged too, and a denial there denies the whole command.
 export function guardDecision(hookInput, denialFor) {
@@ -59,12 +58,8 @@ export function guardDecision(hookInput, denialFor) {
   if (hookInput.tool_name !== 'Bash' || typeof command !== 'string' || command === '') return null;
   if (!guardsOn()) return null;
   let reason = denialFor(command, hookInput);
-  if (typeof reason !== 'string' || reason === '') reason = innerDenial(command, hookInput, denialFor, 1) ?? reason;
+  if (typeof reason !== 'string' || reason === '') reason = innerDenial(command, hookInput, denialFor, 1);
   if (!reason) return null;
-  if (typeof reason === 'object') {
-    const updatedInput = { ...hookInput.tool_input, command: reason.updatedCommand };
-    return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } };
-  }
   const decision = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
   return { hookSpecificOutput: decision };
 }

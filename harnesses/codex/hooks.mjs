@@ -1,6 +1,6 @@
 // The hook entries exo installs into Codex's hooks.json, derived from
 // `hooks/hooks.json` by an allowlist: the events and matchers Codex can serve
-// (SessionStart, UserPromptSubmit, PreToolUse Bash, PostToolUse Bash). Each
+// (SessionStart, UserPromptSubmit, PreToolUse Bash). Each
 // entry keeps only the handler fields Codex documents, so Claude's `shell` is
 // dropped, and runs `harnesses/codex/hook-entry.mjs`, which sets the host and plugin root
 // before it imports the script the source entry named.
@@ -12,8 +12,7 @@ import path from 'node:path';
 const ALLOWED = [
   { event: 'SessionStart', matcher: 'startup|resume|clear|compact' },
   { event: 'UserPromptSubmit' },
-  { event: 'PreToolUse', matcher: 'Bash' },
-  { event: 'PostToolUse', matcher: 'Bash' }
+  { event: 'PreToolUse', matcher: 'Bash' }
 ];
 
 // The handler fields of the hooks page of learn.chatgpt.com/docs/hooks.
