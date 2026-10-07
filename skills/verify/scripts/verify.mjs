@@ -6,7 +6,7 @@
 // backticked command of the plan's Success criterion (else `none` for `Land gate:
 // none`, else `npm run check`, or `npm test` when `package.json` has a `test` script
 // and no `check` script, whose PASS line is followed by a ready `Proof:` line quoting
-// this command; any other Land gate is the per-task gate, never
+// this command when `package.json` names no `bin` and no `scripts.start`; any other Land gate is the per-task gate, never
 // the final check), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files. Ends on one REVIEWER: <agent name> line, picked from
@@ -48,6 +48,7 @@ import { frameOf, landedTasks, parsePlan, planIdOf } from '#plan-tasks';
 import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
+import { packageHasEntryPoint } from '#package-entry-point';
 import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-reviewer.mjs';
 
 // The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
@@ -336,8 +337,10 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     // does, is judged on its exit code alone. A run that exits 0 yet fails names its
     // SUMMARY line as the reason.
     if (successCriterionPasses(gateRun) && testScriptGate) {
-      // A ready Proof line for build's report, quoting this command and a line it printed.
-      lines.push(TEST_SCRIPT_PASS, `Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);
+      // A ready Proof line for build's report, quoting this command and a line it printed,
+      // only where proof-check takes a test-runner Proof, so a suite never stands in for the product.
+      lines.push(TEST_SCRIPT_PASS);
+      if (!packageHasEntryPoint(root)) lines.push(`Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);
     } else if (successCriterionPasses(gateRun)) {
       lines.push('PASS success-criterion');
     } else {

@@ -15,6 +15,7 @@
     "#mcp-tool-call": "./lib/mcp-tool-call.mjs",
     "#memory-store": "./lib/memory-store.mjs",
     "#model-kinds": "./lib/model-kinds.mjs",
+    "#package-entry-point": "./lib/package-entry-point.mjs",
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",

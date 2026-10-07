@@ -28,6 +28,7 @@ import { hasPendingBackgroundTask } from '#background-tasks';
 import { readHookText } from '#hook-input';
 import { isMain } from '#script-flags';
 import { mcpToolCall } from '#mcp-tool-call';
+import { packageHasEntryPoint } from '#package-entry-point';
 
 const BUILD_SKILL = /(^|:)build$/i;
 const TEST_RUNNER_DENYLIST = /^(npm(?:\s+run)?\s+test\S*|pnpm\s+test\S*|yarn\s+test\S*|bun\s+test\S*|node\s+--test\b|jest\b|vitest\b|mocha\b|pytest\b|go\s+test\b|cargo\s+test\b)/i;
@@ -276,18 +277,6 @@ function proofLines(text) {
 function mcpToolOf(command) {
   const word = command.split(' ')[0].replace(/^mcp:/, '');
   return word.match(MCP_TOOL_NAME)?.[1] ?? word;
-}
-
-// False only when directory's package.json parses and names no `bin` and no
-// `scripts.start`; a missing or unreadable one counts as an entry point.
-function packageHasEntryPoint(directory) {
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8'));
-  } catch {
-    return true;
-  }
-  return Boolean(manifest?.bin) || typeof manifest?.scripts?.start === 'string';
 }
 
 function proofProblem(proof, calls, writtenPaths, hasEntryPoint) {

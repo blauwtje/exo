@@ -651,21 +651,22 @@ test('commandLine rebuilds the command as SKILL.md runs it, quoting only words a
   assert.equal(commandLine(['node', '/v.mjs', '--check-command', 'echo "$HOME"']), 'node "/v.mjs" --check-command "echo \\"\\$HOME\\""');
 });
 
-// A package whose `test` script appends one line to `runs` per run, so a test can count suite runs.
-async function testScriptRepository(scripts) {
+// A package whose `test` script appends one line to `runs` per run, so a test can count suite runs;
+// `fields` adds other package.json fields, such as `bin`.
+async function testScriptRepository(scripts, fields = {}) {
   const runs = path.join(await mkdtemp(path.join(tmpdir(), 'verify-runs-')), 'runs.log');
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
     'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: npm test\n',
     'count.js': `require('node:fs').appendFileSync(${JSON.stringify(runs)}, 'run\\n');\n`,
     'check.js': CLEAN_CHECK,
-    'package.json': JSON.stringify({ scripts })
+    'package.json': JSON.stringify({ ...fields, scripts })
   });
   landTask(root, 1);
   return { root, runs };
 }
 
-test('with no check script the gate runs npm test once and prints a Proof line quoting its own command', async () => {
+test('with no check script a library runs npm test once and prints a Proof line quoting its own command', async () => {
   const { root, runs } = await testScriptRepository({ test: 'node count.js' });
 
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
@@ -692,4 +693,21 @@ test('with a check script the gate stays npm run check and prints no Proof line'
   ]);
   assert.equal(lines.some((line) => line.startsWith('Proof:')), false);
   await assert.rejects(readFile(runs, 'utf8'), { code: 'ENOENT' });
+});
+
+test('with no check script a package with a bin or a start script passes on npm test but prints no Proof line', async () => {
+  for (const [scripts, fields] of [[{ test: 'node count.js' }, { bin: 'src/app.js' }], [{ start: 'node src/app.js', test: 'node count.js' }, {}]]) {
+    const { root, runs } = await testScriptRepository(scripts, fields);
+
+    const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
+    assert.equal(result.code, 0, result.stdout);
+    const lines = result.stdout.trim().split('\n');
+    assert.deepEqual(lines.slice(0, 3), [
+      'SKIP Task 1 (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)',
+      'PASS success-criterion (npm test; no check script)',
+      'PASS stray-paths'
+    ]);
+    assert.equal(lines.some((line) => line.startsWith('Proof:')), false);
+    assert.equal(await readFile(runs, 'utf8'), 'run\n');
+  }
 });
