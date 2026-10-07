@@ -105,6 +105,27 @@ test('the report reads the flow records of several out dirs and prints each arm 
   assert.match(text, /^exo better$/m);
 });
 
+test('the report counts verify ran, review dispatched and routes, and averages lead peaks and verify-ran cells', async () => {
+  const records = [
+    record('flow-c7', { verifyRan: true, reviewDispatched: false, routes: ['inline'], leadPeakTokens: 60000, tokens: 200 }),
+    record('flow-c7', { verifyRan: false, reviewDispatched: false, routes: ['direct', 'direct'], leadPeakTokens: 80000, tokens: 400 }),
+    record('flow-c7', { tokens: 600 })
+  ];
+  const [arm] = aggregateFlow(records);
+  assert.deepEqual(
+    { gated: arm.gated, verifyRan: arm.verifyRan, reviewDispatched: arm.reviewDispatched, routed: arm.routed, routes: arm.routes, leadPeakMean: arm.leadPeakMean, leadPeakMax: arm.leadPeakMax, verifiedTokensMean: arm.verifiedTokensMean },
+    { gated: 2, verifyRan: 1, reviewDispatched: 0, routed: 2, routes: { inline: 1, direct: 1 }, leadPeakMean: 70000, leadPeakMax: 80000, verifiedTokensMean: 200 }
+  );
+  const report = flowReport(records);
+  assert.match(report, /verify ran 1\/2, review dispatched 0\/2/);
+  assert.match(report, /route inline 1, direct 1 \(of 2\)/);
+  assert.match(report, /lead peak tokens mean 70000, max 80000/);
+  assert.match(report, /verify-ran cells: weighted tokens mean 200/);
+  const directory = await outDirectory([record('flow-c7', {})]);
+  await fs.writeFile(path.join(directory, 'flow-c7', 'usage.json'), JSON.stringify({ leadPeakTokens: 71000 }));
+  assert.equal(readFlowRecords(directory)[0].leadPeakTokens, 71000);
+});
+
 test('an arm with no hidden-check result is not better', () => {
   assert.match(flowReport([record('flow-c7', {})]), /^not better$/m);
   assert.equal(flowReport([]), 'No flow records found.');

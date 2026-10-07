@@ -17,6 +17,7 @@
 //   node benchmarks/lean-gates.mjs --version old|new --run <n> --out <dir>
 //     [--plan old|new] [--model claude-opus-5-5] [--effort medium] [--budget 30]
 //     [--timeout-min 110] [--dry-run]
+//   node benchmarks/lean-gates.mjs --version <label> --plugin-dir <exo checkout> --plan old|new --run <n> --out <dir>
 //   node benchmarks/lean-gates.mjs --version old|new --probe --out <dir>
 //
 // --out must sit outside every git work tree, with no CLAUDE.md,
@@ -92,7 +93,7 @@ export const ISOLATION_ENV = { CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_
 const CONTEXT_NAMES = ['CLAUDE.md', 'CLAUDE.local.md', '.claude'];
 
 export function parseArguments(argv) {
-  const options = { version: null, plan: null, run: null, out: null, model: 'claude-opus-5-5', effort: 'medium', budget: '30', timeoutMin: 110, dryRun: false, probe: false };
+  const options = { version: null, plan: null, pluginDir: null, run: null, out: null, model: 'claude-opus-5-5', effort: 'medium', budget: '30', timeoutMin: 110, dryRun: false, probe: false };
   const value = (index) => {
     if (index >= argv.length) throw new Error(`${argv[index - 1]} needs a value`);
     return argv[index];
@@ -101,6 +102,7 @@ export function parseArguments(argv) {
     const flag = argv[index];
     if (flag === '--version') options.version = value(++index);
     else if (flag === '--plan') options.plan = value(++index);
+    else if (flag === '--plugin-dir') options.pluginDir = path.resolve(value(++index));
     else if (flag === '--run') options.run = Number(value(++index));
     else if (flag === '--out') options.out = value(++index);
     else if (flag === '--model') options.model = value(++index);
@@ -111,8 +113,16 @@ export function parseArguments(argv) {
     else if (flag === '--probe') options.probe = true;
     else throw new Error(`unknown flag ${flag}`);
   }
-  if (!(options.version in PLUGIN_DIRS)) throw new Error('--version must be old or new');
-  options.plan ??= options.version;
+  // --plugin-dir runs any exo checkout, such as a branch worktree; --version
+  // then only labels the run dir and must not pass for old or new.
+  if (options.pluginDir === null) {
+    if (!(options.version in PLUGIN_DIRS)) throw new Error('--version must be old or new, or a label with --plugin-dir');
+    options.pluginDir = PLUGIN_DIRS[options.version];
+    options.plan ??= options.version;
+  } else {
+    if (options.version in PLUGIN_DIRS || !/^[\w.-]+$/.test(options.version ?? '')) throw new Error('with --plugin-dir, --version must be a label other than old or new, of letters, digits, dot, dash or underscore');
+    if (options.plan === null) throw new Error('with --plugin-dir, name the plan: --plan old|new');
+  }
   if (!(options.plan in PLUGIN_DIRS)) throw new Error('--plan must be old or new');
   if (options.probe) Object.assign(options, PROBE);
   else if (!Number.isInteger(options.run) || options.run < 1) throw new Error('--run must be a positive integer');
@@ -351,7 +361,7 @@ function probeChecks(meta) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  const pluginDir = PLUGIN_DIRS[options.version];
+  const { pluginDir } = options;
   if (!fs.existsSync(path.join(pluginDir, '.claude-plugin'))) throw new Error(`${pluginDir} holds no plugin`);
   const name = runDirectoryName(options.run, options.version, options.probe);
   const runDirectory = path.resolve(options.out, name);

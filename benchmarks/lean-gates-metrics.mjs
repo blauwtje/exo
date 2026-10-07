@@ -196,6 +196,24 @@ export function toolCalls(entries) {
   return [...calls.values()];
 }
 
+// The gates one session's main transcript shows, from its tool calls
+// (.git/branch-review.md misses a review whose report went elsewhere):
+// - verify ran: a Skill call to verify (`exo:verify`), else a Bash call whose
+//   command runs `node <path>/verify.mjs`; verifyCall is the first of these.
+// - review dispatched: an Agent (older harness: Task) call whose
+//   subagent_type holds review-branch.
+// - routes: the `Route: <name>` lines a Bash call running next-task.mjs
+//   printed, in order; a reference read that quotes one does not count.
+export function gateFacts(calls) {
+  const verifyCall = calls.find((call) => call.name === 'Skill' && /(^|:)verify$/.test(String(call.input.skill ?? '')))
+    ?? calls.find((call) => call.name === 'Bash' && /\bnode\s+\S*verify\.mjs/.test(String(call.input.command ?? '')));
+  const reviewDispatched = calls.some((call) => (call.name === 'Agent' || call.name === 'Task') && /review-branch/.test(String(call.input.subagent_type ?? '')));
+  const routes = calls
+    .filter((call) => call.name === 'Bash' && /next-task\.mjs/.test(String(call.input.command ?? '')))
+    .flatMap((call) => [...(call.resultText ?? '').matchAll(/^Route: (\w+)/gm)].map((match) => match[1]));
+  return { verifyCall, verifyRan: verifyCall !== undefined, reviewDispatched, routes };
+}
+
 // Whether one shell command runs the whole test suite.
 export function isFullSuiteCommand(command) {
   if (typeof command !== 'string') return false;
@@ -544,8 +562,8 @@ export function runMetrics(runDirectory, { recheck: doRecheck = true, forceReche
   const repo = path.join(runDirectory, 'repo');
   const hasRepo = fs.existsSync(path.join(repo, '.git'));
 
-  const verifyCall = calls.find((call) => call.name === 'Skill' && /(^|:)verify$/.test(String(call.input.skill ?? '')))
-    ?? calls.find((call) => call.name === 'Bash' && /verify\.mjs/.test(String(call.input.command ?? '')));
+  const gates = gateFacts(calls);
+  const verifyCall = gates.verifyCall;
   const facts = hasRepo ? repoFacts(repo, { verifyAtMs: ms(verifyCall?.ts) }) : null;
   const phases = phasesOf({ calls, subagents: session.subagents, meta, facts, mainBounds });
 
@@ -639,6 +657,8 @@ export function runMetrics(runDirectory, { recheck: doRecheck = true, forceReche
     fullSuite,
     tokens: { source: 'transcript-usage', main: { ...main, label: 'main session' }, byAgentType, subagents, total },
     cost: { transcriptUsd: total.costUsd, harnessUsd: stdout?.total_cost_usd ?? null, note: 'transcriptUsd: transcript tokens x prices.mjs list price, main + subagents; harnessUsd: stdout.json total_cost_usd from claude' },
+    // next-task's Route: lines, so a run shows which build route it took.
+    routes: gates.routes,
     reviewer,
     quality,
     repo: facts
@@ -694,8 +714,8 @@ const orDash = (value) => (value == null ? '-' : String(value));
 
 export function markdownTable(metrics) {
   const rows = [
-    '| run | wall min | build | gate | review | fix | suite runs log/bash | tokens M (main/sub) | $ transcript/harness | reviewer picked/expected | findings d/h/q | fix rounds | verdict | tasks landed | recheck t/tc/l |',
-    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|'
+    '| run | wall min | build | gate | review | fix | suite runs log/bash | tokens M (main/sub) | $ transcript/harness | route | reviewer picked/expected | findings d/h/q | fix rounds | verdict | tasks landed | recheck t/tc/l |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|'
   ];
   for (const run of metrics.runs) {
     const sub = run.tokens.total.totalTokens - run.tokens.main.totalTokens;
@@ -705,7 +725,7 @@ export function markdownTable(metrics) {
     const tokens = run.transcriptMissing ? 'n/a' : `${millions(run.tokens.total.totalTokens)} (${millions(run.tokens.main.totalTokens)}/${millions(sub)})`;
     const transcriptUsd = run.transcriptMissing ? 'n/a' : dollars(run.cost.transcriptUsd);
     const label = run.incomplete ? `${run.id} [incomplete: ${run.incompleteReason}]*` : run.id;
-    rows.push(`| ${label} | ${minutes(run.wall.ms)} | ${minutes(run.phases.build.ms)} | ${minutes(run.phases.gate.ms)} | ${minutes(run.phases.review.ms)} | ${minutes(run.phases.fix?.ms)} | ${orDash(run.fullSuite.log.full)}/${run.fullSuite.bash.full} | ${tokens} | ${transcriptUsd}/${dollars(run.cost.harnessUsd)} | ${orDash(run.reviewer.line?.replace('REVIEWER: ', '') ?? run.reviewer.dispatched)}/${orDash(run.reviewer.expectedByOwnRule)} | ${orDash(run.quality.findings)} (${orDash(sev.defect)}/${orDash(sev.hazard)}/${orDash(sev.question)}) | ${run.quality.fixRounds} | ${orDash(run.quality.finalVerdict)} | ${run.quality.landedTasks ? `${run.quality.landedTasks.length}/${run.quality.planTasks.length}` : '-'} | ${re ? `${check('test')}/${check('typecheck')}/${check('lint')}` : 'skipped'} |`);
+    rows.push(`| ${label} | ${minutes(run.wall.ms)} | ${minutes(run.phases.build.ms)} | ${minutes(run.phases.gate.ms)} | ${minutes(run.phases.review.ms)} | ${minutes(run.phases.fix?.ms)} | ${orDash(run.fullSuite.log.full)}/${run.fullSuite.bash.full} | ${tokens} | ${transcriptUsd}/${dollars(run.cost.harnessUsd)} | ${[...new Set(run.routes ?? [])].join('+') || '-'} | ${orDash(run.reviewer.line?.replace('REVIEWER: ', '') ?? run.reviewer.dispatched)}/${orDash(run.reviewer.expectedByOwnRule)} | ${orDash(run.quality.findings)} (${orDash(sev.defect)}/${orDash(sev.hazard)}/${orDash(sev.question)}) | ${run.quality.fixRounds} | ${orDash(run.quality.finalVerdict)} | ${run.quality.landedTasks ? `${run.quality.landedTasks.length}/${run.quality.planTasks.length}` : '-'} | ${re ? `${check('test')}/${check('typecheck')}/${check('lint')}` : 'skipped'} |`);
   }
   rows.push('', '| version | metric | median | min-max | mean ± sd | n |', '|---|---|---|---|---|---|');
   const format = { wallMs: minutes, totalTokens: millions, costTranscriptUsd: dollars, costHarnessUsd: dollars };

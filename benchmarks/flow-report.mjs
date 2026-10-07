@@ -7,7 +7,9 @@
 //   node benchmarks/flow-report.mjs <outDir>...
 //
 // Prints per arm the runs, tasks landed, hidden-check passes, defects, tokens,
-// cost, cost per success and wall time, then the pass-rate difference exo minus baseline with
+// cost, cost per success, wall time, verify ran and review dispatched n/N,
+// the next-task routes, lead peak tokens and the means over verify-ran cells
+// (sweep.mjs records the flags), then the pass-rate difference exo minus baseline with
 // two standard errors, and `exo better` only when the difference exceeds them.
 
 import fs from 'node:fs';
@@ -27,6 +29,9 @@ export function readFlowRecords(outDir) {
     const file = path.join(outDir, name, 'record.json');
     if (!fs.existsSync(file)) continue;
     const record = JSON.parse(fs.readFileSync(file, 'utf8'));
+    // A record from before the sweep copied leadPeakTokens takes it from the cell's usage.json.
+    const usageFile = path.join(outDir, name, 'usage.json');
+    if (record.leadPeakTokens === undefined && fs.existsSync(usageFile)) record.leadPeakTokens = JSON.parse(fs.readFileSync(usageFile, 'utf8')).leadPeakTokens ?? null;
     if (record.kind === 'flow') records.push(record);
   }
   return records;
@@ -55,6 +60,15 @@ export function aggregateFlow(records) {
     const checked = runs.filter((run) => typeof run.hiddenPass === 'boolean');
     const scored = runs.filter((run) => typeof run.landed === 'number' && typeof run.total === 'number' && run.total > 0);
     const defects = runs.filter((run) => Array.isArray(run.defects)).map((run) => run.defects.length);
+    // A record from before the gate flags, or with no transcript, has none and drops out of their counts.
+    const gated = runs.filter((run) => typeof run.verifyRan === 'boolean');
+    const verified = gated.filter((run) => run.verifyRan);
+    const routed = runs.filter((run) => Array.isArray(run.routes));
+    const routes = {};
+    for (const run of routed) {
+      const label = [...new Set(run.routes)].join('+') || 'none';
+      routes[label] = (routes[label] ?? 0) + 1;
+    }
     return {
       id,
       n: runs.length,
@@ -70,7 +84,17 @@ export function aggregateFlow(records) {
       costTotal: sum(runs.map((run) => run.costUsd)),
       // Every record's spend over the hidden-check passes; null when none passes.
       costPerSuccess: checked.some((run) => run.hiddenPass) ? sum(runs.map((run) => run.costUsd)) / checked.filter((run) => run.hiddenPass).length : null,
-      wallMeanMs: mean(runs.map((run) => run.wallMs))
+      wallMeanMs: mean(runs.map((run) => run.wallMs)),
+      gated: gated.length,
+      verifyRan: verified.length,
+      reviewDispatched: gated.filter((run) => run.reviewDispatched).length,
+      routed: routed.length,
+      routes,
+      leadPeakMean: mean(runs.map((run) => run.leadPeakTokens)),
+      leadPeakMax: runs.some((run) => typeof run.leadPeakTokens === 'number') ? Math.max(...runs.map((run) => run.leadPeakTokens).filter((value) => typeof value === 'number')) : null,
+      verifiedTokensMean: mean(verified.map((run) => run.tokens)),
+      verifiedCostMean: mean(verified.map((run) => run.costUsd)),
+      verifiedWallMeanMs: mean(verified.map((run) => run.wallMs))
     };
   });
 }
@@ -106,7 +130,11 @@ function armLines(arm) {
     `  weighted tokens mean ${fixed(arm.tokensMean, 0)}`,
     `  cost mean $${fixed(arm.costMean, 3)}, total $${fixed(arm.costTotal, 3)}`,
     `  cost per success ${arm.costPerSuccess === null ? 'none' : `$${fixed(arm.costPerSuccess, 3)}`}`,
-    `  wall time mean ${fixed(arm.wallMeanMs === null ? null : arm.wallMeanMs / 60000, 1)} min`
+    `  wall time mean ${fixed(arm.wallMeanMs === null ? null : arm.wallMeanMs / 60000, 1)} min`,
+    `  verify ran ${arm.verifyRan}/${arm.gated}, review dispatched ${arm.reviewDispatched}/${arm.gated}`,
+    `  route ${Object.entries(arm.routes).map(([label, count]) => `${label} ${count}`).join(', ') || '-'} (of ${arm.routed})`,
+    `  lead peak tokens mean ${fixed(arm.leadPeakMean, 0)}, max ${arm.leadPeakMax ?? '-'}`,
+    `  verify-ran cells: weighted tokens mean ${fixed(arm.verifiedTokensMean, 0)}, cost mean $${fixed(arm.verifiedCostMean, 3)}, wall time mean ${fixed(arm.verifiedWallMeanMs === null ? null : arm.verifiedWallMeanMs / 60000, 1)} min`
   ];
 }
 

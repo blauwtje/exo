@@ -21,6 +21,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { writeCellUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
+import { gateFacts, readJsonl, toolCalls } from './lean-gates-metrics.mjs';
 import { claudeArguments, pluginVariants, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
@@ -140,6 +141,8 @@ function landedTasks(repository) {
 // is removed; a check that throws leaves the cell a record with no landed count.
 async function measureFlow(repository, review, usage) {
   const transcript = usage === null ? '' : fs.readFileSync(usage.transcript, 'utf8');
+  // Null when the transcript is gone, so a lost session never reads as a skipped gate.
+  const gates = usage === null ? null : gateFacts(toolCalls(readJsonl(usage.transcript)));
   let check;
   try {
     check = await checkFlow(repository);
@@ -155,7 +158,11 @@ async function measureFlow(repository, review, usage) {
     landed: check.landed,
     total: check.total,
     hiddenPass: check.pass,
-    defects: check.defects
+    defects: check.defects,
+    verifyRan: gates?.verifyRan ?? null,
+    reviewDispatched: gates?.reviewDispatched ?? null,
+    routes: gates?.routes ?? null,
+    leadPeakTokens: usage?.leadPeakTokens ?? null
   };
 }
 

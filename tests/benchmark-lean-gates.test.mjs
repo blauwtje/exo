@@ -35,6 +35,17 @@ test('--plan defaults to the version and lets either version run either plan', (
   assert.ok(PROMPT.startsWith('First run `npm test` once in the foreground'));
 });
 
+test('--plugin-dir runs any checkout under a label, with the plan named', () => {
+  const base = ['--run', '1', '--out', '/tmp/x'];
+  const options = parseArguments(['--version', 'step2', '--plugin-dir', '/tmp/exo-branch', '--plan', 'new', ...base]);
+  assert.deepEqual({ version: options.version, plan: options.plan, pluginDir: options.pluginDir }, { version: 'step2', plan: 'new', pluginDir: path.resolve('/tmp/exo-branch') });
+  assert.equal(runDirectoryName(1, options.version), '01-step2');
+  assert.throws(() => parseArguments(['--version', 'step2', '--plugin-dir', '/tmp/e', ...base]), /--plan old\|new/);
+  assert.throws(() => parseArguments(['--version', 'new', '--plugin-dir', '/tmp/e', '--plan', 'new', ...base]), /label other than old or new/);
+  assert.throws(() => parseArguments(['--version', 'a/b', '--plugin-dir', '/tmp/e', '--plan', 'new', ...base]), /label/);
+  assert.throws(() => parseArguments(['--version', 'step2', ...base]), /or a label with --plugin-dir/);
+});
+
 test('--probe needs no run and pins haiku at fifty cents', () => {
   const options = parseArguments(['--version', 'old', '--probe', '--out', '/tmp/x']);
   assert.deepEqual({ probe: options.probe, model: options.model, budget: options.budget }, { probe: true, model: 'haiku', budget: '0.5' });

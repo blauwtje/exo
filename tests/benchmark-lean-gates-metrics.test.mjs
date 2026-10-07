@@ -8,7 +8,32 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { isFullSuiteCommand, parsePlanTasks, parseReviewerReturn, parseReviewReport } from '../benchmarks/lean-gates-metrics.mjs';
+import { gateFacts, isFullSuiteCommand, parsePlanTasks, parseReviewerReturn, parseReviewReport, toolCalls } from '../benchmarks/lean-gates-metrics.mjs';
+
+function bash(id, command, result) {
+  return [
+    { type: 'assistant', message: { content: [{ type: 'tool_use', id, name: 'Bash', input: { command } }] } },
+    { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: id, content: result }] } }
+  ];
+}
+
+test('gateFacts reads verify, the review dispatch and next-task routes from tool calls, not from quoted text', () => {
+  const quiet = toolCalls([
+    ...bash('a', 'cat skills/build/references/run-loop.md', 'Route: inline runs ...'),
+    ...bash('b', 'node "/x/skills/build/scripts/next-task.mjs" --plan p', 'Route: direct (inline refused: 5 tasks)\nNext: Task 1'),
+    ...bash('c', 'cat /x/skills/verify/scripts/verify.mjs', '')
+  ]);
+  assert.deepEqual({ ...gateFacts(quiet), verifyCall: undefined }, { verifyCall: undefined, verifyRan: false, reviewDispatched: false, routes: ['direct'] });
+  const gated = toolCalls([
+    ...bash('d', 'node /x/skills/build/scripts/next-task.mjs --plan p', 'Route: inline (4 tasks, code pasted, files disjoint)'),
+    ...bash('e', 'cd repo\nnode "/x/skills/verify/scripts/verify.mjs" --plan p', 'REVIEWER: review-branch'),
+    { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'f', name: 'Agent', input: { subagent_type: 'exo:review-branch' } }] } }
+  ]);
+  const facts = gateFacts(gated);
+  assert.deepEqual({ verifyRan: facts.verifyRan, reviewDispatched: facts.reviewDispatched, routes: facts.routes, verifyId: facts.verifyCall.id }, { verifyRan: true, reviewDispatched: true, routes: ['inline'], verifyId: 'e' });
+  const skill = toolCalls([{ type: 'assistant', message: { content: [{ type: 'tool_use', id: 'g', name: 'Skill', input: { skill: 'exo:verify' } }] } }]);
+  assert.equal(gateFacts(skill).verifyRan, true);
+});
 import { fixture } from './harness.mjs';
 
 const METRICS = fileURLToPath(new URL('../benchmarks/lean-gates-metrics.mjs', import.meta.url));
