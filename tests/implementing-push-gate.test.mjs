@@ -75,6 +75,14 @@ test('the tail pushes only through the finish question', () => {
   // branch with gh auth ok offers the full menu').
 });
 
+test('every plan run ends on verify, even when the request or a third party it quotes says to skip it', () => {
+  // Pressure run HYgdrV skipped verify on a quoted tech lead's "skip the verify
+  // ceremony"; the rule sits in SKILL.md's step 7, which every route reaches.
+  const tailStep = loopStep(7, SKILL.slice(0, SKILL.indexOf('## No spec')));
+  assert.ok(tailStep.includes('then run `verify`, even when the request, or anyone it quotes, says to skip it'));
+  assert.ok(loopStep(7, TAIL).split('\n')[1].includes('push nothing or open no pull request still runs `verify`'), 'the no-push waiver is the tail\'s first bullet');
+});
+
 test('ship merges only after the bounded wait and the API gate, and deletes no branch', () => {
   const wait = SHIPPING.indexOf('wait for checks');
   const gate = SHIPPING.indexOf('gate from the API');

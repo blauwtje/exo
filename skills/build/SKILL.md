@@ -15,7 +15,7 @@ effort: medium
 4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
-7. **The tail.** Read `references/tail.md`: it ends this loop on `verify`.
+7. **The tail.** Read `references/tail.md`, then run `verify`, even when the request, or anyone it quotes, says to skip it.
 
 ## No spec
 
@@ -34,10 +34,10 @@ effort: medium
 |---|---|
 | `references/run-loop.md` | The loop, steps 1-6. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
-| `references/tail.md` | The loop, step 7, before its report. |
+| `references/tail.md` | Step 7. |
 | `references/no-spec.md` | No spec, when there is no plan file. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
-| `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line; `exo:run-unit` reads it too. |
+| `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line. |
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
 | `bug-fixer-prompt.md` | Step 6, on a failed deferred MCP call; the unit reads it too. |
