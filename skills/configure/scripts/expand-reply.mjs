@@ -5,16 +5,11 @@
 // level, because the session rule fades over a long chat and after compaction.
 // With any other level, any other prompt prints nothing.
 //
-// The prompt also keeps the per-session terse state: a lone `?` sets `expand`, and
-// any other prompt clears `expand` and the pending feedback. Under terse that
-// feedback is appended to the reminder once, as a note naming the last score.
-//
 // A fault never blocks a prompt: any error exits 0 with nothing on stdout.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { SCHEMA, settingValue } from '#settings-store';
-import { ARTICLE_LIMIT, readTerseState, writeTerseState } from '#terse-feedback';
 import { isMain } from '#script-flags';
 
 const EXPANSION_INSTRUCTION =
@@ -32,38 +27,15 @@ function terseReminder() {
   return `replies=terse: ${terseRuleSentence('are fine')} ${terseRuleSentence('stay whole')} ${terseRuleSentence('keep normal prose')}`;
 }
 
-// A phrase is cut to 20 characters, so the note is at most 360 characters: 60
-// of frame, 120 of tightened sentence, 160 of stray phrases.
-function terseNote({ rate, sentence, phrases = [] }) {
-  const score = `Last reply: ${rate.toFixed(1)} articles/100 words, limit ${ARTICLE_LIMIT.toFixed(1)}.`;
-  const stray = phrases.length === 0 ? '' : ` Stray: ${phrases.map((phrase) => phrase.slice(0, 20)).join(', ')}.`;
-  return `${score}${stray} Tighter: "${sentence}"`;
-}
-
-// A state-write failure must not drop the instruction or the reminder.
-function saveState(sessionId, state) {
-  try {
-    writeTerseState(sessionId, state);
-  } catch (error) {
-    console.error(`expand-reply: ${error.message}`);
-  }
-}
-
-function contextFor(sessionId, prompt) {
-  const state = readTerseState(sessionId);
-  if (prompt.trim() === '?') {
-    saveState(sessionId, { expand: true, feedback: state.feedback, display: state.display });
-    return EXPANSION_INSTRUCTION;
-  }
-  saveState(sessionId, { expand: false, feedback: null, display: state.display });
+function contextFor(prompt) {
+  if (prompt.trim() === '?') return EXPANSION_INSTRUCTION;
   if (settingValue('replies') !== 'terse') return null;
-  const reminder = terseReminder();
-  return state.feedback === null ? reminder : `${reminder} ${terseNote(state.feedback)}`;
+  return terseReminder();
 }
 
 export function expandReply(hookInput) {
   if (typeof hookInput.prompt !== 'string') return null;
-  const additionalContext = contextFor(hookInput.session_id, hookInput.prompt);
+  const additionalContext = contextFor(hookInput.prompt);
   if (additionalContext === null) return null;
   return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext } };
 }
