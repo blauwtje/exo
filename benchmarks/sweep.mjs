@@ -10,6 +10,7 @@
 //   node benchmarks/sweep.mjs --set all --confirm          runs every cell
 //   node benchmarks/sweep.mjs --set review,plan --confirm --concurrency 1 --out benchmarks/runs/<dir>
 //   node benchmarks/sweep.mjs --set fixer --confirm --results <dir>   writes the results file outside the tree
+//   node benchmarks/sweep.mjs --set flow --cells flow-c7,flow-base   keeps only the named cells of the sets
 //
 // Every call is billed, so no cell starts without --confirm. A cell whose
 // record.json exists is not run again, so a rerun on the same --out resumes.
@@ -35,10 +36,11 @@ const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
 
 function parseArguments(argv) {
-  const options = { sets: null, confirm: false, concurrency: 2, out: null, results: RESULTS };
+  const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--set') options.sets = argv[++index].split(',');
+    else if (flag === '--cells') options.cells = argv[++index].split(',');
     else if (flag === '--confirm') options.confirm = true;
     else if (flag === '--concurrency') options.concurrency = Number(argv[++index]);
     else if (flag === '--out') options.out = argv[++index];
@@ -263,9 +265,19 @@ function readOrWriteMeta(runDirectory, options, cellCount) {
   return meta;
 }
 
+// A cell id outside the chosen sets is refused, so a typo never runs fewer
+// cells than asked without a word.
+function keepNamedCells(cells, ids) {
+  if (ids === null) return cells;
+  const known = cells.map((cell) => cell.id);
+  const unknown = ids.filter((id) => !known.includes(id));
+  if (unknown.length > 0) throw new Error(`unknown cell ${unknown.join(', ')} in the chosen sets; one of ${known.join(', ')}`);
+  return cells.filter((cell) => ids.includes(cell.id));
+}
+
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  const cells = selectCells(sweepCells(), options.sets);
+  const cells = keepNamedCells(selectCells(sweepCells(), options.sets), options.cells);
   console.log(`${cells.length} claude -p calls planned, one per cell:`);
   for (const cell of cells) console.log(`  ${cell.id}: --model ${cell.model} --effort ${cell.effort}`);
   if (!options.confirm) {

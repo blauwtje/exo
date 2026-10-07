@@ -38,6 +38,26 @@ test('a named set counts only its cells', async () => {
   await assert.rejects(fs.access(marker));
 });
 
+test('--cells keeps only the named cells of the chosen sets', async () => {
+  const { env, marker } = await fakeClaude();
+  const result = await run(SWEEP, ['--set', 'flow', '--cells', 'flow-c7,flow-base'], { env });
+  assert.equal(result.code, 2, result.stderr);
+  assert.match(result.stdout, /^2 claude -p calls planned/);
+  assert.match(result.stdout, /flow-c7:/);
+  assert.match(result.stdout, /flow-base:/);
+  assert.doesNotMatch(result.stdout, /flow-session/);
+  await assert.rejects(fs.access(marker));
+});
+
+test('an unknown --cells id stops before any call', async () => {
+  const { env, marker } = await fakeClaude();
+  const result = await run(SWEEP, ['--set', 'flow', '--cells', 'flow-c7,plan-fable-xhigh'], { env });
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /unknown cell plan-fable-xhigh in the chosen sets; one of flow-c7, /);
+  assert.doesNotMatch(result.stdout, /calls planned/);
+  await assert.rejects(fs.access(marker));
+});
+
 test('a fixer cell prepares a branch carrying a real branch-review.md fixture', async () => {
   const { env } = await fakeClaude();
   const out = await fixture();
