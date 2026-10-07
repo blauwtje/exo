@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { BLOCK_TASK_LIMIT, driftOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize, waveLine } from '#plan-tasks';
+import { driftOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, taskSize, waveLine } from '#plan-tasks';
 
 // lib/delegate-budgets.json holds the build-task delegate's budget, its default
 // entry merged with its exo:build-task override; reading it here keeps one
@@ -42,12 +42,6 @@ function budgetLine(task) {
   const soft = Math.round(BUILD_TASK_BUDGET.soft * scale);
   const hard = Math.round(BUILD_TASK_BUDGET.hard * scale);
   return `Budget: ${soft}k/${hard}k`;
-}
-
-// The build's route follows the plan's task count, never the wave size: above
-// BLOCK_TASK_LIMIT the session dispatches run-unit blocks instead of building.
-function routeLine(taskCount) {
-  return `Route: ${taskCount > BLOCK_TASK_LIMIT ? 'unit' : 'direct'}`;
 }
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
@@ -165,18 +159,25 @@ export function nextTaskReport({ planPath, planText, root }) {
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
-  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  const route = planRoute(plan.tasks);
+  const inline = route.route === 'inline';
+  // The inline route builds in the run checkout, never in a wave's worktrees.
+  const wave = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
-    routeLine(plan.tasks.length),
+    routeLine(route),
     waveLine(wave)
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;
+  // On the inline route the lead builds every unlanded task in plan order, so
+  // one call names them all, each with its brief.
+  const briefed = inline ? plan.tasks.filter((task) => !landed.includes(task.number)) : wave;
+  if (inline) lines.push(`Inline: ${briefed.map((task) => `Task ${task.number}`).join(', ')}`);
   const briefDirectory = scratchPath(root, 'briefs');
-  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
+  for (const task of briefed) lines.push('', ...taskLines(task, frame, root, briefDirectory));
   return `${lines.join('\n')}\n`;
 }
 

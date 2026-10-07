@@ -66,12 +66,12 @@ function plannedTasks(count) {
 
 test('the route follows the plan\'s task count against BLOCK_TASK_LIMIT, never the wave size', async () => {
   const { root, planPath } = await checkout();
-  assert.match(nextTaskReport({ planPath, planText: PLAN, root }), /^Route: direct$/m);
+  assert.match(nextTaskReport({ planPath, planText: PLAN, root }), /^Route: direct \(inline refused: /m);
   const atLimit = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(BLOCK_TASK_LIMIT) });
-  assert.match(nextTaskReport({ planPath, planText: atLimit, root }), /^Route: direct$/m);
+  assert.match(nextTaskReport({ planPath, planText: atLimit, root }), /^Route: direct \(inline refused: /m);
   const aboveLimit = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(BLOCK_TASK_LIMIT + 4) });
   const report = nextTaskReport({ planPath, planText: aboveLimit, root });
-  assert.match(report, /^Route: unit$/m);
+  assert.match(report, /^Route: unit \(12 tasks, over 8\)$/m);
   assert.match(report, /^Wave: Task 1, Task 2, Task 3, Task 4$/m, 'a wave still prints above the limit');
 });
 
@@ -316,4 +316,19 @@ test('with every task landed, the report reads Next: none and never Next phase:'
   const report = nextTaskReport({ planPath, planText: PLAN, root });
   assert.match(report, /^Next: none, every task landed$/m);
   assert.doesNotMatch(report, /^Next phase:/m);
+});
+
+test('on the inline route the report names every unlanded task with its brief and never a Wave: line', async () => {
+  const { root, planPath } = await checkout();
+  const tasks = [1, 2, 3].map((number) => taskSection({
+    number, title: `Part ${number}`, files: [`- Create: \`src/part-${number}.js\``], code: `export const part${number} = ${number};`, subject: `feat(app): part ${number}`
+  }));
+  const inlinePlan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks });
+  land(root, 1, 'feat(app): part 1');
+  const report = nextTaskReport({ planPath, planText: inlinePlan, root });
+  assert.match(report, /^Route: inline \(3 tasks, code pasted, files disjoint\)$/m);
+  assert.match(report, /^Next: Task 2\nInline: Task 2, Task 3$/m);
+  assert.doesNotMatch(report, /^Wave:/m);
+  assert.ok(report.includes(`\nBrief: ${briefPath(root, 2)}\n`), report);
+  assert.ok(report.includes(`\nBrief: ${briefPath(root, 3)}\n`), report);
 });

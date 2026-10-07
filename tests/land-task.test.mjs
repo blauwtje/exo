@@ -40,7 +40,7 @@ test('a green task lands with its trailer and the landed set grows', async () =>
   await editApp(root);
   const output = landTask({ planPath, planText: PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
-  assert.match(output, /^Landed: 1\nNext: Task 2$/m);
+  assert.match(output, /^Landed: 1\nRoute: direct \(inline refused: Task 1: no pasted code\)\nNext: Task 2$/m);
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
@@ -56,10 +56,10 @@ test('a landing in a checkout under .claude/worktrees/ names the next task, whil
   git(root, 'worktree', 'add', '-q', '-b', 'feat/x', isolated);
   await editApp(isolated);
   const isolatedPlan = path.join(isolated, 'docs/plans/fixture.md');
-  assert.match(landTask({ planPath: isolatedPlan, planText: plan, number: 1, root: isolated }), /\nLanded: 1\nNext: Task 2\n$/);
+  assert.match(landTask({ planPath: isolatedPlan, planText: plan, number: 1, root: isolated }), /\nLanded: 1\nRoute: direct \(.+\)\nNext: Task 2\n$/);
   const main = await landingCheckout();
   await editApp(main.root);
-  assert.match(landTask({ planPath: main.planPath, planText: plan, number: 1, root: main.root }), /\nLanded: 1\nWave: Task 2, Task 3\n$/);
+  assert.match(landTask({ planPath: main.planPath, planText: plan, number: 1, root: main.root }), /\nLanded: 1\nRoute: direct \(.+\)\nWave: Task 2, Task 3\n$/);
 });
 
 test('a block without the trailer is refused before it runs', async () => {
@@ -726,7 +726,7 @@ test('a changed export signature with every caller inside Files: lands', async (
   await requireBookedOn(root);
   await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 2, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\nNext: Task 1\n$/);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 2\nLanded: 2\nRoute: direct \(.+\)\nNext: Task 1\n$/);
   const message = git(root, 'log', '-1', '--format=%B');
   assert.match(message, /^Plan-task: fixture\/2\nSignature: src\/ledger\/create-entry\.js:createEntry\(id, description, amount\) -> \(id, description, amount, bookedOn\)$/m);
 });
@@ -745,7 +745,7 @@ for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
     const { root, planPath } = await signatureCheckout();
     await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), `export function createEntry${parameters} {\n  return {};\n}\n`);
     const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
-    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nNext: Task 2\n$/);
+    assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nRoute: direct \(.+\)\nNext: Task 2\n$/);
   });
 }
 
@@ -770,7 +770,7 @@ test('a body-only change to an export with an outside caller lands and prints no
   const { root, planPath } = await signatureCheckout();
   await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
-  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nNext: Task 2\n$/);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1\nLanded: 1\nRoute: direct \(.+\)\nNext: Task 2\n$/);
 });
 
 // The builder holds no MCP tool, so a `Proof: mcp:<tool> <args>` task lands on
@@ -905,4 +905,15 @@ test('a Files: entry ending in / covers every changed path under that folder', a
   const output = landTask({ planPath: path.join(root, 'docs/plans/fixture.md'), planText: plan, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.equal(git(root, 'status', '--porcelain'), '');
+});
+
+test('on the inline route a landing names the next task, never a wave, though the plan allows one', async () => {
+  const plan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], code: 'export function greet() {}', subject: 'feat(app): greet' }),
+    taskSection({ number: 2, title: 'Left', files: ['- Create: `src/left.js`'], code: 'export const left = 1;', subject: 'feat(app): left' }),
+    taskSection({ number: 3, title: 'Right', files: ['- Create: `src/right.js`'], code: 'export const right = 1;', subject: 'feat(app): right' })
+  ] });
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  assert.match(landTask({ planPath, planText: plan, number: 1, root }), /\nLanded: 1\nRoute: inline \(3 tasks, code pasted, files disjoint\)\nNext: Task 2\n$/);
 });

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange } from '#plan-tasks';
+import { driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange } from '#plan-tasks';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
@@ -348,4 +348,32 @@ test('a Risk: segment reads as risk and its absence as null', () => {
   ] }));
   assert.equal(plan.tasks[0].risk, 'money path');
   assert.equal(plan.tasks[1].risk, null);
+});
+
+function pastedTask(number, { files = [`- Create: \`src/part-${number}.js\``], code = `export const part${number} = ${number};`, design = false } = {}) {
+  return taskSection({ number, title: `Part ${number}`, design, files, code, subject: `feat(app): part ${number}` });
+}
+
+function routeOf(tasks) {
+  return planRoute(parsePlan(planFixture({ tasks })).tasks);
+}
+
+test('four tasks with pasted code and disjoint files take the inline route', () => {
+  assert.deepEqual(routeOf([1, 2, 3, 4].map((number) => pastedTask(number))), { route: 'inline', reason: '4 tasks, code pasted, files disjoint' });
+});
+
+test('a plan breaking an inline rule takes the direct route, naming the first rule it breaks', () => {
+  assert.deepEqual(routeOf([1, 2, 3, 4, 5].map((number) => pastedTask(number))), { route: 'direct', reason: 'inline refused: 5 tasks' });
+  assert.deepEqual(routeOf([pastedTask(1), pastedTask(2, { code: '' })]), { route: 'direct', reason: 'inline refused: Task 2: no pasted code' });
+  const twoFilesOneBlock = pastedTask(1, { files: ['- Create: `src/a.js`', '- Test: `src/a.test.js`'] });
+  assert.deepEqual(routeOf([twoFilesOneBlock]), { route: 'direct', reason: 'inline refused: Task 1: no pasted code' });
+  assert.deepEqual(routeOf([pastedTask(1), pastedTask(2, { files: ['- Modify: `src/part-1.js`'] })]), { route: 'direct', reason: 'inline refused: Task 1 and Task 2 share src/part-1.js' });
+  assert.deepEqual(routeOf([pastedTask(1, { files: [] })]), { route: 'direct', reason: 'inline refused: Task 1: no Files: entries' });
+  assert.deepEqual(routeOf([pastedTask(1, { design: true })]), { route: 'direct', reason: 'inline refused: Task 1: a Design: task' });
+  const compact = parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): a', files: ['src/a.js'] })] })).tasks;
+  assert.deepEqual(planRoute(compact), { route: 'direct', reason: 'inline refused: Task 1: no pasted code' });
+});
+
+test('a plan past BLOCK_TASK_LIMIT takes the unit route', () => {
+  assert.equal(routeOf(Array.from({ length: 9 }, (_, index) => pastedTask(index + 1))).route, 'unit');
 });
