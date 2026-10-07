@@ -1,7 +1,7 @@
 # Step 5 under `Route: inline`
 
 - This session builds every task itself, in plan order, in the run checkout; it never dispatches `exo-build-task` and never reads the wave worktrees reference.
-- Steps 1-3 stand: the workspace answer from `references/workspace.md` holds, and only one `start-run.mjs` runs with the session marker.
+- Steps 1-3 stand: the workspace reference's answer holds, and only one `start-run.mjs` runs with the session marker.
 - The `Inline:` line names every unlanded task, each with its `Brief:` file; read a task's brief, never the plan.
 - Per task, write the failing test from its pasted block, run its `Run:` and expect the stated failure.
 - Then write the code from its pasted block, run `Run:` again and expect green.

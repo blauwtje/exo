@@ -20,7 +20,7 @@
    - `Route: unit`: **dispatch the unit**, never build a `Wave:` here.
    - Send each block to the `exo:run-unit` agent, naming plan path, branch, checkout, `<skill>` (`${CLAUDE_SKILL_DIR}` resolved), task numbers, the budget rule's hard agent (`exo:solve-hard`, `-high` or `-low`).
    - `Route: direct`: read the direct route reference; a `Next:` line sends its task, a `Wave:` line each task.
-   - `Route: inline`: read `references/run-loop-inline.md`.
+   - `Route: inline`: read the inline route reference.
 6. **Route the return.**
    - `BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.
    - `BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait` before asking it.
