@@ -67,12 +67,7 @@ export const EXO_SETTINGS = {
   budget: 'medium',
   ship: 'local',
   workspace: 'branch',
-  guards: 'on',
-  guard_lines: 400,
-  heavy_commands: '',
-  heavy_after_seconds: 60,
-  log_scan: 'off',
-  sibling_scan: 'off'
+  guards: 'on'
 };
 
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];

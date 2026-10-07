@@ -72,7 +72,7 @@ function contextLine(root) {
     const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
     const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
-    // An empty value, such as heavy_commands by default, adds noise to every session, so the line leaves it out.
+    // An empty value adds noise to every session, so the line leaves it out.
     const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '');
     const parts = printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
     const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
@@ -147,15 +147,12 @@ function show(root) {
 // sit outside the fence because bold renders only there.
 const MAX_PICKS = 3;
 const TOPICS = {
-  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you, how much effort tasks get and which short notes I add', keys: ['replies', 'budget', 'scans'] },
+  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['replies', 'budget'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
-  safety: { label: 'Safety and speed', question: 'Which part of safety and speed?', about: 'what I block and which slow commands I skip repeating', keys: ['guards', 'guard_lines', 'slow'] }
+  safety: { label: 'Safety', question: 'Which part of safety?', about: 'what I block', keys: ['guards'] }
 };
 
-const GROUPS = {
-  scans: { label: 'Short notes', question: 'Which part of short notes?', about: 'whether I add a note after a long log file or an edit that removes code', keys: ['log_scan', 'sibling_scan'] },
-  slow: { label: 'Slow commands', question: 'Which part of slow commands?', about: 'which commands and tests I run only once per code change', keys: ['heavy_commands', 'heavy_after_seconds'] }
-};
+const GROUPS = {};
 
 function settingKeys(keys) {
   return keys.flatMap((key) => GROUPS[key]?.keys ?? [key]);

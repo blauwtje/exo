@@ -16,8 +16,6 @@ import process from 'node:process';
 import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
 import { bookSentence } from '../skills/remember/scripts/approve-book.mjs';
-import { reset as resetReadGuard } from './guards/read-guard.mjs';
-import { reset as resetRepeatGuard } from './guards/repeat-guard.mjs';
 
 // A hook output string over this many characters reaches the model as a file
 // path and a 2,000-character preview, which would cut the rules themselves. The
@@ -162,26 +160,7 @@ function welcomeMessage() {
   return 'exo is installed: run /exo:start to see what it can do, or /exo:configure to set your choices.';
 }
 
-// A clear or a compaction empties the context, so the read guard forgets which
-// ranges the model still holds and the repeat guard forgets which calls it saw.
 let pointers = '';
-// The guards keep their session files under the Claude config folder, so a
-// Codex reset points them at the Codex folder instead. Shortcut: the other
-// hooks do not yet share this path; lift it by making #session-record-path
-// pick the folder from #host.
-if (onCodex) process.env.EXO_SESSIONS_DIR ??= path.join(configDirectory, 'sessions');
-if (input.source === 'clear' || input.source === 'compact') {
-  try {
-    resetReadGuard(input);
-  } catch (error) {
-    console.error(`read-guard: ${error.message}`);
-  }
-  try {
-    resetRepeatGuard(input);
-  } catch (error) {
-    console.error(`repeat-guard: ${error.message}`);
-  }
-}
 
 const skillFile = path.join(root, 'skills', 'route-skills', 'SKILL.md');
 if (fs.existsSync(skillFile)) {

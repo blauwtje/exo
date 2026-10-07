@@ -223,7 +223,7 @@ function runClaude(args, workdir, cellDirectory, extraEnvironment, timeoutMs) {
     const startedAt = Date.now();
     const child = spawn('claude', args, {
       cwd: workdir,
-      env: { ...withoutParentSession(process.env), ...extraEnvironment, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
+      env: { ...withoutParentSession(process.env), ...extraEnvironment },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;

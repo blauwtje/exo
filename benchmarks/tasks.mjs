@@ -68,8 +68,6 @@ export const ARMS = {
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
   'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },
   'exo-no-find-cause': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'no-find-cause' },
-  'exo-log-scan': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, exoSettings: { log_scan: 'on' } },
-  'exo-sibling-scan': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, exoSettings: { sibling_scan: 'on' } },
   // skills-rival is a skills-only rival plugin. Unforced, its skill triggered 0
   // of 8 times (docs/research/positioning/4b-devil.md), so its promptSuffix in
   // rivals.local.json names the skill.

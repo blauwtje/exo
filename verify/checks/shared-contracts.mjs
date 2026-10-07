@@ -8,9 +8,6 @@ import { readFrontmatter } from '../frontmatter.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/verify/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
-import { SCHEMA } from '../../lib/settings-store.mjs';
-
-const DEFAULT_GUARD_LINES = SCHEMA['guard_lines'].default;
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
@@ -126,17 +123,13 @@ const PINNED_SENTENCES = {
   ],
   'README.md': [
     `${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`,
-    `over ${DEFAULT_GUARD_LINES} lines`,
   ],
   'CONTRIBUTING.md': [
     RISK_TRIGGER,
-    `lines, ${DEFAULT_GUARD_LINES} unless set`,
-    `reads as ${DEFAULT_GUARD_LINES}`,
   ],
   'docs/skills/build.md': [RISK_TRIGGER],
   'skills/ship/SKILL.md': [`stops after ${DEFAULT_MINUTES} minutes`, `exit ${TIMEOUT_EXIT}`],
   'skills/remember/SKILL.md': [`${NUMBER_WORDS[ATTESTATIONS_REQUIRED]} sessions`],
-  'skills/configure/references/setup-map.md': [`\`${DEFAULT_GUARD_LINES}\` (the default)`],
 };
 
 // A doc list that restates a data asset: every name the asset lists appears

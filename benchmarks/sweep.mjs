@@ -65,7 +65,7 @@ function runClaude(cell, workdir, cellDirectory, copies) {
     const pluginDir = cell.pluginVariant ? copies[cell.pluginVariant] : ROOT;
     const child = spawn('claude', claudeArguments(cell, pluginDir), {
       cwd: workdir,
-      env: { ...process.env, EXO_SESSIONS_DIR: path.join(cellDirectory, 'sessions') },
+      env: { ...process.env },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
