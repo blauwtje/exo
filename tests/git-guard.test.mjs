@@ -210,6 +210,18 @@ test('force-deleting a branch is allowed when its commits are in main or its pul
   assert.match(await reason(`git -C ${root} branch -D squashed`, { ghState: 'OPEN' }), /not in main yet/);
 });
 
+test('force-deleting a branch with one patch cherry-picked onto main names only the patch not in main', async () => {
+  const root = await repository();
+  git(root, 'switch', '-q', '-c', 'partial');
+  await commitFiles(root, { 'picked.txt': 'picked\n' }, 'add picked');
+  await commitFiles(root, { 'unpicked.txt': 'unpicked\n' }, 'add unpicked');
+  git(root, 'switch', '-q', 'main');
+  git(root, 'cherry-pick', 'partial~1');
+  const denied = await reason(`git -C ${root} branch -D partial`);
+  assert.match(denied, /force-deleting partial discards commits not in main yet: [0-9a-f]{7} add unpicked\. Land/);
+  assert.doesNotMatch(denied, /add picked/);
+});
+
 test('force-deleting a branch whose content landed as a squash commit is allowed, an extra or conflicting change is not', async () => {
   const root = await repository();
   for (const branch of ['landed', 'extra', 'conflicting']) {
