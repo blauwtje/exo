@@ -1,5 +1,8 @@
 // Guards build's *Done* verdict: a green test suite must never stand
-// in for running the product on real input (see SKILL.md step 5). Blocks the
+// in for running the product on real input (see SKILL.md step 5). A Proof
+// naming a test runner blocks, unless the package.json in the hook's cwd names
+// no `bin` and no `scripts.start`: a library's tests are the one way to run
+// it. A missing or unreadable package.json keeps that block. Blocks the
 // turn at Stop when a `Proof: <command or MCP tool> -> <output>` line of the
 // session's final report names a Bash command or MCP tool call this build turn
 // did not make, or quotes output that call did not return. An unbacked proof,
@@ -275,10 +278,22 @@ function mcpToolOf(command) {
   return word.match(MCP_TOOL_NAME)?.[1] ?? word;
 }
 
-function proofProblem(proof, calls, writtenPaths) {
+// False only when directory's package.json parses and names no `bin` and no
+// `scripts.start`; a missing or unreadable one counts as an entry point.
+function packageHasEntryPoint(directory) {
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8'));
+  } catch {
+    return true;
+  }
+  return Boolean(manifest?.bin) || typeof manifest?.scripts?.start === 'string';
+}
+
+function proofProblem(proof, calls, writtenPaths, hasEntryPoint) {
   const quoted = `The Proof line "${proof.line.slice(0, 80)}"`;
   if (proof.command === null) return `${quoted} has no "->" between its command and output.`;
-  if (TEST_RUNNER_DENYLIST.test(proof.command)) return `${quoted} names a test runner, not the product.`;
+  if (hasEntryPoint && TEST_RUNNER_DENYLIST.test(proof.command)) return `${quoted} names a test runner, not the product.`;
   // A Proof naming an MCP tool, prefixed or known, is matched against that
   // tool's calls only, never a Bash call the shell could not run.
   const bashOutput = mcpToolCall(proof.command) === null ? calls.bash.get(proof.command) : undefined;
@@ -314,12 +329,12 @@ function unverifiedKeys(text) {
 // Every Proof line of a report as { command, problem }, checked against the
 // calls in rows after the build call; problem is null for a backed proof. A
 // line with no arrow stands for its command.
-function assessProofs(text, rows, skillIndex) {
+function assessProofs(text, rows, skillIndex, hasEntryPoint) {
   const calls = productCallsAfter(rows, skillIndex);
   const writtenPaths = sessionWrittenPaths(rows, skillIndex);
   return proofLines(text).map((proof) => ({
     command: proof.command ?? normalizeCommand(proof.line),
-    problem: proofProblem(proof, calls, writtenPaths)
+    problem: proofProblem(proof, calls, writtenPaths, hasEntryPoint)
   }));
 }
 
@@ -346,12 +361,12 @@ function proofCheckBlockIndexes(rows, skillIndex) {
 
 // The commands of the unbacked proofs the report still owes: its own, plus
 // those of each earlier blocked report that no backed Proof line now covers.
-function unbackedCommands(current, rows, skillIndex, blockIndexes) {
+function unbackedCommands(current, rows, skillIndex, blockIndexes, hasEntryPoint) {
   const backed = new Set(current.filter((proof) => proof.problem === null).map((proof) => proof.command));
   const unbacked = new Set(current.filter((proof) => proof.problem !== null).map((proof) => proof.command));
   for (const blockIndex of blockIndexes) {
     const earlier = lastReportBefore(rows, blockIndex, skillIndex);
-    for (const proof of assessProofs(earlier, rows.slice(0, blockIndex), skillIndex)) {
+    for (const proof of assessProofs(earlier, rows.slice(0, blockIndex), skillIndex, hasEntryPoint)) {
       if (proof.problem !== null && !backed.has(proof.command)) unbacked.add(proof.command);
     }
   }
@@ -391,9 +406,10 @@ export function stopHook(input) {
   const lastMessage = input.last_assistant_message;
   const report = typeof lastMessage === 'string' && lastMessage.trim() ? lastMessage : lastReportBefore(rows, rows.length, skillIndex);
   if (!report) return null;
+  const hasEntryPoint = packageHasEntryPoint(input.cwd || process.cwd());
   const blockIndexes = proofCheckBlockIndexes(rows, skillIndex);
-  const current = assessProofs(report, rows, skillIndex);
-  const unbacked = unbackedCommands(current, rows, skillIndex, blockIndexes);
+  const current = assessProofs(report, rows, skillIndex, hasEntryPoint);
+  const unbacked = unbackedCommands(current, rows, skillIndex, blockIndexes, hasEntryPoint);
   const reason = blockReason(report, current, unbacked);
   if (reason === null) return null;
   if (blockIndexes.length < BLOCK_CEILING) return { decision: 'block', reason };
