@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The sweep's flow set gains `flow-base`, a no-plugin baseline cell on the same plan as `flow-c7`; `benchmarks/flow-check.mjs` scores both against 17 hidden tests in `benchmarks/flow-hidden/` (proven to fail on the seed and pass on the reference), and `benchmarks/flow-report.mjs` prints per-arm landed tasks, hidden pass, defects, tokens, cost and wall time with a 2-standard-error verdict.
+- `benchmarks/results/2026-10-07-flow.md` records exo's build flow against plain Sonnet 5 on the text-helpers plan, 5 runs each: hidden check 4/5 exo against 5/5 baseline, so exo shows no advantage beyond 2 standard errors, at about 5x the weighted tokens and wall time.
+
 ## 0.97.0 - 2026-10-06
 
 ### Added
