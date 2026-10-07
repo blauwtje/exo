@@ -20,7 +20,6 @@ import { scratchPath, ScratchPathError } from '#scratch-path';
 // letter comes from its place in the array. `open` replaces `context`,
 // `options` and `reason` while the artifact lists an open point.
 const ADJUST_BRIEF = ['Adjust the brief', 'change it before anything is built.'];
-const BUILD_HERE = ['Build here', 'build it now in this chat.'];
 const BUILD_FRESH = ['Build fresh', 'start a clean chat and build it there.'];
 
 const NEXT_STAGE = {
@@ -28,12 +27,12 @@ const NEXT_STAGE = {
     stage: 'build',
     title: 'Is the brief ready to build?',
     context: (artifact) => `The brief is written at \`${artifact}\` with no open point.`,
-    options: [BUILD_HERE, BUILD_FRESH, ADJUST_BRIEF],
-    reason: 'the brief settles every point and this chat already knows it, while (B) starts over and (C) reopens a settled brief.',
+    options: [BUILD_FRESH, ADJUST_BRIEF],
+    reason: 'the brief settles every point and a clean chat builds it on a small context, while (B) reopens a settled brief.',
     open: {
       context: (artifact, count) => `The brief is written at \`${artifact}\` with ${count} open point${count === 1 ? '' : 's'} under \`## Open points\`.`,
-      options: [ADJUST_BRIEF, BUILD_HERE, BUILD_FRESH],
-      reason: 'the open points get settled before anything is built, while (B) and (C) build on them unconfirmed.'
+      options: [ADJUST_BRIEF, BUILD_FRESH],
+      reason: 'the open points get settled before anything is built, while (B) builds on them unconfirmed.'
     }
   },
   'find-cause': {

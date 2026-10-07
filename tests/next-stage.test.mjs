@@ -1,5 +1,5 @@
 // next-stage.mjs prints the next-stage question as one lettered question, A the
-// recommended option (for spec: build, or adjust while the brief lists an
+// recommended option (for spec: build fresh, or adjust while the brief lists an
 // open point), with no model line; with `--fresh` it prints the lines
 // the user types after the fresh-chat route, reading a plan's `Design:` tasks
 // and `## Visual direction` to pick the model switch.
@@ -22,7 +22,7 @@ function buildStageModel() {
   return kinds[stages.build.kind].model;
 }
 
-test('spec with no open point recommends building: build here A, build fresh B, adjust the brief C', async () => {
+test('spec with no open point recommends building fresh: build fresh A, adjust the brief B', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
   ] });
@@ -33,11 +33,10 @@ test('spec with no open point recommends building: build here A, build fresh B, 
     '**Is the brief ready to build?**',
     `The brief is written at \`${planPath}\` with no open point.`,
     '',
-    '- **(A) Build here**: build it now in this chat.',
-    '- **(B) Build fresh**: start a clean chat and build it there.',
-    '- **(C) Adjust the brief**: change it before anything is built.',
+    '- **(A) Build fresh**: start a clean chat and build it there.',
+    '- **(B) Adjust the brief**: change it before anything is built.',
     '',
-    'Recommended: (A), because the brief settles every point and this chat already knows it, while (B) starts over and (C) reopens a settled brief.'
+    'Recommended: (A), because the brief settles every point and a clean chat builds it on a small context, while (B) reopens a settled brief.'
   ].join('\n') + '\n');
   assertQuestionShape(report);
   assert.equal(freshReport({ after: 'spec', artifact: planPath }), [
@@ -54,8 +53,8 @@ test('spec with an entry under ## Open points recommends adjusting the brief fir
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
   assert.ok(report.includes(`The brief is written at \`${planPath}\` with 2 open points under \`## Open points\`.`));
-  assert.match(report, /\n- \*\*\(A\) Adjust the brief\*\*: .*\n- \*\*\(B\) Build here\*\*: .*\n- \*\*\(C\) Build fresh\*\*/);
-  assert.ok(report.endsWith('Recommended: (A), because the open points get settled before anything is built, while (B) and (C) build on them unconfirmed.\n'));
+  assert.match(report, /\n- \*\*\(A\) Adjust the brief\*\*: .*\n- \*\*\(B\) Build fresh\*\*: .*\n\n/);
+  assert.ok(report.endsWith('Recommended: (A), because the open points get settled before anything is built, while (B) builds on them unconfirmed.\n'));
   assertQuestionShape(report);
 });
 
@@ -66,7 +65,7 @@ test('an empty ## Open points section counts as no open point', async () => {
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   assert.deepEqual(openPoints(planPath), []);
-  assert.ok(nextStageReport({ after: 'spec', artifact: planPath }).includes('- **(A) Build here**'));
+  assert.ok(nextStageReport({ after: 'spec', artifact: planPath }).includes('- **(A) Build fresh**'));
 });
 
 test('an issue artifact reads its open points from the scratch copy spec writes', async () => {
@@ -79,7 +78,7 @@ test('an issue artifact reads its open points from the scratch copy spec writes'
   assert.ok(result.stdout.includes('- **(A) Adjust the brief**'));
   const missing = await run(SCRIPT, ['--after', 'spec', '--artifact', '#43'], { cwd: root });
   assert.equal(missing.code, 0, missing.stderr);
-  assert.ok(missing.stdout.includes('- **(A) Build here**'));
+  assert.ok(missing.stdout.includes('- **(A) Build fresh**'));
 });
 
 test('the fresh-chat route switches model when every Design: task holds a frozen direction', async () => {
