@@ -88,6 +88,21 @@ test('a proof-check block leaves the resume-plan wait marker in place', () => {
   assert.equal(fs.existsSync(waitMarker), true);
 });
 
+test('an agent whose notification is only queued draws no block until the lead receives it', async () => {
+  const box = sandbox();
+  const transcriptPath = path.join(box.project, 'transcript.jsonl');
+  const build = { type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Skill', input: { skill: 'exo:build' } }] } };
+  const launch = { type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_agent', content: 'Async agent launched successfully.' }] } };
+  const text = '<task-notification><tool-use-id>toolu_agent</tool-use-id><status>completed</status></task-notification>';
+  const queued = { type: 'queue-operation', operation: 'enqueue', content: text };
+  const reply = { type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'Task 1 GREEN. Waiting on task 2.' }] } };
+  fs.writeFileSync(transcriptPath, line(build) + line(launch) + line(queued) + line(reply));
+  const input = { session_id: 's6', cwd: box.project, transcript_path: transcriptPath };
+  assert.equal((await dispatch(box, JSON.stringify(input))).stdout, '');
+  fs.appendFileSync(transcriptPath, line({ type: 'user', message: { role: 'user', content: text } }) + line(reply));
+  assert.equal(dispatchStop(input).decision, 'block');
+});
+
 // A transcript where a never-run proof drew five proof-check blocks and the last reply still names it.
 function ceilingTranscript(directory) {
   const file = path.join(directory, 'transcript.jsonl');

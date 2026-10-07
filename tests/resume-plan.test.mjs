@@ -136,11 +136,13 @@ for (const source of ['clear', 'compact', 'startup']) {
   });
 }
 
-test('a stop does not block while a background launch is pending, and blocks once it has notified', async () => {
+test('a stop does not block while a background launch is pending or only queued, and blocks once it has notified', async () => {
   const { root } = await checkout({ marker: true });
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'resume-plan-'));
   const launch = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_agent', content: 'Async agent launched successfully.' }] } };
-  const notice = { type: 'queue-operation', operation: 'enqueue', content: '<task-notification><tool-use-id>toolu_agent</tool-use-id></task-notification>' };
+  const text = '<task-notification><tool-use-id>toolu_agent</tool-use-id></task-notification>';
+  const queued = { type: 'queue-operation', operation: 'enqueue', content: text };
+  const notice = { type: 'user', message: { role: 'user', content: text } };
   const stopWith = async (rows) => {
     const transcriptPath = path.join(dir, `${rows.length}.jsonl`);
     await fs.writeFile(transcriptPath, rows.map((row) => JSON.stringify(row)).join('\n') + '\n');
@@ -148,5 +150,6 @@ test('a stop does not block while a background launch is pending, and blocks onc
     return run(SCRIPT, ['stop'], { input: JSON.stringify(input) });
   };
   assert.equal((await stopWith([launch])).stdout, '');
-  assert.equal(JSON.parse((await stopWith([launch, notice])).stdout).decision, 'block');
+  assert.equal((await stopWith([launch, queued])).stdout, '');
+  assert.equal(JSON.parse((await stopWith([launch, queued, notice])).stdout).decision, 'block');
 });

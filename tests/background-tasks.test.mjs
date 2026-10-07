@@ -27,8 +27,13 @@ test('a background Bash command with no notification is pending', () => {
   assert.equal(hasPendingBackgroundTask(transcript([bashLaunch('toolu_b')])), true);
 });
 
-test('a launch notified through a queue-operation entry is not pending', () => {
+test('a launch whose notification is only queued is pending', () => {
   const rows = [agentLaunch('toolu_a'), { type: 'queue-operation', operation: 'enqueue', content: notification('toolu_a') }];
+  assert.equal(hasPendingBackgroundTask(transcript(rows)), true);
+});
+
+test('a launch notified through a queued_command attachment is not pending', () => {
+  const rows = [agentLaunch('toolu_a'), { type: 'queue-operation', operation: 'enqueue', content: notification('toolu_a') }, { type: 'attachment', attachment: { type: 'queued_command', prompt: notification('toolu_a') } }];
   assert.equal(hasPendingBackgroundTask(transcript(rows)), false);
 });
 
@@ -38,7 +43,7 @@ test('a launch notified through a user entry is not pending', () => {
 });
 
 test('one unnotified launch among notified ones is pending', () => {
-  const rows = [agentLaunch('toolu_a'), agentLaunch('toolu_c'), { type: 'queue-operation', operation: 'enqueue', content: notification('toolu_a') }];
+  const rows = [agentLaunch('toolu_a'), agentLaunch('toolu_c'), { type: 'user', message: { content: notification('toolu_a') } }];
   assert.equal(hasPendingBackgroundTask(transcript(rows)), true);
 });
 

@@ -163,12 +163,15 @@ test('blocks a Proof run on a fixture a heredoc Bash call wrote', () => {
   assert.match(result.reason, /input this session wrote/);
 });
 
-test('does not block while a background launch is pending, and blocks once it has notified', () => {
+test('does not block while a background launch is pending or only queued, and blocks once it has notified', () => {
   const launch = bashResult('toolu_agent', 'Async agent launched successfully.\nagentId: a1');
-  const notice = { type: 'queue-operation', operation: 'enqueue', content: '<task-notification><tool-use-id>toolu_agent</tool-use-id></task-notification>' };
+  const text = '<task-notification><tool-use-id>toolu_agent</tool-use-id></task-notification>';
+  const queued = { type: 'queue-operation', operation: 'enqueue', content: text };
+  const notice = { type: 'user', message: { role: 'user', content: text } };
   const report = finalReport('**Done:** wired --status into bin/report.js.');
   assert.equal(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, report]) }), '');
-  assert.equal(JSON.parse(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, notice, report]) })).decision, 'block');
+  assert.equal(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, queued, report]) }), '');
+  assert.equal(JSON.parse(stopOutput({ transcript_path: transcript([SKILL_CALL, launch, queued, notice, report]) })).decision, 'block');
 });
 
 function typedMessage(text) {
