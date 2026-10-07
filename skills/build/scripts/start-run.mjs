@@ -14,8 +14,11 @@
 // workspace decision reads the plan's `Repository:` and `Branch:` lines
 // before the run's checkout is known, so it runs before the marker-writing
 // call.
-// Prints the picked plan's absolute path, or exits 1 with one line when zero
-// or several plans match.
+// `--find-only` prints the picked plan's absolute path. The marker-writing
+// call prints one `run started` line naming the plan, checkout, branch and
+// session, plus a note when the checkout's branch is not the plan's
+// `Branch:`. A refusal (zero or several plans, a `--checkout` that is not a
+// checkout) exits 1 with one line naming the cause and the next command.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -27,9 +30,10 @@ import { frameOf, parsePlan, PlanError } from '#plan-tasks';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
+const USAGE = 'usage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--session <id>] [--root <checkout>]';
 
-/** No plan matches, or more than one does after the branch preference: the caller exits 1. */
-export class NoPlanError extends Error {}
+/** No plan matches, several do, or the run checkout is no checkout: the caller exits 1 and writes no marker. */
+export class RefusalError extends Error {}
 
 function gitLine(root, args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
@@ -68,17 +72,17 @@ export function pickPlans(candidates, branch) {
   return onBranch.length > 0 ? onBranch : candidates;
 }
 
-/** The plan to run for `root`, or throws `NoPlanError` naming why none is picked. */
+/** The plan to run for `root`, or throws `RefusalError` naming why none is picked. */
 export function resolvePlan(root) {
   const repository = gitLine(root, ['rev-parse', '--show-toplevel']);
   const branch = gitLine(root, ['branch', '--show-current']);
   const candidates = candidatePlans(root, repository);
   if (candidates.length === 0) {
-    throw new NoPlanError(`no plan under docs/plans/, docs/specs/ or ~/.claude/plans/ names Repository: ${repository}`);
+    throw new RefusalError(`no plan under docs/plans/, docs/specs/ or ~/.claude/plans/ names Repository: ${repository}; no marker written. Next: rerun with --plan <path> naming the plan.`);
   }
   const picked = pickPlans(candidates, branch);
   if (picked.length > 1) {
-    throw new NoPlanError(`${picked.length} plans name Repository: ${repository}: ${picked.map((plan) => plan.file).join(', ')}`);
+    throw new RefusalError(`${picked.length} plans name Repository: ${repository}: ${picked.map((plan) => plan.file).join(', ')}; no marker written. Next: ask which plan runs, then rerun with --plan <that path>.`);
   }
   return picked[0].file;
 }
@@ -104,9 +108,38 @@ function main(argv) {
     process.stdout.write(`${planPath}\n`);
     return;
   }
-  writeMarker(root, planPath, flags.checkout ?? root, flags.session ?? process.env.CLAUDE_SESSION_ID ?? process.env.CLAUDE_CODE_SESSION_ID ?? '');
+  const checkout = flags.checkout ?? root;
+  const branch = checkoutBranch(checkout);
+  // An empty `--session` is an unset shell variable, so it falls through too.
+  const sessionId = flags.session || process.env.CLAUDE_SESSION_ID || process.env.CLAUDE_CODE_SESSION_ID || '';
+  writeMarker(root, planPath, checkout, sessionId);
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
-  process.stdout.write(`${planPath}\n`);
+  const onBranch = branch === '' ? 'detached HEAD' : `branch ${branch}`;
+  process.stdout.write(`start-run: run started, marker written: plan ${planPath}, checkout ${checkout} on ${onBranch}, session ${sessionId || 'none'}. Step 1 is done; never rerun start-run in this run.\n`);
+  const planBranch = planFrame(planPath)?.branch;
+  if (planBranch && planBranch !== branch) {
+    const switchArgs = branchExists(checkout, planBranch) ? planBranch : `-c ${planBranch}`;
+    process.stdout.write(`start-run: note: checkout ${checkout} is on ${branch || 'detached HEAD'}, not the plan's Branch: ${planBranch}. The marker names no branch, so if the workspace answer is ${planBranch}, run \`git -C ${checkout} switch ${switchArgs}\` and do not rerun start-run.\n`);
+  }
+}
+
+// The run checkout's current branch, empty on a detached HEAD, or a
+// refusal when the path is no git checkout.
+function checkoutBranch(checkout) {
+  try {
+    return execFileSync('git', ['-C', checkout, 'branch', '--show-current'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    throw new RefusalError(`--checkout ${checkout} is not a git checkout; no marker written. Next: create it as the workspace answer says, then rerun with --checkout <that path>.`);
+  }
+}
+
+function branchExists(checkout, branch) {
+  try {
+    execFileSync('git', ['-C', checkout, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 if (isMain(import.meta.url)) {
@@ -114,9 +147,9 @@ if (isMain(import.meta.url)) {
     main(process.argv.slice(2));
   } catch (error) {
     if (error instanceof UsageError) {
-      process.stderr.write(`start-run: ${error.message}\n`);
+      process.stderr.write(`start-run: ${error.message}\n${USAGE}\n`);
       process.exitCode = 2;
-    } else if (error instanceof NoPlanError) {
+    } else if (error instanceof RefusalError) {
       process.stderr.write(`start-run: ${error.message}\n`);
       process.exitCode = 1;
     } else {

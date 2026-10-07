@@ -2,6 +2,7 @@
 
 - Ask where a code-changing run commits before its first edit, and commit only where the answer puts it.
 - An explicit instruction in the request (a branch name, "work on main", "use a worktree") is the answer: skip the script below.
+- On an explicit branch name, switch the checkout to that branch, creating it when new, before `start-run.mjs`.
 - A run another stage started holds its caller's answer: skip the script below.
 - Otherwise run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/lib/workspace.mjs"` and follow its one line.
 - Add `--repository <dir> --plan-repository` for a plan's own `Repository:` folder.
