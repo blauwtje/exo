@@ -396,9 +396,21 @@ function routeOf(tasks) {
   return planRoute(parsePlan(planFixture({ tasks })).tasks);
 }
 
-test('every plan takes the unit route, whatever its size or code', () => {
-  assert.deepEqual(routeOf([1, 2, 3, 4].map((number) => pastedTask(number))), { route: 'unit', reason: '4 tasks' });
+test('four tasks with pasted code and disjoint files take the inline route', () => {
+  assert.deepEqual(routeOf([1, 2, 3, 4].map((number) => pastedTask(number))), { route: 'inline', reason: '4 tasks, code pasted, files disjoint' });
+});
+
+test('a plan breaking an inline rule takes the unit route', () => {
+  assert.deepEqual(routeOf([1, 2, 3, 4, 5].map((number) => pastedTask(number))), { route: 'unit', reason: '5 tasks' });
   assert.equal(routeOf(Array.from({ length: 9 }, (_, index) => pastedTask(index + 1))).route, 'unit');
+  assert.equal(routeOf([pastedTask(1), pastedTask(2, { code: '' })]).route, 'unit', 'no pasted code');
+  const twoFilesOneBlock = pastedTask(1, { files: ['- Create: `src/a.js`', '- Test: `src/a.test.js`'] });
+  assert.equal(routeOf([twoFilesOneBlock]).route, 'unit', 'a code block short');
+  assert.equal(routeOf([pastedTask(1), pastedTask(2, { files: ['- Modify: `src/part-1.js`'] })]).route, 'unit', 'a shared file');
+  assert.equal(routeOf([pastedTask(1, { files: [] })]).route, 'unit', 'no Files: entries');
+  assert.equal(routeOf([pastedTask(1, { design: true })]).route, 'unit', 'a Design: task');
+  const compact = parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): a', files: ['src/a.js'] })] })).tasks;
+  assert.equal(planRoute(compact).route, 'unit', 'a compact task');
 });
 
 function blockOf(tasks, landed = []) {

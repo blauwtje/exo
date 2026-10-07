@@ -9,6 +9,7 @@
 2. **Leave the plan to the unit.**
    - The unit reads the frame: `## Goal`, `## Plan basis`, `## Success criterion`, `## Checkpoint`, plus `## Non-goals`, `## Context`, `## Decisions`, `## Visual direction` if present; never the whole plan.
 3. **Ask the branch what landed.** Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/build/scripts/next-task.mjs" --block --plan <plan> --root <checkout>`; `Next: none` goes to step 7.
+   - `Route: inline` prints `Steps:` and each task's section: follow those steps instead of steps 4-6.
    - Only a `Plan-task:` commit decides what landed, never memory.
    - On a restart, once, write one line in the reply language naming the landed tasks and the next; later loops stay silent.
 4. **Take the block from the `Block:` line.**

@@ -715,8 +715,8 @@ test('with no check script a package with a bin or a start script passes on npm 
 const INLINE_PLAN = ['### Task 1: feat(app): greet', 'Depends on: none', '', 'Files:', '- Modify: `src/app.js`', '',
   '```js', 'export const greet = () => "hi";', '```', '', 'Commit:', '```bash', 'git commit -am "feat(app): greet" -m "Plan-task: plan/1"', '```', ''].join('\n');
 
-test('a small plan with no risk fact still prints a reviewer, and a manifest change keeps one', async () => {
-  assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat: x', 'Plan-task: plan/1']] }), 'REVIEWER: review-branch');
+test('a plan on the inline route with no risk fact prints no reviewer, while a manifest change keeps one', async () => {
+  assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat: x', 'Plan-task: plan/1']] }), 'REVIEWER: none (inline route)');
   const manifest = await reviewerOf({ 'plan.md': INLINE_PLAN, 'package.json': '{}\n' }, { commits: [['feat: x', 'Plan-task: plan/1', { 'package.json': '{"name":"a"}\n' }]] });
   assert.equal(manifest, `REVIEWER: ${REVIEWER_AGENTS.deep}`);
 });

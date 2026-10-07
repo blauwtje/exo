@@ -10,6 +10,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
+import { proofRecordPath } from '#plan-tasks';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
@@ -900,4 +901,16 @@ test('a Files: entry ending in / covers every changed path under that folder', a
   const output = landTask({ planPath: path.join(root, 'docs/plans/fixture.md'), planText: plan, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
+});
+
+test('on the inline route a landing names the next task, never a wave, though the plan allows one', async () => {
+  const plan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], code: 'export function greet() {}', subject: 'feat(app): greet' }),
+    taskSection({ number: 2, title: 'Left', files: ['- Create: `src/left.js`'], code: 'export const left = 1;', subject: 'feat(app): left' }),
+    taskSection({ number: 3, title: 'Right', files: ['- Create: `src/right.js`'], code: 'export const right = 1;', subject: 'feat(app): right' })
+  ] });
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  assert.match(landTask({ planPath, planText: plan, number: 1, root }), /\nLanded: 1\nRoute: inline \(3 tasks, code pasted, files disjoint\)\nNext: Task 2\n$/);
+  await fs.access(proofRecordPath(root, 'fixture', 1));
 });

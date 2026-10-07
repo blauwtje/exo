@@ -506,8 +506,10 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   writeProofRecord({ root, planId, number, proofs });
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (exit 0)`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
-  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
-  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(planRoute(plan.tasks))}\n${waveLine(wave)}\n`;
+  const route = planRoute(plan.tasks);
+  // The inline route builds in the run checkout, never in a wave's worktrees.
+  const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${waveLine(wave)}\n`;
 }
 
 function main(argv) {
