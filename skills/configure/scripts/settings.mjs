@@ -147,12 +147,13 @@ function show(root) {
 // sit outside the fence because bold renders only there.
 const MAX_PICKS = 3;
 const TOPICS = {
-  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['replies', 'budget'] },
+  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you, how much effort tasks get and which short notes I add', keys: ['replies', 'budget', 'scans'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
   safety: { label: 'Safety and speed', question: 'Which part of safety and speed?', about: 'what I block and which slow commands I skip repeating', keys: ['guards', 'guard_lines', 'slow'] }
 };
 
 const GROUPS = {
+  scans: { label: 'Short notes', question: 'Which part of short notes?', about: 'whether I add a note after a long log file or an edit that removes code', keys: ['log_scan', 'sibling_scan'] },
   slow: { label: 'Slow commands', question: 'Which part of slow commands?', about: 'which commands and tests I run only once per code change', keys: ['heavy_commands', 'heavy_after_seconds'] }
 };
 

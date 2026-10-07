@@ -20,6 +20,8 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 | `heavy_commands` | empty, or prefixes joined by `;` | A matching command runs once per code state across sessions. A green result holds 24 hours. |
 | `heavy_after_seconds` | `60`, or `0` for off | A test-like command slower than this gets the same treatment. |
 | `budget` | `medium`, `high`, `low` | Which model each helper runs on. |
+| `log_scan` | `off`, `on` | `on`: a Bash command that names, or a Read that opens, a long log file gets a note of at most 5 lines with its error and warning counts and most common messages. |
+| `sibling_scan` | `off`, `on` | `on`: an edit that removes lines gets a note of at most 5 lines naming other files and bindings that may share the fault. |
 
 Every reply level keeps code, commands, paths, error text, numbers and every not, no, only and except whole. Only chat prose is shortened.
 

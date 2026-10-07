@@ -69,7 +69,9 @@ export const EXO_SETTINGS = {
   guards: 'on',
   guard_lines: 400,
   heavy_commands: '',
-  heavy_after_seconds: 60
+  heavy_after_seconds: 60,
+  log_scan: 'off',
+  sibling_scan: 'off'
 };
 
 const GIT_SETTINGS = ['-c', 'user.name=bench', '-c', 'user.email=bench@example.com', '-c', 'commit.gpgsign=false'];

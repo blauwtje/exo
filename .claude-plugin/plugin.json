@@ -71,6 +71,20 @@
       "description": "A test-like Bash command whose last run in a project took longer than this many seconds counts as heavy from then on and runs through the same dedupe as heavy commands, with nothing listed. Not sure? Keep 60. 0 turns this off. A project overrides this in .claude/exo.json.",
       "default": 60,
       "min": 0
+    },
+    "log_scan": {
+      "type": "string",
+      "title": "Log notes",
+      "description": "on: a Bash command that names, or a Read that opens, a long log file gets a note of at most 5 lines with its error and warning counts and most common messages. off: no note. Not sure? Keep off. A project overrides this in .claude/exo.json.",
+      "options": ["off", "on"],
+      "default": "off"
+    },
+    "sibling_scan": {
+      "type": "string",
+      "title": "Sibling notes",
+      "description": "on: an edit that removes lines gets a note of at most 5 lines naming other files and bindings that may share the fault. off: no note. Not sure? Keep off. A project overrides this in .claude/exo.json.",
+      "options": ["off", "on"],
+      "default": "off"
     }
   }
 }
