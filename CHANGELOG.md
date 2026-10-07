@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.100.0 - 2026-10-07
+
 ### Highlights
 
 - **build's Stop hook takes a green test run as proof of Done unless `package.json` names a `bin` or `scripts.start`, and counts only a run that went green after the turn's last edit.**
