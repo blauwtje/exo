@@ -56,6 +56,9 @@ const PROSE_RULES = 'Never force push, never run git reset --hard or git clean -
 // baseline gets NO_RUN alone; a prompt arm appends its text to the system
 // prompt; a plugin arm loads exactly the plugins in pluginDirs; promptSuffix is
 // added to the user prompt. gitOnly arms stay out of the default arm list.
+// A plugin arm with a `variant` loads that variant of the plugin copy
+// (variants.mjs); one with `exoSettings` adds those options to the cell's exo
+// settings, so a scan arm is exo with one switch on.
 export const ARMS = {
   baseline: { prompt: null, pluginDirs: [], promptSuffix: null },
   terse: { prompt: TERSE_PROMPT, pluginDirs: [], promptSuffix: null },
@@ -63,6 +66,10 @@ export const ARMS = {
   'replies-terse': { prompt: REPLY_RULES.terse, pluginDirs: [], promptSuffix: null },
   'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDirs: [], promptSuffix: null },
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
+  'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },
+  'exo-no-find-cause': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'no-find-cause' },
+  'exo-log-scan': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, exoSettings: { log_scan: 'on' } },
+  'exo-sibling-scan': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, exoSettings: { sibling_scan: 'on' } },
   // skills-rival is a skills-only rival plugin. Unforced, its skill triggered 0
   // of 8 times (docs/research/positioning/4b-devil.md), so its promptSuffix in
   // rivals.local.json names the skill.
@@ -73,7 +80,8 @@ export const ARMS = {
   'prose-rules': { prompt: PROSE_RULES, pluginDirs: [], promptSuffix: null, gitOnly: true }
 };
 
-export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly);
+// The cut and scan arms run only when named, so a default run keeps its cost.
+export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].variant && !ARMS[name].exoSettings);
 
 export const TEMPLATE_TASKS = [
   { id: 'tmpl-fe-timepicker', kind: 'frontend', prompt: 'Create a component in the frontend for choosing a time of day.' },

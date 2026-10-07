@@ -27,8 +27,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
+import { LOCAL_FILE } from '../lib/settings-store.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
+import { applyVariant } from './variants.mjs';
 import { copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
@@ -77,7 +79,7 @@ function parseArguments(argv) {
   if (options.mode === 'smoke') options.tasks = options.tasks ?? SMOKE_TASKS;
   if (options.mode === 'full') {
     options.tasks = options.tasks ?? [...TEMPLATE_TASKS, ...SAFE_TASKS].map((task) => task.id);
-    options.runs = FULL_RUNS;
+    if (!argv.includes('--runs')) options.runs = FULL_RUNS;
   }
   if (options.tasks === null) throw new Error('name --tasks or --tier, or pick --smoke or --full');
   if (options.tasks.length === 0) throw new Error(`tier ${options.tier} has no tasks`);
@@ -135,12 +137,22 @@ function workdirFor(task, fixtureDirectory) {
 // The git tier lets the model run Bash, which is where its hazard lives, and a
 // value task needs it to finish the job, so neither gets the Bash ban or NO_RUN.
 // A value task's exoPrompt replaces its prompt in the exo arm only, and its
-// exo arm loads exoCopy, not this checkout, which holds the task's hidden files.
-function claudeArguments(armName, task, model, effort, exoCopy) {
+// exo arm loads a copy, not this checkout, which holds the task's hidden files.
+// The copy is the plain one, or the arm's variant of it; `copies` maps each to
+// its folder, and a template cell loads a copy only for a variant arm.
+function copyKey(arm) {
+  return arm.variant ?? 'plain';
+}
+
+function loadsCopy(arm, task) {
+  return arm.pluginDirs.includes(ROOT) && (task.tier === 'value' || arm.variant !== undefined);
+}
+
+function claudeArguments(armName, task, model, effort, copies) {
   const arm = ARMS[armName];
   const open = OPEN_TIERS.has(task.tier);
   const systemPrompt = open ? arm.prompt : arm.prompt === null ? NO_RUN : `${NO_RUN}\n\n${arm.prompt}`;
-  const taskPrompt = armName === 'exo' && task.exoPrompt ? task.exoPrompt : task.prompt;
+  const taskPrompt = arm.pluginDirs.includes(ROOT) && task.exoPrompt ? task.exoPrompt : task.prompt;
   const prompt = arm.promptSuffix === null ? taskPrompt : `${taskPrompt} ${arm.promptSuffix}`;
   const args = [
     '-p', prompt,
@@ -155,7 +167,7 @@ function claudeArguments(armName, task, model, effort, exoCopy) {
   if (systemPrompt !== null) args.push('--append-system-prompt', systemPrompt);
   if (effort !== null) args.push('--effort', effort);
   for (const pluginDirectory of arm.pluginDirs) {
-    args.push('--plugin-dir', task.tier === 'value' && pluginDirectory === ROOT ? exoCopy : pluginDirectory);
+    args.push('--plugin-dir', pluginDirectory === ROOT && loadsCopy(arm, task) ? copies[copyKey(arm)] : pluginDirectory);
   }
   return args;
 }
@@ -264,7 +276,13 @@ function denyMessages(result) {
   return [...denials, ...lines];
 }
 
-async function runCell(cell, fixtureDirectory, effort, cellHome, exoCopy) {
+// Adds a scan arm's options to the exo settings prepareValueRepo wrote.
+function addExoSettings(repo, options) {
+  const file = path.join(repo, LOCAL_FILE);
+  fs.writeFileSync(file, `${JSON.stringify({ ...JSON.parse(fs.readFileSync(file, 'utf8')), ...options }, null, 2)}\n`);
+}
+
+async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
   const { task, arm, run, model, cellDirectory } = cell;
   fs.mkdirSync(cellDirectory, { recursive: true });
   let workdir = workdirFor(task, fixtureDirectory);
@@ -276,9 +294,10 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, exoCopy) {
   }
   try {
     const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
+    if (ARMS[arm].exoSettings) addExoSettings(workdir, ARMS[arm].exoSettings);
     const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
     const environment = { ...cellIsolation(task), HOME: cellHome };
-    const outcome = await runClaude(claudeArguments(arm, task, model, effort, exoCopy), workdir, cellDirectory, environment, timeoutMs);
+    const outcome = await runClaude(claudeArguments(arm, task, model, effort, copies), workdir, cellDirectory, environment, timeoutMs);
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
@@ -361,7 +380,8 @@ function printDryRun(cells, effort) {
     const arm = ARMS[cell.arm];
     const missing = arm.pluginDirs.filter((directory) => !fs.existsSync(directory)).map((directory) => ` [missing: ${directory}]`);
     if (arm.missing) missing.push(` [missing: ${arm.missing}]`);
-    const argv = claudeArguments(cell.arm, cell.task, cell.model, effort, EXO_COPY_LABEL).map((argument) => JSON.stringify(argument));
+    const labels = { [copyKey(arm)]: arm.variant ? `${EXO_COPY_LABEL} with variant ${arm.variant}` : EXO_COPY_LABEL };
+    const argv = claudeArguments(cell.arm, cell.task, cell.model, effort, labels).map((argument) => JSON.stringify(argument));
     console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, 'claude', ...argv].join(' ')}`);
   }
   const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS);
@@ -405,6 +425,9 @@ async function main() {
       }
     }
   }
+  for (const cell of cells) {
+    if (ARMS[cell.arm].exoSettings && cell.task.tier !== 'value') throw new Error(`arm ${cell.arm} sets exo options in the cell's settings, which only a value task writes; ${cell.task.id} is ${cell.task.tier}`);
+  }
   if (options.dryRun) {
     printDryRun(cells, options.effort);
     return;
@@ -424,9 +447,14 @@ async function main() {
   console.log(`${cells.length} cells into ${runDirectory}`);
   let done = 0;
   const cellHome = makeDefaultOptionsHome();
-  // One copy per run, made only when a value cell loads exo.
-  const copiesExo = cells.some((cell) => cell.task.tier === 'value' && ARMS[cell.arm].pluginDirs.includes(ROOT));
-  const exoCopy = copiesExo ? copyPluginWithoutTasks(ROOT, fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-plugin-'))) : null;
+  // One copy per run and variant, made only for a cell that loads one.
+  const copies = {};
+  for (const cell of cells) {
+    const arm = ARMS[cell.arm];
+    if (!loadsCopy(arm, cell.task) || copyKey(arm) in copies) continue;
+    copies[copyKey(arm)] = copyPluginWithoutTasks(ROOT, fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-plugin-')));
+    if (arm.variant) applyVariant(arm.variant, copies[copyKey(arm)]);
+  }
   const heartbeat = setInterval(() => console.log(`running: ${done}/${cells.length} cells done`), HEARTBEAT_MS);
   try {
     await runPool(cells, options.concurrency, async (cell) => {
@@ -435,7 +463,7 @@ async function main() {
         console.log(`[${done}/${cells.length}] ${cell.task.id} ${cell.arm} #${cell.run} already done`);
         return;
       }
-      const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome, exoCopy);
+      const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome, copies);
       done += 1;
       const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
@@ -446,7 +474,7 @@ async function main() {
   } finally {
     clearInterval(heartbeat);
     fs.rmSync(cellHome, { recursive: true, force: true });
-    if (exoCopy !== null) fs.rmSync(exoCopy, { recursive: true, force: true });
+    for (const copy of Object.values(copies)) fs.rmSync(copy, { recursive: true, force: true });
   }
   console.log(`done: node benchmarks/score.mjs ${path.relative(process.cwd(), runDirectory)}`);
 }
