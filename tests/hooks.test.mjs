@@ -158,9 +158,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
-test('the plugin registers twelve hook commands, each under bash', () => {
+test('the plugin registers thirteen hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 12, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 13, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
