@@ -139,18 +139,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-stop.mjs\"",
-            "shell": "bash",
-            "timeout": 10
-          }
-        ]
-      }
     ]
   }
 }

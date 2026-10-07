@@ -77,11 +77,8 @@ test('the delegate budget runs before every tool call and after no call, in a di
   for (const tool of ['Write', 'MultiEdit', 'ReadFile', 'Task', 'Agent', 'BashOutput', 'mcp__server__Bash', 'TaskUpdate']) assert.equal(matcher.test(tool), true, tool);
 });
 
-test('one Stop hook runs the dispatcher that books the turn, keeps a plan going, checks build-change proof and scores terse replies', () => {
-  const stop = hookEntries().filter((entry) => entry.event === 'Stop');
-  assert.equal(stop.length, 1, JSON.stringify(stop.map((entry) => entry.hook.command)));
-  assert.equal(stop[0].matcher, undefined);
-  assert.ok(stop[0].hook.command.endsWith('hooks/dispatch-stop.mjs"'), stop[0].hook.command);
+test('no Stop hook is registered', () => {
+  assert.deepEqual(hookEntries().filter((entry) => entry.event === 'Stop'), []);
 });
 
 test('one prompt hook runs the dispatcher for the reply expander, and takes no matcher', () => {
@@ -158,9 +155,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
-test('the plugin registers thirteen hook commands, each under bash', () => {
+test('the plugin registers twelve hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 13, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 12, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 

@@ -1,5 +1,5 @@
 // #mcp-tool-call is the one place that tells an MCP tool call from a shell
-// command, for verify.mjs, land-task.mjs and proof-check.mjs alike.
+// command, for verify.mjs and land-task.mjs alike.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

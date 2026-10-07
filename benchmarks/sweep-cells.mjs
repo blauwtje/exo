@@ -206,7 +206,6 @@ function flowCells() {
   return [
     { ...shared, id: 'flow-c7', prompt: buildPrompt },
     { ...shared, id: 'flow-session', pluginVariant: 'session-build', prompt: buildPrompt },
-    { ...shared, id: 'flow-session-no-proof', pluginVariant: 'session-build-no-proof', prompt: buildPrompt },
     {
       ...shared,
       id: 'flow-base',

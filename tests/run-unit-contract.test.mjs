@@ -83,7 +83,7 @@ test('build reads a BUDGET return as unfinished and asks the branch what landed'
   assert.ok(askStep.includes('**Ask the branch what landed.**'));
   assert.ok(askStep.includes('Only a `Plan-task:` commit decides what landed, never memory'));
   assert.ok(askStep.includes('On a restart, once, write one line in the reply language naming the landed tasks and the next; later loops stay silent.'));
-  assert.ok(routeStep.includes('`BLOCKED` with a question runs `node "${CLAUDE_SKILL_DIR}/scripts/resume-plan.mjs" wait`'));
+  assert.ok(!RUN_LOOP.includes('resume-plan'));
 });
 
 test('the run-unit agent has its own budget sized for an eight-task block', () => {
