@@ -1,6 +1,6 @@
 // Lands one green task: refuses before it stages or commits anything when
-// the checkout has changed or added a path outside the task's `Files:`,
-// else runs the task's `Commit:` block as the plan wrote it, its bare trailer
+// the checkout has changed or added a path outside the task's `Files:`, bar
+// an untracked one a later, unlanded task names, else runs the task's `Commit:` block as the plan wrote it, its bare trailer
 // swapped for one naming the plan, checks that the new commit carries the `Plan-task: <plan-id>/<n>` trailer and that the landed set now
 // holds the task, and prints that set and next-task's `Next:` or `Wave:` line, so the session neither pastes the
 // block nor reads the log. A compact task lands only on a build report whose
@@ -302,12 +302,15 @@ function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
 // still be untracked in the very checkout it lands into. The decision log
 // beside the plan is exempt for the same reason: land-task writes it after
 // the commit and never commits it.
+function untrackedPaths(root) {
+  return execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' }).split('\n');
+}
+
 function changedPaths(root, planPath) {
   const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
-  const untracked = execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' });
   const scratchPrefix = `${SCRATCH_FOLDER}/`;
   const exempt = planPath === undefined ? [] : [planPath, decisionsPathOf(planPath)].map((file) => path.relative(path.resolve(root), path.resolve(file)));
-  return [...new Set([...tracked.split('\n'), ...untracked.split('\n')])]
+  return [...new Set([...tracked.split('\n'), ...untrackedPaths(root)])]
     .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
@@ -319,9 +322,30 @@ function isCovered(entries, changed) {
   return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
 }
 
-function strayPaths(task, root, planPath) {
+// A `git add` of `.`, `-A`, `--all` or `:/` stages every untracked path.
+const STAGES_ALL = /\bgit\s+add\b[^\n]*\s(?:\.|-A|--all|:\/)(?=\s|$)/m;
+
+// The inline route writes every task's files before it lands the first, so
+// an untracked path a later, unlanded task's `Files:` names is not a stray:
+// it waits, unstaged, for its own landing. A path only an earlier or landed
+// task names, a tracked change, or a Commit: block that stages everything
+// still refuses.
+function waitingPaths(plan, task, root, planPath) {
+  if (task.commitBlock !== null && STAGES_ALL.test(task.commitBlock)) return () => false;
+  const later = plan.tasks.filter((entry) => entry.number > task.number);
+  if (later.length === 0) return () => false;
+  const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
+  const laterEntries = later.filter((entry) => !landed.includes(entry.number)).flatMap((entry) => entry.files.map((file) => file.path));
+  const untracked = new Set(untrackedPaths(root));
+  return (changed) => untracked.has(changed) && isCovered(laterEntries, changed);
+}
+
+function strayPaths(plan, task, root, planPath) {
   const entries = task.files.map((file) => file.path);
-  return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed));
+  const outside = changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed));
+  if (outside.length === 0) return outside;
+  const waiting = waitingPaths(plan, task, root, planPath);
+  return outside.filter((changed) => !waiting(changed));
 }
 
 // The file's source at HEAD, or null when HEAD holds no such file.
@@ -423,8 +447,8 @@ function writeLandGateRecord({ root, planId, gate, proof }) {
   fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
 }
 
-function refuseStrayPaths(task, root, planPath) {
-  const stray = strayPaths(task, root, planPath);
+function refuseStrayPaths(plan, task, root, planPath) {
+  const stray = strayPaths(plan, task, root, planPath);
   if (stray.length > 0) {
     throw new LandingError(`Task ${task.number} changed a path outside Files: ${stray.map((file) => `\`${file}\``).join(', ')}`);
   }
@@ -441,9 +465,10 @@ function checkReport(task, reportText, reportPath) {
 // commits, lints, gates or records, so a builder can run it before it reports.
 export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
   refuseMismatchedToplevel(root);
-  const task = parsePlan(planText).tasks.find((entry) => entry.number === number);
+  const plan = parsePlan(planText);
+  const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  refuseStrayPaths(task, root, planPath);
+  refuseStrayPaths(plan, task, root, planPath);
   checkReport(task, reportText, reportPath);
   return `Report OK: Task ${number}\n`;
 }
@@ -454,7 +479,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const planId = planIdOf(planPath);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
-  refuseStrayPaths(task, root, planPath);
+  refuseStrayPaths(plan, task, root, planPath);
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
   // A long-format task's `Run:` steps may expect a failure (a test-first
   // step), judged against their `Expected:` lines, which this script does not

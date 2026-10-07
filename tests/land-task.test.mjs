@@ -87,6 +87,68 @@ test('a stray path outside Files: is refused before anything stages or commits',
   assert.match(git(root, 'status', '--porcelain'), /extra\.js/);
 });
 
+// The inline route writes every task's files before the first landing, so a
+// later, unlanded task's untracked file waits in the tree, never committed.
+// Each Commit: block stages its own paths, as an inline plan's does.
+const INLINE_PLAN = planFixture({ tasks: [
+  taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js`'], subject: 'feat(app): greet' }).replace('git add .', 'git add src/app.js'),
+  taskSection({ number: 2, title: 'Left', files: ['- Create: `src/left.js`'], subject: 'feat(app): left' }).replace('git add .', 'git add src/left.js'),
+  taskSection({ number: 3, title: 'Right', files: ['- Create: `src/right/`'], subject: 'feat(app): right' }).replace('git add .', 'git add src/right/')
+] });
+
+async function inlineCheckout() {
+  const checkout = await landingCheckout();
+  await fs.writeFile(checkout.planPath, INLINE_PLAN);
+  git(checkout.root, 'commit', '-qam', 'plan');
+  await editApp(checkout.root);
+  await fs.writeFile(path.join(checkout.root, 'src/left.js'), 'export const left = 1;\n');
+  await fs.mkdir(path.join(checkout.root, 'src/right'));
+  await fs.writeFile(path.join(checkout.root, 'src/right/index.js'), 'export const right = 1;\n');
+  return checkout;
+}
+
+test('a later unlanded task\'s untracked files pass and stay untracked', async () => {
+  const { root, planPath } = await inlineCheckout();
+  assert.match(landTask({ planPath, planText: INLINE_PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
+  assert.deepEqual(git(root, 'diff', '--name-only', 'HEAD~1', 'HEAD').split('\n'), ['src/app.js']);
+  assert.equal(git(root, 'status', '--porcelain'), '?? src/left.js\n?? src/right/');
+});
+
+test('beside a later task\'s file, a stray path is still refused', async () => {
+  const { root, planPath } = await inlineCheckout();
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
+  assert.throws(() => landTask({ planPath, planText: INLINE_PLAN, number: 1, root }), { message: 'Task 1 changed a path outside Files: `src/extra.js`' });
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '2');
+});
+
+test('an earlier landed task\'s file is refused, untracked or modified', async () => {
+  const { root, planPath } = await inlineCheckout();
+  landTask({ planPath, planText: INLINE_PLAN, number: 1, root });
+  await fs.appendFile(path.join(root, 'src/app.js'), '// later\n');
+  assert.throws(() => landTask({ planPath, planText: INLINE_PLAN, number: 2, root }), { message: 'Task 2 changed a path outside Files: `src/app.js`' });
+  git(root, 'checkout', '--', 'src/app.js');
+  git(root, 'rm', '-q', '--cached', 'src/app.js');
+  git(root, 'commit', '-qm', 'untrack app');
+  assert.throws(() => landTask({ planPath, planText: INLINE_PLAN, number: 2, root }), { message: 'Task 2 changed a path outside Files: `src/app.js`' });
+});
+
+test('a modified tracked file of a later task is still refused', async () => {
+  const { root, planPath } = await inlineCheckout();
+  const plan = INLINE_PLAN.replace('- Create: `src/left.js`', '- Modify: `src/left.js`');
+  await fs.writeFile(planPath, plan);
+  git(root, 'add', 'src/left.js', 'docs/plans/fixture.md');
+  git(root, 'commit', '-qm', 'track left');
+  await fs.appendFile(path.join(root, 'src/left.js'), '// edit\n');
+  assert.throws(() => landTask({ planPath, planText: plan, number: 1, root }), { message: 'Task 1 changed a path outside Files: `src/left.js`' });
+});
+
+test('a later task\'s file is refused when the Commit: block stages everything', async () => {
+  const { root, planPath } = await inlineCheckout();
+  const plan = INLINE_PLAN.replace('git add src/app.js', 'git add -A');
+  assert.notEqual(plan, INLINE_PLAN);
+  assert.throws(() => landTask({ planPath, planText: plan, number: 1, root }), { message: 'Task 1 changed a path outside Files: `src/left.js`, `src/right/index.js`' });
+});
+
 test('a task whose changes match every Files: path lands clean', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
