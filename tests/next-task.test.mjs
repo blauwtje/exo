@@ -91,6 +91,17 @@ test('a plan with no Parallel: line builds every task serially', async () => {
   assert.doesNotMatch(report, /^Wave: /m);
 });
 
+test('a checkout under .claude/worktrees/ builds one task at a time, while the main checkout still forms the wave', async () => {
+  const { root, planPath } = await checkout();
+  const planText = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: plannedTasks(2) });
+  const isolated = path.join(root, '.claude', 'worktrees', 'feat+x');
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/x', isolated);
+  const report = nextTaskReport({ planPath, planText, root: isolated });
+  assert.match(report, /^Next: Task 1$/m);
+  assert.doesNotMatch(report, /^Wave:/m);
+  assert.match(nextTaskReport({ planPath, planText, root }), /^Wave: Task 1, Task 2$/m);
+});
+
 test('the brief file holds the frame and the task section, and the report holds neither', async () => {
   const { root, planPath } = await checkout();
   const report = nextTaskReport({ planPath, planText: PLAN, root });

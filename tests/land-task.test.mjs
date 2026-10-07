@@ -45,6 +45,23 @@ test('a green task lands with its trailer and the landed set grows', async () =>
   assert.equal(git(root, 'status', '--porcelain'), '');
 });
 
+test('a landing in a checkout under .claude/worktrees/ names the next task, while a main checkout names the wave', async () => {
+  const plan = planFixture({ worktreeSetup: 'none', parallel: 'every task.', tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' }),
+    taskSection({ number: 2, title: 'Left', files: ['- Create: `src/left.js`'], subject: 'feat(app): left' }),
+    taskSection({ number: 3, title: 'Right', files: ['- Create: `src/right.js`'], subject: 'feat(app): right' })
+  ] });
+  const { root } = await landingCheckout();
+  const isolated = path.join(root, '.claude', 'worktrees', 'feat+x');
+  git(root, 'worktree', 'add', '-q', '-b', 'feat/x', isolated);
+  await editApp(isolated);
+  const isolatedPlan = path.join(isolated, 'docs/plans/fixture.md');
+  assert.match(landTask({ planPath: isolatedPlan, planText: plan, number: 1, root: isolated }), /\nLanded: 1\nNext: Task 2\n$/);
+  const main = await landingCheckout();
+  await editApp(main.root);
+  assert.match(landTask({ planPath: main.planPath, planText: plan, number: 1, root: main.root }), /\nLanded: 1\nWave: Task 2, Task 3\n$/);
+});
+
 test('a block without the trailer is refused before it runs', async () => {
   const { root, planPath } = await landingCheckout();
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 2, root }), LandingError);

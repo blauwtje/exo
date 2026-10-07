@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { BLOCK_TASK_LIMIT, driftOf, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize, waveLine } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, driftOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, regionRange, taskSize, waveLine } from '#plan-tasks';
 
 // lib/delegate-budgets.json holds the build-task delegate's budget, its default
 // entry merged with its exo:build-task override; reading it here keeps one
@@ -165,7 +165,7 @@ export function nextTaskReport({ planPath, planText, root }) {
   if (plan.tasks.length === 0) throw new UsageError(`${planPath} holds no '### Task <n>:' heading`);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
-  const wave = nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel);
+  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,

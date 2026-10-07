@@ -22,7 +22,7 @@ import { realpathSync } from 'node:fs';
 import { exportSignatures } from '#export-signatures';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
-import { BLOCK_TASK_LIMIT, frameOf, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer, waveLine } from '#plan-tasks';
+import { BLOCK_TASK_LIMIT, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planTaskTrailer, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
 
@@ -487,7 +487,8 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   const proofLines = proof === null ? '' : `Proof: ${proof}\n`;
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
-  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${waveLine(nextWave(plan.tasks, landed, frame.worktreeSetup, frame.parallel))}\n`;
+  const wave = nextWave(plan.tasks, landed, isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${waveLine(wave)}\n`;
 }
 
 function main(argv) {
