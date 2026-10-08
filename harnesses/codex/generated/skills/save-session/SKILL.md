@@ -9,9 +9,9 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is the
 
 ## Before writing
 
-- Take no irreversible action to pause: no pull request and no push unless one was already out.
+- Take no irreversible action to pause: no push and no pull request.
 - Pause between atomic steps, never inside one: complete the step in progress or undo it, and begin no new work.
-- On a branch other than the repository's default, commit every uncommitted edit as one `wip:` commit first.
+- On a branch other than the repository's default, commit every uncommitted edit as one `chore: wip <topic>` commit first.
 - Say in that commit's body when the tree is broken.
 - On the default branch, leave the edits uncommitted and list them under `## Current state`.
 - Preserve verbatim any artefact the user explicitly asked to survive the clear, such as a question list or a checklist.
