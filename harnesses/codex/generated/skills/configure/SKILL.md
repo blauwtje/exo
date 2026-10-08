@@ -22,7 +22,7 @@ Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/
 
 Take the first step whose answer the request and the letters so far leave open.
 
-1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing.
+1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
 2. **Pick the setting** when the request names none: run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
    - A topic letter runs `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
 3. **Ask the value** once the setting is known but no value: run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts for `ship`: a value its context line names.
