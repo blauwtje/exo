@@ -11,8 +11,7 @@ description: "Use when a run ends with commits that may leave the machine, or th
    - At most five `<what>: <why>` `Changed` lines, a skipped check in `Verified`.
 3. **Ask.** Quote the stdout of `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/ship/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.
    - Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push.
-   - Merge, default-branch push, release, delete, pull request, issue and comment still wait.
-   - `no origin remote` or a set `route: ` skips asking; an unapplied `ship=` is explained.
+   - A set `route: ` skips asking; an unapplied `ship=` is explained.
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
    - With no issue, run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/file-issues/scripts/repo-fields.mjs"` and its `--size` form.
 5. **Verify**, for `pr-merge`: hand the diff to `verify`; `FAIL` pushes nothing.
