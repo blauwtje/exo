@@ -8,7 +8,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Run start → `git pull --ff-only` on `main`, then remove every worktree and branch, local and remote, merged into `main`; each worktree per the removal bullet below.
 - Same tidy → `git fetch --prune`, then delete each local branch whose upstream is gone (`git branch -vv` shows `: gone]`); `git branch --merged` misses squash merges.
 - Lead only orchestrates: every edit, fix and failed-check repair → worktree subagent; independent parts in parallel.
-- `CHANGELOG.md` → lead only, so subagent branches never conflict on it.
+- `CHANGELOG.md` → only the lead writes it, so subagent branches never conflict on it.
 - Subagent → one concern; brief with two unrelated parts → two subagents.
 - Skill or run spanning exploring, building and reviewing → one phase each, a fresh subagent per phase, handover through a file; no context carries the whole process.
 - Land in one integration worktree under `.worktrees/`: merge subagent branches, add `CHANGELOG.md` lines, fetch, rebase onto `origin/main`.
@@ -22,7 +22,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Branch deletions → separate command after a successful push, not in the same command as fast-forward or push: git-guard checks the whole command before any part runs, so finds branch commits missing from `main`.
 - Subagent → no `git stash`; all worktrees share one stash list.
 - Cleanup → drop a stash made on a run branch once its content is on `main`; leave every other stash untouched.
-- Shell wait loop (`until <condition>; do sleep N; done`) → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
+- Every shell wait loop, such as `until <condition>; do sleep N; done` → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
 - This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
 - Report that changed exo → last line tells user to run `/reload-plugins`.
 

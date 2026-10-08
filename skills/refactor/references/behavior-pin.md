@@ -1,6 +1,6 @@
 # Behavior pin
 
-A pin records what the code does now, so the refactor is judged against old outputs, not intent. Grading against intent lets a bug already shipped as behavior survive unnoticed. Overcorrection: a pin so exhaustive it stalls the refactor. Write it before the first structural edit; rerun after every step.
+A pin records what the code does now, so the refactor is judged against old outputs, not intent. Grading against intent lets a bug already shipped as behavior survive unnoticed. Overcorrection: a pin so exhaustive it stalls the refactor. Write the pin before the first structural edit; rerun it after every step.
 
 ## Choosing the pin
 
