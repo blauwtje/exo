@@ -17,9 +17,7 @@ issue that never says when it is done, which pushes the whole spec into the
 plan.
 
 A plain request to file, open, write or split issues authorizes creating them,
-with their labels, type, project fields, relations and milestone. It never
-closes an issue, never deletes one, and never edits an existing one, except to
-add a relation to a parent or a blocker the user named.
+with their labels, type, project fields, relations and milestone.
 
 ## Steps
 
@@ -40,6 +38,10 @@ add a relation to a parent or a blocker the user named.
 4. **Create in dependency order**, in the same turn and with no approval
    question first: a parent before its children, a blocker before what it
    blocks, with the commands and field settings in `references/fields.md`.
+   - Run no `gh` command that closes, deletes or edits an existing issue, even
+     at the user's request, because the pre-approved `gh issue *` would run it
+     unconfirmed; give the user the command instead. Adding a relation to a
+     parent or a blocker the user named is the exception.
 
 5. **Read back.** Read each created issue back with
    `gh issue view <n> --json number,title,labels,milestone,url` and report its
@@ -70,8 +72,6 @@ bug, a regression, a chore or a documentation fix takes the Report shape below.
 
 ## Judgment
 
-- Explicit user instructions outrank this skill, including a body section it
-  forbids: say once that the metadata already shows it, then write it.
-- A request to change or close an existing issue leaves this skill: report it
-  and let the user run the `gh` command.
+- Explicit user instructions on the body outrank this skill, including a
+  section it forbids: say once that the metadata already shows it, then write it.
 - A repeated request for one issue after a proposed split is the decision.
