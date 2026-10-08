@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.106.0 - 2026-10-08
+
 ### Highlights
 
 **Five budget twin agents are gone and dispatches now set `model` and `effort` per call on the base agent, so a custom prompt naming `critique-ui-high`, `review-branch-deep`, `review-branch-deep-high`, `solve-hard-high` or `solve-hard-low` must name the base agent instead.**
