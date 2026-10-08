@@ -15,6 +15,7 @@ description: "Use when the user invokes it to see how the exo skills are named, 
 
 # Closing
 
+- The final message is the report: the outcome, the check proving it with its result or a read-only claim's evidence, any check not run, then one open action for the user, never a question back.
 - A choice made for the user is one line with its cost if wrong.
 - A request that read two ways names its rival reading.
 - A question ends the turn only when the choice is the user's and the routes differ; read `references/question.md` first, ask nothing else, run nothing before the answer.
