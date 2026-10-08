@@ -27,6 +27,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, landedTasks, loopCommands, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { isMain, parseFlags, UsageError } from '#script-flags';
+import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
 const KILL_GRACE_MS = 5000;
@@ -38,8 +39,7 @@ const SCRIPT = {
   verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
   planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'),
-  mcpToolCall: path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs'),
-  scratchExclude: path.join(PLUGIN_ROOT, 'lib', 'scratch-exclude.mjs')
+  mcpToolCall: path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs')
 };
 
 // The markers a running Claude Code session sets; any other CLAUDE_CODE_*
@@ -424,7 +424,13 @@ async function main(argv) {
     return 0;
   }
 
-  spawnSync(process.execPath, [SCRIPT.scratchExclude], { cwd: root });
+  try {
+    excludeScratch(root);
+  } catch (error) {
+    if (!(error instanceof ScratchExcludeError)) throw error;
+    process.stdout.write(`run-plan: refused: scratch-exclude: ${error.message}\n`);
+    return 2;
+  }
   const logDir = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, utcStamp());
   fs.mkdirSync(logDir, { recursive: true });
   const run = { planPath, plan, branch, cap, root, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [] };
