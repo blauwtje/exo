@@ -30,6 +30,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `configure` again shows the settings block in a `text` fence, a line an earlier cut dropped and a recheck with the exo session text loaded proved needed.
 - A confined run is cut off from the user's GitHub account: an empty `gh` config folder, no `GH_TOKEN`, `GITHUB_TOKEN` or `GH_ENTERPRISE_TOKEN`, no git credential helper or terminal prompt, and a caller's stub bin stays first on `PATH` after `~/.zshenv` runs.
 - `pressure.mjs` marks an unopened citation only on a path with a line number or in a quoted line, not on a bare path mention.
+- file-issues states its no-close rule in the step that runs `gh`, so a pre-approved `gh issue` permission no longer lets a run close an issue the user did not ask to close.
+- save-session never pushes and commits as `chore: wip <topic>`, a subject the commit guard accepts.
+- `land-task.mjs` no longer fails on a path the task already removed with `git rm`; the removal lands in the task's commit.
+- `run-plan.mjs` adds `.exo/` to the target repository's `info/exclude`, so a run leaves no untracked `.exo/` folder.
 
 ## 0.106.0 - 2026-10-08
 
