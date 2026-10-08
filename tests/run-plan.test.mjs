@@ -149,6 +149,17 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.equal(summary.trim().split('\n').at(-1), result.stop);
 });
 
+test('scratch: the run leaves no untracked .exo/ and lists it once in info/exclude, however often it runs', async () => {
+  const context = await setup();
+  for (let round = 0; round < 2; round += 1) {
+    const result = await runPlan(context, [{}], ['--max-iterations', '1']);
+    assert.ok(result.stdout.includes('Logs: '), result.stdout + result.stderr);
+    assert.equal(git(context.root, 'status', '--porcelain', '--untracked-files=all'), '');
+  }
+  const exclude = await fs.readFile(path.join(context.root, '.git', 'info', 'exclude'), 'utf8');
+  assert.equal(exclude.split('\n').filter((line) => line === '.exo/').length, 1);
+});
+
 test('iteration cap: --max-iterations 1 spawns once and stops on the cap', async () => {
   const context = await setup();
   const result = await runPlan(context, [{}], ['--max-iterations', '1']);

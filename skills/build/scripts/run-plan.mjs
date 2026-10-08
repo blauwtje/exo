@@ -38,7 +38,8 @@ const SCRIPT = {
   verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
   planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'),
-  mcpToolCall: path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs')
+  mcpToolCall: path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs'),
+  scratchExclude: path.join(PLUGIN_ROOT, 'lib', 'scratch-exclude.mjs')
 };
 
 // The markers a running Claude Code session sets; any other CLAUDE_CODE_*
@@ -423,6 +424,7 @@ async function main(argv) {
     return 0;
   }
 
+  spawnSync(process.execPath, [SCRIPT.scratchExclude], { cwd: root });
   const logDir = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, utcStamp());
   fs.mkdirSync(logDir, { recursive: true });
   const run = { planPath, plan, branch, cap, root, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [] };
