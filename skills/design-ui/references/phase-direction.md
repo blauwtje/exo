@@ -15,7 +15,6 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Give the display font, the body font and the accent hue one plan clause each naming this user and this product, as in "for <user> <task> in <product>", because a reason that fits any page is no reason.
 - Derive faces and hues from the subject, the user and a named or saved product, never from a seed.
 - Draw each plan ASCII layout in at most 8 lines per width, because the plan holds at most 25 lines.
-- Every rung other than 3 produces one direction, written as the skill's plan, with no variants, no offer, and no selection gate.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
 
 ## Mood to look
@@ -33,9 +32,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - With no image generator, the Imagery trope of the `build-pass` reference holds: a labelled placeholder, never a drawn stand-in.
 - Calm and luxurious: a tonal ground, generous space, refined type contrast and slow eased motion.
 - Bold and expressive: saturated regions, heavy display type, hard edges and large travel.
-- Pick hues, faces and radii yourself from the mood and the product, not from a seed or a stock default.
 - Record the mood in the contract's rationale, or in the plan on the one pass, and trace each look value to it.
-- Invent no company, brand story, metaphor or subject prop as a theme unless the user asks, because the mood and content carry the look.
 
 ## Rung 3
 

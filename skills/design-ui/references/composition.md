@@ -17,8 +17,6 @@ Compose relationships before containers. The enemy is the interchangeable vertic
 
 ## Inventory before layout
 
-Start with content, not sections:
-
 - **Objects** — the products, records, people, places, files, or events the interface is about.
 - **Decisions** — what the audience must understand, compare, choose, or do.
 - **Claims and evidence** — each promise beside its mechanism, proof, constraint, or example.
@@ -53,7 +51,7 @@ Record each minimum item as its own fixed scope group, so the plan check lists i
 
 An ask naming no product keeps a plain category name and generic content, never an invented brand or domain.
 
-A marketing page communicates what the offer is, why it is credible, how it works or differs, and what to do next; an app view owes the obligations of its surface class below. These are content obligations, not prescribed sections.
+A marketing page communicates what the offer is, why it is credible, how it works or differs, and what to do next; an app view owes the obligations of its surface class below.
 
 ## Name and substantiate the content
 
@@ -90,8 +88,6 @@ A task that interrupts the page picks its container from the task's own shape, n
 - the task is short, self-contained, and blocks everything else until it resolves → a modal, and the page behind it is inert;
 - the task carries its own sections, more than roughly seven fields, or a step sequence → its own route, because a scrolling modal is a page that forfeited its URL, its back button, and its focus order;
 - the task is one value on one object → edit it where it sits, since a container around a single field costs more attention than the field.
-
-A modal that grew a second step or a scrollbar is the signal to promote it to a route, not to make it taller.
 
 ## Write a composition contract
 
@@ -140,9 +136,6 @@ On a touch-first surface, reachability is physical: a hand holding the device sw
 
 - [ ] Does every content obligation from the inventory appear in the rendered design?
 - [ ] Full or bounded redesign: three or more supporting subject mappings outside the focal element; new piece: every subject mapping it carries stays visible.
-- [ ] Does each region add new information or a new relationship rather than paraphrase the previous one?
-- [ ] Can every large whitespace area and every repeated container name its job?
-- [ ] Does mobile preserve substance and the action path rather than hide the difficult regions?
 - [ ] For a bounded redesign, does the result differ from the recorded baseline on the axes the complaint named?
 
 ## Judgment
