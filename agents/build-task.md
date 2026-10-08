@@ -28,12 +28,11 @@ tools: Read, Edit, Write, Grep, Bash
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
 - Start no background session or delegate, ask nothing; log over 40 lines beside `Report to:`.
-- Stop at green, a second failure of a test or `Run:`, an `exo budget:` line, or a user-noticeable choice left open (BLOCKED, options).
+- Stop at green, a second failure of a test or `Run:`, or a user-noticeable choice left open (BLOCKED, options).
 
 ## Report
 
 - Never probe or create `Report to:`'s folder; write at most 25 lines there, plus `Choice: <clause>` per open choice.
-- Copy each Proof command verbatim: build lands on it.
 - Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix the report until `Report OK`, never rerunning a proof.
 - Layout:
 
