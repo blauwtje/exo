@@ -19,7 +19,7 @@ Open the block for the harness you use and run its commands.
 <details>
 <summary>Claude Code (CLI)</summary>
 
-Inside Claude Code, run these two commands, then restart Claude Code:
+Inside Claude Code, run these, then restart it:
 
 ```text
 /plugin marketplace add blauwtje/exo
@@ -32,7 +32,7 @@ Or run this in a terminal:
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness claude
 ```
 
-To check, run `/exo:configure` in a new session. If it lists exo's settings, exo is loaded.
+To check, run `/exo:configure` in a new session; if it lists exo's settings, exo is loaded.
 
 </details>
 
@@ -43,31 +43,31 @@ To check, run `/exo:configure` in a new session. If it lists exo's settings, exo
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --harness codex
 ```
 
-To check, run `$configure` in a new session. If it lists exo's settings, exo is loaded.
+To check, run `$configure` in a new session; if it lists exo's settings, exo is loaded.
 
-Codex needs a ChatGPT plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. The Codex desktop app loads the same skills, but whether it runs exo's hooks and agents is untested. [docs/codex.md](docs/codex.md) lists what differs from Claude Code.
+Codex needs a ChatGPT plan that includes Sol: Plus, Pro, Business, Enterprise or Edu. The Codex desktop app loads the same skills; its handling of exo's hooks and agents is untested. [docs/codex.md](docs/codex.md) lists what differs from Claude Code.
 
 </details>
 
-`curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash` with no arguments asks which harnesses and projects get exo. The script needs git and Node 22 or newer on the machine, and keeps its copy of exo in `~/.exo`.
+`curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash` with no arguments asks which harnesses and projects get exo. The script needs git and Node 22 or newer, and keeps its copy of exo in `~/.exo`.
 
 ### Update and uninstall
 
-These commands cover every harness the script installed. To update exo:
+These act on every install the script made. Update:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --update
 ```
 
-To uninstall exo:
+Uninstall:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/blauwtje/exo/main/install.sh | bash -s -- --remove
 ```
 
-`--update` and `--remove` act on every install the script made. `--remove` then deletes `~/.exo` when no install is left and the folder has no local changes. If you installed from inside Claude Code, update with `claude plugin update exo@blauwtje` in a terminal and then restart Claude Code. Uninstall with `/plugin uninstall exo@blauwtje` inside Claude Code.
+`--remove` then deletes `~/.exo` when no install is left and the folder has no local changes. Installed from inside Claude Code? Update with `claude plugin update exo@blauwtje` in a terminal, then restart Claude Code; uninstall with `/plugin uninstall exo@blauwtje` inside Claude Code.
 
-The hooks need `bash` on `PATH`. On Windows, Git Bash runs them, and support is best effort.
+The hooks need `bash` on `PATH`. On Windows, Git Bash runs them; support is best effort.
 
 ## Use
 
@@ -98,7 +98,7 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 | writes "The hook is not reading the setting, so the reminder never fires." | Under `replies=terse`, that reply reads "Hook not reading setting → reminder never fires." |
 | gets a bug report | `find-cause` builds a reproduction that fails on demand and names one cause before anything is fixed. |
 
-These hold in every session without a skill. Searches and reviews run in helpers, so their file dumps stay out of your context. Five Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all six settings.
+These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. Five Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all six settings.
 
 ## More
 
