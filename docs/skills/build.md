@@ -7,6 +7,7 @@ Runs a plan, one task per fresh context. Without a plan, it builds a decided cha
 - A session opens on a plan, or you say to run or resume one.
 - A decided change with no plan touches more than two files, adds a dependency, changes a public signature, or crosses a persisted format or security boundary.
 - You ask for a change test-first, at any size.
+- Unattended, with Claude Code: `node skills/build/scripts/run-plan.mjs <plan.md>` lands each task in its own headless process, then verifies; the plan needs an `Allow:` line.
 
 Not for writing or repairing a plan, or a change of two files or fewer.
 
