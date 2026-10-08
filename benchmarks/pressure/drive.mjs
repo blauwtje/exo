@@ -33,10 +33,11 @@ const PROMPTS = {
 const armSetup = arm === 'with' ? { name: 'with', pluginDir: PLUGIN, flags: ['--plugin-dir', PLUGIN] } : comparisonArm({ pluginId, mainDir: MAIN_DIR });
 const id = `${scenario}-${model}-${armSetup.name}${flags.label ? `-${flags.label}` : ''}`;
 const dir = path.join(S, 'runs', id);
-const cwd = path.join(dir, 'work');
 // A rerun with the same id starts from a fresh work copy, not over the last run's leftovers.
 fs.rmSync(dir, { recursive: true, force: true });
-fs.mkdirSync(cwd, { recursive: true });
+fs.mkdirSync(dir, { recursive: true });
+// A cwd unique per run gives a transcript and memory folder under the config dir that no other session loads.
+const cwd = fs.mkdtempSync(path.join(dir, 'work-'));
 const tmp = path.join(dir, 'tmp');
 fs.mkdirSync(tmp);
 fs.cpSync(path.join('/tmp/exo-pressure/spec', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export',E:'fx-visit-report'}[scenario]), cwd, { recursive: true });
