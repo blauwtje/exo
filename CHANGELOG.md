@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**A plan can now run unattended: `node <exo>/skills/build/scripts/run-plan.mjs <plan.md>` lands each task in a fresh headless Claude Code process, held to that one task by code, then runs verify without a push and ends on one stop line.**
+
+### Added
+
+- `run-plan.mjs` runs a plan one task per `claude -p` process in `dontAsk` mode, with allow rules built from the plan and a deny list for pushes, `gh` and history rewrites; after each process it checks git for exactly one commit carrying that task's trailer and no moved branch or remote ref, and it stops on done, the iteration cap, two runs without progress, a blocked or denied task, a breach or exo failing to load, writing logs and a one-screen summary under `.exo/run-plan/`.
+- build `--task <n>` builds and lands one task in the session and asks nothing: a question becomes `Task <n>: BLOCKED <reason>`, and a reversible choice takes the recommended option and logs a `Decision:` line.
+- Under `EXO_RUN_TASK=<plan-id>/<n>`, land-task refuses any other plan or task, `--fix` and an MCP proof, and commits nothing.
+- `plan-check --loop` refuses, by name, a plan the runner cannot run: no `Allow:` line, a Success criterion that is not one command, an MCP proof, an output redirect, an undecided `Design:` task or a `Branch:` naming the default branch.
+- A plan's `## Plan basis` takes an `Allow:` line naming the commands its tasks run beyond the other fields.
+- After spec, next-stage prints the runner command with its absolute path when the plan passes `plan-check --loop`.
+
+### Changed
+
+- save-session's pause step is reworded; the rule is unchanged.
+
 ## 0.104.1 - 2026-10-07
 
 ### Fixed
