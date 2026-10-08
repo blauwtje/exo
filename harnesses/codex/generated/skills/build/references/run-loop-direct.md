@@ -5,8 +5,8 @@
 - A `Next:` line sends its task, a `Wave:` line each task per the wave worktrees reference in one message, to `exo-build-task` from `../implementer-prompt.md`, which carries `Return: one line`.
 - In a wave, a failed sibling never discards a green task.
 - That reference's step 4 saves each worktree's diff, then removes it.
-- A land-task refusal about the report (no report, no Proof command, a command listed as failing) goes by a follow-up message to the agent that wrote it, with land-task's full refusal verbatim; this session never reruns a proof to repair a report.
-- A build-task return that stopped at its budget before green redispatches `exo-build-task` from `../implementer-prompt.md` with a raised `Budget:` line, never an improvised prompt to another agent.
+- Land-task refusal about the report (no report, no Proof command, a command listed as failing) → SendMessage to the agent that wrote it, with land-task's full refusal verbatim; this session reruns no proof to repair a report.
+- Build-task return stopped at its budget before green → redispatch `exo-build-task` from `../implementer-prompt.md` with a raised `Budget:` line, not an improvised prompt to another agent.
 - Any other land-task refusal reads the full diff; any other line hands its report path, unread, to a repair delegate: `PLAN DRIFT` to `../drift-repairer-prompt.md`, `BLOCKED` or a failed `Run:` with no cause to `../bug-fixer-prompt.md`.
-- A second failure of one task stops the run `BLOCKED` with both reports and 2-3 options.
-- A land-task refusal but `PLAN DRIFT` or a report refusal goes to a repair delegate the same way and reruns once; a second refusal stops likewise.
+- Second failure of one task → stop the run `BLOCKED` with both reports and 2-3 options.
+- Land-task refusal other than `PLAN DRIFT` or a report refusal → repair delegate the same way, rerun once; a second refusal stops likewise.

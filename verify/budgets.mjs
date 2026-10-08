@@ -56,18 +56,18 @@ export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui
 // lock only ever moves down; a locked file that drops to 750 tokens or under
 // leaves this map. Token counts are Math.round(bytes / BYTES_PER_TOKEN).
 export const REFERENCE_TOKEN_LOCKS = {
-  'skills/build/references/critique.md': 845,
-  'skills/build/references/data-migration.md': 912,
-  'skills/build/references/security.md': 1040,
-  'skills/build/references/test-design.md': 907,
-  'skills/build/references/wave-worktrees.md': 962,
-  'skills/ship/references/pr-prep.md': 830,
+  'skills/build/references/critique.md': 797,
+  'skills/build/references/data-migration.md': 874,
+  'skills/build/references/security.md': 999,
+  'skills/build/references/test-design.md': 862,
+  'skills/build/references/wave-worktrees.md': 916,
+  'skills/ship/references/pr-prep.md': 772,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits
 // under the 750 tokens REFERENCE_TOKEN_LOCKS starts at, so it is locked in
 // bytes, the same two ways: growth fails and so does a shrink the lock does
 // not follow.
-export const LEAN_REFERENCE_LOCK = { bytes: 1030, measured: '2026-10-06' };
+export const LEAN_REFERENCE_LOCK = { bytes: 1008, measured: '2026-10-08' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 // Highest Jaccard overlap two model-invocable descriptions may share in

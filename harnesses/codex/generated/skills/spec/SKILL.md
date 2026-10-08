@@ -14,23 +14,23 @@ description: "Use when a request leaves done, data, architecture or a trade-off 
    - Asked for options: list them, recommend one, no file.
    - New wishes for briefed work reopen that brief.
 2. **Sort each point.**
-   - Answerable by running or reading: record it, never ask.
+   - Answerable by running or reading → record it, never ask.
    - Each open decision is a question, root decisions first.
    - A decision the user left open stays open whatever the code suggests.
-   - A point the user would not notice goes in `Data:`.
+   - Point the user would not notice → `Data:`.
    - Name the owning layer and a smaller alternative.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`: decide nothing silently.
    - Recommend a loaded skill's prescribed pattern over an option it rules out.
    - Close with up to three lines on what was agreed; brief after the user's yes.
-   - After a compaction: list decisions first.
+   - After a compaction → list decisions first.
 4. **Map, then locate.** Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/spec/scripts/repo-map.mjs"` (plan mode too); read it; else `exo-locate-code`, at most eight ranges; never `cat`, `head` or `sed`.
 5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; in plan mode an edit-needing proof is Task 1.
 6. **Store it** per `specs` in `exo settings:`, else `docs` (plan mode: the harness plan file).
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/spec/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `$build`, even asked, because build starts in a clean chat.
-   - Invoked by another stage or a workflow: ask nothing, return to the caller.
+8. **Hand off.** End on `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `$build`, even when asked; build starts in a clean chat.
+   - Invoked by another stage or a workflow → ask nothing, return to the caller.
 
 ## References
 

@@ -2,22 +2,22 @@
 
 ## Find every conflict
 
-- List every conflicting file from `git status` plus its in-file conflict markers before resolving anything, because a missed file ships a marker.
+- Before resolving → list every conflicting file from `git status` plus its in-file conflict markers; a missed file ships a marker.
 
 ## Resolve
 
-- A resolve never uses `--strategy`/`-X`.
-- Create no tag while resolving, because a tag can cut a release, which nothing here authorizes.
+- No `--strategy`/`-X`.
+- No tag while resolving; a tag can cut a release, which nothing here authorizes.
 
 ## Lockfiles
 
-- Regenerate a conflicted lockfile with the package manager's own tooling, because a hand-edited lockfile drifts from what the tool resolves.
+- Conflicted lockfile → regenerate with the package manager's own tooling, never hand-edit.
 
 ## Validate before the push
 
-- A failing check here blocks the push; fix it or report it, never push past it.
-- Run the project's own check, compile, lint and the relevant tests, before the push that follows.
+- Failing check here blocks the push → fix it or report it, never push past it.
+- Before the push → run the project's own check, compile, lint and relevant tests.
 
 ## Report
 
-- Name the files resolved, the notable resolution choices and the build and test outcome.
+- Name the files resolved, notable resolution choices, build and test outcome.

@@ -26,7 +26,7 @@ Mark all eight cells. Each required cell stays valid until the deployment state 
 ## Expand → migrate → verify → contract
 
 1. **Expand.** Add fields, tables, indexes, format versions, or dual-read/dual-write without removing what an old version needs. Deploy the reader before any writer can emit data only it understands.
-2. **Migrate.** Backfill in batches selected by a stable key and an explicit "not migrated" predicate. Repeated batch → same final state. Checkpoint the last completed key and record failed rows, so a restart resumes rather than starts over.
+2. **Migrate.** Backfill in batches selected by a stable key and an explicit "not migrated" predicate, so a repeated batch reaches the same final state. Checkpoint the last completed key and record failed rows, so a restart resumes rather than starts over.
 3. **Verify.** Before switching reads or deleting compatibility code, compare a source/target row count, checksum, or named invariant. Record totals: selected, migrated, skipped, failed, still pending.
 4. **Contract.** Remove old field, format, reader, writer, or data only after deployment evidence shows no required matrix cell depends on it and verification has zero unexplained mismatches.
 

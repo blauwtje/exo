@@ -9,24 +9,24 @@ Change exo's settings only through its own scripts, one named setting or every s
 
 ## When to use
 
-- `$configure` with nothing after it, or a request to set up or configure exo as a whole: take `## The walk`.
-- A question about one setting, or a request to change one: take `## One setting`.
+- `$configure` with nothing after it, or request to set up or configure exo as a whole → `## The walk`.
+- Question about one setting, or request to change one → `## One setting`.
 
 ## Where things stand
 
-The values when this skill loaded, each with its layer:
+Values when this skill loaded, each with its layer:
 
 Run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" show` first and use its output here.
 
 ## One setting
 
-Take the first step whose answer the request and the letters so far leave open.
+Take the first step the request and letters so far leave open.
 
-1. **Relay** the `show` block above as the whole reply when the request only asks to see the settings, and run nothing. Keep its ```` ```text ```` fence unchanged, because the rows line up only in a monospace block.
-2. **Pick the setting** when the request names none: run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" menu` and relay its output unchanged as the whole reply, because the user answers it with a letter.
-   - A topic letter runs `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
-3. **Ask the value** once the setting is known but no value: run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" menu <key>` and relay it the same way. A typed answer also counts for `ship`: a value its context line names.
-4. **Ask the layer** for a key `show` lists once setting and value are known but no layer:
+1. **Relay.** Request only asks to see the settings → relay the `show` block above as the whole reply, run nothing. Keep its ```` ```text ```` fence unchanged; rows line up only in a monospace block.
+2. **Pick the setting.** Request names none → run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply; user answers with a letter.
+   - Topic letter → run `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
+3. **Ask the value.** Setting known, no value → run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" menu <key>`, relay it the same way. For `ship`, a typed answer also counts: a value its context line names.
+4. **Ask the layer.** Key `show` lists, setting and value known, no layer → ask:
    ```text
    **Who should this apply to?**
 
@@ -36,9 +36,9 @@ Take the first step whose answer the request and the letters so far leave open.
 
    Recommended: (A), because the whole team gets the same value, and (B) and (C) reach only you.
    ```
-5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line, because the block above predates the change.
-   - Relay a rejection as the script printed it and change nothing by hand.
-   - A project value adds one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
+5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change.
+   - Rejection → relay it as the script printed it, change nothing by hand.
+   - Project value → add one line under the fence: collaborators receive it once `.claude/exo.json` is committed.
 
 ## The walk
 
@@ -49,7 +49,7 @@ Follow `references/setup-map.md` from its first step. Never pick an answer for t
 | Setting | Command |
 |---|---|
 | A key `show` lists, for this repository | `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/configure/scripts/settings.mjs" set <key> <value> --scope <project or local>` |
-| A key `show` lists, for every project | None: the harness owns that file. The report names the value to pick for that key under exo in `/config`. |
+| A key `show` lists, for every project | None: the harness owns that file. Report names the value to pick for that key under exo in `/config`. |
 
 ## References
 
@@ -61,6 +61,6 @@ Follow `references/setup-map.md` from its first step. Never pick an answer for t
 ## Judgment
 
 - A project or local value outranks a global one.
-- When the user picks every project for a key such a layer holds, the report names that layer, because the new value stays hidden there.
-- The scripts' output outranks any value in the context, including the session's `exo settings:` line, which was read when the session started.
-- The pointer to `../route-skills/references/lean.md` has no switch and rides in every session, whatever `guards` holds: a request to switch it off gets that answer and runs nothing.
+- User picks every project for a key a project or local layer holds → report names that layer; the new value stays hidden there.
+- Scripts' output outranks any value in context, including the session's `exo settings:` line, read at session start.
+- The pointer to `../route-skills/references/lean.md` has no switch and rides in every session, whatever `guards` holds: request to switch it off → give that answer, run nothing.

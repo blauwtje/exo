@@ -1,63 +1,63 @@
 # Interaction and QA
 
-Design the interface's behavior as deliberately as its surface. The enemy is the ideal-state interface — populated, enabled, pointer-driven, nothing loading and nothing failing. The overcorrection is process ceremony: flows documented, states enumerated, none of them built.
+Design the interface's behavior as deliberately as its surface. The enemy is the ideal-state interface: populated, enabled, pointer-driven, nothing loading and nothing failing. The overcorrection is process ceremony: flows documented, states enumerated, none of them built.
 
 ## The reachable-state inventory
 
-First inventory which of loading, empty, error, success, disabled, permission, and live states each region and fallible control can enter — from the repository, data model, workflow, or brief. Build every reachable state and no unreachable one.
+First inventory which of loading, empty, error, success, disabled, permission and live states each region and fallible control can enter, from the repository, data model, workflow or brief. Build every reachable state, no unreachable one.
 
-- **Loading** reserves its space, so arrival shifts no layout, and covers every asynchronous action.
-- **Empty** takes one of three forms, each written for the reason the region is empty:
-  - *First use* says what will live here and hands over the first action. ✗ "No projects found." ✓ "Projects you create will appear here." + [New project].
-  - *No results or filtered* keeps the query and filters in the sentence and offers recovery. ✓ "No projects match “atlas” in Archived." + [Clear filters].
-  - *Unavailable or restricted* names what governs access or availability, never dressed as onboarding.
-- **Error** is inline at the point of failure, in the interface's voice, without blame and without apology theater, and answers three questions:
-  - What happened — precisely, never "Something went wrong" when you know what did.
+- **Loading**: reserves its space (arrival shifts no layout); covers every asynchronous action.
+- **Empty**: one of three forms, written for the reason the region is empty:
+  - *First use*: says what will live here, hands over the first action. ✗ "No projects found." ✓ "Projects you create will appear here." + [New project].
+  - *No results or filtered*: keeps query and filters in the sentence, offers recovery. ✓ "No projects match “atlas” in Archived." + [Clear filters].
+  - *Unavailable or restricted*: names what governs access or availability, never dressed as onboarding.
+- **Error**: inline at the point of failure, in the interface's voice, no blame, no apology theater. Answers:
+  - What happened, precisely; never "Something went wrong" when you know what did.
   - Why, only when the why changes what to do.
-  - What to do next, as a recovery action in the same surface when the interface exposes one.
-  - ✗ "Oops! Something went wrong." ✓ "Couldn't save — you're offline. Changes are kept on this device and will sync when you reconnect."
-- **Success** names the outcome rather than announcing completion.
-- **Disabled** shows the reason where the reason is knowable, and exists wherever an action can be unavailable.
-- **Permission** hides a capability irrelevant or unavailable to this person, and shows it locked only when discoverability and a concrete recovery, upgrade, or admin path matter.
-- **Live** names what updates and how attention is drawn (the orientation job).
+  - What next, as a recovery action in the same surface when the interface exposes one.
+  - ✗ "Oops! Something went wrong." ✓ "Couldn't save: you're offline. Changes are kept on this device and will sync when you reconnect."
+- **Success**: names the outcome, not "completed".
+- **Disabled**: exists wherever an action can be unavailable; shows the reason where knowable.
+- **Permission**: capability irrelevant or unavailable to this person → hidden; shown locked only when discoverability and a concrete recovery, upgrade or admin path matter.
+- **Live**: names what updates and how attention is drawn (orientation job).
 
-Hover and active belong to every pointer control, and visible focus to every interactive control, as the floor beneath this inventory. A reachable state the build does not show is a missing region; an unreachable state built anyway is decoration.
+Floor beneath this inventory: hover and active on every pointer control, visible focus on every interactive control. Reachable state the build does not show = missing region; unreachable state built anyway = decoration.
 
 ## The task path
 
-Name the primary task, its decision points, and the path from arrival to done. The primary action sits at the decision point, not at the page bottom. Name what happens immediately after success: where the person lands, what changed, what they can do next.
+Name the primary task, its decision points, and the path from arrival to done. Primary action sits at the decision point, not page bottom. Name what happens right after success: where the person lands, what changed, what they can do next.
 
 ## Affordance and feedback
 
-- Interactive elements read as interactive before they are touched: cursor, hover, and pressed states distinguish them from static text.
-- Every action acknowledges within one transition — a state change, a result, or a progress indicator.
-- Continuity: an element that appears or moves shows where it came from (the continuity job in the `motion` reference).
-- Recovery is deterministic: undo for safely reversible actions, confirmation for irreversible or high-impact ones, never both on one action.
-- State transitions run 120–200ms on hover, focus, and active, and 200–400ms on open and close, from the easing tokens (the `motion` reference).
+- Interactive elements read as interactive before touch: cursor, hover and pressed states distinguish them from static text.
+- Every action acknowledges within one transition: state change, result or progress indicator.
+- Continuity: element that appears or moves shows where it came from (continuity job, `motion` reference).
+- Recovery deterministic: undo for safely reversible actions, confirmation for irreversible or high-impact ones, never both on one action.
+- State transitions: 120–200ms on hover, focus, active; 200–400ms on open and close; easing tokens from the `motion` reference.
 
 ## Progressive disclosure
 
-Defaults stay visible; secondary controls sit behind labeled disclosure. Build disclosure on native `details`, `dialog`, and `popover` states (the `implementation` reference) so open and closed are real states, not reconstructed ones.
+Defaults visible; secondary controls behind labeled disclosure. Build disclosure on native `details`, `dialog` and `popover` states (`implementation` reference) so open and closed are real states, not reconstructed.
 
-Where controls filter a result field, what is currently on is visible without opening anything:
+Controls filter a result field → what is on stays visible without opening anything:
 
-- every active filter renders as its own removable chip beside the results, with a live count of what survives, because a filter a person cannot see is a filter they blame the data for;
-- an option that would return nothing is shown disabled with its zero count, not removed, since a list that reshuffles as you read it costs the reader their place;
-- one action clears all of them at once, and it names what it clears rather than saying "Reset".
+- every active filter → own removable chip beside the results, with live count of what survives; an unseen filter gets blamed on the data;
+- option that would return nothing → shown disabled with zero count, not removed; a list reshuffling while read loses the reader's place;
+- one action clears all at once, naming what it clears, not "Reset".
 
 ## Input modality
 
-- **Keyboard:** every control reachable in DOM order, focus visible (the quality floor), what opens closes with Escape, arrow keys inside composite widgets.
-- **Coarse pointer:** the target floor is `## The build floor` of the `phase-detail` reference (WCAG 2.2 AA 2.5.8 at 24×24 CSS px, AAA 2.5.5 at 44×44, the default for a touch-first surface). No hover-only affordance: any hover-revealed action has a visible-on-touch equivalent.
-- At 390px, re-verify the disclosure patterns and the primary action's reachability.
+- **Keyboard:** every control reachable in DOM order, focus visible (quality floor), what opens closes with Escape, arrow keys inside composite widgets.
+- **Coarse pointer:** target floor = `## The build floor` of the `phase-detail` reference (WCAG 2.2 AA 2.5.8 at 24×24 CSS px; AAA 2.5.5 at 44×44, default for a touch-first surface). No hover-only affordance: every hover-revealed action has a visible-on-touch equivalent.
+- At 390px → re-verify disclosure patterns and primary action reachability.
 
 ## Pre-ship interaction sweep
 
 Exercised in the render, not read in the source:
 
-- [ ] Tab through the page: is the order the reading order, and is focus visible throughout?
-- [ ] Trigger one reachable error state and one reachable empty state. Mark each one the surface cannot enter as not applicable and exercise another representative reachable state in its place.
-- [ ] Exercise one disclosure open and closed, marking it not applicable where the surface has none; never add disclosure for this checklist.
+- [ ] Tab through the page: order = reading order, focus visible throughout?
+- [ ] Trigger one reachable error state and one reachable empty state. Each one the surface cannot enter → mark not applicable, exercise another representative reachable state instead.
+- [ ] Exercise one disclosure open and closed; none on the surface → not applicable; never add disclosure for this checklist.
 - [ ] Check touch targets and hover-only affordances at the coarse-pointer width.
 - [ ] Confirm feedback survives reduced motion.
 - [ ] Exercise every motion in the bar of the `motion` reference, and its reduced-motion result.
@@ -66,5 +66,5 @@ Exercised in the render, not read in the source:
 
 - Built states outrank documented states.
 - Native semantics outrank reconstructed widgets.
-- The quality floor outranks visual polish on any control.
+- Quality floor outranks visual polish on any control.
 - Existing repository interaction patterns outrank these defaults.

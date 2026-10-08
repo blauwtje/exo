@@ -4,31 +4,35 @@ Judge the delivered diff against the request before judging its internal eleganc
 
 ## What it checks, in order
 
-1. **Request match.** Read the request or brief Goal before the diff. Name any requested outcome with no corresponding changed behavior.
-2. **Scope.** Trace every changed path to one requested outcome. A path with no trace is scope creep.
-3. **Claimed proof.** Match every Acceptance claim to a command or action executed in this session.
-4. **Missing verification.** When logic changed and the repo has a test runner, name the gap if no test ran.
-5. **Boundary inputs.** Check empty input when the changed interface accepts a collection or optional value; maximum documented size when one exists; concurrent access when shared mutable state changed; malformed or hostile input when authentication, validation, network, file, or process boundaries changed. Do not invent an edge category outside those predicates.
+1. **Request match.** Read request or brief Goal before the diff. Name each requested outcome with no matching changed behavior.
+2. **Scope.** Trace each changed path to one requested outcome. Path with no trace → scope creep.
+3. **Claimed proof.** Match each Acceptance claim to a command or action executed this session.
+4. **Missing verification.** Logic changed, repo has a test runner, no test ran → name the gap.
+5. **Boundary inputs.** Check only these:
+   - changed interface accepts a collection or optional value → empty input;
+   - documented maximum size exists → that size;
+   - shared mutable state changed → concurrent access;
+   - authentication, validation, network, file, or process boundary changed → malformed or hostile input.
 6. **Simplification.**
-   - Name duplicated logic, an abstraction with one caller, or a form with fewer statements and the same observable behavior.
+   - Name duplicated logic, an abstraction with one caller, or a form with fewer statements and same observable behavior.
    - Name as a cut any fallback chain, second source of truth, cache or replica, queue, polling loop, scheduler, watchdog, or distributed coordination the request did not ask for: each guards against an enemy the request never named.
-   - Never name as a cut a security check, a data-loss guard, an accessibility affordance, idempotency, a retry at an external boundary, or an audit record: these are the protections a simplification pass erodes first.
-7. **Boundary discipline.** Validation, error narrowing, and untrusted-input handling belong at the entry point; an internal function should trust the shape it receives. Name a validation or error-narrowing check buried inside business logic instead of at the boundary it protects.
-8. **Domain modeling.** A scattered chain of conditionals or a second boolean kept in sync with a first is often a state machine, typed model, or discriminated union in disguise. Name the growing conditional chain or synced boolean and the state it is standing in for.
-9. **Late-reference evidence.** When security, data-migration, or test-design guidance was loaded, match each claimed result to its recorded negative test, migration invariant, or failing-before/passing-after command. Do not reload or restate those procedures here.
+   - Never name as a cut a security check, data-loss guard, accessibility affordance, idempotency, retry at an external boundary, or audit record: a simplification pass erodes these first.
+7. **Boundary discipline.** Validation, error narrowing, and untrusted-input handling belong at the entry point; internal functions trust the shape they receive. Name such a check buried in business logic instead of at the boundary it protects.
+8. **Domain modeling.** Scattered conditional chain or a second boolean synced with a first → often a state machine, typed model, or discriminated union in disguise. Name the chain or synced boolean and the state it stands in for.
+9. **Late-reference evidence.** Security, data-migration, or test-design guidance loaded → match each claimed result to its recorded negative test, migration invariant, or failing-before/passing-after command. Do not reload or restate those procedures here.
 
-Report correctness and security first, then scope, missing verification, and simplification. Say nothing for an axis with no finding.
+Report correctness and security first, then scope, missing verification, simplification. Axis with no finding → say nothing.
 
 ## Getting a separate context
 
-Use a perspective that has not seen the implementation reasoning. Give it exactly the request or brief and the diff. Do not include the author's explanation of each choice.
+Use a perspective that has not seen the implementation reasoning. Give it exactly the request or brief and the diff, not the author's explanation of each choice.
 
 ## When no separate context exists
 
-State that no separate context was available. Then run the seven checks in order, re-reading the request before the diff. Do not claim a separate review occurred.
+State that no separate context was available. Run the seven checks in order, re-reading the request before the diff. Do not claim a separate review occurred.
 
 ## Judgment
 
-- The request and settled brief decisions outrank reviewer preferences.
+- Request and settled brief decisions outrank reviewer preferences.
 - Observable behavior and executed proof outrank the author's explanation.
-- Repository conventions outrank generic simplification advice unless they conflict with the request.
+- Repository conventions outrank generic simplification advice, unless they conflict with the request.

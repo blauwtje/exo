@@ -13,14 +13,14 @@ description: "Use when commits may leave the machine, or the user asks to push, 
    - Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push.
    - A set `route: ` skips asking; an unapplied `ship=` is explained.
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
-   - With no issue, run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/file-issues/scripts/repo-fields.mjs"` and its `--size` form.
+   - No issue → run `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/file-issues/scripts/repo-fields.mjs"` and its `--size` form.
 5. **Verify**, for `pr-merge`: hand the diff to `verify`; `FAIL` pushes nothing.
-   - `PASS` or `PASS+NOTES` records verdict and `patch-id=` under `## Verification`, by `gh pr edit <n> --body-file <f>` on an open pull request.
+   - `PASS` or `PASS+NOTES` → record verdict and `patch-id=` under `## Verification`, via `gh pr edit <n> --body-file <f>` on an open pull request.
    - Reuse a recorded verdict past `--verdict-current <patch-id>`; `stale` reruns it.
 6. **Route.** `node "{{EXO_ROOT}}/harnesses/codex/run.mjs" "{{EXO_ROOT}}/skills/ship/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` in a background `exec_command` session polled with `write_stdin`.
    - Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm.
    - `DIRTY` exits 4, other stops 1, asking `(A) Resolve conflicts` or `(B) Stop`, leaving it open.
-   - A fix reruns step 5, never `--merge`.
+   - A fix → rerun step 5, never `--merge`.
    - `open-pr` or a merge request stops after three fix rounds, watch included.
 7. **Merge.** Print `gh pr list --json number,title,baseRefName,headRefName` in order.
    - Each gets a step 5 verdict via `gh pr view <n> --json headRefOid,baseRefName,title,body`; `FAIL` drops out.

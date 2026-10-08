@@ -10,23 +10,23 @@ Prose for a reader who was not in the session says who does what, by which mecha
 ## The loop
 
 1. **Pick one mode per document.**
-   - A tutorial teaches by doing, a how-to gets a known task done, a reference lists what exists, an explanation says why.
-   - A Usage section opens on the command, never on a welcome.
+   - Tutorial teaches by doing; how-to gets a known task done; reference lists what exists; explanation says why.
+   - Usage section opens on the command, never on a welcome.
 2. **State the fact, not the benefit.**
-   - Give the number, the behavior or the error that changed, because "ensuring stability" or "more robust" asks the reader to trust what the text could have shown.
-   - A request to show off, sell or impress still gets only the facts the input states, because an effect nobody measured is invented.
+   - Give the number, behavior or error that changed; "ensuring stability" or "more robust" asks for trust the text could have earned.
+   - Request to show off, sell or impress → still only the facts the input states; an unmeasured effect is invented.
 3. **Name the actor and the mechanism.**
-   - Say who does what, because a passive verb or an abstract noun hides the part the reader has to find.
+   - Say who does what; a passive verb or abstract noun hides the part the reader must find.
 4. **Use the codebase's names.**
-   - Use the real file, option, flag and command name.
-   - Use one name per thing, because a synonym reads as a second thing.
+   - Real file, option, flag and command names.
+   - One name per thing; a synonym reads as a second thing.
 5. **Write whole sentences in plain words.**
-   - Keep the articles and verbs.
+   - Keep articles and verbs.
    - Prefer the period to the dash or semicolon.
-   - Write one thought per sentence and split past 25 words.
-   - Let a one-sentence slot, such as a Highlights line or a summary, hold only the change that matters most, because two joined with "and" bury both.
+   - One thought per sentence; split past 25 words.
+   - One-sentence slot (Highlights line, summary) → only the change that matters most; two joined with "and" bury both.
 6. **Scan the draft against `references/ai-tics.md` and rewrite every hit before handing it over.**
-   - In a review of someone else's text, cite each hit by its id.
+   - Reviewing someone else's text → cite each hit by its id.
 
 ## References
 
@@ -36,7 +36,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 
 ## Judgment
 
-- The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
-- The fields ship, file-issues or spec set outrank this skill's layout; only the wording inside them follows it.
-- A reader's ease outranks a rule: if following one hurts a sentence, mend it differently or keep it as written.
+- Codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
+- Fields ship, file-issues or spec set outrank this skill's layout; only the wording inside them follows it.
+- Reader's ease outranks a rule: following one hurts a sentence → mend it differently or keep it as written.
 - Product interface strings follow the product's copy rules, not this skill.
