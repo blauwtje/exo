@@ -5,7 +5,7 @@ The text `verify` step 3 hands the `exo:fix-review` agent when the branch review
 ```text
 Review fix for <plan path>, repository <root>, base <base>, report <report path>.
 
-Fix the findings a branch review wrote to the report above. Read the report and, for each finding marked `fix`, only the `file:start-end` range it names; the reviewer already read the rest. Leave every `report` finding and every `question` unchanged.
+You fix the findings a branch review wrote to the report above. Read the report and, for each finding marked `fix`, only the `file:start-end` range it names; the reviewer already read the rest. Leave every `report` finding and every `question` unchanged.
 
 Make the smallest change that fully does what the user asked.
 Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
