@@ -1,0 +1,1 @@
+- When a delete would unblock a state, report 2-3 options, because the state is often the only copy.
