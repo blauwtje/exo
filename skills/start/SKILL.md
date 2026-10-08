@@ -1,6 +1,6 @@
 ---
 name: start
-description: "Use when the user does not remember a skill's name, wants the list of exo skills in plain words, or names a goal and wants exo to pick. Not for a session's own routing rules, which route-skills owns and loads by itself."
+description: "Use when the user does not remember a skill's name, wants the list of exo skills in plain words, or names a goal and wants exo to pick. Not for the session's own routing rules, which route-skills owns."
 argument-hint: "[goal or spec-path]"
 disable-model-invocation: true
 ---
@@ -11,23 +11,23 @@ One door for a user who does not remember a skill's name. The enemy is a pick ha
 
 ## No goal
 
-- Relay the two tables in `references/cheat-sheet.md` as the whole reply, rows unchanged, because they line up only as written.
+- Relay the two tables in `references/cheat-sheet.md` as the whole reply, rows unchanged; they line up only as written.
 
 ## With a goal
 
-1. **Match.** Read every skill's `description` for the triggers that fit the stated goal.
-   - A path to a spec file, or a spec or big wish to build, picks `spec` with that path or wish as its argument.
+1. **Match.** Read every skill's `description` for triggers fitting the stated goal.
+   - Path to a spec file, or a spec or big wish to build → `spec`, with that path or wish as argument.
    - Start runs nothing after `spec`, which offers `build` once the brief is written.
    - `route-skills` is never a pick.
-2. **Two routes, different work.** A goal that leaves open whether behavior stays or changes fits a behavior-keeping and a behavior-changing skill.
-   - Run nothing before the answer, because the wrong pick does work the answer undoes.
+2. **Two routes, different work.** Goal leaves open whether behavior stays or changes → fits a behavior-keeping and a behavior-changing skill.
+   - Run nothing before the answer; a wrong pick does work the answer undoes.
    - Ask one question per `../route-skills/references/question.md`.
 3. **Several fit.** Pick the one, ordering by `route-skills`' "When several fire" section.
-4. **None fits.** Follow `route-skills` step 2 and do the work without a skill.
-5. **Run.** Call the picked skill through the Skill tool in this turn with the goal as its argument, before any edit or write.
-   - Tell the user no command to type, because they already typed one.
-   - A skill carrying `disable-model-invocation` cannot be called that way: name the exact command to type instead, such as `/exo:remember <goal>`.
-6. **Chain.** Each stage's handoff carries the run on to `ship`: add no stop, summary or question between stages, because the stage's next-stage question is the user's one choice.
+4. **None fits.** Follow `route-skills` step 2; do the work without a skill.
+5. **Run.** Call the picked skill through the Skill tool in this turn, goal as argument, before any edit or write.
+   - Tell the user no command to type; they already typed one.
+   - Skill carrying `disable-model-invocation` cannot be called that way → name the exact command to type instead, such as `/exo:remember <goal>`.
+6. **Chain.** Each stage's handoff carries the run on to `ship`: add no stop, summary or question between stages; the stage's next-stage question is the user's one choice.
 
 ## References
 

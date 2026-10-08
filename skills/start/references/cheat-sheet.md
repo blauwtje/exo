@@ -1,6 +1,6 @@
 # Cheat sheet
 
-Ordered by how often people use each skill; **type it** marks a skill the model never runs on its own, so typing the exact command is the only way in.
+Ordered by how often people use each skill. **type it** marks a skill the model never runs on its own; typing the exact command is the only way in.
 
 | Skill | What it does | Just say instead |
 |---|---|---|
@@ -22,7 +22,7 @@ Ordered by how often people use each skill; **type it** marks a skill the model 
 
 ## Rarely
 
-Skills for a case most sessions never hit; still worth knowing about.
+Skills for a case most sessions never hit.
 
 | Skill | What it does | Just say instead |
 |---|---|---|
