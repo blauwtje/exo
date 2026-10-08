@@ -24,6 +24,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - save-session's pause step is reworded; the rule is unchanged.
 
+### Fixed
+
+- verify no longer reports the plan file as a stray path when the plan is committed on the branch.
+
 ## 0.104.1 - 2026-10-07
 
 ### Fixed
