@@ -7,58 +7,58 @@ effort: high
 
 # Visual Design
 
-Design so the result reads polished, modern and cleanly finished in the chosen mood: every visual choice traceable to that mood, the audience, the page job or the content. The enemy is the unfinished default — stock type, flat ground, loose spacing and missing states. The overcorrection is a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or a ledger, unless the user asks for one.
+Design so the result reads polished, modern and finished in the chosen mood, every visual choice traceable to that mood, audience, page job or content. The enemy is the unfinished default: stock type, flat ground, loose spacing, missing states. The overcorrection is a costume: a theme, metaphor or prop drawn from the subject, such as a barcode or ledger, unless the user asks for one.
 
-A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design, or a large empty area has no content, grouping, pacing, or staging job. Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
+A full or bounded redesign fails when the rendered result stays materially interchangeable with the baseline. It also fails when supporting regions stay generic while one focal point carries the design, or a large empty area has no content, grouping, pacing, or staging job. Open axis (composition, type, chromatic hierarchy, surface treatment, imagery, motion) → not absent by default; restraint on one axis needs a brief-side reason and expression on the others.
 
 Every screen ships the scope `references/composition.md` completes and the motion bar of `references/motion.md`.
 
-**After a compaction**, see `## The run directory` of `references/intake.md`.
+After a compaction → `## The run directory` of `references/intake.md`.
 
 ## Size the request
 
-Any visual change belongs here, at any file count; an undecided surface goes to `spec` first, added state, persistence, a dependency `references/stack.md` lacks or a network call to `build`.
+Any visual change belongs here, at any file count. Undecided surface → `spec` first. Added state, persistence, a dependency `references/stack.md` lacks, or a network call → `build`.
 
-- **Page or redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. It takes the one pass below; the existing direction is evidence, not a veto.
+- **Page or redesign:** a new page/view/identity; a request changing at least three of composition, palette, type, motion, and content hierarchy; or a report that an existing surface is empty, boring, generic, flat, unfinished, or not distinctive. Takes the one pass below; existing direction is evidence, not a veto.
 - **Sketch, new piece, tweak:** `## Sizes` of `references/phase-build.md`.
 
 ## Route
 
-Resolve the surface from the markup and style files in the working-tree diff, then the last touched one; with neither, ask only which surface. Then stop at the first matching rung:
+Surface → markup and style files in the working-tree diff, else the last touched one; neither → ask only which surface. First matching rung wins:
 
 1. **Tweak:** the tweak path.
-2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at one-pass step 5.
-3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
+2. **Handed a direction:** copy a plan's `Contract:` or a brief's `contract-selected.json` to `$RUN/contract-selected.json`; resume at one-pass step 5.
+3. **Asked to choose:** user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser → the offer in `## Asking` of `references/intake.md`.
 4. **Sketch:** the sketch path.
-5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, while neither the user nor the brief lets it be replaced: the plan keeps that identity. A component library in the manifest is not that evidence on its own.
-6. **Everything else**, a landing or marketing page included: the scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface.
+5. **Settled identity:** evidence `## Settled identity` of `references/intake.md` lists, and neither user nor brief lets it be replaced → plan keeps that identity. A component library in the manifest is not that evidence on its own.
+6. **Everything else**, landing or marketing page included → scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface.
 
 Only a request from the user opens the picker: a landing page or an open identity does not.
 
 ## The one pass
 
-The default for every rung but 1 and 4; `exo:build-ui` writes the code, since code here overruns context. References call steps 1-2 Phase 1-2 and 3-7 Phase 3.
+Default for every rung but 1 and 4; `exo:build-ui` writes the code, since code here overruns context. References call steps 1-2 Phase 1-2, steps 3-7 Phase 3.
 
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`.
-2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names any named or saved product, the hex color and font line, the motion thesis and ASCII layouts at 1440 and 390; send the user `scripts/picks.mjs`'s line.
-3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise until none is missing.
+2. **Plan.** One line each naming scope groups and mood, then a plan of at most 25 lines in `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. Plan names any named or saved product, hex color and font line, motion thesis, ASCII layouts at 1440 and 390; send the user `scripts/picks.mjs`'s line.
+3. **Check the plan.** List each scope group and each section, content item, tone word and constraint the request names; mark where the plan carries it. Revise until none missing.
 4. **Build pass.** Read `references/build-pass.md` whole.
 5. **Build.** Dispatch fresh `exo:build-ui`, `model: "opus"`, `SCOPE: page`, with the rung 3 comp; read its report only.
-6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3, sending the fault list to the builder.
-7. **Finish on a fresh capture.** Take its step 4; a page is done only on a capture after its last edit.
+6. **Capture, look, fix once.** `## Capture, look, fix once` of `references/phase-build.md`, steps 1-3; send the fault list to the builder.
+7. **Finish on a fresh capture.** Its step 4; page done only on a capture after its last edit.
 
 ## On request only
 
-The parts below run only when the user's own words ask for them; a page's size, rung or genre never starts them.
+Run only when the user's own words ask; page size, rung or genre never starts them.
 
 - **Variants or a picker** ("show me options", "let me choose"): rung 3.
 - **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
 
 ## References
 
-- Load only the sections a row names, all if none.
-- Read a section by `offset`/`limit` from `grep -n '^## '`, never `cat`, `awk` or `sed`, since Bash persists long output.
-- Never Read a `tool-results/` file the run holds, which loads it twice.
+- Load only the sections a row names; none named → whole file.
+- Read a section by `offset`/`limit` from `grep -n '^## '`, not `cat`, `awk` or `sed`; Bash persists long output.
+- Skip Reading a `tool-results/` file the run holds; it loads twice.
 
 | File | Read it when |
 |---|---|
