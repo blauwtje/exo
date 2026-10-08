@@ -14,6 +14,7 @@ Branch: due-date-badge
 Worktree setup: none
 Land gate: npm run typecheck
 Lint: npx eslint
+Allow: none
 
 ## Success criterion
 `npm test` passes.

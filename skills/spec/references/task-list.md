@@ -9,6 +9,7 @@ The task list names the goal, basis, proof and one line per task for a zero-cont
    - When two tasks share no `Depends on:` chain, add `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
    - Add `Land gate: npm run typecheck` for root's package.json `typecheck` script, else `none`; the owner may name a slower `validate` or `check`.
    - Add `Lint: <linter binary>` for root's package.json `lint` script, else `none`; `npm run lint` skips a task's `Files:`.
+   - Add `Allow:` with backticked commands a task needs beyond its `Proof:`, `Run:`, `Land gate:` and `Lint:`, separated by commas, else `none`; only `plan-check --loop` requires it.
 3. `## Success criterion`: one backticked command proving every task landed, no interpretation or user-only check.
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`, `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`: the dependency-ordered list.
