@@ -23,9 +23,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - design-ui's intake, direction-preview, composition and phase-direction references drop lines a with-and-without run showed change nothing, from 7,182 to 6,947 words.
 - build and find-cause dispatch one shared fixer prompt, and the handoff fields live only in find-cause's `handoff.md`, from 1,252 to 972 words across the four prompt files.
 - When several decisions are open at once and none waits on another's answer, a skill asks them all in one numbered message instead of one per turn.
+- build's entry, the build-task agent and the run-unit agent drop lines a with-and-without run showed change nothing or a hook already enforces: build 510 to 503, build-task 487 to 473, run-unit 498 to 467 words.
+- The high and low `budget` rule lines are shorter (70 to 59 and 114 to 90 words) and still route hard work to `solve-hard` at the right model and effort.
 
 ### Fixed
 
+- A design-ui build on Opus again gives tabs and buttons their hover and state transitions, a requirement an earlier cut had left outside the motion bar.
 - `confinedClaude` requires a `tmp` folder and makes none of its own, so a call no longer leaves a `claude-isolation-*` or `claude-tmp-*` folder behind.
 - A confined pressure or benchmark run on macOS denies `defaults write`, Apple Events, `open`, LaunchServices and `launchctl`, proven by canary probes run under the same sandbox profile.
 - A confined run on Linux loads only project and local settings, so a user `permissions.allow` or sandbox path cannot widen it; an API key set through user settings no longer reaches such a run.
