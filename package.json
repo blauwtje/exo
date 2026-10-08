@@ -17,6 +17,7 @@
     "#package-entry-point": "./lib/package-entry-point.mjs",
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
+    "#confine-claude": "./lib/confine-claude.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
     "#prose-density": "./lib/prose-density.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",

@@ -24,7 +24,9 @@
 // file with that twin's kind as the call's model and effort; a kind with
 // no effort prints `session`.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
-// directory outside the repository, matching pressure-scenarios.md; cells
+// directory outside the repository, matching pressure-scenarios.md, and
+// confined by #confine-claude so it can write only in that run folder's
+// scratch/ and tmp/, never ~/.claude; on Windows the runner refuses; cells
 // run one after another. --setup <script> (resolved against the caller's cwd)
 // runs `bash <script>` right before every single run instead, and the runs go
 // one after another, alternating arms (comparison 1, with 1, comparison 2,
@@ -53,6 +55,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { confineRefusal, confinedClaude } from '#confine-claude';
 import { readKindTable } from '#model-kinds';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags, isMain } from '#script-flags';
@@ -63,7 +66,7 @@ const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
 const CITATION = /[\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md)/g;
-const USAGE = 'usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--setup <script>] [--runs <n>] [--out <dir>]';
+const USAGE ='usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--setup <script>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
   const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' });
@@ -131,19 +134,19 @@ function unopenedCitations(text, reads) {
   });
 }
 
-function claudeArguments({ model, effort, promptText, settingSources, armFlags }) {
+// The base arguments of one run; #confine-claude adds the permission mode.
+function claudeArguments({ model, effort, promptText, settingSources, pluginFlags }) {
   const args = [
     '-p', promptText,
     '--model', model,
     '--effort', effort,
     '--output-format', 'stream-json',
     '--verbose',
-    '--permission-mode', 'bypassPermissions',
     // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case.
     '--strict-mcp-config'
   ];
   if (settingSources !== undefined) args.push('--setting-sources', settingSources);
-  args.push(...armFlags);
+  args.push(...pluginFlags);
   return args;
 }
 
@@ -182,9 +185,10 @@ function parseStream(rawStdout) {
   return { finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
 }
 
-function runArm(args, cwd) {
+// Runs one confined claude: `run` comes from confinedClaude.
+function runArm(run) {
   return new Promise((resolve) => {
-    const child = spawn('claude', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => { stdout += chunk; });
@@ -248,8 +252,16 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       const setup = runSetup(setupScript);
       if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
     }
-    const scratch = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
-    return runArm(claudeArguments({ model, effort, promptText, settingSources, armFlags: arm.flags }), scratch);
+    // The run folder holds scratch/, the cwd, and tmp/, its temporary directory;
+    // the run can write nowhere else.
+    const runFolder = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
+    const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
+    for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
+    const settingsAt = arm.flags.indexOf('--settings');
+    const settings = settingsAt === -1 ? undefined : JSON.parse(arm.flags[settingsAt + 1]);
+    const pluginFlags = settingsAt === -1 ? arm.flags : arm.flags.filter((_, at) => at !== settingsAt && at !== settingsAt + 1);
+    const args = claudeArguments({ model, effort, promptText, settingSources, pluginFlags });
+    return runArm(confinedClaude({ args, roots: [scratch, tmp], cwd: scratch, tmp, settings }));
   };
   const outcomes = setupScript === undefined
     ? await Promise.all(planned.map(startRun))
@@ -295,6 +307,12 @@ async function main() {
       console.error(`${USAGE}: ${error.message}`);
       process.exitCode = 2;
     }
+    return;
+  }
+  const refusal = confineRefusal();
+  if (refusal !== undefined) {
+    console.error(`pressure.mjs: ${refusal}`);
+    process.exitCode = 2;
     return;
   }
   let promptText;

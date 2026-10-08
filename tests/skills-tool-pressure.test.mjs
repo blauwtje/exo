@@ -18,12 +18,13 @@ import { fixture, run } from './harness.mjs';
 
 const PRESSURE = fileURLToPath(new URL('../skills/edit-skills/scripts/pressure.mjs', import.meta.url));
 
-// Stands in for `claude`: logs its arguments and prints a stream-json
-// transcript picked by STAND_IN_MODE, one line per event.
+// Stands in for `claude`: logs its arguments to calls.log in its cwd, the
+// only place a confined run can write, and prints a stream-json transcript
+// picked by STAND_IN_MODE, one line per event.
 const STAND_IN = [
   '#!/usr/bin/env node',
   "const fs = require('node:fs');",
-  "fs.appendFileSync(process.env.STAND_IN_LOG, process.argv.slice(2).join(' ') + '\\n');",
+  "fs.appendFileSync('calls.log', process.argv.slice(2).join(' ') + '\\n');",
   'const mode = process.env.STAND_IN_MODE;',
   "const assistantWithEdit = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: '/tmp/x.js' } }] } };",
   "const assistantWithSkill = (skill) => ({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Skill', input: { skill } }] } });",
@@ -34,7 +35,7 @@ const STAND_IN = [
   "if (mode === 'long') { console.log(JSON.stringify(resultLine('a'.repeat(400) + ' middle ' + 'b'.repeat(400) + ' the end'))); process.exit(0); }",
   "if (mode === 'loads') { const dir = process.env.STAND_IN_BASE ?? process.argv[process.argv.indexOf('--plugin-dir') + 1] + '/skills/spec'; console.log(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'Base directory for this skill: ' + dir + '\\n\\n# Skill' }] } })); console.log(JSON.stringify(resultLine('loaded a skill'))); process.exit(0); }",
   "if (mode === 'cites') { console.log(JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: '/clone/skills/spec/references/opened.md' } }, { type: 'tool_use', name: 'Read', input: { file_path: '/clone/skills/find-cause/fixer-prompt.md' } }] } })); console.log(JSON.stringify(resultLine('Per references/opened.md and skills/spec/references/opened.md, plus fixer-prompt.md, but also references/ghost.md and /clone/other-prompt.md.'))); process.exit(0); }",
-  "if (mode === 'paced') { setTimeout(() => { fs.appendFileSync(process.env.STAND_IN_LOG, 'end\\n'); console.log(JSON.stringify(resultLine('paced answer'))); }, 100); return; }",
+  "if (mode === 'paced') { setTimeout(() => { fs.appendFileSync('calls.log', 'end\\n'); console.log(JSON.stringify(resultLine('paced answer'))); }, 100); return; }",
   "if (mode === 'fails') { process.stderr.write('e'.repeat(400) + ' stderr tail'); process.exit(1); }",
   'process.exit(0);'
 ].join('\n');
@@ -59,7 +60,22 @@ async function pluginClone({ omit = [] } = {}) {
   return clone;
 }
 
-// `args` is a list, or a function of the runner's cwd that returns one.
+// The calls.log lines of every run folder under `runs` not yet collected,
+// removing each file once read.
+async function collectCalls(runs) {
+  const lines = [];
+  for (const folder of (await fs.readdir(runs)).sort()) {
+    const file = path.join(runs, folder, 'scratch', 'calls.log');
+    const text = await fs.readFile(file, 'utf8').catch(() => '');
+    await fs.rm(file, { force: true });
+    lines.push(...text.split('\n').filter((line) => line !== ''));
+  }
+  return lines;
+}
+
+// `args` is a list, or a function of the runner's cwd that returns one. The
+// runs land under STAND_IN_RUNS, the runner's TMPDIR, and a setup script
+// appends to STAND_IN_LOG.
 async function runPressure(mode, args, extraEnv = {}) {
   const directory = await fixture();
   const bin = path.join(directory, 'bin');
@@ -68,13 +84,22 @@ async function runPressure(mode, args, extraEnv = {}) {
   const promptFile = path.join(directory, 'prompt.txt');
   await fs.writeFile(promptFile, 'a pressure scenario');
   const log = path.join(directory, 'calls.log');
+  const runs = path.join(directory, 'runs');
+  await fs.mkdir(runs);
   const argList = typeof args === 'function' ? args(directory) : args;
   const outcome = await run(PRESSURE, ['--prompt', promptFile, ...argList], {
     cwd: directory,
-    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, STAND_IN_LOG: log, STAND_IN_MODE: mode, ...extraEnv }
+    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: runs, STAND_IN_RUNS: runs, STAND_IN_LOG: log, STAND_IN_MODE: mode, ...extraEnv }
   });
   const logged = await fs.readFile(log, 'utf8').catch(() => '');
-  return { ...outcome, calls: logged.split('\n').filter((line) => line !== '') };
+  return { ...outcome, calls: [...logged.split('\n').filter((line) => line !== ''), ...await collectCalls(runs)] };
+}
+
+// The settings object a logged call passes through --settings, or undefined;
+// on Linux it also holds the sandbox block.
+function settingsOf(call) {
+  const value = /--settings (\{\S*\})/.exec(call)?.[1];
+  return value === undefined ? undefined : JSON.parse(value);
 }
 
 // The arm lines of stdout, each parsed into its arm, run, answer file, first
@@ -186,9 +211,8 @@ test('the without arm disables the installed plugin through --settings and the w
   assert.equal(outcome.code, 0, outcome.stderr);
   const withoutCall = outcome.calls.find((call) => !call.includes('--plugin-dir'));
   const withCall = outcome.calls.find((call) => call.includes('--plugin-dir'));
-  const settings = JSON.stringify({ enabledPlugins: { [`${PLUGIN_NAME}@${MARKETPLACE_NAME}`]: false } });
-  assert.ok(withoutCall.includes(`--settings ${settings}`), withoutCall);
-  assert.ok(!withCall.includes('--settings'), withCall);
+  assert.deepEqual(settingsOf(withoutCall)?.enabledPlugins, { [`${PLUGIN_NAME}@${MARKETPLACE_NAME}`]: false }, withoutCall);
+  assert.equal(settingsOf(withCall)?.enabledPlugins, undefined, withCall);
 });
 
 test('every call gets --strict-mcp-config so a user\'s MCP servers cannot steer a run', async () => {
@@ -272,7 +296,7 @@ test('--main-dir turns the without arm into a main arm that loads the second cop
   assert.equal(outcome.code, 0, outcome.stderr);
   assert.ok(outcome.calls.some((call) => call.includes(`--plugin-dir ${main}`)), outcome.calls.join('\n'));
   assert.ok(outcome.calls.some((call) => call.includes(`--plugin-dir ${clone}`)), outcome.calls.join('\n'));
-  assert.ok(outcome.calls.every((call) => !call.includes('--settings')), outcome.calls.join('\n'));
+  assert.ok(outcome.calls.every((call) => settingsOf(call)?.enabledPlugins === undefined), outcome.calls.join('\n'));
   assert.match(outcome.stdout, /^ {2}main 1: /m);
   assert.doesNotMatch(outcome.stdout, /without/);
 });
@@ -315,7 +339,10 @@ async function setupScript(body) {
 test('--setup runs the script right before every run, and the runs go one at a time, alternating arms', async () => {
   const clone = await pluginClone();
   const out = await fixture();
-  const script = await setupScript('echo setup >> "$STAND_IN_LOG"\necho rebuilt\n');
+  // Each setup first moves the logs of the runs before it into STAND_IN_LOG, so
+  // that log holds every step in order.
+  const drain = 'for log in "$STAND_IN_RUNS"/*/scratch/calls.log; do [ -f "$log" ] && cat "$log" >> "$STAND_IN_LOG" && rm "$log"; done\n';
+  const script = await setupScript(`${drain}echo setup >> "$STAND_IN_LOG"\necho rebuilt\n`);
   const outcome = await runPressure('paced', (cwd) => ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out, '--runs', '2', '--setup', path.relative(cwd, script)]);
   assert.equal(outcome.code, 0, outcome.stderr);
   const steps = outcome.calls.map((call) => {
