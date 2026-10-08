@@ -184,6 +184,13 @@ test('denied: a permission denial stops by the command it named', async () => {
   assert.equal(result.stop, 'run-plan: stop: task 1 denied npm install left-pad; add it to Allow:');
 });
 
+test('denied: a denial outranks the BLOCKED line it caused', async () => {
+  const context = await setup();
+  const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
+  const result = await runPlan(context, [{ denials: [denial], result: 'Tried.\nTask 1: BLOCKED Bash permission denied in don\'t-ask mode' }]);
+  assert.equal(result.stop, 'run-plan: stop: task 1 denied npm install left-pad; add it to Allow:');
+});
+
 test('breach: one iteration landing two tasks is an extra commit', async () => {
   const context = await setup();
   const result = await runPlan(context, [{ commits: [land(1).commits[0], land(2).commits[0]] }]);
