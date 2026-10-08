@@ -13,6 +13,8 @@
 // --setting-sources passes through to every run of both arms, so a case can
 // leave out the user's settings and memory, which could decide it for reasons
 // outside the plugin.
+// --output-style <name> sets `outputStyle` in the settings of every run of
+// both arms, so a style case compares replies under that style.
 // A run whose answer names a `references/*.md` or `*-prompt.md` path that no
 // `Read` call of that run opened gets `[unopened citation: <path>]` on its arm
 // line and ends the runner with exit 1, since the citation is faked.
@@ -49,7 +51,7 @@
 // ends the runner with exit 1, so that run never counts as a pass.
 //
 //   node pressure.mjs --cells-for <file>
-//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--setup <script>] [--runs 3] [--out <dir>]
+//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--output-style <name>] [--setup <script>] [--runs 3] [--out <dir>]
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -67,10 +69,10 @@ const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
 const CITATION = /[\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md)/g;
-const USAGE ='usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--setup <script>] [--runs <n>] [--out <dir>]';
+const USAGE ='usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' });
   if (flags['cells-for'] !== undefined) return { cellsFor: flags['cells-for'] };
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
@@ -95,6 +97,7 @@ function readFlags(argv) {
     pluginId: installedPluginId(pluginDir, '--plugin-dir'),
     mainDir: flags['main-dir'] === undefined ? undefined : resolvePluginDir('--main-dir', flags['main-dir'], process.cwd()),
     settingSources: flags['setting-sources'],
+    outputStyle: flags['output-style'],
     setupScript,
     runs: flags.runs === undefined ? DEFAULT_RUNS : Number(flags.runs),
     outDir: flags.out
@@ -242,7 +245,7 @@ async function runInSequence(planned, startRun) {
 
 // Runs one cell and prints its lines; true when some setup failed or some
 // run loaded a wrong copy.
-async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, setupScript, runs, outDir }) {
+async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir }) {
   const arms = [
     comparisonArm({ pluginId, mainDir }),
     { name: 'with', pluginDir, flags: ['--plugin-dir', pluginDir] }
@@ -259,7 +262,8 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
     for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
     const settingsAt = arm.flags.indexOf('--settings');
-    const settings = settingsAt === -1 ? undefined : JSON.parse(arm.flags[settingsAt + 1]);
+    const armSettings = settingsAt === -1 ? undefined : JSON.parse(arm.flags[settingsAt + 1]);
+    const settings = outputStyle === undefined ? armSettings : { ...armSettings, outputStyle };
     const pluginFlags = settingsAt === -1 ? arm.flags : arm.flags.filter((_, at) => at !== settingsAt && at !== settingsAt + 1);
     const args = claudeArguments({ model, effort, promptText, settingSources, pluginFlags });
     return runArm(confinedClaude({ args, roots: [scratch, tmp], cwd: scratch, tmp, settings }));
