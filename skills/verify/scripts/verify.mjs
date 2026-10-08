@@ -9,7 +9,7 @@
 // this command when `package.json` names no `bin` and no `scripts.start`; any other Land gate is the per-task gate, never
 // the final check), and a
 // stray-path check that the diff touched nothing outside a task's declared
-// Files. Ends on one REVIEWER: <agent name> line, picked from
+// Files, save the plan file itself. Ends on one REVIEWER: <agent name> line, picked from
 // risk (a landed task's `Risk:`, a manifest change or a signature change
 // since base), or `REVIEWER: none (inline route)` for a plan on build's inline
 // route with none of those risks, so a caller knows which agent reviews
@@ -162,6 +162,16 @@ export function commandLine(argv) {
   const quoted = (word) => `"${word.replace(/["\\$`]/g, '\\$&')}"`;
   const args = argv.slice(2).map((word) => (PLAIN_SHELL_WORD.test(word) ? word : quoted(word)));
   return ['node', quoted(argv[1]), ...args].join(' ');
+}
+
+/**
+ * The plan file's path from the repository root of `root`, with `/` separators as git prints
+ * paths, so the stray check can tell the run's own input from an edit; a plan outside the
+ * repository yields a `../` path that matches no changed path.
+ */
+function repoPathOf(planPath, root) {
+  const top = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  return path.relative(top, fs.realpathSync(planPath)).split(path.sep).join('/');
 }
 
 /** A changed path outside every task's declared Files is a stray edit. */
@@ -474,7 +484,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   }
 
   const changed = changedPaths({ base });
-  const strays = findStrayPaths(plan.tasks, changed);
+  // The plan file committed on the branch is the run's input, not drift.
+  const planFile = repoPathOf(planPath, root);
+  const strays = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
   if (strays.length === 0) {
     lines.push('PASS stray-paths');
   } else {
@@ -502,9 +514,11 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 async function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
-  const planText = fs.readFileSync(flags.plan, 'utf8');
+  // Resolved before the chdir below, so a relative --plan keeps naming the caller's file.
+  const planPath = path.resolve(flags.plan);
+  const planText = fs.readFileSync(planPath, 'utf8');
   if (flags.root !== undefined) process.chdir(flags.root);
-  const { lines, failed } = await runGate(planText, { planPath: flags.plan, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
+  const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
   process.stdout.write(`${lines.join('\n')}\n`);
   if (failed) process.exitCode = 1;
 }

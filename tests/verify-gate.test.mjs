@@ -479,6 +479,23 @@ test('a change outside every declared Files prints a STRAY line and exits 1', as
   assert.ok(result.stdout.includes('STRAY src/extra.js'));
 });
 
+test('the plan file committed on the branch is the run\'s input, not a stray path', async () => {
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'check.js': CLEAN_CHECK });
+  const base = git(root, 'rev-parse', 'HEAD');
+  await mkdir(path.join(root, 'docs'));
+  await writeFile(path.join(root, 'docs', 'plan.md'), '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-m', 'docs: plan');
+  appendFileSync(path.join(root, 'src', 'app.js'), '// task 1\n');
+  git(root, 'commit', '-am', 'feat(app): greet', '-m', 'Plan-task: plan/1');
+
+  const fromRoot = await run(SCRIPT, ['--plan', 'docs/plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(fromRoot.stdout.includes('PASS stray-paths\n'), fromRoot.stdout);
+  const outside = path.dirname(root);
+  const fromOutside = await run(SCRIPT, ['--plan', path.relative(outside, path.join(root, 'docs', 'plan.md')), '--root', root, '--base', base, '--check-command', 'node check.js'], { cwd: outside });
+  assert.ok(fromOutside.stdout.includes('PASS stray-paths\n'), fromOutside.stdout);
+});
+
 test('--root points the gate at another checkout, not the caller\'s own cwd', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
