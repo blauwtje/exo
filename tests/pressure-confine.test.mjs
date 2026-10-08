@@ -242,6 +242,11 @@ test('on macOS the session-env root is the caller\'s --session-id, else its --re
   assert.deepEqual(forked.roots, [path.join(configDir, 'session-env', fresh)]);
   assert.notEqual(fresh, 'abc-3');
   assert.throws(() => sessionEnvRoot(['--session-id', '../escape']), /not a session id/);
+  assert.throws(() => sessionEnvRoot(['--session-id', 'other-1', '--session-id', 'own-1']), /repeated/);
+  assert.throws(() => sessionEnvRoot(['--resume', 'other-1', '-r', 'own-1']), /repeated/);
+  assert.deepEqual(sessionEnvRoot(['-r', 'abc-3']), { roots: [path.join(configDir, 'session-env', 'abc-3')], args: ['-r', 'abc-3'] });
+  assert.throws(() => sessionEnvRoot(['--continue']), /--continue without --fork-session/);
+  assert.throws(() => sessionEnvRoot(['-p', 'x', '-c']), /--continue without --fork-session/);
   assert.deepEqual((await fs.readdir(path.join(configDir, 'session-env'))).sort(), ['abc-1', 'abc-2', 'abc-3', fresh].sort());
 });
 
