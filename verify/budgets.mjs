@@ -21,7 +21,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 2725, measured: '2026-10-06' };
 // Every plugin agent's description, in the Agent tool listing of every session.
-export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 956, measured: '2026-10-06' };
+export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 739, measured: '2026-10-08' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2067, measured: '2026-10-06' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
@@ -46,9 +46,9 @@ export const STAGE_BODY_TOKENS = {
   'start': 750, 'spec': 760, 'build': 750, 'verify': 750, 'find-cause': 750, 'ship': 750,
 };
 // Every plugin agent's body, stripped of its own frontmatter, stays within this
-// ceiling. build-ui, survey-ui, critique-ui and its twin carry visual-direction context
+// ceiling. build-ui, survey-ui and critique-ui carry visual-direction context
 // no other agent needs, so they are exempt by exact name, never by pattern.
-export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui', 'critique-ui-high'] };
+export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: ['build-ui', 'survey-ui', 'critique-ui'] };
 // Every stage-path reference and every prompt a stage skill's own table names
 // (a row whose target is not under references/) stays within 750 tokens,
 // unless it is locked here at its measured size. A lock fails a file that

@@ -3,7 +3,7 @@
 //
 //   harnesses/codex/generated/skills/<name>/**/*.md      each skill Markdown file, rewritten by rules.mjs
 //   harnesses/codex/generated/skills/<name>/agents/openai.yaml   the policy of an explicit-only skill
-//   harnesses/codex/generated/agents/exo-<agent>.toml    one custom agent per `agents/*.md` entry and low twin
+//   harnesses/codex/generated/agents/exo-<agent>.toml    one custom agent per `agents/*.md` entry and Codex twin
 //
 // An override in `harnesses/codex/overrides/<path under generated>` replaces one
 // generated file when its first line, `<!-- exo:override source-sha256=<hash> -->`,
@@ -132,10 +132,8 @@ function addAgents(root, known, files, sources) {
   for (const [file, entry] of Object.entries(table.agents)) {
     add(`exo-${path.basename(file, '.md')}`, file, entry, table.kinds[entry.kind]);
   }
-  for (const [file, twin] of Object.entries(table.lowTwins)) {
-    const source = path.basename(file, '.md');
-    const description = `${source}, low budget, by name only.`;
-    add(twin.name, file, table.agents[file], twin, description);
+  for (const [name, twin] of Object.entries(table.codexTwins)) {
+    add(name, twin.from, table.agents[twin.from], twin, twin.description);
   }
 }
 

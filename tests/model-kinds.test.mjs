@@ -134,22 +134,35 @@ test('the fresh-chat route names the model of the kind the table gives the build
   assert.ok(report.includes(`\`/model ${model}\``), report);
 });
 
-test('the codex block lists its models, tiers, identity efforts, shift, null effort and low twins', () => {
+test('the codex block lists its models, tiers, identity efforts, shift, null effort and twins', () => {
   const { codex } = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8')).providers;
   assert.deepEqual(codex.models, ['gpt-6.1-sol', 'gpt-6-luna']);
   assert.deepEqual(codex.tiers, { strong: 'gpt-6.1-sol', standard: 'gpt-6.1-sol', fast: 'gpt-6-luna' });
   assert.deepEqual(codex.efforts, { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' });
   assert.deepEqual(codex.effortShift, { strong: 1 });
   assert.equal(codex.nullEffort, 'medium');
-  assert.deepEqual(codex.lowTwins, {
-    'agents/critique-ui.md': 'exo-critique-ui-low',
-    'agents/review-branch-deep.md': 'exo-review-branch-deep-low'
+  assert.equal(codex.lowTwins, undefined);
+  assert.deepEqual(Object.fromEntries(Object.entries(codex.codexTwins).map(([name, twin]) => [name, [twin.from, twin.kind, twin.budget ?? null]])), {
+    'exo-critique-ui-high': ['agents/critique-ui.md', 'review-deep-high', null],
+    'exo-critique-ui-low': ['agents/critique-ui.md', 'review-deep', 'low'],
+    'exo-review-branch-deep': ['agents/review-branch.md', 'review-deep', null],
+    'exo-review-branch-deep-high': ['agents/review-branch.md', 'review-deep-high', null],
+    'exo-review-branch-deep-low': ['agents/review-branch.md', 'review-deep', 'low'],
+    'exo-solve-hard-high': ['agents/solve-hard.md', 'hardest-high', null],
+    'exo-solve-hard-low': ['agents/solve-hard.md', 'hardest-low', null]
   });
 });
 
-test('the default provider stays claude and carries no low twins', () => {
+test('the budget twin agent files are folded into their base agents', () => {
+  for (const twin of ['critique-ui-high', 'review-branch-deep', 'review-branch-deep-high', 'solve-hard-high', 'solve-hard-low']) {
+    assert.ok(!(`agents/${twin}.md` in table.agents), `agents/${twin}.md is still an agents entry`);
+  }
+  for (const kind of ['review-deep-high', 'hardest-high', 'hardest-low']) assert.ok(kind in table.kinds, `kind ${kind} is kept for the budget call mapping`);
+});
+
+test('the default provider stays claude and carries no codex twins', () => {
   assert.equal(readKindTable().provider, 'claude');
-  assert.deepEqual(readKindTable().lowTwins, {});
+  assert.deepEqual(readKindTable().codexTwins, {});
   assert.deepEqual(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds, table.kinds);
 });
 
@@ -174,12 +187,20 @@ test('a strong kind at max stays at max under the codex shift', () => {
   assert.equal(readKindTable(file, { provider: 'codex' }).kinds.prose.effort, 'max');
 });
 
-test('the codex low twins resolve at the low budget tier swap, without the effort shift', () => {
-  const { lowTwins } = readKindTable(TABLE_PATH, { provider: 'codex' });
-  assert.deepEqual(lowTwins, {
-    'agents/critique-ui.md': { name: 'exo-critique-ui-low', model: 'gpt-6.1-sol', effort: 'high' },
-    'agents/review-branch-deep.md': { name: 'exo-review-branch-deep-low', model: 'gpt-6.1-sol', effort: 'high' }
+test('each codex twin resolves its kind, and a budget twin at that budget\'s tier swap without the effort shift', () => {
+  const { codexTwins } = readKindTable(TABLE_PATH, { provider: 'codex' });
+  const resolved = Object.fromEntries(Object.entries(codexTwins).map(([name, twin]) => [name, `${twin.model}:${twin.effort}`]));
+  assert.deepEqual(resolved, {
+    'exo-critique-ui-high': 'gpt-6.1-sol:max',
+    'exo-critique-ui-low': 'gpt-6.1-sol:high',
+    'exo-review-branch-deep': 'gpt-6.1-sol:xhigh',
+    'exo-review-branch-deep-high': 'gpt-6.1-sol:max',
+    'exo-review-branch-deep-low': 'gpt-6.1-sol:high',
+    'exo-solve-hard-high': 'gpt-6.1-sol:max',
+    'exo-solve-hard-low': 'gpt-6.1-sol:high'
   });
+  assert.equal(codexTwins['exo-review-branch-deep'].from, 'agents/review-branch.md');
+  assert.equal(codexTwins['exo-review-branch-deep'].description, 'Reviews one risky plan branch. Dispatched by verify only.');
 });
 
 test('the reader rejects a bad codex shift, null effort or low twin', () => {
@@ -190,6 +211,7 @@ test('the reader rejects a bad codex shift, null effort or low twin', () => {
   assert.throws(readKindTable.bind(null, TABLE_PATH, { provider: 'nope' }), /unknown provider nope/);
   assert.throws(codex((block) => { block.effortShift = { strong: 1, huge: 1 }; }), /effortShift names unknown tier huge/);
   assert.throws(codex((block) => { block.nullEffort = 'huge'; }), /nullEffort names unknown effort huge/);
-  assert.throws(codex((block) => { block.lowTwins['agents/nope.md'] = 'exo-nope-low'; }), /lowTwins names agents\/nope\.md, which agents does not list/);
-  assert.throws(codex((block) => { block.lowTwins['agents/build-task.md'] = 'exo-build-task-low'; }), /agents\/build-task\.md: kind build is not on a tier the low budget swaps/);
+  assert.throws(codex((block) => { block.codexTwins['exo-nope-low'] = { from: 'agents/nope.md', kind: 'build', description: 'x' }; }), /codexTwins exo-nope-low names agents\/nope\.md, which agents does not list/);
+  assert.throws(codex((block) => { block.codexTwins['exo-nope-low'] = { from: 'agents/build-task.md', kind: 'nope', description: 'x' }; }), /codexTwins exo-nope-low: unknown kind nope/);
+  assert.throws(codex((block) => { block.codexTwins['exo-build-task-low'] = { from: 'agents/build-task.md', kind: 'build', budget: 'low', description: 'x' }; }), /exo-build-task-low: kind build is not on a tier the low budget swaps/);
 });

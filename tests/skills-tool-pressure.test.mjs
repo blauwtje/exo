@@ -374,11 +374,16 @@ function cellsFor(file) {
 }
 
 test('--cells-for prints the kind\'s cell and each budget replacement as a --cells value', async () => {
-  const deep = await cellsFor('agents/review-branch-deep.md');
-  assert.equal(deep.code, 0, deep.stderr);
-  assert.equal(deep.stdout, 'opus:high,sonnet:high\n');
+  const critic = await cellsFor('agents/critique-ui.md');
+  assert.equal(critic.code, 0, critic.stderr);
+  assert.equal(critic.stdout, 'opus:high,sonnet:high,opus:xhigh\n');
   const build = await cellsFor('agents/build-task.md');
   assert.equal(build.stdout, 'sonnet:high\n');
+});
+
+test('--cells-for adds every per-call kind a budget runs the file on, deep and high review and the hard twins', async () => {
+  assert.equal((await cellsFor('agents/review-branch.md')).stdout, 'sonnet:high,opus:high,opus:xhigh\n');
+  assert.equal((await cellsFor('agents/solve-hard.md')).stdout, 'opus:high,sonnet:high,opus:xhigh,opus:medium\n');
 });
 
 test('--cells-for prints session for a kind with no effort, and a dispatches entry\'s kind for its file', async () => {

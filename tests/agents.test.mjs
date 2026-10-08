@@ -146,10 +146,7 @@ test('every reference file an agent reads exists', () => {
 
 test('every agent a skill dispatches has a file, and every agent file is dispatched', () => {
   const dispatched = new Set([...skillMarkdown().matchAll(/`exo:([a-z-]+)` agent/g)].map((match) => match[1]));
-  const generatedTwins = Object.keys(kindTable.agents)
-    .filter((file) => kindTable.agents[file].generatedFrom !== undefined)
-    .map((file) => path.basename(file, '.md'));
-  const defined = new Set(agents.map((agent) => agent.frontmatter.name).filter((name) => !generatedTwins.includes(name)));
+  const defined = new Set(agents.map((agent) => agent.frontmatter.name));
   assert.deepEqual([...dispatched].filter((name) => !defined.has(name)), [], 'a skill dispatches an agent with no file');
   assert.deepEqual([...defined].filter((name) => !dispatched.has(name)), [], 'an agent file no skill dispatches');
 });
@@ -163,60 +160,15 @@ test('the inputs the design critic expects are the ones design-ui hands it', () 
   }
 });
 
-test('review-branch-deep is review-branch\'s generated twin on its own kind, with one body', () => {
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
-  const deepReviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch-deep');
-  assert.ok(deepReviewer, 'agents/review-branch-deep.md is missing');
-  assert.equal(kindTable.agents['agents/review-branch-deep.md'].generatedFrom, 'agents/review-branch.md');
-  assert.equal(deepReviewer.frontmatter.model, kindTable.kinds['review-deep'].model);
-  assert.equal(deepReviewer.frontmatter.effort, kindTable.kinds['review-deep'].effort);
-  assert.equal(deepReviewer.body, reviewer.body);
-  assert.equal(deepReviewer.frontmatter.tools, reviewer.frontmatter.tools);
-  assert.ok(reviewer.body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
-});
-
-test('the full twins of the deep reviewer and the design critic share their source body on the xhigh kind', () => {
-  const twins = [
-    { twin: 'review-branch-deep-high', source: 'review-branch' },
-    { twin: 'critique-ui-high', source: 'critique-ui' }
-  ];
-  for (const { twin, source } of twins) {
-    const twinAgent = agents.find((agent) => agent.frontmatter.name === twin);
-    const sourceAgent = agents.find((agent) => agent.frontmatter.name === source);
-    assert.ok(twinAgent, `agents/${twin}.md is missing`);
-    const entry = kindTable.agents[`agents/${twin}.md`];
-    assert.equal(entry.kind, 'review-deep-high');
-    assert.equal(entry.generatedFrom, `agents/${source}.md`);
-    assert.match(entry.description, /high budget/);
-    assert.equal(twinAgent.frontmatter.model, kindTable.kinds['review-deep-high'].model);
-    assert.equal(twinAgent.frontmatter.effort, 'xhigh');
-    assert.equal(twinAgent.body, sourceAgent.body);
-    assert.equal(twinAgent.frontmatter.tools, sourceAgent.frontmatter.tools);
+test('the budget twins fold into their base agents, which a dispatch runs at the call\'s model and effort', () => {
+  for (const twin of ['critique-ui-high', 'review-branch-deep', 'review-branch-deep-high', 'solve-hard-high', 'solve-hard-low']) {
+    assert.ok(!agents.some((agent) => agent.frontmatter.name === twin), `agents/${twin}.md is still an agent file`);
   }
-});
-
-test('solve-hard has a high and a low twin on opus with its one body', () => {
+  assert.deepEqual(Object.keys(kindTable.agents).filter((file) => kindTable.agents[file].generatedFrom !== undefined), []);
   const source = agents.find((agent) => agent.frontmatter.name === 'solve-hard');
-  assert.ok(source, 'agents/solve-hard.md is missing');
-  assert.equal(kindTable.agents['agents/solve-hard.md'].kind, 'hardest');
   assert.equal(source.frontmatter.model, 'opus');
-  assert.equal(source.frontmatter.effort, 'high');
-  const twins = [
-    { twin: 'solve-hard-high', kind: 'hardest-high', effort: 'xhigh', budget: 'high' },
-    { twin: 'solve-hard-low', kind: 'hardest-low', effort: 'medium', budget: 'low' }
-  ];
-  for (const { twin, kind, effort, budget } of twins) {
-    const twinAgent = agents.find((agent) => agent.frontmatter.name === twin);
-    assert.ok(twinAgent, `agents/${twin}.md is missing`);
-    const entry = kindTable.agents[`agents/${twin}.md`];
-    assert.equal(entry.kind, kind);
-    assert.equal(entry.generatedFrom, 'agents/solve-hard.md');
-    assert.match(entry.description, new RegExp(`${budget} budget`));
-    assert.equal(twinAgent.frontmatter.model, 'opus');
-    assert.equal(twinAgent.frontmatter.effort, effort);
-    assert.equal(twinAgent.body, source.body);
-  }
   assert.match(source.body, /carry out the prompt you are handed/i);
+  assert.ok(agents.find((agent) => agent.frontmatter.name === 'review-branch').body.includes('the findings path the dispatch names'), 'the dispatch names the findings path');
 });
 
 test('a branch reviewer reads and reports: no edit tool, no fix, no final verification, one return line', () => {
@@ -226,9 +178,6 @@ test('a branch reviewer reads and reports: no edit tool, no fix, no final verifi
   assert.doesNotMatch(reviewer.frontmatter.description, /\bfix|final verification/i);
   assert.doesNotMatch(reviewer.body, /run every Final verification|`fixed` or `reported`|`FIXED`/);
   assert.ok(reviewer.body.includes('`verdict=CLEAN|FINDINGS|BLOCKED defect=<n> hazard=<n> question=<n> fix=<n> report=<path>`'), 'the reviewer returns one verdict line with its fix count');
-  for (const name of ['review-branch-deep', 'review-branch-deep-high']) {
-    assert.ok(agents.find((agent) => agent.frontmatter.name === name).body.includes('fix=<n> report=<path>`'), `${name} returns the fix count`);
-  }
 });
 
 test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prompt.md', () => {
@@ -323,9 +272,9 @@ test('the implementer names test-design.md and reports Test first: and Red: line
   assert.match(builder.body, /Red:/);
 });
 
-test('each branch reviewer holds the test-first rule and the missing-Red: rule', () => {
+test('the branch reviewer holds the test-first rule and the missing-Red: rule', () => {
   const reviewers = agents.filter((agent) => agent.fileName.startsWith('review-branch'));
-  assert.equal(reviewers.length, 3, 'three branch reviewers exist');
+  assert.equal(reviewers.length, 1, 'one branch reviewer exists');
   for (const reviewer of reviewers) {
     assert.match(reviewer.body, /test-first/, `${reviewer.fileName} test-first rule`);
     assert.match(reviewer.body, /`Test first: yes`/, `${reviewer.fileName} Test first: yes`);

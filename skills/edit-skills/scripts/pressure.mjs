@@ -19,7 +19,9 @@
 // `--cells-for <file>` prints, and runs nothing else, every `model:effort`
 // cell the file runs on as one `--cells` value: its kind's cell, a cell for
 // each budget replacement of the kind's tier, and the cell of every
-// `dispatches` entry for the file, all from `lib/model-kinds.json`; a kind with
+// `dispatches` entry for the file, all from `lib/model-kinds.json`, plus the
+// cell of each Codex twin built from the file, since a budget dispatches the
+// file with that twin's kind as the call's model and effort; a kind with
 // no effort prints `session`.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
 // directory outside the repository, matching pressure-scenarios.md; cells
@@ -109,6 +111,12 @@ function cellsFor(file) {
     for (const swaps of Object.values(table.budgets ?? {})) {
       if (swaps[tier]) cells.add(`${tiers[swaps[tier]]}:${label}`);
     }
+  }
+  const twins = Object.values(table.providers).flatMap((block) => Object.values(block.codexTwins ?? {}));
+  for (const twin of twins.filter((entry) => entry.from === file)) {
+    const { model, effort } = table.kinds[twin.kind];
+    const tier = Object.keys(tiers).find((name) => tiers[name] === model);
+    cells.add(`${twin.budget === undefined ? model : tiers[table.budgets[twin.budget][tier]]}:${effort ?? 'session'}`);
   }
   if (cells.size === 0) throw new UsageError(`no kind in lib/model-kinds.json lists '${file}'`);
   return [...cells].join(',');

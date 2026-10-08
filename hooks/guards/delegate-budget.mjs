@@ -47,10 +47,7 @@ const READ_ONLY_AGENTS = new Set([
   'exo:fetch-docs',
   'exo:survey-ui',
   'exo:critique-ui',
-  'exo:critique-ui-high',
   'exo:review-branch',
-  'exo:review-branch-deep',
-  'exo:review-branch-deep-high',
   'Explore',
   'Plan'
 ]);

@@ -39,13 +39,14 @@ function copyOfRepository() {
 
 const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
 
-test('one file per agent entry plus the two low twins, and no other', () => {
+const TWINS = [
+  'exo-critique-ui-high', 'exo-critique-ui-low', 'exo-review-branch-deep', 'exo-review-branch-deep-high',
+  'exo-review-branch-deep-low', 'exo-solve-hard-high', 'exo-solve-hard-low'
+];
+
+test('one file per agent entry plus the seven codex twins, and no other', () => {
   const names = [...generateAgents(ROOT).keys()].map((file) => path.basename(file, '.toml')).sort();
-  const expected = [
-    ...agentFiles.map((name) => `exo-${path.basename(name, '.md')}`),
-    'exo-critique-ui-low',
-    'exo-review-branch-deep-low'
-  ].sort();
+  const expected = [...agentFiles.map((name) => `exo-${path.basename(name, '.md')}`), ...TWINS].sort();
   assert.equal(names.length, 17);
   assert.deepEqual(names, expected);
 });
@@ -82,6 +83,30 @@ test('a low twin takes the low budget tier and keeps its source body', () => {
   const body = fs.readFileSync(path.join(ROOT, 'agents', 'critique-ui.md'), 'utf8').split('\n---\n')[1].trim();
   assert.ok(twin.includes(body));
   assert.ok(generated('exo-review-branch-deep-low').includes('exo-review-branch-deep-low'));
+});
+
+test('each twin takes its own kind\'s model and effort and its base agent\'s body', () => {
+  const cases = [
+    ['exo-critique-ui-high', 'critique-ui', 'max'], ['exo-review-branch-deep', 'review-branch', 'xhigh'],
+    ['exo-review-branch-deep-high', 'review-branch', 'max'], ['exo-review-branch-deep-low', 'review-branch', 'high'],
+    ['exo-solve-hard-high', 'solve-hard', 'max'], ['exo-solve-hard-low', 'solve-hard', 'high']
+  ];
+  for (const [name, base, effort] of cases) {
+    const twin = generated(name);
+    assert.equal(field(twin, 'model'), 'gpt-6.1-sol', name);
+    assert.equal(field(twin, 'model_reasoning_effort'), effort, name);
+    const body = fs.readFileSync(path.join(ROOT, 'agents', `${base}.md`), 'utf8').split('\n---\n')[1].trim();
+    assert.ok(twin.includes(body.split('\n')[0]), `${name} holds the ${base} body`);
+  }
+  assert.equal(field(generated('exo-review-branch-deep'), 'description'), 'Reviews one risky plan branch. Dispatched by verify only.');
+});
+
+test('every agent the codex budget rules spawn is generated', () => {
+  const schema = JSON.parse(fs.readFileSync(path.join(ROOT, 'skills', 'configure', 'schema.json'), 'utf8'));
+  const named = new Set(JSON.stringify(schema).match(/exo-[a-z-]+[a-z]/g));
+  const names = new Set([...generateAgents(ROOT).keys()].map((file) => path.basename(file, '.toml')));
+  assert.ok(named.has('exo-review-branch-deep'), [...named].join(' '));
+  assert.deepEqual([...named].filter((name) => !names.has(name)), []);
 });
 
 test('only the agents without Edit or Write run read-only', () => {
