@@ -5,6 +5,8 @@ description: "Use when a plan is to run or resume, or a decided change touches o
 
 # Implementing a plan
 
+With `--task <n>` after the plan path, read `references/task-mode.md` and follow it, not the loop or No spec.
+
 ## The loop
 
 1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
@@ -34,6 +36,7 @@ description: "Use when a plan is to run or resume, or a decided change touches o
 | `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7. |
+| `references/task-mode.md` | The request carries `--task <n>`. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line. |

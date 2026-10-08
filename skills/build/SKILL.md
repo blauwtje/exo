@@ -1,11 +1,13 @@
 ---
 name: build
 description: Use when a plan is to run or resume, or a decided change touches over two files, a dependency, a public signature, a persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure.
-argument-hint: "[plan path]"
+argument-hint: "[plan path] [--task <n>]"
 effort: medium
 ---
 
 # Implementing a plan
+
+With `--task <n>` after the plan path, read `references/task-mode.md` and follow it, not the loop or No spec.
 
 ## The loop
 
@@ -36,6 +38,7 @@ effort: medium
 | `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7. |
+| `references/task-mode.md` | The request carries `--task <n>`. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line. |
