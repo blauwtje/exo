@@ -6,11 +6,14 @@
 //   node next-stage.mjs --after <stage> --artifact <path> [--fresh]
 
 import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { readKindTable } from '#model-kinds';
-import { frameOf, parsePlan } from '#plan-tasks';
+import { frameOf, parsePlan, PlanError } from '#plan-tasks';
 import { scratchPath, ScratchPathError } from '#scratch-path';
+import { planCheckReport } from '../../spec/scripts/plan-check.mjs';
 
 // The stage a session just finished names the question that ends it, per
 // the question shape: a title, a context sentence, lettered option
@@ -78,6 +81,23 @@ function briefFile(artifact) {
   }
 }
 
+// The line that offers the unattended run after spec: `run-plan.mjs` beside
+// this skill's sibling `build`, named by absolute path, for a plan that
+// `plan-check --loop` passes; `null` for any other brief or after any other
+// stage.
+function unattendedLine(after, artifact) {
+  const file = after === 'spec' ? briefFile(artifact) : null;
+  if (file === null) return null;
+  try {
+    if (!planCheckReport(fs.readFileSync(file, 'utf8'), { loop: true }).ok) return null;
+  } catch (error) {
+    if (error instanceof UsageError || error instanceof PlanError) return null;
+    throw error;
+  }
+  const script = fileURLToPath(new URL('../../build/scripts/run-plan.mjs', import.meta.url));
+  return `Unattended, with Claude Code: node "${script}" ${path.resolve(file)}`;
+}
+
 /**
  * The open points of a brief: each list item under its `## Open points`
  * heading, a question or an assumption the user has still to confirm. An
@@ -104,6 +124,8 @@ export function nextStageReport({ after, artifact }) {
     return `- **(${String.fromCharCode(65 + index)}) ${label}**: ${text}`;
   });
   const lines = [`**${next.title}**`, next.context(artifact, count), '', ...options, '', `Recommended: (A), because ${next.reason}`];
+  const unattended = unattendedLine(after, artifact);
+  if (unattended !== null) lines.push('', unattended);
   return `${lines.join('\n')}\n`;
 }
 
@@ -118,6 +140,8 @@ export function freshReport({ after, artifact }) {
   const lines = [`Type \`/clear\`, then \`/exo:${next.stage} ${artifact}\`.`];
   const modelSwitch = modelSwitchFor(next.stage, artifact);
   if (modelSwitch !== null) lines.push(modelSwitch);
+  const unattended = unattendedLine(after, artifact);
+  if (unattended !== null) lines.push(unattended);
   return `${lines.join('\n')}\n`;
 }
 

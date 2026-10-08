@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
 import { freshReport, nextStageReport, openPoints } from '../skills/route-skills/scripts/next-stage.mjs';
-import { fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
+import { compactPlanFixture, compactTask, fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
@@ -123,4 +123,19 @@ test('CLI prints the fresh-chat lines with --fresh', async () => {
   const result = await run(SCRIPT, ['--after', 'spec', '--artifact', planPath, '--fresh']);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout, freshReport({ after: 'spec', artifact: planPath }));
+});
+
+test('after spec both reports name the runner command only when plan-check --loop passes', async () => {
+  const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
+  const loopPlan = compactPlanFixture({ tasks }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nAllow: none');
+  const root = await gitRepository({ 'docs/plans/loop.md': loopPlan, 'docs/plans/plain.md': compactPlanFixture({ tasks }) });
+  const loopPath = path.join(root, 'docs/plans/loop.md');
+  const plainPath = path.join(root, 'docs/plans/plain.md');
+  const runner = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
+  const line = `Unattended, with Claude Code: node "${runner}" ${loopPath}`;
+  assert.ok(nextStageReport({ after: 'spec', artifact: loopPath }).endsWith(`\n\n${line}\n`));
+  assert.ok(freshReport({ after: 'spec', artifact: loopPath }).endsWith(`\n${line}\n`));
+  assert.ok(!nextStageReport({ after: 'spec', artifact: plainPath }).includes('Unattended'));
+  assert.ok(!freshReport({ after: 'spec', artifact: plainPath }).includes('Unattended'));
+  assert.ok(!nextStageReport({ after: 'find-cause', artifact: loopPath }).includes('Unattended'));
 });
