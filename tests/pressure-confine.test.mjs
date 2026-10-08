@@ -1,7 +1,7 @@
 // edit-skills's pressure runner confines every `claude` run to its own run
 // folder: on macOS a real sandbox-exec makes a stub `claude` fail with EPERM
 // on a write outside that folder and under a `~/.claude`-like folder, save
-// its own transcript folder, while its write in its cwd succeeds; on Linux the run gets dontAsk, Edit and Write
+// its own transcript and session-env folders, while its write in its cwd succeeds; on Linux the run gets dontAsk, Edit and Write
 // allows scoped to its scratch folder, Claude's sandbox settings and no user
 // settings, never bypassPermissions; on Windows the runner refuses; all of it lives in lib/confine-claude.mjs.
 
@@ -30,13 +30,14 @@ const STAND_IN = [
   "  projects: path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'),",
   "  transcript: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects', process.cwd().replace(/[^a-zA-Z0-9]/g, '-'), 's.jsonl'), 'x')),",
   "  otherSlug: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects', 'other-slug', 's.jsonl'), 'x')),",
+  "  sessionEnv: attempt(() => fs.mkdtempSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'session-env', 'session-'))),",
   "  configRoot: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'exo-confine-canary.txt'), 'x')),",
   '  cwd: process.cwd()',
   '};',
   "console.log(JSON.stringify({ type: 'result', result: JSON.stringify(outcome) }));"
 ].join('\n');
 
-test('on macOS a run cannot write outside its run folder or under ~/.claude but its own transcript folder, and can write in its cwd', { skip: process.platform !== 'darwin' && 'sandbox-exec confinement is macOS only' }, async () => {
+test('on macOS a run cannot write outside its run folder or under ~/.claude but its own transcript folder and session-env, and can write in its cwd', { skip: process.platform !== 'darwin' && 'sandbox-exec confinement is macOS only' }, async () => {
   const directory = await fixture();
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
@@ -75,12 +76,13 @@ test('on macOS a run cannot write outside its run folder or under ~/.claude but 
     assert.equal(result.inside, 'ok', `${answer}: ${text}`);
     assert.equal(result.transcript, 'ok', `${answer}: ${text}`);
     assert.equal(result.otherSlug, 'EPERM', `${answer}: ${text}`);
+    assert.equal(result.sessionEnv, 'ok', `${answer}: ${text}`);
     assert.equal(result.configRoot, 'EPERM', `${answer}: ${text}`);
     assert.ok(result.cwd.startsWith(`${realRuns}${path.sep}`), `${answer}: ${text}`);
   }
   assert.equal(await fs.readFile(canary, 'utf8'), CANARY_TEXT);
   assert.deepEqual(await fs.readdir(fakeClaudeHome), []);
-  assert.deepEqual(await fs.readdir(configDir), ['projects']);
+  assert.deepEqual((await fs.readdir(configDir)).sort(), ['projects', 'session-env']);
   assert.deepEqual(await fs.readdir(path.join(configDir, 'projects', 'other-slug')), []);
   assert.equal((await fs.readdir(path.join(configDir, 'projects'))).length, 3);
 });
@@ -112,8 +114,8 @@ test('on macOS sandbox-exec wraps claude with bypassPermissions, the roots\' rea
   const transcripts = path.join(configDir, 'projects', `${real}/scratch`.replace(/[^a-zA-Z0-9]/g, '-'));
   assert.equal(run.command, 'sandbox-exec');
   assert.equal(run.args[0], '-p');
-  assert.equal(run.args[1], sandboxProfile([`${real}/scratch`, `${real}/tmp`, transcripts]));
-  assert.deepEqual(await fs.readdir(configDir), ['projects']);
+  assert.equal(run.args[1], sandboxProfile([`${real}/scratch`, `${real}/tmp`, transcripts, path.join(configDir, 'session-env')]));
+  assert.deepEqual((await fs.readdir(configDir)).sort(), ['projects', 'session-env']);
   assert.deepEqual(await fs.readdir(path.join(configDir, 'projects')), [path.basename(transcripts)]);
   assert.deepEqual(run.args.slice(2), ['claude', '--permission-mode', 'bypassPermissions', '--settings', JSON.stringify(settings), ...base]);
   assert.deepEqual(run.env, { TMPDIR: `${real}/tmp/`, CLAUDE_CODE_TMPDIR: `${real}/tmp` });
@@ -127,7 +129,7 @@ test('on macOS a run with no tmp gets a fresh temporary directory added as a wri
   const tmp = run.env.CLAUDE_CODE_TMPDIR;
   try {
     assert.ok(tmp && tmp !== real, tmp);
-    assert.equal(run.args[1], sandboxProfile([real, tmp, transcriptFolder(real, configDir)]));
+    assert.equal(run.args[1], sandboxProfile([real, tmp, transcriptFolder(real, configDir), path.join(configDir, 'session-env')]));
     assert.equal(run.cwd, real);
     assert.ok(!run.args.includes('--settings'), run.args.join(' '));
   } finally {
@@ -179,13 +181,13 @@ test('the transcript folder is the config dir\'s projects/<slug>, every non-alph
   assert.throws(() => transcriptFolder(`/${'x'.repeat(200)}`, '/c'), /over 200 characters/);
 });
 
-test('on macOS the transcript folder is the only root added under the config dir, and Linux adds none', async () => {
+test('on macOS the transcript and session-env folders are the only roots added under the config dir, and Linux adds none', async () => {
   const { real } = await linkedRoots();
   const configDir = await fs.realpath(await fixture());
   const darwin = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`, `${real}/tmp`], tmp: `${real}/tmp`, platform: 'darwin', configDir });
   const subpaths = [...darwin.args[1].matchAll(/\(subpath "([^"]*)"\)/g)].map((match) => match[1]);
-  assert.deepEqual(subpaths.filter((root) => root.startsWith(configDir)), [transcriptFolder(`${real}/scratch`, configDir)]);
-  assert.equal(subpaths.length, 3, darwin.args[1]);
+  assert.deepEqual(subpaths.filter((root) => root.startsWith(configDir)), [transcriptFolder(`${real}/scratch`, configDir), path.join(configDir, 'session-env')]);
+  assert.equal(subpaths.length, 4, darwin.args[1]);
   const linux = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`], platform: 'linux', configDir: path.join(configDir, 'linux') });
   assert.ok(!linux.args.join(' ').includes(configDir), linux.args.join(' '));
 });
