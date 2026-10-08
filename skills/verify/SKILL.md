@@ -10,24 +10,24 @@ effort: high
 ## The loop
 
 1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
-   - With no plan file, end the turn: ask for its path and name `build`'s no-plan route, never hand-run checks or `ship`.
-   - It runs each landed task's Proof command, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate.
-   - It then runs the gate once: the first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, or `npm test` with no `check` script.
-   - A `FAIL` or `STRAY` line ends the turn with the script's own report, and nothing here reruns its checks.
-   - It also runs a claims-diff check per landed task; list a `WARN` line in the report, and it never ends the turn.
-   - A `SESSION <check>` line names an `mcp:<tool> <args>` call the script never runs: call the `mcp__<server>__<tool>` tool with those args yourself, never through Bash.
-   - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; a `FAIL` ends the turn like its own.
-   - With no `mcp__*__<tool>` tool, record `UNRUN <check>`, not `PASS`, and list it in the report.
+   - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
+   - Script runs each landed task's Proof command, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate.
+   - Then the gate once: first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, else `npm test` with no `check` script.
+   - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun none of its checks.
+   - `WARN` line (claims-diff per landed task) → list it in the report; never ends the turn.
+   - `SESSION <check>` line names an `mcp:<tool> <args>` call the script skips → call the `mcp__<server>__<tool>` tool with those args yourself, not through Bash.
+   - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; that `FAIL` ends the turn too.
+   - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the report.
 2. **Review the branch.** `REVIEWER: none` skips steps 2-3; go to step 4.
    - Otherwise dispatch the `exo:review-branch` agent, setting its `model` and `effort` to the `REVIEWER:` line's `model=` and `effort=`, unless the budget rule sets others.
-   - Pass the plan path, branch, checkout and base.
-   - Pass the code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
-   - Pass `${CLAUDE_SKILL_DIR}/references/review-rules.md` as the review rules path.
-   - Pass `<checkout>/.exo/` as the implementer report directory and `<checkout>/.exo/branch-review.md` as the findings path.
-   - `BLOCKED` ends the turn with its report.
+   - Pass: plan path, branch, checkout, base.
+   - Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
+   - Pass: review rules path `${CLAUDE_SKILL_DIR}/references/review-rules.md`.
+   - Pass: implementer report directory `<checkout>/.exo/`, findings path `<checkout>/.exo/branch-review.md`.
+   - `BLOCKED` → end the turn with its report.
 3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
-   - At `fix=0` go to step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
-   - After the dispatch, follow `references/repair.md`.
+   - `fix=0` → step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
+   - After the dispatch → follow `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
 
 ## References
