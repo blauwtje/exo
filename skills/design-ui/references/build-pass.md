@@ -29,6 +29,7 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 
 - Span the page background and any sidebar or side rail the full page height at 390px and 1440px, full-page captures included, or a band of another color shows below.
 - Give raised surfaces the direction's material, not one grey shadow each, and type a voice through a second weight, width or family, as `## Character` sets.
+- Write the motion thesis as one sentence before the first animation: how the chosen mood moves.
 - Build the motion bar: every item of `## Motion thesis` in the `motion` reference, held to its `## Job gate`, `## Timing` and `## Reduced motion` sections; open them before the first animation.
 - Let no trope from `## Slop tropes` stand without recorded provenance.
 - Theme every browser surface: `::selection`, `accent-color`, `caret-color`, `scrollbar-color` on inner scrollers, and link underline offset and thickness.
