@@ -6,57 +6,57 @@ argument-hint: <skill or agent to create, edit or size>
 
 # Skills tool
 
-A skill earns its place only by stopping a mistake the model makes without it, in as few words as that takes. The enemy is the skill that restates behavior the model already has and hides the one rule that changes anything. The overcorrection is an order stripped of its reason, which the model obeys to the letter past where it ends.
+A skill earns its place only by stopping a mistake the model makes without it, in the fewest words that takes. The enemy is the skill that restates default behavior and hides the one rule that changes anything. The overcorrection is an order stripped of its boundary reason, obeyed to the letter past where it ends.
 
 ## When to use
 
-- Creating a skill or an agent, changing one, or judging whether one has grown too long.
-- Borrowed by a stage, hand control back to it once the skill is done; otherwise own the turn alone.
-- Not for a fix that happens once, a habit of one project, or a limit a regex can check: a commit, `CLAUDE.md` or the verifier holds those, because a skill exists for a call that needs judgment.
+- Creating, changing or sizing a skill or agent.
+- Borrowed by a stage → hand control back once done; otherwise own the turn.
+- Not for a one-time fix, one project's habit, or a limit a regex can check: a commit, `CLAUDE.md` or the verifier holds those; a skill is for a call needing judgment.
 
 ## The loop
 
-1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom.
-2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <cells> --plugin-dir <clone>` on the cells `--cells-for <edited file>` prints, else the session's own, and read only the `without` answers now.
-3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape below, the style `references/instruction-style.md` sets and the register `references/wording.md` sets.
-4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
-5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
-6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
-7. **Judge blind.** When step 4's read is a close call, judge the pre-edit and edited clones' `with` answers blind, per `references/blind-eval.md`.
+1. **Catch the mistake.** Write one prompt per `references/pressure-scenarios.md` whose answer shows the mistake as one observable symptom.
+2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <cells> --plugin-dir <clone>` on the cells `--cells-for <edited file>` prints, else the session's own; read only the `without` answers now.
+3. **Choose the home.** Place the fix per `references/where-a-fix-lives.md`; write prose in the shape below, style per `references/instruction-style.md`, register per `references/wording.md`.
+4. **Watch it stop.** Rerun `pressure.mjs` on the same cells; read the `with` answers. Run without the skill also passed → case shows nothing; harden it until that run fails.
+5. **Close each new excuse.** Each justification the `with` run still produced → apply `references/plugging-holes.md`, rerun all cases. Done when a full rerun adds nothing to its tables.
+6. **Verify.** Run `node verify.mjs`; red check → fix the structure, never exempt it.
+7. **Judge blind.** Step 4's read a close call → judge pre-edit and edited clones' `with` answers blind, per `references/blind-eval.md`.
 
 ## The shape
 
 | Part | Contract |
 |---|---|
-| `description` | Trigger only: the moments it fires, then what it leaves alone. A workflow written into it replaces the body, because the model acts on the summary it already read. |
-| Opening | A single paragraph naming the principle, the enemy and the overcorrection. |
-| `## When to use` | Bullets naming the symptoms first, then each "not for" case. |
-| Process | Numbered steps, aim for at most eight, taken in order until one matches; every step is a rule, with a reason only where it sets the boundary. |
-| `## Red flags` | Only in a skill the model is tempted to skip: a table from the tempting thought to what is actually true. |
-| `## References` | A table of each file and the moment to read it; nothing is loaded before the step that needs it. |
-| `## Judgment` | A ladder saying which rule wins when two conflict. |
+| `description` | Trigger only: moments it fires, then what it leaves alone. No workflow: the model acts on that summary instead of the body. |
+| Opening | One paragraph: principle, enemy, overcorrection. |
+| `## When to use` | Bullets: symptoms first, then each "not for" case. |
+| Process | Numbered steps, aim at most eight, in order until one matches; each step a rule, reason only where it sets the boundary. |
+| `## Red flags` | Only in a skill the model is tempted to skip: table from tempting thought to what is true. |
+| `## References` | Table of each file and when to read it; nothing loads before the step that needs it. |
+| `## Judgment` | Ladder: which rule wins when two conflict. |
 
 ## Form
 
-- Bulk material, such as a template, a worked example or a checklist longer than 20 lines, lives in `references/`, and the body names the moment to open it.
+- Bulk material (template, worked example, checklist over 20 lines) → `references/`; body names when to open it.
 - Aim the body at 2,000 tokens (bytes after the frontmatter / 4) and the description at 200 characters; the verifier fails 2,500 tokens, 518 for the injected `route-skills`, and 250 characters.
 - A reference holds one topic and links to no other reference; over 100 lines it opens with a contents list linking each section.
-- Text handed to a delegate lives beside `SKILL.md` as `<role>-prompt.md`, with a References row naming the step that dispatches it; `references/` holds only what the skill reads itself.
+- Text handed to a delegate → beside `SKILL.md` as `<role>-prompt.md`, with a References row naming the dispatching step; `references/` holds only what the skill reads itself.
 
 ## Red flags
 
 | The excuse | What holds |
 |---|---|
-| "The body has room to explain itself." | A reason earns one clause only where it sets the rule's boundary; one that needs a paragraph belongs in a reference. |
-| "An edit this small needs no test run." | Without the run lacking the skill, the edit is a guess about what the model does. |
-| "Any model already knows this." | Then the line goes; only what the run without the skill got wrong earns a place. |
-| "I will test them together once all the skills are written." | Each skill clears every case before the next one begins, because skills written in a batch hide each other's gaps. |
+| "The body has room to explain itself." | Reason gets one clause, only where it sets the boundary; a paragraph-long one → reference. |
+| "An edit this small needs no test run." | Without the `without` run, the edit is a guess about what the model does. |
+| "Any model already knows this." | Then cut the line; only what the `without` run got wrong earns a place. |
+| "I will test them together once all the skills are written." | Each skill clears every case before the next begins; skills written in a batch hide each other's gaps. |
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `scripts/rename-skill.mjs` | Renaming a skill: run `node scripts/rename-skill.mjs --from <old> --to <new>` to move its folder, docs page and pressure folder and rewrite every mention in one pass. |
+| `scripts/rename-skill.mjs` | Renaming a skill: `node scripts/rename-skill.mjs --from <old> --to <new>` moves its folder, docs page and pressure folder and rewrites every mention in one pass. |
 | `references/pressure-scenarios.md` | Step 1. |
 | `references/where-a-fix-lives.md` | Step 3, before the first rule is written. |
 | `references/instruction-style.md` | Step 3, before writing or editing any instruction file, `CLAUDE.md`, rule, agent, output style or hook included. |
@@ -68,6 +68,6 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 ## Judgment
 
-- A rule the run without the skill broke outranks a rule that only reads well.
-- An edit that was never tested is reverted rather than kept as a draft.
-- Short outranks complete: a skill that grew too long drops its weakest rule, never a reason clause that sets a boundary.
+- Rule the `without` run broke outranks a rule that only reads well.
+- Untested edit → revert, never keep as draft.
+- Short outranks complete: an overlong skill drops its weakest rule, never a reason clause that sets a boundary.

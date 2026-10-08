@@ -1,6 +1,6 @@
 # Skill shape
 
-A new skill starts from this template and removes every section it has nothing real to put in.
+New skill → start from this template; remove every section with nothing real to put in.
 
 ```markdown
 ---
@@ -39,15 +39,15 @@ description: <The moments it fires, then "Not for ..." naming the cases it leave
 - <rule A> outranks <rule B> when <condition>.
 ```
 
-An agent uses the same shape with two changes: its frontmatter sets `model`, `tools` and `effort`, picked so discovery and bulk reading run on Sonnet with few tools, and its body closes with the exact report format its caller parses.
+An agent takes the same shape with two changes: frontmatter sets `model`, `tools` and `effort` (discovery and bulk reading run on Sonnet with few tools); body closes with the exact report format its caller parses.
 
 ## What to leave out
 
-- A war story about one fix, such as "last sprint the build broke because…"; write the rule the story taught, since a reader cannot generalize an anecdote.
-- One example repeated in several languages, or a blank template dressed up as an example; give a single complete example in the language that matters most.
-- Placeholder names such as `step3`, `helper` or `data` where a word from the domain exists.
-- A second shape for the final message; a skill's report step names what the ending under `# Closing` in route-skills carries.
+- War story about one fix ("last sprint the build broke because…") → write the rule it taught; a reader cannot generalize an anecdote.
+- One example in several languages, or a blank template posing as an example → one complete example in the language that matters most.
+- Placeholder names (`step3`, `helper`, `data`) where a domain word exists.
+- A second final-message shape; the report step names what the `# Closing` ending in route-skills carries.
 
 ## Judgment
 
-- The verifier's rules for the opening and the closing outrank any layout preference.
+- Verifier rules for opening and closing outrank any layout preference.
