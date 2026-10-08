@@ -22,9 +22,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 - design-ui keeps one copy of its quality floor in `build-pass.md`, of its motion steps in `motion.md` and of its capture steps in `phase-build.md`; the build-ui agent and the other phases point there, and each pointer still carries the step a builder needs without opening the target.
 - design-ui's intake, direction-preview, composition and phase-direction references drop lines a with-and-without run showed change nothing, from 7,182 to 6,947 words.
 - build and find-cause dispatch one shared fixer prompt, and the handoff fields live only in find-cause's `handoff.md`, from 1,252 to 972 words across the four prompt files.
+- When several decisions are open at once and none waits on another's answer, a skill asks them all in one numbered message instead of one per turn.
 
 ### Fixed
 
+- `confinedClaude` requires a `tmp` folder and makes none of its own, so a call no longer leaves a `claude-isolation-*` or `claude-tmp-*` folder behind.
 - A confined pressure or benchmark run on macOS denies `defaults write`, Apple Events, `open`, LaunchServices and `launchctl`, proven by canary probes run under the same sandbox profile.
 - A confined run on Linux loads only project and local settings, so a user `permissions.allow` or sandbox path cannot widen it; an API key set through user settings no longer reaches such a run.
 - A confined run on macOS can create its `session-env` folder, so SessionStart hooks run and the injected exo text loads; before this, confined pressure runs ran without it.
