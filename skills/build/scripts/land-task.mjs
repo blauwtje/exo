@@ -54,12 +54,17 @@ function trailersOf(planId, number, signatures) {
 // A compact task carries no `Commit:` block by design: its heading title is
 // the commit subject and its `Files:` field is the `git add` list, so this
 // derives the same shape land-task would otherwise read from the plan text.
-function deriveCommit(task, number, planId, signatures) {
+// A path `git rm` already staged as deleted is left out of the `git add`,
+// which refuses a path matching neither the index nor the tree; the index
+// still carries the removal into the commit.
+function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
-  const addArgs = task.files.map((file) => shellQuote(file.path)).join(' ');
-  return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m ${shellQuote(trailersOf(planId, number, signatures))}`;
+  const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
+  const addArgs = task.files.filter((file) => !removed.has(file.path)).map((file) => shellQuote(file.path)).join(' ');
+  const addLine = addArgs === '' ? '' : `git add ${addArgs}\n`;
+  return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(trailersOf(planId, number, signatures))}`;
 }
 
 // The `{ planId, number }` an `EXO_RUN_TASK` value pins this process to; null when the
@@ -121,7 +126,7 @@ export function fixLand({ root, subject, plan = null, pin = null }) {
 
 // spec writes a `Commit:` block's trailer as the bare `Plan-task: <n>`, which
 // names no plan; the block runs with that trailer swapped for the one that does.
-export function commitBlockOf(plan, number, planId, signatures = []) {
+export function commitBlockOf(plan, number, planId, signatures = [], root = '.') {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   if (task.commitBlock !== null) {
@@ -130,7 +135,7 @@ export function commitBlockOf(plan, number, planId, signatures = []) {
     }
     return task.commitBlock.replace(`"Plan-task: ${number}"`, shellQuote(trailersOf(planId, number, signatures)));
   }
-  if (task.compact) return deriveCommit(task, number, planId, signatures);
+  if (task.compact) return deriveCommit(task, number, planId, signatures, root);
   throw new LandingError(`Task ${number} has no Commit: block`);
 }
 
@@ -541,7 +546,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   refuseMcpProofUnderPin(pin, task);
   refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, true));
-  const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
+  const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
