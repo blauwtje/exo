@@ -23,9 +23,8 @@ Settle what the run needs before it builds: the questions worth asking, where th
 - Rungs 3, 5 and 6 of `## Route` show the completed scope as one form, after Phase 1 and before Direction.
 - The form sends, in this order, a single-select Users question, a multi-select Scope question and a single-select Directions question.
 - Ask no product or style question, because a product or style counts only when the user names one in the ask.
-- Users, Scope and Directions name the questions here; the user never sees these names.
 - Write each question's `header` tab in the conversation's language, at most 12 characters.
-- The tabs read Users "For whom", Scope "What's in", Directions "Designs", each written in the conversation's language.
+- The tabs read Users "For whom", Scope "What's in", Directions "Designs".
 - Word every question and option in plain words for someone without design knowledge.
 - Use no jargon or abbreviation in a tab, question or option, such as scope, reference, directions or SLA, in any language.
 - The Users question comes first, because the user the screen serves decides its layout, density and main action.
