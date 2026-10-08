@@ -13,11 +13,9 @@ issue that never says when it is done, which pushes the whole spec into the
 plan.
 
 A plain request to file, open, write or split issues authorizes creating them,
-with their labels, type, project fields, relations and milestone, and creating
-the default labels `references/fields.md` names when the repository defines
-none of its own. It never closes an issue, never deletes one, and never edits
-an existing one, except to add a relation to a parent or a blocker the user
-named.
+with their labels, type, project fields, relations and milestone. It never
+closes an issue, never deletes one, and never edits an existing one, except to
+add a relation to a parent or a blocker the user named.
 
 ## Steps
 
@@ -49,7 +47,7 @@ Write it in the language of the existing issues, which the script's `titles`
 shows. When there are none, follow the language of the recent pull requests and
 commits
 (`gh pr list --limit 5 --json title --jq '[.[].title]'`,
-`git log -5 --format=%s`). The skill's own text stays English.
+`git log -5 --format=%s`).
 
 A brief or any feature work takes the Spec shape in `references/fields.md`; a
 bug, a regression, a chore or a documentation fix takes the Report shape below.
@@ -57,7 +55,7 @@ bug, a regression, a chore or a documentation fix takes the Report shape below.
 - `### What happens`: one sentence naming the current behavior, in the present tense.
 - `### Expected`: what should happen instead.
 - `### Steps`: the prompts or commands that produce it, in order.
-- `### Environment`: the versions and the platform the repository's own bug template asks for, one per line; where it has no template, the tool versions and the operating system.
+- `### Environment`: the versions and the platform the repository's own bug template asks for, one per line.
 - `### Evidence`: the output, transcript or log lines that show it, the relevant ones only and with secrets removed.
 
 ## References
