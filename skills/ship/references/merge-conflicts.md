@@ -7,9 +7,6 @@
 ## Resolve
 
 - A resolve never uses `--strategy`/`-X`.
-- Resolve each conflict with a minimal, correctness-first edit, because a wider edit hides what the resolve changed.
-- Keep both sides when safe; otherwise keep the variant that compiles and preserves public behavior.
-- Leave no conflict markers in any file.
 - Create no tag while resolving, because a tag can cut a release, which nothing here authorizes.
 
 ## Lockfiles
@@ -19,7 +16,6 @@
 ## Validate before the push
 
 - A failing check here blocks the push; fix it or report it, never push past it.
-- Stage the resolved files.
 - Run the project's own check, compile, lint and the relevant tests, before the push that follows.
 
 ## Report

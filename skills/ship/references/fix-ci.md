@@ -3,15 +3,9 @@
 ## Read the failure
 
 - Inspect every failing check with `gh pr checks --json name,bucket,state,workflow,link` or its log before touching code, because a guessed cause fixes the wrong thing.
-- Find the first actionable error and work one failure at a time, because later errors often follow from the first.
-
-## Smallest fix
-
-- Apply the smallest safe fix for that one failure, because a small diff shows whether it closed the failure.
 
 ## Rerun rules
 
-- Push, rerun `gh pr checks`, and repeat: fix, push, recheck, within the round limit.
 - At the round limit, stop, hand back and summarize what is still broken.
 
 ## Flake and a stale base

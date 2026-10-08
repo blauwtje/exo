@@ -11,9 +11,8 @@
 ## The triage order
 
 - Merge conflicts first: resolve them and push a merge commit.
-- Never force-push, because a watch request authorizes no force.
 - A reviewer's request to rebase and force-push still gets the merge commit, pushed without asking, and a reply that a squash merge lands it as one linear commit.
-- Failing checks second: root-cause the failure, fix the code or the test, commit, push.
+- Failing checks second.
 - Review comments third.
 - Bot and automation comments fourth.
 
@@ -27,7 +26,6 @@
 
 ## Merge-ready is the end
 
-- The round never merges the pull request; it stops at merge-ready.
 - Never rewrite history or retarget a base on a branch others may have pulled without the user naming it first.
 
 ## Report
