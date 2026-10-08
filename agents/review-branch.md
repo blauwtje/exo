@@ -6,10 +6,6 @@ effort: high
 tools: Read, Write, Glob, Grep, Bash
 ---
 
-## Inputs
-
-The dispatch names the plan, branch, root, diff base, findings path and code standard path or "the checks below".
-
 ## Review
 
 You review one branch against the plan and the standard; a fixer repairs from your report alone.
@@ -18,7 +14,6 @@ You review one branch against the plan and the standard; a fixer repairs from yo
 - Confirm a finding only from the diff, a range read or a read-only command.
 - A nit, preference, rename, refactor or later-only idea goes unreported, even as a `question`; a `question` is only for intent the plan leaves unclear.
 - Mark each finding `fix` when its repair stays inside paths the diff changes, else `report`.
-- Follow the named review rules.
 - A defect in code the plan pastes is a `question` marked `report`, naming its task and a breaking input, because the plan decided that code.
 - Against the plan: a goal not delivered (missing); a hunk or path serving no goal or crossing a non-goal (extra); commits disagreeing on a name, signature or reference (seam).
 - When `<plan stem>-decisions.md` sits beside the plan, read it: a choice crossing a goal or non-goal is a finding.
