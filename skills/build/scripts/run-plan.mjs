@@ -37,7 +37,8 @@ const SCRIPT = {
   landTask: path.join(HERE, 'land-task.mjs'),
   verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
-  planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs')
+  planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'),
+  mcpToolCall: path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs')
 };
 
 // The markers a running Claude Code session sets; any other CLAUDE_CODE_*
@@ -153,7 +154,7 @@ const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((
 
 /** The allowlist one process gets: reads, edits in the root, exo's scripts, the plan's commands and read-only git. */
 export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT }) {
-  const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.nextTask, SCRIPT.landTask];
+  const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.nextTask, SCRIPT.landTask, SCRIPT.mcpToolCall];
   const commands = loopCommands(plan)
     .filter((entry) => entry.field !== 'Success criterion')
     .flatMap((entry) => entry.parts.map((part) => `Bash(${part} *)`));
