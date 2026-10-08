@@ -19,7 +19,7 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // route-skills body and cuts the tail of that body before it passes the cap, so the
 // next addition to route-skills buys its bytes out of that body.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
-export const DESCRIPTION_TOTAL_LOCK = { chars: 2725, measured: '2026-10-06' };
+export const DESCRIPTION_TOTAL_LOCK = { chars: 2542, measured: '2026-10-08' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 739, measured: '2026-10-08' };
 export const INJECTED_CONTEXT_LOCK = { bytes: 2067, measured: '2026-10-06' };

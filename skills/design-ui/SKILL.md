@@ -1,6 +1,6 @@
 ---
 name: design-ui
-description: "Use when a page or component's look or copy changes, or looks empty, boring or generic. When a new visual surface does not name its data or behavior, spec decides those first; design-ui follows for presentation. Not for a typo or non-visual change."
+description: "Use when a page or component's look or copy changes, or looks empty, boring or generic. Not for a typo or non-visual change."
 argument-hint: <page, component or visual change>
 effort: high
 ---

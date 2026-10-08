@@ -1,6 +1,6 @@
 ---
 name: build
-description: Use when a plan is to run or resume, or a decided change touches over two files, a dependency, a public signature, a persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure.
+description: Use when running or resuming a plan, or a decided change touches over two files, a dependency, public signature, persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure.
 argument-hint: "[plan path] [--task <n>]"
 effort: medium
 ---

@@ -20,7 +20,6 @@ const thousands = (value) => value.toLocaleString('en-US');
 
 const LABEL_LIMIT = 70;
 const HANDSHAKE = /When a new visual surface does not name [^.]+; design-ui follows for presentation\./;
-const HANDSHAKE_SKILLS = ['spec', 'design-ui'];
 
 const PINNED_SENTENCES = {
   'skills/spec/SKILL.md': [
@@ -202,19 +201,11 @@ export function checkSharedContracts(report, repository) {
 
   checkPinnedLists(errors, repository);
 
-  // The handshake sentence lives in two descriptions and must read the same in both.
-  const handshakes = new Map();
-  for (const skill of HANDSHAKE_SKILLS) {
-    const parsed = readFrontmatter(repository.lines(path.join(repository.skillsRoot, skill, 'SKILL.md')));
-    const match = HANDSHAKE.exec(parsed.values.get('description') ?? '');
-    if (match === null) {
-      errors.push(`${skill}: description lacks the spec/design-ui handshake sentence`);
-    } else {
-      handshakes.set(skill, match[0]);
-    }
-  }
-  if (handshakes.size === 2 && handshakes.get('spec') !== handshakes.get('design-ui')) {
-    errors.push('spec and design-ui handshake sentences are not byte-identical');
+  // Spec decides a new visual surface's data and behavior before design-ui, so
+  // spec's description alone carries the handshake sentence that routes it there.
+  const specDescription = readFrontmatter(repository.lines(path.join(repository.skillsRoot, 'spec', 'SKILL.md'))).values.get('description') ?? '';
+  if (!HANDSHAKE.test(specDescription)) {
+    errors.push('spec: description lacks the spec/design-ui handshake sentence');
   }
 
   report.assert(
