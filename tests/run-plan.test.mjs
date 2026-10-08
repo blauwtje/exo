@@ -140,6 +140,8 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
   assert.ok(result.calls[0].argv.includes(`Edit(/${context.root}/**)`));
   assert.ok(result.calls[0].argv.includes('Bash(node --version *)'));
+  const mcpCheck = path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs');
+  for (const rule of [`Bash(node "${mcpCheck}" *)`, `Bash(node ${mcpCheck} *)`]) assert.ok(result.calls[0].argv.includes(rule), rule);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
   const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
   assert.match(summary, /Task 1: [0-9a-f]{7,}/);
