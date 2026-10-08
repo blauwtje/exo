@@ -29,6 +29,7 @@ import { defaultBranch, frameOf, landedTasks, loopCommands, parsePlan, planIdOf,
 import { isMain, parseFlags, UsageError } from '#script-flags';
 import { SCRATCH_FOLDER } from '#scratch-path';
 
+const KILL_GRACE_MS = 5000;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
 const SCRIPT = {
@@ -194,9 +195,10 @@ function buildTaskDefaults() {
   };
 }
 
-function gitOut(root, args) {
+function gitOut(root, args, { trim = true } = {}) {
   const answer = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  return answer.status === 0 ? answer.stdout.trim() : null;
+  if (answer.status !== 0) return null;
+  return trim ? answer.stdout.trim() : answer.stdout.replace(/\s+$/, '');
 }
 
 function snapshot(root) {
@@ -230,11 +232,31 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs }) {
     let text = '';
     let timedOut = false;
     let settled = false;
-    const child = spawn(claude.command, [...claude.prefix, ...args], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
+    let graceTimer = null;
+    // Detached on POSIX so the child leads a process group the timeout can end whole.
+    const child = spawn(claude.command, [...claude.prefix, ...args], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
+    const endTree = (signal) => {
+      try {
+        if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
+        else process.kill(-child.pid, signal);
+      } catch {
+        // The group is already gone.
+      }
+    };
+    // The child has its own process group, so a signal to the runner no longer reaches it: end the group, then exit.
+    const onSignal = (signal) => {
+      endTree('SIGKILL');
+      process.exit(128 + (signal === 'SIGINT' ? 2 : 15));
+    };
+    process.on('SIGINT', onSignal);
+    process.on('SIGTERM', onSignal);
     const settle = (code, signal) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(graceTimer);
+      process.off('SIGINT', onSignal);
+      process.off('SIGTERM', onSignal);
       resolve({ text, code, signal, timedOut });
     };
     const record = (chunk) => {
@@ -251,12 +273,19 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs }) {
     });
     // After a kill a grandchild may still hold the pipes, so settle on exit, not close.
     child.on('exit', (code, signal) => {
-      if (timedOut) settle(code, signal);
+      if (!timedOut) return;
+      endTree('SIGKILL');
+      settle(code, signal);
     });
     child.on('close', settle);
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill();
+      endTree('SIGTERM');
+      // A claude that ignores SIGTERM never exits, so end the group hard after a grace period.
+      graceTimer = setTimeout(() => {
+        endTree('SIGKILL');
+        settle(null, 'SIGKILL');
+      }, KILL_GRACE_MS);
     }, timeoutMs);
   });
 }
@@ -298,7 +327,7 @@ function preflight(planArgument, flags) {
   if (wanted === null) throw new Refusal("the plan's '## Plan basis' names no Branch:");
   if (branch !== wanted) throw new Refusal(`the checkout is on branch ${branch ?? '(detached)'}, not the plan's Branch: ${wanted}`);
   if (wanted === defaultBranch(root)) throw new Refusal(`Branch: ${wanted} is the default branch`);
-  const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no']);
+  const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
   if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
   const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop'], { encoding: 'utf8' });
   if (check.status !== 0) {
@@ -448,7 +477,7 @@ async function main(argv) {
       stall = 0;
       retryNote = '';
       run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
-      for (const line of (gitOut(root, ['status', '--porcelain']) ?? '').split('\n').filter(Boolean)) {
+      for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
         const file = line.slice(3);
         if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
       }

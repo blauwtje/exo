@@ -50,7 +50,7 @@ else {
 }
 `;
 
-const planText = (root, { allow = 'Allow: none' } = {}) => [
+const planText = (root, { allow = 'Allow: none', branch = 'feat/run' } = {}) => [
   '# Plan: runner fixture',
   '',
   '## Goal',
@@ -58,7 +58,7 @@ const planText = (root, { allow = 'Allow: none' } = {}) => [
   '',
   '## Plan basis',
   `Repository: ${root}`,
-  'Branch: feat/run',
+  `Branch: ${branch}`,
   'Worktree setup: none',
   'Land gate: none',
   'Lint: none',
@@ -206,12 +206,14 @@ test('exo not loaded: a plugin error for exo in the init event stops the run', a
 test('refused: the default branch, a tracked change, a failing plan-check and a missing claude exit 2 with no spawn', async () => {
   const onMain = await setup();
   git(onMain.root, 'switch', '-q', 'main');
+  const onDefault = await setup({ branch: 'main' });
+  git(onDefault.root, 'switch', '-q', 'main');
   const changed = await setup();
   await fs.writeFile(path.join(changed.root, 'README.md'), 'edited\n');
   const noAllow = await setup({ allow: 'Worktree setup: none' });
   const noClaude = await setup();
   noClaude.stub = path.join(noClaude.tools, 'missing.mjs');
-  for (const [context, why] of [[onMain, /branch/], [changed, /tracked change/], [noAllow, /plan-check/], [noClaude, /claude/]]) {
+  for (const [context, why] of [[onMain, /branch/], [onDefault, /is the default branch/], [changed, /tracked change in the checkout: README\.md;/], [noAllow, /plan-check/], [noClaude, /claude/]]) {
     const result = await runPlan(context, [land(1)]);
     assert.match(result.stop, /^run-plan: refused: /);
     assert.match(result.stop, why);
