@@ -1,22 +1,22 @@
 # Workspace
 
-- Ask where a code-changing run commits before its first edit, and commit only where the answer puts it.
-- An explicit instruction in the request (a branch name, "work on main", "use a worktree") is the answer: skip the script below.
-- On an explicit branch name, switch the checkout to that branch, creating it when new, before `start-run.mjs`.
-- A run another stage started holds its caller's answer: skip the script below.
+- Ask where a code-changing run commits before its first edit; commit only where the answer puts it.
+- Explicit instruction in the request (a branch name, "work on main", "use a worktree") is the answer: skip the script below.
+- Explicit branch name → switch the checkout to it, creating it when new, before `start-run.mjs`.
+- Run another stage started → holds its caller's answer: skip the script below.
 - Otherwise run `node "${CLAUDE_SKILL_DIR}/../../lib/workspace.mjs"` and follow its one line.
-- Add `--repository <dir> --plan-repository` for a plan's own `Repository:` folder.
-- Add `--current-recommended` when the root `CLAUDE.md` or `AGENTS.md` already says work commits on the default branch.
-- On `stop <reason>`, edit nothing before the answer.
-  - When the reason ends "an init would capture files the plan never named", put a two-option menu as the question: `git init -b main` in that folder committing its current files, or another folder.
-  - Wait for the letter, and on `A` run that init and commit there.
-  - On any other `stop`, name the reason and end the turn.
+- Plan's own `Repository:` folder → add `--repository <dir> --plan-repository`.
+- Root `CLAUDE.md` or `AGENTS.md` already says work commits on the default branch → add `--current-recommended`.
+- `stop <reason>` → edit nothing before the answer.
+  - Reason ends "an init would capture files the plan never named" → put a two-option menu as the question: `git init -b main` in that folder committing its current files, or another folder.
+  - Wait for the letter; on `A` run that init and commit there.
+  - Any other `stop` → name the reason, end the turn.
 - `init` runs `git init -b main` and commits there.
 - `commit-here <where>` commits at `<where>` with no question.
 - `ask` puts its menu as the question and waits for the digit.
-  - Then run the script again with `--pick branch|worktree|current --name <branch-name>` for that answer before any edit.
-- A failed `git switch` or `git worktree add` the script reports stops the run before any edit.
-- `<branch-name>` is the plan's `Branch:` line when it names a branch other than the default, else `<type>/<slug>` from the goal.
-- Prefer the harness's own worktree tool over `git worktree add` when the session has it.
-- Every command from here runs inside the picked branch or worktree, so it names that path or branch as `start-run.mjs`'s `--checkout` and the unit's checkout.
+  - Then before any edit rerun the script with `--pick branch|worktree|current --name <branch-name>` for that answer.
+- Failed `git switch` or `git worktree add` the script reports → stop the run before any edit.
+- `<branch-name>` = the plan's `Branch:` line when it names a non-default branch, else `<type>/<slug>` from the goal.
+- Session has the harness's own worktree tool → prefer it over `git worktree add`.
+- Every later command runs inside the picked branch or worktree; name that path or branch as `start-run.mjs`'s `--checkout` and the unit's checkout.
 - Nothing pushes before `ship`.
