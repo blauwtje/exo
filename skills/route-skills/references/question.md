@@ -2,7 +2,7 @@
 
 ## One question
 
-A message asks one question, never several, because the user then answers with one letter and nothing else. After the answer, the next question comes only if one is still open.
+A message asks one question, never several, because the user then answers with one letter and nothing else. After the answer, the next question comes only if one is still open. When several decisions are open at once and none waits on another's answer, one message asks them all, numbered, each in this shape.
 
 ```text
 **How should we pick the new look?**
@@ -15,7 +15,7 @@ I have three looks ready. You can see them first or let me choose.
 Recommended: (A), because seeing the looks beats reading about them, and (C) skips your say.
 ```
 
-1. **Title line.** `**<title>**`, a plain everyday question of at most about ten words; no number, no `---` line.
+1. **Title line.** `**<title>**`, a plain everyday question of at most about ten words; no number outside a batch, no `---` line.
 2. **Context.** At most two short sentences, only what the user needs to choose. Plain words anyone understands: no token counts, seconds, costs, tool, model or effort names, no file name the user need not open, and no internal name unless the user picks between them.
 3. **Options.** One blank line, then `- **(A) Label**: what the user gets`, one per line, then one blank line. A label has one to three words; the text says in one short plain clause what the user gets or gives up, enough to choose without asking back, and never holds a command.
 4. **Three or four options.** Two only when no honest third route exists; a padded option is a fake choice.

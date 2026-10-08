@@ -4,9 +4,9 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 
 ## Each question message
 
-- One message holds one question; the next comes only after the answer, and only while a question is still open.
+- One message holds one question, or, when several open decisions wait on no other answer, all of them, numbered; the next comes only after the answer, and only while a question is still open.
 - No later question repeats a point already asked or decided unless a reply opened a new costly point.
-- Each question opens with a title line `**<title>**`, unnumbered, a plain everyday question of about ten words at most.
+- Each question opens with a title line `**<title>**`, unnumbered outside a batch, a plain everyday question of about ten words at most.
 - Each question has two short sentences of context at most, only what the user needs to choose.
 - No file name the user need not open, setting or field name, flag, model name, token count, endpoint or other technical term in a title, an option or the recommendation.
 - Three or four options, two only when no honest third route exists, each on its own line as `- **(A) Label**: what the user gets`, the label one to three words, the text one short plain clause on what the user gets or gives up.
@@ -45,12 +45,12 @@ The driver sends these replies in order after the first user turn, stopping when
 - `d-notes-export.txt`: `ok`, sent while the reply is a question.
 - `e-report-proof.txt`: `ok`, then `go`, each sent only while the reply is a question.
 
-## Case d: independent questions one at a time
+## Case d: independent questions in one message
 
 `d-notes-export.txt` opens one costly-or-irreversible point (where the PDF renders) and routine points the fixture code leaves open (note order on the page, the default file name, the default page size). The `with` arm passes when:
 
-- The first assistant message holds exactly one question, unnumbered, with no `---` separator.
-- Each `ok` takes that question's recommendation and the next message is the next open question or the brief, never two questions at once.
+- The first assistant message asks every open point it raises together, numbered, each in the question shape, with no `---` separator.
+- The `ok` takes every recommendation and the next message is the brief or a question a reply opened, never one of those points again.
 
 ## Case e: a flaw only running shows
 
