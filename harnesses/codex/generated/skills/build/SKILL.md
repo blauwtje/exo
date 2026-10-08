@@ -54,4 +54,4 @@ description: "Use when running or resuming a plan, or a decided change touches o
 | `references/performance.md` | No spec, speed-only work, before measuring. |
 | `../route-skills/references/question.md` | Before asking the user to pick among options. |
 
-Report: `ship`'s overview as this turn's one report, one `Proof:` line per proof, ending with the brief's `## Manual checks`.
+Report: `ship`'s overview as this turn's one report, one `Proof:` line per proof.
