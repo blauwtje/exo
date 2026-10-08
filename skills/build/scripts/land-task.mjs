@@ -17,6 +17,9 @@
 // with the given subject, no task, plan or trailer needed. A task whose
 // changed exported function signature still has a caller outside its
 // `Files:` is refused with a `PLAN DRIFT` line, the one the drift repair reads.
+// Under `EXO_RUN_TASK=<plan-id>/<n>`, which run-plan.mjs sets for each task process, this
+// serves that one task of that plan: another plan or task, `--fix`, a task whose Proof is an
+// MCP call and a malformed value are refused with exit 1 before anything stages or commits.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -59,6 +62,29 @@ function deriveCommit(task, number, planId, signatures) {
   return `git add ${addArgs}\ngit commit -m ${shellQuote(task.title)} -m ${shellQuote(trailersOf(planId, number, signatures))}`;
 }
 
+// The `{ planId, number }` an `EXO_RUN_TASK` value pins this process to; null when the
+// variable is unset. A set value that is not `<plan-id>/<n>`, even an empty one, refuses,
+// so a mangled pin never falls back to an unpinned run.
+function parsePin(value) {
+  if (value === undefined) return null;
+  const match = value.match(/^([^/\s]+)\/(\d+)$/);
+  if (match === null) throw new LandingError(`EXO_RUN_TASK '${value}' is not <plan-id>/<task number>`);
+  return { planId: match[1], number: Number(match[2]) };
+}
+
+function refuseOutsidePin(pin, planPath, number) {
+  if (pin === null) return;
+  if (pin.planId !== planIdOf(planPath) || pin.number !== number) {
+    throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; Task ${number} of ${planIdOf(planPath)} is refused`);
+  }
+}
+
+function refuseMcpProofUnderPin(pin, task) {
+  if (pin !== null && mcpProofOf(task) !== null) {
+    throw new LandingError(`EXO_RUN_TASK refuses Task ${task.number}: its Proof is an MCP call, which only an interactive session can run`);
+  }
+}
+
 // A `--root` naming a subdirectory of the checkout, or a copy under another
 // name, would stage and commit paths outside the checkout the plan and its
 // Files: lines describe. This runs before any command that stages or
@@ -79,7 +105,8 @@ function refuseMismatchedToplevel(root) {
 // spell out as a bare `git add -A && git commit -m` line.
 // With a `plan` path, the plan's `Lint:` command first runs on the changed
 // script paths and a failure refuses the commit, as a task landing does.
-export function fixLand({ root, subject, plan = null }) {
+export function fixLand({ root, subject, plan = null, pin = null }) {
+  if (pin !== null) throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
   refuseMismatchedToplevel(root);
   const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
   if (status.trim() === '') {
@@ -493,22 +520,26 @@ function checkReport(task, reportText, reportPath) {
 // The stray-path and report checks landTask runs first, alone: nothing runs
 // the Proof, commits, lints, gates or records, so a builder can run it before
 // it reports.
-export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
+export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
+  refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
+  refuseMcpProofUnderPin(pin, task);
   refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, false));
   checkReport(task, reportText, reportPath);
   return `Report OK: Task ${number}\n`;
 }
 
-export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath }) {
+export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
+  refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
+  refuseMcpProofUnderPin(pin, task);
   refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, true));
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root));
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
@@ -551,8 +582,9 @@ export function landTask({ planText, number, root, reportText = null, reportPath
 function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean' });
   const root = flags.root ?? process.cwd();
+  const pin = parsePin(process.env.EXO_RUN_TASK);
   if (flags.fix !== undefined) {
-    process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null }));
+    process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null, pin }));
     return;
   }
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
@@ -564,7 +596,7 @@ function main(argv) {
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
   const run = flags.check === true ? checkTask : landTask;
-  process.stdout.write(run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan }));
+  process.stdout.write(run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin }));
 }
 
 if (isMain(import.meta.url)) {
