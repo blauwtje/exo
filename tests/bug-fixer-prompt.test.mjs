@@ -4,7 +4,9 @@ import { test } from 'node:test';
 
 const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', '`for` loop', 'never call `Monitor` or start with `sleep`'];
 
-const PROMPT = new URL('../skills/build/bug-fixer-prompt.md', import.meta.url);
+const POINTER = new URL('../skills/build/bug-fixer-prompt.md', import.meta.url);
+const PROMPT = new URL('../skills/find-cause/fixer-prompt.md', import.meta.url);
+const HANDOFF = new URL('../skills/find-cause/references/handoff.md', import.meta.url);
 
 const HANDOFF_FIELDS = [
   'Symptom',
@@ -18,34 +20,49 @@ const HANDOFF_FIELDS = [
   'Prediction',
   'Ranges',
   'Status',
+  'Tests',
   'Edits',
   'Proof',
   'Unresolved',
 ];
 
-test('bug-fixer-prompt.md names the exo/debug/task-<n>.md handoff path', () => {
-  const source = fs.readFileSync(PROMPT, 'utf8');
-  assert.ok(source.includes('exo/debug/task-<n>.md'), 'names exo/debug/task-<n>.md');
+const read = (url) => fs.readFileSync(url, 'utf8');
+
+test('bug-fixer-prompt.md sends the build opening of the shared fixer prompt', () => {
+  const source = read(POINTER);
+  assert.ok(source.includes('../find-cause/fixer-prompt.md'), 'points at the shared fixer prompt');
+  assert.ok(source.includes('## build opening'), 'names the build opening');
 });
 
-test('bug-fixer-prompt.md names Steps 1 to 5', () => {
-  const source = fs.readFileSync(PROMPT, 'utf8');
-  assert.ok(source.includes('Steps 1 to 5'), 'names Steps 1 to 5');
-});
-
-test('bug-fixer-prompt.md drops the old bug-fixer-<n>.md path', () => {
-  const source = fs.readFileSync(PROMPT, 'utf8');
-  assert.ok(!source.includes('bug-fixer-<n>.md'), 'no longer names bug-fixer-<n>.md');
-});
-
-test('bug-fixer-prompt.md report fields match the D1 handoff field names', () => {
-  const source = fs.readFileSync(PROMPT, 'utf8');
-  for (const field of HANDOFF_FIELDS) {
-    assert.ok(source.includes(`\`${field}\``), `report names ${field}`);
+test('the shared fixer prompt has a find-cause opening, a build opening and a shared block', () => {
+  const source = read(PROMPT);
+  for (const heading of ['## find-cause opening', '## build opening', '## Shared block']) {
+    assert.ok(source.includes(heading), `has ${heading}`);
   }
 });
 
-test('bug-fixer-prompt.md waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
-  const source = fs.readFileSync(PROMPT, 'utf8');
+test('the build opening names the exo/debug/task-<n>.md handoff path and Steps 1 to 5', () => {
+  const source = read(PROMPT);
+  assert.ok(source.includes('exo/debug/task-<n>.md'), 'names exo/debug/task-<n>.md');
+  assert.ok(source.includes('Steps 1 to 5'), 'names Steps 1 to 5');
+  assert.ok(!source.includes('bug-fixer-<n>.md'), 'no longer names bug-fixer-<n>.md');
+});
+
+test('only references/handoff.md lists the handoff fields; the prompts point at it', () => {
+  const handoff = read(HANDOFF);
+  for (const field of HANDOFF_FIELDS) {
+    assert.ok(handoff.includes(`\`${field}\``), `handoff.md names ${field}`);
+  }
+  const investigator = read(new URL('../skills/find-cause/investigator-prompt.md', import.meta.url));
+  for (const source of [read(PROMPT), investigator]) {
+    assert.ok(source.includes('`references/handoff.md`'), 'points at references/handoff.md');
+    for (const field of ['Hypotheses', 'Mechanism', 'Prediction', 'Edits']) {
+      assert.ok(!source.includes(`\`${field}\``), `does not list ${field}`);
+    }
+  }
+});
+
+test('the shared block waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
+  const source = read(PROMPT);
   assert.ok(DELEGATE_WAIT_PARTS.every((part) => source.includes(part)), 'the hard boundaries carry the wait line');
 });

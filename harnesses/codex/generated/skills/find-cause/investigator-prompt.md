@@ -12,8 +12,7 @@ No production edit. Revert every instrumentation edit you make before you stop, 
 
 Handoff file: `<scratch>/<slug>.md`, `<scratch>` being the absolute `.exo/debug` directory of <root>.
 Write it with the Write tool.
-Write the investigate part there, at most 25 lines, one line per field, in this order: `Symptom`, `Repro` (one bare command), `Expected`, `Actual`, `Log` (path), `Hypotheses` (one line each: claim, deciding observation, kept or dropped), `Cause` (path:line symbol), `Mechanism` (at most 3 lines), `Prediction` (the output the fix changes), `Ranges` (path:a-b the fix reads), `Status` (`proven`, `unproven` or `no-repro`).
-A field the loop did not reach is written `none`.
+Write there only the investigate part, at most 25 lines, in the fields and order of the `$find-cause` skill's `references/handoff.md`.
 
 Never ask the user questions; record what is missing as `none`.
 
