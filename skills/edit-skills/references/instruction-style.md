@@ -1,25 +1,57 @@
 # Instruction-file style
 
-This style applies to `CLAUDE.md`, rules, skills, agents, output styles and hooks. The enemy is the line that restates what the model does anyway. The overcorrection is a line cut so far that its boundary is lost.
+Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: model, not human.
 
-- Give a bullet one rule: one condition, one action.
-- Split a compound bullet, because the model follows a specific rule more consistently than a bundle.
-- Split a sentence that carries a second condition or action, unless the split loses its boundary.
-- The verifier fails a sentence over 40 words.
-- The verifier fails a list item of three or more sentences.
-- Put the rules most often broken first in a file, because the model recalls the start of its context best and the middle worst.
-- Move what only some paths need to a reference.
-- Keep one load path, SKILL.md plus the references that path reads, under about 150 rules, because adherence falls past it and earlier rules win.
-- Keep a line only when it prevents a mistake.
-- Give each rule one owner: when another file states it, point there or omit it.
-- Write for the model: line length, hard wraps and reading grade are human metrics, not targets.
-- Write short: drop a word where the meaning stays exact, never one that sets a boundary.
-- Leave out comments (HTML included), dates, sources, change history, opinions and examples, unless the rule fails without them.
-- Give a reason only where it sets the rule's boundary, in one clause.
-- Put an exception beside its rule.
-- Define by contrast: "X, not Y".
-- When a list's order could read as precedence, say whether the first match wins or every item applies.
-- Keep a rule the system prompt also states, because sessions switch models.
-- Make what must happen every time without exception a hook, not a rule.
-- A hook never rewrites a command inside a pipeline; a guard denies or allows and leaves the command unchanged.
-- Use Markdown headers and bullets.
+## Cut
+
+- Each line → test "remove it, Claude errs?"; no → cut.
+- Model does it by default → cut.
+- Code already shows it → cut.
+- Stale line → cut.
+- Rule owned elsewhere → point to owner or omit.
+- Rule system prompt also states → keep; sessions switch models.
+- Comments (HTML too), dates, sources, change history, opinions → cut.
+- Example → cut unless rule fails without it.
+- Reason → cut unless it sets the rule's boundary; then one clause.
+
+## Compress
+
+- Drop articles, copulas, filler, hedges.
+- Never drop: `not`, `no`, `only`, `except`, `never`, numbers, paths, commands, identifiers, error text.
+- Over-compressed line = defect: ambiguous → rewrite, not shorten further.
+- Line length, hard wraps, reading grade → not targets.
+- Em dashes → none.
+
+## Bullets
+
+- Format: `condition → action`, trigger word first.
+- One rule per bullet: one condition, one action.
+- Compound bullet → split, unless split loses the boundary.
+- Exception → beside its rule.
+- Definition → by contrast: "X, not Y".
+- List order could read as precedence → say whether first match wins or every item applies.
+- Structure → Markdown headers and bullets.
+- Verifier fails a sentence over 40 words and a list item of 3+ sentences.
+
+## Tone
+
+- Phrasing → positive by default.
+- `never` / `IMPORTANT` → real guardrails only, max 2 per file.
+- CAPS or `MUST` shouting → none; Opus 5.5 overtriggers.
+- "Think carefully" → none; thinking always on.
+- One term per concept; established term over coined one.
+
+## Placement and budgets
+
+- Most-broken rules → top of file.
+- Material only some paths need → reference.
+- Reference → one level deep, loaded via a pointer naming when to open it.
+- `CLAUDE.md` → under 60 lines.
+- Skill body → under 200 words where possible; 500 lines hard cap; token caps in edit-skills `## Form`.
+- Load path (skill body + references it reads) → under ~150 rules.
+- Skill description → when to use + triggers, third person (`Use when …`), never a workflow summary; aim 200 chars, verifier fails 250.
+
+## Enforcement
+
+- Must happen every time, no exception → hook or verifier, not prose.
+- Hook → deny or allow, command unchanged; no rewrite inside a pipeline.

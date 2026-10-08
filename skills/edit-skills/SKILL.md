@@ -18,7 +18,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom.
 2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <cells> --plugin-dir <clone>` on the cells `--cells-for <edited file>` prints, else the session's own, and read only the `without` answers now.
-3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape below and in the register `references/wording.md` sets.
+3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape below, the style `references/instruction-style.md` sets and the register `references/wording.md` sets.
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
 5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
 6. **Verify.** Run `node verify.mjs`; a red check means the structure is wrong and gets fixed, never exempted.
@@ -31,7 +31,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | `description` | Trigger only: the moments it fires, then what it leaves alone. A workflow written into it replaces the body, because the model acts on the summary it already read. |
 | Opening | A single paragraph naming the principle, the enemy and the overcorrection. |
 | `## When to use` | Bullets naming the symptoms first, then each "not for" case. |
-| Process | Numbered steps, aim for at most eight, taken in order until one matches; every step is a rule with its reason. |
+| Process | Numbered steps, aim for at most eight, taken in order until one matches; every step is a rule, with a reason only where it sets the boundary. |
 | `## Red flags` | Only in a skill the model is tempted to skip: a table from the tempting thought to what is actually true. |
 | `## References` | A table of each file and the moment to read it; nothing is loaded before the step that needs it. |
 | `## Judgment` | A ladder saying which rule wins when two conflict. |
@@ -47,7 +47,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 | The excuse | What holds |
 |---|---|
-| "The body has room to explain itself." | Each rule gets one reason clause; reasons that need a paragraph belong in a reference. |
+| "The body has room to explain itself." | A reason earns one clause only where it sets the rule's boundary; one that needs a paragraph belongs in a reference. |
 | "An edit this small needs no test run." | Without the run lacking the skill, the edit is a guess about what the model does. |
 | "Any model already knows this." | Then the line goes; only what the run without the skill got wrong earns a place. |
 | "I will test them together once all the skills are written." | Each skill clears every case before the next one begins, because skills written in a batch hide each other's gaps. |
@@ -70,4 +70,4 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 
 - A rule the run without the skill broke outranks a rule that only reads well.
 - An edit that was never tested is reverted rather than kept as a draft.
-- Short outranks complete: a skill that grew too long drops its weakest rule, never a reason clause.
+- Short outranks complete: a skill that grew too long drops its weakest rule, never a reason clause that sets a boundary.

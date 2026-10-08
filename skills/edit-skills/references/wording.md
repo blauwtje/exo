@@ -15,7 +15,6 @@
 
 - State a rule as a bright line the model can check, never a hedge, which the model reads as permission.
 - "When X, do Y" with X observable beats general advice; the model executes the trigger without deciding.
-- One term per concept across the skill; a synonym reads as a second concept.
 - A default with one named escape hatch beats a menu of options; the model picks the default and moves.
 - A fact that will age goes to a reference with its date.
 
