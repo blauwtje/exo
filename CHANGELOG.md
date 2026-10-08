@@ -21,6 +21,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The session-start "Using exo" text drops the lines a with-and-without routing run showed change nothing, from 389 to 264 words.
 - design-ui keeps one copy of its quality floor in `build-pass.md`, of its motion steps in `motion.md` and of its capture steps in `phase-build.md`; the build-ui agent and the other phases point there, and each pointer still carries the step a builder needs without opening the target.
 - design-ui's intake, direction-preview, composition and phase-direction references drop lines a with-and-without run showed change nothing, from 7,182 to 6,947 words.
+- build and find-cause dispatch one shared fixer prompt, and the handoff fields live only in find-cause's `handoff.md`, from 1,252 to 972 words across the four prompt files.
 
 ### Fixed
 
@@ -34,6 +35,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - save-session never pushes and commits as `chore: wip <topic>`, a subject the commit guard accepts.
 - `land-task.mjs` no longer fails on a path the task already removed with `git rm`; the removal lands in the task's commit.
 - `run-plan.mjs` adds `.exo/` to the target repository's `info/exclude`, so a run leaves no untracked `.exo/` folder.
+- A confined run on macOS may write only its own `session-env/<session id>` folder, not other sessions' folders, which unconfined sessions read; a confined run on Linux keeps its GitHub isolation folder under the caller's temporary folder, so no `claude-isolation-*` folder is left behind.
 
 ## 0.106.0 - 2026-10-08
 
