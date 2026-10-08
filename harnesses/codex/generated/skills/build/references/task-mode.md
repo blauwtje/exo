@@ -2,9 +2,11 @@
 
 `build <plan> --task <n>` lands task `<n>` in this session and asks the user nothing. `run-plan.mjs` starts one such session per task.
 
+- Run each command as its own Bash call, spelled as the plan or skill gives it, with no `$( )`, `;`, `&&`, redirect or heredoc, because the run's allowlist denies anything else and a denial stops the task.
+- Create and change files only with the Write and Edit tools, and read them with the Read tool.
+- Work in the current checkout: run `git rev-parse --show-toplevel` alone and use the printed path literally as `<checkout>`.
 - Ask nothing: a choice you cannot rule is `BLOCKED`; a reversible one you take on its recommended option is a `Decision: <clause>` line in the report, in place of `Choice:`.
 - Dispatch no agent; run no `start-run.mjs`, worktree, tail or `ship`.
-- Work in the current checkout, `git rev-parse --show-toplevel`, called `<checkout>`.
 - Push nothing, and never run `land-task.mjs --fix`.
 
 ## Steps
