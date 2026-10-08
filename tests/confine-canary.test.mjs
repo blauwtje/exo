@@ -22,15 +22,15 @@ const PROBE_TIMEOUT_MS = 20_000;
 // Variables a test runner inside a git hook may set, which would point the probe's git at another repository.
 const GIT_LOCATION = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE'];
 
-// A writable root and the profile confinedClaude builds for it.
+// A writable root, the profile confinedClaude builds for it and the env it adds.
 async function confinedRoot() {
   const root = await fs.realpath(await fixture());
   const run = confinedClaude({ args: [], roots: [root], tmp: root, platform: 'darwin', configDir: await fixture() });
-  return { root, profile: run.args[1] };
+  return { root, profile: run.args[1], env: run.env };
 }
 
-function shell(command, { profile, cwd } = {}) {
-  const env = { ...process.env };
+function shell(command, { profile, cwd, extraEnv } = {}) {
+  const env = { ...process.env, ...extraEnv };
   for (const name of GIT_LOCATION) delete env[name];
   const [file, args] = profile === undefined ? ['/bin/sh', ['-c', command]] : ['sandbox-exec', ['-p', profile, '/bin/sh', '-c', command]];
   const outcome = spawnSync(file, args, { cwd, env, encoding: 'utf8', timeout: PROBE_TIMEOUT_MS });
@@ -111,4 +111,11 @@ test('a confined run reads the Claude Code keychain item as an unconfined one do
   const { root, profile } = await confinedRoot();
   const inside = shell(lookup, { profile, cwd: root });
   assert.equal(inside.status, outside.status, inside.output);
+});
+
+test('a confined run\'s git finds no stored credential for github.com', { skip: SKIP }, async () => {
+  const { root, profile, env } = await confinedRoot();
+  const confined = shell(`printf 'protocol=https\\nhost=github.com\\n\\n' | git credential fill`, { profile, cwd: root, extraEnv: env });
+  assert.notEqual(confined.status, 0, confined.output);
+  assert.match(confined.output, /terminal prompts disabled/);
 });

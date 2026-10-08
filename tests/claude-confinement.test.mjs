@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { confinedClaude } from '../lib/confine-claude.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HELPER = 'lib/confine-claude.mjs';
@@ -110,4 +111,33 @@ test('the scan flags planted offenders and passes confined, excluded and comment
     'bench/skip.sh:2',
     'bench/user-sources.mjs:2'
   ]);
+});
+
+test('a confined run on either platform gets no GitHub token, an empty gh and zsh folder, and git with no credential helper or prompt', (t) => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'claude-isolation-test-')));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const configDir = path.join(root, 'config');
+  for (const platform of ['linux', 'darwin']) {
+    const { env } = confinedClaude({ args: [], roots: [root], tmp: root, platform, configDir });
+    for (const name of ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN']) assert.equal(env[name], '', `${platform} ${name}`);
+    for (const name of ['GH_CONFIG_DIR', 'ZDOTDIR']) {
+      assert.ok(path.isAbsolute(env[name]), `${platform} ${name}`);
+      assert.deepEqual(fs.readdirSync(env[name]), [], `${platform} ${name}`);
+    }
+    assert.notEqual(env.GH_CONFIG_DIR, env.ZDOTDIR);
+    assert.deepEqual([env.GIT_CONFIG_COUNT, env.GIT_CONFIG_KEY_0, env.GIT_CONFIG_VALUE_0, env.GIT_TERMINAL_PROMPT], ['1', 'credential.helper', '', '0'], platform);
+    if (platform === 'linux') fs.rmSync(path.dirname(env.GH_CONFIG_DIR), { recursive: true, force: true });
+  }
+});
+
+test('zsh run with the confined env reads no ~/.zshenv, so a stub bin first on PATH stays first', { skip: process.platform === 'win32' || !fs.existsSync('/bin/zsh') }, (t) => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'claude-zsh-test-')));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const { env } = confinedClaude({ args: [], roots: [root], tmp: root, platform: 'darwin', configDir: path.join(root, 'config') });
+  const home = path.join(root, 'home');
+  fs.mkdirSync(home);
+  fs.writeFileSync(path.join(home, '.zshenv'), 'export PATH="/user/bin:$PATH"\n');
+  const run = (extra) => execFileSync('/bin/zsh', ['-c', 'print -r -- $PATH'], { encoding: 'utf8', env: { PATH: '/stub/bin:/usr/bin', HOME: home, ...extra } }).trim();
+  assert.match(run({}), /^\/user\/bin:/);
+  assert.match(run({ ZDOTDIR: env.ZDOTDIR }), /^\/stub\/bin:/);
 });

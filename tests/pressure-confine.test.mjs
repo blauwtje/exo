@@ -97,6 +97,20 @@ test('the profile denies every write but each root and the shell\'s /dev nodes, 
 });
 
 // Two roots reached through a symlink, so their realpaths differ from the given paths.
+// The exact env every confined run adds for GitHub isolation, given its two empty folders.
+const githubEnv = (gh, zsh) => ({
+  GH_CONFIG_DIR: gh,
+  GH_TOKEN: '',
+  GITHUB_TOKEN: '',
+  GH_ENTERPRISE_TOKEN: '',
+  GITHUB_ENTERPRISE_TOKEN: '',
+  GIT_CONFIG_COUNT: '1',
+  GIT_CONFIG_KEY_0: 'credential.helper',
+  GIT_CONFIG_VALUE_0: '',
+  GIT_TERMINAL_PROMPT: '0',
+  ZDOTDIR: zsh
+});
+
 async function linkedRoots() {
   const base = await fs.realpath(await fixture());
   await fs.mkdir(path.join(base, 'real', 'scratch'), { recursive: true });
@@ -118,7 +132,7 @@ test('on macOS sandbox-exec wraps claude with bypassPermissions, the roots\' rea
   assert.deepEqual((await fs.readdir(configDir)).sort(), ['projects', 'session-env']);
   assert.deepEqual(await fs.readdir(path.join(configDir, 'projects')), [path.basename(transcripts)]);
   assert.deepEqual(run.args.slice(2), ['claude', '--permission-mode', 'bypassPermissions', '--settings', JSON.stringify(settings), ...base]);
-  assert.deepEqual(run.env, { TMPDIR: `${real}/tmp/`, CLAUDE_CODE_TMPDIR: `${real}/tmp` });
+  assert.deepEqual(run.env, { TMPDIR: `${real}/tmp/`, CLAUDE_CODE_TMPDIR: `${real}/tmp`, ...githubEnv(`${real}/tmp/isolated-gh`, `${real}/tmp/isolated-zsh`) });
   assert.equal(run.cwd, `${real}/scratch`);
 });
 
@@ -144,7 +158,12 @@ test('on Linux the run gets dontAsk, Edit and Write scoped to its roots and Clau
     const run = confinedClaude({ args: base, roots: [`${link}/scratch`, `${link}/tmp`], cwd: `${link}/scratch`, settings, platform: 'linux' });
     const args = run.args;
     assert.equal(run.command, 'claude');
-    assert.deepEqual(run.env, {});
+    const folder = path.dirname(run.env.GH_CONFIG_DIR);
+    try {
+      assert.deepEqual(run.env, githubEnv(path.join(folder, 'isolated-gh'), path.join(folder, 'isolated-zsh')));
+    } finally {
+      await fs.rm(folder, { recursive: true, force: true });
+    }
     assert.deepEqual(args.slice(-base.length), base);
     assert.ok(!args.includes('bypassPermissions'), args.join(' '));
     assert.equal(args[args.indexOf('--permission-mode') + 1], 'dontAsk');
