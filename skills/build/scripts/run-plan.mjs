@@ -483,14 +483,15 @@ async function main(argv) {
       }
       continue;
     }
-    const blocked = outcome.timedOut ? null : last.match(new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`));
-    if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
-      stop = `task ${n} blocked: ${blocked?.[1] || last}; re-plan with exo:spec`;
-      break;
-    }
+    // A denial often makes the session report BLOCKED, so it goes first to name the command for Allow:.
     if (parsed.denials.length > 0) {
       const denial = parsed.denials[0];
       stop = `task ${n} denied ${denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`}; add it to Allow:`;
+      break;
+    }
+    const blocked = outcome.timedOut ? null : last.match(new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`));
+    if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
+      stop = `task ${n} blocked: ${blocked?.[1] || last}; re-plan with exo:spec`;
       break;
     }
     stall += 1;
