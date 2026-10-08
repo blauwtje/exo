@@ -12,9 +12,9 @@ I scan: I read the first and last line; everything between must earn its place.
 2. **Max three blocks**, blank line between, each a bold label plus one short paragraph or a flat one-line-per-item list.
    - No nested bullets.
    - One point = one block; never pad.
-3. **One closing line**: the single next action, or that nothing is needed from me, or one offer naming what was cut. The next action appears only there.
+3. **One closing line**: the single next action, or that nothing is needed from me, or one offer naming what was cut; the next action appears only there.
 4. **Max eight lines** above the closing line, as wrapped.
-   - Over: cut whole points in the order below, don't shorten each.
+   - Over: cut whole points in the order below, not shorten each.
    - Choice options don't count.
 
 ## Cut order
@@ -50,7 +50,7 @@ Unchosen alternatives, unasked side notes, benefits to me, evidence for passing 
 
 ## Exempt
 
-Code, diffs, exact error output and requested artifacts; the prose around them isn't.
+Code, diffs, exact error output and requested artifacts, not the prose around them.
 
 - Table only for a mixed result, short enough not to scroll; else count plus location.
 - Code: changed lines plus placing context; never unchanged files or code we just read.
