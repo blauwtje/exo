@@ -14,6 +14,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - `pressure.mjs --output-style <name>` runs both arms under the named output style, so a cut to an output style can be pressure-tested.
+- `pressure.mjs` prints each run's cost from its result event on the arm line and a total per arm for each cell, so a run's spend is measured, not estimated.
 
 ### Changed
 
@@ -27,6 +28,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A confined run on Linux loads only project and local settings, so a user `permissions.allow` or sandbox path cannot widen it; an API key set through user settings no longer reaches such a run.
 - A confined run on macOS can create its `session-env` folder, so SessionStart hooks run and the injected exo text loads; before this, confined pressure runs ran without it.
 - `configure` again shows the settings block in a `text` fence, a line an earlier cut dropped and a recheck with the exo session text loaded proved needed.
+- A confined run is cut off from the user's GitHub account: an empty `gh` config folder, no `GH_TOKEN`, `GITHUB_TOKEN` or `GH_ENTERPRISE_TOKEN`, no git credential helper or terminal prompt, and a caller's stub bin stays first on `PATH` after `~/.zshenv` runs.
+- `pressure.mjs` marks an unopened citation only on a path with a line number or in a quoted line, not on a bare path mention.
 
 ## 0.106.0 - 2026-10-08
 
