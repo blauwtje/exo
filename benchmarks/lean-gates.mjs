@@ -38,6 +38,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { confinedClaude } from '#confine-claude';
 import { configDirectory } from '#config-directory';
 import { exoLoaded } from './cell-usage.mjs';
 
@@ -212,7 +213,6 @@ export function claudeArguments(options, pluginDir, sessionId, prompt = PROMPT) 
     '--plugin-dir', pluginDir,
     '--model', options.model,
     '--effort', options.effort,
-    '--permission-mode', 'bypassPermissions',
     '--output-format', 'json',
     '--setting-sources', 'project,local',
     '--strict-mcp-config',
@@ -301,13 +301,16 @@ function writeMeta(runDirectory, meta) {
   fs.writeFileSync(path.join(runDirectory, 'meta.json'), `${JSON.stringify(meta, null, 2)}\n`);
 }
 
+// The session is confined by #confine-claude to the run directory, which
+// holds repo/, origin.git/ and the suite log its tests append to.
 function runClaude(argv, cwd, env, runDirectory, timeoutMs) {
+  const run = confinedClaude({ args: argv, roots: [runDirectory], cwd });
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(runDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(runDirectory, 'stderr.log'), 'w');
     const started = Date.now();
     // Its own process group, so a timeout kills the session's shells and test runs too.
-    const child = spawn('claude', argv, { cwd, env, stdio: ['ignore', stdout, stderr], detached: true });
+    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...env, ...run.env }, stdio: ['ignore', stdout, stderr], detached: true });
     const killGroup = () => {
       try {
         process.kill(-child.pid, 'SIGKILL');

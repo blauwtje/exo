@@ -69,17 +69,21 @@ test('a cell loads the arm\'s variant copy', (t) => {
     "if (process.argv.includes('--version')) { console.log('0.0.0 (fake)'); process.exit(0); }",
     "const plugin = process.argv[process.argv.indexOf('--plugin-dir') + 1];",
     "const settings = fs.existsSync('.claude/exo.local.json') ? JSON.parse(fs.readFileSync('.claude/exo.local.json', 'utf8')) : null;",
-    "fs.appendFileSync(process.env.FAKE_LOG, `${JSON.stringify({ plugin, pointer: fs.readFileSync(`${plugin}/hooks/session-start.mjs`, 'utf8').includes('exo skills, invoked as'), settings })}\\n`);",
+    // The confined run writes nowhere outside its cell, so the stub reports on stderr, which run.mjs keeps as the cell's stderr.log.
+    "process.stderr.write(`${JSON.stringify({ plugin, pointer: fs.readFileSync(`${plugin}/hooks/session-start.mjs`, 'utf8').includes('exo skills, invoked as'), settings })}\\n`);",
     "console.log(JSON.stringify({ result: 'done', total_cost_usd: 0 }));"
   ].join('\n'));
   fs.chmodSync(path.join(bin, 'claude'), 0o755);
-  const log = path.join(scratch, 'log.jsonl');
   const run = spawnSync(process.execPath, [RUN, '--tasks', 'value-test-pollution', '--arms', 'exo,exo-pointer', '--model', 'sonnet', '--concurrency', '1', '--out', path.join(scratch, 'out')], {
     encoding: 'utf8',
-    env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, FAKE_LOG: log }
+    // A home of its own, so the cell's transcript folder lands in its .claude, not the user's ~/.claude/projects.
+    env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, HOME: fs.mkdirSync(path.join(scratch, 'home'), { recursive: true }) }
   });
   assert.equal(run.status, 0, run.stderr + run.stdout);
-  const cells = fs.readFileSync(log, 'utf8').trim().split('\n').map((row) => JSON.parse(row));
+  const out = path.join(scratch, 'out');
+  const logs = fs.readdirSync(out, { recursive: true }).filter((entry) => entry.endsWith('stderr.log'));
+  const cells = ['exo', 'exo-pointer'].map((arm) => logs.find((entry) => entry.split(path.sep).includes(arm)))
+    .map((entry) => JSON.parse(fs.readFileSync(path.join(out, entry), 'utf8').trim()));
   assert.equal(cells.length, 2);
   const [exo, pointer] = cells;
   assert.deepEqual(exo.settings, { workspace: 'current', ship: 'local' });

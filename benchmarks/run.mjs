@@ -27,6 +27,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
 import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
+import { confinedClaude } from '#confine-claude';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
@@ -156,7 +157,6 @@ function claudeArguments(armName, task, model, effort, copies) {
   const args = [
     '-p', prompt,
     '--model', MODELS[model],
-    '--permission-mode', 'bypassPermissions',
     '--output-format', 'json',
     '--setting-sources', 'project,local',
     '--strict-mcp-config'
@@ -215,14 +215,17 @@ function makeDefaultOptionsHome() {
   return mirror;
 }
 
-function runClaude(args, workdir, cellDirectory, extraEnvironment, timeoutMs) {
+// The run is confined by #confine-claude to its cell root and its own
+// temporary directory; stdout and stderr go to files opened here.
+function runClaude(args, { workdir, cellRoot, tmp }, cellDirectory, extraEnvironment, timeoutMs) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
     const startedAt = Date.now();
-    const child = spawn('claude', args, {
-      cwd: workdir,
-      env: { ...withoutParentSession(process.env), ...extraEnvironment },
+    const run = confinedClaude({ args, roots: [cellRoot, tmp], cwd: workdir, tmp });
+    const child = spawn(run.command, run.args, {
+      cwd: run.cwd,
+      env: { ...withoutParentSession(process.env), ...extraEnvironment, ...run.env },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
@@ -280,6 +283,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
   fs.mkdirSync(cellDirectory, { recursive: true });
   let workdir = workdirFor(task, fixtureDirectory);
   const cellRoot = workdir;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bench-tmp-'));
   if (task.tier === 'git') {
     const { setupCell } = await import(`./git/${task.dir}/setup.mjs`);
     setupCell(cellRoot);
@@ -289,7 +293,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
     const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
     const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
     const environment = { ...cellIsolation(task), HOME: cellHome };
-    const outcome = await runClaude(claudeArguments(arm, task, model, effort, copies), workdir, cellDirectory, environment, timeoutMs);
+    const outcome = await runClaude(claudeArguments(arm, task, model, effort, copies), { workdir, cellRoot, tmp }, cellDirectory, environment, timeoutMs);
     const result = parseResult(cellDirectory);
     if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
@@ -322,6 +326,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
     return checks;
   } finally {
     fs.rmSync(cellRoot, { recursive: true, force: true });
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
 }
 

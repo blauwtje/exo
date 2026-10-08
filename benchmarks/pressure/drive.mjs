@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { confinedClaude } from '#confine-claude';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags } from '#script-flags';
 
@@ -36,16 +37,20 @@ const cwd = path.join(dir, 'work');
 // A rerun with the same id starts from a fresh work copy, not over the last run's leftovers.
 fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(cwd, { recursive: true });
+const tmp = path.join(dir, 'tmp');
+fs.mkdirSync(tmp);
 fs.cpSync(path.join('/tmp/exo-pressure/spec', {A:'fx-deepseek-worker',B:'fx-tide-export',C:'fx-shopping-share',D:'fx-notes-export',E:'fx-visit-report'}[scenario]), cwd, { recursive: true });
 const armFlags = armSetup.flags;
 let loadedWrongCopy = false;
 const log = (m) => { const l = `[${new Date().toISOString().slice(11,19)}] ${id}: ${m}`; console.log(l); fs.appendFileSync(path.join(dir, 'progress.log'), l + '\n'); };
 function turn(prompt, sessionId, n) {
-  // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case.
-  const args = ['-p', prompt, '--model', model, '--effort', 'high', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', '--strict-mcp-config', ...armFlags];
+  // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case;
+  // #confine-claude picks the mode and confines each turn to the run folder.
+  const args = ['-p', prompt, '--model', model, '--effort', 'high', '--output-format', 'stream-json', '--verbose', '--strict-mcp-config', ...armFlags];
   if (sessionId) args.push('--resume', sessionId);
   return new Promise((resolve) => {
-    const child = spawn('claude', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+    const run = confinedClaude({ args, roots: [dir], cwd, tmp });
+    const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '', err = '', timedOut = false;
     child.stdout.on('data', (c) => out += c); child.stderr.on('data', (c) => err += c);
     const hb = setInterval(() => log('turn ' + n + ' running, ' + out.length + ' bytes'), 60000); const t = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, 360000);

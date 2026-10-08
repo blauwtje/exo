@@ -19,6 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { confinedClaude } from '#confine-claude';
 import { configDirectory } from '#config-directory';
 import { scoreProse } from '#prose-density';
 import { MODELS, ROOT } from './tasks.mjs';
@@ -131,7 +132,6 @@ export function claudeArguments(options) {
     '--model', modelId(options.model),
     '--setting-sources', 'project,local',
     '--strict-mcp-config',
-    '--permission-mode', 'bypassPermissions',
     '--max-budget-usd', SESSION_BUDGET_USD
   ];
   if (options.effort !== null) args.push('--effort', options.effort);
@@ -284,13 +284,15 @@ function prepareRepository(options, workdir) {
 // Sends one prompt, waits for its `result` event, then sends the next; stdin closes after the
 // last turn or the first failed one, which ends the process. Resolves with the streamed turns
 // and how the process ended; stderr goes to stderr.log in the run directory.
-function streamSession(options, workdir, runDirectory) {
+// #confine-claude confines the process to the repository and its own temporary directory.
+function streamSession(options, workdir, tmp, runDirectory) {
   return new Promise((resolve) => {
     const streamTurns = [];
     const stderr = fs.openSync(path.join(runDirectory, 'stderr.log'), 'w');
-    const child = spawn('claude', claudeArguments(options), {
-      cwd: workdir,
-      env: { ...process.env },
+    const run = confinedClaude({ args: claudeArguments(options), roots: [workdir, tmp], cwd: workdir, tmp });
+    const child = spawn(run.command, run.args, {
+      cwd: run.cwd,
+      env: { ...process.env, ...run.env },
       stdio: ['pipe', 'pipe', stderr]
     });
     const sendNextTurn = () => child.stdin.write(userMessageLine(TURN_PROMPTS[streamTurns.length]));
@@ -343,9 +345,10 @@ export function runReasons(verdict, outcome, cause) {
 async function runSession(options, runDirectory) {
   fs.mkdirSync(runDirectory, { recursive: true });
   const workdir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-terse-drift-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-terse-drift-tmp-'));
   try {
     prepareRepository(options, workdir);
-    const { streamTurns, outcome } = await streamSession(options, workdir, runDirectory);
+    const { streamTurns, outcome } = await streamSession(options, workdir, tmp, runDirectory);
     for (const [index, { result }] of streamTurns.entries()) {
       fs.writeFileSync(path.join(runDirectory, `turn-${index + 1}.json`), `${JSON.stringify(result, null, 2)}\n`);
     }
@@ -361,6 +364,7 @@ async function runSession(options, runDirectory) {
     return summary;
   } finally {
     fs.rmSync(workdir, { recursive: true, force: true });
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
 }
 

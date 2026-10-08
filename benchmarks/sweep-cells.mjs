@@ -236,13 +236,13 @@ export function pluginVariants(cells) {
 // Every call names this clone as its plugin, or the variant copy `pluginDir`
 // names, except a cell marked `plugin: false`, and the cell's own model and
 // effort, so no cell falls back to an effort a settings file or session holds.
+// No permission mode: sweep.mjs starts each cell through #confine-claude, which picks it.
 export function claudeArguments(cell, pluginDir = ROOT) {
   const args = [
     '-p', cell.prompt,
     ...(cell.plugin === false ? [] : ['--plugin-dir', pluginDir]),
     '--model', cell.model,
     '--effort', cell.effort,
-    '--permission-mode', 'bypassPermissions',
     '--output-format', 'json',
     '--setting-sources', 'project,local',
     '--strict-mcp-config',

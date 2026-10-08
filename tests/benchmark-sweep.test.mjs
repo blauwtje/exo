@@ -75,7 +75,6 @@ test('a fixer cell prepares a branch carrying a real branch-review.md fixture', 
 // that folder holds the session build loop.
 async function loggingClaude() {
   const bin = await fixture();
-  const log = path.join(bin, 'log.jsonl');
   await fs.writeFile(path.join(bin, 'claude'), [
     '#!/usr/bin/env node',
     "const fs = require('node:fs');",
@@ -83,19 +82,22 @@ async function loggingClaude() {
     "const at = process.argv.indexOf('--plugin-dir');",
     "const plugin = at === -1 ? null : process.argv[at + 1];",
     "const read = (file) => plugin === null ? null : fs.readFileSync(`${plugin}/${file}`, 'utf8');",
-    `fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ plugin, loop: read('skills/build/references/run-loop-direct.md') }) + '\\n');`,
+    // The confined run writes nowhere outside its cell, so the stub reports on stderr, which sweep.mjs keeps as the cell's stderr.log.
+    `process.stderr.write(JSON.stringify({ plugin, loop: read('skills/build/references/run-loop-direct.md') }) + '\\n');`,
     "console.log(JSON.stringify({ result: 'done', total_cost_usd: 0 }));"
   ].join('\n'), { mode: 0o755 });
-  return { env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` }, log };
+  return { env: { PATH: `${bin}${path.delimiter}${process.env.PATH}` } };
 }
 
 test('a session flow cell loads its variant copy and every other flow cell keeps its argv', async () => {
-  const { env, log } = await loggingClaude();
+  const { env } = await loggingClaude();
   const out = await fixture();
   const results = await fixture();
   const result = await run(SWEEP, ['--set', 'flow', '--confirm', '--concurrency', '1', '--out', out, '--results', results], { env });
   assert.equal(result.code, 0, result.stderr);
-  const [exo, session, base] = (await fs.readFile(log, 'utf8')).trim().split('\n').map((row) => JSON.parse(row));
+  const logs = (await fs.readdir(out, { recursive: true })).filter((entry) => entry.endsWith('stderr.log'));
+  const [exo, session, base] = await Promise.all(['flow-c7', 'flow-session', 'flow-base']
+    .map(async (id) => JSON.parse((await fs.readFile(path.join(out, logs.find((entry) => entry.split(path.sep).includes(id))), 'utf8')).trim())));
   const sessionLoop = await fs.readFile(path.join(ROOT, 'benchmarks', 'arms', 'build-session.md'), 'utf8');
   assert.equal(exo.plugin, ROOT);
   assert.equal(base.plugin, null);

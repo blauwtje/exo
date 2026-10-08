@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { confinedClaude } from '#confine-claude';
 import { writeCellUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, toolCalls } from './lean-gates-metrics.mjs';
@@ -56,16 +57,20 @@ function git(directory, args) {
 }
 
 // A cell with a plugin variant loads that variant's copy from `copies`; every
-// other cell loads this clone, as before.
-function runClaude(cell, workdir, cellDirectory, copies) {
+// other cell loads this clone, as before. The run is confined to its cell root,
+// which holds the repository, its origin and its temporary directory.
+function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
     const startedAt = Date.now();
     const pluginDir = cell.pluginVariant ? copies[cell.pluginVariant] : ROOT;
-    const child = spawn('claude', claudeArguments(cell, pluginDir), {
-      cwd: workdir,
-      env: { ...process.env },
+    const tmp = path.join(cellRoot, 'tmp');
+    fs.mkdirSync(tmp, { recursive: true });
+    const run = confinedClaude({ args: claudeArguments(cell, pluginDir), roots: [cellRoot], cwd: workdir, tmp });
+    const child = spawn(run.command, run.args, {
+      cwd: run.cwd,
+      env: { ...process.env, ...run.env },
       stdio: ['ignore', stdout, stderr]
     });
     let timedOut = false;
@@ -209,7 +214,7 @@ async function runCell(cell, runDirectory, copies) {
   fs.mkdirSync(repository);
   try {
     prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
-    const outcome = await runClaude(cell, repository, cellDirectory, copies);
+    const outcome = await runClaude(cell, repository, cellRoot, cellDirectory, copies);
     const result = readResult(cellDirectory);
     const usage = typeof result?.session_id === 'string' ? writeCellUsage(cellDirectory, result.session_id) : null;
     const measured = await measureCell(cell, repository, usage, cellDirectory);

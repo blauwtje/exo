@@ -26,7 +26,8 @@
 // Every run of both arms of a cell runs in parallel, each in its own scratch
 // directory outside the repository, matching pressure-scenarios.md, and
 // confined by #confine-claude so it can write only in that run folder's
-// scratch/ and tmp/, never ~/.claude; on Windows the runner refuses; cells
+// scratch/ and tmp/ and, under ~/.claude, only the transcript folder of its
+// scratch/; on Windows the runner refuses; cells
 // run one after another. --setup <script> (resolved against the caller's cwd)
 // runs `bash <script>` right before every single run instead, and the runs go
 // one after another, alternating arms (comparison 1, with 1, comparison 2,

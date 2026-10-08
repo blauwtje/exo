@@ -1,7 +1,7 @@
 // edit-skills's pressure runner confines every `claude` run to its own run
 // folder: on macOS a real sandbox-exec makes a stub `claude` fail with EPERM
-// on a write outside that folder and under a `~/.claude`-like folder, while
-// its write in its cwd succeeds; on Linux the run gets dontAsk, Edit and Write
+// on a write outside that folder and under a `~/.claude`-like folder, save
+// its own transcript folder, while its write in its cwd succeeds; on Linux the run gets dontAsk, Edit and Write
 // allows scoped to its scratch folder and Claude's sandbox settings, never
 // bypassPermissions; on Windows the runner refuses; all of it lives in lib/confine-claude.mjs.
 
@@ -11,12 +11,12 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
-import { confineRefusal, confinedClaude, sandboxProfile } from '../lib/confine-claude.mjs';
+import { confineRefusal, confinedClaude, sandboxProfile, transcriptFolder } from '../lib/confine-claude.mjs';
 
 const PRESSURE = fileURLToPath(new URL('../skills/edit-skills/scripts/pressure.mjs', import.meta.url));
 const CANARY_TEXT = 'canary before the run\n';
 
-// Stands in for `claude`: tries the three writes and answers with the error
+// Stands in for `claude`: tries the writes and answers with the error
 // code of each, or `ok`.
 const STAND_IN = [
   '#!/usr/bin/env node',
@@ -27,12 +27,16 @@ const STAND_IN = [
   "  outside: attempt(() => fs.appendFileSync(process.env.CANARY, 'written by the run\\n')),",
   "  claudeHome: attempt(() => fs.writeFileSync(path.join(process.env.FAKE_CLAUDE_HOME, 'exo-confine-canary.txt'), 'x')),",
   "  inside: attempt(() => fs.writeFileSync(path.join(process.cwd(), 'inside.txt'), 'x')),",
+  "  projects: path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'),",
+  "  transcript: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects', process.cwd().replace(/[^a-zA-Z0-9]/g, '-'), 's.jsonl'), 'x')),",
+  "  otherSlug: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects', 'other-slug', 's.jsonl'), 'x')),",
+  "  configRoot: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'exo-confine-canary.txt'), 'x')),",
   '  cwd: process.cwd()',
   '};',
   "console.log(JSON.stringify({ type: 'result', result: JSON.stringify(outcome) }));"
 ].join('\n');
 
-test('on macOS a run cannot write outside its run folder or under ~/.claude, and can write in its cwd', { skip: process.platform !== 'darwin' && 'sandbox-exec confinement is macOS only' }, async () => {
+test('on macOS a run cannot write outside its run folder or under ~/.claude but its own transcript folder, and can write in its cwd', { skip: process.platform !== 'darwin' && 'sandbox-exec confinement is macOS only' }, async () => {
   const directory = await fixture();
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
@@ -53,9 +57,11 @@ test('on macOS a run cannot write outside its run folder or under ~/.claude, and
   const runs = path.join(directory, 'ru"n\\s');
   await fs.mkdir(runs);
   const out = await fixture();
+  const configDir = await fixture();
+  await fs.mkdir(path.join(configDir, 'projects', 'other-slug'), { recursive: true });
   const outcome = await run(PRESSURE, ['--prompt', promptFile, '--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out], {
     cwd: directory,
-    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: runs, CANARY: canary, FAKE_CLAUDE_HOME: fakeClaudeHome }
+    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: runs, CANARY: canary, FAKE_CLAUDE_HOME: fakeClaudeHome, CLAUDE_CONFIG_DIR: configDir }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
   const answers = (await fs.readdir(out)).sort();
@@ -67,10 +73,16 @@ test('on macOS a run cannot write outside its run folder or under ~/.claude, and
     assert.equal(result.outside, 'EPERM', `${answer}: ${text}`);
     assert.equal(result.claudeHome, 'EPERM', `${answer}: ${text}`);
     assert.equal(result.inside, 'ok', `${answer}: ${text}`);
+    assert.equal(result.transcript, 'ok', `${answer}: ${text}`);
+    assert.equal(result.otherSlug, 'EPERM', `${answer}: ${text}`);
+    assert.equal(result.configRoot, 'EPERM', `${answer}: ${text}`);
     assert.ok(result.cwd.startsWith(`${realRuns}${path.sep}`), `${answer}: ${text}`);
   }
   assert.equal(await fs.readFile(canary, 'utf8'), CANARY_TEXT);
   assert.deepEqual(await fs.readdir(fakeClaudeHome), []);
+  assert.deepEqual(await fs.readdir(configDir), ['projects']);
+  assert.deepEqual(await fs.readdir(path.join(configDir, 'projects', 'other-slug')), []);
+  assert.equal((await fs.readdir(path.join(configDir, 'projects'))).length, 3);
 });
 
 test('the profile denies every write but each root and the shell\'s /dev nodes, quoting a quote and a backslash', () => {
@@ -95,10 +107,14 @@ test('on macOS sandbox-exec wraps claude with bypassPermissions, the roots\' rea
   const { real, link } = await linkedRoots();
   const settings = { enabledPlugins: { 'p@m': false } };
   const base = ['-p', 'prompt', '--model', 'haiku', '--plugin-dir', '/clone'];
-  const run = confinedClaude({ args: base, roots: [`${link}/scratch`, `${link}/tmp`], cwd: `${link}/scratch`, tmp: `${link}/tmp`, settings, platform: 'darwin' });
+  const configDir = await fs.realpath(await fixture());
+  const run = confinedClaude({ args: base, roots: [`${link}/scratch`, `${link}/tmp`], cwd: `${link}/scratch`, tmp: `${link}/tmp`, settings, platform: 'darwin', configDir });
+  const transcripts = path.join(configDir, 'projects', `${real}/scratch`.replace(/[^a-zA-Z0-9]/g, '-'));
   assert.equal(run.command, 'sandbox-exec');
   assert.equal(run.args[0], '-p');
-  assert.equal(run.args[1], sandboxProfile([`${real}/scratch`, `${real}/tmp`]));
+  assert.equal(run.args[1], sandboxProfile([`${real}/scratch`, `${real}/tmp`, transcripts]));
+  assert.deepEqual(await fs.readdir(configDir), ['projects']);
+  assert.deepEqual(await fs.readdir(path.join(configDir, 'projects')), [path.basename(transcripts)]);
   assert.deepEqual(run.args.slice(2), ['claude', '--permission-mode', 'bypassPermissions', '--settings', JSON.stringify(settings), ...base]);
   assert.deepEqual(run.env, { TMPDIR: `${real}/tmp/`, CLAUDE_CODE_TMPDIR: `${real}/tmp` });
   assert.equal(run.cwd, `${real}/scratch`);
@@ -106,11 +122,12 @@ test('on macOS sandbox-exec wraps claude with bypassPermissions, the roots\' rea
 
 test('on macOS a run with no tmp gets a fresh temporary directory added as a writable root', async () => {
   const { real, link } = await linkedRoots();
-  const run = confinedClaude({ args: ['-p', 'x'], roots: [link], platform: 'darwin' });
+  const configDir = await fs.realpath(await fixture());
+  const run = confinedClaude({ args: ['-p', 'x'], roots: [link], platform: 'darwin', configDir });
   const tmp = run.env.CLAUDE_CODE_TMPDIR;
   try {
     assert.ok(tmp && tmp !== real, tmp);
-    assert.equal(run.args[1], sandboxProfile([real, tmp]));
+    assert.equal(run.args[1], sandboxProfile([real, tmp, transcriptFolder(real, configDir)]));
     assert.equal(run.cwd, real);
     assert.ok(!run.args.includes('--settings'), run.args.join(' '));
   } finally {
@@ -140,6 +157,22 @@ test('on Linux the run gets dontAsk, Edit and Write scoped to its roots and Clau
     assert.deepEqual(merged.sandbox, { enabled: true, failIfUnavailable: true, autoAllowBashIfSandboxed: true, allowUnsandboxedCommands: false });
     assert.deepEqual(merged.enabledPlugins, settings?.enabledPlugins);
   }
+});
+
+test('the transcript folder is the config dir\'s projects/<slug>, every non-alphanumeric cwd character a dash, and a slug Claude Code would cut is refused', () => {
+  assert.equal(transcriptFolder('/private/var/run_1/a.b', '/c'), '/c/projects/-private-var-run-1-a-b');
+  assert.throws(() => transcriptFolder(`/${'x'.repeat(200)}`, '/c'), /over 200 characters/);
+});
+
+test('on macOS the transcript folder is the only root added under the config dir, and Linux adds none', async () => {
+  const { real } = await linkedRoots();
+  const configDir = await fs.realpath(await fixture());
+  const darwin = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`, `${real}/tmp`], tmp: `${real}/tmp`, platform: 'darwin', configDir });
+  const subpaths = [...darwin.args[1].matchAll(/\(subpath "([^"]*)"\)/g)].map((match) => match[1]);
+  assert.deepEqual(subpaths.filter((root) => root.startsWith(configDir)), [transcriptFolder(`${real}/scratch`, configDir)]);
+  assert.equal(subpaths.length, 3, darwin.args[1]);
+  const linux = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`], platform: 'linux', configDir: path.join(configDir, 'linux') });
+  assert.ok(!linux.args.join(' ').includes(configDir), linux.args.join(' '));
 });
 
 test('on Windows the helper refuses', () => {
