@@ -18,10 +18,3 @@
 7. Spawn a fresh sonnet delegate as judge with the case prompt, the rubric and the labeled file; it scores each label against the rubric and picks the stronger, blind to which is which.
 8. Unmask the labels against the judge's pick, and call the edit done only when the judge picked the changed answer for the reason the rubric names.
 9. On a tie or the baseline winning, return to step 3 of the loop (Choose the home), because the wording did not move the behavior.
-
-## Judgment
-
-- The judge's blind pick outranks your own read of the `with`/`without`
-  answers, because a close call is exactly what your own read cannot referee.
-- One case judged with a clean label outranks several judged with a label
-  that leaked "old" or "new".

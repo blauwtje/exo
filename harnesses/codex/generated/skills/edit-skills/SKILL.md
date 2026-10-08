@@ -16,7 +16,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 ## The loop
 
 1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom.
-2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <model:effort> --plugin-dir <clone>` on each cell `--cells-for <edited file>` prints, else the session's own, and read only the `without` answers now. A delegate takes no effort setting, so it cannot stand in for this run.
+2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <model:effort> --plugin-dir <clone>` on each cell `--cells-for <edited file>` prints, else the session's own, and read only the `without` answers now.
 3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape below and in the register `references/wording.md` sets.
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
 5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.
@@ -49,7 +49,6 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | "The body has room to explain itself." | Each rule gets one reason clause; reasons that need a paragraph belong in a reference. |
 | "An edit this small needs no test run." | Without the run lacking the skill, the edit is a guess about what the model does. |
 | "Any model already knows this." | Then the line goes; only what the run without the skill got wrong earns a place. |
-| "Forbidding it will do." | Forbidding a wrong output shape tends to produce more of it; the failure picks the form. |
 | "I will test them together once all the skills are written." | Each skill clears every case before the next one begins, because skills written in a batch hide each other's gaps. |
 
 ## References
@@ -57,7 +56,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 | File | Read it when |
 |---|---|
 | `scripts/rename-skill.mjs` | Renaming a skill: run `node scripts/rename-skill.mjs --from <old> --to <new>` to move its folder, docs page and pressure folder and rewrite every mention in one pass. |
-| `references/pressure-scenarios.md` | Step 1, and whenever the run without the skill passes a prompt that only asks for the rule. |
+| `references/pressure-scenarios.md` | Step 1. |
 | `references/where-a-fix-lives.md` | Step 3, before the first rule is written. |
 | `references/instruction-style.md` | Step 3, before writing or editing any instruction file, `CLAUDE.md`, rule, agent, output style or hook included. |
 | `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |

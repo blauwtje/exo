@@ -21,7 +21,3 @@ Ask the run that failed how the skill should have been worded, and act on the ki
 - It says the skill was clear and it went its own way: add the letter-and-spirit line and a bright line, because the wording was never the gap.
 - It proposes a specific sentence: add that sentence in its words.
 - It says it never noticed a section: move that section earlier or into the opening, and add nothing.
-
-## Judgment
-
-- A change that names the workaround outranks one that repeats the rule.

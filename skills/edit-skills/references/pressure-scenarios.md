@@ -36,7 +36,3 @@ One pressure gives a usable case; stack three when the skill guards a habit, bec
 4. Keep the prompt and both justifications in the edit's report.
 5. Save the case in `benchmarks/pressure/<skill>/` as its README shows: the prompt files, `<skill>/criteria.md` with the `with` arm's pass criterion, and any fixture's `setup.sh`, because the next edit of the skill reruns it.
 6. A run the API refuses before any tool call is neither a pass nor a fail: remove the framing that added the most pressure and rerun, never the same prompt unchanged.
-
-## Judgment
-
-- A case the run without the skill fails outranks a case that reads well.
