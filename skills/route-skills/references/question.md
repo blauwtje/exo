@@ -2,7 +2,7 @@
 
 ## One question
 
-A message asks one question, never several, because the user then answers with one letter and nothing else. After the answer, the next question comes only if one is still open. When several decisions are open at once and none waits on another's answer, one message asks them all, numbered, each in this shape.
+A message asks one question by default, because the user then answers with one letter and nothing else. When several decisions are open at once and none waits on another's answer, one message asks them all, numbered, each in this shape, one letter each. Otherwise the next question comes only after the answer, if one is still open.
 
 ```text
 **How should we pick the new look?**

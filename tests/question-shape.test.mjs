@@ -1,4 +1,5 @@
-// Every exo question is one question per message: a plain title, lettered
+// Every exo question is one question per message by default (independent open
+// decisions may go in one numbered batch): a plain title, lettered
 // options `- **(A) Label**: text`, and a closing `Recommended: (A), because`
 // line. The shape lives only in the question reference; the route-skills body
 // and each skill point at it, so this test guards the text that states it.
@@ -22,7 +23,8 @@ test('the question reference is the one place that defines the shape, with A rec
   assert.ok(QUESTION.includes('`Recommended: (A), because <why A beats the others>`'));
   assert.ok(QUESTION.includes('A is always the recommended option'));
   assert.ok(QUESTION.includes('## One question'));
-  assert.ok(QUESTION.includes('A message asks one question, never several'));
+  assert.ok(QUESTION.includes('A message asks one question by default'));
+  assert.ok(QUESTION.includes('one message asks them all, numbered'));
   assert.ok(QUESTION.includes('**Three or four options.**'));
   assert.ok(QUESTION.includes('a question tool, a form or a picker is never used'));
   assert.ok(QUESTION.includes('`b`, `B` and `(b)` all pick B'));
