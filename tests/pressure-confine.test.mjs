@@ -162,6 +162,22 @@ test('a run with no tmp throws on either platform and leaves no folder in the sy
   assert.deepEqual(await fs.readdir(configDir), []);
 });
 
+test('the cwd defaults to the first root\'s realpath on either platform', async () => {
+  const { real, link } = await linkedRoots();
+  const configDir = await fs.realpath(await fixture());
+  for (const platform of ['linux', 'darwin']) {
+    const run = confinedClaude({ args: ['-p', 'x'], roots: [`${link}/scratch`, `${link}/tmp`], tmp: `${link}/tmp`, platform, configDir });
+    assert.equal(run.cwd, `${real}/scratch`, platform);
+  }
+});
+
+test('on macOS no --settings flag is passed when the caller gives no settings', async () => {
+  const { link } = await linkedRoots();
+  const configDir = await fs.realpath(await fixture());
+  const run = confinedClaude({ args: ['-p', 'x'], roots: [`${link}/scratch`, `${link}/tmp`], tmp: `${link}/tmp`, platform: 'darwin', configDir });
+  assert.ok(!run.args.includes('--settings'), run.args.join(' '));
+});
+
 test('on Linux the run gets dontAsk, Edit and Write scoped to its roots and Claude\'s sandbox, never bypassPermissions', async () => {
   const { real, link } = await linkedRoots();
   for (const settings of [{ enabledPlugins: { 'p@m': false } }, undefined]) {
