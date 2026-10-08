@@ -18,6 +18,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - The session-start "Using exo" text drops the lines a with-and-without routing run showed change nothing, from 389 to 264 words.
+- design-ui keeps one copy of its quality floor in `build-pass.md`, of its motion steps in `motion.md` and of its capture steps in `phase-build.md`; the build-ui agent and the other phases point there, and each pointer still carries the step a builder needs without opening the target.
+- design-ui's intake, direction-preview, composition and phase-direction references drop lines a with-and-without run showed change nothing, from 7,182 to 6,947 words.
 
 ### Fixed
 
