@@ -20,7 +20,7 @@ Tertiary text action → a link, not a fourth button style. Two tiers differing 
 
 ## Proportion and padding
 
-- **Optical padding, not metric.** Equal numeric padding reads bottom-heavy under most typefaces; adjust until even at the rendered size. Round and uppercase labels read differently.
+- **Optical padding, not metric.** Equal numeric padding reads bottom-heavy under most typefaces; adjust until even at the rendered size. Round labels read differently from uppercase ones.
 - **Text-to-icon proportion.** Icon inside a control → sized to the label's cap height, not its em box, separated by a gap from the spacing scale, never a hard-coded margin. Icon-only control → same optical mass as its labelled sibling.
 - **Height comes from the type scale.** Control height = label size plus padding rhythm, so a dense table filter and an expressive hero action follow one rule at different densities.
 

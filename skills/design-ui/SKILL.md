@@ -49,7 +49,7 @@ Default for every rung but 1 and 4; `exo:build-ui` writes the code, since code h
 
 ## On request only
 
-Run only when the user's own words ask; page size, rung or genre never starts them.
+The parts below run only when the user's own words ask; page size, rung or genre never starts them.
 
 - **Variants or a picker** ("show me options", "let me choose"): rung 3.
 - **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
@@ -67,7 +67,7 @@ Run only when the user's own words ask; page size, rung or genre never starts th
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or a read-only planning mode. |
 | `references/phase-build.md` | One-pass steps 6-7 and every path's capture: `## Capture, look, fix once`; full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | Whole: sketch Phase 3, one-pass step 4; full run Phase 3 `## Slop tropes` alone. |
+| `references/build-pass.md` | Whole: sketch Phase 3, one-pass step 4; full run Phase 3 `## Slop tropes` and `## Proof` alone. |
 | `references/stack.md` | Phase 2: `## Which stack`; the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
 | `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |

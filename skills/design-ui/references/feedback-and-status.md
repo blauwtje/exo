@@ -50,7 +50,7 @@ Dwell, placement, stack depth and self-dismissal → decided once for the produc
 - Stack → cap at roughly three, collapse the rest into a count.
 - A transient message is never the only record of something that matters; anything needed again belongs in its surface or a place the person can return to.
 - No focus move on arrival; any action inside is keyboard-reachable before it expires, or the message holds no action.
-- Action already visible on screen (the row disappeared) → no message.
+- Result of an action already visible on screen (the row disappeared) → no confirming message.
 
 ## Announce what changed
 

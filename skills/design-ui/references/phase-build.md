@@ -21,7 +21,7 @@ Where the build runs:
 
 Proof: `## Proof` of the `build-pass` reference, plus:
 
-- Repository type-check, lint and test commands → before the next `scripts/check-ui.mjs` run.
+- The repository checks of that `## Proof` → before the next `scripts/check-ui.mjs` run.
 - Direct `scripts/check-ui.mjs` run → read its one summary line and the report's `typeSummary` (definite and blocking counts by type), not the findings.
 - `--all` adds `target-size-enhanced` and media-query px findings to the summary → pass it only when the user asks for AAA or breakpoint review; the report file always holds them.
 - Run proof once the last edit lands, here or after every builder has returned.

@@ -124,7 +124,7 @@ Each surface class owes content, hierarchy, interaction, and verification, never
 - **Marketing**: opening thesis paired with a concrete artifact, mechanism, or proof; claims interleaved with evidence, not repeated benefit blocks; closing adds decision-relevant information, not only a larger CTA.
 - **Application workspace**: expose current context; primary work surface before summaries (summary is that surface when the page's job is monitoring or overview); controls beside what they change; build the states that alter the next action. Verify: walk the primary task in the render.
 - **Data-dense**: align units, changing figures tabular, sort and filter → result relationship visible.
-- **Data-dense** comparison or exceptions held by repository, workflow, or brief → make the comparison the organizing act, surface the exceptions; locate each in the render, invent neither to satisfy this list.
+- **Data-dense**: repository, workflow, or brief holds a comparison → make it the organizing act; holds exceptions → surface them, not bury them. Locate each in the render; invent neither to satisfy this list.
 - **Editorial or immersive**: reading rhythm and pacing are the structure; scroll tied to real content progression; every staging job named. Verify reading order at both widths.
 
 ## Responsive recomposition
