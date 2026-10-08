@@ -16,7 +16,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 ## The loop
 
 1. **Catch the mistake.** Write one prompt, built as `references/pressure-scenarios.md` describes, whose answer shows the mistake as one observable symptom.
-2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <model:effort> --plugin-dir <clone>`, the cell `references/pressure-scenarios.md` picks for the skill's kind, and read only the `without` answers now. A delegate takes no effort setting, so it cannot stand in for this run.
+2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <model:effort> --plugin-dir <clone>` on each cell `--cells-for <edited file>` prints, else the session's own, and read only the `without` answers now. A delegate takes no effort setting, so it cannot stand in for this run.
 3. **Choose the home.** Place the fix with `references/where-a-fix-lives.md`, then write what must be prose in the shape below and in the register `references/wording.md` sets.
 4. **Watch it stop.** Rerun `pressure.mjs` on the same cells and read the `with` answers; when the run without the skill also passed, the case shows nothing, so harden it until that run fails.
 5. **Close each new excuse.** For every justification the run with the skill still produced, apply `references/plugging-holes.md` and rerun all cases; the skill is finished when a full rerun adds nothing to its tables.

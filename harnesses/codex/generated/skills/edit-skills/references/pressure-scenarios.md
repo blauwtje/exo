@@ -30,7 +30,7 @@ One pressure gives a usable case; stack three when the skill guards a habit, bec
 
 ## Running it
 
-1. Save the case to a prompt file and take the model and effort from the skill's kind in `lib/model-kinds.json` for a stage skill, or from an agent's frontmatter, with the session's effort where it names none. Use `sonnet` at `high` for a build delegate's prompt and the session's own for any other skill; a rule one model or effort needs is noise to another.
+1. Save the case to a prompt file and run it on every cell the loop's step 2 names, because a rule one model or effort needs is noise to another.
 2. Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`; it runs both arms of every cell `--runs` times (default 3) in parallel, each in a scratch directory outside the repository, and writes each full answer to its own file in `--out`. `--main-dir <main clone>` swaps the without arm for a `main` arm; a `WRONG COPY` line, exit 1, voids a run that loaded another copy.
 3. Copy the chosen action and the justification word for word from the `without` answer files; that wording is what the skill has to answer.
 4. Keep the prompt and both justifications in the edit's report.
