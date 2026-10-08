@@ -1,0 +1,255 @@
+// run-plan.mjs against a temp repository with a two-task plan on a feature
+// branch and a local bare remote. A stub claude, written here from the shapes
+// of a `claude -p --output-format stream-json --verbose` stream with neutral
+// values, plays one scenario step per spawn and records its argv, stdin and
+// EXO_RUN_TASK, so each case asserts what the runner passed and how it stopped.
+
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { resolveClaude, parseStream } from '../skills/build/scripts/run-plan.mjs';
+import { fixture, git, gitRepository, run } from './harness.mjs';
+
+const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
+const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
+
+// The stub: one step of the scenario per call, chosen by how many calls the
+// record already holds. A step may land tasks (one commit per entry, each
+// carrying the trailers listed), push the branch, hang, report denials or a
+// plugin error, and end on one or two result events.
+const STUB = `
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+const scenario = JSON.parse(fs.readFileSync(process.env.STUB_SCENARIO, 'utf8'));
+const record = process.env.STUB_RECORD;
+const stdin = fs.readFileSync(0, 'utf8');
+const index = fs.existsSync(record) ? fs.readFileSync(record, 'utf8').split('\\n').filter(Boolean).length : 0;
+fs.appendFileSync(record, JSON.stringify({ argv: process.argv.slice(2), stdin, pin: process.env.EXO_RUN_TASK ?? null, marker: process.env.CLAUDECODE ?? null }) + '\\n');
+const step = scenario.steps[index] ?? {};
+const emit = (event) => process.stdout.write(JSON.stringify(event) + '\\n');
+const init = { type: 'system', subtype: 'init', cwd: process.cwd(), session_id: 'session-1', permissionMode: 'dontAsk',
+  plugins: [{ name: 'exo', path: scenario.pluginPath, source: 'exo@local', version: '0.0.0' }] };
+if (step.pluginError) init.plugin_errors = [{ plugin: 'exo', type: 'generic-error', message: step.pluginError }];
+emit(init);
+const git = (...args) => execFileSync('git', ['-c', 'user.name=stub', '-c', 'user.email=stub@example.com', '-c', 'commit.gpgsign=false', ...args], { encoding: 'utf8' });
+for (const commit of step.commits ?? []) {
+  fs.writeFileSync(commit.file, String(index) + '\\n');
+  git('add', commit.file);
+  git('commit', '-q', '-m', 'feat: stub', ...commit.trailers.flatMap((trailer) => ['-m', trailer]));
+}
+if (step.push) git('push', '-q', 'origin', 'HEAD');
+if (step.hang) setInterval(() => {}, 1000);
+else {
+  const result = (text, turns, cost, denials) => ({ type: 'result', subtype: 'success', is_error: false, num_turns: turns,
+    total_cost_usd: cost, permission_denials: denials, result: text, session_id: 'session-1' });
+  if (step.background) emit(result('Started a background agent.', 1, 0.01, []));
+  emit(result(step.result ?? 'Worked on it.', 2, 0.02, step.denials ?? []));
+}
+`;
+
+const planText = (root, { allow = 'Allow: none' } = {}) => [
+  '# Plan: runner fixture',
+  '',
+  '## Goal',
+  'Two files exist.',
+  '',
+  '## Plan basis',
+  `Repository: ${root}`,
+  'Branch: feat/run',
+  'Worktree setup: none',
+  'Land gate: none',
+  'Lint: none',
+  allow,
+  '',
+  '## Success criterion',
+  '`node --version`',
+  '',
+  '## Checkpoint',
+  '- Blocks first: Task 1.',
+  '- Parallel: none.',
+  '- Shared state: none.',
+  '- Smallest safe split: one file per task.',
+  '',
+  '## Manual checks',
+  '- Open both files.',
+  '',
+  '## Tasks',
+  '### Task 1: feat(a): add a',
+  'Depends on: none | Files: `a.txt` | Data: a line | Proof: node --version',
+  '### Task 2: feat(b): add b',
+  'Depends on: 1 | Files: `b.txt` | Data: a line | Proof: node --version',
+  ''
+].filter((line) => line !== null).join('\n');
+
+/** A repository whose main holds the plan, checked out on feat/run, with a bare origin holding main. */
+async function setup(options = {}) {
+  const root = await gitRepository({ 'README.md': 'fixture\n' });
+  await fs.mkdir(path.join(root, 'docs'));
+  const plan = path.join(root, 'docs', 'plan.md');
+  await fs.writeFile(plan, planText(root, options));
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'docs: add the plan');
+  const bare = await fs.realpath(await fixture());
+  git(bare, 'init', '-q', '--bare');
+  git(root, 'remote', 'add', 'origin', bare);
+  git(root, 'push', '-q', 'origin', 'main');
+  git(root, 'fetch', '-q', 'origin');
+  git(root, 'switch', '-q', '-c', 'feat/run');
+  const tools = await fixture();
+  const stub = path.join(tools, 'claude.mjs');
+  await fs.writeFile(stub, STUB);
+  return { root, plan, bare, tools, stub };
+}
+
+async function runPlan(context, steps, args = []) {
+  const scenario = path.join(context.tools, 'scenario.json');
+  const record = path.join(context.tools, 'calls.jsonl');
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, steps }));
+  const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...args], {
+    cwd: context.root,
+    env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1' }
+  });
+  const text = await fs.readFile(record, 'utf8').catch(() => '');
+  const calls = text.split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  for (const call of calls) {
+    const mode = call.argv.indexOf('--permission-mode');
+    assert.equal(call.argv[mode + 1], 'dontAsk');
+    assert.ok(!call.argv.includes('--bare'));
+    assert.equal(call.marker, null, 'the running session marker is not passed on');
+  }
+  const lines = result.stdout.trim().split('\n');
+  return { ...result, calls, stop: lines.at(-1) };
+}
+
+const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
+
+test('done: two task processes and the tail land the plan, the gate passes and the remote is untouched', async () => {
+  const context = await setup();
+  const remoteBefore = git(context.bare, 'for-each-ref');
+  const result = await runPlan(context, [land(1), { ...land(2), background: true }, { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
+  assert.equal(result.code, 0);
+  assert.equal(result.calls.length, 3);
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
+  assert.match(result.calls[0].stdin, /^\/exo:build .*plan\.md --task 1/);
+  assert.match(result.calls[2].stdin, /^\/exo:verify .*plan\.md Push nothing and open no pull request\./);
+  const deny = result.calls[0].argv.slice(result.calls[0].argv.indexOf('--disallowedTools') + 1);
+  for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
+  assert.ok(result.calls[0].argv.includes(`Edit(/${context.root}/**)`));
+  assert.ok(result.calls[0].argv.includes('Bash(node --version *)'));
+  assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
+  const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
+  assert.match(summary, /Task 1: [0-9a-f]{7,}/);
+  assert.match(summary, /Open both files\./);
+  assert.equal(summary.trim().split('\n').at(-1), result.stop);
+});
+
+test('iteration cap: --max-iterations 1 spawns once and stops on the cap', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{}], ['--max-iterations', '1']);
+  assert.equal(result.stop, 'run-plan: stop: iteration cap 1 reached, 0/2 landed');
+  assert.equal(result.code, 1);
+  assert.equal(result.calls.length, 1);
+});
+
+test('no progress: two iterations without a landing stop, and the retry names the failed attempt', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ result: 'Ran out of ideas.' }, {}]);
+  assert.match(result.stop, /^run-plan: stop: no progress on task 1 in 2 iterations, log .+iter-2-task-1\.log$/);
+  assert.equal(result.calls.length, 2);
+  assert.match(result.calls[1].stdin, /Ran out of ideas\./);
+});
+
+test('no progress: a hanging process is killed at the timeout and counts as no progress', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ hang: true }, { hang: true }], ['--timeout', '0.01']);
+  assert.match(result.stop, /^run-plan: stop: no progress on task 1 in 2 iterations/);
+  assert.equal(result.calls.length, 2);
+});
+
+test('blocked: a last line Task 1: BLOCKED stops after one spawn', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ result: 'Looked.\nTask 1: BLOCKED the data shape is open' }]);
+  assert.equal(result.stop, 'run-plan: stop: task 1 blocked: the data shape is open; re-plan with exo:spec');
+  assert.equal(result.calls.length, 1);
+});
+
+test('denied: a permission denial stops by the command it named', async () => {
+  const context = await setup();
+  const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
+  const result = await runPlan(context, [{ denials: [denial] }]);
+  assert.equal(result.stop, 'run-plan: stop: task 1 denied npm install left-pad; add it to Allow:');
+});
+
+test('breach: one iteration landing two tasks is an extra commit', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ commits: [land(1).commits[0], land(2).commits[0]] }]);
+  assert.equal(result.stop, 'run-plan: stop: breach in iteration 1: extra commit');
+  assert.equal(result.code, 1);
+});
+
+test('breach: a push to the remote moves a remote ref', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ push: true }]);
+  assert.equal(result.stop, 'run-plan: stop: breach in iteration 1: remote ref moved');
+});
+
+test('exo not loaded: a plugin error for exo in the init event stops the run', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ pluginError: 'hooks failed to load' }]);
+  assert.equal(result.stop, 'run-plan: stop: exo not loaded: hooks failed to load');
+});
+
+test('refused: the default branch, a tracked change, a failing plan-check and a missing claude exit 2 with no spawn', async () => {
+  const onMain = await setup();
+  git(onMain.root, 'switch', '-q', 'main');
+  const changed = await setup();
+  await fs.writeFile(path.join(changed.root, 'README.md'), 'edited\n');
+  const noAllow = await setup({ allow: 'Worktree setup: none' });
+  const noClaude = await setup();
+  noClaude.stub = path.join(noClaude.tools, 'missing.mjs');
+  for (const [context, why] of [[onMain, /branch/], [changed, /tracked change/], [noAllow, /plan-check/], [noClaude, /claude/]]) {
+    const result = await runPlan(context, [land(1)]);
+    assert.match(result.stop, /^run-plan: refused: /);
+    assert.match(result.stop, why);
+    assert.equal(result.code, 2);
+    assert.equal(result.calls.length, 0);
+  }
+});
+
+test('dry run prints the order, the rules and the first prompt and spawns nothing', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [land(1)], ['--dry-run']);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.equal(result.calls.length, 0);
+  assert.match(result.stdout, /Order: Task 1, Task 2/);
+  assert.match(result.stdout, /--task 1/);
+});
+
+test('resolveClaude finds claude.exe on Windows, refuses a .cmd-only PATH and a PATH without claude', () => {
+  const files = new Set(['/bin/claude', 'C:\\npm\\claude.cmd', 'C:\\tools\\claude.exe']);
+  const isFile = (file) => files.has(file);
+  assert.deepEqual(resolveClaude({ pathValue: '/usr/x:/bin', platform: 'linux', isFile }), { command: '/bin/claude', prefix: [] });
+  assert.equal(resolveClaude({ pathValue: 'C:\\npm;C:\\tools', platform: 'win32', isFile }).command, 'C:\\tools\\claude.exe');
+  assert.match(resolveClaude({ pathValue: 'C:\\npm', platform: 'win32', isFile }).refused, /pass --claude/);
+  assert.match(resolveClaude({ pathValue: '/usr/x', platform: 'linux', isFile }).refused, /no claude/);
+  assert.deepEqual(resolveClaude({ flag: '/s/stub.mjs', isFile: () => true }), { command: process.execPath, prefix: ['/s/stub.mjs'] });
+});
+
+test('parseStream takes the last result, sums turns, keeps the last cost and unions denials', () => {
+  const denial = (id) => ({ tool_name: 'Bash', tool_use_id: id, tool_input: { command: id } });
+  const events = [
+    { type: 'system', subtype: 'init', plugins: [] },
+    { type: 'result', num_turns: 1, total_cost_usd: 0.1, permission_denials: [denial('a')], result: 'first' },
+    { type: 'system', subtype: 'init', plugins: [] },
+    { type: 'result', num_turns: 3, total_cost_usd: 0.3, permission_denials: [denial('a'), denial('b')], result: 'second' }
+  ];
+  const parsed = parseStream(`${events.map((event) => JSON.stringify(event)).join('\r\n')}\nnot json\n`);
+  assert.equal(parsed.resultText, 'second');
+  assert.equal(parsed.turns, 4);
+  assert.equal(parsed.cost, 0.3);
+  assert.deepEqual(parsed.denials.map((entry) => entry.tool_use_id), ['a', 'b']);
+});
