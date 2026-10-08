@@ -29,10 +29,7 @@ Ask each setting with the plain texts its entry in `../schema.json` holds, never
 - Every other `choices` entry follows as `- **(<letter>) <label>**: <gives>`, then `Keep the rest`, which keeps every setting not yet asked.
 - `scope` has no `Keep the rest`.
 
-A value that is the current one appears only as the keep answer.
-
 ## Judgment
 
 - An answer the scripts reject is never offered, even when the user typed it: ask that setting again with the accepted values.
-- The current value outranks the default as the recommended answer.
 - The user's typed words outrank the letter they came with.
