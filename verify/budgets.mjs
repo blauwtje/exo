@@ -70,4 +70,7 @@ export const REFERENCE_TOKEN_LOCKS = {
 export const LEAN_REFERENCE_LOCK = { bytes: 1030, measured: '2026-10-06' };
 export const DESCRIPTION_CHARS = { realistic: 200, ceiling: 250 };
 export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
+// Highest Jaccard overlap two model-invocable descriptions may share in
+// stopword-filtered words; verify/checks/routing.mjs fails above it.
+export const ROUTING_SIMILARITY_CEILING = 0.4;
 export const REFERENCE_CONTENTS_LINES = 100;
