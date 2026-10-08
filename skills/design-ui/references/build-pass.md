@@ -24,12 +24,17 @@ Build the one pass from this file, read whole and once; where the `stack` refere
 
 ## The build floor
 
+This floor binds every build, in the session and in every builder, and is checked before any critique.
+
 The underdesign floor: the ground is a designed surface, not an untouched flat neutral.
 
-- Span the page background and any sidebar the full page height at 390px and 1440px, or a band of another color shows below.
+- Span the page background and any sidebar or side rail the full page height at 390px and 1440px, full-page captures included, or a band of another color shows below.
+- Give raised surfaces the material and type the voice `## Character` sets.
+- Build `## The motion bar`.
+- Let no trope from `## Slop tropes` stand without recorded provenance.
 - Theme every browser surface: `::selection`, `accent-color`, `caret-color`, `scrollbar-color` on inner scrollers, and link underline offset and thickness.
 - Set amounts and changing figures in the body or display family with `font-variant-numeric: tabular-nums`, never a monospace family.
-- Use `text-wrap: pretty`, grid and subgrid, `color-mix()`, masks and scroll-driven animation as the idiom, not enhancements to ration.
+- Use `text-wrap: pretty`, grid and subgrid, `color-mix()`, masks and scroll-driven animation as the idiom, not enhancements to ration; their shapes live in the `craft-recipes` reference.
 - Build every content item the plan carries; a region still holding placeholder material leaves the page unfinished.
 - Build a technique the content or brief names, such as a canvas or generative motion, working and live, never faked by an image.
 
@@ -43,7 +48,7 @@ The numeric floor:
 - 44×44 is the enhanced target and the default under a coarse pointer;
 - reduced-motion handling for every animation and semantic HTML beneath styling;
 - reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;
-- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property;
+- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property; anything costlier carries the cost disclosure the `performance-budget` reference defines.
 
 ## Slop tropes
 

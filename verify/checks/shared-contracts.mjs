@@ -58,15 +58,7 @@ const PINNED_SENTENCES = {
     'Name the decision an answer changes before asking anything; a question with no named decision is not asked.',
   ],
   'skills/design-ui/references/phase-detail.md': [
-    '- no horizontal scroll from 360px through 1440px;',
-    '- reduced-motion handling for every animation and semantic HTML beneath styling;',
-    '- reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;',
-    '- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property;',
-    '- body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;',
-    '- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;',
-    '- targets at least 24×24 CSS px, the WCAG 2.2 AA minimum;',
-    '- a target is exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation;',
-    '- 44×44 is the enhanced target and the default under a coarse pointer;',
+    '`## The build floor` of the `build-pass` reference',
     'never substitute a product-category aesthetic for missing evidence',
     'its repair is a new direction, not another polish pass, so the cycle ends there',
     'baseline before the first edit, post-build before the critique fixes, and final after them',
@@ -96,13 +88,6 @@ const PINNED_SENTENCES = {
   ],
   'skills/design-ui/references/build-pass.md': [
     '- no horizontal scroll from 360px through 1440px;',
-    '- body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;',
-    '- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;',
-    '- targets at least 24×24 CSS px, the WCAG 2.2 AA minimum;',
-    'The underdesign floor: the ground is a designed surface, not an untouched flat neutral',
-  ],
-  'agents/build-ui.md': [
-    '- no horizontal scroll from 360px through 1440px;',
     '- reduced-motion handling for every animation and semantic HTML beneath styling;',
     '- reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;',
     '- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property;',
@@ -112,6 +97,10 @@ const PINNED_SENTENCES = {
     '- a target is exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation;',
     '- 44×44 is the enhanced target and the default under a coarse pointer;',
     'The underdesign floor: the ground is a designed surface, not an untouched flat neutral',
+    'This floor binds every build, in the session and in every builder',
+  ],
+  'agents/build-ui.md': [
+    'Every scope meets `## The build floor` of `$SKILL/references/build-pass.md`',
   ],
   'skills/edit-skills/SKILL.md': [
     `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens, ${thousands(INJECTED_BODY_TOKENS.ceiling)} for the injected \`${INJECTED_BODY_TOKENS.skill}\`, and ${DESCRIPTION_CHARS.ceiling} characters.`,

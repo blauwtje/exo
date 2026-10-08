@@ -36,28 +36,7 @@ The full run starts only when the user asks for a survey, parallel builders, a c
 
 ## The build floor
 
-The underdesign floor, checked before the critique:
-
-- the ground is a designed surface, not an untouched flat neutral;
-- the page background and any sidebar or side rail span the full page height at 390px and 1440px, full-page captures included, because one ending at the viewport or content height leaves a band of another color below;
-- raised surfaces carry the direction's material, not one grey shadow each;
-- type carries a voice through a second weight, width, or family;
-- the motion bar is built;
-- every browser surface on the finish list in the `implementation` reference is themed;
-- no slop trope from the `build-pass` reference stands without recorded provenance;
-- `text-wrap: pretty`, CSS grid and subgrid, `color-mix()`, masks, and scroll-driven animation are the idiom, not enhancements to ration, and their shapes live in the `craft-recipes` reference.
-
-The numeric floor:
-
-- no horizontal scroll from 360px through 1440px;
-- body text at least 16px, or 14px in dense data UI, with line-height at least 1.5;
-- contrast at least 4.5:1 for body text and 3:1 for UI chrome and text at least 24px, or at least 18.66px and bold;
-- targets at least 24×24 CSS px, the WCAG 2.2 AA minimum;
-- a target is exempt only for sufficient spacing, an equivalent control, inline text, a user-agent default, or an essential presentation;
-- 44×44 is the enhanced target and the default under a coarse pointer;
-- reduced-motion handling for every animation and semantic HTML beneath styling;
-- reflow at 320×256 CSS px with no scrolling in two dimensions, unless the content requires a two-dimensional layout for usage or meaning;
-- the largest element loading eagerly, every element above the fold reserving its space, and no persistent animation on a layout or paint property; anything costlier carries the cost disclosure the `performance-budget` reference defines.
+The floor checked before the critique is `## The build floor` of the `build-pass` reference; read that section and the sections it names.
 
 ## The critique dispatch
 
