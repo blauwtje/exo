@@ -7,6 +7,32 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**Five budget twin agents are gone and dispatches now set `model` and `effort` per call on the base agent, so a custom prompt naming `critique-ui-high`, `review-branch-deep`, `review-branch-deep-high`, `solve-hard-high` or `solve-hard-low` must name the base agent instead.**
+**On macOS every bypass-mode `claude` run that the pressure tests and benchmarks start is confined to its own scratch and transcript folders, so a test run can no longer change your `~/.claude` settings.**
+
+### Added
+
+- edit-skills' `pressure.mjs --cells-for <file>` prints the model cells a file runs on, and a pressure run marks a cited file the session never opened as `[unopened citation: …]`, which grades as a fail.
+- verify's claims-diff warns when a branch removes a test assertion or silences a check.
+- verify runs a routing check that ranks sample prompts against every skill description and fails when a prompt ranks another skill first.
+
+### Changed
+
+- The budget setting passes `model` and `effort` on each dispatch instead of naming a twin agent, and verify's deep `REVIEWER:` line carries `model=` and `effort=`.
+- configure, edit-skills, file-issues, ship, verify, critique-ui, review-branch and locate-code are shorter, each cut proven with and without on its model cells.
+- The descriptions of design-ui, ship, build and write-docs are shorter, bringing the always-loaded skill listing from 480 to 441 words.
+
+### Removed
+
+- The agents `critique-ui-high`, `review-branch-deep`, `review-branch-deep-high`, `solve-hard-high` and `solve-hard-low`.
+
+### Fixed
+
+- A pressure or benchmark run can write only its scratch folder and its own `~/.claude/projects/<slug>` folder on macOS, so it can no longer edit `~/.claude/settings.json`, and a test fails any script that starts `claude` in bypass mode outside the shared confinement.
+- Each pressure drive run gets a unique working folder, so a rerun never loads the last run's memory.
+
 ## 0.105.0 - 2026-10-08
 
 ### Highlights
