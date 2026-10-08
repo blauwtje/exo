@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `tests/pressure-confine.test.mjs` again proves that a confined run defaults its cwd to the first root and, on macOS, passes no `--settings` flag when given no settings.
 - A design-ui build on Opus again gives tabs and buttons their hover and state transitions, a requirement an earlier cut had left outside the motion bar.
 - `confinedClaude` requires a `tmp` folder and makes none of its own, so a call no longer leaves a `claude-isolation-*` or `claude-tmp-*` folder behind.
 - A confined pressure or benchmark run on macOS denies `defaults write`, Apple Events, `open`, LaunchServices and `launchctl`, proven by canary probes run under the same sandbox profile.
