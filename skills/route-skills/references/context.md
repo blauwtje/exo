@@ -10,7 +10,8 @@
 - **Command output.** Output that may pass forty lines → log under `.exo/` or a temp directory outside git; read back only failing lines.
 - **Delegate brief.** Name scope, acceptance criteria, stop condition, pointers (paths, ids, logs) not pasted content, a tool-call budget, and return shape: verdict first, a few lines, full detail in a named file.
 - **Reader budget.** Read-only dispatch to an agent type without its own limit → carries a standalone `Budget: 70k/100k` line; the 40k default stops a reader after a few files.
-- **Discovery routing.** Read-only discovery of where code lives → `locate-code`, one bounded question per dispatch, independent questions in parallel; Haiku reads cheaper. General-purpose agent → only for edits or a task no named agent fits. Line under `Unsure:` → re-ask as one new question or read it yourself, never guess.
+- **Discovery routing.** Read-only discovery of where code lives → `locate-code`, one bounded question per dispatch, independent questions in parallel; Haiku reads cheaper than a general-purpose agent, which only edits or a task no named agent fits use.
+- **Unsure lines.** Line `locate-code` lists under `Unsure:` → re-ask as one new question or read it yourself, never guess.
 - **Budget return.** Delegate returns `BUDGET:` → a fresh agent continues its open part; the main session never finishes it itself, to keep context for the rest of the run.
 - **Terse return.** Under `replies=terse` → dispatch asks for a terse return, since the model is its only reader; files the delegate writes keep normal prose.
 - **Isolated commands.** Worktree-isolated delegate's Bash refuses some shapes: double-quote a runtime value with a literal prefix, or put `--` before it; run plain commands one at a time, not `;` chains with variables; wait with a background run, never `sleep`.
