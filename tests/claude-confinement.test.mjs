@@ -126,7 +126,7 @@ test('a confined run on either platform gets no GitHub token, an empty gh and zs
     }
     assert.notEqual(env.GH_CONFIG_DIR, env.ZDOTDIR);
     assert.deepEqual([env.GIT_CONFIG_COUNT, env.GIT_CONFIG_KEY_0, env.GIT_CONFIG_VALUE_0, env.GIT_TERMINAL_PROMPT], ['1', 'credential.helper', '', '0'], platform);
-    if (platform === 'linux') fs.rmSync(path.dirname(env.GH_CONFIG_DIR), { recursive: true, force: true });
+    assert.equal(path.dirname(env.GH_CONFIG_DIR), root, `${platform} isolation sits under the caller's tmp`);
   }
 });
 

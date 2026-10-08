@@ -302,9 +302,11 @@ function writeMeta(runDirectory, meta) {
 }
 
 // The session is confined by #confine-claude to the run directory, which
-// holds repo/, origin.git/ and the suite log its tests append to.
+// holds repo/, origin.git/ and the suite log its tests append to, and a
+// temporary directory removed when the session ends.
 function runClaude(argv, cwd, env, runDirectory, timeoutMs) {
-  const run = confinedClaude({ args: argv, roots: [runDirectory], cwd });
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-lean-tmp-'));
+  const run = confinedClaude({ args: argv, roots: [runDirectory, tmp], cwd, tmp });
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(runDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(runDirectory, 'stderr.log'), 'w');
@@ -334,6 +336,7 @@ function runClaude(argv, cwd, env, runDirectory, timeoutMs) {
       process.off('SIGTERM', forward);
       fs.closeSync(stdout);
       fs.closeSync(stderr);
+      fs.rmSync(tmp, { recursive: true, force: true });
       resolve({ exitCode, signal, timedOut, wallMs: Date.now() - started });
     });
   });

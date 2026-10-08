@@ -30,7 +30,10 @@ const STAND_IN = [
   "  projects: path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'),",
   "  transcript: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects', process.cwd().replace(/[^a-zA-Z0-9]/g, '-'), 's.jsonl'), 'x')),",
   "  otherSlug: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects', 'other-slug', 's.jsonl'), 'x')),",
+  "  ownSession: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'session-env', process.argv[process.argv.indexOf('--session-id') + 1], 'hook.txt'), 'x')),",
   "  sessionEnv: attempt(() => fs.mkdtempSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'session-env', 'session-'))),",
+  "  otherCreate: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'session-env', 'other-id', 'new.txt'), 'x')),",
+  "  otherChange: attempt(() => fs.appendFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'session-env', 'other-id', 'existing.txt'), 'changed')),",
   "  configRoot: attempt(() => fs.writeFileSync(path.join(process.env.CLAUDE_CONFIG_DIR, 'exo-confine-canary.txt'), 'x')),",
   '  cwd: process.cwd()',
   '};',
@@ -60,6 +63,8 @@ test('on macOS a run cannot write outside its run folder or under ~/.claude but 
   const out = await fixture();
   const configDir = await fixture();
   await fs.mkdir(path.join(configDir, 'projects', 'other-slug'), { recursive: true });
+  await fs.mkdir(path.join(configDir, 'session-env', 'other-id'), { recursive: true });
+  await fs.writeFile(path.join(configDir, 'session-env', 'other-id', 'existing.txt'), 'kept');
   const outcome = await run(PRESSURE, ['--prompt', promptFile, '--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out], {
     cwd: directory,
     env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: runs, CANARY: canary, FAKE_CLAUDE_HOME: fakeClaudeHome, CLAUDE_CONFIG_DIR: configDir }
@@ -76,7 +81,10 @@ test('on macOS a run cannot write outside its run folder or under ~/.claude but 
     assert.equal(result.inside, 'ok', `${answer}: ${text}`);
     assert.equal(result.transcript, 'ok', `${answer}: ${text}`);
     assert.equal(result.otherSlug, 'EPERM', `${answer}: ${text}`);
-    assert.equal(result.sessionEnv, 'ok', `${answer}: ${text}`);
+    assert.equal(result.ownSession, 'ok', `${answer}: ${text}`);
+    assert.equal(result.sessionEnv, 'EPERM', `${answer}: ${text}`);
+    assert.equal(result.otherCreate, 'EPERM', `${answer}: ${text}`);
+    assert.equal(result.otherChange, 'EPERM', `${answer}: ${text}`);
     assert.equal(result.configRoot, 'EPERM', `${answer}: ${text}`);
     assert.ok(result.cwd.startsWith(`${realRuns}${path.sep}`), `${answer}: ${text}`);
   }
@@ -84,6 +92,8 @@ test('on macOS a run cannot write outside its run folder or under ~/.claude but 
   assert.deepEqual(await fs.readdir(fakeClaudeHome), []);
   assert.deepEqual((await fs.readdir(configDir)).sort(), ['projects', 'session-env']);
   assert.deepEqual(await fs.readdir(path.join(configDir, 'projects', 'other-slug')), []);
+  assert.deepEqual(await fs.readdir(path.join(configDir, 'session-env', 'other-id')), ['existing.txt']);
+  assert.equal(await fs.readFile(path.join(configDir, 'session-env', 'other-id', 'existing.txt'), 'utf8'), 'kept');
   assert.equal((await fs.readdir(path.join(configDir, 'projects'))).length, 3);
 });
 
@@ -126,12 +136,15 @@ test('on macOS sandbox-exec wraps claude with bypassPermissions, the roots\' rea
   const configDir = await fs.realpath(await fixture());
   const run = confinedClaude({ args: base, roots: [`${link}/scratch`, `${link}/tmp`], cwd: `${link}/scratch`, tmp: `${link}/tmp`, settings, platform: 'darwin', configDir });
   const transcripts = path.join(configDir, 'projects', `${real}/scratch`.replace(/[^a-zA-Z0-9]/g, '-'));
+  const id = run.args[run.args.indexOf('--session-id') + 1];
+  assert.match(id, /^[0-9a-f-]{36}$/);
+  assert.equal(run.args[1], sandboxProfile([`${real}/scratch`, `${real}/tmp`, transcripts, path.join(configDir, 'session-env', id)]));
   assert.equal(run.command, 'sandbox-exec');
   assert.equal(run.args[0], '-p');
-  assert.equal(run.args[1], sandboxProfile([`${real}/scratch`, `${real}/tmp`, transcripts, path.join(configDir, 'session-env')]));
   assert.deepEqual((await fs.readdir(configDir)).sort(), ['projects', 'session-env']);
+  assert.deepEqual(await fs.readdir(path.join(configDir, 'session-env')), [id]);
   assert.deepEqual(await fs.readdir(path.join(configDir, 'projects')), [path.basename(transcripts)]);
-  assert.deepEqual(run.args.slice(2), ['claude', '--permission-mode', 'bypassPermissions', '--settings', JSON.stringify(settings), ...base]);
+  assert.deepEqual(run.args.slice(2), ['claude', '--permission-mode', 'bypassPermissions', '--settings', JSON.stringify(settings), '--session-id', id, ...base]);
   assert.deepEqual(run.env, { TMPDIR: `${real}/tmp/`, CLAUDE_CODE_TMPDIR: `${real}/tmp`, ...githubEnv(`${real}/tmp/isolated-gh`, `${real}/tmp/isolated-zsh`) });
   assert.equal(run.cwd, `${real}/scratch`);
 });
@@ -143,7 +156,7 @@ test('on macOS a run with no tmp gets a fresh temporary directory added as a wri
   const tmp = run.env.CLAUDE_CODE_TMPDIR;
   try {
     assert.ok(tmp && tmp !== real, tmp);
-    assert.equal(run.args[1], sandboxProfile([real, tmp, transcriptFolder(real, configDir), path.join(configDir, 'session-env')]));
+    assert.equal(run.args[1], sandboxProfile([real, tmp, transcriptFolder(real, configDir), path.join(configDir, 'session-env', run.args[run.args.indexOf('--session-id') + 1])]));
     assert.equal(run.cwd, real);
     assert.ok(!run.args.includes('--settings'), run.args.join(' '));
   } finally {
@@ -200,15 +213,42 @@ test('the transcript folder is the config dir\'s projects/<slug>, every non-alph
   assert.throws(() => transcriptFolder(`/${'x'.repeat(200)}`, '/c'), /over 200 characters/);
 });
 
-test('on macOS the transcript and session-env folders are the only roots added under the config dir, and Linux adds none', async () => {
+test('on macOS the transcript and the run\'s own session-env folders are the only roots added under the config dir, and Linux adds none', async () => {
   const { real } = await linkedRoots();
   const configDir = await fs.realpath(await fixture());
   const darwin = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`, `${real}/tmp`], tmp: `${real}/tmp`, platform: 'darwin', configDir });
   const subpaths = [...darwin.args[1].matchAll(/\(subpath "([^"]*)"\)/g)].map((match) => match[1]);
-  assert.deepEqual(subpaths.filter((root) => root.startsWith(configDir)), [transcriptFolder(`${real}/scratch`, configDir), path.join(configDir, 'session-env')]);
+  assert.deepEqual(subpaths.filter((root) => root.startsWith(configDir)), [transcriptFolder(`${real}/scratch`, configDir), path.join(configDir, 'session-env', darwin.args[darwin.args.indexOf('--session-id') + 1])]);
   assert.equal(subpaths.length, 4, darwin.args[1]);
   const linux = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`], platform: 'linux', configDir: path.join(configDir, 'linux') });
   assert.ok(!linux.args.join(' ').includes(configDir), linux.args.join(' '));
+});
+
+test('on macOS the session-env root is the caller\'s --session-id, else its --resume id unless forked, else a fresh one added as --session-id', async () => {
+  const { real } = await linkedRoots();
+  const configDir = await fs.realpath(await fixture());
+  const sessionEnvRoot = (args) => {
+    const run = confinedClaude({ args, roots: [`${real}/scratch`], tmp: `${real}/tmp`, platform: 'darwin', configDir });
+    const roots = [...run.args[1].matchAll(/\(subpath "([^"]*)"\)/g)].map((match) => match[1]).filter((root) => root.startsWith(path.join(configDir, 'session-env')));
+    return { roots, args: run.args.slice(run.args.indexOf('claude') + 3) };
+  };
+  const own = sessionEnvRoot(['-p', 'x', '--session-id', 'abc-1']);
+  assert.deepEqual(own, { roots: [path.join(configDir, 'session-env', 'abc-1')], args: ['-p', 'x', '--session-id', 'abc-1'] });
+  assert.deepEqual(sessionEnvRoot(['--session-id=abc-2']).roots, [path.join(configDir, 'session-env', 'abc-2')]);
+  const resumed = sessionEnvRoot(['-p', 'x', '--resume', 'abc-3']);
+  assert.deepEqual(resumed, { roots: [path.join(configDir, 'session-env', 'abc-3')], args: ['-p', 'x', '--resume', 'abc-3'] });
+  const forked = sessionEnvRoot(['--resume', 'abc-3', '--fork-session']);
+  const fresh = forked.args[forked.args.indexOf('--session-id') + 1];
+  assert.deepEqual(forked.roots, [path.join(configDir, 'session-env', fresh)]);
+  assert.notEqual(fresh, 'abc-3');
+  assert.throws(() => sessionEnvRoot(['--session-id', '../escape']), /not a session id/);
+  assert.deepEqual((await fs.readdir(path.join(configDir, 'session-env'))).sort(), ['abc-1', 'abc-2', 'abc-3', fresh].sort());
+});
+
+test('on Linux the GitHub isolation folders go under the caller\'s tmp when given', async () => {
+  const { real, link } = await linkedRoots();
+  const run = confinedClaude({ args: ['-p', 'x'], roots: [`${link}/scratch`, `${link}/tmp`], tmp: `${link}/tmp`, platform: 'linux' });
+  assert.deepEqual(run.env, githubEnv(`${real}/tmp/isolated-gh`, `${real}/tmp/isolated-zsh`));
 });
 
 test('on Windows the helper refuses', () => {
