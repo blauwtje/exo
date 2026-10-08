@@ -10,7 +10,7 @@ Freeze what this session knows and the next one cannot rebuild. The enemy is the
 ## Before writing
 
 - Take no irreversible action to pause: no pull request and no push unless one was already out.
-- Stop at a safe boundary: finish the current atomic step or back it out, and start nothing new.
+- Pause between atomic steps, never inside one: complete the step in progress or undo it, and begin no new work.
 - On a branch other than the repository's default, commit every uncommitted edit as one `wip:` commit first.
 - Say in that commit's body when the tree is broken.
 - On the default branch, leave the edits uncommitted and list them under `## Current state`.
