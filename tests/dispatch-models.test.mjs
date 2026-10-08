@@ -36,15 +36,17 @@ test('every general-purpose delegate dispatch names its model', () => {
   assert.deepEqual(unnamed, []);
 });
 
-test('every review dispatch names the agents the printed reviewer picks and no model override', () => {
+test('every review dispatch names the agent the printed reviewer picks and passes its model and effort', () => {
+  const [agent, ...parameters] = REVIEWER_AGENTS.deep.split(' ');
+  assert.equal(agent, REVIEWER_AGENTS.light);
+  assert.deepEqual(parameters.map((pair) => pair.split('=')[0]), ['model', 'effort']);
   for (const relativePath of ['verify/SKILL.md']) {
     const text = fs.readFileSync(path.join(skillsRoot, relativePath), 'utf8');
     const dispatch = text.match(/^.*`exo:review-branch` agent.*$/m)?.[0];
     assert.ok(dispatch, `${relativePath} does not dispatch \`exo:review-branch\``);
-    for (const name of Object.values(REVIEWER_AGENTS)) {
-      assert.ok(dispatch.includes(`\`exo:${name}\``), `${relativePath} does not name exo:${name}`);
-    }
-    assert.match(dispatch, /no model override/, `${relativePath} does not rule out a model override`);
+    assert.ok(dispatch.includes(`\`exo:${REVIEWER_AGENTS.light}\``), `${relativePath} does not name exo:${REVIEWER_AGENTS.light}`);
+    assert.match(dispatch, /`model` and `effort` to the `REVIEWER:` line's `model=` and `effort=`/, `${relativePath} does not pass the REVIEWER line's model and effort`);
+    assert.doesNotMatch(dispatch, /exo:review-branch-deep/, `${relativePath} still names the deep twin`);
   }
 });
 

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { readKindTable } from '../lib/model-kinds.mjs';
 import { commitFiles, git, gitRepository, run } from './harness.mjs';
 
 const { light, deep } = REVIEWER_AGENTS;
@@ -30,11 +31,11 @@ test('touchesManifest reads a manifest or lockfile anywhere in the paths', () =>
   assert.equal(touchesManifest(['src/app.js']), false);
 });
 
-test('the pair is two distinct agents that exist as files', async () => {
-  assert.notEqual(light, deep);
-  for (const name of [light, deep]) {
-    await fs.access(path.join(AGENTS_DIRECTORY, `${name}.md`));
-  }
+test('the light pick is an agent file and the deep pick is that agent with the review-deep call model and effort', async () => {
+  const { model, effort } = readKindTable().kinds['review-deep'];
+  await fs.access(path.join(AGENTS_DIRECTORY, `${light}.md`));
+  assert.equal(light, 'review-branch');
+  assert.equal(deep, `review-branch model=${model} effort=${effort}`);
 });
 
 test('signatureChangedSince reads a Signature trailer or a script commit missing a Plan-task trailer, never a merge', async () => {

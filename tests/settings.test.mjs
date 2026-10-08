@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
+import { readKindTable } from '../lib/model-kinds.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
@@ -288,6 +289,9 @@ async function pluginWithTiers(tiers) {
   return path.join(copy, 'skills', 'configure', 'scripts', 'settings.mjs');
 }
 
+const KINDS = readKindTable().kinds;
+const callParameters = ({ model, effort }) => `\`model\` to \`${model}\` and \`effort\` to \`${effort}\``;
+
 test('the low rule names the provider models the kind table maps, and carries no placeholder', async () => {
   const table = JSON.parse(readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
   const [[fromTier, toTier]] = Object.entries(table.budgets.low);
@@ -297,37 +301,38 @@ test('the low rule names the provider models the kind table maps, and carries no
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /budget=low \(project\)/);
   assert.ok(result.stdout.includes('resolves to model model-from ('), result.stdout);
-  assert.ok(result.stdout.includes("pass model-to as the Task call's own model parameter"), result.stdout);
-  assert.ok(result.stdout.includes('exo:solve-hard-low'), result.stdout);
-  assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
+  assert.ok(result.stdout.includes("set model-to as the Agent call's own `model`"), result.stdout);
+  assert.ok(result.stdout.includes(callParameters({ model: 'model-to', effort: KINDS['review-deep'].effort })), result.stdout);
+  assert.doesNotMatch(result.stdout, /\{(from|to|model:|effort:)/);
 });
 
-test('the high rule names both twins and carries no placeholder', async () => {
-  const space = await workspace({ project: { budget: 'high' } });
-  const result = await run(SETTINGS, ['context'], { cwd: space.root, env: space.env });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /budget=high \(project\)/);
-  assert.ok(result.stdout.includes('exo:review-branch-deep-high'), result.stdout);
-  assert.ok(result.stdout.includes('exo:critique-ui-high'), result.stdout);
-  assert.ok(result.stdout.includes('exo:solve-hard-high'), result.stdout);
-  assert.doesNotMatch(result.stdout, /\{from\}|\{to\}/);
+test('each budget line names the Agent call model and effort for critique-ui, solve-hard and the deep review', async () => {
+  const lowDeep = { model: readKindTable().providers.claude.tiers.standard, effort: KINDS['review-deep'].effort };
+  const expected = {
+    high: { review: KINDS['review-deep-high'], hard: KINDS['hardest-high'] },
+    low: { review: lowDeep, hard: KINDS['hardest-low'] }
+  };
+  for (const [budget, { review, hard }] of Object.entries(expected)) {
+    const space = await workspace({ project: { budget } });
+    const line = (await run(SETTINGS, ['context'], { cwd: space.root, env: space.env })).stdout;
+    assert.ok(line.includes(`dispatch exo:critique-ui or the deep review (exo:review-branch on a \`REVIEWER:\` line that prints a model), set the call's ${callParameters(review)}`), line);
+    assert.ok(line.includes(`dispatch exo:solve-hard, set its ${callParameters(hard)}`), line);
+    assert.doesNotMatch(line, /exo:[a-z-]+-(high|low)\b|exo:review-branch-deep|\{(from|to|model:|effort:)/);
+  }
 });
 
-test('on Codex the budget rules dispatch the generated high and low twins by name', async () => {
-  const high = await codexWorkspace({ budget: 'high' });
-  const highLine = (await settings(high, ['context'])).stdout;
-  for (const twin of ['exo-review-branch-deep-high', 'exo-critique-ui-high', 'exo-solve-hard-high']) assert.ok(highLine.includes(twin), highLine);
-  assert.ok(!highLine.includes('exo:solve-hard-high'), highLine);
-  const low = await codexWorkspace({ budget: 'low' });
-  const lowLine = (await settings(low, ['context'])).stdout;
-  for (const twin of ['exo-review-branch-deep-low', 'exo-critique-ui-low', 'exo-solve-hard-low']) assert.ok(lowLine.includes(twin), lowLine);
-  assert.doesNotMatch(lowLine, /\{from\}|\{to\}|Task call|model parameter/);
-  assert.ok(!lowLine.includes('exo:solve-hard-low'), lowLine);
+test('on Codex the budget rules spawn the generated twins by name', async () => {
+  const lines = {};
+  for (const budget of ['high', 'medium', 'low']) lines[budget] = (await settings(await codexWorkspace({ budget }), ['context'])).stdout;
+  for (const twin of ['exo-review-branch-deep-high', 'exo-critique-ui-high', 'exo-solve-hard-high']) assert.ok(lines.high.includes(twin), lines.high);
+  for (const twin of ['exo-review-branch-deep-low', 'exo-critique-ui-low', 'exo-solve-hard-low']) assert.ok(lines.low.includes(twin), lines.low);
+  assert.ok(lines.medium.includes('spawn exo-review-branch-deep for that review'), lines.medium);
+  for (const line of Object.values(lines)) assert.doesNotMatch(line, /\{(from|to|model:|effort:)|Agent call|exo:solve-hard/);
 });
 
 test('on Codex the replies rule is the same as on Claude Code', async () => {
   const space = await codexWorkspace({ replies: 'terse' });
-  assert.ok((await settings(space, ['context'])).stdout.trim().endsWith(`. ${SCHEMA.replies.rules.terse}`));
+  assert.ok((await settings(space, ['context'])).stdout.includes(`. ${SCHEMA.replies.rules.terse}`));
 });
 
 test('the Codex budget rules name only twins that exist as generated agent files', () => {

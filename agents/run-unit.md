@@ -20,7 +20,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - Else a wave builds per `<skill>/references/wave-worktrees.md`, reading its `${CLAUDE_SKILL_DIR}` as `<skill>`.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report in 54 minutes`; never a `sleep` command.
-  - A repair goes to the dispatch's hard agent (`exo:solve-hard` if none) with `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
+  - A repair goes to `exo:solve-hard`, with the dispatch's `model` and `effort`, and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
 4. **Commit a green task.** Done means `GREEN`, never a report you wrote, since land-task runs each `Run:` or `Proof:` itself; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.

@@ -16,7 +16,7 @@
    - A `Design:` line routes its task by its direction per the design tasks reference, then step 3 repeats.
    - An open choice the user would miss stops with a question; any other is ruled, recorded in the commit.
 5. **Dispatch the unit.** Send the `Block:` tasks to the `exo-run-unit` agent, silently, then end the turn; its completion notification resumes it.
-   - Name plan path, branch, checkout, `<skill>` (`{{SKILL_DIR}}` resolved), task numbers, the budget rule's hard agent (`exo-solve-hard`, `-high` or `-low`).
+   - Name plan path, branch, checkout, `<skill>` (`{{SKILL_DIR}}` resolved), task numbers, and the `model` and `effort` the budget rule sets for `exo-solve-hard`, if any.
    - Never build a task here, and never call ScheduleWakeup, ListAgents, Monitor or sleep while the unit runs.
 6. **Route the return.** Each line reads `LANDED <n>`, with no sha, or `BLOCKED <n> <reason> <report path>`.
    - `LANDED` needs nothing bar a ` pending mcp:<tool>` suffix: call `mcp__*__<tool>`.

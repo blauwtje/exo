@@ -13,16 +13,15 @@ import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 export const FILE_LIMIT = 5;
 export const LINE_LIMIT = 200;
 
-// The light reviewer is the agent of kind `review`; the deep one is the agent
-// of kind `review-deep` generated from it, which sets it apart from other
-// `review-deep` agents. Each agent's name is its file's basename.
+// The light reviewer is the agent of kind `review`; the deep one is that same
+// agent with the model and effort of kind `review-deep`, which the dispatch
+// passes as the Agent call's parameters. The agent's name is its file's basename.
 function reviewerAgents() {
-  const { agents } = readKindTable();
-  const agentName = (file) => basename(file, '.md');
+  const { agents, kinds } = readKindTable();
   const [lightFile] = Object.entries(agents).find(([, entry]) => entry.kind === 'review');
-  const [deepFile] = Object.entries(agents)
-    .find(([, entry]) => entry.kind === 'review-deep' && entry.generatedFrom === lightFile);
-  return { light: agentName(lightFile), deep: agentName(deepFile) };
+  const light = basename(lightFile, '.md');
+  const { model, effort } = kinds['review-deep'];
+  return { light, deep: `${light} model=${model} effort=${effort}` };
 }
 
 export const REVIEWER_AGENTS = reviewerAgents();
@@ -40,7 +39,7 @@ export const MANIFESTS = [
   'composer.json', 'composer.lock', 'pom.xml', 'build.gradle', 'build.gradle.kts'
 ];
 
-/** The deep reviewer when a landed task carries a `Risk:`, a manifest changed or a signature changed; diff size no longer picks it. */
+/** The deep reviewer pick (the light agent plus call model and effort) when a landed task carries a `Risk:`, a manifest changed or a signature changed; diff size no longer picks it. */
 export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
   return riskTasks || manifestChanged || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light;
 }

@@ -59,6 +59,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exportSignatures } from '#export-signatures';
+import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { sumCounts, usageCounts } from '#token-weights';
 import { findTranscript } from './cell-usage.mjs';
 import { withoutParentSession } from './lean-gates.mjs';
@@ -396,8 +397,8 @@ export function repoFacts(repo, { verifyAtMs = NaN, planPath = null } = {}) {
       exportedSignatureChanges: signatureChanges,
       files: files.length,
       changedLines,
-      expectedNew: riskTasks.length > 0 || manifestFiles.length > 0 || signatureChanged ? 'review-branch-deep' : 'review-branch',
-      expectedOld: files.length > OLD_FILE_LIMIT || changedLines > OLD_LINE_LIMIT ? 'review-branch-deep' : 'review-branch'
+      expectedNew: riskTasks.length > 0 || manifestFiles.length > 0 || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light,
+      expectedOld: files.length > OLD_FILE_LIMIT || changedLines > OLD_LINE_LIMIT ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light
     },
     _taskCommits: taskCommits,
     _fixCommits: fixCommits
@@ -600,7 +601,7 @@ export function runMetrics(runDirectory, { recheck: doRecheck = true, forceReche
   // reviewer
   const reviewerLines = [];
   for (const call of calls) {
-    for (const match of (call.resultText ?? '').matchAll(/^REVIEWER:\s*(\S+)/gm)) reviewerLines.push({ ts: call.resultTs, agent: match[1], fromVerify: /verify\.mjs/.test(String(call.input.command ?? '')) });
+    for (const match of (call.resultText ?? '').matchAll(/^REVIEWER:[ \t]*(.*\S)/gm)) reviewerLines.push({ ts: call.resultTs, agent: match[1], fromVerify: /verify\.mjs/.test(String(call.input.command ?? '')) });
   }
   const pickedLine = reviewerLines.find((line) => line.fromVerify) ?? reviewerLines[0] ?? null;
   const dispatched = phases.review.agentType?.replace(/^exo:/, '') ?? null;

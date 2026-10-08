@@ -35,16 +35,31 @@ import {
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
 
-// A rule's `{from}` and `{to}` are the provider's models for the two tiers of
-// each pair in the kind table's `budgets` map under the setting's value, so a
-// rule names no model itself; a rule with neither placeholder is used as written.
+// A rule's `{model:<kind>}` and `{effort:<kind>}` are the provider's model and
+// effort for that kind, and `{model:<kind>@<budget>}` is that model after the
+// budget's tier swap, so a rule names the Agent call's parameters without
+// naming a model itself. Its `{from}` and `{to}` are the provider's models for
+// the two tiers of each pair in the kind table's `budgets` map under the
+// setting's value. A rule with no placeholder is used as written.
 function filledRule(rule, value) {
-  if (!rule.includes('{from}')) return rule;
+  if (!rule.includes('{')) return rule;
   const table = readKindTable();
   const { tiers } = table.providers[table.provider];
+  const kind = (name) => {
+    if (!table.kinds[name]) throw new Error(`budget rule names unknown kind ${name}`);
+    return table.kinds[name];
+  };
+  const swapped = (model, budget) => {
+    const pair = Object.entries(table.budgets[budget] ?? {}).find(([fromTier]) => tiers[fromTier] === model);
+    return pair ? tiers[pair[1]] : model;
+  };
+  const called = rule
+    .replace(/\{model:([a-z-]+)(?:@([a-z]+))?\}/g, (_, name, budget) => (budget ? swapped(kind(name).model, budget) : kind(name).model))
+    .replace(/\{effort:([a-z-]+)\}/g, (_, name) => kind(name).effort);
+  if (!called.includes('{from}')) return called;
   return Object.entries(table.budgets[value]).map(([fromTier, toTier]) => {
     if (!tiers[fromTier] || !tiers[toTier]) throw new Error(`budgets.${value}: ${fromTier} to ${toTier} names a tier the provider lacks`);
-    return rule.replaceAll('{from}', tiers[fromTier]).replaceAll('{to}', tiers[toTier]);
+    return called.replaceAll('{from}', tiers[fromTier]).replaceAll('{to}', tiers[toTier]);
   }).join(' ');
 }
 
@@ -52,7 +67,7 @@ function filledRule(rule, value) {
 // the injected settings line; a value with no entry there (such as budget's
 // default `medium`) adds nothing. On Codex a `codexRules` map takes the place
 // of `rules` for its key, because Codex spawns a twin by name where Claude
-// Code passes the Task call a model.
+// Code passes the Agent call a model and effort.
 function activeRules(values) {
   const onCodex = currentHost() === 'codex';
   return Object.entries(SCHEMA)

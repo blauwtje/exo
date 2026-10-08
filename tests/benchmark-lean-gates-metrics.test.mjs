@@ -7,6 +7,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
+import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { fileURLToPath } from 'node:url';
 import { gateFacts, isFullSuiteCommand, parsePlanTasks, parseReviewerReturn, parseReviewReport, toolCalls } from '../benchmarks/lean-gates-metrics.mjs';
 
@@ -115,13 +116,13 @@ async function syntheticRun() {
     assistant('m2', '2026-10-02T10:06:00.500Z', [{ type: 'text', text: 'repeat of m2 for a second content block' }], usage(10, 20)),
     result('2026-10-02T10:06:01.000Z', 'tS', 'Launching skill'),
     assistant('m3', '2026-10-02T10:06:05.000Z', [{ type: 'tool_use', id: 'tV', name: 'Bash', input: { command: 'node /p/skills/verify/scripts/verify.mjs --plan p' } }], usage(10, 20)),
-    result('2026-10-02T10:07:05.000Z', 'tV', 'PASS success-criterion npm test\nREVIEWER: review-branch-deep\nDONE Task 1'),
+    result('2026-10-02T10:07:05.000Z', 'tV', `PASS success-criterion npm test\nREVIEWER: ${REVIEWER_AGENTS.deep}\nDONE Task 1`),
     assistant('m4', '2026-10-02T10:07:10.000Z', [{ type: 'tool_use', id: 'tR', name: 'Agent', input: { subagent_type: 'exo:review-branch-deep', description: 'Review' } }], usage(10, 20)),
     result('2026-10-02T10:10:10.000Z', 'tR', 'verdict=FINDINGS defect=0 hazard=1 question=0 fix=1 report=.exo/branch-review.md', { toolUseResult: { status: 'completed' } }),
     assistant('m5', '2026-10-02T10:10:15.000Z', [{ type: 'tool_use', id: 'tF', name: 'Agent', input: { subagent_type: 'exo:fix-review', description: 'Fix' } }], usage(10, 20)),
     result('2026-10-02T10:11:15.000Z', 'tF', 'fixed 1'),
     assistant('m6', '2026-10-02T10:11:20.000Z', [{ type: 'tool_use', id: 'tV2', name: 'Bash', input: { command: 'node /p/skills/verify/scripts/verify.mjs --plan p' } }], usage(10, 20)),
-    result('2026-10-02T10:11:50.000Z', 'tV2', 'PASS\nREVIEWER: review-branch-deep'),
+    result('2026-10-02T10:11:50.000Z', 'tV2', `PASS\nREVIEWER: ${REVIEWER_AGENTS.deep}`),
     assistant('m7', '2026-10-02T10:13:00.000Z', [{ type: 'text', text: 'done' }], usage(10, 20))
   ];
   await fs.writeFile(path.join(project, `${SESSION}.jsonl`), `${main.join('\n')}\n`);
@@ -166,8 +167,8 @@ test('a synthetic run yields phases, suite counts, the token split and quality',
   assert.equal(run.tokens.byAgentType['exo:review-branch-deep'].output, 500);
   assert.equal(run.cost.harnessUsd, 1.5);
   assert.ok(run.cost.transcriptUsd > 0);
-  assert.equal(run.reviewer.line, 'REVIEWER: review-branch-deep');
-  assert.equal(run.reviewer.expectedByOwnRule, 'review-branch-deep');
+  assert.equal(run.reviewer.line, `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+  assert.equal(run.reviewer.expectedByOwnRule, REVIEWER_AGENTS.deep);
   assert.equal(run.reviewer.fitsRule, true);
   assert.equal(run.reviewer.risk.riskTasks[0].number, 2);
   assert.equal(run.reviewer.risk.exportedSignatureChanges.length, 1);

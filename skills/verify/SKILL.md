@@ -21,7 +21,7 @@ effort: high
    - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; a `FAIL` ends the turn like its own.
    - With no `mcp__*__<tool>` tool, record `UNRUN <check>`, not `PASS`, and list it in the report.
 2. **Review the branch.** `REVIEWER: none` skips steps 2-3; go to step 4.
-   - Otherwise dispatch the `exo:review-branch` agent, or `exo:review-branch-deep` when the `REVIEWER:` line prints that name, with no model override.
+   - Otherwise dispatch the `exo:review-branch` agent, setting its `model` and `effort` to the `REVIEWER:` line's `model=` and `effort=`, unless the budget rule sets others.
    - Pass the plan path, branch, checkout and base.
    - Pass the code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
    - Pass `${CLAUDE_SKILL_DIR}/references/review-rules.md` as the review rules path.
