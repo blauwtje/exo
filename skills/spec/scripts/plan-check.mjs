@@ -5,13 +5,15 @@
 // Modify: path present in the target repository, and no shared Files: path
 // between two tasks with no Depends on chain between them, and a plan with
 // two such independent tasks and no Worktree setup: line, and a compact
-// task whose Proof: runs the whole suite. Planning runs
+// task whose Proof: runs the whole suite. With --loop it also refuses what
+// run-plan.mjs cannot run unattended. Planning runs
 // this instead of reading the finished plan back.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, frameOf, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBranch, frameOf, loopCommands, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { mcpToolCall } from '#mcp-tool-call';
 import { wholeSuiteKeys } from '#suite-command';
 
 const STEP_HEADING = /^Step \d+: .*$/;
@@ -267,12 +269,52 @@ function checkCompactFields(task) {
   return [...problems, ...checkWholeSuiteProof(task)];
 }
 
+// run-plan.mjs runs a plan with no session to answer it, so `--loop` refuses,
+// by name, what only a session or a person could run: a missing `Allow:`, a
+// Success criterion that is not one backticked non-MCP command, an MCP
+// `Proof:` or passing `Run:`, an output redirect to a file, a `Design:` task
+// without a selected contract, and a `Branch:` that is the default branch.
+const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
+const QUOTED = /"(?:\\.|[^"\\])*"|'[^']*'/g;
+
+function redirectsToFile(part) {
+  return [...part.replace(QUOTED, '""').matchAll(REDIRECT)].some((match) => !match[2].startsWith('&') && match[2] !== '/dev/null');
+}
+
+function checkLoop(plan, root) {
+  const basis = frameOf(plan.frame);
+  const problems = [];
+  if (basis.allow === null) problems.push("loop: the plan's '## Plan basis' has no 'Allow:' line: add 'Allow: none' or the backticked commands the run may use");
+  const criterion = [...(basis.successCriterion ?? '').matchAll(/`([^`]+)`/g)];
+  if (criterion.length !== 1) problems.push("loop: the plan's '## Success criterion' is not one backticked command");
+  else if (mcpToolCall(criterion[0][1].trim()) !== null) problems.push("loop: the plan's '## Success criterion' is an MCP call, which only a session can run");
+  for (const task of plan.tasks) {
+    const proof = task.proof?.replace(/^`(.*)`$/, '$1') ?? null;
+    if (proof !== null && mcpToolCall(proof) !== null) problems.push(`loop: Task ${task.number}: 'Proof: ${proof}' is an MCP call, which only a session can run`);
+    for (const run of task.runs.filter((entry) => entry.expectsPass && mcpToolCall(entry.command) !== null)) {
+      problems.push(`loop: Task ${task.number}: 'Run: ${run.command}' is an MCP call, which only a session can run`);
+    }
+    if (task.design && !(basis.visualDirection ?? '').includes('contract-selected.json')) {
+      problems.push(`loop: Task ${task.number}: names 'Design:' but '## Visual direction' names no contract-selected.json`);
+    }
+  }
+  for (const { field, task, parts } of loopCommands(plan)) {
+    for (const part of parts.filter(redirectsToFile)) {
+      problems.push(`loop: ${field}${task === null ? '' : ` of Task ${task}`}: '${part}' redirects output to a file`);
+    }
+  }
+  const defaultName = root === undefined ? null : defaultBranch(root);
+  if (defaultName !== null && basis.branch?.trim() === defaultName) problems.push(`loop: 'Branch: ${basis.branch}' names the default branch`);
+  return problems;
+}
+
 /**
  * Reads `planText` and returns `{ ok, lines }`: the problems found, or the
  * one ok line. `root` names the repository the plan targets, so a task's
  * Modify: entry can be checked against it; omit it to skip that one check.
+ * `loop` adds the problems that keep run-plan.mjs from running the plan.
  */
-export function planCheckReport(planText, { root } = {}) {
+export function planCheckReport(planText, { root, loop = false } = {}) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
@@ -299,7 +341,8 @@ export function planCheckReport(planText, { root } = {}) {
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
     ...checkSharedFiles(plan.tasks),
-    ...checkWorktreeSetup(plan.tasks, plan.frame)
+    ...checkWorktreeSetup(plan.tasks, plan.frame),
+    ...(loop ? checkLoop(plan, resolvedRoot) : [])
   ];
   if (problems.length > 0) return { ok: false, lines: problems };
   const largest = plan.tasks.reduce((best, task) => {
@@ -310,11 +353,11 @@ export function planCheckReport(planText, { root } = {}) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', loop: 'boolean' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  const report = planCheckReport(planText, { root: flags.root });
+  const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;
 }

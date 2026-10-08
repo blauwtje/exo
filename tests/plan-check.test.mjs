@@ -321,3 +321,78 @@ test('plan-check does not flag a plan whose tasks form one Depends on chain, wit
   const report = planCheckReport(compactPlanFixture({ tasks: compactTasks(3) }));
   assert.equal(report.ok, true);
 });
+
+const LOOP_TASK = compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' });
+const loopPlan = (tasks = [LOOP_TASK]) => compactPlanFixture({ tasks }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nAllow: none');
+const loopProblems = (plan, root) => planCheckReport(plan, { loop: true, root }).lines.filter((line) => line.startsWith('loop: '));
+
+test('plan-check --loop passes a plan that names Allow:, one command criterion and a Bash Proof:', () => {
+  assert.equal(planCheckReport(loopPlan(), { loop: true }).ok, true);
+  assert.equal(planCheckReport(loopPlan().replace('Allow: none', 'Allow: `npx eslint`, `git status`'), { loop: true }).ok, true);
+});
+
+test('plan-check without --loop ignores every loop field', () => {
+  const plan = compactPlanFixture({ tasks: [LOOP_TASK] });
+  assert.equal(planCheckReport(plan).ok, true);
+  assert.equal(planCheckReport(plan, { loop: true }).ok, false);
+});
+
+test('plan-check --loop refuses a plan with no Allow: line by name', () => {
+  const problems = loopProblems(compactPlanFixture({ tasks: [LOOP_TASK] }));
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /no 'Allow:' line/);
+});
+
+test('plan-check --loop refuses a Success criterion that is not one backticked non-MCP command', () => {
+  for (const criterion of ['Everything passes.', '`node --test` and `npm run lint` pass.', '`mcp:run_playtest` passes.', '`run_playtest` passes.']) {
+    const problems = loopProblems(loopPlan().replace('`node --test` passes.', criterion));
+    assert.equal(problems.length, 1, criterion);
+    assert.match(problems[0], /Success criterion/, criterion);
+  }
+});
+
+test('plan-check --loop refuses an MCP Proof: and names the task', () => {
+  const task = compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'mcp:run_playtest {}' });
+  const problems = loopProblems(loopPlan([task]));
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /Task 1: 'Proof: mcp:run_playtest \{\}' is an MCP call/);
+});
+
+test('plan-check --loop refuses a passing MCP Run: and accepts a Bash one', () => {
+  const planWith = (command) => loopPlan([goodTask({ number: 1 })]).replace('## Tasks', '## Success criterion\n`node --test` passes.\n\n## Tasks').replace('Run: `node --test`', `Run: \`${command}\``);
+  const refused = loopProblems(planWith('mcp:check_map {}'));
+  assert.ok(refused.some((line) => /Task 1: 'Run: mcp:check_map \{\}' is an MCP call/.test(line)), refused.join('\n'));
+  assert.ok(!loopProblems(planWith('node --test')).some((line) => line.includes('MCP')));
+});
+
+test('plan-check --loop refuses a command part that redirects output to a file, but not 2>&1 or /dev/null', () => {
+  const planWith = (proof) => loopPlan([compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof })]);
+  for (const proof of ['node --test > out.log', 'node a.mjs && node b.mjs >> out.log', 'node --test 2> err.txt']) {
+    const problems = loopProblems(planWith(proof));
+    assert.equal(problems.length, 1, proof);
+    assert.match(problems[0], /Task 1: .* redirects output to a file/, proof);
+  }
+  for (const proof of ['node --test 2>&1', 'node --test > /dev/null', 'node -e "a=>b"']) {
+    assert.deepEqual(loopProblems(planWith(proof)), [], proof);
+  }
+  assert.match(loopProblems(loopPlan().replace('`node --test` passes.', '`npm run build > out.txt` passes.'))[0], /Success criterion: .* redirects output to a file/);
+});
+
+test('plan-check --loop refuses a Design: task unless Visual direction names a contract-selected.json', () => {
+  const task = compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], design: 'design-ui', proof: 'node --test tests/app.test.mjs' });
+  const visual = (text) => loopPlan([task]).replace('## Tasks', `## Visual direction\n${text}\n\n## Tasks`);
+  const refused = loopProblems(visual('Quiet record.'));
+  assert.equal(refused.length, 1);
+  assert.match(refused[0], /Task 1: .*Design:.*contract-selected\.json/);
+  assert.deepEqual(loopProblems(visual('Contract: docs/contract-selected.json')), []);
+  assert.deepEqual(loopProblems(loopPlan()), []);
+});
+
+test('plan-check --loop refuses a Branch: that names the default branch', async () => {
+  const root = await gitRepository({ 'src/app.js': GOOD_CODE });
+  const onMain = loopPlan().replace('Branch: feat/fixture', 'Branch: main');
+  const problems = loopProblems(onMain, root);
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /Branch: main.*default branch/);
+  assert.deepEqual(loopProblems(loopPlan(), root), []);
+});
