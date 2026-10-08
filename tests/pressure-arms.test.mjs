@@ -105,3 +105,34 @@ test('an unread path on a line that quotes text is marked, a bare one on another
   const outcome = await citationRun('references/bare.md says it.\nreferences/quoted.md says "keep it short".\n> references/block.md: also this');
   assert.deepEqual(outcome, { code: 1, tags: ['references/quoted.md', 'references/block.md'] });
 });
+
+// Runs the runner once against a stand-in `claude` whose result event carries
+// `cost` (none when undefined), with two runs per arm; returns the stdout lines.
+async function costRun(cost) {
+  const directory = await fixture();
+  const bin = path.join(directory, 'bin');
+  await fs.mkdir(bin);
+  const event = { type: 'result', result: 'done', ...(cost === undefined ? {} : { total_cost_usd: cost }) };
+  await fs.writeFile(path.join(bin, 'claude'), `#!/usr/bin/env node\nconsole.log(JSON.stringify(${JSON.stringify(event)}));\n`, { mode: 0o755 });
+  const clone = await plugin(directory, 'clone');
+  const promptFile = path.join(directory, 'prompt.txt');
+  await fs.writeFile(promptFile, 'report');
+  const outcome = await run(PRESSURE, ['--prompt', promptFile, '--cells', 'sonnet:high', '--plugin-dir', clone, '--runs', '2', '--out', await fixture()], {
+    cwd: directory,
+    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: await fixture(), CLAUDE_CONFIG_DIR: await fixture() }
+  });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  return outcome.stdout.split('\n');
+}
+
+test('each arm line carries the result event cost and the cell ends on one total per arm', skipWindows, async () => {
+  const lines = await costRun(0.25);
+  const costs = lines.filter((text) => /^ {2}(with|without) \d:/.test(text)).map((text) => /\[cost: (\$[\d.]+)\]/.exec(text)?.[1]);
+  assert.deepEqual(costs, ['$0.2500', '$0.2500', '$0.2500', '$0.2500']);
+  assert.deepEqual(lines.filter((text) => text.includes('total')), ['  total without: $0.5000', '  total with: $0.5000']);
+});
+
+test('a result with no total_cost_usd gets no cost tag and no total', skipWindows, async () => {
+  const lines = await costRun(undefined);
+  assert.deepEqual(lines.filter((text) => text.includes('cost') || text.includes('total')), []);
+});

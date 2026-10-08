@@ -46,7 +46,12 @@
 // result gets a note holding the full stderr instead. stdout opens with
 // `answers: <dir>`, then per cell its label and one line per arm and run:
 //
-//   without 1: <file> [first edit/write: Edit /x.js] [skills: exo:find-cause]
+//   without 1: <file> [first edit/write: Edit /x.js] [skills: exo:find-cause] [cost: $0.1234]
+//
+// `[cost: $<total_cost_usd>]` comes from the run's result event and is left
+// off a run whose result carries none. Each cell ends on one line per arm,
+// `  total <arm>: $<sum>`, summing the costs its runs report; an arm with no
+// reported cost prints no total.
 //
 // A skill loaded from outside its arm's plugin directory adds a line
 // `  WRONG COPY <arm> <run>: <skill dir> is not under <plugin dir>` and
@@ -167,13 +172,15 @@ function claudeArguments({ model, effort, promptText, settingSources, pluginFlag
 // never produced one, such as a timeout or a refusal), the first Edit or
 // Write tool call across the whole stream, the `skill` input of every Skill
 // tool call, in order, the base directory of every skill loaded, and the
-// paths the answer cites without a Read of them.
+// paths the answer cites without a Read of them, and the cost the result
+// event reports.
 function parseStream(rawStdout) {
   let finalText;
   let firstAction = null;
   const skills = [];
   const skillDirs = [];
   const reads = [];
+  let cost;
   for (const line of rawStdout.split('\n')) {
     if (line.trim() === '') continue;
     let event;
@@ -193,9 +200,12 @@ function parseStream(rawStdout) {
       }
     }
     skillDirs.push(...loadedSkillDirs(event));
-    if (event.type === 'result') finalText = typeof event.result === 'string' ? event.result : '';
+    if (event.type === 'result') {
+      finalText = typeof event.result === 'string' ? event.result : '';
+      if (typeof event.total_cost_usd === 'number') cost = event.total_cost_usd;
+    }
   }
-  return { finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
+  return { cost, finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
 }
 
 // Runs one confined claude: `run` comes from confinedClaude.
@@ -282,6 +292,7 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     : await runInSequence(planned, startRun);
   console.log(`${model}:${effort}`);
   let failed = false;
+  const totals = new Map();
   planned.forEach(({ arm, runNumber }, index) => {
     const outcome = outcomes[index];
     const file = path.join(outDir, `${fileSafe(model)}-${fileSafe(effort)}-${arm.name}-${runNumber}.md`);
@@ -292,14 +303,17 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       return;
     }
     const skills = outcome.skills.length > 0 ? outcome.skills.join(', ') : 'none';
+    const cost = typeof outcome.cost === 'number' ? ` [cost: $${outcome.cost.toFixed(4)}]` : '';
+    if (cost !== '') totals.set(arm.name, (totals.get(arm.name) ?? 0) + outcome.cost);
     const unopened = outcome.unopened.map((citation) => ` [unopened citation: ${citation}]`).join('');
-    console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]${unopened}`);
+    console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]${cost}${unopened}`);
     if (unopened !== '') failed = true;
     for (const dir of wrongCopies(outcome.skillDirs, arm.pluginDir)) {
       failed = true;
       console.log(`  WRONG COPY ${arm.name} ${runNumber}: ${dir} is not under ${arm.pluginDir}`);
     }
   });
+  for (const [name, total] of totals) console.log(`  total ${name}: $${total.toFixed(4)}`);
   return failed;
 }
 
