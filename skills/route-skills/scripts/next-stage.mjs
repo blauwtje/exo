@@ -5,15 +5,15 @@
 //
 //   node next-stage.mjs --after <stage> --artifact <path> [--fresh]
 
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { readKindTable } from '#model-kinds';
-import { frameOf, parsePlan, PlanError } from '#plan-tasks';
+import { frameOf, parsePlan } from '#plan-tasks';
 import { scratchPath, ScratchPathError } from '#scratch-path';
-import { planCheckReport } from '../../spec/scripts/plan-check.mjs';
 
 // The stage a session just finished names the question that ends it, per
 // the question shape: a title, a context sentence, lettered option
@@ -84,16 +84,15 @@ function briefFile(artifact) {
 // The line that offers the unattended run after spec: `run-plan.mjs` beside
 // this skill's sibling `build`, named by absolute path, for a plan that
 // `plan-check --loop` passes; `null` for any other brief or after any other
-// stage.
+// stage. plan-check runs as its own process, since a skill script never
+// imports from another skill folder.
 function unattendedLine(after, artifact) {
   const file = after === 'spec' ? briefFile(artifact) : null;
   if (file === null) return null;
-  try {
-    if (!planCheckReport(fs.readFileSync(file, 'utf8'), { loop: true }).ok) return null;
-  } catch (error) {
-    if (error instanceof UsageError || error instanceof PlanError) return null;
-    throw error;
-  }
+  const planCheck = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
+  const check = spawnSync(process.execPath, [planCheck, '--plan', file, '--loop'], { encoding: 'utf8' });
+  if (check.error !== undefined) throw check.error;
+  if (check.status !== 0) return null;
   const script = fileURLToPath(new URL('../../build/scripts/run-plan.mjs', import.meta.url));
   return `Unattended, with Claude Code: node "${script}" ${path.resolve(file)}`;
 }
