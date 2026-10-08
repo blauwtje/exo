@@ -33,6 +33,7 @@ const STAND_IN = [
   "if (mode === 'skills') { console.log(JSON.stringify(assistantWithSkill('exo:find-cause'))); console.log(JSON.stringify(assistantWithSkill('exo:edit-skills'))); console.log(JSON.stringify(resultLine('used two skills'))); process.exit(0); }",
   "if (mode === 'long') { console.log(JSON.stringify(resultLine('a'.repeat(400) + ' middle ' + 'b'.repeat(400) + ' the end'))); process.exit(0); }",
   "if (mode === 'loads') { const dir = process.env.STAND_IN_BASE ?? process.argv[process.argv.indexOf('--plugin-dir') + 1] + '/skills/spec'; console.log(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'Base directory for this skill: ' + dir + '\\n\\n# Skill' }] } })); console.log(JSON.stringify(resultLine('loaded a skill'))); process.exit(0); }",
+  "if (mode === 'cites') { console.log(JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: '/clone/skills/spec/references/opened.md' } }, { type: 'tool_use', name: 'Read', input: { file_path: '/clone/skills/find-cause/fixer-prompt.md' } }] } })); console.log(JSON.stringify(resultLine('Per references/opened.md and skills/spec/references/opened.md, plus fixer-prompt.md, but also references/ghost.md and /clone/other-prompt.md.'))); process.exit(0); }",
   "if (mode === 'paced') { setTimeout(() => { fs.appendFileSync(process.env.STAND_IN_LOG, 'end\\n'); console.log(JSON.stringify(resultLine('paced answer'))); }, 100); return; }",
   "if (mode === 'fails') { process.stderr.write('e'.repeat(400) + ' stderr tail'); process.exit(1); }",
   'process.exit(0);'
@@ -353,4 +354,42 @@ test('a --setup naming no file is a usage error that runs no claude', async () =
   assert.ok(outcome.stderr.includes(missing), outcome.stderr);
   assert.equal(outcome.stdout, '');
   assert.deepEqual(outcome.calls, []);
+});
+
+test('an answer naming a references or prompt file the run never read gets an unopened-citation tag and the runner exits 1', async () => {
+  const clone = await pluginClone();
+  const cited = await runPressure('cites', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', await fixture()]);
+  assert.equal(cited.code, 1, cited.stderr);
+  const line = cited.stdout.split('\n').find((text) => text.startsWith('  with 1:'));
+  const tags = [...line.matchAll(/\[unopened citation: ([^\]]+)\]/g)].map((match) => match[1]);
+  assert.deepEqual(tags, ['references/ghost.md', '/clone/other-prompt.md'], line);
+  const plain = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', await fixture()]);
+  assert.equal(plain.code, 0, plain.stderr);
+  assert.doesNotMatch(plain.stdout, /unopened citation/);
+});
+
+// The cells line `--cells-for <file>` prints, from the real kind table.
+function cellsFor(file) {
+  return run(PRESSURE, ['--cells-for', file]);
+}
+
+test('--cells-for prints the kind\'s cell and each budget replacement as a --cells value', async () => {
+  const deep = await cellsFor('agents/review-branch-deep.md');
+  assert.equal(deep.code, 0, deep.stderr);
+  assert.equal(deep.stdout, 'opus:high,sonnet:high\n');
+  const build = await cellsFor('agents/build-task.md');
+  assert.equal(build.stdout, 'sonnet:high\n');
+});
+
+test('--cells-for prints session for a kind with no effort, and a dispatches entry\'s kind for its file', async () => {
+  assert.equal((await cellsFor('agents/locate-code.md')).stdout, 'haiku:session\n');
+  assert.equal((await cellsFor('skills/find-cause/fixer-prompt.md')).stdout, 'sonnet:high\n');
+  assert.equal((await cellsFor('skills/configure/SKILL.md')).stdout, 'sonnet:low\n');
+});
+
+test('--cells-for a file no kind lists is a usage error with an empty stdout', async () => {
+  const outcome = await cellsFor('skills/no-such/SKILL.md');
+  assert.equal(outcome.code, 2, outcome.stderr);
+  assert.equal(outcome.stdout, '');
+  assert.ok(outcome.stderr.includes('skills/no-such/SKILL.md'), outcome.stderr);
 });

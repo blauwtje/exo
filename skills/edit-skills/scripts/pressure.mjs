@@ -13,6 +13,14 @@
 // --setting-sources passes through to every run of both arms, so a case can
 // leave out the user's settings and memory, which could decide it for reasons
 // outside the plugin.
+// A run whose answer names a `references/*.md` or `*-prompt.md` path that no
+// `Read` call of that run opened gets `[unopened citation: <path>]` on its arm
+// line and ends the runner with exit 1, since the citation is faked.
+// `--cells-for <file>` prints, and runs nothing else, every `model:effort`
+// cell the file runs on as one `--cells` value: its kind's cell, a cell for
+// each budget replacement of the kind's tier, and the cell of every
+// `dispatches` entry for the file, all from `lib/model-kinds.json`; a kind with
+// no effort prints `session`.
 // Every run of both arms of a cell runs in parallel, each in its own scratch
 // directory outside the repository, matching pressure-scenarios.md; cells
 // run one after another. --setup <script> (resolved against the caller's cwd)
@@ -35,6 +43,7 @@
 // `  WRONG COPY <arm> <run>: <skill dir> is not under <plugin dir>` and
 // ends the runner with exit 1, so that run never counts as a pass.
 //
+//   node pressure.mjs --cells-for <file>
 //   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--setup <script>] [--runs 3] [--out <dir>]
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -42,6 +51,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { readKindTable } from '#model-kinds';
 import { comparisonArm, installedPluginId, loadedSkillDirs, resolvePluginDir, wrongCopies } from '#plugin-copy';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
@@ -50,10 +60,12 @@ const DEFAULT_RUNS = 1;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
-const USAGE = 'usage: pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--setup <script>] [--runs <n>] [--out <dir>]';
+const CITATION = /[\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md)/g;
+const USAGE = 'usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--setup <script>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', setup: 'value', runs: 'value', out: 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' });
+  if (flags['cells-for'] !== undefined) return { cellsFor: flags['cells-for'] };
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
   if (!flags['plugin-dir']) throw new UsageError('--plugin-dir needs a clone of the plugin');
@@ -83,6 +95,34 @@ function readFlags(argv) {
   };
 }
 
+// The `--cells` value for one file of the kind table.
+function cellsFor(file) {
+  const table = readKindTable();
+  const tiers = table.providers[table.provider].tiers;
+  const entries = [table.agents[file], table.skills[file], ...table.dispatches.filter((dispatch) => dispatch.file === file)];
+  const cells = new Set();
+  for (const entry of entries.filter(Boolean)) {
+    const { model, effort } = table.kinds[entry.kind];
+    const label = effort ?? 'session';
+    cells.add(`${model}:${label}`);
+    const tier = Object.keys(tiers).find((name) => tiers[name] === model);
+    for (const swaps of Object.values(table.budgets ?? {})) {
+      if (swaps[tier]) cells.add(`${tiers[swaps[tier]]}:${label}`);
+    }
+  }
+  if (cells.size === 0) throw new UsageError(`no kind in lib/model-kinds.json lists '${file}'`);
+  return [...cells].join(',');
+}
+
+// The cited paths of `text` that no path in `reads` ends with.
+function unopenedCitations(text, reads) {
+  const cited = [...new Set(text.match(CITATION) ?? [])];
+  return cited.filter((citation) => {
+    const bare = citation.replace(/^\.\//, '');
+    return !reads.some((read) => read === bare || read.endsWith(`/${bare}`));
+  });
+}
+
 function claudeArguments({ model, effort, promptText, settingSources, armFlags }) {
   const args = [
     '-p', promptText,
@@ -101,13 +141,15 @@ function claudeArguments({ model, effort, promptText, settingSources, armFlags }
 
 // The result of one run: the final assistant text (undefined when the run
 // never produced one, such as a timeout or a refusal), the first Edit or
-// Write tool call across the whole stream, and the `skill` input of every
-// Skill tool call, in order, and the base directory of every skill loaded.
+// Write tool call across the whole stream, the `skill` input of every Skill
+// tool call, in order, the base directory of every skill loaded, and the
+// paths the answer cites without a Read of them.
 function parseStream(rawStdout) {
   let finalText;
   let firstAction = null;
   const skills = [];
   const skillDirs = [];
+  const reads = [];
   for (const line of rawStdout.split('\n')) {
     if (line.trim() === '') continue;
     let event;
@@ -122,13 +164,14 @@ function parseStream(rawStdout) {
         if (firstAction === null && ACTIONS.has(toolUse.name)) {
           firstAction = `${toolUse.name} ${toolUse.input?.file_path ?? ''}`.trim();
         }
+        if (toolUse.name === 'Read' && toolUse.input?.file_path) reads.push(String(toolUse.input.file_path));
         if (toolUse.name === 'Skill') skills.push(String(toolUse.input?.skill ?? ''));
       }
     }
     skillDirs.push(...loadedSkillDirs(event));
     if (event.type === 'result') finalText = typeof event.result === 'string' ? event.result : '';
   }
-  return { finalText, firstAction, skills, skillDirs };
+  return { finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
 }
 
 function runArm(args, cwd) {
@@ -215,7 +258,9 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       return;
     }
     const skills = outcome.skills.length > 0 ? outcome.skills.join(', ') : 'none';
-    console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]`);
+    const unopened = outcome.unopened.map((citation) => ` [unopened citation: ${citation}]`).join('');
+    console.log(`  ${arm.name} ${runNumber}: ${file} [first edit/write: ${outcome.firstAction ?? 'none'}] [skills: ${skills}]${unopened}`);
+    if (unopened !== '') failed = true;
     for (const dir of wrongCopies(outcome.skillDirs, arm.pluginDir)) {
       failed = true;
       console.log(`  WRONG COPY ${arm.name} ${runNumber}: ${dir} is not under ${arm.pluginDir}`);
@@ -232,6 +277,16 @@ async function main() {
     if (!(error instanceof UsageError)) throw error;
     console.error(`${USAGE}: ${error.message}`);
     process.exitCode = 2;
+    return;
+  }
+  if (flags.cellsFor !== undefined) {
+    try {
+      console.log(cellsFor(flags.cellsFor));
+    } catch (error) {
+      if (!(error instanceof UsageError)) throw error;
+      console.error(`${USAGE}: ${error.message}`);
+      process.exitCode = 2;
+    }
     return;
   }
   let promptText;
