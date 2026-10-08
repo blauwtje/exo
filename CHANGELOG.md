@@ -11,6 +11,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 **A confined `claude` run on macOS can no longer write preferences, send Apple Events, open apps or reach LaunchServices, and on Linux your user settings no longer widen what it may write.**
 
+### Added
+
+- `pressure.mjs --output-style <name>` runs both arms under the named output style, so a cut to an output style can be pressure-tested.
+
 ### Changed
 
 - The session-start "Using exo" text drops the lines a with-and-without routing run showed change nothing, from 389 to 264 words.
@@ -20,6 +24,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A confined pressure or benchmark run on macOS denies `defaults write`, Apple Events, `open`, LaunchServices and `launchctl`, proven by canary probes run under the same sandbox profile.
 - A confined run on Linux loads only project and local settings, so a user `permissions.allow` or sandbox path cannot widen it; an API key set through user settings no longer reaches such a run.
 - A confined run on macOS can create its `session-env` folder, so SessionStart hooks run and the injected exo text loads; before this, confined pressure runs ran without it.
+- `configure` again shows the settings block in a `text` fence, a line an earlier cut dropped and a recheck with the exo session text loaded proved needed.
 
 ## 0.106.0 - 2026-10-08
 
