@@ -71,3 +71,37 @@ test('with no --output-style no arm gets an outputStyle', skipWindows, async () 
   const settings = await armSettings([]);
   for (const [answer, value] of Object.entries(settings)) assert.ok(value === 'none' || !Object.hasOwn(value, 'outputStyle'), answer);
 });
+
+// Runs the runner once against a stand-in `claude` that answers `answer`
+// without reading any file; returns the exit code and the arm line.
+async function citationRun(answer) {
+  const directory = await fixture();
+  const bin = path.join(directory, 'bin');
+  await fs.mkdir(bin);
+  const standIn = `#!/usr/bin/env node\nconsole.log(JSON.stringify({ type: 'result', result: ${JSON.stringify(answer)} }));\n`;
+  await fs.writeFile(path.join(bin, 'claude'), standIn, { mode: 0o755 });
+  const clone = await plugin(directory, 'clone');
+  const promptFile = path.join(directory, 'prompt.txt');
+  await fs.writeFile(promptFile, 'report');
+  const outcome = await run(PRESSURE, ['--prompt', promptFile, '--cells', 'sonnet:high', '--plugin-dir', clone, '--out', await fixture()], {
+    cwd: directory,
+    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: await fixture(), CLAUDE_CONFIG_DIR: await fixture() }
+  });
+  const line = outcome.stdout.split('\n').find((text) => text.startsWith('  with 1:')) ?? '';
+  return { code: outcome.code, tags: [...line.matchAll(/\[unopened citation: ([^\]]+)\]/g)].map((match) => match[1]) };
+}
+
+test('a bare mention of an unread references path is not marked and leaves the exit 0', skipWindows, async () => {
+  const outcome = await citationRun('See references/ghost.md and fixer-prompt.md for the rule.');
+  assert.deepEqual(outcome, { code: 0, tags: [] });
+});
+
+test('an unread path with a :line suffix is marked without the suffix', skipWindows, async () => {
+  const outcome = await citationRun('The rule sits at references/ghost.md:12 in that file.');
+  assert.deepEqual(outcome, { code: 1, tags: ['references/ghost.md'] });
+});
+
+test('an unread path on a line that quotes text is marked, a bare one on another line is not', skipWindows, async () => {
+  const outcome = await citationRun('references/bare.md says it.\nreferences/quoted.md says "keep it short".\n> references/block.md: also this');
+  assert.deepEqual(outcome, { code: 1, tags: ['references/quoted.md', 'references/block.md'] });
+});

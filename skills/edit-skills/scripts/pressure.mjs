@@ -17,7 +17,9 @@
 // both arms, so a style case compares replies under that style.
 // A run whose answer names a `references/*.md` or `*-prompt.md` path that no
 // `Read` call of that run opened gets `[unopened citation: <path>]` on its arm
-// line and ends the runner with exit 1, since the citation is faked.
+// line and ends the runner with exit 1, since the citation is faked. Only a
+// path with a `:<line>` suffix, or on a line that quotes text between double
+// quotes or after a leading `>`, counts as a citation; a bare mention does not.
 // `--cells-for <file>` prints, and runs nothing else, every `model:effort`
 // cell the file runs on as one `--cells` value: its kind's cell, a cell for
 // each budget replacement of the kind's tier, and the cell of every
@@ -68,7 +70,7 @@ const DEFAULT_RUNS = 1;
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
-const CITATION = /[\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md)/g;
+const CITATION = /([\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md))(:\d+)?/g;
 const USAGE ='usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>]';
 
 function readFlags(argv) {
@@ -129,10 +131,17 @@ function cellsFor(file) {
   return [...cells].join(',');
 }
 
-// The cited paths of `text` that no path in `reads` ends with.
+// The cited paths of `text` that no path in `reads` ends with. A path counts
+// as cited with a `:<line>` suffix or on a line that quotes text.
 function unopenedCitations(text, reads) {
-  const cited = [...new Set(text.match(CITATION) ?? [])];
-  return cited.filter((citation) => {
+  const cited = new Set();
+  for (const line of text.split('\n')) {
+    const quotes = /["\u201c\u201d]/.test(line) || line.startsWith('>');
+    for (const [, citation, lineNumber] of line.matchAll(CITATION)) {
+      if (lineNumber !== undefined || quotes) cited.add(citation);
+    }
+  }
+  return [...cited].filter((citation) => {
     const bare = citation.replace(/^\.\//, '');
     return !reads.some((read) => read === bare || read.endsWith(`/${bare}`));
   });
