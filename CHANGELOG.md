@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.105.0 - 2026-10-08
+
 ### Highlights
 
 **A plan can now run unattended: `node <exo>/skills/build/scripts/run-plan.mjs <plan.md>` lands each task in a fresh headless Claude Code process, held to that one task by code, then runs verify without a push and ends on one stop line.**
