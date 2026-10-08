@@ -30,6 +30,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/run-loop-direct.md',
     'references/run-loop-inline.md',
     'references/tail.md',
+    'references/task-mode.md',
     'references/no-spec.md',
     'references/workspace.md',
     'references/wave-worktrees.md',

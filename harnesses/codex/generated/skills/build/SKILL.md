@@ -5,11 +5,9 @@ description: "Use when a plan is to run or resume, or a decided change touches o
 
 # Implementing a plan
 
-With `--task <n>` after the plan path, read `references/task-mode.md` and follow it, not the loop or No spec.
-
 ## The loop
 
-1. **Find the plan.** Read `references/run-loop.md` for steps 1-6.
+1. **Find the plan.** With `--task <n>`, follow only `references/task-mode.md`; else read `references/run-loop.md` for steps 1-6.
 2. **Leave the plan to the unit.** On `Route: unit`: After dispatch, read only script output and unit returns, no plan or diff.
 3. **Ask the branch what landed.**
 4. **Take the block.**
@@ -24,8 +22,8 @@ With `--task <n>` after the plan path, read `references/task-mode.md` and follow
 3. **Workspace, then baseline.**
 4. **Build.**
 5. **Prove.** A risky change reads `references/test-design.md` first. When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.
-6. **Project knowledge.** Read `references/project-knowledge.md` when its first line applies.
-7. **Fresh eyes.** Read `references/fresh-eyes.md` and run it.
+6. **Project knowledge.**
+7. **Fresh eyes.**
 8. **Commit.**
 
 ## References
@@ -36,7 +34,7 @@ With `--task <n>` after the plan path, read `references/task-mode.md` and follow
 | `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7. |
-| `references/task-mode.md` | The request carries `--task <n>`. |
+| `references/task-mode.md` | Step 1, with `--task <n>`. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line. |
@@ -46,14 +44,14 @@ With `--task <n>` after the plan path, read `references/task-mode.md` and follow
 | `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
 | `references/design-tasks.md` | Step 4, for a `Design:` line; its `## The delegate` is never here. |
 | `reviewer-prompt.md` | No spec step 7. |
-| `references/fresh-eyes.md` | No spec step 7. |
+| `references/fresh-eyes.md` | No spec step 7; run it. |
 | `references/critique.md` | No spec step 7's last fallback. |
 | `references/security.md` | When its first line applies. |
 | `references/data-migration.md` | When its first line applies. |
 | `references/test-design.md` | When its first line applies. |
 | `references/test-first.md` | No spec, test-first work, before naming the first boundary. |
-| `references/project-knowledge.md` | No spec step 6. |
+| `references/project-knowledge.md` | No spec step 6, when its first line applies. |
 | `references/performance.md` | No spec, speed-only work, before measuring. |
 | `../route-skills/references/question.md` | Before asking the user to pick among options. |
 
-Report: `ship`'s overview as this turn's one report, one `Proof: <command or MCP tool> -> <output>` line per proof, ending with the brief's `## Manual checks`.
+Report: `ship`'s overview as this turn's one report, one `Proof:` line per proof, ending with the brief's `## Manual checks`.

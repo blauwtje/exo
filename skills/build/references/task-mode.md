@@ -1,4 +1,4 @@
-# Task mode
+# One-task mode
 
 `build <plan> --task <n>` lands task `<n>` in this session and asks the user nothing. `run-plan.mjs` starts one such session per task.
 
