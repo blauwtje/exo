@@ -2,8 +2,8 @@
 // folder: on macOS a real sandbox-exec makes a stub `claude` fail with EPERM
 // on a write outside that folder and under a `~/.claude`-like folder, save
 // its own transcript folder, while its write in its cwd succeeds; on Linux the run gets dontAsk, Edit and Write
-// allows scoped to its scratch folder and Claude's sandbox settings, never
-// bypassPermissions; on Windows the runner refuses; all of it lives in lib/confine-claude.mjs.
+// allows scoped to its scratch folder, Claude's sandbox settings and no user
+// settings, never bypassPermissions; on Windows the runner refuses; all of it lives in lib/confine-claude.mjs.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -156,7 +156,22 @@ test('on Linux the run gets dontAsk, Edit and Write scoped to its roots and Clau
     const merged = JSON.parse(args[args.indexOf('--settings') + 1]);
     assert.deepEqual(merged.sandbox, { enabled: true, failIfUnavailable: true, autoAllowBashIfSandboxed: true, allowUnsandboxedCommands: false });
     assert.deepEqual(merged.enabledPlugins, settings?.enabledPlugins);
+    assert.deepEqual(args.filter((_, at) => args[at - 1] === '--setting-sources'), ['project,local']);
   }
+});
+
+test('on Linux a caller\'s --setting-sources without user stays alone, and one naming user or no source, or settings with permissions, throws', async () => {
+  const { link } = await linkedRoots();
+  const linuxRun = (args, settings) => confinedClaude({ args, roots: [`${link}/scratch`], settings, platform: 'linux' }).args;
+  for (const own of [['--setting-sources', 'project'], ['--setting-sources=project,local']]) {
+    const args = linuxRun(['-p', 'x', ...own]);
+    assert.equal(args.filter((arg) => arg.startsWith('--setting-sources')).length, 1, args.join(' '));
+    assert.deepEqual(args.slice(-own.length), own);
+  }
+  for (const own of [['--setting-sources', 'user,project,local'], ['--setting-sources', 'project, user'], ['--setting-sources=user'], ['--setting-sources', ''], ['--setting-sources'], ['--setting-sources', 'local', '--setting-sources', 'user']]) {
+    assert.throws(() => linuxRun(['-p', 'x', ...own]), /refusing --setting-sources/, own.join(' '));
+  }
+  assert.throws(() => linuxRun(['-p', 'x'], { permissions: { allow: ['Write(//**)'] } }), /settings object with permissions/);
 });
 
 test('the transcript folder is the config dir\'s projects/<slug>, every non-alphanumeric cwd character a dash, and a slug Claude Code would cut is refused', () => {
