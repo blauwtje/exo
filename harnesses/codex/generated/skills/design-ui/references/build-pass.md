@@ -7,7 +7,6 @@ Build the one pass from this file, read whole and once; where the `stack` refere
 - [Character](#character)
 - [The build floor](#the-build-floor)
 - [Slop tropes](#slop-tropes)
-- [The motion bar](#the-motion-bar)
 - [Finishing controls](#finishing-controls)
 - [Proof](#proof)
 - [Judgment](#judgment)
@@ -30,7 +29,7 @@ The underdesign floor: the ground is a designed surface, not an untouched flat n
 
 - Span the page background and any sidebar or side rail the full page height at 390px and 1440px, full-page captures included, or a band of another color shows below.
 - Give raised surfaces the direction's material, not one grey shadow each, and type a voice through a second weight, width or family, as `## Character` sets.
-- Build `## The motion bar`.
+- Build the motion bar: every item of `## Motion thesis` in the `motion` reference, held to its `## Job gate`, `## Timing` and `## Reduced motion` sections; open them before the first animation.
 - Let no trope from `## Slop tropes` stand without recorded provenance.
 - Theme every browser surface: `::selection`, `accent-color`, `caret-color`, `scrollbar-color` on inner scrollers, and link underline offset and thickness.
 - Set amounts and changing figures in the body or display family with `font-variant-numeric: tabular-nums`, never a monospace family.
@@ -77,28 +76,6 @@ By category:
 - Default stack: no hand-written component the shadcn CLI ships, and no shadcn block such as `dashboard-01` as the base.
 - Stock shadcn: no fetched component left in its default form; the radius, tokens, density and variants follow the `stack` reference's `## Theme`.
 
-## The motion bar
-
-- Write the motion thesis as one sentence before the first animation: how the chosen mood moves.
-- Build the whole bar on every screen, each item where the scope gives it a home, because rich motion is a level, not a look.
-- Stagger regions in from their container, focal region first, content visible at rest so a failed animation hides nothing.
-- Count key figures up to their value on first view.
-- Move the active mark of tabs, segmented controls and navigation with a sliding indicator.
-- Morph a section or view switch with Motion's `AnimatePresence` and `layout` where the project uses Motion, else wrap it in `document.startViewTransition()`, not only `view-transition-name`.
-- Slide a detail, filter or edit panel in from its edge, and let it leave faster.
-- Transition hover, focus, active and open states at every size, beneath the bar.
-- Cut an animation with no job among continuity, feedback, orientation or atmosphere.
-- Time press, toggle and hover feedback at 120–200ms, a panel or dropdown at 200–400ms, an entrance or count-up at 400–800ms.
-- Space a stagger 30–80ms per sibling, with the whole sequence inside 800ms.
-- Ease functional motion out with `cubic-bezier(.16, 1, .3, 1)` or a Motion spring without bounce; overshoot belongs only to a playful mood, never a functional control.
-- Declare the exit on the closed state, or in Motion's `exit`, with a shorter duration and an ease-in, because one base-rule transition replays the entrance reversed.
-- Animate `transform` and `opacity`, keep durations and curves in tokens, and name each transitioned property, never `all`, Tailwind's `transition-all` in a fetched component included.
-- Show a focus indicator at once; never transition the indicator itself.
-- Put every CSS transition and animation behind `@media (prefers-reduced-motion: no-preference)`, never the state it leads to.
-- Wrap a Motion app in `<MotionConfig reducedMotion="user">`, so Motion drops transform and layout animation under `reduce` while keeping opacity.
-- Declare hover offset, press, open panel and selected tab outside that query, so each state change still happens under `reduce`.
-- Under `reduce`, replace meaningful motion with a fade or color shift rather than deleting it, so loading and feedback survive.
-
 ## Finishing controls
 
 - Style every reachable state of a repeated component: rest, hover, focus-visible, active, disabled, plus invalid and busy where they occur.
@@ -135,5 +112,4 @@ By category:
 
 - Explicit brief requirements outrank these defaults.
 - Body-text contrast outranks any ground or surface treatment.
-- Reduced motion and interaction feedback outrank the motion thesis.
 - Existing repository tokens, components and motion conventions outrank these shapes; extend them rather than adding a sibling.

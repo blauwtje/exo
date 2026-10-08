@@ -43,7 +43,7 @@ Each comp is the real surface in one direction, not a sketch: real content, buil
 - A project whose pages are plain HTML gets a plain HTML comp: a fragment with its own markup and `<style>`, and no doctype, `<head>`, viewport tag or reset.
 - The picker injects a fragment's document parts and nothing else, so the ground, the type, the palette and the one technique stay inside the comp.
 - Load every face the direction names from its real font files, never a system fallback or a monospace stand-in, because the face is half the direction.
-- Every rule of the `build-pass` reference holds in a comp: the character, the build floor, the slop tropes and the motion bar.
+- Every rule of the `build-pass` reference holds in a comp: the character, the build floor and the slop tropes, plus the motion bar of the `motion` reference.
 - A comp has no line budget; it is as long as its screen needs.
 - A comp is responsive: it reflows between 390 and 1440 wide, with no horizontal scroll at either width.
 - Compose every region across its full width, so no empty band reads as part of the direction.

@@ -65,9 +65,13 @@ Without that identity, a new piece extracts the existing tokens and patterns, ta
 ## Capture, look, fix once
 
 1. Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
-2. Read both captures and list each fault against the direction, the request and the floor.
-3. Repair every listed fault in one pass.
-4. Rerun step 1 with `--label final` and read both, because a run is done only on a capture taken after its last edit.
+2. Read both captures and list each fault against the direction, the request, a named or saved product's finish and the floor.
+3. Repair every listed fault in one pass; on the one pass, `SendMessage` the list to the builder instead.
+4. Rerun step 1 with `--label final` and read both, because a run is done only on a capture taken after its last edit; later changes go to the builder that built the page.
+
+Read only the post-build and final pairs, never a state capture, because each image costs context; a fault under repair adds one.
+
+A page that does not render, or a capture that exits non-zero, reports the capture blocked, naming what went unchecked.
 
 ## Judgment
 

@@ -49,17 +49,17 @@ Read these and nothing else before writing, in one batch where the files are ind
 
 Read a section of a reference by finding its `## ` heading with `Grep -n`, then Read with offset and limit through the next heading.
 
-- Page: `$SKILL/references/build-pass.md` whole, first; `$RUN/plan.md`; `$RUN/contract-selected.json` and the `COMP` folder when given; `$RUN/user.md`; the `FILES` ranges; `$SKILL/references/stack.md` when the plan picks the default stack.
-- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor`, `## Slop tropes` and `## The motion bar` sections.
-- Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor`, `## Slop tropes` and `## The motion bar` sections.
-- Comp: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps` sections.
+- Page: `$SKILL/references/build-pass.md` whole, first; `$RUN/plan.md`; `$RUN/contract-selected.json` and the `COMP` folder when given; `$RUN/user.md`; the `FILES` ranges; `$SKILL/references/stack.md` when the plan picks the default stack; `$SKILL/references/motion.md`'s `## Motion thesis`, `## Job gate`, `## Timing` and `## Reduced motion` sections.
+- Foundation: `$RUN/contract-selected.json`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes` sections; `$SKILL/references/motion.md`'s `## Motion thesis`, `## Job gate`, `## Timing` and `## Reduced motion` sections.
+- Surface: `$RUN/contract-selected.json`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for the treatment this surface builds; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes` sections; `$SKILL/references/motion.md`'s `## Motion thesis`, `## Job gate`, `## Timing` and `## Reduced motion` sections; `$SKILL/references/phase-build.md`'s `## Capture, look, fix once` section.
+- Comp: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; `$SKILL/references/motion.md`'s `## Motion thesis`, `## Job gate`, `## Timing` and `## Reduced motion` sections; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps` sections.
 - Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name; `$SKILL/references/build-pass.md`'s `## The build floor` section. No inventory, no foundation report and no other reference unless the brief names one.
 
 **Page scope.**
 
 Build the whole page from the plan, around the `COMP` when given, then run the type-check, lint and tests of `build-pass.md`'s `## Proof`; the session starts the preview, runs check-ui and captures.
 
-Write `$RUN/build-<PASS>.md`: the paths written, the plan items built and any missing, each motion bar item of `build-pass.md` built or missing, and the proof's result. At most 20 lines.
+Write `$RUN/build-<PASS>.md`: the paths written, the plan items built and any missing, each motion bar item of `motion.md` built or missing, and the proof's result. At most 20 lines.
 
 A `SendMessage` from the session lists faults: repair every one in one pass, then rewrite that report with each fault `fixed` or `open`.
 
@@ -79,13 +79,9 @@ Build the surface from its inventory slice on top of the foundation: every conte
 
 Never edit the foundation files; a missing primitive is reported, not added locally.
 
-Then capture, look and fix once:
+Then open `$SKILL/references/phase-build.md`'s `## Capture, look, fix once` and take steps 1-3 only. Run its `capture.mjs` command for both viewports, full page, label `post-build`, with `$URL`, `$SKILL` as the skill dir and `--out $RUN/renders/<SCOPE>`. Read both captures, list faults against the contract, your inventory slice and the floor, and repair them in one pass; take no second capture.
 
-1. Run `node $SKILL/scripts/capture.mjs --url $URL --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out $RUN/renders/<SCOPE>`.
-2. Read `$RUN/renders/<SCOPE>/post-build-390x844-fullpage.png` and `$RUN/renders/<SCOPE>/post-build-1440x900-fullpage.png`, and list each fault against the contract, your inventory slice and the floor.
-3. Repair every listed fault in one pass, with no second capture.
-
-Without a `URL`, or when the capture exits non-zero, skip these steps and report the capture as blocked.
+Without a `URL`, or when the capture exits non-zero, skip them and report the capture as blocked.
 
 Write `$RUN/build-<SCOPE>.md`: the paths written, the faults the capture showed with `fixed` or `open`, the inventory items covered and any missing, the floor checks you could confirm from source, and the primitives you needed but the foundation lacks. At most 20 lines.
 
