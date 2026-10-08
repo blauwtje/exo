@@ -25,6 +25,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - When several decisions are open at once and none waits on another's answer, a skill asks them all in one numbered message instead of one per turn.
 - build's entry, the build-task agent and the run-unit agent drop lines a with-and-without run showed change nothing or a hook already enforces: build 510 to 503, build-task 487 to 473, run-unit 498 to 467 words.
 - The high and low `budget` rule lines are shorter (70 to 59 and 114 to 90 words) and still route hard work to `solve-hard` at the right model and effort.
+- `instruction-style.md` is the single owner of a terse house style for instruction files: `condition → action` bullets, no articles or filler, reasons only where they set a boundary, and boundary words, numbers and identifiers never dropped.
+- Skills, agents, the output style, `CLAUDE.md`, `README.md` and `CONTRIBUTING.md` follow that style, from 71,280 to 65,827 words across 98 files with no rule changed; four design-ui files a pressure run showed regressing keep their old text.
 
 ### Fixed
 
