@@ -42,7 +42,8 @@
 // A claims-diff check compares each landed task's claims with its commits' diff: a FAIL line
 // for a `Files:` path no commit of the task changed, and for a test-first task (`Risk:`, or a
 // `fix` with a test file in `Files:`) whose commits change no test file; a WARN line, which
-// does not fail, for each assertion a test file loses and each `.skip` or `.only` it gains.
+// does not fail, for each assertion a test file loses, each `.skip` or `.only` it gains and
+// each lint, type or coverage suppression comment any non-prose file gains.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -97,6 +98,9 @@ const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._
 // A line a test file loses that asserts, and a line it gains that skips or isolates a test.
 const REMOVED_ASSERTION = /expect\(|assert/;
 const ADDED_SKIP = /\.(?:skip|only)\b/;
+// A line that switches a check off in place: a lint, type or coverage suppression comment.
+const SILENCER = /eslint-disable|@ts-(?:ignore|nocheck|expect-error)|#\s*(?:noqa|type:\s*ignore|pylint:\s*disable)|\/\/\s*nolint|biome-ignore|(?:istanbul|c8) ignore/;
+const PROSE_FILE = /\.(?:md|mdx|txt|rst)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*)$/;
 // A WARN line quotes at most this much of the changed line.
@@ -234,10 +238,36 @@ export function weakenedTests(patch) {
   ];
 }
 
+/** `path:line silenced ...` for each line a patch (`git show -U0`) adds that carries a suppression comment, outside prose files. */
+export function silencedChecks(patch) {
+  const findings = [];
+  let file = null;
+  let oldLeft = 0;
+  let newLeft = 0;
+  let newLine = 0;
+  for (const line of patch.split('\n')) {
+    const idle = oldLeft === 0 && newLeft === 0;
+    const hunk = idle ? line.match(HUNK_HEADER) : null;
+    const header = idle ? line.match(FILE_HEADER) : null;
+    if (hunk !== null) {
+      [oldLeft, newLeft, newLine] = [Number(hunk[2] ?? 1), Number(hunk[4] ?? 1), Number(hunk[3])];
+    } else if (header !== null) {
+      if (header[1] !== '/dev/null') file = header[1];
+    } else if (oldLeft > 0 && line.startsWith('-')) {
+      oldLeft -= 1;
+    } else if (newLeft > 0 && line.startsWith('+')) {
+      if (!PROSE_FILE.test(file) && SILENCER.test(line)) findings.push(`${file}:${newLine} silenced \`${line.slice(1).trim().slice(0, WARN_TEXT_LENGTH)}\``);
+      newLeft -= 1;
+      newLine += 1;
+    }
+  }
+  return findings;
+}
+
 /**
  * The claims-diff lines for one landed task: a FAIL line for `Files:` paths its commits left
  * unchanged and for a test-first task whose commits change no test file, a WARN line for each
- * test weakened in them. Empty when its claims hold.
+ * test weakened and each check silenced in them. Empty when its claims hold.
  */
 function claimLines(task, root, planId) {
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
@@ -250,7 +280,8 @@ function claimLines(task, root, planId) {
     lines.push(`FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`);
   }
   for (const sha of shas) {
-    for (const finding of weakenedTests(git('-U0', '--no-color', '--no-ext-diff', sha))) lines.push(`WARN claims-diff Task ${task.number} (${finding})`);
+    const patch = git('-U0', '--no-color', '--no-ext-diff', sha);
+    for (const finding of [...weakenedTests(patch), ...silencedChecks(patch)]) lines.push(`WARN claims-diff Task ${task.number} (${finding})`);
   }
   return lines;
 }

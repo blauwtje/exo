@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { parsePlan } from '#plan-tasks';
-import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
+import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -853,6 +853,23 @@ test('weakenedTests names the file and line of a removed assertion and of an add
   assert.deepEqual(weakenedTests(moved), []);
 });
 
+test('silencedChecks names the file and line of an added suppression, in any file but prose', () => {
+  const patch = [
+    'diff --git a/src/a.js b/src/a.js', '--- a/src/a.js', '+++ b/src/a.js',
+    '@@ -3,1 +3,2 @@', '-const a = 1;', '+// eslint-disable-next-line no-unused-vars', '+const a = 2;',
+    'diff --git a/src/b.py b/src/b.py', '--- a/src/b.py', '+++ b/src/b.py',
+    '@@ -0,0 +7,1 @@', '+x = f()  # type: ignore',
+    'diff --git a/src/c.ts b/src/c.ts', '--- a/src/c.ts', '+++ b/src/c.ts',
+    '@@ -5,1 +5,1 @@', '-// @ts-ignore', '+const ok = 1;',
+    'diff --git a/docs/a.md b/docs/a.md', '--- a/docs/a.md', '+++ b/docs/a.md',
+    '@@ -1,0 +1,1 @@', '+Write `eslint-disable` to silence a rule.', ''
+  ].join('\n');
+  assert.deepEqual(silencedChecks(patch), [
+    'src/a.js:3 silenced `// eslint-disable-next-line no-unused-vars`',
+    'src/b.py:7 silenced `x = f()  # type: ignore`'
+  ]);
+});
+
 const claimsPlan = (title, extra) => `### Task 1: ${title}\nDepends on: none | Files: \`src/a.js\`, \`tests/a.test.mjs\`${extra} | Data: none | Proof: node -e "process.exit(0)"\n`;
 
 // Commits `changes`, a map of path to content, as Task 1, then runs the gate.
@@ -904,6 +921,13 @@ test('claims-diff warns, without failing, on a removed assertion and an added sk
   assert.equal(result.code, 0, result.stdout);
   assert.ok(lines.includes('WARN claims-diff Task 1 (tests/a.test.mjs:1 removed `assert.ok(1);`)'), result.stdout);
   assert.ok(lines.includes("WARN claims-diff Task 1 (tests/a.test.mjs:1 added `it.skip('x', () => {});`)"), result.stdout);
+  assert.ok(!lines.includes('PASS claims-diff'));
+});
+
+test('claims-diff warns, without failing, on an added suppression comment', async () => {
+  const { result, lines } = await claimsRun(claimsPlan('feat(app): x', ''), { 'src/a.js': '// eslint-disable-next-line\nb\n', 'tests/a.test.mjs': 'assert.ok(1);\n// x\n' });
+  assert.equal(result.code, 0, result.stdout);
+  assert.ok(lines.includes('WARN claims-diff Task 1 (src/a.js:1 silenced `// eslint-disable-next-line`)'), result.stdout);
   assert.ok(!lines.includes('PASS claims-diff'));
 });
 
