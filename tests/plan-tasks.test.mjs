@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
-import { driftOf, frameOf, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, landedTasks, loopCommands, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange } from '#plan-tasks';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 test('parsePlan reads the frame and each task\'s dependencies, files and commit subject', () => {
@@ -431,4 +431,38 @@ test('the next block ends before a task that depends on an unlanded task outside
   assert.deepEqual(nextBlock(inside, []).map((task) => task.number), [1, 2, 3], 'a dependency inside the block keeps it whole');
   const outside = parsePlan(dependsOn(planFixture({ tasks: [pastedTask(1), pastedTask(2), pastedTask(3)] }), 2, 3)).tasks;
   assert.deepEqual(nextBlock(outside, []).map((task) => task.number), [1], 'a task waiting on a later task ends the block');
+});
+
+test('frameOf reads the Allow: line as its backticked commands, none as an empty list, absence as null', () => {
+  const plan = (line) => parsePlan(planFixture({ tasks: [] }).replace('Branch: feat/fixture', `Branch: feat/fixture${line}`));
+  assert.deepEqual(frameOf(plan('\nAllow: `npm run generate`, `make docs`').frame).allow, ['npm run generate', 'make docs']);
+  assert.deepEqual(frameOf(plan('\nAllow: none').frame).allow, []);
+  assert.equal(frameOf(plan('').frame).allow, null);
+});
+
+test('loopCommands lists every command the loop runs, split into parts outside quotes', () => {
+  const text = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Create: `a.js`'], subject: 'feat(app): greet' }),
+    compactTask({ number: 2, title: 'Style', files: ['b.js'], proof: '`NODE_ENV=test node --test a.js && echo "a; b" | wc -l`' })
+  ] }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nLand gate: npm run typecheck\nLint: none\nAllow: `npm run generate`');
+  const entries = loopCommands(parsePlan(text));
+  const find = (field, task) => entries.find((entry) => entry.field === field && entry.task === task);
+  assert.deepEqual(find('Land gate', null).parts, ['npm run typecheck']);
+  assert.equal(find('Lint', null), undefined);
+  assert.deepEqual(find('Allow', null).parts, ['npm run generate']);
+  assert.deepEqual(find('Proof', 2).parts, ['NODE_ENV=test node --test a.js', 'echo "a; b"', 'wc -l']);
+  assert.equal(find('Proof', 2).command, 'NODE_ENV=test node --test a.js && echo "a; b" | wc -l');
+  assert.ok(entries.some((entry) => entry.task === 1 && entry.field === 'Run'));
+  const compact = loopCommands(parsePlan(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'T', files: ['a.js'] })] })));
+  assert.deepEqual(compact.map(({ field, task, parts }) => [field, task, parts]), [['Success criterion', null, ['node --test']], ['Proof', 1, ['node --test']]]);
+});
+
+test('defaultBranch names the branch origin/HEAD or a local main or master gives, else null', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  assert.equal(defaultBranch(root), 'main');
+  git(root, 'branch', '-m', 'trunk');
+  assert.equal(defaultBranch(root), null);
+  git(root, 'update-ref', 'refs/remotes/origin/trunk', 'HEAD');
+  git(root, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/trunk');
+  assert.equal(defaultBranch(root), 'trunk');
 });
