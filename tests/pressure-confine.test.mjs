@@ -7,6 +7,7 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -149,34 +150,26 @@ test('on macOS sandbox-exec wraps claude with bypassPermissions, the roots\' rea
   assert.equal(run.cwd, `${real}/scratch`);
 });
 
-test('on macOS a run with no tmp gets a fresh temporary directory added as a writable root', async () => {
-  const { real, link } = await linkedRoots();
+test('a run with no tmp throws on either platform and leaves no folder in the system temporary directory', async () => {
+  const { link } = await linkedRoots();
   const configDir = await fs.realpath(await fixture());
-  const run = confinedClaude({ args: ['-p', 'x'], roots: [link], platform: 'darwin', configDir });
-  const tmp = run.env.CLAUDE_CODE_TMPDIR;
-  try {
-    assert.ok(tmp && tmp !== real, tmp);
-    assert.equal(run.args[1], sandboxProfile([real, tmp, transcriptFolder(real, configDir), path.join(configDir, 'session-env', run.args[run.args.indexOf('--session-id') + 1])]));
-    assert.equal(run.cwd, real);
-    assert.ok(!run.args.includes('--settings'), run.args.join(' '));
-  } finally {
-    await fs.rm(tmp, { recursive: true, force: true });
+  const leaked = async () => (await fs.readdir(os.tmpdir())).filter((name) => /^claude-(isolation|tmp)-/.test(name)).sort();
+  const before = await leaked();
+  for (const platform of ['linux', 'darwin']) {
+    assert.throws(() => confinedClaude({ args: ['-p', 'x'], roots: [link], platform, configDir }), /needs a tmp directory/, platform);
   }
+  assert.deepEqual(await leaked(), before);
+  assert.deepEqual(await fs.readdir(configDir), []);
 });
 
 test('on Linux the run gets dontAsk, Edit and Write scoped to its roots and Claude\'s sandbox, never bypassPermissions', async () => {
   const { real, link } = await linkedRoots();
   for (const settings of [{ enabledPlugins: { 'p@m': false } }, undefined]) {
     const base = ['-p', 'prompt', '--plugin-dir', '/clone'];
-    const run = confinedClaude({ args: base, roots: [`${link}/scratch`, `${link}/tmp`], cwd: `${link}/scratch`, settings, platform: 'linux' });
+    const run = confinedClaude({ args: base, roots: [`${link}/scratch`, `${link}/tmp`], cwd: `${link}/scratch`, tmp: `${link}/tmp`, settings, platform: 'linux' });
     const args = run.args;
     assert.equal(run.command, 'claude');
-    const folder = path.dirname(run.env.GH_CONFIG_DIR);
-    try {
-      assert.deepEqual(run.env, githubEnv(path.join(folder, 'isolated-gh'), path.join(folder, 'isolated-zsh')));
-    } finally {
-      await fs.rm(folder, { recursive: true, force: true });
-    }
+    assert.deepEqual(run.env, githubEnv(`${real}/tmp/isolated-gh`, `${real}/tmp/isolated-zsh`));
     assert.deepEqual(args.slice(-base.length), base);
     assert.ok(!args.includes('bypassPermissions'), args.join(' '));
     assert.equal(args[args.indexOf('--permission-mode') + 1], 'dontAsk');
@@ -196,7 +189,7 @@ test('on Linux the run gets dontAsk, Edit and Write scoped to its roots and Clau
 
 test('on Linux a caller\'s --setting-sources without user stays alone, and one naming user or no source, or settings with permissions, throws', async () => {
   const { link } = await linkedRoots();
-  const linuxRun = (args, settings) => confinedClaude({ args, roots: [`${link}/scratch`], settings, platform: 'linux' }).args;
+  const linuxRun = (args, settings) => confinedClaude({ args, roots: [`${link}/scratch`, `${link}/tmp`], tmp: `${link}/tmp`, settings, platform: 'linux' }).args;
   for (const own of [['--setting-sources', 'project'], ['--setting-sources=project,local']]) {
     const args = linuxRun(['-p', 'x', ...own]);
     assert.equal(args.filter((arg) => arg.startsWith('--setting-sources')).length, 1, args.join(' '));
@@ -220,7 +213,7 @@ test('on macOS the transcript and the run\'s own session-env folders are the onl
   const subpaths = [...darwin.args[1].matchAll(/\(subpath "([^"]*)"\)/g)].map((match) => match[1]);
   assert.deepEqual(subpaths.filter((root) => root.startsWith(configDir)), [transcriptFolder(`${real}/scratch`, configDir), path.join(configDir, 'session-env', darwin.args[darwin.args.indexOf('--session-id') + 1])]);
   assert.equal(subpaths.length, 4, darwin.args[1]);
-  const linux = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`], platform: 'linux', configDir: path.join(configDir, 'linux') });
+  const linux = confinedClaude({ args: ['-p', 'x'], roots: [`${real}/scratch`, `${real}/tmp`], tmp: `${real}/tmp`, platform: 'linux', configDir: path.join(configDir, 'linux') });
   assert.ok(!linux.args.join(' ').includes(configDir), linux.args.join(' '));
 });
 
