@@ -16,7 +16,6 @@
 - Rule → bright line the model can check, never a hedge; a hedge reads as permission.
 - "When X, do Y" with X observable beats general advice; the model executes the trigger without deciding.
 - One default with one named escape hatch beats a menu; the model picks the default and moves.
-- Fact that will age → reference, with its date.
 
 ## Micro-test wording
 

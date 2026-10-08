@@ -19,7 +19,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 1. **Catch the mistake.** Write one prompt per `references/pressure-scenarios.md` whose answer shows the mistake as one observable symptom.
 2. **Watch it happen.** Run `scripts/pressure.mjs --prompt <file> --cells <cells> --plugin-dir <clone>` on the cells `--cells-for <edited file>` prints, else the session's own; read only the `without` answers now.
 3. **Choose the home.** Place the fix per `references/where-a-fix-lives.md`; write prose in the shape below, style per `references/instruction-style.md`, register per `references/wording.md`.
-4. **Watch it stop.** Rerun `pressure.mjs` on the same cells; read the `with` answers. Run without the skill also passed → case shows nothing; harden it until that run fails.
+4. **Watch it stop.** Rerun `pressure.mjs` on the same cells; read the `with` answers. `without` run also passed → case shows nothing; harden it until that run fails.
 5. **Close each new excuse.** Each justification the `with` run still produced → apply `references/plugging-holes.md`, rerun all cases. Done when a full rerun adds nothing to its tables.
 6. **Verify.** Run `node verify.mjs`; red check → fix the structure, never exempt it.
 7. **Judge blind.** Step 4's read a close call → judge pre-edit and edited clones' `with` answers blind, per `references/blind-eval.md`.

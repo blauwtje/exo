@@ -10,14 +10,15 @@ Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: mod
 - Stale line → cut.
 - Rule owned elsewhere → point to owner or omit.
 - Rule system prompt also states → keep; sessions switch models.
-- Comments (HTML too), dates, sources, change history, opinions → cut.
+- Comments (HTML too), sources, change history, opinions → cut.
+- Date → cut, except on a fact that will age; that fact → reference, with its date.
 - Example → cut unless rule fails without it.
 - Reason → cut unless it sets the rule's boundary; then one clause.
 
 ## Compress
 
 - Drop articles, copulas, filler, hedges.
-- Never drop: `not`, `no`, `only`, `except`, `never`, numbers, paths, commands, identifiers, error text.
+- Never drop: `not`, `no`, `only`, `except`, `never`, `unless`, `each`, `every`, `at most`, `before`, `after`, numbers, paths, commands, identifiers, error text, or any other word that sets a boundary.
 - Over-compressed line = defect: ambiguous → rewrite, not shorten further.
 - Line length, hard wraps, reading grade → not targets.
 - Em dashes → none.
@@ -26,7 +27,7 @@ Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: mod
 
 - Format: `condition → action`, trigger word first.
 - One rule per bullet: one condition, one action.
-- Compound bullet → split, unless split loses the boundary.
+- Compound bullet or sentence (second condition or action) → split, unless split loses the boundary.
 - Exception → beside its rule.
 - Definition → by contrast: "X, not Y".
 - List order could read as precedence → say whether first match wins or every item applies.
@@ -47,11 +48,12 @@ Scope: `CLAUDE.md`, rules, skills, agents, output styles, hook text. Reader: mod
 - Material only some paths need → reference.
 - Reference → one level deep, loaded via a pointer naming when to open it.
 - `CLAUDE.md` → under 60 lines.
-- Skill body → under 200 words where possible; 500 lines hard cap; token caps in edit-skills `## Form`.
+- Skill body → under 200 words where possible; when it cannot be, edit-skills `## Form` token aim and verifier cap govern; 500 lines hard cap.
 - Load path (skill body + references it reads) → under ~150 rules.
 - Skill description → when to use + triggers, third person (`Use when …`), never a workflow summary; aim 200 chars, verifier fails 250.
 
 ## Enforcement
 
 - Must happen every time, no exception → hook or verifier, not prose.
-- Hook → deny or allow, command unchanged; no rewrite inside a pipeline.
+- Guard → deny or allow, command unchanged.
+- Hook → no command rewrite inside a pipeline.

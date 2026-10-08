@@ -7,7 +7,7 @@ Turn a lesson learned this session into something the next session reads unpromp
 ## Append the line, or build the check
 
 - Recurring correction → lint, type, or check before a text line, when the repository can build one.
-- Proof reveals a missing build, test, or run command, or a failure-causing repository gotcha → append one line to root `AGENTS.md` (root `CLAUDE.md` when `AGENTS.md` is absent).
+- Proof reveals a build, test, or run command, or a failure-causing repository gotcha, missing from root `AGENTS.md` (root `CLAUDE.md` when `AGENTS.md` is absent) → append one line there.
 - Neither file present → create nothing.
 
 ## Judgment
