@@ -6,14 +6,18 @@
 // skill is not strictly first FAILs, naming the skill that outranked it. Two
 // descriptions whose word sets overlap above ROUTING_SIMILARITY_CEILING
 // (Jaccard) FAIL as well, because text that close cannot route apart.
+// `negatives` holds { prompt, winner } pairs: prompts that sound like one skill
+// but belong to another. Every sample counts toward a rank-1 rate, which FAILs
+// below ROUTING_RANK_ONE_LOCK or when that lock is lower than on origin/main.
 // Run standalone: node verify/checks/routing.mjs
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readFrontmatter } from '../frontmatter.mjs';
-import { ROUTING_SIMILARITY_CEILING } from '../budgets.mjs';
+import { ROUTING_RANK_ONE_LOCK, ROUTING_SIMILARITY_CEILING } from '../budgets.mjs';
 import { createReport } from '../report.mjs';
 import { createRepository } from '../repository.mjs';
 
@@ -34,6 +38,12 @@ function overlap(left, right) {
   let shared = 0;
   for (const word of left) if (right.has(word)) shared += 1;
   return shared;
+}
+
+function baseLock(repository) {
+  const shown = spawnSync('git', ['-C', repository.root, 'show', 'origin/main:verify/budgets.mjs'], { encoding: 'utf8' });
+  const found = shown.status === 0 ? shown.stdout.match(/ROUTING_RANK_ONE_LOCK = ([\d.]+)/) : null;
+  return found ? Number(found[1]) : undefined;
 }
 
 export function checkRouting(report, repository) {
@@ -58,25 +68,38 @@ export function checkRouting(report, repository) {
     if (!Array.isArray(samples[name]) || samples[name].length < 2) problems.push(`${name} has fewer than two sample prompts`);
   }
   for (const name of Object.keys(samples)) {
-    if (!descriptions.has(name)) problems.push(`sample skill ${name} is not a model-invocable skill`);
+    if (name !== 'negatives' && !descriptions.has(name)) problems.push(`sample skill ${name} is not a model-invocable skill`);
   }
-  let count = 0;
-  for (const [name, prompts] of Object.entries(samples)) {
-    if (!descriptions.has(name)) continue;
-    for (const prompt of prompts) {
-      count += 1;
-      const promptWords = words(prompt);
-      const own = overlap(promptWords, descriptions.get(name));
-      let best = { name: '', score: -1 };
-      for (const [other, set] of descriptions) {
-        const score = other === name ? -1 : overlap(promptWords, set);
-        if (score > best.score) best = { name: other, score };
-      }
-      if (best.score >= own) {
-        problems.push(`"${prompt}" belongs to ${name} (${own} shared words) but ${best.name} ${best.score > own ? 'outranks it' : 'ties it'} (${best.score})`);
-      }
+  const negatives = samples.negatives ?? [];
+  for (const entry of negatives) {
+    if (typeof entry?.prompt !== 'string' || !descriptions.has(entry.winner)) problems.push(`negative sample ${JSON.stringify(entry)} needs a prompt and a model-invocable winner`);
+  }
+  const cases = [
+    ...Object.entries(samples)
+      .filter(([name]) => descriptions.has(name))
+      .flatMap(([name, prompts]) => prompts.map((prompt) => ({ prompt, name }))),
+    ...negatives
+      .filter((entry) => typeof entry?.prompt === 'string' && descriptions.has(entry.winner))
+      .map((entry) => ({ prompt: entry.prompt, name: entry.winner })),
+  ];
+  const misses = [];
+  for (const { prompt, name } of cases) {
+    const promptWords = words(prompt);
+    const own = overlap(promptWords, descriptions.get(name));
+    let best = { name: '', score: -1 };
+    for (const [other, set] of descriptions) {
+      const score = other === name ? -1 : overlap(promptWords, set);
+      if (score > best.score) best = { name: other, score };
+    }
+    if (best.score >= own) {
+      misses.push(`"${prompt}" belongs to ${name} (${own} shared words) but ${best.name} ${best.score > own ? 'outranks it' : 'ties it'} (${best.score})`);
     }
   }
+  const count = cases.length;
+  const rate = count === 0 ? 0 : (count - misses.length) / count;
+  if (rate < ROUTING_RANK_ONE_LOCK) problems.push(`rank-1 rate ${rate.toFixed(2)} is below the locked ${ROUTING_RANK_ONE_LOCK}: ${misses.join('; ')}`);
+  const base = baseLock(repository);
+  if (base !== undefined && ROUTING_RANK_ONE_LOCK < base) problems.push(`ROUTING_RANK_ONE_LOCK ${ROUTING_RANK_ONE_LOCK} is lower than ${base} on origin/main`);
   const names = [...descriptions.keys()].sort();
   let highest = { value: 0, pair: '' };
   for (let first = 0; first < names.length; first += 1) {
@@ -94,7 +117,7 @@ export function checkRouting(report, repository) {
     report.result('FAIL', 'routing', problems.join('; '));
     return;
   }
-  report.result('PASS', 'routing', `${count} sample prompts each rank their own skill first; most similar descriptions ${highest.pair} at ${highest.value.toFixed(2)} (ceiling ${ROUTING_SIMILARITY_CEILING})`);
+  report.result('PASS', 'routing', `${count} sample prompts rank their own skill first at ${rate.toFixed(2)} (lock ${ROUTING_RANK_ONE_LOCK}); most similar descriptions ${highest.pair} at ${highest.value.toFixed(2)} (ceiling ${ROUTING_SIMILARITY_CEILING})`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

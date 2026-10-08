@@ -46,5 +46,12 @@
   "write-docs": [
     "Write a README and doc page, and draft the prose of a changelog line and commit body",
     "Edit this brief so it reads well later, and write the issue body and spec prose"
+  ],
+  "negatives": [
+    { "prompt": "The app reports an error and a crash, a regression in behavior, and no evidence shows the causal line or its mechanism", "winner": "find-cause" },
+    { "prompt": "Rename this function and move it, reshape the internal API, and keep behavior unchanged without a shim", "winner": "refactor" },
+    { "prompt": "Merge the pull request once its failing checks, conflicts and review comments are fixed, then push", "winner": "ship" },
+    { "prompt": "This page looks empty, boring and generic, so change its look and copy", "winner": "design-ui" },
+    { "prompt": "A new visual surface does not name its data or behavior, so decide those before the presentation", "winner": "spec" }
   ]
 }

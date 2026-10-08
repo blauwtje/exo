@@ -48,7 +48,28 @@ function editSamples(root, edit) {
 test('every sample in this repository ranks its own skill first', (t) => {
   const { counts, detail } = verdict(fixture(t));
   assert.equal(counts.FAIL + counts.WARN + counts.UNRUN, 0, detail);
-  assert.match(detail, /24 sample prompts/);
+  assert.match(detail, /29 sample prompts.*at 1\.00/);
+});
+
+test('a negative sample that another skill outranks fails the rank-1 rate', (t) => {
+  const root = fixture(t);
+  editSamples(root, (samples) => { samples.negatives[0].winner = 'ship'; });
+  const { counts, detail } = verdict(root);
+  assert.equal(counts.FAIL, 1, detail);
+  assert.match(detail, /rank-1 rate 0\.97 is below the locked 1.*belongs to ship/);
+});
+
+test('a lock lower than the one on origin/main fails', (t) => {
+  const root = fixture(t);
+  const git = (...args) => spawnSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
+  fs.writeFileSync(path.join(root, 'verify/budgets.mjs'), 'export const ROUTING_RANK_ONE_LOCK = 1.5;\n', 'utf8');
+  git('init', '-q');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'base');
+  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  const { counts, detail } = verdict(root);
+  assert.equal(counts.FAIL, 1, detail);
+  assert.match(detail, /ROUTING_RANK_ONE_LOCK 1 is lower than 1\.5 on origin\/main/);
 });
 
 test('standalone run prints its line and exits 0 on a pass', () => {

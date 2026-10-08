@@ -73,4 +73,8 @@ export const DESCRIPTION_TOTAL_WARN = { chars: 5175 };
 // Highest Jaccard overlap two model-invocable descriptions may share in
 // stopword-filtered words; verify/checks/routing.mjs fails above it.
 export const ROUTING_SIMILARITY_CEILING = 0.4;
+// Lowest share of routing sample prompts, negatives included, that rank their own
+// skill strictly first; verify/checks/routing.mjs fails below it and when it is
+// lower than the value on origin/main.
+export const ROUTING_RANK_ONE_LOCK = 1;
 export const REFERENCE_CONTENTS_LINES = 100;
