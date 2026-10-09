@@ -1,6 +1,6 @@
 // verify.mjs runs each landed task's Proof command, the plan's own Land
-// gate (or npm run check) and a stray-path check, then prints the REVIEWER
-// line pick-reviewer.mjs's size facts pick. "Landed" comes from #plan-tasks'
+// gate (or npm run check) and a stray-path check, then prints one REVIEW line per landed task
+// and the OVERLAP lines. "Landed" comes from #plan-tasks'
 // own landedTasks(), the same read land-task.mjs uses, so a task with no
 // `Plan-task: <plan-id>/<n>` commit never runs its Proof here either.
 
@@ -103,10 +103,13 @@ test('criterionCommand reads the first backticked command, or null', () => {
   assert.equal(criterionCommand(null), null);
 });
 
+// The REVIEW line of task `number` landed by landTask, whose commit is HEAD.
+const reviewLine = (root, number, reviewer) => `REVIEW Task ${number} ${git(root, 'rev-parse', 'HEAD')}: ${reviewer}`;
+
 const CLEAN_CHECK = "console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0');\n";
 const FAILING_CHECK = "console.log('check failed'); process.exit(1);\n";
 
-test('a landed task, a clean check and no stray paths print PASS lines and the light reviewer agent', async () => {
+test('a landed task, a clean check and no stray paths print PASS lines and one REVIEW line', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
     'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
@@ -116,7 +119,7 @@ test('a landed task, a clean check and no stray paths print PASS lines and the l
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet']);
 });
 
 test('a landed task whose Proof fails prints FAIL and exits 1', async () => {
@@ -238,7 +241,7 @@ test('a failing check-command prints FAIL success-criterion', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', 'PASS claims-diff', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet']);
 });
 
 test('a check that exits 0 and prints no SUMMARY line passes, under any gate command', async () => {
@@ -577,7 +580,7 @@ test('--root points the gate at another checkout, not the caller\'s own cwd', as
     { cwd: path.dirname(root) }
   );
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', `REVIEWER: ${REVIEWER_AGENTS.light}`, 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet']);
 });
 
 test('missing --plan is rejected', async () => {
@@ -688,7 +691,7 @@ test('no check-cache entry reruns the gate and the Proof', async () => {
 
 const RISK_PLAN = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none${risk}| Proof: node -e "process.exit(0)"\n`;
 
-async function reviewerOf(files, { commits = [], args = [] } = {}) {
+async function reviewRun(files, { commits = [], args = [] } = {}) {
   const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'check.js': CLEAN_CHECK, ...files });
   const base = git(root, 'rev-parse', 'HEAD');
   // Each commit is [subject, trailer?, files?]; `files`, a map of path to
@@ -699,42 +702,70 @@ async function reviewerOf(files, { commits = [], args = [] } = {}) {
     git(root, 'commit', '--allow-empty', '-m', subject, ...(trailer ? ['-m', trailer] : []));
   }
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js', ...args], { cwd: root });
-  return result.stdout.split('\n').find((line) => line.startsWith('REVIEWER: '));
+  return { root, lines: result.stdout.split('\n') };
 }
 
-test('a landed task with a Risk: field prints the deep reviewer for a small diff', async () => {
-  const line = await reviewerOf({ 'plan.md': RISK_PLAN(' | Risk: security boundary ') }, { commits: [['feat: x', 'Plan-task: plan/1']] });
-  assert.equal(line, `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+// The reviewer a task's REVIEW line names.
+async function reviewerOf(files, options) {
+  const { lines } = await reviewRun(files, options);
+  return lines.find((line) => line.startsWith('REVIEW Task 1 '))?.replace(/^[^:]*: /, '');
+}
+
+test('REVIEW: a landed task with Risk: security boundary gets the deep reviewer, another Risk the light one', async () => {
+  const commits = [['feat: x', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]];
+  assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' | Risk: security boundary ') }, { commits }), REVIEWER_AGENTS.deep);
+  assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' | Risk: data loss ') }, { commits }), REVIEWER_AGENTS.light);
 });
 
-test('a Signature trailer or a branch commit without Plan-task prints the deep reviewer', async () => {
+test('REVIEW: a Signature trailer, a manifest change or a fix commit no longer picks the deep reviewer', async () => {
   const plan = { 'plan.md': RISK_PLAN(' ') };
-  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1\nSignature: a.js:f(x) -> (x, y)']] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
-  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1'], ['fix: review', null, { 'src/app.js': 'export const greet = () => "hello";\n' }]] }), `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+  const src = { 'src/app.js': 'export const greet = () => "hello";\n' };
+  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1\nSignature: a.js:f(x) -> (x, y)', src]] }), REVIEWER_AGENTS.light);
+  assert.equal(await reviewerOf(plan, { commits: [['feat: x', 'Plan-task: plan/1', src], ['fix: review', null, { 'src/app.js': 'export const greet = () => "yo";\n' }]] }), REVIEWER_AGENTS.light);
+  assert.equal(await reviewerOf({ ...plan, 'package.json': '{}\n' }, { commits: [['feat: x', 'Plan-task: plan/1', { ...src, 'package.json': '{"name":"a"}\n' }]] }), REVIEWER_AGENTS.light);
 });
 
-test('a changed manifest prints the deep reviewer', async () => {
-  const files = { 'plan.md': RISK_PLAN(' '), 'package.json': '{}\n' };
-  const root = await gitRepository({ 'src/app.js': 'x\n', 'check.js': CLEAN_CHECK, ...files });
-  const base = git(root, 'rev-parse', 'HEAD');
-  await writeFile(path.join(root, 'package.json'), '{"name":"a"}\n');
-  git(root, 'add', '-A');
-  git(root, 'commit', '-m', 'feat: x', '-m', 'Plan-task: plan/1');
-  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(result.stdout.includes(`REVIEWER: ${REVIEWER_AGENTS.deep}`), result.stdout);
+test('REVIEW: a task changing no script file gets none (text only)', async () => {
+  assert.equal(await reviewerOf({ 'plan.md': RISK_PLAN(' ') }, { commits: [['docs: x', 'Plan-task: plan/1', { 'NOTES.md': 'x\n' }]] }), 'none (text only)');
 });
 
-test('a large diff with no risk and merge commits only prints the light reviewer', async () => {
+test('REVIEW: a task whose commits merged in through a merge commit still gets its line', async () => {
   const root = await gitRepository({ 'src/app.js': 'x\n', 'plan.md': RISK_PLAN(' '), 'check.js': CLEAN_CHECK });
   const base = git(root, 'rev-parse', 'HEAD');
   git(root, 'checkout', '-b', 'side');
   await writeFile(path.join(root, 'src', 'app.js'), 'y\n'.repeat(300));
   git(root, 'add', '-A');
   git(root, 'commit', '-m', 'feat: x', '-m', 'Plan-task: plan/1');
+  const sha = git(root, 'rev-parse', 'HEAD');
   git(root, 'checkout', '-');
   git(root, 'merge', '--no-ff', 'side', '-m', 'merge side');
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(result.stdout.includes(`REVIEWER: ${REVIEWER_AGENTS.light}`), result.stdout);
+  assert.ok(result.stdout.includes(`REVIEW Task 1 ${sha}: ${REVIEWER_AGENTS.light}`), result.stdout);
+  assert.ok(!result.stdout.includes('REVIEWER:'), result.stdout);
+});
+
+test('REVIEW: a recorded review with a verdict prints REVIEWED with the record path, one without stays REVIEW', async () => {
+  const { root, lines } = await reviewRun({ 'plan.md': RISK_PLAN(' ') }, { commits: [['feat: x', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]] });
+  const sha = git(root, 'rev-parse', 'HEAD');
+  assert.ok(lines.includes(`REVIEW Task 1 ${sha}: ${REVIEWER_AGENTS.light}`), lines.join('\n'));
+  const record = path.join(root, '.exo', `review-${sha.slice(0, 7)}.md`);
+  await mkdir(path.dirname(record), { recursive: true });
+  await writeFile(record, 'no verdict yet\n');
+  const open = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(open.stdout.includes(`REVIEW Task 1 ${sha}:`), open.stdout);
+  await writeFile(record, 'Verdict: CLEAN\n');
+  const done = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(done.stdout.split('\n').includes(`REVIEWED Task 1 ${record}`), done.stdout);
+  assert.ok(!done.stdout.includes('REVIEW Task 1'), done.stdout);
+});
+
+test('REVIEW: the OVERLAP lines list a file two tasks changed, and OVERLAP none otherwise', async () => {
+  const plan = ['### Task 1: feat(app): a', 'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"', '',
+    '### Task 2: feat(app): b', 'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"', ''].join('\n');
+  const shared = await reviewRun({ 'plan.md': plan }, { commits: [['feat: a', 'Plan-task: plan/1', { 'src/app.js': 'a\n' }], ['feat: b', 'Plan-task: plan/2', { 'src/app.js': 'b\n' }]] });
+  assert.ok(shared.lines.includes('OVERLAP src/app.js (Tasks 1, 2)'), shared.lines.join('\n'));
+  const apart = await reviewRun({ 'plan.md': plan, 'src/b.js': 'z\n' }, { commits: [['feat: a', 'Plan-task: plan/1', { 'src/app.js': 'a\n' }], ['feat: b', 'Plan-task: plan/2', { 'src/b.js': 'b\n' }]] });
+  assert.ok(apart.lines.includes('OVERLAP none'), apart.lines.join('\n'));
 });
 
 test('commandLine rebuilds the command as SKILL.md runs it, quoting only words a shell would split', () => {
@@ -809,11 +840,12 @@ test('with no check script a package with a bin or a start script passes on npm 
 const INLINE_PLAN = ['### Task 1: feat(app): greet', 'Depends on: none', '', 'Files:', '- Modify: `src/app.js`', '',
   '```js', 'export const greet = () => "hi";', '```', '', 'Commit:', '```bash', 'git commit -am "feat(app): greet" -m "Plan-task: plan/1"', '```', ''].join('\n');
 
-test('a plan on the inline route with no risk fact prints no reviewer, while a manifest change keeps one', async () => {
-  assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat: x', 'Plan-task: plan/1']] }), 'REVIEWER: none (inline route)');
+test('REVIEW: a plan on the inline route with no Risk prints none (inline route), even with a manifest change', async () => {
+  assert.equal(await reviewerOf({ 'plan.md': INLINE_PLAN }, { commits: [['feat: x', 'Plan-task: plan/1']] }), 'none (inline route)');
   const manifest = await reviewerOf({ 'plan.md': INLINE_PLAN, 'package.json': '{}\n' }, { commits: [['feat: x', 'Plan-task: plan/1', { 'package.json': '{"name":"a"}\n' }]] });
-  assert.equal(manifest, `REVIEWER: ${REVIEWER_AGENTS.deep}`);
+  assert.equal(manifest, 'none (inline route)');
 });
+
 
 // Run pe44LB's shape: the user asked for tasks 1-2 of a three-task plan, and the plan's
 // criterion checks every function, so it fails on the module task 3 has not created yet.
@@ -844,6 +876,7 @@ const SCOPED_PLAN = [
   ])
 ].join('\n');
 
+
 async function scopedRun(landedSources, landedNumbers) {
   const root = await gitRepository({ 'plan.md': SCOPED_PLAN, 'prove.mjs': SCOPED_PROVE, ...landedSources });
   for (const number of landedNumbers) landTask(root, number);
@@ -856,7 +889,8 @@ test('a criterion failing only on an unlanded task\'s missing module prints SKIP
   const lines = result.stdout.trim().split('\n');
   assert.equal(lines[2], 'SKIP success-criterion (out of scope: exit 1 names only files of unlanded Task 3)');
   assert.ok(!result.stdout.includes('FAIL success-criterion'));
-  assert.ok(lines.includes(`REVIEWER: ${REVIEWER_AGENTS.light}`));
+  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ') && line.endsWith(`: ${REVIEWER_AGENTS.light}`)));
+  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 2 ')));
   assert.ok(lines.includes('OPEN Task 3: feat(strings): add c'));
 });
 
@@ -1003,7 +1037,7 @@ test('claims-diff holds on the inline route, whose long-format task lists a Modi
   const { result, lines } = await claimsRun(INLINE_PLAN, { 'src/app.js': 'export const greet = () => "hello";\n' }, { 'src/app.js': 'export const greet = () => "hi";\n' });
   assert.equal(result.code, 0, result.stdout);
   assert.ok(lines.includes('PASS claims-diff'), result.stdout);
-  assert.ok(lines.includes('REVIEWER: none (inline route)'), result.stdout);
+  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ') && line.endsWith(': none (inline route)')), result.stdout);
 });
 
 test('a gate that passed on this tree is skipped on the next run, and a tracked edit reruns it', async () => {

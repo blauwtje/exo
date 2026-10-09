@@ -9,16 +9,15 @@
 // this command when `package.json` names no `bin` and no `scripts.start`; any other Land gate is the per-task gate, never
 // the final check), and a
 // stray-path check that the diff touched nothing outside a task's declared
-// Files, save the plan file itself. Ends on one REVIEWER: <agent name> line, picked from
-// risk (a landed task's `Risk:`, a manifest change or a signature change
-// since base), or `REVIEWER: none (inline route)` for a plan on build's inline
-// route with none of those risks, so a caller knows which agent reviews
-// the change without asking. Reads the plan through #plan-tasks, the same
+// Files, save the plan file itself. Ends on one `REVIEW Task <n> <shas>: <reviewer>` line per landed
+// task (deep reviewer for `Risk: security boundary`, light for another Risk or a script file,
+// else `none (text only)`; `none (inline route)` for an inline-route task without Risk), then the
+// `OVERLAP` lines of review-overlap.mjs, so a caller knows who reviews what. Reads the plan through #plan-tasks, the same
 // module land-task.mjs uses, so both agree on which task actually landed.
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
 //
-// Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check, then the REVIEWER line,
+// Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check, then one REVIEW (or REVIEWED, when `.exo/review-<sha7>.md` holds a verdict) line per landed task and the OVERLAP lines,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
 // A FAIL line for a Proof or the Success criterion names why in brackets, the
@@ -61,7 +60,8 @@ import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
-import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-reviewer.mjs';
+import { taskReviewer } from './pick-reviewer.mjs';
+import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
 // The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
@@ -564,14 +564,20 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));
   if (claims.some((line) => line.startsWith('FAIL '))) failed = true;
 
-  const riskTasks = plan.tasks.some((task) => landed.has(task.number) && task.risk !== null);
+  // One REVIEW line per landed task, REVIEWED when its last commit's review record holds a verdict.
+  const route = planRoute(plan.tasks).route;
+  const commitPaths = (sha) => execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'show', '--format=', '--no-renames', '--name-only', sha], { encoding: 'utf8', maxBuffer: Infinity }).split('\n').filter((name) => name !== '');
+  for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
+    const shas = taskCommits(task, root, planId);
+    const record = shas.length === 0 ? null : path.join(path.resolve(root ?? '.'), '.exo', `review-${shas[0].slice(0, 7)}.md`);
+    if (record !== null && fs.existsSync(record) && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
+      lines.push(`REVIEWED Task ${task.number} ${record}`);
+    } else {
+      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, shas.flatMap((sha) => commitPaths(sha)), route)}`);
+    }
+  }
   // With no base there is no range of commits to read.
-  const signatureChanged = base !== undefined && signatureChangedSince(base, root);
-  const manifestChanged = touchesManifest(changed);
-  // The inline route's plan pasted all its code, so with no risk fact the
-  // branch review is skipped; any risk fact keeps the picked reviewer.
-  const unreviewed = planRoute(plan.tasks).route === 'inline' && !riskTasks && !manifestChanged && !signatureChanged;
-  lines.push(`REVIEWER: ${unreviewed ? 'none (inline route)' : pickReviewer({ riskTasks, manifestChanged, signatureChanged })}`);
+  lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
   for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
   for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
   return { lines, failed };
