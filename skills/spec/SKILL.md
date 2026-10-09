@@ -30,7 +30,7 @@ argument-hint: <outcome to shape>
 6. **Store it** per `specs` in `exo settings:`, else `docs` (plan mode: the harness plan file).
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `exo:build`, even when asked; build starts in a clean chat.
+8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build here, load `exo:build` with `<brief path or #<n>> --land`; on Build fresh, print its `--fresh` output.
    - Invoked by another stage or a workflow → ask nothing, return to the caller.
 
 ## References
