@@ -7,6 +7,24 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**A `build` or `verify` run now ends on three short status lines and one decision; proofs, checks and manual checks go to `.exo/run-report.md`.**
+
+### Added
+
+- `verify` writes each run's proofs, checks and manual checks to `.exo/run-report.md` and prints its path.
+
+### Changed
+
+- `verify` ends on three state lines, any open task and `question` finding, and one decision; `Changed` lines, chores and `report` findings go to the run report, and `ship` called from `verify` uses that short shape while a plain push keeps its overview.
+- `build` keeps `Proof:` lines and manual checks out of its final message and names the run report instead.
+
+### Fixed
+
+- A review finding whose repair changes no behavior, such as a rule in another file or a wording change, is a `report` finding, not `fix`.
+- When the review of the fixer's changes finds only `report` findings, `verify` commits the fixes instead of stopping the run.
+
 ## 0.109.2 - 2026-10-09
 
 ### Changed
