@@ -230,9 +230,12 @@ test('the plugin copy a value cell loads keeps what exo needs and drops the excl
 
 test('the copy of this checkout carries the plugin and no hidden/, solution/ or check.mjs', async () => {
   const copy = copyPluginWithoutTasks(ROOT, await fixture());
-  const entries = await fs.readdir(copy, { recursive: true });
-  for (const needed of ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'skills', 'agents', 'lib']) assert.ok(entries.includes(needed), needed);
-  const leaks = entries.filter((entry) => entry.split(path.sep).some((part) => ['benchmarks', 'hidden', 'solution', 'check.mjs'].includes(part)));
+  const present = async (file) => fs.access(path.join(copy, file)).then(() => true, () => false);
+  for (const needed of ['.claude-plugin/plugin.json', 'hooks/hooks.json', 'skills', 'agents', 'lib']) assert.ok(await present(needed), needed);
+  const tracked = execFileSync('git', ['-C', ROOT, 'ls-files', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).split('\0').filter(Boolean);
+  const candidates = tracked.filter((file) => file.split('/').some((part) => ['benchmarks', 'hidden', 'solution', 'check.mjs'].includes(part)));
+  const leaks = [];
+  for (const file of candidates) if (await present(file)) leaks.push(file);
   assert.deepEqual(leaks, []);
 });
 
