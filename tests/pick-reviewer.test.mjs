@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { codexOffer, FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { codexOffer, FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, taskReviewer, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
 import { commitFiles, git, gitRepository, run } from './harness.mjs';
 
@@ -142,4 +142,29 @@ test('--effort with --base is rejected', async () => {
   const result = await run(SCRIPT, ['--effort', '--base', 'x'], { cwd: root });
   assert.equal(result.code, 2);
   assert.equal(result.stdout, '');
+});
+
+test('taskReviewer picks deep only for a security boundary, light for another Risk or a script file, none otherwise', () => {
+  const task = (risk) => ({ risk });
+  assert.equal(taskReviewer(task('security boundary'), ['a.md'], 'block'), deep);
+  assert.equal(taskReviewer(task('security boundary'), ['a.md'], 'inline'), deep);
+  assert.equal(taskReviewer(task('data loss'), ['a.md'], 'block'), light);
+  assert.equal(taskReviewer(task('data loss'), ['a.md'], 'inline'), light);
+  assert.equal(taskReviewer(task(null), ['a.mjs', 'b.md'], 'block'), light);
+  assert.equal(taskReviewer(task(null), ['package.json'], 'block'), 'none (text only)');
+  assert.equal(taskReviewer(task(null), ['a.md'], 'block'), 'none (text only)');
+  assert.equal(taskReviewer(task(null), ['a.mjs'], 'inline'), 'none (inline route)');
+});
+
+test('--task prints the reviewer from the task commits', async () => {
+  const plan = (risk) => `### Task 1: feat(app): greet\nDepends on: none | Files: \`app.js\`, \`notes.md\` | Data: none${risk}| Proof: node -e "process.exit(0)"\n`;
+  const root = await gitRepository({ 'plan.md': plan(' | Risk: security boundary ') });
+  await fs.writeFile(path.join(root, 'app.js'), 'export const a = 1;\n');
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'feat(app): greet', '-m', 'Plan-task: plan/1');
+  const asked = () => run(SCRIPT, ['--task', '1', '--plan', 'plan.md', '--root', root], { cwd: root });
+  assert.equal((await asked()).stdout, `${deep}\n`);
+  await fs.writeFile(path.join(root, 'plan.md'), plan(' '));
+  assert.equal((await asked()).stdout, `${light}\n`);
+  assert.equal((await run(SCRIPT, ['--task', '9', '--plan', 'plan.md', '--root', root], { cwd: root })).code, 2);
 });

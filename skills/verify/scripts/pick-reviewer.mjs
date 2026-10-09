@@ -4,11 +4,14 @@
 // and numbers themselves do.
 
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { basename, extname } from 'node:path';
 import { onPath } from '#on-path';
 import { readKindTable } from '#model-kinds';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
 
 export const FILE_LIMIT = 5;
@@ -43,6 +46,25 @@ export const MANIFESTS = [
 /** The deep reviewer pick (the light agent plus call model and effort) when a landed task carries a `Risk:`, a manifest changed or a signature changed; diff size no longer picks it. */
 export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
   return riskTasks || manifestChanged || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light;
+}
+
+/**
+ * One landed task's reviewer: the deep pick only for `Risk: security boundary`;
+ * the light pick for another `Risk:` or a changed script file; `none (text only)`
+ * for a task changing no script file; `none (inline route)` for an inline-route
+ * task without `Risk:`.
+ */
+export function taskReviewer(task, changedPaths, route) {
+  if (task.risk !== null && /security boundary/i.test(task.risk)) return REVIEWER_AGENTS.deep;
+  if (task.risk !== null) return REVIEWER_AGENTS.light;
+  if (route === 'inline') return 'none (inline route)';
+  return changedPaths.some((name) => SCRIPT_EXTENSIONS.has(extname(name))) ? REVIEWER_AGENTS.light : 'none (text only)';
+}
+
+/** The paths the commits carrying task `number` of the plan changed. */
+function taskPaths(task, root, planId) {
+  const shas = taskCommits(task, root, planId);
+  return shas.flatMap((sha) => execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'show', '--format=', '--no-renames', '--name-only', '-z', sha], { encoding: 'utf8', maxBuffer: Infinity }).split('\0').filter((name) => name !== ''));
 }
 
 /** Whether verify may offer the opt-in second review through Codex: only when `codex` is on `PATH`. */
@@ -93,7 +115,15 @@ function measureEffort() {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { effort: 'boolean', codex: 'boolean' });
+  const flags = parseFlags(argv, { effort: 'boolean', codex: 'boolean', task: 'value', plan: 'value', root: 'value' });
+  if (flags.task !== undefined) {
+    for (const name of ['plan', 'root']) if (flags[name] === undefined) throw new UsageError(`flag '--${name}' needs a value`);
+    const { tasks } = parsePlan(fs.readFileSync(path.resolve(flags.plan), 'utf8'));
+    const task = tasks.find((candidate) => String(candidate.number) === flags.task);
+    if (task === undefined) throw new UsageError(`no task ${flags.task} in the plan`);
+    process.stdout.write(`${taskReviewer(task, taskPaths(task, flags.root, planIdOf(flags.plan)), planRoute(tasks).route)}\n`);
+    return;
+  }
   if (flags.codex) {
     process.stdout.write(`${codexOffer() ? 'offer' : 'none'}\n`);
     return;
