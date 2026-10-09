@@ -51,6 +51,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/performance.md',
   ],
   'skills/check-docs/SKILL.md': [],
+  'skills/run-plan/SKILL.md': [],
   'skills/verify/SKILL.md': ['references/review-rules.md', 'references/repair.md'],
   'skills/start/SKILL.md': [
     'references/cheat-sheet.md',

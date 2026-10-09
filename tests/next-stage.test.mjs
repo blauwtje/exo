@@ -127,8 +127,8 @@ test('CLI prints the fresh-chat lines with --fresh', async () => {
 
 test('after spec both reports name the runner command only when plan-check --loop passes', async () => {
   const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
-  const loopPlan = compactPlanFixture({ tasks }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nAllow: none');
-  const root = await gitRepository({ 'docs/plans/loop.md': loopPlan, 'docs/plans/plain.md': compactPlanFixture({ tasks }) });
+  const redirecting = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs > out.log' })];
+  const root = await gitRepository({ 'docs/plans/loop.md': compactPlanFixture({ tasks }), 'docs/plans/plain.md': compactPlanFixture({ tasks: redirecting }) });
   const loopPath = path.join(root, 'docs/plans/loop.md');
   const plainPath = path.join(root, 'docs/plans/plain.md');
   const runner = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
