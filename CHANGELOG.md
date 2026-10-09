@@ -30,6 +30,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The plugin copy a benchmark arm loads leaves out `.claude/worktrees/` and every `.DS_Store`, and still copies uncommitted edits.
+- The Codex install skips a Finder `.DS_Store` in a skill folder in place of refusing the folder as a file exo did not write.
+- `verify` reports a path changed only by trailer-less `fix(...)` commits as `FIX-ONLY <path> (<sha>)` in place of `STRAY`, so repairs made during a run no longer fail the gate and still show in its report.
 - `tests/pressure-confine.test.mjs` again proves that a confined run defaults its cwd to the first root and, on macOS, passes no `--settings` flag when given no settings.
 - A design-ui build on Opus again gives tabs and buttons their hover and state transitions, a requirement an earlier cut had left outside the motion bar.
 - `confinedClaude` requires a `tmp` folder and makes none of its own, so a call no longer leaves a `claude-isolation-*` or `claude-tmp-*` folder behind.

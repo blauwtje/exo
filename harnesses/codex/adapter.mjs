@@ -194,6 +194,25 @@ function plainChain(base, parts) {
   return true;
 }
 
+// macOS Finder drops a `.DS_Store` into any folder it opens. It is not exo's and not
+// a user's work, so a skill folder is never refused for it, and it is never recorded,
+// overwritten or deleted. Only the exact name counts; other dotfiles stay foreign.
+const FINDER_FILE = '.DS_Store';
+
+// True when `folder` is a real folder that holds a Finder file and nothing else,
+// counting a subfolder only when it too holds nothing but Finder files.
+function holdsOnlyFinderFiles(folder) {
+  if (!statOf(folder)?.isDirectory()) return false;
+  const names = fs.readdirSync(folder);
+  if (!names.includes(FINDER_FILE) && !names.some((name) => statOf(path.join(folder, name))?.isDirectory())) return false;
+  return names.every((name) => {
+    const full = path.join(folder, name);
+    const stat = statOf(full);
+    if (stat?.isDirectory()) return holdsOnlyFinderFiles(full);
+    return name === FINDER_FILE && stat?.isFile() === true;
+  });
+}
+
 // Each releasing helper adds the writes that delete what the record says this
 // adapter wrote, and a note for each entry it leaves because it changed.
 function releaseLinks(entries, skillsDir, writes, notes) {
@@ -333,7 +352,8 @@ function planSkill({ skillDir, files, oldSkill, oldLink, writes, conflicts }) {
   const fresh = statOf(skillDir) === undefined;
   const legacy = oldLink !== undefined && linksTo(skillDir, oldLink.source);
   const known = oldSkill !== undefined && statOf(skillDir)?.isDirectory() === true;
-  if (!fresh && !legacy && !known) {
+  const finderOnly = !fresh && !legacy && !known && holdsOnlyFinderFiles(skillDir);
+  if (!fresh && !legacy && !known && !finderOnly) {
     conflicts.push(`${skillDir} exists and exo did not write it`);
     return undefined;
   }

@@ -228,6 +228,25 @@ test('the plugin copy a value cell loads keeps what exo needs and drops the excl
   assert.deepEqual((await fs.readdir(copy)).sort(), ['.claude-plugin', 'agents', 'hooks', 'lib', 'package.json', 'skills']);
 });
 
+test('the plugin copy leaves out .claude/worktrees, .worktrees and .DS_Store but keeps the rest, uncommitted files included', async () => {
+  const root = await fixture();
+  const files = [
+    '.claude/worktrees/x/f', '.claude/keep.json', '.worktrees/w/f', 'skills/.DS_Store', 'skills/a/SKILL.md', '.DS_Store',
+    'lib/new-file.mjs', 'lib/deep/.DS_Store'
+  ];
+  for (const file of files) {
+    await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
+    await fs.writeFile(path.join(root, file), 'x');
+  }
+  const copy = copyPluginWithoutTasks(root, await fixture());
+  const found = (await fs.readdir(copy, { recursive: true, withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.relative(copy, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'))
+    .sort();
+  assert.deepEqual(found, ['.claude/keep.json', 'lib/new-file.mjs', 'skills/a/SKILL.md']);
+  assert.ok(!(await fs.readdir(path.join(copy, '.claude'))).includes('worktrees'));
+});
+
 test('the copy of this checkout carries the plugin and no hidden/, solution/ or check.mjs', async () => {
   const copy = copyPluginWithoutTasks(ROOT, await fixture());
   const present = async (file) => fs.access(path.join(copy, file)).then(() => true, () => false);

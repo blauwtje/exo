@@ -65,11 +65,18 @@ export function loadValueTasks(root = VALUE_ROOT) {
 
 // A copy of the plugin at root without benchmarks/, tests/, tmp/, docs/ and the
 // other entries of PLUGIN_COPY_EXCLUDES, so the exo arm of a value cell loads
-// exo from a folder that holds no hidden/ or solution/. Made once per run.
+// exo from a folder that holds no hidden/ or solution/. It also leaves out
+// .claude/worktrees/ (top level only) and every .DS_Store, and copies
+// everything else, uncommitted edits included. Made once per run.
 export function copyPluginWithoutTasks(root, destination) {
   fs.cpSync(root, destination, {
     recursive: true,
-    filter: (source) => !PLUGIN_COPY_EXCLUDES.has(path.relative(root, source).split(path.sep)[0])
+    filter: (source) => {
+      const parts = path.relative(root, source).split(path.sep);
+      if (PLUGIN_COPY_EXCLUDES.has(parts[0])) return false;
+      if (parts[0] === '.claude' && parts[1] === 'worktrees') return false;
+      return parts[parts.length - 1] !== '.DS_Store';
+    }
   });
   return destination;
 }

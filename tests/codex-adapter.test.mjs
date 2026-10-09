@@ -327,6 +327,66 @@ for (const [label, scope, setup, expected] of [
   });
 }
 
+test('an install into a skill folder that holds only a Finder .DS_Store succeeds and leaves the .DS_Store alone', () => {
+  const paths = sandbox();
+  const folder = path.join(paths.skills, SKILL);
+  fs.mkdirSync(path.join(folder, 'references'), { recursive: true });
+  fs.writeFileSync(path.join(folder, '.DS_Store'), 'finder');
+  fs.writeFileSync(path.join(folder, 'references', '.DS_Store'), 'finder too');
+  apply(paths);
+  assert.equal(fs.readFileSync(path.join(folder, '.DS_Store'), 'utf8'), 'finder');
+  assert.equal(fs.readFileSync(path.join(folder, 'references', '.DS_Store'), 'utf8'), 'finder too');
+  assert.ok(fs.existsSync(path.join(folder, 'SKILL.md')));
+  const listed = userInstall(paths).skills.find((skill) => skill.name === SKILL).files.map((file) => file.path);
+  assert.ok(listed.includes('SKILL.md'));
+  assert.ok(listed.every((file) => path.basename(file) !== '.DS_Store'));
+  // An update of the recorded folder keeps the .DS_Store as well.
+  apply(paths, update);
+  assert.equal(fs.readFileSync(path.join(folder, '.DS_Store'), 'utf8'), 'finder');
+});
+
+test('an install still refuses a skill folder that holds a real foreign file beside a .DS_Store', () => {
+  const paths = sandbox();
+  const folder = path.join(paths.skills, SKILL);
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(path.join(folder, '.DS_Store'), 'finder');
+  fs.writeFileSync(path.join(folder, 'notes.txt'), 'mine');
+  const before = snapshot(paths.base);
+  assert.throws(() => apply(paths), /exo did not write it/);
+  assert.deepEqual(snapshot(paths.base), before);
+});
+
+test('an install does not skip other dotfiles, nor a .DS_Store that is a folder', () => {
+  for (const name of ['.gitignore', '.DS_Store_backup']) {
+    const paths = sandbox();
+    fs.mkdirSync(path.join(paths.skills, SKILL), { recursive: true });
+    fs.writeFileSync(path.join(paths.skills, SKILL, name), 'mine');
+    assert.throws(() => apply(paths), /exo did not write it/);
+  }
+  const paths = sandbox();
+  fs.mkdirSync(path.join(paths.skills, SKILL, '.DS_Store'), { recursive: true });
+  fs.writeFileSync(path.join(paths.skills, SKILL, '.DS_Store', 'inside'), 'mine');
+  assert.throws(() => apply(paths), /exo did not write it/);
+});
+
+test('remove deletes the files exo wrote and keeps a .DS_Store, which leaves its folder in place', () => {
+  const paths = sandbox();
+  apply(paths);
+  const folder = path.join(paths.skills, SKILL);
+  fs.writeFileSync(path.join(folder, '.DS_Store'), 'finder');
+  const sibling = SKILL_NAMES.find((name) => name !== SKILL);
+  remove(selector(paths));
+  // The existing rule: rmdir takes only a folder the deletes emptied, so a folder holding the
+  // .DS_Store stays; the .DS_Store is neither deleted nor reported as a kept foreign file.
+  assert.deepEqual(fs.readdirSync(folder), ['.DS_Store']);
+  assert.equal(fs.readFileSync(path.join(folder, '.DS_Store'), 'utf8'), 'finder');
+  if (sibling !== undefined) assert.equal(fs.existsSync(path.join(paths.skills, sibling)), false);
+  // The leftover folder does not block a later install.
+  apply(paths);
+  assert.ok(fs.existsSync(path.join(folder, 'SKILL.md')));
+  assert.equal(fs.readFileSync(path.join(folder, '.DS_Store'), 'utf8'), 'finder');
+});
+
 test('user scope takes no project folder and an unknown scope is refused', () => {
   const paths = sandbox();
   const before = snapshot(paths.base);
