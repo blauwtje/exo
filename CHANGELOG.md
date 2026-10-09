@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- An `ok` or a picked option is carried out at once, with no recap or confirmation question, and approves every step the option names, including opening an issue.
+
 ## 0.109.1 - 2026-10-09
 
 ### Changed
