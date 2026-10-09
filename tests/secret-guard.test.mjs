@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 
-const GUARD = fileURLToPath(new URL('../hooks/guards/secret-guard.mjs', import.meta.url));
+const GUARD = fileURLToPath(new URL('../hooks/dispatch-bash.mjs', import.meta.url));
 
 async function writeSettings(file, deny) {
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -173,13 +173,13 @@ test('a command that does not read the protected path passes', async () => {
   for (const command of [
     'cat README.md',
     'ls -a .env',
-    'rm .env',
+    'touch .env',
     'echo .env',
     'git add .env',
     'cat notes.txt > .env',
     'cat .env.example',
     'echo "cat .env"',
-    'npm test'
+    'node app.js'
   ]) {
     assert.equal(await reason(command, place), null, command);
   }

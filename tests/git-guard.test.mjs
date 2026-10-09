@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { commitFiles, fixture, git, run } from './harness.mjs';
 
-const GUARD = fileURLToPath(new URL('../hooks/guards/git-guard.mjs', import.meta.url));
+const GUARD = fileURLToPath(new URL('../hooks/dispatch-bash.mjs', import.meta.url));
 
 // A `gh` first on PATH that answers `pr view` with `state`, or fails when it is
 // null, so no test reaches the real GitHub CLI.

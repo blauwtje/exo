@@ -1,27 +1,16 @@
-// Turns a shell command into the same string with the text that runs nothing
-// blanked, so a guard matches the words that run and not the words in a message.
-// Blanked: single-quoted and double-quoted text, heredoc bodies, and the bare
-// word after a git `-m` or `--message`. Each blanked character becomes a space,
-// so length, quote marks, line breaks and delimiter lines stay where they were.
-// Kept: a `$(...)` or backtick substitution inside a double-quoted string or an
-// unquoted heredoc body, because it runs. Ceiling: a command assembled from
-// variables at run time reads as written, and a quote inside `$((...))`
-// arithmetic is read as a quote.
+// Blanks the text of a shell command that runs nothing (quoted text, heredoc
+// bodies, the bare word after git `-m`) to spaces, keeping every position, so a
+// guard matches the words that run. A substitution in double quotes or an
+// unquoted heredoc runs, so it is kept. Ceiling: a command built from variables
+// reads as written; a quote inside `$((...))` reads as a quote.
 
-// A heredoc operator and its delimiter, shared with destructive-guard, which
-// reads the body a database client is fed.
+// A heredoc operator and its delimiter, shared with destructive-guard.
 export const HEREDOC_OPERATOR = /<<(-?)[ \t]*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|\\?([A-Za-z_]\w*))/y;
 
-// The words that start a git invocation, up to and with the whitespace before the
-// subcommand, as regular-expression source for git-guard to
-// share. Whitespace is a space, a tab or a `\`-newline continuation. The command
-// is `git` with an optional `.exe` and a closing quote, so a path such as
-// `/usr/bin/git` and a quoted `"git"` both count; the caller chooses what may
-// precede it. A global option may repeat and appear in any order: `-C`, `-c`,
-// `--git-dir`, `--work-tree` and `--namespace` take a separate value, every other
-// one is a single token such as `--no-pager`.
-// Ceiling: a `"git"` with a quote only counts at the start of a command, because
-// blanking removes it anywhere else.
+// Regex source for `git` (optional `.exe` and closing quote) and its global
+// options in any order, up to the subcommand; `-C`, `-c`, `--git-dir`,
+// `--work-tree` and `--namespace` take a value. Whitespace includes a
+// `\`-newline. Ceiling: a quoted `"git"` counts only at the start of a command.
 const SPACE = '(?:[ \\t]|\\\\\\n)';
 const OPTION = `(?:(?:-[cC]|--(?:git-dir|work-tree|namespace))${SPACE}+[^ \\t\\n]+|-[^ \\t\\n]+)`;
 export const GIT_PREFIX_SOURCE = `git(?:\\.exe)?["']?(?:${SPACE}+${OPTION})*${SPACE}+`;
@@ -29,8 +18,7 @@ export const GIT_PREFIX_SOURCE = `git(?:\\.exe)?["']?(?:${SPACE}+${OPTION})*${SP
 // A quoted `git` that is the command word, blanked as text and restored after.
 const QUOTED_GIT_COMMAND = /(?:^|[;&|(\n])[ \t]*(["'])(git(?:\.exe)?)\1/g;
 
-// A git prefix at the start of a command, then arguments up to a message flag,
-// then a bare word that holds no substitution, quote or separator.
+// A git prefix, arguments up to a message flag, then a bare plain word.
 const GIT_MESSAGE_WORD = new RegExp(
   `((?:^|[;&|(\`/\\n])[ \\t]*["']?${GIT_PREFIX_SOURCE}(?:[^;&|\\n]|(?<=\\\\)\\n)*?(?<=[ \\t\\n])(?:-[a-zA-Z]*m|--message=?)[ \\t]*)([^\\s;&|"'\`$()<>\\\\]+)`,
   'g'
@@ -48,8 +36,7 @@ export function blankCommandText(command) {
     for (let index = start; index < end; index += 1) blank(index);
   };
 
-  // Blanks text from `position` up to the closing `quote` (or `limit`), and
-  // scans each substitution in it as code.
+  // Blanks text up to the closing `quote` or `limit`, scanning substitutions as code.
   function scanText(quote, limit) {
     while (position < limit) {
       const character = command[position];
@@ -108,8 +95,7 @@ export function blankCommandText(command) {
     }
   }
 
-  // Scans code up to the `terminator` that ends the enclosing substitution:
-  // `)` at depth zero, a closing backtick, or the end of the command.
+  // Scans code up to `terminator`: `)` at depth zero, a backtick, or the end.
   function scanCode(terminator) {
     const heredocs = [];
     let depth = 0;

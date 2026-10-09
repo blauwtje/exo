@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { blankCommandText } from '../hooks/guards/command-text.mjs';
-import { guardDecision } from '../hooks/guards/guard-runner.mjs';
+import { guardDecision } from '../hooks/dispatch-bash.mjs';
 import { innerCommands } from '../hooks/guards/inner-commands.mjs';
 
 test('the argument of bash -c, sh -c, zsh -c and a login -lc is read', () => {

@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 
-const GUARD = fileURLToPath(new URL('../hooks/guards/destructive-guard.mjs', import.meta.url));
+const GUARD = fileURLToPath(new URL('../hooks/dispatch-bash.mjs', import.meta.url));
 
 async function guard(hookInput, { env = {}, input = JSON.stringify(hookInput) } = {}) {
   const directory = await fixture();

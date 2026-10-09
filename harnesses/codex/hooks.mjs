@@ -1,6 +1,6 @@
 // The hook entries exo installs into Codex's hooks.json, derived from
 // `hooks/hooks.json` by an allowlist: the events and matchers Codex can serve
-// (SessionStart, UserPromptSubmit, PreToolUse Bash). Each
+// (SessionStart, PreToolUse Bash). Each
 // entry keeps only the handler fields Codex documents, so Claude's `shell` is
 // dropped, and runs `harnesses/codex/hook-entry.mjs`, which sets the host and plugin root
 // before it imports the script the source entry named.
@@ -11,7 +11,6 @@ import path from 'node:path';
 // An undefined matcher selects the group the source file gives none.
 const ALLOWED = [
   { event: 'SessionStart', matcher: 'startup|resume|clear|compact' },
-  { event: 'UserPromptSubmit' },
   { event: 'PreToolUse', matcher: 'Bash' }
 ];
 

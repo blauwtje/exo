@@ -16,6 +16,7 @@ import { checkMarkdownReferences } from './verify/checks/markdown-references.mjs
 import { checkAgentDescriptionBudgets, checkDescriptionBudgets } from './verify/checks/description-budgets.mjs';
 import { checkRouting } from './verify/checks/routing.mjs';
 import { checkInjectedContext } from './verify/checks/injected-context.mjs';
+import { checkHookSize } from './verify/checks/hook-size.mjs';
 import { checkBannedText } from './verify/checks/banned-text.mjs';
 import { checkDerivation } from './verify/checks/derivation.mjs';
 import { checkBodyBudgets } from './verify/checks/body-budgets.mjs';
@@ -71,6 +72,7 @@ checkDescriptionBudgets(report, repository);
 checkAgentDescriptionBudgets(report, repository);
 checkRouting(report, repository);
 checkInjectedContext(report, repository);
+checkHookSize(report, repository);
 checkBannedText(report, repository);
 checkDerivation(report, repository);
 checkBodyBudgets(report, repository);

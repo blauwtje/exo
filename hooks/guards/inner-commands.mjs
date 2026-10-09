@@ -1,15 +1,8 @@
-// Lists the commands a shell runs from a string argument, so a guard can judge
-// `bash -c "git reset --hard"` and `eval "git reset --hard"` as it judges the
-// bare command. `innerCommands(command)` returns the string argument of each
-// `bash`, `sh` or `zsh` run with `-c` (also `-lc`, a path such as `/bin/bash`)
-// and of each `eval`, read from the raw text, quotes and escapes resolved. A
-// call is found in the blanked text, so a commit message that merely names
-// `bash -c` is not one.
-// Ceiling: only a call at the start of a command, or after `;`, `&`, `|`, `(` or
-// a newline, counts, so `sudo bash -c`, `env X=1 bash -c` and `xargs sh -c` pass;
-// `eval` reads its first argument only; a `'\''` inside a single-quoted argument
-// ends it; an argument built from variables reads as written. Lift the first by
-// widening CALL.
+// Lists the string argument of each `bash`, `sh` or `zsh -c` (also `-lc`, a
+// path) and `eval` in a command, quotes and escapes resolved, so a guard judges
+// `bash -c "git reset --hard"` like the bare command. Calls are found in the
+// blanked text. Ceiling: only a call at a command start counts (`sudo bash -c`,
+// `xargs sh -c` pass); `eval` reads its first argument only.
 
 import { blankCommandText } from './command-text.mjs';
 

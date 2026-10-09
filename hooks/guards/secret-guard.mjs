@@ -1,31 +1,12 @@
-#!/usr/bin/env node
-// PreToolUse guard on Bash: denies a shell read of a path that the `Read(...)`
-// entries under `permissions.deny` protect. Those entries bind only the Read
-// tool, so `cat .env` would otherwise walk around them. The globs come from the
-// user settings file in the config directory and from `.claude/settings.json`
-// and `.claude/settings.local.json` in the project.
-// Stands down when the `guards` setting is `off`.
-//
-// A glob follows the Read rule forms: `//abs` is absolute, `~/x` is under the
-// home directory, `/x` is under the project root, `./x` is under the hook's
-// working directory, and a bare `x` with no slash matches that name at any depth.
-// `**` crosses directories, `*` and `?` stay inside one.
-//
-// A read is a word after a reader command (`cat`, `head`, `grep`, `cp`, `tar`,
-// `dd if=` and the like), a `curl` upload (`-T file`, `@file`) or after `<`. A word
-// with `*` or `?` is expanded against the working directory first, and a dotfile
-// matches only a pattern that spells its dot, as in the shell; `[...]` and `{...}`
-// are not expanded. A directory word is a read of what it holds, so a
-// recursive `grep` of a protected directory is denied.
-// Ceiling: the command string is tokenised, not run. Every operand of a reader
-// counts as a file, so `grep .env README.md` with a `Read(./.env)` rule is denied
-// as well; spell such a pattern so it differs from the path. `cd` is not followed, a
-// command name or path assembled from variables other than a leading `$HOME`
-// reads as written, and a reader behind `xargs`, `find -exec` or `sh -c` is not
-// seen, and a `$(...)` in single quotes reads as a run; list the command in the deny rules of the settings file to cover it.
-// A settings file that cannot be read is skipped and named on stderr when no other
-// file yields a denial. A fault reading the input exits 0 with no output; the
-// guard never exits 2.
+// Bash guard: denies a shell read of a path a `Read(...)` rule under
+// `permissions.deny` protects (user, project and local settings), since those
+// rules bind only the Read tool. Globs follow the Read rule forms (`//abs`,
+// `~/x`, `/x` from the project root, `./x`, bare `x` at any depth). A read is an
+// operand of a reader command, a `curl` upload or a `<` file; a glob word is
+// expanded first, and a directory word reads what it holds.
+// Ceiling: tokenised, not run: every reader operand counts as a file, `cd` is
+// not followed, and a reader behind `xargs` or `find -exec` is not seen. An
+// unreadable settings file is skipped and named on stderr.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -33,7 +14,6 @@ import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
 import { projectRoot, readLayer } from '#settings-store';
-import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
 const READERS = new Set([
   'cat', 'tac', 'nl', 'head', 'tail', 'less', 'more', 'bat', 'sed', 'awk', 'gawk',
@@ -51,8 +31,7 @@ function unquote(token) {
   return token.replace(QUOTED_PART, (whole, single, double, escaped) => single ?? double?.replace(/\\(.)/g, '$1') ?? escaped);
 }
 
-// Splits a command into segments of words at `; & | ( )` and newlines. A `<`
-// puts its file word into `redirected`; a `>` drops the word it writes to.
+// Word segments split at `; & | ( )` and newlines; `<` files go to `redirected`, `>` targets drop.
 function wordSegments(command) {
   const segments = [];
   let words = [];
@@ -79,17 +58,14 @@ function wordSegments(command) {
   return segments;
 }
 
-// A `$(...)` or backtick substitution inside a double-quoted string runs, and
-// the word split above reads the string as one word, so each substitution body
-// is split again.
+// A substitution inside a double-quoted string runs, so its body is split again.
 function readSegments(command) {
   const segments = wordSegments(command);
   for (const match of command.matchAll(SUBSTITUTION)) segments.push(...readSegments(match[1] ?? match[2]));
   return segments;
 }
 
-// The words a segment reads: its arguments when its command is a reader, and
-// every `<` file.
+// The words a segment reads: a reader's operands and every `<` file.
 function readWords({ words, redirected }) {
   let start = 0;
   while (start < words.length && (ASSIGNMENT.test(words[start]) || WRAPPERS.has(words[start]))) start += 1;
@@ -102,8 +78,7 @@ function readWords({ words, redirected }) {
   return [...operands, ...redirected];
 }
 
-// The files a `curl` command sends: `-T file`, `--upload-file file`, and `@file`
-// after `-d`, `--data-binary`, `-F name=` and the like.
+// The files `curl` sends: `-T file`, `--upload-file file` and `@file` data.
 function curlFiles(args) {
   const files = [];
   for (const [index, word] of args.entries()) {
@@ -123,30 +98,15 @@ function expandHome(word) {
   return match ? path.join(home, match[1]) : word;
 }
 
-// Glob matching runs on `/`; on Windows the platform separator is `\`.
-function slashed(file) {
-  return file.split(path.sep).join('/');
-}
+// Glob matching runs on `/`, not the Windows `\`.
+const slashed = (file) => file.split(path.sep).join('/');
+
+// `**/`, `**`, `*` and `?` become their patterns; any other regex character is escaped.
+const GLOB_TOKEN = /\*\*\/|\*\*|\*|\?|[.+^${}()|[\]\\]/g;
+const GLOB_PATTERNS = { '**/': '(?:.*/)?', '**': '.*', '*': '[^/]*', '?': '[^/]' };
 
 function globRegExp(glob) {
-  let source = '';
-  for (let position = 0; position < glob.length; position += 1) {
-    const character = glob[position];
-    if (glob.startsWith('**/', position)) {
-      source += '(?:.*/)?';
-      position += 2;
-    } else if (glob.startsWith('**', position)) {
-      source += '.*';
-      position += 1;
-    } else if (character === '*') {
-      source += '[^/]*';
-    } else if (character === '?') {
-      source += '[^/]';
-    } else {
-      source += character.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-    }
-  }
-  return new RegExp(`^${source}$`);
+  return new RegExp(`^${glob.replace(GLOB_TOKEN, (token) => GLOB_PATTERNS[token] ?? `\\${token}`)}$`);
 }
 
 // The absolute glob a `Read(...)` spec stands for.
@@ -162,25 +122,13 @@ function absoluteGlob(spec, directory, root) {
 function readSpecs(file) {
   const deny = readLayer(file).permissions?.deny;
   if (!Array.isArray(deny)) return [];
-  const specs = [];
-  for (const entry of deny) {
-    const match = typeof entry === 'string' ? READ_RULE.exec(entry) : null;
-    if (match) specs.push(match[1]);
-  }
-  return specs;
-}
-
-function settingsFiles(root) {
-  return [
-    path.join(configDirectory(), 'settings.json'),
-    path.join(root, '.claude', 'settings.json'),
-    path.join(root, '.claude', 'settings.local.json')
-  ];
+  return deny.map((entry) => (typeof entry === 'string' ? READ_RULE.exec(entry)?.[1] : undefined)).filter((spec) => spec !== undefined);
 }
 
 function protectedRules(directory, root, notes) {
   const rules = [];
-  for (const file of settingsFiles(root)) {
+  const files = [path.join(configDirectory(), 'settings.json'), path.join(root, '.claude', 'settings.json'), path.join(root, '.claude', 'settings.local.json')];
+  for (const file of files) {
     let specs;
     try {
       specs = readSpecs(file);
@@ -206,7 +154,7 @@ function expandGlob(word, directory) {
         next.push(path.join(base, segment));
         continue;
       }
-      let names = [];
+      let names;
       try {
         names = fs.readdirSync(base);
       } catch {
@@ -252,5 +200,3 @@ export function denialFor(command, hookInput = {}) {
   if (!reason && notes.length > 0) process.stderr.write(`${notes.join('\n')}\n`);
   return reason;
 }
-
-if (isProcessEntry(import.meta.url)) await runBashGuard(denialFor);
