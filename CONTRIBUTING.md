@@ -80,7 +80,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 `hooks/hooks.json` registers three commands, one hook process per event and matcher rather than one per feature: `hooks/session-start.mjs` on `SessionStart`, `hooks/dispatch-prompt.mjs` on `UserPromptSubmit` (reply expander), `hooks/dispatch-bash.mjs` on `PreToolUse` for `Bash` (the three Bash guards). A dispatcher runs each step in its own try/catch, returns the first deny or block and joins the additional contexts.
 
-- **SessionStart** (startup, resume, clear, compaction): writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set) and injects the `route-skills` body, because a skill body is read only when invoked and that one says when to invoke the others.
+- **SessionStart** (startup, resume, clear, compaction): writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set) and injects facts only: the settings line, the handoff and memory pointers when those files exist, the Codex host note on Codex, and the text of `hooks/session-rules.md` when that file exists. The `route-skills` body, a welcome and the book sentence are not injected; `route-skills` stays a user-only skill.
 - **Delegate limits**: each agent that builds, reviews or repairs sets `maxTurns` in its frontmatter (60, `run-unit` 90); the harness ends a delegate at that turn.
 
 Each hook entry pins `"shell": "bash"` and `.gitattributes` forces LF; `CLAUDE.md` `## Environment` says why.

@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 // SessionStart hook on startup, resume, clear and compact: builds one
 // additionalContext string, in order: a handoff pointer, a project-memory
-// pointer, the settings line, then the body of the
-// route-skills skill (frontmatter dropped), the only skill invoked this way
-// because its frontmatter blocks model invocation. On Codex the Codex host note
-// follows, since Codex has no tool names to match.
-// It runs in Node so a host without `jq` still gets the injection.
+// pointer, the settings line, the Codex host note on Codex, then the text of
+// hooks/session-rules.md when that file exists. Facts only: no skill body, no
+// welcome. It runs in Node so a host without `jq` still gets the injection.
 
-import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -16,22 +13,10 @@ import process from 'node:process';
 import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
 
-// A hook output string over this many characters reaches the model as a file
-// path and a 2,000-character preview, which would cut the rules themselves. The
-// pointers and the settings line go first and always, so a cut falls on the
-// tail of the route-skills body and is named on stderr.
-// verify/budgets.mjs holds the same number as HOOK_OUTPUT_CAP.
-const OUTPUT_CAP = 10000;
-
-// Codex counts additionalContextLimit in tokens, so its context is capped at
-// this many tokens, estimated as UTF-8 bytes divided by 4; the installer sets
-// the limit higher, which leaves room for the estimate's error.
-const CODEX_TOKEN_CAP = 5000;
-
 const root = path.dirname(path.dirname(path.resolve(process.argv[1])));
 const onCodex = currentHost() === 'codex';
-// A Codex session keeps its pointer and marker under Codex's own folder, so it
-// cannot repoint Claude's copy of the plugin root.
+// A Codex session keeps its pointer under Codex's own folder, so it cannot
+// repoint Claude's copy of the plugin root.
 const configDirectory = onCodex
   ? path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'exo')
   : path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo');
@@ -97,32 +82,6 @@ function pointersFor(cwd) {
   return pointers;
 }
 
-// The route-skills text without its frontmatter; every later `---` line goes
-// too, as the awk filter this replaced dropped it.
-function skillBody(skillFile) {
-  let fences = 0;
-  const kept = [];
-  for (const line of fs.readFileSync(skillFile, 'utf8').split('\n')) {
-    if (line === '---') fences += 1;
-    else if (fences >= 2) kept.push(line);
-  }
-  return kept.join('\n').replace(/\n+$/, '');
-}
-
-// The Codex note follows the context above, whole and last, so the cap cuts the
-// context before it: the note maps every tool the skills name, and the cut falls
-// on the tail of the route-skills body.
-function withCodexNote(context) {
-  const note = fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd();
-  const tail = `\n\n${note}`;
-  const bytesRoom = CODEX_TOKEN_CAP * 4 - Buffer.byteLength(tail);
-  const bytes = Buffer.from(context);
-  if (bytes.length <= bytesRoom) return `${context}${tail}`;
-  console.error(`exo: session context cut by ${bytes.length - bytesRoom} bytes, it would pass ${CODEX_TOKEN_CAP} tokens`);
-  const cut = bytes.subarray(0, Math.max(bytesRoom, 0)).toString('utf8').replace(/\uFFFD+$/, '');
-  return `${cut}${tail}`;
-}
-
 let input = {};
 try {
   input = JSON.parse((await readHookText()) || '{}');
@@ -142,40 +101,14 @@ try {
   console.error(`exo: plugin-root pointer not written, ${error.message}`);
 }
 
-// The first session on a machine tells the user once where to start; the marker
-// beside plugin-root records it. A marker that cannot be written shows no
-// message, so a read-only config folder does not repeat it every session.
-function welcomeMessage() {
-  const marker = path.join(configDirectory, 'welcomed');
-  if (fs.existsSync(marker)) return undefined;
-  try {
-    fs.writeFileSync(marker, 'welcomed\n');
-  } catch (error) {
-    console.error(`exo: welcome marker not written, ${error.message}`);
-    return undefined;
-  }
-  if (onCodex) return 'exo is installed: run $start to see what it can do, or $configure to set your choices.';
-  return 'exo is installed: run /exo:start to see what it can do, or /exo:configure to set your choices.';
-}
-
-let pointers = '';
-
-const skillFile = path.join(root, 'skills', 'route-skills', 'SKILL.md');
-if (fs.existsSync(skillFile)) {
-  if (typeof input.cwd === 'string' && input.cwd !== '') pointers += pointersFor(input.cwd);
-  // Skills read project and global choices, such as where spec stores a spec,
-  // from this one line instead of opening the settings files themselves.
-  const settingsRun = runScript('skills/configure/scripts/settings.mjs', 'context');
-  const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
-  const headText = `${pointers}${settings}\n\n`;
-  const room = OUTPUT_CAP - headText.length;
-  let body = skillBody(skillFile);
-  if (body.length > room) {
-    console.error(`exo: route-skills cut by ${body.length - room} characters, the session context would pass ${OUTPUT_CAP}`);
-    body = body.slice(0, Math.max(room, 0));
-  }
-  let additionalContext = `${headText}${body}`;
-  if (onCodex) additionalContext = withCodexNote(additionalContext);
-  const systemMessage = welcomeMessage();
-  process.stdout.write(`${JSON.stringify({ systemMessage, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);
-}
+const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(input.cwd) : '';
+// Skills read project and global choices, such as where spec stores a spec,
+// from this one line instead of opening the settings files themselves.
+const settingsRun = runScript('skills/configure/scripts/settings.mjs', 'context');
+const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
+const parts = [`${pointers}${settings}`];
+if (onCodex) parts.push(fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd());
+const rulesFile = path.join(root, 'hooks', 'session-rules.md');
+if (fs.existsSync(rulesFile)) parts.push(fs.readFileSync(rulesFile, 'utf8').trimEnd());
+const additionalContext = parts.join('\n\n');
+process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } })}\n`);

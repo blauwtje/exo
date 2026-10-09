@@ -26,8 +26,8 @@ const DIRECT_LOOP = 'skills/build/references/run-loop-direct.md';
 
 const POINTER_EDIT = {
   file: SESSION_FILE,
-  from: '  let additionalContext = `${headText}${body}`;',
-  to: `  let additionalContext = ['# Using exo', '', ${JSON.stringify(SKILL_LINE)}].join('\\n');`
+  from: "const additionalContext = parts.join('\\n\\n');",
+  to: `const additionalContext = ['# Using exo', '', ${JSON.stringify(SKILL_LINE)}].join('\\n');`
 };
 const FIND_CAUSE_EDIT = { file: ROUTE_FILE, from: ', an unproven failure to `find-cause`', to: '' };
 const BUILD_SWAP = { target: DIRECT_LOOP, source: 'benchmarks/arms/build-session.md' };
@@ -80,7 +80,8 @@ export function checkVariant(name) {
     const copy = copyPluginWithoutTasks(ROOT, path.join(scratch, 'plugin'));
     applyVariant(name, copy);
     const context = sessionContext(copy, scratch);
-    if (!context.includes('# Using exo')) problems.push('session text no longer holds `# Using exo`');
+    const expectedStart = name === 'session-pointer' ? '# Using exo' : 'exo settings:';
+    if (!context.includes(expectedStart)) problems.push(`session text no longer holds \`${expectedStart}\``);
     const variant = VARIANTS[name];
     for (const { file } of variant.edits.filter((edit) => edit.file.endsWith('.mjs'))) {
       const check = spawnSync(process.execPath, ['--check', path.join(copy, file)], { encoding: 'utf8' });

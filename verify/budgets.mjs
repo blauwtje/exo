@@ -15,14 +15,14 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // The date records when the number was measured; nothing enforces its age.
 // First-party documentation caps one hook output string at HOOK_OUTPUT_CAP
 // characters and hands the model a 2,000-character preview of a longer one.
-// hooks/session-start.mjs puts the pointers and the settings line before the
-// route-skills body and cuts the tail of that body before it passes the cap, so the
-// next addition to route-skills buys its bytes out of that body.
+// hooks/session-start.mjs injects only facts and the text of
+// hooks/session-rules.md, which stays far under the cap.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 2542, measured: '2026-10-08' };
 // Every plugin agent's description, in the Agent tool listing of every session.
 export const AGENT_DESCRIPTION_TOTAL_LOCK = { chars: 739, measured: '2026-10-08' };
-export const INJECTED_CONTEXT_LOCK = { bytes: 1353, measured: '2026-10-08' };
+// The authored text of hooks/session-rules.md, which the session hook injects.
+export const INJECTED_CONTEXT_LOCK = { bytes: 100, measured: '2026-10-09' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };

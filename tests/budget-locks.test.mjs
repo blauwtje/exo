@@ -18,15 +18,17 @@ import { checkBodyBudgets } from '../verify/checks/body-budgets.mjs';
 import { checkReferenceShape } from '../verify/checks/reference-shape.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
-const USING_EXO = 'skills/route-skills/SKILL.md';
+const SESSION_RULES = 'hooks/session-rules.md';
 // A counted description to shorten, so model-invocable; growth goes to padding skills instead.
 const COUNTED_SKILL = 'skills/build/SKILL.md';
 
-// Every check here reads nothing outside skills/, so the fixture copies that alone.
+// Every check here reads nothing outside skills/ and the session rules file, so the fixture copies those alone.
 function skillsFixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-budget-lock-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.cpSync(path.join(REPOSITORY_ROOT, 'skills'), path.join(root, 'skills'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'hooks'));
+  fs.copyFileSync(path.join(REPOSITORY_ROOT, SESSION_RULES), path.join(root, SESSION_RULES));
   return root;
 }
 
@@ -140,18 +142,18 @@ test('a description at the per-skill ceiling passes and one char past it fails',
   assert.match(run.detail, new RegExp(`${DESCRIPTION_CHARS.ceiling + 1} chars \\(> ${DESCRIPTION_CHARS.ceiling}\\)`));
 });
 
-test('a paragraph below the route-skills frontmatter fails the injected lock', (t) => {
+test('a line added to the session rules fails the injected lock', (t) => {
   const root = skillsFixture(t);
   const baseline = injectedBytes(verdict(root, checkInjectedContext).detail);
   const padding = 'x'.repeat(INJECTED_CONTEXT_LOCK.bytes - baseline);
-  const paragraph = `\n${padding}Every reply names the skill it followed.\n`;
-  fs.appendFileSync(path.join(root, USING_EXO), paragraph, 'utf8');
+  const paragraph = `\n- ${padding}Every reply names the skill it followed.\n`;
+  fs.appendFileSync(path.join(root, SESSION_RULES), paragraph, 'utf8');
 
   const run = verdict(root, checkInjectedContext);
 
   assert.equal(run.counts.FAIL, 1, run.detail);
   assert.match(run.detail, new RegExp(`${INJECTED_CONTEXT_LOCK.bytes} locked`));
-  assert.equal(injectedBytes(run.detail), baseline + paragraph.length, run.detail);
+  assert.equal(injectedBytes(run.detail), baseline + 1 + paragraph.trimEnd().length, run.detail);
 });
 
 // AGENT_BODY_TOKENS is a plain ceiling, not a two-way lock like
