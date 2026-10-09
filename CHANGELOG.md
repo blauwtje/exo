@@ -7,9 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**After a brief, `spec` recommends building it in the same chat: one reply runs build, verify and ship to the end, with no further question except an irreversible step.**
+
 ### Added
 
 - `spec` offers to build the brief in this chat with `--land`, so one reply runs build, verify and ship to the end.
+- `npm run check` reuses the verify gate's pass when only `CHANGELOG.md` changed since: it skips the test suite and self-test, reruns the fast checks and requires a changelog line; `--no-reuse` forces the full run.
 
 ### Changed
 
@@ -22,6 +27,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Fixed
 
 - The plugin-version check passes a branch that still waits for its changelog line.
+- The check cache no longer returns a stale pass after a same-size edit made in the same second as the index entry.
+- The script-syntax check no longer crashes when git maintenance repacks `.git/objects` during the walk.
 
 ## 0.110.0 - 2026-10-09
 
