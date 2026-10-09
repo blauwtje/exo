@@ -7,6 +7,27 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`exo run` now updates main and tidies merged branches itself, prints one timed line per event and ends on a plain summary of at most six lines.**
+
+**Each `exo run` task session starts lighter: no MCP servers, and a prompt that already holds the brief and builder rules, so about nine fixed tool calls per task are gone.**
+
+### Added
+
+- `exo run` fetches and fast-forwards the default branch before it starts, deletes local branches that are merged and whose upstream is gone (`git branch -d` only), and finds plans in `docs/plans/` as well as `docs/specs/`.
+- `exo run` prints one `[mm:ss]` line per event: run start, task start, task landed, task failed with its reason, run done.
+
+### Changed
+
+- `exo run` ends on a summary of at most six plain lines; per-task lines, denied commands (counted, cut to 120 characters) and manual checks move to `summary.txt`.
+- `exo run` task sessions start with no MCP servers and a prompt holding the brief plus the rules from `task-mode.md`, `build-task.md` and `lean.md`, so a session no longer reads them itself; prompt plus required reads drop from about 14.9k to 7.5k characters.
+- Run sessions run one command per Bash call, plan commands exactly as written; `agents/build-task.md` gains a `## Git` section, and the run deny list adds `git stash`, `git clean` and `git restore`.
+
+### Fixed
+
+- `exo run` kills a session at its first init event when exo loads from another path, instead of letting it spend turns.
+
 ## 0.107.1 - 2026-10-09
 
 ### Fixed
