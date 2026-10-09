@@ -101,7 +101,8 @@ export function resolveClaude({ flag, pathValue = process.env.PATH ?? '', platfo
  * The parts of one `claude -p --output-format stream-json --verbose` stream the
  * runner reads: the first init event, the last result's text and subtype, the
  * turns summed over every result, the last reported cost and the denials
- * unioned by tool_use_id, because a background agent adds a second result.
+ * unioned by tool_use_id, because a background agent adds a second result,
+ * and the peak context: the largest input an assistant event reports.
  */
 export function parseStream(text) {
   const events = [];
@@ -122,6 +123,10 @@ export function parseStream(text) {
       if (!denials.has(denial.tool_use_id)) denials.set(denial.tool_use_id, denial);
     }
   }
+  const peakContext = Math.max(0, ...events.filter((event) => event.type === 'assistant').map((event) => {
+    const usage = event.message?.usage ?? {};
+    return (Number(usage.input_tokens) || 0) + (Number(usage.cache_read_input_tokens) || 0) + (Number(usage.cache_creation_input_tokens) || 0);
+  }));
   const costs = results.map((result) => result.total_cost_usd).filter((cost) => typeof cost === 'number');
   return {
     init,
@@ -129,6 +134,7 @@ export function parseStream(text) {
     resultText: typeof final?.result === 'string' ? final.result : '',
     turns: results.reduce((sum, result) => sum + (Number(result.num_turns) || 0), 0),
     cost: costs.at(-1) ?? 0,
+    peakContext,
     denials: [...denials.values()]
   };
 }
@@ -373,6 +379,8 @@ function reportLines(root, number) {
 
 const money = (cost) => `$${cost.toFixed(4)}`;
 
+const thousands = (tokens) => Math.round(tokens / 1000);
+
 function summaryLines(run, stop) {
   const { planPath, plan, branch, cap, records, landings, logDir, root } = run;
   const lines = [`Plan: ${planPath}`, `Branch: ${branch}`, `Iterations: ${records.filter((record) => record.task !== null).length} of ${cap}`, `Logs: ${logDir}`];
@@ -380,7 +388,8 @@ function summaryLines(run, stop) {
     const landing = landings.get(task.number);
     if (landing === undefined) lines.push(`Task ${task.number}: not landed`);
     else if (landing.before) lines.push(`Task ${task.number}: ${landing.sha} landed before the run`);
-    else lines.push(`Task ${task.number}: ${landing.sha} iteration ${landing.record.iteration}, turns ${landing.record.turns}, cost ${money(landing.record.cost)} (reported)`);
+    else lines.push(`Task ${task.number}: ${landing.sha} iteration ${landing.record.iteration}, turns ${landing.record.turns}, cost ${money(landing.record.cost)} (reported), peak context ${thousands(landing.record.peakContext)}k`);
+    if (landing?.record?.peakContext > run.contextBudget) lines.push(`Task ${task.number}: peak context ${thousands(landing.record.peakContext)}k is over the ${thousands(run.contextBudget)}k budget; split similar tasks next time`);
   }
   lines.push(`Total cost: ${money(records.reduce((sum, record) => sum + record.cost, 0))} (reported)`);
   const tail = records.find((record) => record.task === null);
@@ -467,7 +476,7 @@ async function main(argv) {
   }
   const logDir = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, utcStamp());
   fs.mkdirSync(logDir, { recursive: true });
-  const run = { planPath, plan, branch, cap, root, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [] };
+  const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [] };
   for (const number of landedAtStart) {
     const task = plan.tasks.find((entry) => entry.number === number);
     run.landings.set(number, { before: true, sha: (taskCommits(task, root, planId)[0] ?? '').slice(0, 12) });
@@ -513,7 +522,7 @@ async function main(argv) {
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     // A denial is only logged: the task is judged by whether it landed, and a run that landed nothing counts toward the stall limit.
     const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);
-    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, last, denied };
+    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied };
     run.records.push(record);
 
     const breach = breachOf(root, before, { trailer });
@@ -557,7 +566,7 @@ async function main(argv) {
     iteration += 1;
     const log = path.join(logDir, 'tail.log');
     const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, pin: null, log });
-    run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
+    run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
     const breach = breachOf(root, before);
     const notLoaded = breach === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
     if (breach !== null) stop = `breach in iteration ${iteration}: ${breach}`;

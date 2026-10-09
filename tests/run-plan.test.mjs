@@ -46,6 +46,7 @@ if (step.hang) setInterval(() => {}, 1000);
 else {
   const result = (text, turns, cost, denials) => ({ type: 'result', subtype: 'success', is_error: false, num_turns: turns,
     total_cost_usd: cost, permission_denials: denials, result: text, session_id: 'session-1' });
+  if (step.usage) emit({ type: 'assistant', message: { usage: step.usage } });
   if (step.background) emit(result('Started a background agent.', 1, 0.01, []));
   emit(result(step.result ?? 'Worked on it.', 2, 0.02, step.denials ?? []));
 }
@@ -159,6 +160,21 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const progress = await fs.readFile(path.join(logDir, 'progress.md'), 'utf8');
   assert.match(progress, /Task 1: landed/);
   assert.equal(progress.trim().split('\n').at(-1), 'RUN COMPLETE');
+});
+
+test('context: each task line ends with its peak context and a task over budget is flagged but still lands', async () => {
+  const context = await setup();
+  const usage = (input, read, created) => ({ input_tokens: input, cache_read_input_tokens: read, cache_creation_input_tokens: created });
+  const result = await runPlan(context, [
+    { ...land(1), usage: usage(1000, 69000, 2000) },
+    { ...land(2), usage: usage(500, 20000, 1500) },
+    { result: 'Verify done.' }
+  ]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
+  assert.match(result.stdout, /^Task 1: .*, peak context 72k$/m);
+  assert.match(result.stdout, /^Task 2: .*, peak context 22k$/m);
+  assert.match(result.stdout, /^Task 1: peak context 72k is over the 60k budget; split similar tasks next time$/m);
+  assert.doesNotMatch(result.stdout, /Task 2: peak context .* is over/);
 });
 
 test('progress: a capped run flips no task and writes no RUN COMPLETE', async () => {
@@ -423,6 +439,13 @@ test('parseStream takes the last result, sums turns, keeps the last cost and uni
   assert.equal(parsed.turns, 4);
   assert.equal(parsed.cost, 0.3);
   assert.deepEqual(parsed.denials.map((entry) => entry.tool_use_id), ['a', 'b']);
+});
+
+test('parseStream keeps the largest assistant context across input, cache read and cache creation', () => {
+  const usage = (input, read, created) => ({ type: 'assistant', message: { usage: { input_tokens: input, cache_read_input_tokens: read, cache_creation_input_tokens: created } } });
+  const parsed = parseStream([usage(10, 2000, 300), usage(5, 9000, 1000), usage(1, 100, 0)].map((event) => JSON.stringify(event)).join('\n'));
+  assert.equal(parsed.peakContext, 10005);
+  assert.equal(parseStream('').peakContext, 0);
 });
 
 test('the run-plan skill is user-only, takes a plan path and runs run-plan.mjs on it', async () => {
