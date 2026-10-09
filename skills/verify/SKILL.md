@@ -37,4 +37,4 @@ effort: high
 | `references/review-rules.md` | Step 2, each dispatch. |
 | `references/repair.md` | Step 3, after the fixer returns. |
 
-Report: `ship`'s overview as this turn's one report, ending with every task as done or open, each `report` finding, each `question` as a plan question naming its task and any breaking input, and the plan's `MANUAL` checks, listed once.
+Report: after appending `Changed` and follow-up chores to the `REPORT` file, three state lines (outcome; tasks and checks counted; branch and run report path), then the one blocking decision with one recommended option.

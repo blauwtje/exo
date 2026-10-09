@@ -11,6 +11,7 @@ allowed-tools: Bash(node *repo-fields.mjs*)
    - Watching or comments authorize only fix commits, push and replies, never force, `--no-verify`, or a relaxed gate or test.
 2. **Overview**: outcome line, `Changed`, `Verified`, `Branch`, then the question.
    - At most five `<what>: <why>` `Changed` lines, a skipped check in `Verified`.
+   - Invoked by `verify` → its three state lines replace the overview; `Changed` lines go to the run report.
 3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.
    - Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push.
    - A set `route: ` skips asking; an unapplied `ship=` is explained.
