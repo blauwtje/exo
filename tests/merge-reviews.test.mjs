@@ -80,3 +80,26 @@ test('the demoted count is returned and printed on its own line only above zero'
   await fs.writeFile(clean, CLEAN);
   assert.equal((await run(SCRIPT, ['--root', root, '--report', clean])).stdout.trim().split('\n').length, 1);
 });
+
+const HEADING_FORM = 'FINDINGS\n\n## a.mjs:3\ndefect | missing guard; evidence | fix\n  Probe: grep -q guard a.mjs\n';
+
+test('a finding line not in the one-line shape is counted as unread, with its fix marks', () => {
+  const merged = mergeReviews([{ name: 'task-1', text: HEADING_FORM }]);
+  assert.equal(merged.unread, 1);
+  assert.equal(merged.unreadFix, 1);
+  assert.equal(merged.counts.fix, 0);
+  const clean = mergeReviews([{ name: 'task-1', text: FINDINGS }]);
+  assert.equal(clean.unread, 0);
+  assert.equal(clean.unreadFix, 0);
+});
+
+test('the unread count is printed on its own line only above zero', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'merge-reviews-'));
+  const heading = path.join(root, 'task-1.md');
+  await fs.writeFile(heading, HEADING_FORM);
+  const lines = (await run(SCRIPT, ['--root', root, '--report', heading])).stdout.trim().split('\n');
+  assert.equal(lines[1], 'UNREAD 1 finding line(s) not in the one-line shape, 1 marked fix');
+  const clean = path.join(root, 'task-2.md');
+  await fs.writeFile(clean, FINDINGS);
+  assert.ok(!(await run(SCRIPT, ['--root', root, '--report', clean])).stdout.includes('UNREAD'));
+});
