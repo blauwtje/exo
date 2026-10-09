@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { memoryDirectory } from '#memory-store';
 import { parsePlan } from '#plan-tasks';
 import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository as seedRepository, run } from './harness.mjs';
@@ -659,9 +660,10 @@ async function landedWithRecord(record) {
   landTask(root, 1);
   if (record !== null) {
     const tree = git(root, 'rev-parse', 'HEAD^{tree}');
-    await mkdir(path.join(root, '.exo'), { recursive: true });
+    const cacheFile = path.join(memoryDirectory(root), 'check-cache.json');
+    await mkdir(path.dirname(cacheFile), { recursive: true });
     const entry = { tree: record.tree ?? tree, ms: 1 };
-    await writeFile(path.join(root, '.exo/check-cache.json'), JSON.stringify({ 'node check.js': entry, 'node -e "process.exit(1)"': entry }));
+    await writeFile(cacheFile, JSON.stringify({ 'node check.js': entry, 'node -e "process.exit(1)"': entry }));
   }
   return root;
 }

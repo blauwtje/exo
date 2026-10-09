@@ -25,7 +25,7 @@
 // a Success criterion that exited 0, and is followed by the last
 // lines of that command's output, each indented two spaces, so every check line
 // still starts at the left margin.
-// A gate or Proof command already passed on this working tree, per `.exo/check-cache.json` (#check-cache), prints a SKIP line, not a rerun; each pass here is recorded there.
+// A gate or Proof command already passed on this working tree, per `<git common dir>/exo/check-cache.json` (#check-cache), prints a SKIP line, not a rerun; each pass here is recorded there.
 // The Success criterion passes on exit code 0, and when its output holds a
 // `SUMMARY ` line, as exo's own `npm run check` prints, that line must also read
 // FAIL=0 WARN=0 UNRUN=0.
