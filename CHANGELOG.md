@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- Every exo question comes alone in its message; with several decisions open, the next is asked only after the answer, never in a numbered batch.
+
 ## 0.109.0 - 2026-10-09
 
 ### Added
