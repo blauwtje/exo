@@ -30,6 +30,9 @@ after(async () => {
 // The variables through which a script finds the developer's own exo settings:
 // the project folder, and the plugin options a hook receives.
 const SETTINGS_VARIABLE = /^(CLAUDE_PROJECT_DIR|CLAUDE_PLUGIN_OPTION_.*)$/;
+// The task pin run-plan.mjs sets for each task session; inherited by a test run inside
+// one, it would make every spawned land-task refuse all but that task.
+const RUN_PIN_VARIABLE = 'EXO_RUN_TASK';
 
 let emptyConfigDirectory;
 
@@ -39,10 +42,10 @@ function emptyConfig() {
   return emptyConfigDirectory;
 }
 
-/** The inherited environment without the developer's own exo settings, then `overrides`, so a test that names one on purpose still wins. */
+/** The inherited environment without the developer's own exo settings or run pin, then `overrides`, so a test that names one on purpose still wins. */
 async function isolatedEnv(overrides) {
   const inherited = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name))
+    Object.entries(process.env).filter(([name]) => !SETTINGS_VARIABLE.test(name) && name !== RUN_PIN_VARIABLE)
   );
   return { ...inherited, CLAUDE_CONFIG_DIR: await emptyConfig(), ...overrides };
 }
