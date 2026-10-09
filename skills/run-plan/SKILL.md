@@ -23,3 +23,4 @@ Terminal route → `exo run [plan]`, installed once by `setup`.
 
 - While it runs → touch no task, branch or file the script owns.
 - Exit 1 or 2 → report the stop line; rerun only when the user asks.
+- In-session loop wanted → official `/ralph-loop` plugin still works beside exo, which adds no Stop hook; this skill and `exo run` start a fresh session per task.

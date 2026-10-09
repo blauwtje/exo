@@ -61,6 +61,8 @@ const DENY_RULES = [
 ];
 
 const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files'];
+// Inspection only: no write or network command, so file contents cannot leave the machine; `sed -n`, not `sed`, which edits with -i.
+const READ_ONLY_INSPECT = ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n'];
 const STALL_LIMIT = 2;
 const DEFAULT_TIMEOUT_MINUTES = 60;
 
@@ -163,7 +165,7 @@ const spellings = (file) => [...new Set([file, realpathOr(file)])];
 const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${tool}(/${spelling.split(path.sep).join('/')}/**)`);
 const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((spelling) => [`Bash(node "${spelling}" *)`, `Bash(node ${spelling} *)`]));
 
-/** The allowlist one process gets: reads, edits in the root, exo's scripts, the plan's commands and read-only git. */
+/** The allowlist one process gets: reads, edits in the root, exo's scripts, the plan's commands, read-only git and inspection. */
 export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT }) {
   const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.nextTask, SCRIPT.landTask, SCRIPT.mcpToolCall];
   const commands = loopCommands(plan)
@@ -175,7 +177,8 @@ export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PL
     ...pathRule('Write', root),
     ...scriptRules(scripts),
     ...commands,
-    ...READ_ONLY_GIT.map((command) => `Bash(git ${command} *)`)
+    ...READ_ONLY_GIT.map((command) => `Bash(git ${command} *)`),
+    ...READ_ONLY_INSPECT.flatMap((command) => [`Bash(${command})`, `Bash(${command} *)`])
   ])];
 }
 
