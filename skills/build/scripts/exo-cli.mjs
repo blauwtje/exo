@@ -12,10 +12,11 @@
 // docs/specs/*.md or docs/plans/*.md that is not a *-decisions.md file. It
 // refuses a checkout with uncommitted edits (exit 2), fetches and fast-forwards
 // the default branch (a remote-less checkout skips this; a diverged default
-// branch refuses), puts the checkout on the plan's Branch: (created from the
-// default branch when missing), deletes local branches and clean worktrees
-// already merged into the default branch, then runs run-plan.mjs with
-// inherited stdio and exits with its code.
+// branch refuses only when the plan branch must be created from it), puts the
+// checkout on the plan's Branch: (created from the default branch when
+// missing), deletes local branches merged into the default branch whose
+// upstream is gone, then runs run-plan.mjs with inherited stdio and exits with
+// its code. --dry-run and --help skip the fetch, fast-forward and deletion.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -25,7 +26,6 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
 import { isMain } from '#script-flags';
-import { removeWorktree } from './remove-worktree.mjs';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
@@ -86,8 +86,8 @@ function worktrees(root) {
   }));
 }
 
-/** Fetches, then fast-forwards the local default branch to its upstream; no remote skips, a diverged branch refuses. */
-function updateDefault(root, base) {
+/** Fetches, then fast-forwards the local default branch to its upstream; no remote skips, a diverged branch refuses when `needed` (the plan branch is created from it), else warns. */
+function updateDefault(root, base, needed) {
   if (git(root, ['remote']).text === '') return;
   if (!git(root, ['fetch', '--prune']).ok) {
     process.stdout.write('exo: git fetch failed; going on with the local default branch\n');
@@ -98,6 +98,10 @@ function updateDefault(root, base) {
   if (upstream === '' || local === '' || upstream === local) return;
   if (git(root, ['merge-base', '--is-ancestor', upstream, local]).ok) return;
   if (!git(root, ['merge-base', '--is-ancestor', local, upstream]).ok) {
+    if (!needed) {
+      process.stdout.write(`exo: warning: ${base} and origin/${base} have diverged; going on with the existing plan branch\n`);
+      return;
+    }
     throw new Refusal(`refused: ${base} and origin/${base} have diverged; rebase or reset ${base} onto origin/${base} yourself, then rerun exo run`);
   }
   const holder = worktrees(root).find((tree) => tree.branch === base);
@@ -108,38 +112,17 @@ function updateDefault(root, base) {
   process.stdout.write(`exo: fast-forwarded ${base} to origin/${base}\n`);
 }
 
-/** Deletes local branches merged into `base` (git branch -d) and their clean worktrees; skips `keep`; prints one line per item. */
+/** Deletes local branches merged into `base` whose upstream is gone (git branch -d); skips `keep` and any branch checked out in a worktree. */
 function cleanUp(root, base, keep) {
   git(root, ['worktree', 'prune']);
   const merged = git(root, ['branch', '--merged', base, '--format=%(refname:short)']).text.split('\n').filter(Boolean);
-  const here = realpath(root);
+  const gone = git(root, ['for-each-ref', '--format=%(refname:short)\t%(upstream:track)', 'refs/heads']).text
+    .split('\n').filter((line) => line.endsWith('\t[gone]')).map((line) => line.split('\t')[0]);
+  const checkedOut = worktrees(root).map((tree) => tree.branch);
   for (const name of merged) {
-    if (name === base || keep.includes(name)) continue;
-    const tree = worktrees(root).find((candidate) => candidate.branch === name);
-    if (tree !== undefined) {
-      if (tree.main || realpath(tree.path) === here) continue;
-      if (git(tree.path, ['status', '--porcelain']).text !== '') {
-        process.stdout.write(`exo: kept worktree ${tree.path}: ${name} is merged but the worktree has uncommitted files\n`);
-        continue;
-      }
-      try {
-        removeWorktree({ worktree: tree.path, run: root, kept: true });
-      } catch (error) {
-        process.stdout.write(`exo: kept worktree ${tree.path}: ${error.message}\n`);
-        continue;
-      }
-      process.stdout.write(`exo: removed worktree ${tree.path}\n`);
-    }
+    if (name === base || keep.includes(name) || !gone.includes(name) || checkedOut.includes(name)) continue;
     const deleted = git(root, ['branch', '-d', name]);
     process.stdout.write(deleted.ok ? `exo: removed branch ${name}\n` : `exo: kept branch ${name}: ${deleted.error}\n`);
-  }
-}
-
-function realpath(file) {
-  try {
-    return fs.realpathSync(file);
-  } catch {
-    return file;
   }
 }
 
@@ -248,9 +231,11 @@ function runCommand(argv) {
     throw new Refusal(`cannot read ${plan}: ${error.message}`);
   }
   const base = defaultBranch(root);
-  if (base !== null) updateDefault(root, base);
+  const chores = base !== null && !flags.some((flag) => flag === '--dry-run' || flag === '--help');
+  const missing = branch !== null && gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${branch}`]) === null;
+  if (chores) updateDefault(root, base, missing);
   if (branch !== null) putOnBranch(root, branch);
-  if (base !== null) cleanUp(root, base, [branch, gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
+  if (chores) cleanUp(root, base, [branch, gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
 
   return spawnSync(process.execPath, [RUN_PLAN, plan, ...flags], { cwd: root, stdio: 'inherit' }).status ?? 1;
 }
