@@ -11,7 +11,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 
 | Key | Values (default first) | Sets |
 |---|---|---|
-| `replies` | `tight`, `terse`, `standard` | How dense chat replies are. `tight` drops preamble, recap and filler. `terse` also drops a, an, the, is, are, was and were. `standard` is full prose. |
+| `compression` | `low`, `high`, `off` | How compact chat replies are. `low` drops preamble, recap and filler. `high` also drops a, an, the, is, are, was and were. `off` is full prose. A stored `replies` value still reads: `tight` as `low`, `terse` as `high`, `standard` as `off`. |
 | `specs` | `docs`, `issues`, `both` | Where `spec` stores a brief: `docs/specs/`, a GitHub issue, or both. |
 | `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |

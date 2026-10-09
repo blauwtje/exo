@@ -161,7 +161,7 @@ function show(root) {
 // sit outside the fence because bold renders only there.
 const MAX_PICKS = 3;
 const TOPICS = {
-  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['replies', 'budget'] },
+  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['compression', 'budget'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
   safety: { label: 'Safety', question: 'Which part of safety?', about: 'what I block', keys: ['guards'] }
 };

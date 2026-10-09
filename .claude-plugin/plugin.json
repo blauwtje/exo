@@ -17,12 +17,12 @@
       "options": ["docs", "issues", "both"],
       "default": "docs"
     },
-    "replies": {
+    "compression": {
       "type": "string",
-      "title": "How replies are written",
-      "description": "terse: chat prose without articles or linking verbs. tight: no preamble, recap or filler; code, paths, errors and warnings stay whole. standard: full prose. The output style sets the layout; this sets how dense the words are. A project overrides this in .claude/exo.json.",
-      "options": ["terse", "tight", "standard"],
-      "default": "tight"
+      "title": "How compact replies are",
+      "description": "high: chat prose without articles or linking verbs. low: no preamble, recap or filler; code, paths, errors and warnings stay whole. off: full prose. A project overrides this in .claude/exo.json.",
+      "options": ["off", "low", "high"],
+      "default": "low"
     },
     "budget": {
       "type": "string",
