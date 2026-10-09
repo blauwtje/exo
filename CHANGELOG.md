@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.111.0 - 2026-10-09
+
 ### Highlights
 
 **After a brief, `spec` recommends building it in the same chat: one reply runs build, verify and ship to the end, with no further question except an irreversible step.**
