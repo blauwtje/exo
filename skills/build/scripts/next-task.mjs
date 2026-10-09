@@ -21,7 +21,8 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
-import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { proofLines, proofsReport } from '#proofs-report';
+import { driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
 // regions; with no match, every bullet, because a brief that drops a fact
@@ -210,25 +211,6 @@ export function blockReport({ planPath, planText, root }) {
     blockLine(nextBlock(plan.tasks, landed), frameOf(plan.frame).visualDirection),
     ...(landed.length === 0 ? [] : proofLines(planPath, landed, root))
   ].join('\n')}\n`;
-}
-
-// The report's proof lines, read from land-task's records instead of rerun, so
-// the session reads no plan, test or script to name a landed task's proof.
-function proofLines(planPath, landed, root) {
-  const planId = planIdOf(planPath);
-  const lines = landed.map((number) => {
-    const record = proofRecordPath(root, planId, number);
-    return fs.existsSync(record) ? fs.readFileSync(record, 'utf8').trimEnd() : `No proof: Task ${number} landed with no land-task record`;
-  });
-  const decisions = decisionsPathOf(planPath);
-  if (fs.existsSync(decisions)) lines.push(`Decisions: ${decisions}`);
-  return lines;
-}
-
-export function proofsReport({ planPath, planText, root }) {
-  const plan = parseTasks(planPath, planText);
-  const lines = proofLines(planPath, landedTasks(plan.tasks, root, planIdOf(planPath)), root);
-  return lines.length === 0 ? 'Landed: none\n' : `${lines.join('\n')}\n`;
 }
 
 // Writes a brief file for each task of the next wave and returns the report

@@ -120,7 +120,7 @@ test('a landed task, a clean check and no stray paths print PASS lines and one R
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('a landed task whose Proof fails prints FAIL and exits 1', async () => {
@@ -242,7 +242,7 @@ test('a failing check-command prints FAIL success-criterion', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'FAIL success-criterion (exit 1)', '  check failed', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('a check that exits 0 and prints no SUMMARY line passes, under any gate command', async () => {
@@ -581,7 +581,7 @@ test('--root points the gate at another checkout, not the caller\'s own cwd', as
     { cwd: path.dirname(root) }
   );
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet']);
+  assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('missing --plan is rejected', async () => {
@@ -614,7 +614,7 @@ test('the run ends on every task and the plan\'s manual checks', async () => {
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(result.stdout.trim().split('\n').slice(-3), ['DONE Task 1: feat(app): greet', 'OPEN Task 2: feat(app): wave', 'MANUAL Click the badge in the task list.']);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(-4), ['DONE Task 1: feat(app): greet', 'OPEN Task 2: feat(app): wave', 'MANUAL Click the badge in the task list.', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
 test('per-task Proofs overlap, at most 3 at once, and print in task order', async () => {

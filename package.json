@@ -22,6 +22,7 @@
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#confine-claude": "./lib/confine-claude.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
+    "#proofs-report": "./lib/proofs-report.mjs",
     "#prose-density": "./lib/prose-density.mjs",
     "#return-caps": "./verify/checks/return-caps.mjs",
     "#scratch-exclude": "./lib/scratch-exclude.mjs",

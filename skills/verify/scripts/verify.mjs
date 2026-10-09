@@ -19,7 +19,9 @@
 //
 // Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check, then one REVIEW (or REVIEWED, when `.exo/review-<sha7>.md` holds a verdict) line per landed task and the OVERLAP lines,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
-// checks` bullet, so the run ends on every task and the checks only the user can make.
+// checks` bullet, so the run ends on every task and the checks only the user can make,
+// and a last `REPORT <path>` line naming `<root>/.exo/run-report.md`, overwritten each run with
+// the `## Proofs`, `## Checks` and `## Manual checks` of that run.
 // A FAIL line for a Proof or the Success criterion names why in brackets, the
 // signal that killed the command, its exit code, or the unclean SUMMARY line of
 // a Success criterion that exited 0, and is followed by the last
@@ -58,6 +60,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
+import { proofsReport } from '#proofs-report';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { taskPaths, taskReviewer } from './pick-reviewer.mjs';
@@ -582,6 +585,24 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   return { lines, failed };
 }
 
+/**
+ * Overwrites `<root>/.exo/run-report.md` with the run's `## Proofs`, `## Checks` (the printed
+ * lines but MANUAL) and `## Manual checks`, and returns its path.
+ */
+function writeRunReport(lines, { planPath, planText, root }) {
+  const manual = lines.filter((line) => line.startsWith('MANUAL '));
+  const checks = lines.filter((line) => !line.startsWith('MANUAL '));
+  const reportPath = path.join(root, '.exo', 'run-report.md');
+  const text = [
+    '## Proofs', proofsReport({ planPath, planText, root }).trimEnd(), '',
+    '## Checks', ...checks, '',
+    '## Manual checks', ...manual.map((line) => `- ${line.slice('MANUAL '.length)}`), ''
+  ].join('\n');
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, text);
+  return reportPath;
+}
+
 async function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
@@ -591,6 +612,8 @@ async function main(argv) {
   if (flags.root !== undefined) process.chdir(flags.root);
   const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
   process.stdout.write(`${lines.join('\n')}\n`);
+  const reportPath = writeRunReport(lines, { planPath, planText, root: path.resolve('.') });
+  process.stdout.write(`REPORT ${reportPath}\n`);
   if (failed) process.exitCode = 1;
 }
 

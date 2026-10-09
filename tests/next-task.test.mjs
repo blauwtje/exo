@@ -8,8 +8,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { blockReport, frameOnlyReport, nextTaskReport, proofsReport } from '../skills/build/scripts/next-task.mjs';
+import { blockReport, frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
 import { BLOCK_TASK_LIMIT } from '#plan-tasks';
+import { proofsReport } from '#proofs-report';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/next-task.mjs', import.meta.url));
