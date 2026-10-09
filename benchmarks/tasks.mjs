@@ -62,7 +62,6 @@ export const ARMS = {
   baseline: { prompt: null, pluginDirs: [], promptSuffix: null },
   terse: { prompt: TERSE_PROMPT, pluginDirs: [], promptSuffix: null },
   'compression-low': { prompt: COMPRESSION_RULES.low, pluginDirs: [], promptSuffix: null },
-  'compression-high': { prompt: COMPRESSION_RULES.high, pluginDirs: [], promptSuffix: null },
   'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDirs: [], promptSuffix: null },
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
   'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },

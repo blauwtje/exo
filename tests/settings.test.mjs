@@ -68,7 +68,7 @@ test('compression is low by default and off when the project sets it', async () 
 });
 
 test('a stored replies value reads as the compression level it maps to, and compression outranks it in the same layer', async () => {
-  for (const [replies, compression] of [['terse', 'high'], ['tight', 'low'], ['standard', 'off']]) {
+  for (const [replies, compression] of [['terse', 'low'], ['tight', 'low'], ['standard', 'off']]) {
     const space = await workspace({ project: { replies } });
     const result = await settings(space, ['context']);
     assert.equal(result.code, 0, result.stderr);
@@ -78,23 +78,19 @@ test('a stored replies value reads as the compression level it maps to, and comp
   const both = await workspace({ project: { replies: 'terse', compression: 'off' } });
   assert.equal((await settings(both, ['get', 'compression'])).stdout.trim(), 'off');
   const lower = await workspace({ project: { replies: 'terse' }, global: { compression: 'off' } });
-  assert.equal((await settings(lower, ['get', 'compression'])).stdout.trim(), 'high');
+  assert.equal((await settings(lower, ['get', 'compression'])).stdout.trim(), 'low');
 });
 
-test('compression=high injects the high rule in place of the low one', async () => {
+test('a stored compression=high reads as low and injects the low rule', async () => {
   const space = await workspace({ project: { compression: 'high' } });
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /compression=high \(project\)/);
-  assert.ok(result.stdout.trim().endsWith(`. ${SCHEMA.compression.rules.high}`), result.stdout);
-  assert.ok(!result.stdout.includes(SCHEMA.compression.rules.low), result.stdout);
-  assert.ok(!SCHEMA.compression.rules.high.includes('where the meaning survives'));
-  assert.ok(SCHEMA.compression.rules.high.includes('never write a, an or the'));
-  assert.ok(SCHEMA.compression.rules.high.includes('never write is, are, was or were'));
-  assert.ok(!SCHEMA.compression.rules.high.includes('steps whose order matters'));
-  assert.match(SCHEMA.compression.rules.high, /label such as .Warning:. on anything else does not lift the ban/);
-  assert.ok(SCHEMA.compression.rules.high.includes('Hook not reading setting → reminder never fires.'));
-  for (const level of ['low', 'high']) assert.match(SCHEMA.compression.rules[level], /lone .\?. from the user asks for your previous reply restated in full sentences/);
+  assert.match(result.stdout, /compression=low \(project\)/);
+  assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
+  assert.equal((await settings(space, ['get', 'compression'])).stdout.trim(), 'low');
+  assert.deepEqual(Object.keys(SCHEMA.compression.rules), ['low', 'off']);
+  assert.deepEqual(SCHEMA.compression.options, ['off', 'low']);
+  assert.match(SCHEMA.compression.rules.low, /lone .\?. from the user asks for your previous reply restated in full sentences/);
 });
 
 test('set writes the project file and rejects a value the schema does not allow', async () => {
@@ -207,7 +203,7 @@ test('a value the schema does not allow is named in the context line, and the de
   const space = await workspace({ project: { compression: 'verbose' } });
   const result = await settings(space, ['context']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /compression=low \(default\).*compression=verbose is not one of off, low, high/);
+  assert.match(result.stdout, /compression=low \(default\).*compression=verbose is not one of off, low/);
   assert.ok(result.stdout.trim().endsWith(TIGHT_RULE), result.stdout);
 });
 
@@ -346,8 +342,8 @@ test('on Codex the budget rules spawn the generated twins by name', async () => 
 });
 
 test('on Codex the compression rule is the same as on Claude Code', async () => {
-  const space = await codexWorkspace({ compression: 'high' });
-  assert.ok((await settings(space, ['context'])).stdout.includes(`. ${SCHEMA.compression.rules.high}`));
+  const space = await codexWorkspace({ compression: 'low' });
+  assert.ok((await settings(space, ['context'])).stdout.includes(TIGHT_RULE));
 });
 
 test('the Codex budget rules name only twins that exist as generated agent files', () => {

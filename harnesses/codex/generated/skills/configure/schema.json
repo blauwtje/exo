@@ -15,12 +15,12 @@
   },
   "compression": {
     "type": "string",
-    "options": ["off", "low", "high"],
+    "options": ["off", "low"],
     "default": "low",
-    "description": "how compact the session writes replies: high bans the words a, an, the, is, are, was and were; low drops preamble, recap and filler; off keeps full prose",
-    "legacy": { "key": "replies", "values": { "terse": "high", "tight": "low", "standard": "off" } },
+    "description": "how compact the session writes replies: low drops preamble, recap and filler; off keeps full prose. The old name high still reads as low",
+    "aliases": { "high": "low" },
+    "legacy": { "key": "replies", "values": { "terse": "low", "tight": "low", "standard": "off" } },
     "rules": {
-      "high": "Compression is high: chat prose only, in the user's language. In chat prose, lists and numbered steps included, never write a, an or the, and never write is, are, was or were; fragments, `→` for leads to and `=` for is are fine. Example: \"The hook is not reading the setting, so the reminder never fires.\" becomes \"Hook not reading setting → reminder never fires.\" Code, commands, paths, identifiers, error text, numbers and every not, no, only and except stay whole. Full sentences return only for a security warning, a confirmation before an irreversible action and a question to the user; a label such as `Warning:` on anything else does not lift the ban. Commits, PR text, docs, code comments and saved files keep normal prose. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out.",
       "low": "Compression is low: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out.",
       "off": "Compression is off: full prose."
     },
@@ -28,7 +28,6 @@
     "about": "how compact I write to you",
     "question": "How compact should my replies be?",
     "choices": {
-      "high": { "label": "High", "gives": "fewest words, short fragments without small words" },
       "low": { "label": "Low", "gives": "short replies with no preamble or recap" },
       "off": { "label": "Off", "gives": "normal full sentences" }
     }

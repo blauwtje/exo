@@ -11,7 +11,6 @@ Every cell is one `claude -p --output-format json` call on a fresh checkout of `
 | `baseline` | No plugin and no extra prompt. |
 | `terse` | exo's terse-prose control prompt in `arms/terse.md`: short replies, with nothing said about code size. |
 | `compression-low` | The `low` compression rule from `skills/configure/schema.json` as the prompt. |
-| `compression-high` | The `high` compression rule from `skills/configure/schema.json` as the prompt. |
 | `yagni-oneliner` | One sentence asking for YAGNI and one-liners. |
 | `exo` | This plugin, loaded from the working tree. |
 | `skills-rival` | git tier only: a skills-only rival plugin, forced by naming its skill, as a second `--plugin-dir`. Its repository, tag, commit, plugin root and the user-prompt suffix that names the skill live in the git-ignored `benchmarks/fixtures/rivals.local.json`. |

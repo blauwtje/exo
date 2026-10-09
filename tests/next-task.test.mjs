@@ -377,14 +377,11 @@ test('on the inline route the report prints the inline reference\'s steps with t
   assert.doesNotMatch(report, /CLAUDE_SKILL_DIR/);
 });
 
-test('the brief states build-task\'s report cap, halved and rounded up at high', async () => {
+test('the brief states build-task\'s report cap', async () => {
   const { root, planPath } = await checkout();
   const prompt = await fs.readFile(fileURLToPath(new URL('../agents/build-task.md', import.meta.url)), 'utf8');
   const cap = Number(/\bat most (\d+) lines\b/.exec(prompt)[1]);
-  const expected = { off: cap, low: cap, high: Math.ceil(cap / 2) };
-  for (const [compression, lines] of Object.entries(expected)) {
-    nextTaskReport({ planPath, planText: PLAN, root, compression });
-    const brief = await fs.readFile(briefPath(root, 1), 'utf8');
-    assert.match(brief, new RegExp(`^Report cap: ${lines} lines$`, 'm'), `${compression}\n${brief}`);
-  }
+  nextTaskReport({ planPath, planText: PLAN, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, new RegExp(`^Report cap: ${cap} lines$`, 'm'), brief);
 });

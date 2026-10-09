@@ -11,7 +11,6 @@
 - **Delegate brief.** Name scope, acceptance criteria, stop condition, pointers (paths, ids, logs) not pasted content, a tool-call budget, and return shape: verdict first, a few lines, full detail in a named file.
 - **Discovery routing.** Read-only discovery of where code lives → `locate-code`, one bounded question per dispatch, independent questions in parallel; Haiku reads cheaper than a general-purpose agent, which only edits or a task no named agent fits use.
 - **Unsure lines.** Line `locate-code` lists under `Unsure:` → re-ask as one new question or read it yourself, never guess.
-- **Terse return.** Under `compression=high` → dispatch asks for a terse return, since the model is its only reader; files the delegate writes keep normal prose.
 - **Isolated commands.** Worktree-isolated delegate's Bash refuses some shapes: double-quote a runtime value with a literal prefix, or put `--` before it; run plain commands one at a time, not `;` chains with variables; wait with a background run, never `sleep`.
 - **Files.** Create files with Write, not compound Bash; one simple command per Bash call.
 - **Scope.** Write only the artifacts a skill names, at the length needed.

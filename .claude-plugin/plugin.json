@@ -20,8 +20,8 @@
     "compression": {
       "type": "string",
       "title": "How compact replies are",
-      "description": "high: chat prose without articles or linking verbs. low: no preamble, recap or filler; code, paths, errors and warnings stay whole. off: full prose. A project overrides this in .claude/exo.json.",
-      "options": ["off", "low", "high"],
+      "description": "low: no preamble, recap or filler; code, paths, errors and warnings stay whole. off: full prose. A project overrides this in .claude/exo.json.",
+      "options": ["off", "low"],
       "default": "low"
     },
     "budget": {
