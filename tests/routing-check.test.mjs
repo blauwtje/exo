@@ -38,6 +38,12 @@ function verdict(root) {
   return { counts: report.counts(), detail: printed.join('\n') };
 }
 
+// The check counts every sample prompt and every negative as one case.
+function sampleCount(root) {
+  const samples = JSON.parse(fs.readFileSync(path.join(root, SAMPLES), 'utf8'));
+  return Object.values(samples).reduce((total, entries) => total + entries.length, 0);
+}
+
 function editSamples(root, edit) {
   const file = path.join(root, SAMPLES);
   const samples = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -46,17 +52,20 @@ function editSamples(root, edit) {
 }
 
 test('every sample in this repository ranks its own skill first', (t) => {
-  const { counts, detail } = verdict(fixture(t));
+  const root = fixture(t);
+  const { counts, detail } = verdict(root);
   assert.equal(counts.FAIL + counts.WARN + counts.UNRUN, 0, detail);
-  assert.match(detail, /29 sample prompts.*at 1\.00/);
+  assert.match(detail, new RegExp(`${sampleCount(root)} sample prompts.*at 1\\.00`));
 });
 
 test('a negative sample that another skill outranks fails the rank-1 rate', (t) => {
   const root = fixture(t);
   editSamples(root, (samples) => { samples.negatives[0].winner = 'ship'; });
+  const count = sampleCount(root);
+  const rate = ((count - 1) / count).toFixed(2).replace('.', '\\.');
   const { counts, detail } = verdict(root);
   assert.equal(counts.FAIL, 1, detail);
-  assert.match(detail, /rank-1 rate 0\.97 is below the locked 1.*belongs to ship/);
+  assert.match(detail, new RegExp(`rank-1 rate ${rate} is below the locked 1.*belongs to ship`));
 });
 
 test('a lock lower than the one on origin/main fails', (t) => {

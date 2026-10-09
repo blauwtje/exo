@@ -19,8 +19,8 @@ import { checkReferenceShape } from '../verify/checks/reference-shape.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const USING_EXO = 'skills/route-skills/SKILL.md';
-// A counted description to shorten; growth goes to padding skills instead.
-const COUNTED_SKILL = 'skills/check-docs/SKILL.md';
+// A counted description to shorten, so model-invocable; growth goes to padding skills instead.
+const COUNTED_SKILL = 'skills/build/SKILL.md';
 
 // Every check here reads nothing outside skills/, so the fixture copies that alone.
 function skillsFixture(t) {
