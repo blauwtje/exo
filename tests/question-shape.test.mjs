@@ -31,6 +31,9 @@ test('the question reference is the one place that defines the shape, with A rec
   assert.ok(QUESTION.includes('**Three or four options.**'));
   assert.ok(QUESTION.includes('a question tool, a form or a picker is never used'));
   assert.ok(QUESTION.includes('`b`, `B` and `(b)` all pick B'));
+  assert.ok(QUESTION.includes('take the recommendation and carry it out at once, like a letter: no recap, no confirmation question'));
+  assert.ok(QUESTION.includes('A picked option approves every step it names, including an outward write it states'));
+  assert.ok(QUESTION.includes('only an irreversible step the option did not name gets a new question'));
   assert.ok(!QUESTION.includes('1a'), 'no reply answers several questions');
   assert.ok(!QUESTION.includes('Without an answer'), 'no line for a missing answer');
 });

@@ -28,7 +28,8 @@ Recommended: (A), because seeing the looks beats reading about them, and (C) ski
 ## Replies
 
 - `b`, `B` and `(b)` all pick B → carry it out at once, no confirmation question.
-- `ok` → take the recommendation.
+- `ok` → take the recommendation and carry it out at once, like a letter: no recap, no confirmation question.
+- A picked option approves every step it names, including an outward write it states (opening an issue, posting a comment) → no second question for it; only an irreversible step the option did not name gets a new question.
 - "I don't know" → two everyday sentences on how the options differ, with one example, then the same question again; a second one → take the recommendation, and the closing summary names it.
 
 ## Judgment
