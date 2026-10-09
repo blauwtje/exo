@@ -11,7 +11,7 @@ Handoff file: <path>
 Paths in scope: the `Ranges` paths and the new test files under `Tests`.
 
 First write the failing test the test-design row calls for, in files the fix does not touch where the repository allows, because the session commits those files alone before the fix. Quote its failure.
-Then make the predicted fix and prove it: re-run the reproduction and isolated case, then the required suite, grepping its log for failures.
+Then make the predicted fix and prove it: re-run the reproduction and isolated case, then the required suite.
 A run that skips the test or shows no clear pass is not proof: return `failed`, not `fixed`.
 
 Return this one line: `status=<fixed|failed|blocked> handoff=<path>`.

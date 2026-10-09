@@ -69,7 +69,7 @@ Read these and nothing else before writing, one batch where files are independen
 - Then open `$SKILL/references/phase-build.md`'s `## Capture, look, fix once`, steps 1-3 only. Run its `capture.mjs` command for both viewports, full page, label `post-build`, with `$URL`, `$SKILL` as skill dir and `--out $RUN/renders/<SCOPE>`.
 - Read both captures, list faults against the contract, your inventory slice and the floor, repair them in one pass; take no second capture.
 - No `URL`, or capture exits non-zero → skip those steps, report the capture as blocked.
-- Write `$RUN/build-<SCOPE>.md`, at most 20 lines: paths written, faults the capture showed with `fixed` or `open`, inventory items covered and any missing, floor checks confirmed from source, primitives needed but missing from the foundation.
+- Write `$RUN/build-<SCOPE>.md`, at most 20 lines: paths written, faults the capture showed with `fixed` or `open`, inventory items covered and any missing, primitives needed but missing from the foundation.
 
 **Comp scope (`comp:<n>`).**
 
@@ -106,7 +106,6 @@ Every scope meets `## The build floor` of `$SKILL/references/build-pass.md` and 
 - Read call sites before changing or deleting non-obvious existing behavior.
 - Remove only dead code your own change orphaned; report the rest.
 - Shell wait loop such as `until <condition>; do sleep N; done` → counter that exits with an error after a set number of rounds.
-- Invent nothing: read the file or run the command before a factual claim; name what stays unknown.
 - Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy. Report the situation with two or three options instead.
 - Run no git command that writes: no `add`, `commit`, `switch`, `checkout`, `stash`, `reset`, `restore`, `branch`, `push`, `worktree`, and no `gh` command at all. Read-only git is yours.
 
