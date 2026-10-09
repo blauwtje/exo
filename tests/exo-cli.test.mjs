@@ -259,3 +259,29 @@ test('with no argument a plan under docs/plans is found too', async () => {
   assert.match(result.stdout, /^exo: plan .*docs\/plans\/fresh\.md$/m, result.stdout + result.stderr);
   assert.equal(git(context.root, 'branch', '--show-current'), 'feat/fresh');
 });
+
+test('worktree: the checkout the plugin-root pointer names stays on main and the branch is built in a worktree', async () => {
+  const context = await setup();
+  const config = await fixture();
+  await fs.mkdir(path.join(config, 'exo'), { recursive: true });
+  await fs.writeFile(path.join(config, 'exo', 'plugin-root'), `${context.root}\n`);
+  const result = await run(CLI, ['run', 'docs/specs/new.md', '--claude', context.stub], {
+    cwd: context.root,
+    env: { STUB_RECORD: context.record, HOME: context.home, CLAUDE_CONFIG_DIR: config }
+  });
+  assert.equal(git(context.root, 'branch', '--show-current'), 'main', result.stdout + result.stderr);
+  const tree = path.join(context.root, '.worktrees', 'feat-new');
+  assert.equal(git(tree, 'branch', '--show-current'), 'feat/new');
+});
+
+test('worktree: a checkout the pointer does not name is switched in place', async () => {
+  const context = await setup();
+  const config = await fixture();
+  await fs.mkdir(path.join(config, 'exo'), { recursive: true });
+  await fs.writeFile(path.join(config, 'exo', 'plugin-root'), `${config}\n`);
+  await run(CLI, ['run', '--dry-run', '--claude', context.stub], {
+    cwd: context.root,
+    env: { STUB_RECORD: context.record, HOME: context.home, CLAUDE_CONFIG_DIR: config }
+  });
+  assert.equal(git(context.root, 'branch', '--show-current'), 'feat/new');
+});

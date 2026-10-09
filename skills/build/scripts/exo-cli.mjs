@@ -14,7 +14,9 @@
 // the default branch (a remote-less checkout skips this; a diverged default
 // branch refuses only when the plan branch must be created from it), puts the
 // checkout on the plan's Branch: (created from the default branch when
-// missing), deletes local branches merged into the default branch whose
+// missing; when the checkout is the one the plugin-root pointer names, the
+// checkout stays on the default branch and the Branch: is built in a worktree
+// under .worktrees/, so its sessions load that checkout's exo), deletes local branches merged into the default branch whose
 // upstream is gone, then runs run-plan.mjs with inherited stdio and exits with
 // its code. --dry-run and --help skip the fetch, fast-forward and deletion.
 
@@ -69,6 +71,30 @@ function putOnBranch(root, wanted) {
   }
   const done = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
   if (done.status !== 0) throw new Refusal(`git ${args.join(' ')} failed: ${done.stderr.trim()}`);
+}
+
+/** The path of a worktree for `wanted` under `<root>/.worktrees/`, reused when one holds the branch, else added (the branch created from the default branch when missing). */
+function worktreeFor(root, wanted) {
+  const held = worktrees(root).find((tree) => tree.branch === wanted);
+  if (held !== undefined) return held.path;
+  const where = path.join(root, '.worktrees', wanted.replaceAll('/', '-'));
+  const exists = gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
+  const base = defaultBranch(root);
+  if (!exists && base === null) throw new Refusal(`branch ${wanted} is missing and the checkout has no default branch to create it from`);
+  const args = exists ? ['worktree', 'add', where, wanted] : ['worktree', 'add', '-b', wanted, where, base];
+  const done = git(root, args);
+  if (!done.ok) throw new Refusal(`git ${args.join(' ')} failed: ${done.error}`);
+  return where;
+}
+
+/** True when `root` is the checkout the plugin-root pointer names; false with no readable pointer. */
+function isPluginCheckout(root) {
+  try {
+    const pointer = fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo', 'plugin-root'), 'utf8').split('\n')[0];
+    return fs.realpathSync(pointer) === fs.realpathSync(root);
+  } catch {
+    return false;
+  }
 }
 
 function git(root, args) {
@@ -234,10 +260,14 @@ function runCommand(argv) {
   const chores = base !== null && !flags.some((flag) => flag === '--dry-run' || flag === '--help');
   const missing = branch !== null && gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${branch}`]) === null;
   if (chores) updateDefault(root, base, missing);
-  if (branch !== null) putOnBranch(root, branch);
+  const inTree = branch !== null && isPluginCheckout(root);
+  let runRoot = root;
+  if (inTree) runRoot = worktreeFor(root, branch);
+  else if (branch !== null) putOnBranch(root, branch);
   if (chores) cleanUp(root, base, [branch, gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
 
-  return spawnSync(process.execPath, [RUN_PLAN, plan, ...flags], { cwd: root, stdio: 'inherit' }).status ?? 1;
+  const rootFlags = inTree ? ['--root', runRoot] : [];
+  return spawnSync(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit' }).status ?? 1;
 }
 
 if (isMain(import.meta.url)) {
