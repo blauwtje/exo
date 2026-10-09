@@ -37,5 +37,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 1. **Verified names only.** List a path or symbol only after reading its range; `plan-check` catches only a missing one.
 2. **One field line, one task.** A second field line, `Run:`, `Expected:` or a code block makes it long-format: `Commit:`, `Run:`, `Expected:` required.
 3. **Small tasks.** One heading, one concern; split only when `Files:` spans a shared write target (rule 4) and an independent one.
+   - Size → a mid-size model lands the task in one fresh session from its own text, not from the brief.
+   - `Files:` → every registry, index or test list that must name a file the task adds.
 4. **Shared write target.** File, key or branch two tasks touch → split, unless a shared invariant earns a `Depends on:` edge.
 5. **No manual task.** User-only check → one `## Manual checks` line.
