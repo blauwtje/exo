@@ -30,13 +30,15 @@ export function createRepository(root) {
   // skills/ also holds the workflow and meta skills, whose shape the
   // edit-skills skill governs until each is rewritten into this contract;
   // everySkillFile reaches them for the checks every skill must pass.
-  function walk(directory, predicate) {
+  // `enter` decides which folders are descended into at all.
+  function walk(directory, predicate, enter = () => true) {
     const found = [];
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       if (directory === skillsRoot && !EXPECTED_SKILLS.includes(entry.name)) continue;
       const full = path.join(directory, entry.name);
-      if (entry.isDirectory()) found.push(...walk(full, predicate));
-      else if (entry.isFile() && predicate(full)) found.push(full);
+      if (entry.isDirectory()) {
+        if (enter(full)) found.push(...walk(full, predicate, enter));
+      } else if (entry.isFile() && predicate(full)) found.push(full);
     }
     return found.sort(comparePaths);
   }

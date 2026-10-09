@@ -22,6 +22,9 @@ function copy(t) {
   git('init', '-q', '-b', 'work');
   git('config', 'user.email', 'a@b.c');
   git('config', 'user.name', 'a');
+  // No detached `git maintenance run --auto` after the commit: it repacks .git while the
+  // copied verifier runs and the cleanup removes the copy.
+  git('config', 'maintenance.auto', 'false');
   git('add', '-A');
   git('commit', '-q', '-m', 'base');
   git('update-ref', 'refs/remotes/origin/main', 'HEAD');

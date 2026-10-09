@@ -1,13 +1,17 @@
 // Every script in the repository parses: JavaScript goes through node --check.
 
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
 import process from 'node:process';
 
 // A dot-prefixed folder holds tool caches and harness settings, not scripts this
-// repository ships.
+// repository ships, so the walk never enters one: `.git/objects` and `.worktrees/`
+// change under it while git maintenance or another agent runs, and a folder
+// removed mid-walk crashed the verifier.
+const undotted = (target) => !path.basename(target).startsWith('.');
+
 function scripts(repository, extension) {
-  return repository.walk(repository.root, (file) => file.endsWith(extension)
-    && !repository.relative(file).split('/').some((segment) => segment.startsWith('.')));
+  return repository.walk(repository.root, (file) => file.endsWith(extension) && undotted(file), undotted);
 }
 
 // changedScripts is a Set of absolute paths that limits the parse, or null for every script.
