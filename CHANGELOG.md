@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `merge-reviews.mjs` counts a review finding not written on one line and prints it as `UNREAD <n>`, so `fix=0` no longer hides a `fix` finding.
+- The branch reviewer's report rules show one example finding line, so the merge reads its findings.
+- `verify` lists an unread review finding in its report instead of dropping it.
+
 ## 0.111.1 - 2026-10-09
 
 ### Changed
