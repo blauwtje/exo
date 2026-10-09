@@ -16,7 +16,7 @@ Not for writing or repairing a plan, or a change of two files or fewer.
 - One commit per task, so a resumed run knows what landed.
 - Independent tasks built in parallel in their own worktrees.
 - Test-first work shows the failing test before the fix and the passing test after.
-- A final report ending with the brief's `## Manual checks`, the checks only you can make.
+- A short final message naming a run report that holds the proofs and the brief's `## Manual checks`, the checks only you can make.
 - A handoff to `verify`. It picks the deep reviewer when a landed task carries a `Risk:` field, a manifest or lockfile changed or a public signature changed.
 
 ## Source

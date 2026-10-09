@@ -10,7 +10,7 @@ In this order:
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
 - **Open points:** only while a question or assumption the user has still to confirm remains; one list item each, none for a point Decisions closed. Entry listed → the handoff recommends adjusting the brief.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
-- **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; `build` ends its final report with them.
+- **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; the run report holds them, not the final message.
 - **Visual direction:** new visual surface only: whether the existing identity stays or may be replaced, the ambition, who chooses between rendered directions.
   - Frontend-design skill returns → add the path of its `contract-selected.json` with the contract's `title` and `description`.
 - **Plan basis**, **Success criterion**, **Checkpoint**, **Tasks**, in that order, each as the task-list specification defines it.

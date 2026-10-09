@@ -56,4 +56,4 @@ effort: medium
 | `references/performance.md` | No spec, speed-only work, before measuring. |
 | `../route-skills/references/question.md` | Before asking the user to pick among options. |
 
-Report: `ship`'s overview as this turn's one report, one `Proof:` line per proof.
+Report: `ship`'s overview as this turn's one report; the proofs stay in the `REPORT` file's `## Proofs`, which the message names.
