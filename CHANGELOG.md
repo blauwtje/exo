@@ -15,7 +15,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `route-skills` recommends building the brief in this chat.
 - `build`, `verify` and `ship` carry `--land` through without a further question except an irreversible step.
-- The branch reviewer stops after 30 turns and searches only inside the checkout.
+- The branch reviewer stops after 30 turns and searches only inside the checkout; the review fixer stops after 40 turns and skips the full suite.
+- `verify` continues when a capped reviewer or fixer returns no line.
+- Pass results in the check cache are keyed by their code apart from `CHANGELOG.md`.
+
+### Fixed
+
+- The plugin-version check passes a branch that still waits for its changelog line.
 
 ## 0.110.0 - 2026-10-09
 
