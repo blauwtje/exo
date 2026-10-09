@@ -30,7 +30,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { cachedPass, recordPass, SLOW_GATE_MS } from '#check-cache';
+import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
@@ -489,17 +489,6 @@ function runLandGate(landGate, root) {
   }
   recordPass(root, landGate, Date.now() - started);
   return '';
-}
-
-// The time of `command`'s latest recorded pass on any tree, else null; check-cache's
-// cachedPass answers only for the current tree.
-function lastPassMs(root, command) {
-  try {
-    const ms = JSON.parse(fs.readFileSync(path.join(root, SCRATCH_FOLDER, 'check-cache.json'), 'utf8'))[command]?.ms;
-    return typeof ms === 'number' ? ms : null;
-  } catch {
-    return null;
-  }
 }
 
 // A test runner's pass count (`ℹ pass 3`, `# pass 3`, `3 passing`, `Tests: 3 passed`), the line

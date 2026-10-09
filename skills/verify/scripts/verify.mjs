@@ -59,7 +59,6 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
-import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { pickReviewer, signatureChangedSince, touchesManifest } from './pick-reviewer.mjs';
@@ -539,9 +538,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   }
 
   const changed = changedPaths({ base });
-  // The plan file committed on the branch is the run's input, not drift; nor is the scratch folder, which holds the check cache.
+  // The plan file committed on the branch is the run's input, not drift.
   const planFile = repoPathOf(planPath, root);
-  const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile && !changedPath.startsWith(`${SCRATCH_FOLDER}/`)));
+  const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
   const { strays, fixOnly } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
   if (strays.length === 0) {
     lines.push('PASS stray-paths');
