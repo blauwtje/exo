@@ -1,0 +1,1 @@
+`npm test` fails in /tmp/exo-pressure/compression/ledger. Run it there, find the cause, fix it in `src/` without changing the tests, and run `npm test` again until it passes. Then explain to me what was wrong, why it happened, and what you changed.
