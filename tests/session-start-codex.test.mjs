@@ -1,6 +1,6 @@
 // Given a Codex-shaped SessionStart input with EXO_HOST=codex, the hook adds the
-// host note to the context, writes its pointer and
-// marker under the Codex home, and leaves the Claude config folder alone.
+// host note after the settings line, writes its pointer under the Codex home,
+// shows no welcome, and leaves the Claude config folder alone.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -34,22 +34,22 @@ test('a Codex run injects the note after the existing context and writes under .
     assert.ok(!context.includes('{root}'), 'a placeholder is left');
     assert.ok(!context.includes('EXO_HOST=codex'), 'the note still names the host prefix');
     assert.ok(Buffer.byteLength(context) / 4 <= 5000, `${Buffer.byteLength(context)} bytes`);
-    assert.match(output.systemMessage, /run \$start .*\$configure/);
+    assert.equal(output.systemMessage, undefined, 'a welcome is shown');
     const folder = path.join(home, '.codex', 'exo');
     assert.equal(fs.readFileSync(path.join(folder, 'plugin-root'), 'utf8'), `${REPOSITORY}\n`);
-    assert.ok(fs.existsSync(path.join(folder, 'welcomed')));
+    assert.equal(fs.existsSync(path.join(folder, 'welcomed')), false, 'a welcomed marker is written');
     assert.equal(fs.existsSync(path.join(home, '.claude', 'exo')), false, 'the Claude folder was touched');
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
 
-test('CODEX_HOME moves the pointer and marker', () => {
+test('CODEX_HOME moves the pointer', () => {
   const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-codex-set-'));
   const { home } = run({ EXO_HOST: 'codex', CODEX_HOME: codexHome });
   try {
     assert.ok(fs.existsSync(path.join(codexHome, 'exo', 'plugin-root')));
-    assert.ok(fs.existsSync(path.join(codexHome, 'exo', 'welcomed')));
+    assert.equal(fs.existsSync(path.join(codexHome, 'exo', 'welcomed')), false);
     assert.equal(fs.existsSync(path.join(home, '.codex')), false);
     assert.equal(fs.existsSync(path.join(home, '.claude', 'exo')), false);
   } finally {
@@ -67,12 +67,13 @@ test('a clear on Codex also leaves the Claude folder alone', () => {
   }
 });
 
-test('a Claude run gets no note and the slash welcome', () => {
+test('a Claude run gets the settings line, no Codex note and no welcome', () => {
   const { home, output } = run({ EXO_HOST: 'claude' });
   try {
     const context = output.hookSpecificOutput.additionalContext;
+    assert.ok(context.includes('exo settings:'));
     assert.ok(!context.includes('# exo on Codex'));
-    assert.match(output.systemMessage, /\/exo:start/);
+    assert.equal(output.systemMessage, undefined);
     assert.ok(fs.existsSync(path.join(home, '.claude', 'exo', 'plugin-root')));
     assert.equal(fs.existsSync(path.join(home, '.codex')), false);
   } finally {
