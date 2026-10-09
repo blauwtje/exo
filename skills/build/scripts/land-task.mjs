@@ -31,6 +31,7 @@ import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
+import { attributionProblem, subjectProblem } from '../../../lib/commit-text.mjs';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
@@ -103,6 +104,13 @@ function refuseMismatchedToplevel(root) {
   }
 }
 
+// Refuses commit text that attributes the work to an AI or whose subject is not
+// a Conventional Commit, before git runs, so nothing is staged or committed.
+function refuseBadCommitText(subject, rest = '') {
+  const problem = subjectProblem(subject) ?? attributionProblem(`${subject}\n${rest}`);
+  if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
+}
+
 // A review-fix or bug-fix commit names no task and touches whatever the
 // repair changed, so `--fix <subject>` skips the Files: scope check and the
 // Plan-task trailer entirely: it stages every changed path and commits it
@@ -113,6 +121,7 @@ function refuseMismatchedToplevel(root) {
 export function fixLand({ root, subject, plan = null, pin = null }) {
   if (pin !== null) throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
   refuseMismatchedToplevel(root);
+  refuseBadCommitText(subject);
   const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
   if (status.trim() === '') {
     throw new LandingError('no changed path to commit');
@@ -547,6 +556,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   refuseMcpProofUnderPin(pin, task);
   refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, true));
   const block = commitBlockOf(plan, number, planId, signatureChanges(task, root), root);
+  refuseBadCommitText(task.commitSubject ?? task.title, block);
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? passingRunsOf(task) : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));

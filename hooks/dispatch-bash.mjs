@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse dispatcher on Bash: runs the five Bash guards and the
+// PreToolUse dispatcher on Bash: runs the four Bash guards and the
 // memory-booking approval inside one process, so a Bash call spawns one
 // hook process where it spawned six. The guards run first, then the
 // bookkeeping steps unless a guard denied, each in its own try/catch, so a
@@ -15,7 +15,6 @@ import { denialFor as gitDenial } from './guards/git-guard.mjs';
 import { runDispatcherEntry, runSteps } from './dispatch-steps.mjs';
 import { guardDecision } from './guards/guard-runner.mjs';
 import { denialFor as secretDenial } from './guards/secret-guard.mjs';
-import { denialFor as writingDenial } from './guards/writing-guard.mjs';
 
 // A step for a guard's `denialFor`.
 function guardStep(denialFor) {
@@ -29,8 +28,7 @@ const GUARDS = [
   { name: 'git-guard', run: guardStep(gitDenial) },
   { name: 'secret-guard', run: guardStep(secretDenial) },
   { name: 'destructive-guard', run: guardStep(destructiveDenial) },
-  { name: 'detach-guard', run: guardStep(detachDenial) },
-  { name: 'writing-guard', run: guardStep(writingDenial) }
+  { name: 'detach-guard', run: guardStep(detachDenial) }
 ];
 const BOOKKEEPING = [{ name: 'approve-book', run: approve }];
 

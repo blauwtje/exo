@@ -181,6 +181,25 @@ test('an existing open pull request is reused with no pr create', async () => {
   assert.deepEqual(outcome.calls, ['pr view feat/x --json number,url,state']);
 });
 
+test('open-pr refuses attributing or untyped text and an AI-named branch before git or gh runs', async () => {
+  const cases = [
+    { branch: 'feat/x', title: 'feat: x', body: 'Adds it.\n\nGenerated with Claude Code\n', stopped: /text-refused: .*attribute/ },
+    { branch: 'feat/x', title: 'add the feature', body: 'Adds it.\n', stopped: /text-refused: .*Conventional Commits/ },
+    { branch: 'claude/x', title: 'feat: x', body: 'Adds it.\n', stopped: /text-refused: .*branch name/ }
+  ];
+  for (const { branch, title, body, stopped } of cases) {
+    const { workDir, origin } = await shipRepository();
+    git(workDir, 'checkout', '-q', '-b', branch);
+    await commitFiles(workDir, { 'feature.txt': 'x\n' }, 'feat: add feature');
+    await fs.writeFile(path.join(workDir, 'body.md'), body);
+    const outcome = await shipRun(workDir, ['--route', 'open-pr', '--title', title, '--body', 'body.md']);
+    assert.equal(outcome.code, 1, outcome.stderr);
+    assert.match(outcome.stdout, stopped);
+    assert.deepEqual(outcome.calls, []);
+    assert.equal(git(origin, 'branch', '--list', branch), '');
+  }
+});
+
 // The pull request read by "create" and reused through wait, gate, merge and
 // confirm, so a pr-merge test never needs to name a number by hand.
 const OPEN_PR = { number: 42, url: 'https://github.com/acme/widgets/pull/42', state: 'OPEN' };

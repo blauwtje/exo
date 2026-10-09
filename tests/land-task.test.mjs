@@ -577,6 +577,26 @@ test('--fix commits every changed path, tracked or not, with the given subject',
   assert.equal(git(root, 'status', '--porcelain', '--', '.', ':!.exo'), ''); // .exo/ is excluded in a real checkout
 });
 
+test('--fix refuses an attributing or untyped subject before anything stages or commits', async () => {
+  const root = await fixCheckout();
+  await editApp(root);
+  const head = git(root, 'rev-parse', 'HEAD');
+  assert.throws(() => fixLand({ root, subject: 'fix(app): done\n\nCo-Authored-By: Claude <noreply@anthropic.com>' }), /commit text refused.*attribute/);
+  assert.throws(() => fixLand({ root, subject: 'address the review' }), /commit text refused.*Conventional Commits/);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  assert.match(git(root, 'status', '--porcelain', '--', 'src'), /app\.js/);
+});
+
+test('a task whose subject is not a Conventional Commit is refused before it commits', async () => {
+  const plan = compactPlanFixture({ tasks: [
+    compactTask({ number: 1, title: 'greet the user', files: ['src/app.js'], proof: 'node tests/app.test.mjs' })
+  ] });
+  const { root, planPath } = await compactCheckout(plan);
+  const head = git(root, 'rev-parse', 'HEAD');
+  await assertRefused(root, planPath, [], /commit text refused.*Conventional Commits/);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+});
+
 async function lintPlan(linterBody) {
   const tools = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-fix-lint-'));
   const linter = path.join(tools, 'linter.sh');

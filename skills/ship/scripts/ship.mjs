@@ -47,6 +47,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
+import { attributionProblem, branchNameProblem, subjectProblem } from '../../../lib/commit-text.mjs';
 import { returnToDefault } from './return-to-default.mjs';
 
 export const USAGE_EXIT = 2;
@@ -380,7 +381,22 @@ function runMergeList(numbers) {
   process.exitCode = exitCode;
 }
 
+// Refuses a title, body file or head branch name that attributes the work to an
+// AI, or a title that is not a Conventional Commit, before git or gh runs.
+function refuseBadText(flags, branch) {
+  if (flags.route === 'push') return;
+  let body;
+  try {
+    body = fs.readFileSync(flags.body, 'utf8');
+  } catch {
+    throw new StepError('create', `body-unreadable ${flags.body}`);
+  }
+  const problem = subjectProblem(flags.title) ?? attributionProblem(`${flags.title}\n${body}`) ?? branchNameProblem(branch);
+  if (problem !== null) throw new StepError('create', `text-refused: ${problem}`);
+}
+
 function run(flags, branch, base) {
+  refuseBadText(flags, branch);
   if (flags.issue !== undefined) {
     announce('create', flags.issue);
     const body = fs.readFileSync(flags.body, 'utf8');
