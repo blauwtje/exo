@@ -23,7 +23,7 @@ effort: high
    - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
    - Each dispatch follows `references/review-rules.md` `## Dispatch`.
    - `BLOCKED` → end the turn with its report.
-   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`; its line is the review verdict for step 3.
+   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, `REVIEWED` records included; its line is step 3's review verdict.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a `codex exec` second review of the same plan and diff; append its findings to the findings path before step 3; `none` or a decline → say nothing.
 3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
    - `fix=0` → step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
@@ -34,7 +34,7 @@ effort: high
 
 | File | Read it when |
 |---|---|
-| `references/review-rules.md` | Step 2, the dispatch and the reviewer's rules. |
+| `references/review-rules.md` | Step 2, each dispatch. |
 | `references/repair.md` | Step 3, after the fixer returns. |
 
 Report: `ship`'s overview as this turn's one report, ending with every task as done or open, each `report` finding, each `question` as a plan question naming its task and any breaking input, and the plan's `MANUAL` checks, listed once.

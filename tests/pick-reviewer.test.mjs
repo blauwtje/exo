@@ -6,9 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { codexOffer, FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, taskReviewer, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { codexOffer, FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, taskReviewer, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
-import { commitFiles, git, gitRepository, run } from './harness.mjs';
+import { git, gitRepository, run } from './harness.mjs';
 
 const { light, deep } = REVIEWER_AGENTS;
 const AGENTS_DIRECTORY = fileURLToPath(new URL('../agents/', import.meta.url));
@@ -37,26 +37,6 @@ test('the light pick is an agent file and the deep pick is that agent with the r
   await fs.access(path.join(AGENTS_DIRECTORY, `${light}.md`));
   assert.equal(light, 'review-branch');
   assert.equal(deep, `review-branch model=${model} effort=${effort}`);
-});
-
-test('signatureChangedSince reads a Signature trailer or a script commit missing a Plan-task trailer, never a merge', async () => {
-  const root = await gitRepository({ 'app.js': 'export const a = 1;\n' });
-  const base = git(root, 'rev-parse', 'HEAD');
-  git(root, 'commit', '--allow-empty', '-m', 'feat: plain', '-m', 'Plan-task: plan/1');
-  assert.equal(signatureChangedSince(base, root), false);
-  git(root, 'commit', '--allow-empty', '-m', 'feat: breaking', '-m', 'Plan-task: plan/2\nSignature: app.js:a(x) -> (x, y)');
-  assert.equal(signatureChangedSince(base, root), true);
-  const second = git(root, 'rev-parse', 'HEAD');
-  assert.equal(signatureChangedSince(second, root), false);
-  await commitFiles(root, { 'app.js': 'export const a = 2;\n' }, 'fix: review fix');
-  assert.equal(signatureChangedSince(second, root), true);
-});
-
-test('signatureChangedSince ignores a changelog-only commit missing a Plan-task trailer', async () => {
-  const root = await gitRepository({ 'app.js': 'export const a = 1;\n', 'CHANGELOG.md': '# Changelog\n' });
-  const base = git(root, 'rev-parse', 'HEAD');
-  await commitFiles(root, { 'CHANGELOG.md': '# Changelog\n\n- a line\n' }, 'docs(changelog): record the change');
-  assert.equal(signatureChangedSince(base, root), false);
 });
 
 test('the command prints no reviewer, so verify.mjs holds the only pick', async () => {

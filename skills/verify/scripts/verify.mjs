@@ -60,7 +60,7 @@ import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
-import { taskReviewer } from './pick-reviewer.mjs';
+import { taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
 // The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
@@ -320,7 +320,7 @@ export function silencedChecks(patch) {
 function claimLines(task, root, planId) {
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
   const shas = taskCommits(task, root, planId);
-  const changed = shas.flatMap((sha) => git('--name-only', '-z', sha).split('\0').filter((path) => path !== ''));
+  const changed = taskPaths(task, root, planId);
   const lines = [];
   const unchanged = unchangedFiles(task.files, changed);
   if (unchanged.length > 0) lines.push(`WARN claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
@@ -566,14 +566,13 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   // One REVIEW line per landed task, REVIEWED when its last commit's review record holds a verdict.
   const route = planRoute(plan.tasks).route;
-  const commitPaths = (sha) => execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'show', '--format=', '--no-renames', '--name-only', sha], { encoding: 'utf8', maxBuffer: Infinity }).split('\n').filter((name) => name !== '');
   for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
     const shas = taskCommits(task, root, planId);
     const record = shas.length === 0 ? null : path.join(path.resolve(root ?? '.'), '.exo', `review-${shas[0].slice(0, 7)}.md`);
     if (record !== null && fs.existsSync(record) && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
       lines.push(`REVIEWED Task ${task.number} ${record}`);
     } else {
-      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, shas.flatMap((sha) => commitPaths(sha)), route)}`);
+      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route)}`);
     }
   }
   // With no base there is no range of commits to read.

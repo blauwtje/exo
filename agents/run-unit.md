@@ -19,13 +19,13 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - Build up to three tasks here on `Drift: none`.
   - Else a wave builds per `<skill>/references/wave-worktrees.md`.
   - Add one `exo:review-branch` dispatch to that same message for each task landed since the last dispatch, unless `node "<skill>/../verify/scripts/pick-reviewer.mjs" --task <n> --plan <plan> --root <checkout>` reads `none`; foreground, its `model` and `effort`.
-  - Brief it per `<skill>/../verify/references/review-rules.md` `## Dispatch` with scope `task <shas>`, shas from `git log --format=%h --grep "Plan-task: <plan id>/<n>"`.
+  - Brief it per `<skill>/../verify/references/review-rules.md` `## Dispatch` with scope `task <shas>`.
   - No build left → send the last landed task's review alone.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A repair goes to `exo:solve-hard`, with the dispatch's `model` and `effort`, and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
-4. **Commit a green task.** Done means `GREEN`, never a report you wrote; else step 3.
+4. **Commit a green task.** Done means `GREEN`, never a report you wrote, since land-task runs each `Run:` or `Proof:` itself; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A report refusal goes by SendMessage to its writer, verbatim; never rerun a proof.
   - Any other refusal sends it to step 3; push nothing.

@@ -8,6 +8,7 @@ import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
 const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
+const PROBE_LINE = /^\s*Probe:\s*\S/;
 const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
 
 /** The verdict word of a report: its first line naming one. */
@@ -21,7 +22,8 @@ function verdictOf(text) {
 
 /** Merges report texts, each `{ name, text }`, into the combined file text and
  *  the counts its return line prints. A report with no readable verdict counts
- *  as BLOCKED, so an unreadable review never passes as clean. */
+ *  as BLOCKED, so an unreadable review never passes as clean. A `fix` finding
+ *  with no `  Probe:` line directly under it is demoted to `report`. */
 export function mergeReviews(reports) {
   const counts = { defect: 0, hazard: 0, question: 0, fix: 0 };
   let verdict = 'CLEAN';
@@ -29,13 +31,19 @@ export function mergeReviews(reports) {
   for (const { name, text } of reports) {
     const own = verdictOf(text);
     if (VERDICT_RANK[own] > VERDICT_RANK[verdict]) verdict = own;
-    for (const line of text.split('\n')) {
+    const lines = text.split('\n');
+    lines.forEach((line, index) => {
       const match = line.match(FINDING);
-      if (!match) continue;
+      if (!match) return;
       counts[match[1]] += 1;
-      if (match[2] === 'fix') counts.fix += 1;
-    }
-    sections.push(`## ${name}\n\n${text.trim()}\n`);
+      if (match[2] !== 'fix') return;
+      if (PROBE_LINE.test(lines[index + 1] ?? '')) {
+        counts.fix += 1;
+      } else {
+        lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
+      }
+    });
+    sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
   }
   if (verdict === 'CLEAN' && counts.defect + counts.hazard + counts.question > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;

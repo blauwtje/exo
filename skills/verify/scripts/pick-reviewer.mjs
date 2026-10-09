@@ -62,7 +62,7 @@ export function taskReviewer(task, changedPaths, route) {
 }
 
 /** The paths the commits carrying task `number` of the plan changed. */
-function taskPaths(task, root, planId) {
+export function taskPaths(task, root, planId) {
   const shas = taskCommits(task, root, planId);
   return shas.flatMap((sha) => execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'show', '--format=', '--no-renames', '--name-only', '-z', sha], { encoding: 'utf8', maxBuffer: Infinity }).split('\0').filter((name) => name !== ''));
 }
@@ -75,25 +75,6 @@ export function codexOffer(env = process.env) {
 /** Whether the diff touches a manifest or lockfile. */
 export function touchesManifest(paths) {
   return paths.some((relativePath) => MANIFESTS.includes(basename(relativePath)));
-}
-
-/**
- * Whether a non-merge commit between `base` and HEAD carries a `Signature:`
- * trailer (land-task adds it), or carries no `Plan-task:` trailer, such as a
- * `--fix` commit, and touches a script file. A commit without `Plan-task:`
- * that touches only prose or data, such as `CHANGELOG.md`, cannot change a
- * signature. Merge commits are never read.
- */
-export function signatureChangedSince(base, root = process.cwd()) {
-  const format = '%x1e%(trailers:key=Signature,valueonly)%x1f%(trailers:key=Plan-task,valueonly)%x1f';
-  const log = execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'log', '--no-merges', '--name-only', `--format=${format}`, `${base}..HEAD`], { encoding: 'utf8' });
-  const commits = log.split('\x1e').slice(1);
-  return commits.some((commit) => {
-    const [signature, planTask, names] = commit.split('\x1f');
-    if (signature.trim() !== '') return true;
-    if (planTask.trim() !== '') return false;
-    return names.split('\n').some((name) => SCRIPT_EXTENSIONS.has(extname(name.trim())));
-  });
 }
 
 /** Effort for the uncommitted fix against HEAD: tracked changes plus untracked new files. */

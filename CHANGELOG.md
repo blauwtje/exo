@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `verify` and `build` review each landed task on its own commits, with a reviewer picked by the task's `Risk:` and three to five concrete questions, and `run-unit` runs that review beside the next builds.
+- `review-overlap.mjs` lists the files and exported names more than one task changed, and `merge-reviews.mjs` combines the task and overlap reviews into one findings file; a `fix` finding without a `Probe:` line is demoted to `report`.
+- `spec` checks every plan with `plan-check --loop` and marks security pieces `Risk: security boundary`.
+
+### Changed
+
+- The check cache is one file in the repository's git common dir, shared by every worktree.
+- `verify` fails `plugin-version` on an empty `## Unreleased` only on the default branch or a detached HEAD, and warns on any other branch.
+- A root `CHANGELOG.md` edited outside a task prints `LEAD`, not `STRAY`, and a `Files:` path no task commit changed prints `WARN claims-diff`, not `FAIL`.
+- This repository's plans gate each task on `npm run validate` and run `npm run check` once as the Success criterion.
+
+### Fixed
+
+- The sketch-tab timing test allows 3000 ms, so a loaded suite no longer fails it.
+
 ## 0.108.2 - 2026-10-09
 
 ### Changed

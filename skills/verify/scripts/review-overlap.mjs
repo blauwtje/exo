@@ -61,6 +61,7 @@ export function formatOverlaps(overlaps) {
   return overlaps.map(({ target, tasks }) => `OVERLAP ${target} (Tasks ${tasks.join(', ')})`).join('\n');
 }
 
+// A path missing at a commit's parent, such as a file the commit added, reads as empty.
 function git(root, args) {
   try {
     return execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1 << 28 });
@@ -69,10 +70,14 @@ function git(root, args) {
   }
 }
 
+function gitOrThrow(root, args) {
+  return execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', ...args], { encoding: 'utf8', maxBuffer: 1 << 28 });
+}
+
 /** The changes of every non-merge commit between `base` and HEAD that carries a `Plan-task: <plan>/<n>` trailer. */
 export function readChanges(base, root = process.cwd()) {
   const format = '%x1e%H%x1f%(trailers:key=Plan-task,valueonly)';
-  const log = git(root, ['log', '--no-merges', `--format=${format}`, `${base}..HEAD`]);
+  const log = gitOrThrow(root, ['log', '--no-merges', `--format=${format}`, `${base}..HEAD`]);
   const changes = [];
   for (const entry of log.split('\x1e').slice(1)) {
     const [hash, trailer] = entry.split('\x1f');

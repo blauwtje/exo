@@ -16,6 +16,7 @@ const FINDINGS = [
   'FINDINGS',
   '',
   'a.mjs:3-4 defect missing guard; evidence here. fix',
+  '  Probe: grep -q guard a.mjs',
   'b.mjs:9 hazard swallowed error; evidence. report',
   '',
   'Count: defect=1 hazard=1'
@@ -58,4 +59,11 @@ test('a missing report file is BLOCKED and a missing flag exits 2', async () => 
   assert.match(result.stdout, /^verdict=BLOCKED /);
   const bad = await run(SCRIPT, ['--root', root]);
   assert.equal(bad.code, 2);
+});
+
+test('a fix finding with no Probe line under it is demoted to report', () => {
+  const { counts, text } = mergeReviews([{ name: 'task-1', text: 'FINDINGS\n\na.mjs:3 defect x; y. fix\n' }]);
+  assert.equal(counts.fix, 0);
+  assert.equal(counts.defect, 1);
+  assert.match(text, /a\.mjs:3 defect x; y\. report/);
 });

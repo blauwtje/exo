@@ -299,21 +299,24 @@ function checkLoopLandGate(basis, root) {
   return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes, per task only while it stays under a minute`];
 }
 
+// A line only a session can satisfy may stay in a plan that a session builds.
+const SESSION_BUILD = '; it may stay: build with exo:build, not run-plan';
+
 function checkLoop(plan, root, planPath) {
   const basis = frameOf(plan.frame);
   const problems = [];
   const planFile = root === undefined || planPath === undefined ? null : repoPath(path.relative(realPath(root), realPath(planPath)));
   const criterion = [...(basis.successCriterion ?? '').matchAll(/`([^`]+)`/g)];
   if (criterion.length !== 1) problems.push("loop: the plan's '## Success criterion' is not one backticked command");
-  else if (mcpToolCall(criterion[0][1].trim()) !== null) problems.push("loop: the plan's '## Success criterion' is an MCP call, which only a session can run");
+  else if (mcpToolCall(criterion[0][1].trim()) !== null) problems.push(`loop: the plan's '## Success criterion' is an MCP call, which only a session can run${SESSION_BUILD}`);
   for (const task of plan.tasks) {
     const proof = task.proof?.replace(/^`(.*)`$/, '$1') ?? null;
-    if (proof !== null && mcpToolCall(proof) !== null) problems.push(`loop: Task ${task.number}: 'Proof: ${proof}' is an MCP call, which only a session can run`);
+    if (proof !== null && mcpToolCall(proof) !== null) problems.push(`loop: Task ${task.number}: 'Proof: ${proof}' is an MCP call, which only a session can run${SESSION_BUILD}`);
     for (const run of task.runs.filter((entry) => entry.expectsPass && mcpToolCall(entry.command) !== null)) {
-      problems.push(`loop: Task ${task.number}: 'Run: ${run.command}' is an MCP call, which only a session can run`);
+      problems.push(`loop: Task ${task.number}: 'Run: ${run.command}' is an MCP call, which only a session can run${SESSION_BUILD}`);
     }
     if (task.design && !(basis.visualDirection ?? '').includes('contract-selected.json')) {
-      problems.push(`loop: Task ${task.number}: names 'Design:' but '## Visual direction' names no contract-selected.json`);
+      problems.push(`loop: Task ${task.number}: names 'Design:' but '## Visual direction' names no contract-selected.json${SESSION_BUILD}`);
     }
     if (planFile !== null && task.files.some((file) => repoPath(file.path) === planFile)) {
       problems.push(`loop: Task ${task.number}: lists the plan file in Files:, which stops run-plan with 'plan changed'; move that edit to a session after the run`);

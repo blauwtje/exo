@@ -7,6 +7,7 @@ Branch reviewer follows these when the dispatch names this file.
 - Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
 - Pass: this file's path, plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`.
 - Pass: scope `task <shas>` from the `REVIEW` line, or `overlap` with the `OVERLAP` lines.
+- No `REVIEW` line (run-unit) → shas from `git log --format=%h --grep "^Plan-task: <plan id>/<n>$"`; the anchors keep `<n>` from matching `<n>0`..`<n>9`.
 - Pass: report path `<checkout>/.exo/review-<sha7>.md`, sha7 from the line's first sha; for `overlap`, `<checkout>/.exo/review-overlap.md`.
 - Scope `task` → also pass three to five concrete questions, written from the task's heading, `Data:`, `Risk:` and Acceptance line.
 - Reviewer reads only the plan, diff and implementer `Red:` lines.

@@ -1,5 +1,7 @@
 # The task list
 
+Reader has no context: no implicit file, shape or step.
+
 ## Sections, in order
 
 1. `## Goal`: one sentence naming the result.
@@ -20,13 +22,14 @@
 Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one bare command>
 ```
 
-- `Files:` path ending in `/` → whole folder.
-- `Proof:` → shows this task landed, not the suite.
+- `Files:` path ending in `/` → its whole folder.
+- `Proof:` → shows this task landed, not the whole suite.
 - Runnable result → prove on real project input with its own command, else a builder script using only its tools, never a test alone.
-- MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; the session calls it.
-- `Data:` → structure holding the result, not its fields or logic; ask before changing a public signature or persisted format.
-- `Risk:` → one of `security boundary` (sandbox, deny rules, breach detection, task pin, land-task, deleting files or branches), `persisted format`, `public signature` or `dependency`.
-- Heading → `land-task`'s commit subject; the task stages `Files:`, no `Commit:` block.
+- MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not a shell.
+- `Data:` → structure holding the result, not its fields or logic; ask before one changing a public signature or persisted format.
+- `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
+- Heading → `land-task`'s conventional-commit subject.
+- The task stages `Files:`; no `Commit:` block.
 - `Design:` → skill a task loads first, only for a page's look.
 
 ## Rules

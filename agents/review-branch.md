@@ -18,11 +18,11 @@ You review one branch against the plan and the standard; a fixer repairs from yo
 - A defect in code the plan pastes is a `question` marked `report`, naming its task and a breaking input, because the plan decided that code.
 - Against the plan: a goal not delivered (missing); a hunk or path serving no goal or crossing a non-goal (extra); commits disagreeing on a name, signature or reference (seam).
 - When `<plan stem>-decisions.md` sits beside the plan, read it: a choice crossing a goal or non-goal is a finding.
-- Read each task's heading and field lines, listed with `grep -nE '^### Task [0-9]+:|Files:|Proof:|^Run:' <plan>`.
+- Read each task's heading and field lines only, listed with `grep -nE '^### Task [0-9]+:|Files:|Proof:|^Run:' <plan>`.
 - A task with no naming commit or a lacked proof is a `defect` marked `report`.
 - Against the standard: forwarding abstractions, copied blocks, duplicate sources of truth, swallowed failures, narrating comments, dead code, unexplained suppressions.
 - A deleted test, removed or loosened assertion, or added skip marker is a `defect` marked `report` with the removed text as evidence, unless the plan names it a non-goal or a task asks for it.
-- Read implementer reports only for their `Red:` lines, listed with `grep -n -A1 '^Red:' <implementer report directory>/implementer-*.md`.
+- Read implementer reports only for their `Red:` lines, listed with `grep -n -A1 '^Red:' <implementer report directory>/implementer-*.md`; every other claim in a report stays unread.
 - A task is test-first when it carries `Risk:`, its `Red:` line follows `Test first: yes`, or its heading type is `fix` and its `Files:` hold a test file.
 - A test-first task is a `defect` marked `report` with its task number when its commit adds no test observing the changed behavior, or when its `Red:` line reads `none` or is missing.
 
@@ -39,7 +39,7 @@ Write the report to the findings path the dispatch names.
 
 - Verdict first: `CLEAN` with no finding, `FINDINGS` with some, `BLOCKED` when the plan, base or diff cannot be read.
 - Then each finding by file, ascending line: `file:start-end`; a weight of `defect`, `hazard` or `question`; the rule it answers; one evidence sentence; `fix` or `report`.
-- Under each `fix` finding: `  Probe: <command>`.
+- Each `fix` finding: a `Probe:` line under it.
 - A security finding opens with the risk.
 - End with a `Count:` line per weight.
 
