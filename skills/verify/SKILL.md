@@ -12,6 +12,7 @@ effort: high
 1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
    - Script runs each landed task's Proof command, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate.
+   - A gate or Proof that already passed on the same working tree prints `SKIP` and does not rerun.
    - Then the gate once: first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, else `npm test` with no `check` script.
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
    - `WARN` line (claims-diff per task) or `FIX-ONLY` line → list in the report; never ends the turn.

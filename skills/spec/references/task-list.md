@@ -7,7 +7,7 @@ Reader has no context: no implicit file, shape or step.
 1. `## Goal`: one sentence naming the result.
 2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; no repo yet → `Branch: main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
    - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
-   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; a task lands only on a pass, so the breaking task fixes it.
+   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; a task lands only on a pass, so the breaking task fixes it; the full check runs per task only while its last pass took under 60 s, and a check or Proof that already passed on the same working tree is skipped.
    - Root package.json has a `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips a task's `Files:`.
    - `Allow:` → each backticked command a task runs that no other field names, comma-separated, else `none`.
 3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.

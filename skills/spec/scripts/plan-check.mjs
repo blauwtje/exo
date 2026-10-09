@@ -296,7 +296,7 @@ function checkLoopLandGate(basis, root) {
   const command = scripts.check !== undefined ? 'npm run check' : scripts.test !== undefined ? 'npm test' : null;
   const gate = basis.landGate?.trim().replace(/^`(.*)`$/, '$1') ?? 'none';
   if (command === null || gate !== 'none') return [];
-  return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes`];
+  return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes, per task only while it stays under a minute`];
 }
 
 function checkLoop(plan, root, planPath) {
