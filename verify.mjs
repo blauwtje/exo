@@ -1,6 +1,6 @@
 // Deterministic verification of the skill corpus: no model calls, no network.
 //
-//   node verify.mjs [--repository-root <dir>] [--self-test]
+//   node verify.mjs [--repository-root <dir>] [--self-test] [--no-reuse]
 //
 // Exits 1 when any check failed.
 
@@ -34,6 +34,7 @@ import { checkModelKinds } from './verify/checks/model-kinds.mjs';
 import { checkCodexOverrides } from './verify/checks/codex-overrides.mjs';
 import { checkQuestionOptions } from './verify/checks/question-options.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
+import { codePass } from '#check-cache';
 import { runSelfTest } from './verify/self-test.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -42,6 +43,8 @@ const { values } = parseArgs({
   options: {
     'repository-root': { type: 'string' },
     'self-test': { type: 'boolean', default: false },
+    // Under --self-test, run the suite and the verifier self-test even when `npm run check` already passed on this code.
+    'no-reuse': { type: 'boolean', default: false },
     // Newline-separated script paths relative to the root; only these are parsed.
     // Absent means every script is parsed.
     'changed-scripts': { type: 'string' }
@@ -84,15 +87,21 @@ checkSharedContracts(report, repository);
 checkReturnCaps(report, repository);
 checkScriptSyntax(report, repository, changedScripts);
 checkSkillScripts(report, repository, changedScripts);
-checkSkillScriptBehavior(report, repository);
+// `npm run check` passed on this code, CHANGELOG.md aside: the suite and self-test are reused; the
+// static checks, which can read CHANGELOG.md, still run, and the version check demands its line.
+const reused = values['self-test'] && !values['no-reuse'] ? codePass(root, 'npm run check') : null;
+const reusedDetail = reused === null ? '' : `reused from the npm run check pass on tree ${reused.tree}`;
+if (reused === null) checkSkillScriptBehavior(report, repository);
+else report.result('PASS', 'skill script behavior', reusedDetail);
 checkGitWhitespace(report, repository);
-checkPluginVersion(report, repository);
+checkPluginVersion(report, repository, { strict: reused !== null });
 checkModelKinds(report, repository);
 checkCodexOverrides(report, repository);
 checkQuestionOptions(report, repository);
 checkInstructionDensity(report, repository);
 
-if (values['self-test']) await runSelfTest(report, repository);
+if (reused !== null) report.result('PASS', 'verifier self-test', reusedDetail);
+else if (values['self-test']) await runSelfTest(report, repository);
 
 const counts = report.counts();
 console.log(`SUMMARY PASS=${counts.PASS} FAIL=${counts.FAIL} WARN=${counts.WARN} UNRUN=${counts.UNRUN}`);
