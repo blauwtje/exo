@@ -7,7 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, git, gitRepository, run } from './harness.mjs';
+import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 
@@ -84,7 +84,7 @@ test('no plan exits 2 with the hint', async () => {
   git(context.root, 'commit', '-q', '-m', 'docs: drop plans');
   const result = await exo(context, ['run']);
   assert.equal(result.code, 2);
-  assert.match(result.stderr, /exo: no plan under docs\/specs\/; pass one: exo run <plan>/);
+  assert.match(result.stderr, /exo: no plan under docs\/specs\/ or docs\/plans\/; pass one: exo run <plan>/);
 });
 
 test('--dry-run passes through to run-plan and no session starts', async () => {
@@ -150,4 +150,89 @@ test('run config shows sources and key status without values, and writes one key
   assert.doesNotMatch(shown.stdout + shown.stderr, /sekret123/);
   await run(CLI, ['run', 'config', 'note', 'plain text'], { env });
   assert.equal(JSON.parse(await fs.readFile(path.join(dir, '.config', 'exo', 'run.json'), 'utf8')).note, 'plain text');
+});
+
+// A bare origin holding main, the fixture as its clone, and a second clone to push from.
+async function withOrigin() {
+  const context = await setup();
+  const bare = path.join(await fixture(), 'origin.git');
+  git(context.root, 'init', '-q', '--bare', '-b', 'main', bare);
+  git(context.root, 'remote', 'add', 'origin', bare);
+  git(context.root, 'push', '-q', 'origin', 'main');
+  git(context.root, 'remote', 'set-head', 'origin', 'main');
+  git(context.root, 'fetch', '-q', 'origin');
+  const other = path.join(await fixture(), 'other');
+  git(await fixture(), 'clone', '-q', bare, other);
+  const pushFrom = async (name) => {
+    await fs.writeFile(path.join(other, name), `${name}\n`);
+    git(other, 'add', '-A');
+    git(other, 'commit', '-q', '-m', `feat: add ${name}`);
+    git(other, 'push', '-q', 'origin', 'main');
+  };
+  return { ...context, bare, pushFrom };
+}
+
+test('the default branch is fetched and fast-forwarded before the plan branch is created from it', async () => {
+  const context = await withOrigin();
+  await context.pushFrom('upstream.txt');
+  const result = await exo(context, ['run', '--dry-run', '--claude', context.stub]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /^exo: fast-forwarded main to origin\/main$/m);
+  const upstream = git(context.bare, 'rev-parse', 'main');
+  assert.equal(git(context.root, 'rev-parse', 'main'), upstream);
+  assert.equal(git(context.root, 'rev-parse', 'feat/new'), upstream);
+});
+
+test('a diverged default branch refuses with one line and spawns nothing', async () => {
+  const context = await withOrigin();
+  await commitFiles(context.root, { 'local.txt': 'local\n' }, 'feat: local only');
+  await context.pushFrom('upstream.txt');
+  const result = await exo(context, ['run', '--claude', context.stub]);
+  assert.equal(result.code, 2);
+  assert.match(result.stderr, /^exo: refused: main and origin\/main have diverged; rebase or reset main onto origin\/main yourself, then rerun exo run$/m);
+  assert.equal(git(context.root, 'branch', '--show-current'), 'main');
+  assert.deepEqual(await calls(context), []);
+});
+
+test('merged branches and their clean worktrees are removed, unmerged and dirty ones are kept', async () => {
+  const context = await withOrigin();
+  const merged = async (name) => {
+    git(context.root, 'switch', '-q', '-c', name);
+    await commitFiles(context.root, { [`${name.replace('/', '-')}.txt`]: 'x\n' }, `feat: ${name}`);
+    git(context.root, 'switch', '-q', 'main');
+    git(context.root, 'merge', '-q', '--no-ff', '-m', `merge ${name}`, name);
+  };
+  await merged('feat/done');
+  await merged('feat/tree');
+  await merged('feat/dirty');
+  git(context.root, 'switch', '-q', '-c', 'feat/wip');
+  await commitFiles(context.root, { 'wip.txt': 'wip\n' }, 'feat: wip');
+  git(context.root, 'switch', '-q', 'main');
+  git(context.root, 'push', '-q', 'origin', 'main');
+  const trees = await fixture();
+  git(context.root, 'worktree', 'add', '-q', path.join(trees, 'tree'), 'feat/tree');
+  git(context.root, 'worktree', 'add', '-q', path.join(trees, 'dirty'), 'feat/dirty');
+  await fs.writeFile(path.join(trees, 'dirty', 'scratch.txt'), 'untracked\n');
+  const result = await exo(context, ['run', '--dry-run', '--claude', context.stub]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  const branches = git(context.root, 'branch', '--format=%(refname:short)').split('\n');
+  assert.ok(!branches.includes('feat/done') && !branches.includes('feat/tree'), branches.join());
+  assert.ok(branches.includes('feat/wip') && branches.includes('feat/dirty') && branches.includes('feat/new'), branches.join());
+  await assert.rejects(fs.stat(path.join(trees, 'tree')));
+  assert.ok((await fs.stat(path.join(trees, 'dirty'))).isDirectory());
+  assert.match(result.stdout, /^exo: removed branch feat\/done$/m);
+  assert.match(result.stdout, /^exo: removed worktree .*tree$/m);
+  assert.match(result.stdout, /^exo: kept worktree .*dirty: feat\/dirty is merged but the worktree has uncommitted files$/m);
+});
+
+test('with no argument a plan under docs/plans is found too', async () => {
+  const context = await setup();
+  const plans = path.join(context.root, 'docs', 'plans');
+  await fs.mkdir(plans, { recursive: true });
+  await fs.writeFile(path.join(plans, 'fresh.md'), planText(context.root, 'feat/fresh'));
+  git(context.root, 'add', '-A');
+  git(context.root, 'commit', '-q', '-m', 'docs: add a plan');
+  const result = await exo(context, ['run', '--dry-run', '--claude', context.stub]);
+  assert.match(result.stdout, /^exo: plan .*docs\/plans\/fresh\.md$/m, result.stdout + result.stderr);
+  assert.equal(git(context.root, 'branch', '--show-current'), 'feat/fresh');
 });
