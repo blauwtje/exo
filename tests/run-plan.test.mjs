@@ -305,3 +305,13 @@ test('parseStream takes the last result, sums turns, keeps the last cost and uni
   assert.equal(parsed.cost, 0.3);
   assert.deepEqual(parsed.denials.map((entry) => entry.tool_use_id), ['a', 'b']);
 });
+
+test('the run-plan skill is user-only, takes a plan path and runs run-plan.mjs on it', async () => {
+  const skill = await fs.readFile(path.join(PLUGIN_ROOT, 'skills', 'run-plan', 'SKILL.md'), 'utf8');
+  assert.match(skill, /^name: run-plan$/m);
+  assert.match(skill, /^disable-model-invocation: true$/m);
+  assert.match(skill, /^argument-hint: "<plan path>"$/m);
+  assert.match(skill, /run-plan\.mjs" <plan>/);
+  const { EXPECTED_SKILLS } = await import('../verify/budgets.mjs');
+  assert.ok(EXPECTED_SKILLS.includes('run-plan'));
+});
