@@ -116,7 +116,7 @@ const FAKE_KEYS = { deepseek: 'fake-deepseek-key-1f3a', zai: 'fake-zai-key-9c7e'
 async function runPlan(context, steps, args = []) {
   const scenario = path.join(context.tools, 'scenario.json');
   const record = path.join(context.tools, 'calls.jsonl');
-  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps }));
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: context.pluginPath ?? PLUGIN_ROOT, planPath: context.plan, steps }));
   const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...args], {
     cwd: context.root,
     env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1', HOME: context.home, ...context.env }
@@ -340,6 +340,27 @@ test('exo not loaded: the child is killed at the init event, not left to run or 
   const result = await runPlan(context, [{ pluginError: 'hooks failed to load', hang: true }], ['--timeout', '1']);
   assert.equal(result.stop, 'run-plan: stop: exo not loaded: hooks failed to load');
   assert.doesNotMatch(result.stdout, /timed out/);
+});
+
+test('worktree: a run rooted in a linked worktree lands there while the main checkout stays on main', async () => {
+  const context = await setup();
+  git(context.root, 'switch', '-q', 'main');
+  const tree = path.join(context.root, '.worktrees', 'run');
+  git(context.root, 'worktree', 'add', '-q', tree, 'feat/run');
+  const linked = { ...context, root: tree, plan: path.join(tree, 'docs', 'plan.md') };
+  const result = await runPlan(linked, [land(1), { ...land(2), background: true }, { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
+  assert.equal(git(context.root, 'branch', '--show-current').trim(), 'main');
+  assert.equal(git(tree, 'branch', '--show-current').trim(), 'feat/run');
+  assert.equal(await fs.readFile(path.join(tree, 'b.txt'), 'utf8'), '1\n');
+  await assert.rejects(fs.access(path.join(context.root, 'a.txt')));
+});
+
+test('loads from: a session whose exo path is another checkout stops the run naming both paths', async () => {
+  const context = await setup();
+  context.pluginPath = await fs.realpath(await fixture());
+  const result = await runPlan(context, [land(1)]);
+  assert.equal(result.stop, `run-plan: stop: exo not loaded: exo loads from ${context.pluginPath}, not ${PLUGIN_ROOT}`);
 });
 
 test('refused: the default branch, a tracked change, a failing plan-check and a missing claude exit 2 with no spawn', async () => {
