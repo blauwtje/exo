@@ -1,4 +1,4 @@
-# Task list
+# The task list
 
 Reader has zero context: no implicit file, shape or step.
 
@@ -14,7 +14,7 @@ Reader has zero context: no implicit file, shape or step.
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`, `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`, dependency-ordered.
 
-## Task template
+## Template
 
 ```
 ### Task <n>: <type>(<scope>): <subject>
@@ -24,20 +24,20 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 
 - `Files:` path ending in `/` → covers its whole folder.
 - `Proof:` → shows this task alone landed, not the whole suite.
-- Runnable result → prove it on real project input with its own command, else a builder's script using only its tools, never a test alone.
+- Runnable result → prove it on real project input with its own command, else a builder script using only its tools, never a test alone.
 - MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not a shell.
 - `Data:` → structure holding the result, not its fields or logic; ask before one changing a public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
 - Heading → `land-task`'s conventional-commit subject.
-- Task stages `Files:`; no `Commit:` block.
+- The task stages `Files:`; no `Commit:` block.
 - `Design:` → skill a task loads first, only for a page's look.
 
 ## Rules
 
 1. **Verified names only.** List a path or symbol only after reading its range; `plan-check` catches only a missing one.
-2. **One field line, one task.** A second field line, `Run:`, `Expected:` or a code block makes it long-format: `Commit:`, `Run:`, `Expected:` required.
+2. **One field line, one task.** A second field line, `Run:`, `Expected:` or a code block makes it long-format, needing `Commit:`, `Run:`, `Expected:`.
 3. **Small tasks.** One heading, one concern; split only when `Files:` spans a shared write target (rule 4) and an independent one.
    - Size → a mid-size model lands it in one fresh session from its text alone.
-   - `Files:` → also each registry, index or test list that must name a file it adds.
+   - `Files:` → also each registry, index or test list that must name an added file.
 4. **Shared write target.** File, key or branch two tasks touch → split, unless a shared invariant earns a `Depends on:` edge.
 5. **No manual task.** User-only check → one `## Manual checks` line.
