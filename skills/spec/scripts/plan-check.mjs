@@ -272,12 +272,26 @@ function checkCompactFields(task) {
 // run-plan.mjs runs a plan with no session to answer it, so `--loop` refuses,
 // by name, what only a session or a person could run: a Success criterion that is not one backticked non-MCP command, an MCP
 // `Proof:` or passing `Run:`, an output redirect to a file, a `Design:` task
-// without a selected contract, and a `Branch:` that is the default branch.
+// without a selected contract, a `Branch:` that is the default branch, and a
+// missing or `none` `Land gate:` while package.json has a full check to run.
 const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
 const QUOTED = /"(?:\\.|[^"\\])*"|'[^']*'/g;
 
 function redirectsToFile(part) {
   return [...part.replace(QUOTED, '""').matchAll(REDIRECT)].some((match) => !match[2].startsWith('&') && match[2] !== '/dev/null');
+}
+
+// Unattended, each task lands only when the repository's full check passes,
+// so the task that breaks it repairs it, not the end of the run.
+function checkLoopLandGate(basis, root) {
+  if (root === undefined || root === null) return [];
+  const packageJsonPath = path.join(root, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) return [];
+  const scripts = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).scripts ?? {};
+  const command = scripts.check !== undefined ? 'npm run check' : scripts.test !== undefined ? 'npm test' : null;
+  const gate = basis.landGate?.trim().replace(/^`(.*)`$/, '$1') ?? 'none';
+  if (command === null || gate !== 'none') return [];
+  return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes`];
 }
 
 function checkLoop(plan, root) {
@@ -303,7 +317,7 @@ function checkLoop(plan, root) {
   }
   const defaultName = root === undefined ? null : defaultBranch(root);
   if (defaultName !== null && basis.branch?.trim() === defaultName) problems.push(`loop: 'Branch: ${basis.branch}' names the default branch`);
-  return problems;
+  return [...problems, ...checkLoopLandGate(basis, root)];
 }
 
 /**

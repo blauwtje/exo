@@ -396,3 +396,17 @@ test('plan-check --loop refuses a Branch: that names the default branch', async 
   assert.match(problems[0], /Branch: main.*default branch/);
   assert.deepEqual(loopProblems(loopPlan(), root), []);
 });
+
+test('plan-check --loop refuses Land gate: none or a missing one while package.json has a check or test script', async () => {
+  const withGate = (gate) => loopPlan().replace('Allow: none', `Allow: none\nLand gate: ${gate}`);
+  const checkRoot = await gitRepository({ 'src/app.js': GOOD_CODE, 'package.json': JSON.stringify({ scripts: { check: 'echo ok', test: 'echo ok' } }) });
+  const refused = loopProblems(withGate('none'), checkRoot);
+  assert.equal(refused.length, 1);
+  assert.match(refused[0], /'Land gate: none' skips the full check; set 'Land gate: npm run check'/);
+  assert.match(loopProblems(loopPlan(), checkRoot)[0], /set 'Land gate: npm run check'/);
+  assert.deepEqual(loopProblems(withGate('npm run check'), checkRoot), []);
+  const testRoot = await gitRepository({ 'src/app.js': GOOD_CODE, 'package.json': JSON.stringify({ scripts: { test: 'echo ok' } }) });
+  assert.match(loopProblems(withGate('none'), testRoot)[0], /set 'Land gate: npm test'/);
+  const bareRoot = await gitRepository({ 'src/app.js': GOOD_CODE, 'package.json': JSON.stringify({ scripts: { build: 'echo ok' } }) });
+  assert.deepEqual(loopProblems(withGate('none'), bareRoot), []);
+});
