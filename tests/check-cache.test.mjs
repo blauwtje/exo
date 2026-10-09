@@ -136,6 +136,25 @@ test('codePass misses on any other edit, on an unknown command and on an entry w
   assert.equal(codePass(root, 'x'), null);
 });
 
+// The edit keeps size, inode and mtime, and the index is as old as its entry: git only sees the
+// edit because the entry is racily clean, which a copy of the index must keep.
+test('a same-size edit in the second of the index entry misses', () => {
+  const { root, git } = repo();
+  git('config', 'core.trustctime', 'false');
+  const file = path.join(root, 'a.txt');
+  const index = path.join(root, '.git', 'index');
+  const past = new Date(Date.now() - 100000);
+  fs.utimesSync(file, past, past);
+  git('update-index', '--refresh');
+  recordPass(root, 'x', 5);
+  fs.writeFileSync(file, 'two\n');
+  fs.utimesSync(file, past, past);
+  fs.utimesSync(index, past, past);
+  assert.equal(git('diff', '--name-only'), 'a.txt\n');
+  assert.equal(cachedPass(root, 'x'), null);
+  assert.equal(codePass(root, 'x'), null);
+});
+
 test('SLOW_GATE_MS is one minute', () => {
   assert.equal(SLOW_GATE_MS, 60000);
 });
