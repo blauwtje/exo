@@ -5,6 +5,7 @@
 // it did when each guard was its own hook. The first deny is returned.
 // A fault reading or parsing the input exits 0 with no output.
 
+import { wrapCommand } from '../lib/compress-output.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
 import { runDispatcherEntry, runSteps } from './dispatch-steps.mjs';
@@ -25,8 +26,18 @@ const GUARDS = [
 ];
 
 // The one output for `hookInput`, or null when no step has anything to say.
-export function dispatchBash(hookInput, guards = GUARDS) {
-  return runSteps(hookInput, guards, []);
+// A denied call is never wrapped; a fault in the wrapper lets the command run as written.
+export async function dispatchBash(hookInput, guards = GUARDS, wrap = wrapCommand) {
+  const guarded = await runSteps(hookInput, guards, []);
+  if (guarded?.hookSpecificOutput.permissionDecision === 'deny') return guarded;
+  let wrapped = null;
+  try {
+    wrapped = wrap(hookInput);
+  } catch (error) {
+    console.error(`compress-output: ${error.message}`);
+  }
+  if (wrapped === null) return guarded;
+  return { hookSpecificOutput: { ...guarded?.hookSpecificOutput, ...wrapped.hookSpecificOutput } };
 }
 
 await runDispatcherEntry(import.meta.url, dispatchBash);
