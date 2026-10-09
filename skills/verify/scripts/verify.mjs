@@ -26,7 +26,7 @@
 // a Success criterion that exited 0, and is followed by the last
 // lines of that command's output, each indented two spaces, so every check line
 // still starts at the left margin.
-// A land-task record `.exo/land-gate-<plan id>.json` for the HEAD tree skips the gate and each Proof it names with a SKIP line.
+// A gate or Proof command already passed on this working tree, per `.exo/check-cache.json` (#check-cache), prints a SKIP line, not a rerun; each pass here is recorded there.
 // The Success criterion passes on exit code 0, and when its output holds a
 // `SUMMARY ` line, as exo's own `npm run check` prints, that line must also read
 // FAIL=0 WARN=0 UNRUN=0.
@@ -57,6 +57,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
+import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
@@ -378,35 +379,18 @@ export function manualChecks(frame) {
 }
 
 /**
- * What land-task passed on the tree now checked out: its `.exo/land-gate-<planId>.json`
- * `{ gate, proofs }`, or null when the file is absent or unreadable, the HEAD tree differs,
- * or a tracked file has changed since. An untracked file is not checked, the same
- * limit land-task's own gate run had.
- */
-function landedGateRecord(root, planId) {
-  try {
-    const record = JSON.parse(fs.readFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), 'utf8'));
-    const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
-    if (record.tree !== git('rev-parse', 'HEAD^{tree}')) return null;
-    if (git('status', '--porcelain', '--untracked-files=no') !== '') return null;
-    return record;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Runs `command` through a shell to `{ ok, code, signal, output }`, `output` its stdout
  * and stderr together. When the shell cannot start, `code` holds the spawn error's code instead of an exit code.
  */
 function runCommand(command) {
   return new Promise((resolve) => {
+    const started = Date.now();
     const child = spawn(command, { shell: true });
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk; });
     child.stderr.on('data', (chunk) => { output += chunk; });
     child.on('error', (error) => resolve({ ok: false, code: error.code ?? error.message, signal: null, output }));
-    child.on('close', (code, signal) => resolve({ ok: code === 0, code, signal, output }));
+    child.on('close', (code, signal) => resolve({ ok: code === 0, code, signal, output, ms: Date.now() - started }));
   });
 }
 
@@ -452,7 +436,6 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const frame = frameOf(plan.frame);
   const planId = planIdOf(planPath);
   const landed = new Set(landedTasks(plan.tasks, root, planId));
-  const record = landedGateRecord(root, planId);
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
@@ -486,8 +469,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
       continue;
     }
-    if (record?.proofs.includes(command)) {
-      proofRuns.push({ line: `SKIP Task ${task.number} (Proof: land-task passed it on this same tree)` });
+    if (cachedPass(root, command) !== null) {
+      proofRuns.push({ line: `SKIP Task ${task.number} (Proof: passed on this same tree)` });
       continue;
     }
     if (queued.has(check)) {
@@ -511,6 +494,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     }
     const proofRun = proofResults[index];
     if (proofRun.ok) {
+      recordPass(root, run.command, proofRun.ms);
       lines.push(`PASS Task ${run.number}`);
     } else {
       const tool = unmarkedMcpTool(run.command, proofRun);
@@ -524,14 +508,15 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     lines.push('UNRUN success-criterion (Land gate: none)');
   } else if (gateMcpCall !== null) {
     lines.push(`SESSION success-criterion (${gateMcpCall}; run it as an MCP tool call)`);
-  } else if (record?.gate === gateCommand) {
-    lines.push('SKIP success-criterion (land-task ran the gate on this same tree)');
+  } else if (cachedPass(root, gateCommand) !== null) {
+    lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
     const gateRun = await runCommand(gateCommand);
     // The SUMMARY rule binds any gate whose output prints a SUMMARY line, whatever
     // the command; a gate that prints none, as another project's `npm run check`
     // does, is judged on its exit code alone. A run that exits 0 yet fails names its
     // SUMMARY line as the reason.
+    if (successCriterionPasses(gateRun)) recordPass(root, gateCommand, gateRun.ms);
     if (successCriterionPasses(gateRun) && testScriptGate) {
       // A ready Proof line for build's report, quoting this command and a line it printed,
       // only for a library, so a suite never stands in for the product.
@@ -554,9 +539,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   }
 
   const changed = changedPaths({ base });
-  // The plan file committed on the branch is the run's input, not drift.
+  // The plan file committed on the branch is the run's input, not drift; nor is the scratch folder, which holds the check cache.
   const planFile = repoPathOf(planPath, root);
-  const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
+  const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile && !changedPath.startsWith(`${SCRATCH_FOLDER}/`)));
   const { strays, fixOnly } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
   if (strays.length === 0) {
     lines.push('PASS stray-paths');

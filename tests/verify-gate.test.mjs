@@ -643,12 +643,13 @@ async function landedWithRecord(record) {
   if (record !== null) {
     const tree = git(root, 'rev-parse', 'HEAD^{tree}');
     await mkdir(path.join(root, '.exo'), { recursive: true });
-    await writeFile(path.join(root, '.exo/land-gate-plan.json'), JSON.stringify({ tree: record.tree ?? tree, gate: 'node check.js', proofs: ['node -e "process.exit(1)"'] }));
+    const entry = { tree: record.tree ?? tree, ms: 1 };
+    await writeFile(path.join(root, '.exo/check-cache.json'), JSON.stringify({ 'node check.js': entry, 'node -e "process.exit(1)"': entry }));
   }
   return root;
 }
 
-test('a land-gate record for the same tree skips the gate and the passed Proof', async () => {
+test('a check-cache entry for the same tree skips the gate and the passed Proof', async () => {
   const root = await landedWithRecord({});
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
@@ -657,14 +658,14 @@ test('a land-gate record for the same tree skips the gate and the passed Proof',
   assert.ok(lines[1].startsWith('SKIP success-criterion'), result.stdout);
 });
 
-test('a land-gate record for another tree reruns the gate and the Proof', async () => {
+test('a check-cache entry for another tree reruns the gate and the Proof', async () => {
   const root = await landedWithRecord({ tree: 'deadbeef' });
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 1);
   assert.deepEqual(result.stdout.trim().split('\n').slice(0, 3), ['FAIL Task 1 (exit 1)', 'FAIL success-criterion (exit 1)', '  check failed']);
 });
 
-test('no land-gate record reruns the gate and the Proof', async () => {
+test('no check-cache entry reruns the gate and the Proof', async () => {
   const root = await landedWithRecord(null);
   const result = await run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
   assert.equal(result.code, 1);
@@ -989,4 +990,13 @@ test('claims-diff holds on the inline route, whose long-format task lists a Modi
   assert.equal(result.code, 0, result.stdout);
   assert.ok(lines.includes('PASS claims-diff'), result.stdout);
   assert.ok(lines.includes('REVIEWER: none (inline route)'), result.stdout);
+});
+
+test('a gate that passed on this tree is skipped on the next run, and a tracked edit reruns it', async () => {
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': '### Task 1: feat(app): x\nDepends on: none | Files: `src/app.js` | Data: none | Proof: none\n', 'check.js': CLEAN_CHECK, '.gitignore': '.exo/\n' });
+  const args = ['--plan', 'plan.md', '--check-command', 'node check.js'];
+  assert.ok((await run(SCRIPT, args, { cwd: root })).stdout.startsWith('PASS success-criterion'));
+  assert.ok((await run(SCRIPT, args, { cwd: root })).stdout.startsWith('SKIP success-criterion (passed on this same tree)'));
+  await writeFile(path.join(root, 'check.js'), `${CLEAN_CHECK}\n`);
+  assert.ok((await run(SCRIPT, args, { cwd: root })).stdout.startsWith('PASS success-criterion'));
 });
