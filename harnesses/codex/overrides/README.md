@@ -1,7 +1,9 @@
 # Overrides
 
 A file here replaces one generated Codex file. Its path under this folder is the
-path under `harnesses/codex/generated/`, such as `skills/<name>/SKILL.md`.
+file's path in the generated tree, such as `skills/<name>/SKILL.md`. The tree is
+built in memory at install; `npm run generate` writes it to the gitignored
+`harnesses/codex/generated/` for inspection.
 
 The first line must be `<!-- exo:override source-sha256=<hash> -->`, where `<hash>` is
 the sha256 of the file's Claude source (`skills/<name>/SKILL.md`, or `agents/<agent>.md`

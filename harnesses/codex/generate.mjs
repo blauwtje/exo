@@ -10,8 +10,11 @@
 // names the sha256 of that file's Claude source; the line itself is dropped
 // from the output. A changed source hash is drift, never a silent fallback.
 //
-//   node harnesses/codex/generate.mjs           write the tree
-//   node harnesses/codex/generate.mjs --check   list drift and exit 1 when any
+// The installer builds this tree in memory, so nothing reads it from disk and it
+// stays uncommitted (gitignored):
+//
+//   node harnesses/codex/generate.mjs           write the tree locally, for inspection
+//   node harnesses/codex/generate.mjs --check   list override problems and exit 1 when any
 //
 // The agent sandbox approximates the tool allowlist: `read-only` for the agents in
 // READ_ONLY, whose tools hold no Edit or Write, `workspace-write` for the rest
@@ -186,26 +189,17 @@ export function generateTree(root = ROOT) {
   return buildOrThrow(root);
 }
 
-// Lists drift as { file, problem } records, empty when every generated file
-// matches, no file stands in `generated/` without a source and every override applies.
-export function findGeneratedDrift(root = ROOT) {
-  const { files, problems } = build(root);
-  const drift = [...problems];
-  for (const [file, text] of files) {
-    const location = path.join(root, file);
-    if (!fs.existsSync(location)) drift.push({ file, problem: 'missing' });
-    else if (fs.readFileSync(location, 'utf8') !== text) drift.push({ file, problem: 'differs from the sources' });
-  }
-  for (const location of listFiles(path.join(root, GENERATED))) {
-    const file = posix(path.relative(root, location));
-    if (!files.has(file)) drift.push({ file, problem: 'not generated from the sources' });
-  }
-  return drift;
+// Lists the overrides that cannot apply as { file, problem } records, empty when
+// every one applies; a source the rules cannot rewrite throws.
+export function findOverrideProblems(root = ROOT) {
+  return build(root).problems;
 }
 
-// A stray file stays: `--check` names it, and the user decides whether to delete it.
+// Replaces the local tree, so a file the sources no longer generate does not linger.
 export function writeGenerated(root = ROOT) {
-  for (const [file, text] of buildOrThrow(root)) {
+  const files = buildOrThrow(root);
+  fs.rmSync(path.join(root, GENERATED), { recursive: true, force: true });
+  for (const [file, text] of files) {
     const location = path.join(root, file);
     fs.mkdirSync(path.dirname(location), { recursive: true });
     fs.writeFileSync(location, text);
@@ -218,9 +212,9 @@ function main() {
     writeGenerated();
     return;
   }
-  const drift = findGeneratedDrift();
-  for (const record of drift) console.log(`${record.file}: ${record.problem}`);
-  if (drift.length > 0) process.exitCode = 1;
+  const problems = findOverrideProblems();
+  for (const record of problems) console.log(`${record.file}: ${record.problem}`);
+  if (problems.length > 0) process.exitCode = 1;
 }
 
 if (fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();

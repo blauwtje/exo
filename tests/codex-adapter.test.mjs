@@ -18,12 +18,12 @@ import { codexHookEntries } from '../harnesses/codex/hooks.mjs';
 const ROOT = new URL('../', import.meta.url).pathname.replace(/\/$/, '');
 const INSTALL = path.join(ROOT, 'install.mjs');
 const TREE = generateTree(ROOT);
-const AGENT_NAMES = fs.readdirSync(path.join(ROOT, 'harnesses', 'codex', 'generated', 'agents')).filter((name) => name.endsWith('.toml'));
+const AGENT_DIRECTORY = 'harnesses/codex/generated/agents/';
+const AGENT_NAMES = [...TREE.keys()].filter((file) => file.startsWith(AGENT_DIRECTORY)).map((file) => file.slice(AGENT_DIRECTORY.length));
 const SKILL_NAMES = fs.readdirSync(path.join(ROOT, 'skills'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name);
 const SKILL = SKILL_NAMES.includes('build') ? 'build' : SKILL_NAMES[0];
-const SKILL_FILE = path.join(ROOT, 'harnesses', 'codex', 'generated', 'skills', SKILL, 'SKILL.md');
 
 function sandbox() {
   const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'codex-adapter-')));
@@ -627,5 +627,5 @@ test('the defaults come from CODEX_HOME and the home folder', () => {
   assert.equal(fs.lstatSync(path.join(paths.base, '.agents', 'skills', SKILL)).isDirectory(), true);
   assert.equal(fs.existsSync(recordPath(paths)), true);
   assert.equal(fs.existsSync(path.join(paths.home, 'agents', AGENT_NAMES[0])), true);
-  assert.equal(fs.existsSync(SKILL_FILE), true);
+  assert.equal(fs.existsSync(path.join(paths.base, '.agents', 'skills', SKILL, 'SKILL.md')), true);
 });

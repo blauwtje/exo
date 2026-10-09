@@ -15,7 +15,7 @@ import { confinedClaude } from '../lib/confine-claude.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HELPER = 'lib/confine-claude.mjs';
-const SKIPPED = ['tests/', 'harnesses/codex/generated/'];
+const SKIPPED = ['tests/'];
 const BYPASS = /bypassPermissions|dangerously-skip-permissions/;
 const JS_START = /\b(?:spawn|spawnSync|exec|execSync|execFile|execFileSync)\(\s*(['"`])claude(\1|\s)/;
 const SH_START = /(?:^|[\s;&|(`'"])claude\s(?:[^;&|]*\s)?(?:-p|--print)(?:\s|$)/;
@@ -94,8 +94,7 @@ test('the scan flags planted offenders and passes confined, excluded and comment
     'bench/comment.mjs': "// one `claude -p` call per cell\n",
     'bench/sources.sh': 'claude -p hi --setting-sources project,local\n',
     [HELPER]: "const mode = 'bypassPermissions';\n",
-    'tests/stub.test.mjs': "const mode = 'bypassPermissions';\n",
-    'harnesses/codex/generated/x.mjs': "const mode = 'bypassPermissions';\n"
+    'tests/stub.test.mjs': "const mode = 'bypassPermissions';\n"
   };
   for (const [file, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

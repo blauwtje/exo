@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { findGeneratedDrift, generateTree } from '../harnesses/codex/generate.mjs';
+import { findOverrideProblems, generateTree, writeGenerated } from '../harnesses/codex/generate.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const agentFiles = fs.readdirSync(path.join(ROOT, 'agents')).filter((name) => name.endsWith('.md'));
@@ -125,8 +125,8 @@ test('the instructions open with the preamble and then the agent body', () => {
   assert.ok(!text.includes('tools: Read'));
 });
 
-test('the committed tree matches the sources', () => {
-  assert.deepEqual(findGeneratedDrift(ROOT), []);
+test('every override in the sources applies', () => {
+  assert.deepEqual(findOverrideProblems(ROOT), []);
 });
 
 test('each skill Markdown file is generated and an explicit-only skill gets a policy file', () => {
@@ -150,14 +150,14 @@ test('an override with a matching source hash replaces the generated file', () =
   assert.equal(generateTree(root).get('harnesses/codex/generated/skills/spec/SKILL.md'), overridden);
 });
 
-test('an override whose source changed, or that names no generated file, is drift', () => {
+test('an override whose source changed, or that names no generated file, is a problem', () => {
   const root = copyOfRepository();
   const overrides = path.join(root, 'harnesses', 'codex', 'overrides');
   fs.mkdirSync(path.join(overrides, 'skills', 'spec'), { recursive: true });
   fs.writeFileSync(path.join(overrides, 'skills', 'spec', 'SKILL.md'), `<!-- exo:override source-sha256=${sha256('old source')} -->\nbody\n`);
   fs.writeFileSync(path.join(overrides, 'skills', 'spec', 'gone.md'), `<!-- exo:override source-sha256=${sha256('x')} -->\nbody\n`);
-  const drift = findGeneratedDrift(root).map((record) => `${record.file}: ${record.problem.split(':')[0]}`).sort();
-  assert.deepEqual(drift, [
+  const problems = findOverrideProblems(root).map((record) => `${record.file}: ${record.problem.split(':')[0]}`).sort();
+  assert.deepEqual(problems, [
     'harnesses/codex/overrides/skills/spec/SKILL.md: source hash changed',
     'harnesses/codex/overrides/skills/spec/gone.md: overrides a file the rules do not generate'
   ]);
@@ -172,19 +172,16 @@ test('an agent source that leaves a skill placeholder fails generation', () => {
   assert.throws(() => generateTree(root), /agents\/run-unit\.md: left unmapped: \{\{SKILL_DIR\}\}/);
 });
 
-test('--check exits 1 and names a changed, a missing and a stray file', () => {
+test('writing the tree puts exactly the generated files on disk and drops a stray one', () => {
   const root = copyOfRepository();
-  const directory = path.join(root, 'harnesses', 'codex', 'generated', 'agents');
-  fs.appendFileSync(path.join(directory, 'exo-build-task.toml'), '# drift\n');
-  fs.rmSync(path.join(directory, 'exo-locate-code.toml'));
-  fs.writeFileSync(path.join(directory, 'exo-stray.toml'), 'name = "exo-stray"\n');
-  const drift = findGeneratedDrift(root).map((record) => `${path.basename(record.file)}: ${record.problem}`).sort();
-  assert.deepEqual(drift, [
-    'exo-build-task.toml: differs from the sources',
-    'exo-locate-code.toml: missing',
-    'exo-stray.toml: not generated from the sources'
-  ]);
-  const result = spawnSync('node', [path.join(root, 'harnesses', 'codex', 'generate.mjs'), '--check'], { encoding: 'utf8' });
-  assert.equal(result.status, 1);
-  assert.match(result.stdout, /exo-build-task\.toml: differs from the sources/);
+  const directory = path.join(root, 'harnesses', 'codex', 'generated');
+  fs.mkdirSync(path.join(directory, 'agents'), { recursive: true });
+  fs.writeFileSync(path.join(directory, 'agents', 'exo-stray.toml'), 'name = "exo-stray"\n');
+  writeGenerated(root);
+  const tree = generateTree(root);
+  const listed = (folder) => fs.readdirSync(folder, { withFileTypes: true })
+    .flatMap((entry) => (entry.isDirectory() ? listed(path.join(folder, entry.name)) : [path.join(folder, entry.name)]));
+  const written = listed(directory).map((file) => path.relative(root, file).split(path.sep).join('/')).sort();
+  assert.deepEqual(written, [...tree.keys()].sort());
+  for (const file of written) assert.equal(fs.readFileSync(path.join(root, file), 'utf8'), tree.get(file));
 });

@@ -15,7 +15,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
-| `npm run generate` | Writes `harnesses/codex/generated/` from the sources (see [Codex](#codex)). |
+| `npm run generate` | Writes the gitignored `harnesses/codex/generated/` from the sources, for inspection only (see [Codex](#codex)). |
 | `node install.mjs [--harness claude,codex] [--scope user\|project\|local] [--project <dir>] [--yes] [--update] [--remove]` | Installs exo into every detected harness from this clone, or updates or removes what it recorded. It generates in memory, so an install never uses a stale tree. |
 | `node verify/skill-graph.mjs <command> [args]` | A read-only index over skills, agents, hooks, root docs, `verify/` and `tests/`: `size`, `range`, `inbound`, `pins`, `refs`, `overlap` and `json`, each printing a compact answer instead of a whole file. |
 
@@ -58,7 +58,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 - Ten roles are plugin agents under `agents/`, because only an agent file pins effort, a tool list and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. A role becomes an agent only when one effort, one tool list and one turn limit fit every dispatch. Each agent's description says what it does.
 - `exo:review-branch` runs on the `review-deep` kind's model and effort, passed in the call, when a landed task carries a `Risk:` field, a manifest or lockfile changed or a public signature changed. It fixes nothing; on `FINDINGS`, `verify` hands its report to `exo:fix-review`, then runs the Final verification once.
 - `lib/model-kinds.json` owns every model and effort: it maps each agent file to a task kind and each kind to a tier and an effort, so this page names neither. A kind's `tier` may be `inherit`, which omits the dispatch's `model` so the session's own model runs. A dispatch that names a model overrides the agent's own.
-- The `budget` setting shifts the tier only, because the Agent tool takes no effort; its rules resolve models from the `budgets` data in that file. Codex ignores a call's model, so `codexTwins` has `npm run generate` write one agent file per budget twin. The `budget` schema's `aliases` (`full`, `normal`, `lean`) let `lib/settings-store.mjs` read an old stored name as the new one.
+- The `budget` setting shifts the tier only, because the Agent tool takes no effort; its rules resolve models from the `budgets` data in that file. Codex ignores a call's model, so `codexTwins` has the Codex generator emit one agent file per budget twin. The `budget` schema's `aliases` (`full`, `normal`, `lean`) let `lib/settings-store.mjs` read an old stored name as the new one.
 - Every other delegate is the harness's `general-purpose` agent; the dispatching skill names its model from `lib/model-kinds.json` and hands it the role text from a `<role>-prompt.md` beside the skill.
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251.
@@ -89,7 +89,7 @@ The plugin ships no permission guard: a cap on what a machine may do belongs in 
 
 ## Codex
 
-`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `npm run generate` applies `harnesses/codex/rules.mjs` to the Claude sources and writes the committed `harnesses/codex/generated/` tree: each skill rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` per agent and per `codexTwins` entry. Edit a source or the table, run `npm run generate`, commit the output; `npm run check` fails on a missing, differing or stray generated file.
+`lib/model-kinds.json` stays the one table: `provider` stays `claude`, and its `providers.codex` block maps each tier to a Codex model and effort. `harnesses/codex/generate.mjs` applies `harnesses/codex/rules.mjs` to the Claude sources and builds the Codex tree in memory: each skill rewritten with its `agents/openai.yaml`, and `agents/exo-<agent>.toml` per agent and per `codexTwins` entry. The Codex installer builds it fresh on every install, so the tree is never committed; `npm run generate` writes it to the gitignored `harnesses/codex/generated/` for inspection only, and nothing reads that copy. `npm run check` fails when the sources cannot generate the tree.
 
 `harnesses/codex/overrides/<path under generated>` replaces one generated file and opens with `<!-- exo:override source-sha256=<hash> -->`. Add one only after a skill reads wrong in a real Codex run; a changed source hash fails `npm run check`.
 

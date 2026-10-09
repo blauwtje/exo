@@ -9,3 +9,4 @@ docs/*
 benchmarks/fixtures/
 benchmarks/runs/
 /tmp
+harnesses/codex/generated/

@@ -31,7 +31,7 @@ import { checkSkillScriptBehavior } from './verify/checks/skill-script-behavior.
 import { checkGitWhitespace } from './verify/checks/git-whitespace.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkModelKinds } from './verify/checks/model-kinds.mjs';
-import { checkCodexGenerated } from './verify/checks/codex-generated.mjs';
+import { checkCodexOverrides } from './verify/checks/codex-overrides.mjs';
 import { checkQuestionOptions } from './verify/checks/question-options.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { runSelfTest } from './verify/self-test.mjs';
@@ -88,7 +88,7 @@ checkSkillScriptBehavior(report, repository);
 checkGitWhitespace(report, repository);
 checkPluginVersion(report, repository);
 checkModelKinds(report, repository);
-checkCodexGenerated(report, repository);
+checkCodexOverrides(report, repository);
 checkQuestionOptions(report, repository);
 checkInstructionDensity(report, repository);
 

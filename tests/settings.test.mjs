@@ -11,7 +11,8 @@ import { fileURLToPath } from 'node:url';
 import { fixture, run } from './harness.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { generateTree } from '../harnesses/codex/generate.mjs';
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const TIGHT_RULE = `. ${SCHEMA.compression.rules.low}`;
@@ -347,8 +348,9 @@ test('on Codex the compression rule is the same as on Claude Code', async () => 
 });
 
 test('the Codex budget rules name only twins that exist as generated agent files', () => {
+  const tree = generateTree();
   for (const rule of Object.values(SCHEMA.budget.codexRules)) {
-    for (const [name] of rule.matchAll(/exo-[a-z-]+/g)) assert.ok(existsSync(new URL(`../harnesses/codex/generated/agents/${name}.toml`, import.meta.url)), name);
+    for (const [name] of rule.matchAll(/exo-[a-z-]+/g)) assert.ok(tree.has(`harnesses/codex/generated/agents/${name}.toml`), name);
   }
 });
 
