@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.109.0 - 2026-10-09
+
 ### Added
 
 - `verify` and `build` review each landed task on its own commits, with a reviewer picked by the task's `Risk:` and three to five concrete questions, and `run-unit` runs that review beside the next builds.
