@@ -233,6 +233,8 @@ function claudeArgs({ model, effort, budget, allow, settings = null }) {
     '--output-format', 'stream-json', '--verbose', '--model', model, '--effort', effort,
     ...(budget === undefined ? [] : ['--max-budget-usd', budget]),
     ...(settings === null ? [] : ['--settings', typeof settings === 'string' ? settings : JSON.stringify(settings)]),
+    // No MCP servers: a run session uses none, and each configured server adds its tool schemas to every turn.
+    '--strict-mcp-config',
     '--allowedTools', ...allow,
     '--disallowedTools', ...DENY_RULES
   ];
@@ -303,11 +305,17 @@ function breachOf(root, before, { trailer = null } = {}) {
   return parent === before.head && lines.length === 1 && lines[0] === trailer ? null : 'extra commit';
 }
 
-/** Spawn claude with the prompt on stdin and its output in `log`; kill it at the timeout. */
-function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs }) {
+/**
+ * Spawn claude with the prompt on stdin and its output in `log`; kill it at the timeout.
+ * `refuseInit(init)` sees the first init event and returns a reason to kill the child at once, else null.
+ */
+function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {
   return new Promise((resolve) => {
     let text = '';
     let timedOut = false;
+    let aborted = false;
+    let initSeen = false;
+    let partial = '';
     let settled = false;
     let graceTimer = null;
     // Detached on POSIX so the child leads a process group the timeout can end whole.
@@ -339,6 +347,16 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs }) {
     const record = (chunk) => {
       text += chunk;
       fs.appendFileSync(log, chunk);
+      if (initSeen) return;
+      const lines = (partial + chunk).split('\n');
+      partial = lines.pop();
+      const init = parseStream(lines.join('\n')).init;
+      if (init === null) return;
+      initSeen = true;
+      if (refuseInit(init) !== null) {
+        aborted = true;
+        endTree('SIGKILL');
+      }
     };
     child.stdout.setEncoding('utf8').on('data', record);
     child.stderr.setEncoding('utf8').on('data', record);
@@ -350,7 +368,7 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs }) {
     });
     // After a kill a grandchild may still hold the pipes, so settle on exit, not close.
     child.on('exit', (code, signal) => {
-      if (!timedOut) return;
+      if (!timedOut && !aborted) return;
       endTree('SIGKILL');
       settle(code, signal);
     });
@@ -572,7 +590,7 @@ async function main(argv) {
   const spawnOne = async ({ prompt, allow, settings, pin, log }) => {
     const before = snapshot(root);
     const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow, settings }), {
-      cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs
+      cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     return { before, outcome, parsed: parseStream(outcome.text) };
   };

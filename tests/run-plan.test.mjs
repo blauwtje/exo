@@ -127,6 +127,8 @@ async function runPlan(context, steps, args = []) {
     const mode = call.argv.indexOf('--permission-mode');
     assert.equal(call.argv[mode + 1], 'dontAsk');
     assert.ok(!call.argv.includes('--bare'));
+    assert.ok(call.argv.includes('--strict-mcp-config'), 'a session loads no MCP servers');
+    assert.ok(!call.argv.includes('--mcp-config'));
     assert.equal(call.marker, null, 'the running session marker is not passed on');
   }
   const lines = result.stdout.trim().split('\n');
@@ -298,6 +300,13 @@ test('exo not loaded: a plugin error for exo in the init event stops the run', a
   const context = await setup();
   const result = await runPlan(context, [{ pluginError: 'hooks failed to load' }]);
   assert.equal(result.stop, 'run-plan: stop: exo not loaded: hooks failed to load');
+});
+
+test('exo not loaded: the child is killed at the init event, not left to run or time out', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ pluginError: 'hooks failed to load', hang: true }], ['--timeout', '1']);
+  assert.equal(result.stop, 'run-plan: stop: exo not loaded: hooks failed to load');
+  assert.doesNotMatch(result.stdout, /timed out/);
 });
 
 test('refused: the default branch, a tracked change, a failing plan-check and a missing claude exit 2 with no spawn', async () => {
