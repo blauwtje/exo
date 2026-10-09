@@ -363,6 +363,7 @@ function summaryLines(run, stop) {
   lines.push(`Total cost: ${money(records.reduce((sum, record) => sum + record.cost, 0))} (reported)`);
   const tail = records.find((record) => record.task === null);
   if (tail !== undefined) lines.push(`Tail: ${tail.log}, turns ${tail.turns}, last line: ${tail.last || '(none)'}`);
+  for (const record of records) for (const command of record.denied) lines.push(`Denied in iteration ${record.iteration}, task ${record.task}: ${command}; add it to Allow: if the task needs it`);
   lines.push(...run.verifyLines);
   for (const [number, landing] of landings) if (!landing.before) lines.push(...reportLines(root, number));
   if (run.uncommitted.size > 0) lines.push(`Uncommitted after a landing: ${[...run.uncommitted].join(', ')}`);
@@ -469,7 +470,9 @@ async function main(argv) {
     const trailer = planTaskTrailer(planId, n);
     const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n) + retryNote, allow: taskAllow, pin: `${planId}/${n}`, log });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
-    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, last };
+    // A denial is only logged: the task is judged by whether it landed, and a run that landed nothing counts toward the stall limit.
+    const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);
+    const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, last, denied };
     run.records.push(record);
 
     const breach = breachOf(root, before, { trailer });
@@ -492,12 +495,6 @@ async function main(argv) {
       }
       continue;
     }
-    // A denial often makes the session report BLOCKED, so it goes first to name the command for Allow:.
-    if (parsed.denials.length > 0) {
-      const denial = parsed.denials[0];
-      stop = `task ${n} denied ${denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`}; add it to Allow:`;
-      break;
-    }
     const blocked = outcome.timedOut ? null : last.match(new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`));
     if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
       stop = `task ${n} blocked: ${blocked?.[1] || last}; re-plan with exo:spec`;
@@ -516,7 +513,7 @@ async function main(argv) {
     iteration += 1;
     const log = path.join(logDir, 'tail.log');
     const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, pin: null, log });
-    run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText) });
+    run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
     const breach = breachOf(root, before);
     const notLoaded = breach === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
     if (breach !== null) stop = `breach in iteration ${iteration}: ${breach}`;

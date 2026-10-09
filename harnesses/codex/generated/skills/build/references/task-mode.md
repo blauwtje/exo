@@ -2,7 +2,7 @@
 
 `build <plan> --task <n>` lands task `<n>` in this session and asks the user nothing. `run-plan.mjs` starts one such session per task.
 
-- Each command → its own Bash call, spelled as the plan or skill gives it, with no `$( )`, `;`, `&&`, redirect or heredoc: the run's allowlist denies anything else, and a denial stops the task.
+- Each command → its own Bash call, spelled as the plan or skill gives it, with no `$( )`, `;`, `&&`, redirect or heredoc: the run's allowlist denies anything else, and a denied command never runs.
 - Create and change files only with the Write and Edit tools; read them with the Read tool.
 - Work in the current checkout: run `git rev-parse --show-toplevel` alone, use the printed path literally as `<checkout>`.
 - Ask nothing: a choice you cannot rule is `BLOCKED`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.

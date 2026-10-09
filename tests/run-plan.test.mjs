@@ -190,18 +190,33 @@ test('blocked: a last line Task 1: BLOCKED stops after one spawn', async () => {
   assert.equal(result.calls.length, 1);
 });
 
-test('denied: a permission denial stops by the command it named', async () => {
+const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
+const deniedLine = /^Denied in iteration 1, task 1: npm install left-pad; add it to Allow: if the task needs it$/m;
+
+test('denied: a denial in a run that lands its task is logged and the loop goes on to the next task', async () => {
   const context = await setup();
-  const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
-  const result = await runPlan(context, [{ denials: [denial] }]);
-  assert.equal(result.stop, 'run-plan: stop: task 1 denied npm install left-pad; add it to Allow:');
+  const result = await runPlan(context, [{ ...land(1), denials: [denial] }, land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
+  const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
+  assert.match(summary, deniedLine);
 });
 
-test('denied: a denial outranks the BLOCKED line it caused', async () => {
+test('denied: two runs with only denials and no landing stop on no progress', async () => {
   const context = await setup();
-  const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
+  const second = { ...denial, tool_use_id: 'toolu_2' };
+  const result = await runPlan(context, [{ denials: [denial] }, { denials: [second] }]);
+  assert.match(result.stop, /^run-plan: stop: no progress on task 1 in 2 iterations, log .+iter-2-task-1\.log$/);
+  assert.equal(result.calls.length, 2);
+  assert.match(result.stdout, deniedLine);
+  assert.match(result.stdout, /^Denied in iteration 2, task 1: npm install left-pad;/m);
+});
+
+test('denied: a denial is logged and the BLOCKED line it caused stops the run', async () => {
+  const context = await setup();
   const result = await runPlan(context, [{ denials: [denial], result: 'Tried.\nTask 1: BLOCKED Bash permission denied in don\'t-ask mode' }]);
-  assert.equal(result.stop, 'run-plan: stop: task 1 denied npm install left-pad; add it to Allow:');
+  assert.equal(result.stop, 'run-plan: stop: task 1 blocked: Bash permission denied in don\'t-ask mode; re-plan with exo:spec');
+  assert.match(result.stdout, deniedLine);
 });
 
 test('breach: one iteration landing two tasks is an extra commit', async () => {
