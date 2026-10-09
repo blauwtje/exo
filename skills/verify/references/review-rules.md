@@ -2,6 +2,15 @@
 
 Branch reviewer follows these when the dispatch names this file.
 
+## Dispatch
+
+- Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
+- Pass: this file's path, plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`.
+- Pass: scope `task <shas>` from the `REVIEW` line, or `overlap` with the `OVERLAP` lines.
+- Pass: report path `<checkout>/.exo/review-<sha7>.md`, sha7 from the line's first sha; for `overlap`, `<checkout>/.exo/review-overlap.md`.
+- Scope `task` → also pass three to five concrete questions, written from the task's heading, `Data:`, `Risk:` and Acceptance line.
+- Reviewer reads only the plan, diff and implementer `Red:` lines.
+
 ## Probe
 
 - Each `fix` finding → line `  Probe: <command>` directly under it.
@@ -12,3 +21,6 @@ Branch reviewer follows these when the dispatch names this file.
 
 - Scope `fix diff` → diff is `git diff HEAD` plus files `git ls-files --others --exclude-standard` lists, not base to HEAD.
 - Scope `fix diff` → skip every task-by-task check.
+- Scope `task <shas>` → diff is `git show <shas>`; read only that task's plan section; answer each question with evidence before the standard pass.
+- Scope `task <shas>` → skip the checks against the plan's goals and other tasks.
+- Scope `overlap` → read each listed file and the named tasks' commits; report only a name, signature or reference two tasks disagree on.

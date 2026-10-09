@@ -12,7 +12,7 @@ Not for a change without a plan.
 
 - Each task's proof command and the plan's success check, run once.
 - Every task marked done or open, plus the checks only you can make.
-- One review of the whole branch.
+- One review per landed task, picked by risk and asked three to five concrete questions, then a model-free list of files and names several tasks changed.
 - Review findings fixed in one commit.
 - A handoff to `ship`.
 

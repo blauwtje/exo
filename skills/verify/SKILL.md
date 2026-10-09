@@ -18,13 +18,12 @@ effort: high
    - `SESSION <check>` line names an `mcp:<tool> <args>` call the script skips → call `mcp__<server>__<tool>` with those args yourself, not through Bash.
    - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; that `FAIL` ends the turn.
    - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the report.
-2. **Review the branch.** `REVIEWER: none` → skip to step 4.
-   - Dispatch the `exo:review-branch` agent, setting its `model` and `effort` to the `REVIEWER:` line's `model=` and `effort=`, unless the budget rule sets others.
-   - Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
-   - Pass: review rules path `${CLAUDE_SKILL_DIR}/references/review-rules.md`.
-   - Pass: plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`, findings path `<checkout>/.exo/branch-review.md`.
+2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
+   - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting its `model` and `effort` to the line's `model=` and `effort=` when it names them, unless the budget rule sets others.
+   - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
+   - Each dispatch follows `references/review-rules.md` `## Dispatch`.
    - `BLOCKED` → end the turn with its report.
-   - Reviewer reads only the plan, diff and implementer `Red:` lines.
+   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`; its line is the review verdict for step 3.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a `codex exec` second review of the same plan and diff; append its findings to the findings path before step 3; `none` or a decline → say nothing.
 3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
    - `fix=0` → step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
@@ -35,7 +34,7 @@ effort: high
 
 | File | Read it when |
 |---|---|
-| `references/review-rules.md` | Step 2, the reviewer's rules. |
+| `references/review-rules.md` | Step 2, the dispatch and the reviewer's rules. |
 | `references/repair.md` | Step 3, after the fixer returns. |
 
 Report: `ship`'s overview as this turn's one report, ending with every task as done or open, each `report` finding, each `question` as a plan question naming its task and any breaking input, and the plan's `MANUAL` checks, listed once.
