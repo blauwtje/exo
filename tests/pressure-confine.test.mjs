@@ -271,3 +271,46 @@ test('on Windows the helper refuses', () => {
   assert.equal(confineRefusal('linux'), undefined);
   assert.throws(() => confinedClaude({ args: ['-p', 'x'], roots: ['C:\\run'], platform: 'win32' }), /Windows/);
 });
+
+// Stands in for `claude` in a --setup run: writes in the case folder the
+// setup just rebuilt and in a sibling case folder.
+const CASE_STAND_IN = [
+  '#!/usr/bin/env node',
+  "const fs = require('node:fs');",
+  "const attempt = (write) => { try { write(); return 'ok'; } catch (error) { return error.code; } };",
+  "const outcome = { caseFolder: attempt(() => fs.writeFileSync(process.env.CASE_FILE, 'x')), otherCase: attempt(() => fs.writeFileSync(process.env.OTHER_CASE_FILE, 'x')) };",
+  "console.log(JSON.stringify({ type: 'result', result: JSON.stringify(outcome) }));"
+].join('\n');
+
+test('on macOS a --setup run can write in /tmp/exo-pressure/<setup folder name>/, its case folder, but not in another case folder', { skip: process.platform !== 'darwin' && 'sandbox-exec confinement is macOS only' }, async (t) => {
+  const directory = await fixture();
+  const bin = path.join(directory, 'bin');
+  await fs.mkdir(bin);
+  await fs.writeFile(path.join(bin, 'claude'), CASE_STAND_IN, { mode: 0o755 });
+  const clone = path.join(directory, 'clone');
+  await fs.mkdir(path.join(clone, '.claude-plugin'), { recursive: true });
+  await fs.writeFile(path.join(clone, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'fixture-plugin' }));
+  await fs.writeFile(path.join(clone, '.claude-plugin', 'marketplace.json'), JSON.stringify({ name: 'fixture-market' }));
+  const promptFile = path.join(directory, 'prompt.txt');
+  await fs.writeFile(promptFile, 'write in the case folder');
+  const skill = `pressure-test-${path.basename(directory)}`;
+  const caseFolder = path.join('/tmp/exo-pressure', skill);
+  const otherCase = `${caseFolder}-other`;
+  t.after(() => Promise.all([caseFolder, otherCase].map((folder) => fs.rm(folder, { recursive: true, force: true }))));
+  await fs.mkdir(otherCase, { recursive: true });
+  const setup = path.join(directory, skill, 'setup.sh');
+  await fs.mkdir(path.dirname(setup));
+  await fs.writeFile(setup, `set -euo pipefail\nrm -rf '${caseFolder}'\nmkdir -p '${caseFolder}/report'\n`);
+  const out = await fixture();
+  const outcome = await run(PRESSURE, ['--prompt', promptFile, '--cells', 'sonnet:high', '--plugin-dir', clone, '--setup', setup, '--out', out], {
+    cwd: directory,
+    env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, TMPDIR: await fixture(), CLAUDE_CONFIG_DIR: await fixture(), CASE_FILE: path.join(caseFolder, 'report', 'implementer-1.md'), OTHER_CASE_FILE: path.join(otherCase, 'x.md') }
+  });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  for (const answer of ['sonnet-high-with-1.md', 'sonnet-high-without-1.md']) {
+    const text = await fs.readFile(path.join(out, answer), 'utf8');
+    const result = JSON.parse(text);
+    assert.equal(result.caseFolder, 'ok', `${answer}: ${text}`);
+    assert.equal(result.otherCase, 'EPERM', `${answer}: ${text}`);
+  }
+});

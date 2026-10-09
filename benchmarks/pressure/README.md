@@ -11,7 +11,7 @@ node skills/edit-skills/scripts/pressure.mjs --prompt benchmarks/pressure/check-
   --setup benchmarks/pressure/check-impact/setup.sh
 ```
 
-`--setup` reruns that script before every run and runs the runs one after another, so each run starts from a fresh fixture that no other run touches. Without it the runs of a cell share one fixture and run in parallel.
+`--setup` reruns that script before every run and runs the runs one after another, so each run starts from a fresh fixture that no other run touches. Each such run can write in `/tmp/exo-pressure/<skill>/`, `<skill>` being the name of the setup script's folder, and otherwise only in its own run folder. Without it the runs of a cell share one fixture, run in parallel and cannot write in it.
 
 `setup.sh` deletes and rebuilds only `/tmp/exo-pressure/<skill>/`, so rerunning it restores a clean fixture. The refactor setup places the fixture scripts that each refactor prompt tells the model to run in its empty directory; the build setup does the same with `setup-strings.sh` for its spec case, one script per no-spec case and `setup-textkit.sh` (placed by `setup-small-plan.sh`) for its small-plan case, each logging its checkout path to `/tmp/exo-pressure/build/checkouts.log` for grading, and the find-cause setup with its three `setup-<fixture>.sh` scripts. Add `--runs 3` to run each cell three times.
 

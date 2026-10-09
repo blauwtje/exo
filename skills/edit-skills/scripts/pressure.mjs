@@ -36,7 +36,10 @@
 // runs `bash <script>` right before every single run instead, and the runs go
 // one after another, alternating arms (comparison 1, with 1, comparison 2,
 // ...), so each run starts from a fixture the script just rebuilt and no other
-// run touches. A setup that exits non-zero skips its run: the answer file
+// run touches. Such a run can also write in its case folder,
+// /tmp/exo-pressure/<the name of the script's folder>, since the case prompts
+// name their fixture files there; without --setup the runs share the fixture
+// in parallel, so it stays read-only. A setup that exits non-zero skips its run: the answer file
 // holds a note with the setup's stderr, the arm line reads
 // `[setup failed: exit <code>]` and the runner ends with exit 1.
 //
@@ -72,6 +75,7 @@ import { UsageError, parseFlags, isMain } from '#script-flags';
 
 const TIMEOUT_MS = 1_800_000;
 const DEFAULT_RUNS = 1;
+const CASE_ROOT = '/tmp/exo-pressure';
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
@@ -228,6 +232,13 @@ function runArm(run) {
   });
 }
 
+// The case folder a setup script rebuilds: `/tmp/exo-pressure/<the name of
+// the script's folder>`, the layout benchmarks/pressure/README.md fixes, since
+// every case prompt names its files by that absolute path.
+function caseFolder(setupScript) {
+  return path.join(CASE_ROOT, path.basename(path.dirname(setupScript)));
+}
+
 // Rebuilds the fixture for the next run; its stdout is dropped so it never
 // mixes into the runner's own lines.
 function runSetup(setupScript) {
@@ -276,16 +287,17 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
     }
     // The run folder holds scratch/, the cwd, and tmp/, its temporary directory;
-    // the run can write nowhere else.
+    // the run can write nowhere else, save the case folder of a --setup run.
     const runFolder = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
     const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
     for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
+    const roots = setupScript === undefined ? [scratch, tmp] : [scratch, tmp, caseFolder(setupScript)];
     const settingsAt = arm.flags.indexOf('--settings');
     const armSettings = settingsAt === -1 ? undefined : JSON.parse(arm.flags[settingsAt + 1]);
     const settings = outputStyle === undefined ? armSettings : { ...armSettings, outputStyle };
     const pluginFlags = settingsAt === -1 ? arm.flags : arm.flags.filter((_, at) => at !== settingsAt && at !== settingsAt + 1);
     const args = claudeArguments({ model, effort, promptText, settingSources, pluginFlags });
-    return runArm(confinedClaude({ args, roots: [scratch, tmp], cwd: scratch, tmp, settings }));
+    return runArm(confinedClaude({ args, roots, cwd: scratch, tmp, settings }));
   };
   const outcomes = setupScript === undefined
     ? await Promise.all(planned.map(startRun))
