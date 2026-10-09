@@ -288,3 +288,9 @@ test('the branch reviewer requires a Probe line under each fix finding and names
   assert.match(reviewer.body, /## Probe/, 'the Probe rule points to review-rules.md ## Probe');
   assert.match(reviewer.body, /report file is the deliverable/, 'the report file is the deliverable');
 });
+
+test('the branch reviewer keeps each finding on one line and shows an example the merge parser reads', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  assert.match(reviewer.body, /each on one line, no heading per finding/, 'a finding shares one line');
+  assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|hazard|question)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
+});
