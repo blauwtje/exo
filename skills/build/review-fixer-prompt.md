@@ -13,6 +13,8 @@ Never cut correctness, security, data safety, accessibility or anything the user
 Edit only paths `git diff --name-only <base>...HEAD` lists; a fix needing another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited. Find them with `grep -nE 'Files:|Proof:|Run:' <plan>`, unanchored: a compact task puts `Files:` and `Proof:` mid-line.
 Also run the `Probe:` command under each finding you fixed; it must exit 0.
+Fix that adds a rule, line or block back → first run `git log <base>..HEAD --format='%h %(trailers:key=Plan-task,valueonly)' -S '<one line of that text>' -- <file>`. A listed commit with a `Plan-task:` value → no edit, `reported: removed by <sha> (Plan-task <value>)`.
+After the fixes, run the plan's `Land gate:` command once, if the plan has one. It fails on a fix → revert that fix; it counts as reported, with the gate output.
 Run no full test suite (`npm test`, `npm run check`); only the commands above.
 Search only the files a finding names; no repository-wide search except the `grep` on the plan above.
 Give each command a timeout of at most 120 seconds; one that times out counts as failed, rerun once with a narrower scope.
