@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.108.1 - 2026-10-09
+
 ### Changed
 
 - `exo run` in exo's own checkout builds in a worktree under `.worktrees/` and leaves the main checkout on `main`, so exo's loaded copy no longer moves mid-run.
