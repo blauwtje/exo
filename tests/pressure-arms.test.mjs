@@ -107,12 +107,13 @@ test('an unread path on a line that quotes text is marked, a bare one on another
 });
 
 // Runs the runner once against a stand-in `claude` whose result event carries
-// `cost` (none when undefined), with two runs per arm; returns the stdout lines.
-async function costRun(cost) {
+// `cost` (none when undefined) and any `extra` fields, with two runs per arm;
+// returns the stdout lines.
+async function costRun(cost, extra = {}) {
   const directory = await fixture();
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
-  const event = { type: 'result', result: 'done', ...(cost === undefined ? {} : { total_cost_usd: cost }) };
+  const event = { type: 'result', result: 'done', ...(cost === undefined ? {} : { total_cost_usd: cost }), ...extra };
   await fs.writeFile(path.join(bin, 'claude'), `#!/usr/bin/env node\nconsole.log(JSON.stringify(${JSON.stringify(event)}));\n`, { mode: 0o755 });
   const clone = await plugin(directory, 'clone');
   const promptFile = path.join(directory, 'prompt.txt');
@@ -134,5 +135,18 @@ test('each arm line carries the result event cost and the cell ends on one total
 
 test('a result with no total_cost_usd gets no cost tag and no total', skipWindows, async () => {
   const lines = await costRun(undefined);
-  assert.deepEqual(lines.filter((text) => text.includes('cost') || text.includes('total')), []);
+  assert.deepEqual(lines.filter((text) => text.includes('cost') || text.includes('tokens') || text.includes('total')), []);
+});
+
+test('each arm line carries usage tokens, cache counted as input, and the total sums them per arm', skipWindows, async () => {
+  const usage = { input_tokens: 10, cache_creation_input_tokens: 200, cache_read_input_tokens: 3000, output_tokens: 45 };
+  const lines = await costRun(0.25, { usage });
+  const tokens = lines.filter((text) => /^ {2}(with|without) \d:/.test(text)).map((text) => /\[cost: \$[\d.]+\] (\[tokens: [^\]]+\])/.exec(text)?.[1]);
+  assert.deepEqual(tokens, Array(4).fill('[tokens: in=3210 out=45]'));
+  assert.deepEqual(lines.filter((text) => text.includes('total')), ['  total without: $0.5000 [tokens: in=6420 out=90]', '  total with: $0.5000 [tokens: in=6420 out=90]']);
+});
+
+test('a usage block with no cost prints tokens alone, a missing count adding 0', skipWindows, async () => {
+  const lines = await costRun(undefined, { usage: { input_tokens: 7 } });
+  assert.deepEqual(lines.filter((text) => text.includes('total')), ['  total without: [tokens: in=14 out=0]', '  total with: [tokens: in=14 out=0]']);
 });
