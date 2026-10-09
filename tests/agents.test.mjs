@@ -281,3 +281,10 @@ test('the branch reviewer holds the test-first rule and the missing-Red: rule', 
     assert.match(reviewer.body, /`Red:` line reads `none` or is missing/, `${reviewer.fileName} Red: rule`);
   }
 });
+
+test('the branch reviewer requires a Probe line under each fix finding and names the report file its deliverable', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  assert.match(reviewer.body, /`  Probe: <command>`/, 'each fix finding carries a Probe line');
+  assert.match(reviewer.body, /## Probe/, 'the Probe rule points to review-rules.md ## Probe');
+  assert.match(reviewer.body, /report file is the deliverable/, 'the report file is the deliverable');
+});
