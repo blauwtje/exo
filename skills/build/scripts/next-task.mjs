@@ -6,13 +6,12 @@
 // the checkout's scratch directory, so the section reaches only build-task
 // and stays out of the session. `--block` prints only the landed set and the
 // next run-unit block, for the build session, which leaves the plan to the unit,
-// then each landed task's proof lines as `--proofs` prints them, so the
-// session holds them for its report before `verify`, whose failed gate ends the
-// turn.
+// then each landed task's proof lines as `--proofs` prints them.
 // On the inline route, where the session builds each task itself, both print
 // the inline steps and each unlanded task's section instead.
 // `--proofs` prints each landed task's `Proof:` lines as land-task recorded
-// them and the decision log's path, for the build report.
+// them and the decision log's path; no step copies them into the final message,
+// since `verify` writes them to the run report.
 
 import fs from 'node:fs';
 import path from 'node:path';

@@ -17,7 +17,7 @@ effort: high
    - `WARN` or `FIX-ONLY` line → list in the report; never ends the turn.
    - `SESSION <check>` line names an `mcp:<tool> <args>` call the script skips → call `mcp__<server>__<tool>` with those args yourself, not through Bash.
    - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; that `FAIL` ends the turn.
-   - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the report.
+   - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the `REPORT` file.
 2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
    - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting its `model` and `effort` to the line's `model=` and `effort=` when it names them, unless the budget rule sets others.
    - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
@@ -37,4 +37,4 @@ effort: high
 | `references/review-rules.md` | Step 2, each dispatch. |
 | `references/repair.md` | Step 3, after the fixer returns. |
 
-Report: after appending `Changed` and follow-up chores to the `REPORT` file, three state lines (outcome; tasks and checks counted; branch and run report path), then the one blocking decision with one recommended option.
+Report: `REPORT` file gets `Changed`, chores, `report` findings. Message: three state lines (outcome; tasks and checks counted, open tasks named; branch and `REPORT` path), `question` findings, one decision: `FAIL`, else `question`, else `ship`.

@@ -13,5 +13,6 @@ test('review-branch marks a no-behavior repair report, never fix', () => {
   const line = review.split('\n').find((l) => /changes no output/.test(l) && /placement/.test(l));
   assert.ok(line, 'rule line missing in ## Review');
   assert.match(line, /`report`/);
+  assert.match(line, /instruction a reader follows/);
   assert.match(line, /never `fix`/);
 });
