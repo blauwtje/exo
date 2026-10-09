@@ -76,6 +76,7 @@ test('a task without a Commit: block is refused', async () => {
 
 test('a failing block reports the failure', async () => {
   const { root, planPath } = await landingCheckout();
+  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n'); // as in a real checkout, so the recorded pass is not committed
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root }), /Commit: block of Task 1 failed/);
 });
 
@@ -185,19 +186,44 @@ test('a passing Land gate lets a green task land', async () => {
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
 });
 
-test('a passing Land gate leaves a record of the landed tree, the gate and the passed Proof', async () => {
+test('a passing Land gate and Proof are recorded with their time, and no land-gate file is written', async () => {
   const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('## Plan basis\n', '## Plan basis\nLand gate: true\n'));
   const plan = await fs.readFile(planPath, 'utf8');
   landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
-  const record = JSON.parse(await fs.readFile(path.join(root, '.exo/land-gate-compact.json'), 'utf8'));
-  assert.deepEqual(record, { tree: git(root, 'rev-parse', 'HEAD^{tree}'), gate: 'true', proofs: ['node tests/app.test.mjs'] });
+  const cache = JSON.parse(await fs.readFile(path.join(root, '.exo/check-cache.json'), 'utf8'));
+  assert.deepEqual(Object.keys(cache).sort(), ['node tests/app.test.mjs', 'true']);
+  assert.equal(typeof cache.true.ms, 'number');
+  assert.equal(cache.true.tree.length, 40);
+  await assert.rejects(fs.access(path.join(root, '.exo/land-gate-compact.json')));
 });
 
-test('no record is written when no Land gate ran', async () => {
+test('a Land gate whose last pass was slow is skipped with one line and the landing commits', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  landTask({ planPath, planText: PLAN, number: 1, root });
-  await assert.rejects(fs.access(path.join(root, '.exo/land-gate-fixture.json')));
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/check-cache.json'), JSON.stringify({ 'echo ran >> gate.log && exit 1': { tree: 'old', ms: 60000 } }));
+  const output = landTask({ planPath, planText: withLandGate('echo ran >> gate.log && exit 1'), number: 1, root });
+  assert.match(output, /^Land gate "echo ran >> gate\.log && exit 1" skipped: its last pass took 60000 ms, so verify runs it once\.$/m);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  await assert.rejects(fs.access(path.join(root, 'gate.log')));
+});
+
+test('a Land gate that already passed on this tree is skipped with one line', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const { recordPass } = await import('#check-cache');
+  recordPass(root, 'exit 1', 5);
+  const output = landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root });
+  assert.match(output, /^Land gate "exit 1" skipped: it already passed on this tree\.$/m);
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+});
+
+test('a fast record still runs the Land gate and refuses a failing one', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo/check-cache.json'), JSON.stringify({ 'exit 1': { tree: 'old', ms: 100 } }));
+  assert.throws(() => landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root }), /Land gate "exit 1" failed/);
 });
 
 test('a failing Land gate is refused before anything commits, naming the command and its output', async () => {
@@ -422,8 +448,8 @@ test('a long-format task lands on its passing Run: commands, skipping a red step
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
   assert.doesNotMatch(result.stdout, /^Proof: false/m);
-  const record = JSON.parse(await fs.readFile(path.join(root, '.exo/land-gate-compact.json'), 'utf8'));
-  assert.deepEqual(record.proofs, ['node tests/app.test.mjs']);
+  const cache = JSON.parse(await fs.readFile(path.join(root, '.exo/check-cache.json'), 'utf8'));
+  assert.ok('node tests/app.test.mjs' in cache);
 });
 
 test('a landing records each passed proof as the report\'s Proof line, its command, exit status and pass count', async () => {
@@ -906,7 +932,7 @@ test('--check validates the stray paths and the report, and commits nothing', as
   assert.equal(ok.stdout, 'Report OK: Task 1\n');
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
   assert.match(git(root, 'status', '--porcelain'), /src\/app\.js/);
-  await assert.rejects(fs.access(path.join(root, '.exo', 'land-gate-compact.json')));
+  await assert.rejects(fs.access(path.join(root, '.exo', 'check-cache.json')));
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export const extra = 1;\n');
   const stray = await check();
   assert.equal(stray.code, 1);

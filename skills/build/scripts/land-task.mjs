@@ -30,6 +30,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { cachedPass, recordPass, SLOW_GATE_MS } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
@@ -291,11 +292,16 @@ function proofCommandOf(task, reportText, reportPath) {
 // signal or the timeout refuses the landing with the output's last lines; a
 // pass returns its exit status and those lines for the printout.
 function runProof(task, command, root, field) {
+  if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
+  const started = Date.now();
   const proofRun = spawnSync('bash', ['-e', '-c', `exec 2>&1\n${command}`], {
     cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
   });
   const tail = (proofRun.stdout ?? '').split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
-  if (proofRun.status === 0) return { command, tail };
+  if (proofRun.status === 0) {
+    recordPass(root, command, Date.now() - started);
+    return { command, tail };
+  }
   let reason = `exit ${proofRun.status}`;
   if (proofRun.error?.code === 'ETIMEDOUT') reason = `timed out after ${PROOF_TIMEOUT_MS / 1000}s`;
   else if (proofRun.error !== undefined) reason = `spawn error ${proofRun.error.message}`;
@@ -464,27 +470,36 @@ function runLint(lint, files, root) {
 // A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
 // right before the commit, so a check spec wrote against the plan's own
 // layout still holds on whatever the build left; a plan without the line, or
-// with `Land gate: none`, gates on nothing, as land-task always has.
+// with `Land gate: none`, gates on nothing, as land-task always has. The
+// gate is skipped, with one line returned, when it already passed on this
+// working tree or its last recorded pass took SLOW_GATE_MS or more, which
+// verify then runs once. A pass is recorded with its time.
 function runLandGate(landGate, root) {
-  if (landGate === null || landGate === 'none') return false;
+  if (landGate === null || landGate === 'none') return null;
+  if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: it already passed on this tree.\n`;
+  const last = lastPassMs(root, landGate);
+  if (last !== null && last >= SLOW_GATE_MS) {
+    return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so verify runs it once.\n`;
+  }
+  const started = Date.now();
   const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8' });
   if (gate.status !== 0) {
     const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${gate.error?.message ?? ''}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
-  return true;
+  recordPass(root, landGate, Date.now() - started);
+  return '';
 }
 
-// The record verify.mjs reads to skip what this landing just ran and passed:
-// the landed commit's tree, the gate command and the task's proof commands. It holds
-// only the latest landing, so an earlier task's proof, passed on an older
-// tree, is never skipped; a later landing or edit changes the tree, and
-// verify then reruns everything. Lift the one-landing limit by keying proofs
-// per tree.
-function writeLandGateRecord({ root, planId, gate, proofs }) {
-  const tree = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
-  fs.mkdirSync(path.join(root, SCRATCH_FOLDER), { recursive: true });
-  fs.writeFileSync(path.join(root, SCRATCH_FOLDER, `land-gate-${planId}.json`), `${JSON.stringify({ tree, gate, proofs })}\n`);
+// The time of `command`'s latest recorded pass on any tree, else null; check-cache's
+// cachedPass answers only for the current tree.
+function lastPassMs(root, command) {
+  try {
+    const ms = JSON.parse(fs.readFileSync(path.join(root, SCRATCH_FOLDER, 'check-cache.json'), 'utf8'))[command]?.ms;
+    return typeof ms === 'number' ? ms : null;
+  } catch {
+    return null;
+  }
 }
 
 // A test runner's pass count (`ℹ pass 3`, `# pass 3`, `3 passing`, `Tests: 3 passed`), the line
@@ -562,7 +577,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
-  const gateRan = runLandGate(frame.landGate, root);
+  const gateLine = runLandGate(frame.landGate, root) ?? '';
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });
@@ -582,7 +597,6 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   if (subject !== expectedSubject) {
     throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
   }
-  if (gateRan) writeLandGateRecord({ root, planId, gate: frame.landGate, proofs: proofCommands });
   const landed = landedTasks(plan.tasks, root, planId);
   appendDecisions({ planPath, reportText, taskCount: plan.tasks.length, number, sha });
   writeProofRecord({ root, planId, number, proofs });
@@ -591,7 +605,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const route = planRoute(plan.tasks);
   // The inline route builds in the run checkout, never in a wave's worktrees.
   const wave = nextWave(plan.tasks, landed, route.route === 'inline' || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
-  return `Committed: ${sha} Task ${number}\n${proofLines}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${waveLine(wave)}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${waveLine(wave)}\n`;
 }
 
 function main(argv) {
