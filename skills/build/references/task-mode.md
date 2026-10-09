@@ -4,7 +4,9 @@
 
 ## Rules
 
-- Run one command per Bash call; run the plan's Proof, Run, Lint, Land gate and Allow commands exactly as written; no `$( )`, `;`, `&&`, `|`, redirect, heredoc or `for` loop of your own: the run's allowlist denies anything else, and a denied command never runs.
+- Run one command per Bash call.
+- Run the plan's Proof, Run, Lint, Land gate and Allow commands exactly as written.
+- Add no `$( )`, `;`, `&&`, `|`, redirect, heredoc or `for` loop of your own: the run's allowlist denies anything else, and a denied command never runs.
 - Create and change files only with the Write and Edit tools; read them with the Read tool.
 - Work in `<checkout>`, the session's current checkout, with that path literally.
 - Ask nothing: a choice you cannot rule is `BLOCKED`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.
