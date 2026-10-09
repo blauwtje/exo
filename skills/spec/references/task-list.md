@@ -9,8 +9,8 @@ Reader has no context: no implicit file, shape or step.
    - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
    - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; a task lands only on a pass, so the breaking task fixes it. It runs per task only while the full check stays under 60 s, else verify runs it once.
    - Root package.json has a `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips a task's `Files:`.
-   - `Allow:` → each backticked command a task runs that no other field names, comma-separated, else `none`.
-3. `## Success criterion`: one backticked command proving every task landed; no user-only check.
+   - `Allow:` → each backticked command a task runs that no other field names, else `none`.
+3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.
 4. `## Checkpoint`: `Blocks first:`, `Parallel:`, `Shared state:`, `Smallest safe split:`, each naming tasks, a shared target or `none`.
 5. `## Tasks`, dependency-ordered.
 
@@ -28,7 +28,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 - MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not a shell.
 - `Data:` → structure holding the result, not its fields or logic; ask before one changing a public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
-- Heading → `land-task`'s commit subject.
+- Heading → `land-task`'s conventional-commit subject.
 - The task stages `Files:`; no `Commit:` block.
 - `Design:` → skill a task loads first, only for a page's look.
 

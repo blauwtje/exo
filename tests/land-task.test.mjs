@@ -199,6 +199,15 @@ test('a passing Land gate and Proof are recorded with their time, and no land-ga
   await assert.rejects(fs.access(path.join(root, '.exo/land-gate-compact.json')));
 });
 
+test('a Land gate that edits a tracked file is not recorded as a pass', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const gate = "echo '// edited' >> src/app.js";
+  landTask({ planPath, planText: withLandGate(gate), number: 1, root });
+  const cache = JSON.parse(await fs.readFile(path.join(root, '.exo/check-cache.json'), 'utf8').catch(() => '{}'));
+  assert.ok(!(gate in cache));
+});
+
 test('a Land gate whose last pass was slow is skipped with one line and the landing commits', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

@@ -30,7 +30,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
-import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS } from '#check-cache';
+import { cachedPass, lastPassMs, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
@@ -293,13 +293,14 @@ function proofCommandOf(task, reportText, reportPath) {
 // pass returns its exit status and those lines for the printout.
 function runProof(task, command, root, field) {
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
+  const before = workingTreeKey(root);
   const started = Date.now();
   const proofRun = spawnSync('bash', ['-e', '-c', `exec 2>&1\n${command}`], {
     cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
   });
   const tail = (proofRun.stdout ?? '').split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   if (proofRun.status === 0) {
-    recordPass(root, command, Date.now() - started);
+    recordPass(root, command, Date.now() - started, before);
     return { command, tail };
   }
   let reason = `exit ${proofRun.status}`;
@@ -481,13 +482,14 @@ function runLandGate(landGate, root) {
   if (last !== null && last >= SLOW_GATE_MS) {
     return `Land gate "${landGate}" skipped: its last pass took ${last} ms, so verify runs it once.\n`;
   }
+  const before = workingTreeKey(root);
   const started = Date.now();
   const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8' });
   if (gate.status !== 0) {
     const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${gate.error?.message ?? ''}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
-  recordPass(root, landGate, Date.now() - started);
+  recordPass(root, landGate, Date.now() - started, before);
   return '';
 }
 

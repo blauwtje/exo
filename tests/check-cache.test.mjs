@@ -58,6 +58,23 @@ test('an ignored file and the scratch folder do not change the key', () => {
   assert.equal(workingTreeKey(root), before);
 });
 
+test('a pass is recorded only for the tree it ran on', () => {
+  const { root } = repo();
+  const before = workingTreeKey(root);
+  fs.writeFileSync(path.join(root, 'a.txt'), 'edited during the run\n');
+  recordPass(root, 'x', 5, before);
+  assert.equal(cachedPass(root, 'x'), null);
+  recordPass(root, 'x', 5, workingTreeKey(root));
+  assert.deepEqual(cachedPass(root, 'x'), { ms: 5 });
+});
+
+test('a file named like a pathspec magic is hashed literally', () => {
+  const { root } = repo();
+  const before = workingTreeKey(root);
+  fs.writeFileSync(path.join(root, ':(glob)*.txt'), 'x\n');
+  assert.notEqual(workingTreeKey(root), before);
+});
+
 test('a second command keeps the first entry', () => {
   const { root } = repo();
   recordPass(root, 'a', 1);
