@@ -140,7 +140,7 @@ async function runPlan(context, steps, args = []) {
 const allowOf = (call) => call.argv.slice(call.argv.indexOf('--allowedTools') + 1, call.argv.indexOf('--disallowedTools'));
 const settingsOf = (call) => (call.argv.includes('--settings') ? JSON.parse(call.argv[call.argv.indexOf('--settings') + 1]) : null);
 const SCRIPTS = path.join(PLUGIN_ROOT, 'skills', 'build', 'scripts');
-const SANDBOX_RULE = /^5\. Bash runs in a sandbox\. A command that fails with "Operation not permitted" or EPERM hit the sandbox/m;
+const SANDBOX_RULE = /^- Bash runs in a sandbox\. A command that fails with "Operation not permitted" or EPERM hit the sandbox/m;
 const sandboxOff = (context) => fs.writeFile(path.join(context.home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { sandbox: { enabled: false } } }));
 
 /** The allowlist with the sandbox off: the plan's commands, read-only git and inspection. */
@@ -164,12 +164,15 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.equal(result.code, 0);
   assert.equal(result.calls.length, 3);
   assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
-  assert.match(result.calls[0].stdin, /^\/exo:build .*plan\.md --task 1/);
+  assert.match(result.calls[0].stdin, /^Land Task 1 of .*plan\.md in this session\./);
   assert.match(result.calls[2].stdin, /^\/exo:verify .*plan\.md Push nothing and open no pull request\./);
   const prompt = result.calls[0].stdin;
   const learnings = path.join(context.root, '.exo', 'run-plan', 'plan', 'learnings.md');
   assert.ok(prompt.includes('### Task 1: feat(a): add a\nDepends on: none | Files: `a.txt`'), 'the task section');
-  for (const rule of [/^1\. Change only the files/m, /^2\. Make the task's proof command pass/m, /^3\. Land through land-task/m, /^4\. Read /m]) assert.match(prompt, rule);
+  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- One command per Bash call/m, /^## Build$/m, /^## Lean code$/m, /^## Finish$/m]) assert.match(prompt, rule);
+  assert.ok(prompt.includes(`node "${path.join(SCRIPTS, 'land-task.mjs')}" --plan ${context.plan} --task 1 --root ${context.root}`), 'the land command');
+  assert.doesNotMatch(prompt, /^\/exo:build|## Design tasks|next-task\.mjs --plan|mcp-tool-call/m, 'no skill load, no design rule, no probe for a shell task');
+  assert.equal(prompt.match(/### Task 1:/g).length, 1, 'the task section appears once');
   assert.ok(prompt.includes('Task 1: BLOCKED <file> is missing from the file list'));
   assert.ok(prompt.includes(learnings), 'the learnings path');
   assert.equal(await fs.readFile(learnings, 'utf8'), '# Learnings\n');
@@ -406,9 +409,7 @@ test('sandbox: run.json sandbox.enabled false keeps the plan allowlist, passes n
   for (const call of result.calls) assert.equal(settingsOf(call), null);
   assertPlanAllowlist(result.calls[0]);
   assertPlanAllowlist(result.calls[2]);
-  const mcpCheck = path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs');
-  const nextTask = path.join(SCRIPTS, 'next-task.mjs');
-  for (const rule of [`Bash(node "${mcpCheck}" *)`, `Bash(node ${mcpCheck} *)`, `Bash(node ${nextTask} *)`]) assert.ok(allowOf(result.calls[0]).includes(rule), rule);
+  assert.ok(!allowOf(result.calls[0]).some((rule) => rule.includes('next-task.mjs') || rule.includes('mcp-tool-call.mjs')));
   assert.doesNotMatch(result.calls[0].stdin, SANDBOX_RULE);
 });
 

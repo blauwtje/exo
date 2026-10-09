@@ -385,3 +385,14 @@ test('the brief states build-task\'s report cap', async () => {
   const brief = await fs.readFile(briefPath(root, 1), 'utf8');
   assert.match(brief, new RegExp(`^Report cap: ${cap} lines$`, 'm'), brief);
 });
+
+test('the brief names a Proof that calls an MCP tool as Deferred:, and a shell Proof gets no such line', async () => {
+  const build = async (proof) => {
+    const planText = briefFixture({ tasks: [compactTask({ number: 1, title: 'feat(tasks): add a dueDate field', files: ['src/tasks/task.js'], proof })] });
+    const root = await gitRepository({ 'src/tasks/task.js': 'export const task = {};\n', 'docs/plans/fixture.md': planText });
+    nextTaskReport({ planPath: path.join(root, 'docs/plans/fixture.md'), planText, root });
+    return fs.readFile(briefPath(root, 1), 'utf8');
+  };
+  assert.match(await build('mcp:run_playtest zone-1'), /^Deferred: mcp:run_playtest zone-1$/m);
+  assert.doesNotMatch(await build('node --test -- task.test'), /^Deferred:/m);
+});

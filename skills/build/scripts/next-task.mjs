@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { reportCap } from '#return-caps';
+import { mcpToolCall } from '#mcp-tool-call';
 import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
@@ -84,7 +85,18 @@ function reportCapLines() {
   return cap === null ? [] : [`Report cap: ${cap} lines`];
 }
 
-function taskBrief(task, frame, root) {
+// The Proof: and Run: commands that name an MCP tool, which only the session
+// can call, so a builder reads them off the brief instead of probing each one.
+function deferredLines(task) {
+  const commands = [task.proof, ...task.runs.map((run) => run.command)]
+    .filter((command) => command !== null && command !== undefined)
+    .map((command) => command.replace(/^`(.*)`$/, '$1'));
+  return [...new Set(commands.filter((command) => mcpToolCall(command) !== null))].map((command) => `Deferred: ${command}`);
+}
+
+// The brief's text: the frame fields that name the task's paths, then the
+// task section once. `run-plan.mjs` prints it in the session's prompt.
+export function taskBrief(task, frame, root) {
   return [
     `Goal: ${frame.goal}`,
     ...successCriterionLines(frame),
@@ -96,6 +108,7 @@ function taskBrief(task, frame, root) {
     ...bulletLines(bulletsFor(task, frame.decisions)),
     ...visualDirectionLines(task, frame),
     ...reportCapLines(),
+    ...deferredLines(task),
     'Modify ranges:',
     ...bulletLines(modifyRanges(task, root)),
     '',

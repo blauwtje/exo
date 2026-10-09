@@ -36,22 +36,21 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { defaultBranch, frameOf, landedTasks, loopCommands, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, landedTasks, loopCommands, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { taskBrief } from './next-task.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 
 const KILL_GRACE_MS = 5000;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
 const SCRIPT = {
-  nextTask: path.join(HERE, 'next-task.mjs'),
   landTask: path.join(HERE, 'land-task.mjs'),
   verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
-  planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'),
-  mcpToolCall: path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs')
+  planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs')
 };
 
 // The markers a running Claude Code session sets; any other CLAUDE_CODE_*
@@ -216,7 +215,7 @@ export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PL
     ...pathRule('Write', root)
   ];
   if (sandbox) return [...new Set([...paths, ...scriptRules(unsandboxedScripts(tail))])];
-  const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.nextTask, SCRIPT.landTask, SCRIPT.mcpToolCall];
+  const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask];
   const commands = loopCommands(plan)
     .filter((entry) => entry.field !== 'Success criterion')
     .flatMap((entry) => entry.parts.map((part) => `Bash(${part} *)`));
@@ -437,6 +436,66 @@ function preflight(planArgument, flags) {
   return { claude, planPath, root, plan, branch };
 }
 
+const SKILL_DIR = path.dirname(HERE);
+const readText = (...parts) => fs.readFileSync(path.join(...parts), 'utf8');
+
+/** The lines under `## <heading>` of a markdown file, up to the next `## `, without surrounding blank lines. */
+function sectionOf(text, heading) {
+  const lines = text.split('\n');
+  const start = lines.indexOf(`## ${heading}`);
+  if (start === -1) throw new Error(`no '## ${heading}' section`);
+  const length = lines.slice(start + 1).findIndex((line) => line.startsWith('## '));
+  return lines.slice(start, length === -1 ? undefined : start + 1 + length).join('\n').trimEnd();
+}
+
+/**
+ * The first prompt of one task session: the task's brief and the rules it needs, read from
+ * their one source files (task-mode.md, build-task.md, lean.md), so the session reads none of them
+ * and runs neither next-task.mjs nor a land-task check.
+ */
+export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, pluginRoot = PLUGIN_ROOT }) {
+  const task = plan.tasks.find((entry) => entry.number === number);
+  const fill = (text) => text
+    .replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIR)
+    .replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot)
+    .replaceAll('<checkout>', root)
+    .replaceAll('<plan>', planPath)
+    .replaceAll('<n>', String(number));
+  const taskMode = readText(SKILL_DIR, 'references', 'task-mode.md');
+  const builder = readText(pluginRoot, 'agents', 'build-task.md');
+  const lean = readText(pluginRoot, 'skills', 'route-skills', 'references', 'lean.md');
+  const drift = driftOf(task, root);
+  return [
+    `Land Task ${number} of ${planPath} in this session.`,
+    `Report to: ${path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`)}`,
+    ...drift.map((item) => `PLAN DRIFT: Task ${number}: ${item}`),
+    '',
+    'Brief:',
+    taskBrief(task, frameOf(plan.frame), root).trimEnd(),
+    '',
+    fill(sectionOf(taskMode, 'Rules')),
+    '',
+    ...(task.design ? [fill(sectionOf(taskMode, 'Design tasks')), ''] : []),
+    fill(sectionOf(builder, 'Build')),
+    '',
+    fill(sectionOf(builder, 'Stop')),
+    '',
+    fill(sectionOf(builder, 'Report')),
+    '',
+    `## Lean code\n\n${lean.slice(lean.indexOf('## ')).replaceAll('\n## ', '\n### ').replace(/^## /, '### ').trimEnd()}`,
+    '',
+    fill(sectionOf(taskMode, 'Finish')),
+    '',
+    '## This run',
+    '',
+    `- Change only the files this task lists. If a registry, index or test list must name the new file and is not listed, end on \`Task ${number}: BLOCKED <file> is missing from the file list\`.`,
+    `- Read ${learnings} first, and before ending append one line on anything the next task should know.`,
+    ...(sandbox
+      ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. land-task reruns the proof outside the sandbox, so land when those are the only failures left.']
+      : [])
+  ].join('\n');
+}
+
 function reportLines(root, number) {
   const file = path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
   if (!isFileOnDisk(file)) return [];
@@ -571,23 +630,7 @@ async function main(argv) {
   const taskSettings = sandboxSettings(sandbox);
   const tailSettings = sandboxSettings(sandbox, { tail: true });
   const learnings = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'learnings.md');
-  const buildPrompt = (number) => {
-    const task = plan.tasks.find((entry) => entry.number === number);
-    return [
-      `/exo:build ${planPath} --task ${number}`,
-      '',
-      task.section,
-      '',
-      'Rules:',
-      `1. Change only the files this task lists. If a registry, index or test list must name the new file and is not listed, end on \`Task ${number}: BLOCKED <file> is missing from the file list\`.`,
-      '2. Make the task\'s proof command pass.',
-      '3. Land through land-task as the build skill says, never with git commit.',
-      `4. Read ${learnings} first, and before ending append one line on anything the next task should know.`,
-      ...(sandbox.enabled
-        ? ['5. Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. land-task reruns the proof outside the sandbox, so land when those are the only failures left.']
-        : [])
-    ].join('\n');
-  };
+  const buildPrompt = (number) => taskPrompt({ plan, planPath, number, root, learnings, sandbox: sandbox.enabled });
 
   if (flags['dry-run']) {
     const order = taskOrder(plan.tasks, landedAtStart);
