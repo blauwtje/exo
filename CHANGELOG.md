@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.111.1 - 2026-10-09
+
 ### Changed
 
 - The branch reviewer must write a `Probe:` line for each `fix` finding, and its report file is named the deliverable.
