@@ -82,7 +82,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 `hooks/hooks.json` registers two commands, one hook process per event and matcher rather than one per feature: `hooks/session-start.mjs` on `SessionStart` and `hooks/dispatch-bash.mjs` on `PreToolUse` for `Bash`. The dispatcher runs the three guards under `hooks/guards/` (none is a process entry of its own) each in its own try/catch, returns the first deny and joins the additional contexts. Hook code (`hooks/**/*.mjs` plus `lib/hook-input.mjs`) stays within `HOOK_LINES_LOCK` in `verify/budgets.mjs`, checked by `verify/checks/hook-size.mjs`.
 
 - **SessionStart** (startup, resume, clear, compaction): writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set) and injects facts only: the settings line, the handoff and memory pointers when those files exist, the Codex host note on Codex, and the text of `hooks/session-rules.md` when that file exists. The `route-skills` body, a welcome and the book sentence are not injected; `route-skills` stays a user-only skill.
-- **Delegate limits**: each agent that builds, reviews or repairs sets `maxTurns` in its frontmatter (60, `run-unit` 90); the harness ends a delegate at that turn.
+- **Delegate limits**: each agent that builds, reviews or repairs sets `maxTurns` in its frontmatter (60; `run-unit` 90, `fix-review` 40); the harness ends a delegate at that turn.
 
 Each hook entry pins `"shell": "bash"` and `.gitattributes` forces LF; `CLAUDE.md` `## Environment` says why.
 

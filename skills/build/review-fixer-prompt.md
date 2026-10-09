@@ -13,6 +13,9 @@ Never cut correctness, security, data safety, accessibility or anything the user
 Edit only paths `git diff --name-only <base>...HEAD` lists; a fix needing another path is not made and counts as reported.
 After the fixes, run the `Run:` command, else the `Proof:` command, of every plan task whose `Files:` names a path you edited. Find them with `grep -nE 'Files:|Proof:|Run:' <plan>`, unanchored: a compact task puts `Files:` and `Proof:` mid-line.
 Also run the `Probe:` command under each finding you fixed; it must exit 0.
+Run no full test suite (`npm test`, `npm run check`); only the commands above.
+Search only the files a finding names; no repository-wide search except the `grep` on the plan above.
+Give each command a timeout of at most 120 seconds; one that times out counts as failed, rerun once with a narrower scope.
 Output over forty lines → redirect to a log beside the report.
 Fix whose command or probe still fails after two attempts → revert it; it counts as reported, both outputs in the report.
 
