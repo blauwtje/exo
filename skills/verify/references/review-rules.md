@@ -13,6 +13,7 @@ Branch reviewer follows these when the dispatch names this file.
 - Reviewer reads only the plan, diff and implementer `Red:` lines.
 - Reviewer return with no report file at its report path, whatever its return line → still pass that path to `merge-reviews.mjs`, which merges it as `BLOCKED`.
 - Merged `verdict=BLOCKED` → end the turn with its report, naming each task without a report; no resume, no redispatch.
+- Merge prints `UNREAD <n>` → list each unread finding in the `REPORT` file as `report`, name the count in the message; no fixer dispatch, no rerun, no rewriting the finding into one-line shape.
 
 ## Probe
 
