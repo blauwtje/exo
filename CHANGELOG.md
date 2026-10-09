@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- A full check or Proof that already passed on the same working tree is skipped by `land-task` and `verify`, through a shared check cache, and `land-task` runs the project's full check per task only while its last pass took under 60 s.
+
 ## 0.108.1 - 2026-10-09
 
 ### Changed
