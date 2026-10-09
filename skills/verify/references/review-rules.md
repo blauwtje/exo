@@ -11,7 +11,8 @@ Branch reviewer follows these when the dispatch names this file.
 - Pass: report path `<checkout>/.exo/review-<sha7>.md`, sha7 from the line's first sha; for `overlap`, `<checkout>/.exo/review-overlap.md`.
 - Scope `task` → also pass three to five concrete questions, written from the task's heading, `Data:`, `Risk:` and Acceptance line.
 - Reviewer reads only the plan, diff and implementer `Red:` lines.
-- Reviewer return with no `verdict=` line and no report file (turn cap) → keep its path out of `merge-reviews.mjs`, list the task as `unreviewed (turn cap)` in the `REPORT` file, continue; no resume, no redispatch.
+- Reviewer return with no report file at its report path, whatever its return line → still pass that path to `merge-reviews.mjs`, which merges it as `BLOCKED`.
+- Merged `verdict=BLOCKED` → end the turn with its report, naming each task without a report; no resume, no redispatch.
 
 ## Probe
 
