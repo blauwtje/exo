@@ -156,6 +156,13 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.ok(result.calls[0].argv.includes('Bash(node --version *)'));
   const mcpCheck = path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs');
   for (const rule of [`Bash(node "${mcpCheck}" *)`, `Bash(node ${mcpCheck} *)`]) assert.ok(result.calls[0].argv.includes(rule), rule);
+  for (const call of [result.calls[0], result.calls[2]]) {
+    const allow = call.argv.slice(call.argv.indexOf('--allowedTools') + 1, call.argv.indexOf('--disallowedTools'));
+    for (const command of ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n']) {
+      for (const rule of [`Bash(${command})`, `Bash(${command} *)`]) assert.ok(allow.includes(rule), rule);
+    }
+    for (const rule of ['Bash(sed *)', 'Bash(sed)', 'Bash(python3 *)', 'Bash(find *)']) assert.ok(!allow.includes(rule), rule);
+  }
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
   const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
   assert.match(summary, /Task 1: [0-9a-f]{7,}/);
