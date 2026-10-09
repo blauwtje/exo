@@ -58,6 +58,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 |---|---|
 | `scripts/rename-skill.mjs` | Renaming a skill: `node scripts/rename-skill.mjs --from <old> --to <new>` moves its folder, docs page and pressure folder and rewrites every mention in one pass. |
 | `references/pressure-scenarios.md` | Step 1. |
+| `references/cut-log.md` | Before any cut, and after a recheck rejects or restores one. |
 | `references/where-a-fix-lives.md` | Step 3, before the first rule is written. |
 | `references/instruction-style.md` | Step 3, before writing or editing any instruction file, `CLAUDE.md`, rule, agent, output style or hook included. |
 | `references/wording.md` | Step 3, when two phrasings compete or a rule's tone is unclear. |

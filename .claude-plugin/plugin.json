@@ -27,7 +27,7 @@
     "budget": {
       "type": "string",
       "title": "Agent model budget",
-      "description": "high: medium, except the deep branch review, the design critique and the hardest work (bug fixer, drift repairer, investigator) dispatch their xhigh twins. medium: every agent dispatches on the model its kind resolves to in lib/model-kinds.json. low: an agent whose kind resolves to a tier named under budgets in lib/model-kinds.json dispatches on that tier's replacement instead, except the hardest work, which runs on its medium-effort twin. Not sure? Keep medium. A project overrides this in .claude/exo.json.",
+      "description": "high: medium, except the deep branch review, the design critique and the hardest work (solve-hard) run at xhigh effort. medium: every agent dispatches on the model its kind resolves to in lib/model-kinds.json. low: an agent whose kind resolves to a tier named under budgets in lib/model-kinds.json dispatches on that tier's replacement instead, except the hardest work, which keeps its model at medium effort. Not sure? Keep medium. A project overrides this in .claude/exo.json.",
       "options": ["high", "medium", "low"],
       "default": "medium"
     },
