@@ -441,34 +441,86 @@ function reportLines(root, number) {
   const lines = fs.readFileSync(file, 'utf8').split('\n');
   return ['Unresolved', 'Decision'].flatMap((label) => {
     const line = lines.find((entry) => new RegExp(`^(?:- )?${label}:`).test(entry));
-    return line === undefined ? [] : [`Task ${number} ${line.replace(/^- /, '')}`];
+    return line === undefined || /:\s*none\.?\s*$/i.test(line) ? [] : [`Task ${number} ${line.replace(/^- /, '')}`];
   });
 }
 
-const money = (cost) => `$${cost.toFixed(4)}`;
+const money = (cost) => `$${cost.toFixed(2)}`;
 
 const thousands = (tokens) => Math.round(tokens / 1000);
 
+const clip = (text, length) => (text.length > length ? `${text.slice(0, length)}...` : text);
+
+/** Elapsed milliseconds as mm:ss, or h:mm:ss past an hour. */
+function clock(ms) {
+  const total = Math.floor(ms / 1000);
+  const two = (value) => String(value).padStart(2, '0');
+  return total >= 3600 ? `${Math.floor(total / 3600)}:${two(Math.floor(total / 60) % 60)}:${two(total % 60)}` : `${two(Math.floor(total / 60))}:${two(total % 60)}`;
+}
+
+/** Elapsed milliseconds in words: 45s, 12m 03s, 1h 02m. */
+function duration(ms) {
+  const total = Math.round(ms / 1000);
+  const two = (value) => String(value).padStart(2, '0');
+  if (total >= 3600) return `${Math.floor(total / 3600)}h ${two(Math.floor(total / 60) % 60)}m`;
+  return total >= 60 ? `${Math.floor(total / 60)}m ${two(total % 60)}s` : `${total}s`;
+}
+
+/** Task numbers as "1, 2, 3" or "1-3" when they run on. */
+function numbersText(numbers) {
+  const parts = [];
+  for (const number of [...numbers].sort((left, right) => left - right)) {
+    const last = parts.at(-1);
+    if (last !== undefined && last.to === number - 1) last.to = number;
+    else parts.push({ from: number, to: number });
+  }
+  return parts.map(({ from, to }) => (to - from >= 2 ? `${from}-${to}` : from === to ? `${from}` : `${from}, ${to}`)).join(', ');
+}
+
+/** The few plain lines the terminal gets at the end; everything else is in detailLines. */
 function summaryLines(run, stop) {
+  const { plan, records, landings, logDir } = run;
+  const landed = plan.tasks.map((task) => task.number).filter((number) => landings.has(number));
+  const before = landed.filter((number) => landings.get(number).before).length;
+  const missing = plan.tasks.map((task) => task.number).filter((number) => !landings.has(number));
+  const lines = [`Landed ${landed.length} of ${plan.tasks.length} tasks${landed.length > 0 ? `: ${numbersText(landed)}` : ''}${before > 0 ? ` (${before} were already done before this run)` : ''}.`];
+  if (missing.length > 0) lines.push(`Not landed: ${missing.length === 1 ? 'task' : 'tasks'} ${numbersText(missing)}. ${stop.why}.`);
+  else if (stop.why !== undefined) lines.push(`${stop.why}.`);
+  else lines.push(stop.gate === 'PASS' ? 'Final check passed.' : `Final check failed: ${run.verifyLines[0] ?? 'see the detail file'}.`);
+  const denied = records.reduce((sum, record) => sum + record.denied.length, 0);
+  if (denied > 0) lines.push(`${denied} command${denied === 1 ? ' was' : 's were'} refused by the permission rules; the detail file lists them.`);
+  lines.push(`Next: ${stop.next}`);
+  lines.push(`Cost ${money(records.reduce((sum, record) => sum + record.cost, 0))}, time ${duration(run.elapsed())}.`);
+  lines.push(`Details: ${path.join(logDir, 'summary.txt')}`);
+  return lines;
+}
+
+/** The full account kept in summary.txt, ending on the stop line. */
+function detailLines(run, stop) {
   const { planPath, plan, branch, cap, records, landings, logDir, root } = run;
   const lines = [`Plan: ${planPath}`, `Branch: ${branch}`, `Iterations: ${records.filter((record) => record.task !== null).length} of ${cap}`, `Logs: ${logDir}`];
+  const before = [...landings.values()].filter((landing) => landing.before).length;
+  if (before > 0) lines.push(`${before} task${before === 1 ? '' : 's'} landed before the run.`);
   for (const task of plan.tasks) {
     const landing = landings.get(task.number);
     if (landing === undefined) lines.push(`Task ${task.number}: not landed`);
-    else if (landing.before) lines.push(`Task ${task.number}: ${landing.sha} landed before the run`);
-    else lines.push(`Task ${task.number}: ${landing.sha} iteration ${landing.record.iteration}, turns ${landing.record.turns}, cost ${money(landing.record.cost)} (reported), peak context ${thousands(landing.record.peakContext)}k`);
+    else if (!landing.before) lines.push(`Task ${task.number}: ${landing.sha} iteration ${landing.record.iteration}, turns ${landing.record.turns}, cost ${money(landing.record.cost)}, peak context ${thousands(landing.record.peakContext)}k`);
     if (landing?.record?.peakContext > run.contextBudget) lines.push(`Task ${task.number}: peak context ${thousands(landing.record.peakContext)}k is over the ${thousands(run.contextBudget)}k budget; split similar tasks next time`);
   }
-  lines.push(`Total cost: ${money(records.reduce((sum, record) => sum + record.cost, 0))} (reported)`);
+  lines.push(`Total cost: ${money(records.reduce((sum, record) => sum + record.cost, 0))}`);
   const tail = records.find((record) => record.task === null);
   if (tail !== undefined) lines.push(`Tail: ${tail.log}, turns ${tail.turns}, last line: ${tail.last || '(none)'}`);
-  for (const record of records) for (const command of record.denied) lines.push(`Denied in iteration ${record.iteration}, task ${record.task}: ${command}; add it to Allow: if the task needs it`);
+  const denied = records.flatMap((record) => record.denied.map((command) => ({ record, command })));
+  if (denied.length > 0) {
+    lines.push(`Denied: ${denied.length} command${denied.length === 1 ? '' : 's'} (first 120 characters each; add one to Allow: if its task needs it; full text in the iteration logs)`);
+    for (const { record, command } of denied) lines.push(`  iteration ${record.iteration}, task ${record.task}: ${clip(command, 120)}`);
+  }
   lines.push(...run.verifyLines);
   for (const [number, landing] of landings) if (!landing.before) lines.push(...reportLines(root, number));
   if (run.uncommitted.size > 0) lines.push(`Uncommitted after a landing: ${[...run.uncommitted].join(', ')}`);
   const manual = (plan.frame['Manual checks'] ?? '').split('\n').filter((line) => line.startsWith('- '));
   if (manual.length > 0) lines.push('Manual checks:', ...manual);
-  lines.push(stop);
+  lines.push(`run-plan: stop: ${stop.line}`);
   return lines;
 }
 
@@ -568,7 +620,8 @@ async function main(argv) {
   const logDir = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, utcStamp());
   fs.mkdirSync(logDir, { recursive: true });
   if (!isFileOnDisk(learnings)) fs.writeFileSync(learnings, '# Learnings\n');
-  const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [] };
+  const startedAt = Date.now();
+  const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [], elapsed: () => Date.now() - startedAt };
   for (const number of landedAtStart) {
     const task = plan.tasks.find((entry) => entry.number === number);
     run.landings.set(number, { before: true, sha: (taskCommits(task, root, planId)[0] ?? '').slice(0, 12) });
@@ -578,9 +631,15 @@ async function main(argv) {
   const progressFile = path.join(logDir, 'progress.md');
   const passes = new Set(landedAtStart);
   const writeTasks = () => fs.writeFileSync(tasksFile, `${JSON.stringify(plan.tasks.map((task) => ({ number: task.number, title: task.title, passes: passes.has(task.number) })), null, 2)}\n`);
-  const progress = (line) => fs.appendFileSync(progressFile, `${line}\n`);
-  writeTasks();
   fs.writeFileSync(progressFile, `# Progress\n\nPlan: ${planPath}\nBranch: ${branch}\n\n`);
+  // One short line per event, on the terminal and in progress.md.
+  const say = (text) => {
+    const line = `[${clock(Date.now() - startedAt)}] ${text}`;
+    fs.appendFileSync(progressFile, `- ${line}\n`);
+    process.stdout.write(`${line}\n`);
+  };
+  writeTasks();
+  say(`run start: ${path.relative(root, planPath) || planPath}, branch ${branch}, ${plan.tasks.length} tasks (${plan.tasks.length - landedAtStart.length} to build)`);
 
   // land-task runs the plan's Proof and Land gate outside the sandbox, so a session must not rewrite them.
   const planHash = () => (isFileOnDisk(planPath) ? createHash('sha256').update(fs.readFileSync(planPath)).digest('hex') : 'missing');
@@ -599,20 +658,24 @@ async function main(argv) {
   let retryNote = '';
   let iteration = 0;
   let stop;
+  const fix = (log) => `read ${log}, fix the cause, then run exo run again`;
   for (;;) {
     const landed = landedTasks(plan.tasks, root, planId);
     if (landed.length === plan.tasks.length) break;
     const task = readyTasks(plan.tasks, landed)[0];
     if (task === undefined) {
-      stop = `no ready task: tasks ${plan.tasks.filter((entry) => !landed.includes(entry.number)).map((entry) => entry.number).join(', ')} wait on unlanded dependencies`;
+      const waiting = plan.tasks.filter((entry) => !landed.includes(entry.number)).map((entry) => entry.number);
+      stop = { line: `no ready task: tasks ${waiting.join(', ')} wait on unlanded dependencies`, why: 'They wait on tasks that have not landed', next: 'check the Depends on lines in the plan, then run exo run again' };
       break;
     }
     if (iteration >= cap) {
-      stop = `iteration cap ${cap} reached, ${landed.length}/${plan.tasks.length} landed`;
+      stop = { line: `iteration cap ${cap} reached, ${landed.length}/${plan.tasks.length} landed`, why: `The run hit its limit of ${cap} sessions`, next: 'run exo run again to continue, or raise --max-iterations' };
       break;
     }
     iteration += 1;
     const n = task.number;
+    const startedTask = Date.now();
+    say(`task ${n} start${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
     const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n) + retryNote, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
@@ -624,12 +687,14 @@ async function main(argv) {
 
     const breach = planBreach() ?? breachOf(root, before, { trailer });
     if (breach !== null) {
-      stop = `breach in iteration ${iteration}: ${breach}`;
+      say(`task ${n} stopped: ${breach}`);
+      stop = { line: `breach in iteration ${iteration}: ${breach}`, why: `A session broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, undo what is wrong, then run exo run again` };
       break;
     }
     const notLoaded = exoError(parsed.init, PLUGIN_ROOT);
     if (notLoaded !== null) {
-      stop = `exo not loaded: ${notLoaded}`;
+      say(`task ${n} stopped: exo not loaded`);
+      stop = { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again' };
       break;
     }
     if (landedTasks(plan.tasks, root, planId).includes(n)) {
@@ -638,7 +703,7 @@ async function main(argv) {
       run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
       passes.add(n);
       writeTasks();
-      progress(`- Task ${n}: landed ${run.landings.get(n).sha}, iteration ${iteration}`);
+      say(`task ${n} landed ${run.landings.get(n).sha.slice(0, 7)}, ${record.turns} turns, ${money(record.cost)}, ${Math.round((Date.now() - startedTask) / 1000)}s`);
       for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
         const file = line.slice(3);
         if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
@@ -647,12 +712,15 @@ async function main(argv) {
     }
     const blocked = outcome.timedOut ? null : last.match(new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`));
     if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
-      stop = `task ${n} blocked: ${blocked?.[1] || last}; re-plan with exo:spec`;
+      const reason = blocked?.[1] || last;
+      say(`task ${n} blocked: ${clip(reason, 80)}`);
+      stop = { line: `task ${n} blocked: ${reason}; re-plan with exo:spec`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 're-plan with /exo:spec, then run exo run again' };
       break;
     }
     stall += 1;
+    say(`task ${n} failed: ${outcome.timedOut ? last : clip(last, 80)}`);
     if (stall >= STALL_LIMIT) {
-      stop = `no progress on task ${n} in ${STALL_LIMIT} iterations, log ${log}`;
+      stop = { line: `no progress on task ${n} in ${STALL_LIMIT} iterations, log ${log}`, why: `Task ${n} did not land in ${STALL_LIMIT} tries`, next: fix(log) };
       break;
     }
     retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${last}\nIts log: ${log}`;
@@ -661,13 +729,14 @@ async function main(argv) {
   let exitCode = 1;
   if (stop === undefined) {
     iteration += 1;
+    say('all tasks landed, final review start');
     const log = path.join(logDir, 'tail.log');
     const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, settings: tailSettings, pin: null, log });
     run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
     const breach = planBreach() ?? breachOf(root, before);
     const notLoaded = breach === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
-    if (breach !== null) stop = `breach in iteration ${iteration}: ${breach}`;
-    else if (notLoaded !== null) stop = `exo not loaded: ${notLoaded}`;
+    if (breach !== null) stop = { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' };
+    else if (notLoaded !== null) stop = { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' };
     else {
       const base = defaultBranch(root);
       const gate = spawnSync(process.execPath, [SCRIPT.verify, '--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])], {
@@ -675,15 +744,22 @@ async function main(argv) {
       });
       run.verifyLines = `${gate.stdout ?? ''}`.split('\n').filter((line) => /^(FAIL|STRAY|WARN)\b/.test(line));
       const pass = gate.status === 0;
-      stop = `done, ${plan.tasks.length}/${plan.tasks.length} tasks landed, gate ${pass ? 'PASS' : 'FAIL'}`;
+      const manual = (plan.frame['Manual checks'] ?? '').split('\n').filter((line) => line.startsWith('- ')).length;
+      stop = {
+        line: `done, ${plan.tasks.length}/${plan.tasks.length} tasks landed, gate ${pass ? 'PASS' : 'FAIL'}`,
+        gate: pass ? 'PASS' : 'FAIL',
+        next: pass
+          ? `review branch ${branch}, then push it or open a pull request${manual > 0 ? `; ${manual} manual check${manual === 1 ? '' : 's'} are listed in the detail file` : ''}`
+          : `read the failing lines in the detail file, fix them on ${branch}, then run exo run again`
+      };
       if (pass) exitCode = 0;
     }
   }
-  if (exitCode === 0) progress('RUN COMPLETE');
+  say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
+  if (exitCode === 0) fs.appendFileSync(progressFile, 'RUN COMPLETE\n');
 
-  const lines = summaryLines(run, `run-plan: stop: ${stop}`);
-  fs.writeFileSync(path.join(logDir, 'summary.txt'), `${lines.join('\n')}\n`);
-  process.stdout.write(`${lines.join('\n')}\n`);
+  fs.writeFileSync(path.join(logDir, 'summary.txt'), `${detailLines(run, stop).join('\n')}\n`);
+  process.stdout.write(`${summaryLines(run, stop).join('\n')}\n`);
   return exitCode;
 }
 

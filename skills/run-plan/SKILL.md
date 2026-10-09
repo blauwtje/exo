@@ -17,11 +17,11 @@ Terminal route → `exo run [plan]`, installed once by `setup`.
    - Else argument → one plan path; none → ask for it, run nothing.
 2. Run `node "${CLAUDE_SKILL_DIR}/../build/scripts/run-plan.mjs" <plan>` with Bash `run_in_background`; the run outlasts one foreground call.
 3. Pass only flags the user typed; the script holds the defaults.
-4. Exit → report its last `run-plan: stop:` line and the summary path it prints. Exit 0 = done, gate passing; 1 = any other stop; 2 = refusal.
+4. Exit → relay the summary the script prints at its end, including its `Details:` path. Exit 0 = done, gate passing; 1 = any other stop; 2 = refusal.
 
 ## Judgment
 
 - While it runs → touch no task, branch or file the script owns.
 - Sessions → sandboxed: writes only inside the repo, no network; land-task is the one command run outside the sandbox.
-- Exit 1 or 2 → report the stop line; rerun only when the user asks.
+- Exit 1 or 2 → report the summary or refusal line; rerun only when the user asks.
 - In-session loop wanted → official `/ralph-loop` plugin still works beside exo, which adds no Stop hook; this skill and `exo run` start a fresh session per task.

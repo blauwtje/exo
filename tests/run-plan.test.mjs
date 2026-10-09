@@ -131,7 +131,9 @@ async function runPlan(context, steps, args = []) {
     assert.ok(!call.argv.includes('--mcp-config'));
     assert.equal(call.marker, null, 'the running session marker is not passed on');
   }
-  const lines = result.stdout.trim().split('\n');
+  // The terminal ends on a short summary; the stop line closes the detail file it names.
+  const detail = result.stdout.match(/^Details: (.+)$/m)?.[1];
+  const lines = (detail === undefined ? result.stdout : await fs.readFile(detail, 'utf8')).trim().split('\n');
   return { ...result, calls, stop: lines.at(-1) };
 }
 
@@ -177,16 +179,27 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.match(prompt, SANDBOX_RULE);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
-  const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
+  const summary = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
   assert.match(summary, /Task 1: [0-9a-f]{7,}/);
   assert.match(summary, /Open both files\./);
   assert.equal(summary.trim().split('\n').at(-1), result.stop);
-  const logDir = result.stdout.match(/^Logs: (.+)$/m)[1];
+  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
   const tasks = JSON.parse(await fs.readFile(path.join(logDir, 'tasks.json'), 'utf8'));
   assert.deepEqual(tasks.map((task) => [task.number, task.passes]), [[1, true], [2, true]]);
   const progress = await fs.readFile(path.join(logDir, 'progress.md'), 'utf8');
-  assert.match(progress, /Task 1: landed/);
+  assert.match(progress, /^- \[\d\d:\d\d\] task 1 landed [0-9a-f]{7}, \d+ turns, \$\d+\.\d\d, \d+s$/m);
   assert.equal(progress.trim().split('\n').at(-1), 'RUN COMPLETE');
+  // Live lines: one per event, each prefixed with the elapsed time, then at most six summary lines.
+  const live = result.stdout.trim().split('\n');
+  const events = live.filter((line) => /^\[\d\d:\d\d\] /.test(line)).map((line) => line.replace(/^\[\d\d:\d\d\] /, ''));
+  assert.match(events[0], /^run start: .*plan\.md, branch feat\/run, 2 tasks \(2 to build\)$/);
+  assert.deepEqual(events.slice(1).map((line) => line.replace(/ [0-9a-f]{7},.*$/, '')), ['task 1 start', 'task 1 landed', 'task 2 start', 'task 2 landed', 'all tasks landed, final review start', 'run done']);
+  const summaryPart = live.slice(live.findIndex((line) => !/^\[\d\d:\d\d\] /.test(line)));
+  assert.ok(summaryPart.length <= 6, summaryPart.join('\n'));
+  assert.equal(summaryPart[0], 'Landed 2 of 2 tasks: 1, 2.');
+  assert.match(summaryPart.join('\n'), /^Next: review branch feat\/run, then push it or open a pull request/m);
+  assert.match(summaryPart.join('\n'), /^Cost \$\d+\.\d\d, time \d+s\.$/m);
+  assert.doesNotMatch(result.stdout, /Open both files|Unresolved|reported\)/);
 });
 
 test('context: each task line ends with its peak context and a task over budget is flagged but still lands', async () => {
@@ -198,16 +211,17 @@ test('context: each task line ends with its peak context and a task over budget 
     { result: 'Verify done.' }
   ]);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
-  assert.match(result.stdout, /^Task 1: .*, peak context 72k$/m);
-  assert.match(result.stdout, /^Task 2: .*, peak context 22k$/m);
-  assert.match(result.stdout, /^Task 1: peak context 72k is over the 60k budget; split similar tasks next time$/m);
-  assert.doesNotMatch(result.stdout, /Task 2: peak context .* is over/);
+  const detail = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
+  assert.match(detail, /^Task 1: .*, peak context 72k$/m);
+  assert.match(detail, /^Task 2: .*, peak context 22k$/m);
+  assert.match(detail, /^Task 1: peak context 72k is over the 60k budget; split similar tasks next time$/m);
+  assert.doesNotMatch(detail, /Task 2: peak context .* is over/);
 });
 
 test('progress: a capped run flips no task and writes no RUN COMPLETE', async () => {
   const context = await setup();
   const result = await runPlan(context, [{}], ['--max-iterations', '1']);
-  const logDir = result.stdout.match(/^Logs: (.+)$/m)[1];
+  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
   const tasks = JSON.parse(await fs.readFile(path.join(logDir, 'tasks.json'), 'utf8'));
   assert.deepEqual(tasks.map((task) => task.passes), [false, false]);
   assert.doesNotMatch(await fs.readFile(path.join(logDir, 'progress.md'), 'utf8'), /RUN COMPLETE/);
@@ -217,7 +231,7 @@ test('scratch: the run leaves no untracked .exo/ and lists it once in info/exclu
   const context = await setup();
   for (let round = 0; round < 2; round += 1) {
     const result = await runPlan(context, [{}], ['--max-iterations', '1']);
-    assert.ok(result.stdout.includes('Logs: '), result.stdout + result.stderr);
+    assert.ok(result.stdout.includes('Details: '), result.stdout + result.stderr);
     assert.equal(git(context.root, 'status', '--porcelain', '--untracked-files=all'), '');
   }
   const exclude = await fs.readFile(path.join(context.root, '.git', 'info', 'exclude'), 'utf8');
@@ -255,14 +269,14 @@ test('blocked: a last line Task 1: BLOCKED stops after one spawn', async () => {
 });
 
 const denial = { tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } };
-const deniedLine = /^Denied in iteration 1, task 1: npm install left-pad; add it to Allow: if the task needs it$/m;
+const deniedLine = /^  iteration 1, task 1: npm install left-pad$/m;
 
 test('denied: a denial in a run that lands its task is logged and the loop goes on to the next task', async () => {
   const context = await setup();
   const result = await runPlan(context, [{ ...land(1), denials: [denial] }, land(2), { result: 'Verify done.' }]);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
   assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
-  const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
+  const summary = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
   assert.match(summary, deniedLine);
 });
 
@@ -272,15 +286,31 @@ test('denied: two runs with only denials and no landing stop on no progress', as
   const result = await runPlan(context, [{ denials: [denial] }, { denials: [second] }]);
   assert.match(result.stop, /^run-plan: stop: no progress on task 1 in 2 iterations, log .+iter-2-task-1\.log$/);
   assert.equal(result.calls.length, 2);
-  assert.match(result.stdout, deniedLine);
-  assert.match(result.stdout, /^Denied in iteration 2, task 1: npm install left-pad;/m);
+  const detail = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
+  assert.match(detail, deniedLine);
+  assert.match(detail, /^  iteration 2, task 1: npm install left-pad$/m);
+  assert.match(detail, /^Denied: 2 commands /m);
+  assert.match(result.stdout, /^2 commands were refused by the permission rules; the detail file lists them\.$/m);
+  assert.doesNotMatch(result.stdout, /left-pad/);
+  assert.match(result.stdout, /^\[\d\d:\d\d\] task 1 failed: /m);
+  assert.match(result.stdout, /^Not landed: tasks 1, 2\. Task 1 did not land in 2 tries\.$/m);
+});
+
+test('denied: a long denied command is cut to 120 characters in the detail file', async () => {
+  const context = await setup();
+  const long = { ...denial, tool_input: { command: `echo ${'x'.repeat(400)}` } };
+  const result = await runPlan(context, [{ denials: [long], result: 'Task 1: BLOCKED denied' }]);
+  const detail = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
+  const line = detail.split('\n').find((entry) => entry.startsWith('  iteration 1, task 1: echo'));
+  assert.ok(line.endsWith('...') && line.length < 160, line);
+  assert.match(result.stdout, /^\[\d\d:\d\d\] task 1 blocked: denied$/m);
 });
 
 test('denied: a denial is logged and the BLOCKED line it caused stops the run', async () => {
   const context = await setup();
   const result = await runPlan(context, [{ denials: [denial], result: 'Tried.\nTask 1: BLOCKED Bash permission denied in don\'t-ask mode' }]);
   assert.equal(result.stop, 'run-plan: stop: task 1 blocked: Bash permission denied in don\'t-ask mode; re-plan with exo:spec');
-  assert.match(result.stdout, deniedLine);
+  assert.match(await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8'), deniedLine);
 });
 
 test('breach: one iteration landing two tasks is an extra commit', async () => {
