@@ -1,0 +1,42 @@
+{
+  "efforts": ["low", "medium", "high", "xhigh", "max"],
+  "defaults": { "provider": "claude", "effort": "medium", "contextBudget": 60000 },
+  "providers": {
+    "claude": {
+      "model": "sonnet",
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
+      "env": {}
+    },
+    "deepseek": {
+      "model": "deepseek-flash",
+      "efforts": ["high", "max"],
+      "key": "DEEPSEEK_API_KEY",
+      "env": {
+        "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+        "ANTHROPIC_AUTH_TOKEN": "${DEEPSEEK_API_KEY}",
+        "ANTHROPIC_MODEL": "deepseek-flash",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-flash",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-flash",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-flash",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-flash",
+        "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT": "1"
+      }
+    },
+    "zai": {
+      "model": "glm-5.3",
+      "efforts": ["low", "high", "max"],
+      "key": "ZAI_API_KEY",
+      "env": {
+        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+        "ANTHROPIC_AUTH_TOKEN": "${ZAI_API_KEY}",
+        "API_TIMEOUT_MS": "3000000",
+        "ANTHROPIC_MODEL": "glm-5.3",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.3",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.3",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-5.3",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "glm-5.3",
+        "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT": "1"
+      }
+    }
+  }
+}
