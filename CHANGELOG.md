@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.107.0 - 2026-10-09
+
 ### Highlights
 
 **A confined `claude` run on macOS can no longer write preferences, send Apple Events, open apps or reach LaunchServices, and on Linux your user settings no longer widen what it may write.**
