@@ -1,7 +1,7 @@
 ---
 name: build
 description: Use when running or resuming a plan, or a decided change touches over two files, a dependency, public signature, persisted format or security boundary, or is test-first. Not for writing or changing a plan, a smaller edit, or an unproven failure.
-argument-hint: "[plan path] [--task <n>]"
+argument-hint: "[plan path] [--task <n>] [--land]"
 effort: medium
 ---
 

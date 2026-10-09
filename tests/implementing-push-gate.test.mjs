@@ -122,3 +122,17 @@ test('the tail points to the REPORT file for Proof lines and manual checks, not 
   assert.ok(tailStep.includes('Never rerun a proof'), 'step 7 bans rerunning or reading for proofs');
   assert.ok(tailStep.includes('`Decisions:` line goes in the report as a path, unread'), 'step 7 names the decision log by path only');
 });
+
+test('--land carries the approval through build, verify and ship, skipping three questions', () => {
+  for (const [name, text] of [['build', SKILL], ['verify', VERIFY], ['ship', SHIPPING]]) {
+    assert.match(text.match(/^argument-hint: .+$/m)[0], /--land/, `${name} argument-hint names --land`);
+    assert.equal((text.match(/^\s*- `--land` →/gm) ?? []).length, { build: 0, verify: 2, ship: 1 }[name], `${name} has its --land bullets; build's sits in tail.md`);
+  }
+  assert.ok(WORKSPACE.includes('- `--land` → the `ask` menu takes its (A) through `--pick` with no question.'));
+  assert.match(VERIFY, /--codex`[^\n]*\n\s*- `--land` → skip that offer\.\n/, 'the codex offer is skipped right under it');
+  assert.ok(VERIFY.includes('- `--land` → pass `--land` to `ship`.'));
+  assert.ok(TAIL.includes('- `--land` → run `verify --land`'), 'the tail passes the flag to verify');
+  assert.ok(RUN_LOOP.includes('`--land`') && TAIL.includes('`--land`'), 'the loop and tail pass the flag on');
+  assert.match(SHIPPING, /- A set `route: ` skips asking[^\n]*\n\s*- `--land` → take the menu's \(A\) with no question\./, 'a set route, local included, still skips the menu under --land');
+  assert.ok(SHIPPING.includes('Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.'));
+});

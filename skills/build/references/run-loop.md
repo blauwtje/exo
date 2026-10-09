@@ -5,6 +5,7 @@
    - Settle where the run commits.
    - Take the plan's `Repository:` and `Branch:` from that output, never the plan.
    - Rerun `start-run.mjs --plan <path> --checkout <checkout>` once; its `run started` line ends step 1.
+   - `--land` → the workspace `ask` menu takes its (A) with no question.
    - Invoking build authorizes commits there and a wave's worktrees beside it; a push or pull request waits for the user's answer to `ship`.
 2. **Leave the plan to the unit.**
    - The unit reads the frame: `## Goal`, `## Plan basis`, `## Success criterion`, `## Checkpoint`, plus `## Non-goals`, `## Context`, `## Decisions`, `## Visual direction` if present; never the whole plan.

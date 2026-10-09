@@ -13,6 +13,7 @@
   - Any other `stop` → name the reason, end the turn.
 - `init` runs `git init -b main` and commits there.
 - `commit-here <where>` commits at `<where>` with no question.
+- `--land` → the `ask` menu takes its (A) through `--pick` with no question.
 - `ask` puts its menu as the question and waits for the digit.
   - Then before any edit rerun the script with `--pick branch|worktree|current --name <branch-name>` for that answer.
 - Failed `git switch` or `git worktree add` the script reports → stop the run before any edit.

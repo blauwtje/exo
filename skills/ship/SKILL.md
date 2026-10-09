@@ -1,7 +1,7 @@
 ---
 name: ship
 description: Use when commits may leave the machine, or the user asks to push, open, watch or merge a pull request or fix its failing checks, conflicts or review comments. Not for reviewing code, an unnamed PR, or a release.
-argument-hint: "[pull request numbers]"
+argument-hint: "[pull request numbers] [--land]"
 allowed-tools: Bash(node *repo-fields.mjs*)
 ---
 
@@ -15,10 +15,11 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 3. **Ask.** Quote the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu; nothing leaves the machine before the letter.
    - Exception: an `Unasked: push` line runs `--route push` before the question, never forced, and drops the menu's Push.
    - A set `route: ` skips asking; an unapplied `ship=` is explained.
+   - `--land` → take the menu's (A) with no question.
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
    - No issue → run `node "${CLAUDE_SKILL_DIR}/../file-issues/scripts/repo-fields.mjs"` and its `--size` form.
 5. **Verify**, for `pr-merge`: hand the diff to `verify`; `FAIL` pushes nothing.
-   - `PASS` or `PASS+NOTES` → record verdict and `patch-id=` under `## Verification`, via `gh pr edit <n> --body-file <f>` on an open pull request.
+   - `PASS` or `PASS+NOTES` → record verdict and `patch-id=` under `## Verification`, via `gh pr edit <n> --body-file <f>` on an open PR.
    - Reuse a recorded verdict past `--verdict-current <patch-id>`; `stale` reruns it.
 6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.
    - Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm.
