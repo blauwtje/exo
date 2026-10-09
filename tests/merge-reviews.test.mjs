@@ -67,3 +67,16 @@ test('a fix finding with no Probe line under it is demoted to report', () => {
   assert.equal(counts.defect, 1);
   assert.match(text, /a\.mjs:3 defect x; y\. report/);
 });
+
+test('the demoted count is returned and printed on its own line only above zero', async () => {
+  assert.equal(mergeReviews([{ name: 'task-1', text: 'FINDINGS\n\na.mjs:3 defect x; y. fix\n' }]).demoted, 1);
+  assert.equal(mergeReviews([{ name: 'task-1', text: CLEAN }]).demoted, 0);
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'merge-reviews-'));
+  const demoted = path.join(root, 'task-1.md');
+  await fs.writeFile(demoted, 'FINDINGS\n\na.mjs:3 defect x; y. fix\n');
+  const lines = (await run(SCRIPT, ['--root', root, '--report', demoted])).stdout.trim().split('\n');
+  assert.equal(lines[1], 'DEMOTED 1 fix finding(s) to report: no Probe: line under them');
+  const clean = path.join(root, 'task-2.md');
+  await fs.writeFile(clean, CLEAN);
+  assert.equal((await run(SCRIPT, ['--root', root, '--report', clean])).stdout.trim().split('\n').length, 1);
+});

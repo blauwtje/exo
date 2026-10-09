@@ -26,6 +26,7 @@ function verdictOf(text) {
  *  with no `  Probe:` line directly under it is demoted to `report`. */
 export function mergeReviews(reports) {
   const counts = { defect: 0, hazard: 0, question: 0, fix: 0 };
+  let demoted = 0;
   let verdict = 'CLEAN';
   const sections = [];
   for (const { name, text } of reports) {
@@ -40,6 +41,7 @@ export function mergeReviews(reports) {
       if (PROBE_LINE.test(lines[index + 1] ?? '')) {
         counts.fix += 1;
       } else {
+        demoted += 1;
         lines[index] = line.replace(/\bfix(\W*)$/, 'report$1');
       }
     });
@@ -48,7 +50,7 @@ export function mergeReviews(reports) {
   if (verdict === 'CLEAN' && counts.defect + counts.hazard + counts.question > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} hazard=${counts.hazard} question=${counts.question} fix=${counts.fix}\n`;
-  return { verdict, counts, text: `${head}${sections.join('\n')}\n${tail}` };
+  return { verdict, counts, demoted, text: `${head}${sections.join('\n')}\n${tail}` };
 }
 
 function main(argv) {
@@ -59,13 +61,14 @@ function main(argv) {
     name: path.basename(file, '.md'),
     text: fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : 'BLOCKED: report missing\n'
   }));
-  const { verdict, counts, text } = mergeReviews(reports);
+  const { verdict, counts, demoted, text } = mergeReviews(reports);
   const target = path.join(flags.root, '.exo', 'branch-review.md');
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, text);
   process.stdout.write(
     `verdict=${verdict} defect=${counts.defect} hazard=${counts.hazard} question=${counts.question} fix=${counts.fix} report=${target}\n`
   );
+  if (demoted > 0) process.stdout.write(`DEMOTED ${demoted} fix finding(s) to report: no Probe: line under them\n`);
 }
 
 if (isMain(import.meta.url)) {
