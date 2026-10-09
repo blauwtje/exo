@@ -54,11 +54,41 @@ export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
  * for a task changing no script file; `none (inline route)` for an inline-route
  * task without `Risk:`.
  */
-export function taskReviewer(task, changedPaths, route) {
+export function taskReviewer(task, changedPaths, route, taskDiff = '') {
   if (task.risk !== null && /security boundary/i.test(task.risk)) return REVIEWER_AGENTS.deep;
   if (task.risk !== null) return REVIEWER_AGENTS.light;
   if (route === 'inline') return 'none (inline route)';
-  return changedPaths.some((name) => SCRIPT_EXTENSIONS.has(extname(name))) ? REVIEWER_AGENTS.light : 'none (text only)';
+  if (!changedPaths.some((name) => SCRIPT_EXTENSIONS.has(extname(name)))) return 'none (text only)';
+  if (changedPaths.some((name) => TEST_FILE.test(name)) && outputOnly(taskDiff)) return 'none (output only, test covered)';
+  return REVIEWER_AGENTS.light;
+}
+
+// A test file: under a `test`, `tests`, `spec` or `__tests__` folder, named `test_*`, or ending `.test.<ext>` or `_spec.<ext>`.
+export const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._-](?:test|spec)\.[^/.]+$/;
+// An added or removed line that only prints, or is blank or a comment.
+const OUTPUT_LINE = /^\s*$|^\s*(?:\/\/|\/\*|\*|#)|\b(?:console\.(?:log|error|warn|info)|process\.(?:stdout|stderr)\.write)\(/;
+
+/** Whether every added or removed line in the diff's non-test script files is blank, a comment or an output call. */
+function outputOnly(taskDiff) {
+  let file = null;
+  for (const line of taskDiff.split('\n')) {
+    if (line.startsWith('diff --git ')) {
+      file = line.slice(line.lastIndexOf(' b/') + 3);
+    } else if (/^(\+\+\+|---) /.test(line)) {
+      continue;
+    } else if ((line.startsWith('+') || line.startsWith('-')) && file !== null) {
+      if (!SCRIPT_EXTENSIONS.has(extname(file)) || TEST_FILE.test(file)) continue;
+      if (!OUTPUT_LINE.test(line.slice(1))) return false;
+    }
+  }
+  return true;
+}
+
+/** The task's commits as one zero-context diff. */
+export function taskDiffOf(task, root, planId) {
+  return taskCommits(task, root, planId)
+    .map((sha) => execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'show', '--format=', '--no-renames', '-U0', sha], { encoding: 'utf8', maxBuffer: Infinity }))
+    .join('\n');
 }
 
 /** The paths the commits carrying task `number` of the plan changed. */
@@ -102,7 +132,7 @@ function main(argv) {
     const { tasks } = parsePlan(fs.readFileSync(path.resolve(flags.plan), 'utf8'));
     const task = tasks.find((candidate) => String(candidate.number) === flags.task);
     if (task === undefined) throw new UsageError(`no task ${flags.task} in the plan`);
-    process.stdout.write(`${taskReviewer(task, taskPaths(task, flags.root, planIdOf(flags.plan)), planRoute(tasks).route)}\n`);
+    process.stdout.write(`${taskReviewer(task, taskPaths(task, flags.root, planIdOf(flags.plan)), planRoute(tasks).route, taskDiffOf(task, flags.root, planIdOf(flags.plan)))}\n`);
     return;
   }
   if (flags.codex) {

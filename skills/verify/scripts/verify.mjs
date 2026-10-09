@@ -63,7 +63,7 @@ import { changedPaths } from '#size-facts';
 import { proofsReport } from '#proofs-report';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
-import { taskPaths, taskReviewer } from './pick-reviewer.mjs';
+import { TEST_FILE, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
 // The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
@@ -100,8 +100,6 @@ const PROSE_PROOF = /`/;
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
 // The exit code a POSIX shell returns for a command it cannot find.
 const COMMAND_NOT_FOUND = 127;
-// A test file: under a `test`, `tests`, `spec` or `__tests__` folder, named `test_*`, or ending `.test.<ext>` or `_spec.<ext>`.
-const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._-](?:test|spec)\.[^/.]+$/;
 // A line a test file loses that asserts, and a line it gains that skips or isolates a test.
 const REMOVED_ASSERTION = /expect\(|assert/;
 const ADDED_SKIP = /\.(?:skip|only)\b/;
@@ -575,7 +573,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     if (record !== null && fs.existsSync(record) && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
       lines.push(`REVIEWED Task ${task.number} ${record}`);
     } else {
-      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route)}`);
+      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId))}`);
     }
   }
   // With no base there is no range of commits to read.

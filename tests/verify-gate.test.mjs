@@ -22,12 +22,12 @@ const gitRepository = (files) => seedRepository({ '.gitignore': '.exo/\n', ...fi
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
 
-// The commit touches every path the task's `Files:` names, as a real landing does.
-function landTask(root, number) {
+// The commit touches every path the task's `Files:` names, as a real landing does; `line` is what it appends to each.
+function landTask(root, number, line = `// task ${number}`) {
   const task = parsePlan(readFileSync(path.join(root, 'plan.md'), 'utf8')).tasks.find((entry) => entry.number === number);
   for (const { path: file } of task.files) {
     mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
-    appendFileSync(path.join(root, file), `// task ${number}\n`);
+    appendFileSync(path.join(root, file), `${line}\n`);
   }
   git(root, 'add', '-A');
   git(root, 'commit', '--allow-empty', '-m', `chore: land task ${number}`, '-m', `Plan-task: plan/${number}`);
@@ -895,7 +895,8 @@ const SCOPED_PLAN = [
 
 async function scopedRun(landedSources, landedNumbers) {
   const root = await gitRepository({ 'plan.md': SCOPED_PLAN, 'prove.mjs': SCOPED_PROVE, ...landedSources });
-  for (const number of landedNumbers) landTask(root, number);
+  // A code line, not a comment: a comment-only diff with a test file gets no model review.
+  for (const number of landedNumbers) landTask(root, number, `export const task${number} = ${number};`);
   return run(SCRIPT, ['--plan', 'plan.md'], { cwd: root });
 }
 

@@ -148,3 +148,16 @@ test('--task prints the reviewer from the task commits', async () => {
   assert.equal((await asked()).stdout, `${light}\n`);
   assert.equal((await run(SCRIPT, ['--task', '9', '--plan', 'plan.md', '--root', root], { cwd: root })).code, 2);
 });
+
+test('taskReviewer sends a test-covered output-only script diff to no model review', () => {
+  const task = { risk: null };
+  const diff = (body) => `diff --git a/lib/a.mjs b/lib/a.mjs\n--- a/lib/a.mjs\n+++ b/lib/a.mjs\n@@ -1 +1 @@\n${body}\n`;
+  const paths = ['lib/a.mjs', 'tests/a.test.mjs'];
+  const none = 'none (output only, test covered)';
+  assert.equal(taskReviewer(task, paths, 'block', diff('-console.log("a");\n+console.log("b");\n+// note\n+')), none);
+  assert.equal(taskReviewer(task, paths, 'block', diff('+process.stderr.write(`x`);')), none);
+  assert.equal(taskReviewer(task, paths, 'block', diff('+const x = 1;')), REVIEWER_AGENTS.light);
+  assert.equal(taskReviewer(task, ['lib/a.mjs'], 'block', diff('+console.log(1);')), REVIEWER_AGENTS.light);
+  assert.equal(taskReviewer({ risk: 'data loss' }, paths, 'block', diff('+console.log(1);')), REVIEWER_AGENTS.light);
+  assert.equal(taskReviewer(task, paths, 'block', ''), none);
+});
