@@ -1,6 +1,7 @@
 ---
 name: write-docs
 description: "Use when writing or editing prose read later: a README, doc page, PR, issue or commit body, changelog line, brief or spec. Not for chat replies (output style), code comments (code standard), or fields ship, file-issues and spec set."
+disable-model-invocation: true
 argument-hint: <the document or text to write or edit>
 ---
 

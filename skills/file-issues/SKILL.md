@@ -1,6 +1,7 @@
 ---
 name: file-issues
 description: Use when the user asks in plain words to file, open, write or split GitHub issues. Not for a brief spec stores, closing or editing an existing issue, a plan, or a repository the working directory does not point at.
+disable-model-invocation: true
 argument-hint: <what the issue or issues should cover>
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh project *), Bash(gh pr list *), Bash(git log *), Bash(node *repo-fields.mjs*)
 model: opus

@@ -1,6 +1,7 @@
 ---
 name: check-docs
 description: Use when a code decision hinges on how a pinned external library, framework, API or service behaves, and a wrong recalled answer would compile yet fail at runtime. Not for what the repository's code answers, a version bump, or a concept explanation.
+disable-model-invocation: true
 argument-hint: <library, version and question>
 effort: high
 ---

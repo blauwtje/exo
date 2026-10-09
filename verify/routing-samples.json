@@ -3,25 +3,9 @@
     "Resume the plan we stopped on and run its remaining tasks, test-first, since it changes a public signature and a persisted format",
     "This decided change touches a dependency and a security boundary across several files, so build it test-first"
   ],
-  "check-docs": [
-    "Does this pinned library behave the way I recall, or would a wrong answer compile yet fail at runtime? Check how the API really works",
-    "I need to know how this external framework and service behaves before I decide the code, not from memory"
-  ],
-  "configure": [
-    "Set up exo for me and change the setting for where specs go",
-    "Show me the exo settings and change one of the guards"
-  ],
   "design-ui": [
     "The settings page looks empty, boring and generic; improve its look and copy",
     "Make this component look better, its copy and visual design feel generic"
-  ],
-  "edit-skills": [
-    "I am creating a new skill and want its size and wording checked before it is done",
-    "Edit this agent and size it, then prove the edit before I call it done"
-  ],
-  "file-issues": [
-    "Open GitHub issues for these problems and split the long one into separate issues",
-    "Please file an issue on GitHub about this and write it up in plain words"
   ],
   "find-cause": [
     "The app crashes with an error after the update and I have no evidence of the causal line; find the mechanism of this bug",
@@ -42,10 +26,6 @@
   "verify": [
     "All the plan's tasks are landed, so run the gate on its branch: the scripted checks and the branch review",
     "Before the pull request, verify the plan's branch with the scripted checks and its repairs"
-  ],
-  "write-docs": [
-    "Write a README and doc page, and draft the prose of a changelog line and commit body",
-    "Edit this brief so it reads well later, and write the issue body and spec prose"
   ],
   "negatives": [
     { "prompt": "The app reports an error and a crash, a regression in behavior, and no evidence shows the causal line or its mechanism", "winner": "find-cause" },

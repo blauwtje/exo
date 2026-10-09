@@ -33,7 +33,7 @@ Load the `edit-skills` skill before any skill or delegate-prompt edit; it holds 
 
 A skill whose work leaves the machine (a push, pull request, merge or issue) runs only on the authorization its body names: the user's pick of a finish route or a plain request. The one exception is `ship` under `ship=ask`, which pushes a non-default branch to origin without asking; merge, default-branch push, pull request and issue still ask. It never deletes a branch or cuts a release.
 
-Four skills carry `disable-model-invocation: true`, because only the user should start them: `start` and `route-skills` show the skills on request (the session hook already loads the routing rules); `save-session` and `remember` write a record only the user should approve. Every other skill stays model-invocable so a next-stage answer can start it, and its description opens with `Use when`.
+Nine skills carry `disable-model-invocation: true`, because only the user should start them: `start` and `route-skills` show the skills on request (the session hook already loads the routing rules); `save-session` and `remember` write a record only the user should approve; `configure`, `edit-skills`, `file-issues`, `write-docs` and `check-docs` start from a person's request and no other skill or agent invokes them, so they carry no routing samples. Every other skill stays model-invocable so a next-stage answer can start it, and its description opens with `Use when`.
 
 `ABOUT.md` says what exo is and lists exo's domain words with the synonym each replaces. Skill bodies, replies and commits use the left column; the `derivation` check reads the file for names exo does not own.
 
