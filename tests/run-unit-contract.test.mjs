@@ -1,7 +1,7 @@
 // Pins the return contract between build and its exo:run-unit agent: a unit
-// ends its turn only when every block task is LANDED or BLOCKED, or with a
-// BUDGET line at the hard budget message, and the caller reads a BUDGET line as
-// unfinished work whose landed part only the branch knows.
+// ends its turn only when every block task is LANDED or BLOCKED, and the
+// caller reads a BUDGET line as unfinished work whose landed part only the
+// branch knows.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -10,7 +10,6 @@ const RUN_LOOP = fs.readFileSync(new URL('../skills/build/references/run-loop.md
 const BUILD_SKILL = fs.readFileSync(new URL('../skills/build/SKILL.md', import.meta.url), 'utf8');
 const UNIT_AGENT = fs.readFileSync(new URL('../agents/run-unit.md', import.meta.url), 'utf8');
 const IMPLEMENTER_PROMPT = fs.readFileSync(new URL('../skills/build/implementer-prompt.md', import.meta.url), 'utf8');
-const BUDGETS = JSON.parse(fs.readFileSync(new URL('../lib/delegate-budgets.json', import.meta.url), 'utf8'));
 
 function loopStep(number, text) {
   const step = text.match(new RegExp(`^${number}\\. \\*\\*[\\s\\S]*?(?=\\n\\d+\\. |\\n## |$(?![\\s\\S]))`, 'm'));
@@ -40,21 +39,20 @@ test('the unit waits for every dispatched report with wait-report.mjs, at most s
   assert.ok(dispatchStep.includes('never a `sleep` command'));
 });
 
-test('the unit ends its turn only with every block task LANDED or BLOCKED, or at the hard budget message', () => {
+test('the unit ends its turn only with every block task LANDED or BLOCKED', () => {
   const stop = section(UNIT_AGENT, 'Stop');
   assert.ok(stop.includes('Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line'));
-  assert.ok(stop.includes('Only the hard message, `past the limit of`, ends the loop'));
+  assert.doesNotMatch(UNIT_AGENT, /past the limit of|BUDGET/);
   assert.ok(loopStep(4, UNIT_AGENT).includes('until every block task has a `LANDED` or `BLOCKED` line'));
 });
 
-test('the unit returns one LANDED or BLOCKED line per task with no report text, never OPEN, and never BUDGET as a completion report', () => {
+test('the unit returns one LANDED or BLOCKED line per task with no report text, never OPEN', () => {
   const unitReturn = section(UNIT_AGENT, 'Return');
   assert.ok(unitReturn.includes('One line per task, no report text'));
   assert.ok(unitReturn.includes('`LANDED <n>` for a committed task'));
   assert.ok(unitReturn.includes('`BLOCKED <n> <reason> <report path>`'));
   assert.ok(unitReturn.includes('the path `none` without a report'));
   assert.doesNotMatch(unitReturn, /LANDED <n> <sha>/);
-  assert.ok(unitReturn.includes('With every block task landed or blocked, return these lines, never a `BUDGET:` line'));
   assert.doesNotMatch(UNIT_AGENT, /`OPEN/);
 });
 
@@ -93,6 +91,6 @@ test('build reads a BUDGET return as unfinished and asks the branch what landed'
   assert.ok(!RUN_LOOP.includes('resume-plan'));
 });
 
-test('the run-unit agent has its own budget sized for an eight-task block', () => {
-  assert.deepEqual(BUDGETS.agents['exo:run-unit'], { soft: 70, calls: 90 });
+test('the run-unit agent has its own turn limit sized for an eight-task block', () => {
+  assert.match(UNIT_AGENT, /^maxTurns: 90$/m);
 });

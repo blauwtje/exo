@@ -4,6 +4,7 @@ description: "Repairs one branch review's fix findings. Dispatched by verify onl
 model: sonnet
 effort: high
 tools: Read, Edit, Write, Grep, Bash
+maxTurns: 60
 omitClaudeMd: true
 ---
 

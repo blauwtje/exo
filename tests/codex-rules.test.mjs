@@ -102,7 +102,6 @@ test('Claude-only tool terms map to their Codex equivalents', () => {
     ['Stop the background task with TaskStop before the report', 'Stop the background task by killing its process before the report'],
     ['its own cap through the build-ui agent\'s maxTurns; this', 'its own cap through the build-ui agent\'s turn budget, which Codex does not enforce; this'],
     ['in the foreground with Bash `timeout: 600000` or a counted `for` loop', 'in the foreground with `exec_command`, polling its session with `write_stdin` until it exits, or a counted `for` loop'],
-    ['verbatim on its own line, so the delegate-budget hook uses it over the shared default.', 'verbatim on its own line, so the delegate keeps to it.'],
     ['A bare skill name in an exo skill, agent or rule means `exo:<name>`.', 'A bare skill name in an exo skill, agent or rule means `$<name>`, a bare agent name `exo-<name>`.']
   ];
   for (const [text, expected] of cases) assert.equal(codexBody(SKILL, text, KNOWN), expected);

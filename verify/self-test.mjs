@@ -18,7 +18,7 @@ import { writeGenerated } from '../harnesses/codex/generate.mjs';
 const FIXTURE_ENTRIES = [
   'skills', 'agents', 'verify', 'verify.mjs', 'README.md',
   'ABOUT.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'benchmarks/README.md',
-  'docs/skills/build.md', 'docs/codex.md', 'docs/settings.md', 'lib/model-kinds.json', 'lib/delegate-budgets.json', 'harnesses',
+  'docs/skills/build.md', 'docs/codex.md', 'docs/settings.md', 'lib/model-kinds.json', 'harnesses',
 ];
 
 function read(root, relative) {
@@ -276,8 +276,6 @@ const SCENARIOS = [
     replaceText(root, 'CONTRIBUTING.md', 'a manifest or lockfile changed', 'a manifest changed') },
   { name: 'drifted-wait-bound', mutate: (root) =>
     replaceText(root, 'skills/ship/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
-  { name: 'unprefixed-delegate-budget-key', mutate: (root) =>
-    replaceText(root, 'lib/delegate-budgets.json', '"exo:build-ui"', '"build-ui"') },
 ];
 
 function copyVerificationFixture(repository, destination) {

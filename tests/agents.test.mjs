@@ -241,8 +241,6 @@ test('the design builder runs with a 60-turn limit, no Agent tool, and scopes fo
     .filter((relativePath) => typeof relativePath === 'string');
   assert.deepEqual(skillFiles.filter((relativePath) => relativePath.endsWith('builder-prompt.md')), []);
 
-  const budgets = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'lib/delegate-budgets.json'), 'utf8'));
-  assert.equal(budgets.agents['exo:build-ui'].calls, 60);
 });
 
 test('the design-ui repair loop drops the 12-call cap for a repair scope with its own report, and QA always dispatches', () => {

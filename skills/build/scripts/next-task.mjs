@@ -1,6 +1,6 @@
 // Prints what the next build needs, read from the plan and the checkout's
 // history instead of the session's memory: the landed set, the route, the
-// next task or wave, and for each of its tasks its Budget:, Design:, Proof:
+// next task or wave, and for each of its tasks its Design:, Proof:
 // and Run: lines, the drift of its Modify: regions and the path of its brief.
 // The brief, the frame fields and the section verbatim, goes to a file under
 // the checkout's scratch directory, so the section reaches only build-task
@@ -19,38 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
-import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, taskSize, waveLine } from '#plan-tasks';
-
-// lib/delegate-budgets.json holds the build-task delegate's budget, its default
-// entry merged with its exo:build-task override; reading it here keeps one
-// source for the cap instead of a second copy of its numbers.
-const DELEGATE_BUDGETS = JSON.parse(
-  fs.readFileSync(new URL('../../../lib/delegate-budgets.json', import.meta.url), 'utf8')
-);
-const BUILD_TASK_BUDGET = { ...DELEGATE_BUDGETS.default, ...DELEGATE_BUDGETS.agents['exo:build-task'] };
-// plan-check.mjs requires a split past 250 code lines or 4 files, so a task at
-// that threshold is as large as a task ever gets: its share of the threshold,
-// capped at 1, scales build-task's budget down for a smaller task.
-const SPLIT_LINES = 250;
-const SPLIT_FILES = 4;
-// A fresh build-task holds about 18k tokens (p90) before its first read: the
-// dispatch prompt, its tools and its agent definition. Its first edit lands
-// near 44k (p90) whatever the task's size, and a soft line below that stops it
-// before it edits, so no task's budget drops past three quarters of
-// build-task's own, 45k/75k.
-const MIN_BUDGET_SHARE = 0.75;
-
-// `delegate-budget.mjs`'s hook reads a standalone `Budget: <soft>k/<hard>k`
-// line from the dispatch; the wave build carries it verbatim, so a small task
-// never holds a large one's context open on a stalled delegate.
-function budgetLine(task) {
-  const size = taskSize(task);
-  const share = Math.min(1, Math.max(size.lines / SPLIT_LINES, size.files / SPLIT_FILES));
-  const scale = MIN_BUDGET_SHARE + (1 - MIN_BUDGET_SHARE) * share;
-  const soft = Math.round(BUILD_TASK_BUDGET.soft * scale);
-  const hard = Math.round(BUILD_TASK_BUDGET.hard * scale);
-  return `Budget: ${soft}k/${hard}k`;
-}
+import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
 // regions; with no match, every bullet, because a brief that drops a fact
@@ -145,7 +114,6 @@ function taskLines(task, frame, root, briefDirectory) {
   const drift = driftOf(task, root);
   return [
     `Task ${task.number}: ${task.title}`,
-    budgetLine(task),
     designLine(task),
     ...(task.proof === null ? [] : [`Proof: ${task.proof}`]),
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
@@ -155,8 +123,7 @@ function taskLines(task, frame, root, briefDirectory) {
 }
 
 // On the inline route the session builds each task itself from its section,
-// so the report carries the section in place of a brief, and no budget, which
-// only a build-task dispatch reads.
+// so the report carries the section in place of a brief.
 function inlineTaskLines(task, root) {
   const drift = driftOf(task, root);
   return [

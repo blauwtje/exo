@@ -40,7 +40,6 @@ const PHRASES = [
   ['with TaskStop', 'by killing its process'],
   ["agent's maxTurns", "agent's turn budget, which Codex does not enforce"],
   ['with Bash `timeout: 600000`', 'with `exec_command`, polling its session with `write_stdin` until it exits,'],
-  ['so the delegate-budget hook uses it over the shared default', 'so the delegate keeps to it'],
   ['means `exo:<name>`', 'means `$<name>`, a bare agent name `exo-<name>`']
 ];
 

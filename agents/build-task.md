@@ -4,6 +4,7 @@ description: "Builds one plan task. Dispatched by build only."
 model: sonnet
 effort: high
 tools: Read, Edit, Write, Grep, Bash
+maxTurns: 60
 ---
 
 ## Scope

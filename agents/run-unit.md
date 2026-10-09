@@ -4,6 +4,7 @@ description: "Builds and lands one plan block. Dispatched by build only."
 model: sonnet
 effort: medium
 tools: Read, Bash, Agent
+maxTurns: 90
 ---
 
 Read the plan's frame per `<skill>/references/run-loop.md` step 2.
@@ -31,7 +32,6 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 ## Stop
 
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
-- Only the hard message, `past the limit of`, ends the loop: finish the task in flight, return `BUDGET:`.
 - Ask the user nothing: a choice or build `BLOCKED` returns it `BLOCKED` with question, options.
 - Delete no data or branch, run no `git stash`: `BLOCKED` with options.
 
@@ -42,6 +42,3 @@ One line per task, no report text, at most eight lines:
 - `LANDED <n>` for a committed task, plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> <reason> <report path>` for any other task, the path `none` without a report.
 - `BLOCKED all nested dispatch unavailable: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH>=2`, alone, when no tool dispatches.
-- `BUDGET: done <list or none>; open <list>; next <sentence>` after the hard message.
-
-With every block task landed or blocked, return these lines, never a `BUDGET:` line.

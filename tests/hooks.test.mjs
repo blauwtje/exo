@@ -26,7 +26,7 @@ function hookEntries() {
 
 test('every hook command resolves under the plugin root to a file the repository ships', () => {
   const entries = hookEntries();
-  assert.ok(entries.length >= 4, `${entries.length} hook commands`);
+  assert.ok(entries.length >= 3, `${entries.length} hook commands`);
   for (const { event, hook } of entries) {
     const relativePaths = [...hook.command.matchAll(PLUGIN_PATH)].map((match) => match[1]);
     assert.ok(relativePaths.length > 0, `${event}: ${hook.command} names no plugin path`);
@@ -44,14 +44,11 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
 
-test('the delegate budget runs before every tool call and after no call, in the Bash dispatcher for Bash', () => {
-  const budgets = hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget.mjs'));
-  assert.deepEqual(budgets.map((entry) => [entry.event, entry.matcher]), [['PreToolUse', '^(?!Bash$).*']]);
+test('no hook runs a delegate budget, and only Bash has a PreToolUse entry', () => {
+  assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget')), []);
   const bashDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
-  assert.match(bashDispatcher, /name: 'delegate-budget'/, 'the Bash dispatcher does not run the delegate budget');
-  const matcher = new RegExp(budgets[0].matcher);
-  assert.equal(matcher.test('Bash'), false);
-  for (const tool of ['Read', 'Edit', 'WebFetch', 'WebSearch', 'Write', 'MultiEdit', 'ReadFile', 'Task', 'Agent', 'BashOutput', 'mcp__server__Bash', 'TaskUpdate']) assert.equal(matcher.test(tool), true, tool);
+  assert.doesNotMatch(bashDispatcher, /delegate-budget/);
+  assert.deepEqual(hookEntries().filter((entry) => entry.event === 'PreToolUse').map((entry) => entry.matcher), ['Bash']);
 });
 
 test('no Stop hook is registered', () => {
@@ -69,7 +66,7 @@ test('one prompt hook runs the dispatcher for the reply expander, and takes no m
   }
 });
 
-test('one Bash hook runs the dispatcher for the delegate budget, the booking approval and the five Bash guards', () => {
+test('one Bash hook runs the dispatcher for the booking approval and the five Bash guards', () => {
   const bash = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === 'Bash');
   assert.equal(bash.length, 1, JSON.stringify(bash.map((entry) => entry.hook.command)));
   assert.equal(bash[0].hook.shell, 'bash');
@@ -107,12 +104,6 @@ test('no tool name matches more than one PreToolUse entry', () => {
   }
 });
 
-test('the delegate budget is the only hook before every tool but Bash', () => {
-  const everyTool = hookEntries().filter((entry) => entry.event === 'PreToolUse' && entry.matcher === '^(?!Bash$).*');
-  assert.equal(everyTool.length, 1);
-  assert.ok(everyTool[0].hook.command.endsWith('delegate-budget.mjs"'), everyTool[0].hook.command);
-});
-
 test('every shipped guard is a step of the Bash dispatcher and none has a hook of its own', () => {
   const guardFiles = fs.readdirSync(path.join(REPOSITORY, 'hooks', 'guards')).filter((name) => name.endsWith('-guard.mjs'));
   assert.deepEqual(guardFiles.sort(), [
@@ -131,9 +122,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
-test('the plugin registers four hook commands, each under bash', () => {
+test('the plugin registers three hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 4, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 3, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 

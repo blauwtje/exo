@@ -4,6 +4,7 @@ description: "Carries out one hard prompt. Dispatched by build and find-cause on
 model: opus
 effort: high
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill
+maxTurns: 60
 ---
 
 You carry out the prompt you are handed, exactly as written: its inputs, hard boundaries, handoff file and return line are the whole job. Add no step it does not name and skip none it does.

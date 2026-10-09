@@ -266,47 +266,10 @@ test('a plan whose open tasks cannot be ordered stops with exit 1 and names the 
   }
 });
 
-// The hook delegate-budget.mjs reads from the dispatch: a standalone
-// `Budget: <soft>k/<hard>k` line, `soft`/`hard` in thousands of tokens.
-const BUDGET_LINE = /^Budget: (\d+)k\/(\d+)k(?:\/(\d+) calls)?\s*$/m;
-
-test('the report prints one Budget: line per task of the wave, scaled below build-task\'s own budget', async () => {
+test('the report prints no Budget: line, since each agent carries its own maxTurns', async () => {
   const { root, planPath } = await checkout();
   const report = nextTaskReport({ planPath, planText: PLAN, root });
-  const matches = [...report.matchAll(new RegExp(BUDGET_LINE, 'gm'))];
-  assert.equal(matches.length, 2, report);
-  for (const match of matches) {
-    assert.ok(Number(match[1]) < 60 && Number(match[2]) < 100, report);
-  }
-});
-
-// The budget tests drop the Commit: block, so the plan takes the direct route,
-// the one that dispatches build-task with a Budget: line.
-test('a task at or past the plan-check split threshold gets build-task\'s own budget, never more', async () => {
-  const bigCode = Array.from({ length: 260 }, (_, index) => `const line${index} = ${index};`).join('\n');
-  const big = taskSection({ number: 1, title: 'Big', files: ['- Create: `src/big.js`'], code: bigCode, subject: 'feat(app): big', commit: false });
-  const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [big] }) });
-  const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
-  assert.match(report, /^Budget: 60k\/100k$/m);
-});
-
-test('a Budget: line stands alone and matches the delegate-budget hook\'s regex', async () => {
-  const { root, planPath } = await checkout();
-  const report = nextTaskReport({ planPath, planText: PLAN, root });
-  const match = report.match(BUDGET_LINE);
-  assert.ok(match, report);
-  assert.equal(match[0], 'Budget: 49k/81k');
-});
-
-test('a one-file task of a few lines still gets at least 45k/75k, three quarters of build-task\'s own budget as a floor', async () => {
-  const small = taskSection({ number: 1, title: 'Small', files: ['- Create: `src/small.js`'], code: 'const a = 1;', subject: 'feat(app): small', commit: false });
-  const root = await gitRepository({ 'docs/plans/fixture.md': planFixture({ tasks: [small] }) });
-  const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextTaskReport({ planPath, planText: await fs.readFile(planPath, 'utf8'), root });
-  const match = report.match(BUDGET_LINE);
-  assert.ok(match, report);
-  assert.ok(Number(match[1]) >= 45 && Number(match[2]) >= 75, report);
+  assert.doesNotMatch(report, /^Budget:/m);
 });
 
 test('with every task landed, the report reads Next: none and never Next phase:', async () => {
