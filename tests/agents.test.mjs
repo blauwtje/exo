@@ -278,6 +278,6 @@ test('the branch reviewer holds the test-first rule and the missing-Red: rule', 
   for (const reviewer of reviewers) {
     assert.match(reviewer.body, /test-first/, `${reviewer.fileName} test-first rule`);
     assert.match(reviewer.body, /`Test first: yes`/, `${reviewer.fileName} Test first: yes`);
-    assert.match(reviewer.body, /`Red:` failing run/, `${reviewer.fileName} Red: rule`);
+    assert.match(reviewer.body, /`Red:` line reads `none` or is missing/, `${reviewer.fileName} Red: rule`);
   }
 });
