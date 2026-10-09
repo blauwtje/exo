@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `spec` offers to build the brief in this chat with `--land`, so one reply runs build, verify and ship to the end.
+
+### Changed
+
+- `route-skills` recommends building the brief in this chat.
+- `build`, `verify` and `ship` carry `--land` through without a further question except an irreversible step.
+- The branch reviewer stops after 30 turns and searches only inside the checkout.
+
 ## 0.110.0 - 2026-10-09
 
 ### Highlights
