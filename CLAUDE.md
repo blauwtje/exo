@@ -30,6 +30,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 
 - `npm run check` gates every commit; clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
 - `npm run check` → lead runs it once, in background, output to a log; delegate runs only its proof.
+- Plan tasks here → `Land gate: npm run validate` (static checks, no test suite); `npm run check` runs once as Success criterion.
 - `npm test` → spec reporter, failure marked `✖`, not `not ok`. `npm run check` → TAP, its FAIL line lists `not ok` lines.
 
 ## Editing
