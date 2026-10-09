@@ -143,6 +143,13 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
   assert.match(result.calls[0].stdin, /^\/exo:build .*plan\.md --task 1/);
   assert.match(result.calls[2].stdin, /^\/exo:verify .*plan\.md Push nothing and open no pull request\./);
+  const prompt = result.calls[0].stdin;
+  const learnings = path.join(context.root, '.exo', 'run-plan', 'plan', 'learnings.md');
+  assert.ok(prompt.includes('### Task 1: feat(a): add a\nDepends on: none | Files: `a.txt`'), 'the task section');
+  for (const rule of [/^1\. Change only the files/m, /^2\. Make the task's proof command pass/m, /^3\. Land through land-task/m, /^4\. Read /m]) assert.match(prompt, rule);
+  assert.ok(prompt.includes('Task 1: BLOCKED <file> is missing from the file list'));
+  assert.ok(prompt.includes(learnings), 'the learnings path');
+  assert.equal(await fs.readFile(learnings, 'utf8'), '# Learnings\n');
   const deny = result.calls[0].argv.slice(result.calls[0].argv.indexOf('--disallowedTools') + 1);
   for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
   assert.ok(result.calls[0].argv.includes(`Edit(/${context.root}/**)`));

@@ -445,7 +445,21 @@ async function main(argv) {
   const cap = maxIterations ?? 2 * (plan.tasks.length - landedAtStart.length);
   const taskAllow = allowRules({ root, planPath, plan });
   const tailAllow = allowRules({ root, planPath, plan, tail: true });
-  const buildPrompt = (number) => `/exo:build ${planPath} --task ${number}`;
+  const learnings = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'learnings.md');
+  const buildPrompt = (number) => {
+    const task = plan.tasks.find((entry) => entry.number === number);
+    return [
+      `/exo:build ${planPath} --task ${number}`,
+      '',
+      task.section,
+      '',
+      'Rules:',
+      `1. Change only the files this task lists. If a registry, index or test list must name the new file and is not listed, end on \`Task ${number}: BLOCKED <file> is missing from the file list\`.`,
+      '2. Make the task\'s proof command pass.',
+      '3. Land through land-task as the build skill says, never with git commit.',
+      `4. Read ${learnings} first, and before ending append one line on anything the next task should know.`
+    ].join('\n');
+  };
 
   if (flags['dry-run']) {
     const order = taskOrder(plan.tasks, landedAtStart);
@@ -476,6 +490,7 @@ async function main(argv) {
   }
   const logDir = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, utcStamp());
   fs.mkdirSync(logDir, { recursive: true });
+  if (!isFileOnDisk(learnings)) fs.writeFileSync(learnings, '# Learnings\n');
   const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [] };
   for (const number of landedAtStart) {
     const task = plan.tasks.find((entry) => entry.number === number);
