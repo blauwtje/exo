@@ -94,3 +94,60 @@ test('--dry-run passes through to run-plan and no session starts', async () => {
   assert.equal(git(context.root, 'branch', '--show-current'), 'feat/old');
   assert.deepEqual(await calls(context), []);
 });
+
+const home = async () => {
+  const dir = await fixture();
+  return { dir, env: { HOME: dir, PATH: '/usr/bin:/bin' } };
+};
+
+test('setup writes the launcher, the config dir and prints the key lines and a PATH warning', async () => {
+  const { dir, env } = await home();
+  const result = await run(CLI, ['setup'], { env });
+  assert.equal(result.code, 0, result.stderr);
+  const target = path.join(dir, '.local', 'bin', 'exo');
+  assert.equal((await fs.stat(target)).mode & 0o777, 0o755);
+  assert.equal(
+    await fs.readFile(target, 'utf8'),
+    '#!/bin/sh\nroot=$(cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/exo/plugin-root") && exec node "$root/skills/build/scripts/exo-cli.mjs" "$@"\n'
+  );
+  assert.ok((await fs.stat(path.join(dir, '.config', 'exo'))).isDirectory());
+  assert.match(result.stdout, /keys\.env/);
+  assert.match(result.stdout, /^DEEPSEEK_API_KEY=$/m);
+  assert.match(result.stdout, /^ZAI_API_KEY=$/m);
+  assert.match(result.stdout, /not on PATH/);
+  await assert.rejects(fs.stat(path.join(dir, '.config', 'exo', 'keys.env')));
+});
+
+test('setup refuses a different file at the target and reruns cleanly on its own launcher', async () => {
+  const { dir, env } = await home();
+  const target = path.join(dir, '.local', 'bin', 'exo');
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, 'mine\n');
+  const refused = await run(CLI, ['setup'], { env });
+  assert.equal(refused.code, 2);
+  assert.match(refused.stderr, /already exists/);
+  assert.equal(await fs.readFile(target, 'utf8'), 'mine\n');
+  await fs.rm(target);
+  const onPath = { ...env, PATH: `${path.dirname(target)}:/usr/bin` };
+  assert.equal((await run(CLI, ['setup'], { env: onPath })).code, 0);
+  const again = await run(CLI, ['setup'], { env: onPath });
+  assert.equal(again.code, 0);
+  assert.doesNotMatch(again.stdout, /not on PATH/);
+});
+
+test('run config shows sources and key status without values, and writes one key', async () => {
+  const { dir, env } = await home();
+  await fs.mkdir(path.join(dir, '.config', 'exo'), { recursive: true });
+  await fs.writeFile(path.join(dir, '.config', 'exo', 'keys.env'), 'DEEPSEEK_API_KEY=sekret123\n');
+  const set = await run(CLI, ['run', 'config', 'defaults', '{"provider":"zai"}'], { env });
+  assert.equal(set.code, 0, set.stderr);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(dir, '.config', 'exo', 'run.json'), 'utf8')), { defaults: { provider: 'zai' } });
+  const shown = await run(CLI, ['run', 'config'], { env });
+  assert.match(shown.stdout, /^defaults\.provider = "zai" \(run\.json\)$/m);
+  assert.match(shown.stdout, /^defaults\.effort = "medium" \(catalog\)$/m);
+  assert.match(shown.stdout, /^key DEEPSEEK_API_KEY \(deepseek\): set$/m);
+  assert.match(shown.stdout, /^key ZAI_API_KEY \(zai\): missing$/m);
+  assert.doesNotMatch(shown.stdout + shown.stderr, /sekret123/);
+  await run(CLI, ['run', 'config', 'note', 'plain text'], { env });
+  assert.equal(JSON.parse(await fs.readFile(path.join(dir, '.config', 'exo', 'run.json'), 'utf8')).note, 'plain text');
+});

@@ -11,7 +11,10 @@ Start the cheap loop on one plan: each unlanded task runs in a fresh `claude -p`
 
 ## Run
 
-1. Argument → one plan path; none → ask for it, run nothing.
+Terminal route → `exo run [plan]`, installed once by `setup`.
+
+1. Argument `setup` → run `node "${CLAUDE_SKILL_DIR}/../build/scripts/exo-cli.mjs" setup`, report its output, stop.
+   - Else argument → one plan path; none → ask for it, run nothing.
 2. Run `node "${CLAUDE_SKILL_DIR}/../build/scripts/run-plan.mjs" <plan>` with Bash `run_in_background`; the run outlasts one foreground call.
 3. Pass only flags the user typed; the script holds the defaults.
 4. Exit → report its last `run-plan: stop:` line and the summary path it prints. Exit 0 = done, gate passing; 1 = any other stop; 2 = refusal.
