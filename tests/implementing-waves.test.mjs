@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import { test } from 'node:test';
 import { nextWave } from '../lib/plan-tasks.mjs';
 
-const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', '`for` loop', 'never call `Monitor` or start with `sleep`'];
+const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', 'never call `Monitor` or start with `sleep`'];
 
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('build/references/workspace.md');
@@ -36,10 +36,11 @@ test('the implementer brief carries only the task fields, and the agent still wr
   assert.ok(IMPLEMENTER_BRIEF.includes('Report to: <report directory>/implementer-<n>.md'));
   assert.ok(!IMPLEMENTER_BRIEF.includes('Hard boundaries:'), 'the rules live in agents/build-task.md');
   assert.ok(IMPLEMENTER_AGENT.includes('start every command with `cd <checkout> &&`'));
-  assert.ok(IMPLEMENTER_AGENT.includes('Never create a worktree, never switch, stash or reset.'));
-  assert.ok(IMPLEMENTER_AGENT.includes('`push`, `worktree`, and no `gh` command at all'));
-  assert.ok(IMPLEMENTER_AGENT.includes('Never call a tool that enters or leaves a worktree'));
-  assert.ok(IMPLEMENTER_AGENT.includes('- Run no writing git,'), 'the agent commits nothing, inside a wave or not');
+  assert.ok(IMPLEMENTER_AGENT.includes('## Git'));
+  assert.ok(IMPLEMENTER_AGENT.includes('never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`'), 'the agent commits nothing, inside a wave or not');
+  assert.ok(IMPLEMENTER_AGENT.includes('`land-task.mjs` is the only committer'));
+  assert.ok(IMPLEMENTER_AGENT.includes('run no `gh` command'));
+  assert.ok(IMPLEMENTER_AGENT.includes('never call a tool that enters or leaves a worktree'));
   assert.ok(!IMPLEMENTER_BRIEF.includes('Wave:'), 'no dispatch sends the agent a wave to commit in');
   assert.ok(!IMPLEMENTER_BRIEF.includes('Your brief:'), 'the brief is named by path, never pasted');
 });
@@ -162,7 +163,7 @@ test('the build table names the direct route as the wave reference\'s reader, an
   }
 });
 
-test('build-task waits in the foreground or a bounded for loop, never Monitor or a leading sleep', () => {
+test('build-task waits in the foreground, never Monitor or a leading sleep', () => {
   assert.ok(DELEGATE_WAIT_PARTS.every((part) => IMPLEMENTER_AGENT.includes(part)), 'the Standard section carries the wait line');
   assert.ok(!IMPLEMENTER_AGENT.includes('background over 1 min'), 'no rule tells the delegate to background a proof');
 });

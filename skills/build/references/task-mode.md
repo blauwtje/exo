@@ -4,7 +4,7 @@
 
 ## Rules
 
-- One command per Bash call, spelled as the plan or skill gives it, with no `$( )`, `;`, `&&`, `|`, redirect or heredoc: the run's allowlist denies anything else, and a denied command never runs.
+- Run one command per Bash call; run the plan's Proof, Run, Lint, Land gate and Allow commands exactly as written; no `$( )`, `;`, `&&`, `|`, redirect, heredoc or `for` loop of your own: the run's allowlist denies anything else, and a denied command never runs.
 - Create and change files only with the Write and Edit tools; read them with the Read tool.
 - Work in `<checkout>`, the session's current checkout, with that path literally.
 - Ask nothing: a choice you cannot rule is `BLOCKED`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.
@@ -27,7 +27,7 @@ Skip this when the prompt holds the brief.
 1. Run `git rev-parse --show-toplevel` alone, use the printed path as `<checkout>`.
 2. Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <plan> --root <checkout>`.
    - Expect `Next: Task <n>`, or a `Wave:` line whose first task is `<n>`; any other line → `BLOCKED` with that line as the reason.
-3. Read the task's `Brief:` file, then build it per `${CLAUDE_SKILL_DIR}/../../agents/build-task.md` `## Build`, `## Stop` and `## Report`, whose `Report to:` is `<checkout>/.exo/implementer-<n>.md`.
+3. Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once, then the task's `Brief:` file, then build it per `${CLAUDE_SKILL_DIR}/../../agents/build-task.md` `## Git`, `## Build`, `## Stop` and `## Report`, whose `Report to:` is `<checkout>/.exo/implementer-<n>.md`.
 
 ## Finish
 

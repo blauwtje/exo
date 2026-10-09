@@ -169,7 +169,7 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const prompt = result.calls[0].stdin;
   const learnings = path.join(context.root, '.exo', 'run-plan', 'plan', 'learnings.md');
   assert.ok(prompt.includes('### Task 1: feat(a): add a\nDepends on: none | Files: `a.txt`'), 'the task section');
-  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- One command per Bash call/m, /^## Build$/m, /^## Lean code$/m, /^## Finish$/m]) assert.match(prompt, rule);
+  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- Run one command per Bash call/m, /^## Git$/m, /^## Build$/m, /^## Lean code$/m, /^## Finish$/m]) assert.match(prompt, rule);
   assert.ok(prompt.includes(`node "${path.join(SCRIPTS, 'land-task.mjs')}" --plan ${context.plan} --task 1 --root ${context.root}`), 'the land command');
   assert.doesNotMatch(prompt, /^\/exo:build|## Design tasks|next-task\.mjs --plan|mcp-tool-call/m, 'no skill load, no design rule, no probe for a shell task');
   assert.equal(prompt.match(/### Task 1:/g).length, 1, 'the task section appears once');
@@ -177,7 +177,7 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.ok(prompt.includes(learnings), 'the learnings path');
   assert.equal(await fs.readFile(learnings, 'utf8'), '# Learnings\n');
   const deny = result.calls[0].argv.slice(result.calls[0].argv.indexOf('--disallowedTools') + 1);
-  for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
+  for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(git stash *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(git reset *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
   assert.ok(result.calls[0].argv.includes(`Edit(/${context.root}/**)`));
   assert.match(prompt, SANDBOX_RULE);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
@@ -534,7 +534,7 @@ test('childEnv: the runner changes only the copy it hands the child, never its o
   assert.equal(env.ANTHROPIC_AUTH_TOKEN, 'fake-token');
   assert.equal(env.CLAUDE_CODE_EFFORT_LEVEL, 'high');
   assert.equal(env.EXO_RUN_TASK, 'plan/1');
-  assert.equal(env.BASH_MAX_TIMEOUT_MS, process.env.BASH_MAX_TIMEOUT_MS ?? '180000', 'one Bash call is capped unless the env sets its own');
+  assert.equal(env.BASH_MAX_TIMEOUT_MS, process.env.BASH_MAX_TIMEOUT_MS, 'no Bash cap is added');
   assert.equal(process.env.ANTHROPIC_API_KEY, 'fake-anthropic-key-5b2d');
   assert.equal(process.env.ANTHROPIC_AUTH_TOKEN, before.ANTHROPIC_AUTH_TOKEN);
   assert.equal(process.env.CLAUDE_CODE_EFFORT_LEVEL, before.CLAUDE_CODE_EFFORT_LEVEL);

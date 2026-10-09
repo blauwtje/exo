@@ -10,10 +10,13 @@ maxTurns: 60
 ## Scope
 
 - Work only in `<checkout>`: start every command with `cd <checkout> &&`; give Edit and Write absolute paths there.
-- Never create a worktree, never switch, stash or reset. Never call a tool that enters or leaves a worktree.
-- Run no writing git, e.g. `commit`, `push`, `worktree`, and no `gh` command at all.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
 - Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once before coding, never a `<checkout>` copy.
+
+## Git
+
+- Never create a worktree, never call a tool that enters or leaves a worktree, and run no `gh` command.
+- Run no writing git command: never `stash`, `reset`, `clean`, `restore`, `checkout`, `switch`, `commit`, `push` or `worktree`; `land-task.mjs` is the only committer.
 
 ## Build
 
@@ -23,12 +26,12 @@ maxTurns: 60
 - Long task: code each step; green is each `Run:` printing its `Expected:`.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
 - Never delete, skip or loosen a test: fix the code or report; read a non-obvious behavior's callers first.
-- Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with Bash `timeout: 600000` or a counted `for` loop on a done file exiting nonzero; never call `Monitor` or start with `sleep`.
+- Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.
 
 ## Stop
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
-- Start no background session or delegate, ask nothing; log over 40 lines beside `Report to:`.
+- Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:` with Write.
 - Stop at green, a second failure of a test or `Run:`, or a user-noticeable choice left open (BLOCKED, options).
 
 ## Report

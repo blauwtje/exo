@@ -64,7 +64,7 @@ const SESSION_MARKERS = [
 const DENY_RULES = [
   'Bash(git push *)', 'Bash(gh *)', 'Bash(git reset *)', 'Bash(git rebase *)', 'Bash(git cherry-pick *)',
   'Bash(git merge *)', 'Bash(git tag *)', 'Bash(git switch *)', 'Bash(git checkout *)', 'Bash(git branch -D *)',
-  'Bash(git commit *)', 'Bash(node *settings.mjs*)', 'Bash(node *memory.mjs*)'
+  'Bash(git commit *)', 'Bash(git stash *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(node *settings.mjs*)', 'Bash(node *memory.mjs*)'
 ];
 
 const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files'];
@@ -72,8 +72,6 @@ const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files']
 const READ_ONLY_INSPECT = ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n'];
 const STALL_LIMIT = 2;
 const DEFAULT_TIMEOUT_MINUTES = 60;
-// Longest a session's Bash call may run: a hung command (a sandboxed dotnet test waited 301 s) stops here, not at the 600 s the model may ask for.
-const BASH_MAX_TIMEOUT_MS = '180000';
 
 class Refusal extends Error {}
 
@@ -248,7 +246,7 @@ export function childEnv(pin, provider) {
   delete env.EXO_RUN_TASK;
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
-  return { BASH_MAX_TIMEOUT_MS, ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
+  return { ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
 }
 
 /** The provider for this run, or a Refusal: the catalog and run.json, keys.env, and `--provider`, `--effort` over the defaults. */
@@ -476,6 +474,8 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, p
     fill(sectionOf(taskMode, 'Rules')),
     '',
     ...(task.design ? [fill(sectionOf(taskMode, 'Design tasks')), ''] : []),
+    fill(sectionOf(builder, 'Git')),
+    '',
     fill(sectionOf(builder, 'Build')),
     '',
     fill(sectionOf(builder, 'Stop')),
