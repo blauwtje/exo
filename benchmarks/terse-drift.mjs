@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // benchmarks/terse-drift.mjs
-// Multi-turn drift harness for `replies=terse`: one run is one 12-turn session
+// Multi-turn drift harness for `compression=high`: one run is one 12-turn session
 // in a fresh repository, held in a single `claude -p` process with streamed
 // input, so SessionStart fires at startup as in an interactive session rather
 // than on every turn. It scores the article density of the text the user reads
@@ -50,7 +50,7 @@ export const TURN_PROMPTS = [
 ];
 
 export function parseArguments(argv) {
-  const options = { pluginDir: ROOT, level: 'terse', model: 'sonnet', effort: null, runs: 1, concurrency: null, out: null, confirm: false };
+  const options = { pluginDir: ROOT, level: 'high', model: 'sonnet', effort: null, runs: 1, concurrency: null, out: null, confirm: false };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = () => argv[++index];
@@ -276,7 +276,7 @@ function prepareRepository(options, workdir) {
   git(workdir, ['add', '-A']);
   git(workdir, ['commit', '-q', '-m', 'seed']);
   fs.mkdirSync(path.join(workdir, '.claude'));
-  fs.writeFileSync(path.join(workdir, '.claude', 'exo.json'), `${JSON.stringify({ replies: options.level })}\n`);
+  fs.writeFileSync(path.join(workdir, '.claude', 'exo.json'), `${JSON.stringify({ compression: options.level })}\n`);
   fs.appendFileSync(path.join(workdir, '.git', 'info', 'exclude'), '.claude/\n');
 }
 

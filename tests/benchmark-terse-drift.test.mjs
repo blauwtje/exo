@@ -1,4 +1,4 @@
-// benchmarks/terse-drift.mjs is the live multi-turn harness for replies=terse.
+// benchmarks/terse-drift.mjs is the live multi-turn harness for compression=high.
 // Its pure parts run here with no network: argument parsing, the 12-turn
 // prompt list, the verdict on canned texts, the stream-json handling on a
 // canned stdout, and the dry run, which exits 0 and starts no claude process.
@@ -31,7 +31,7 @@ const GATED_TERSE = Object.fromEntries(GATED_TURNS.map((turn) => [turn, TERSE_TE
 
 test('arguments default to one terse sonnet run of this repository', () => {
   const options = parseArguments([]);
-  assert.equal(options.level, 'terse');
+  assert.equal(options.level, 'high');
   assert.equal(options.model, 'sonnet');
   assert.equal(options.runs, 1);
   assert.equal(options.concurrency, 1);
@@ -40,9 +40,9 @@ test('arguments default to one terse sonnet run of this repository', () => {
 });
 
 test('arguments read every flag and reject unknown ones', () => {
-  const options = parseArguments(['--plugin-dir', '/tmp/old', '--level', 'tight', '--model', 'opus', '--runs', '3', '--out', 'x', '--confirm']);
+  const options = parseArguments(['--plugin-dir', '/tmp/old', '--level', 'low', '--model', 'opus', '--runs', '3', '--out', 'x', '--confirm']);
   assert.equal(options.pluginDir, '/tmp/old');
-  assert.equal(options.level, 'tight');
+  assert.equal(options.level, 'low');
   assert.equal(options.model, 'opus');
   assert.equal(options.runs, 3);
   assert.equal(options.concurrency, 3);

@@ -59,11 +59,11 @@ export const BRANCH = 'feat/business-invoices';
 const REPO_PLACEHOLDERS = ['@@REPO@@', '{{REPOSITORY}}'];
 
 // Every schema key, set in the project layer so the user's global exo options
-// (workspace=worktree, replies=terse) never reach either version. Defaults,
+// (workspace=worktree, compression=high) never reach either version. Defaults,
 // except workspace and ship, which would otherwise ask.
 export const EXO_SETTINGS = {
   specs: 'docs',
-  replies: 'tight',
+  compression: 'low',
   budget: 'medium',
   ship: 'local',
   workspace: 'branch',

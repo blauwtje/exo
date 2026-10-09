@@ -33,9 +33,9 @@ export const NO_RUN = 'Make the change in code, with tests if a change of this k
 // terse cell shows what brevity alone saves next to the exo cell.
 const TERSE_PROMPT = fs.readFileSync(new URL('./arms/terse.md', import.meta.url), 'utf8').trim();
 
-// The replies-* arms carry the rule text the configure schema injects for each
-// reply level, so a cell measures the level exactly as a session receives it.
-const REPLY_RULES = JSON.parse(fs.readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8')).replies.rules;
+// The compression-* arms carry the rule text the configure schema injects for each
+// compression level, so a cell measures the level exactly as a session receives it.
+const COMPRESSION_RULES = JSON.parse(fs.readFileSync(new URL('../skills/configure/schema.json', import.meta.url), 'utf8')).compression.rules;
 
 // A git-only arm that loads one rival from the directory rivals.mjs fetches it
 // into; nothing is fetched here, so run.mjs reports a missing directory and
@@ -61,8 +61,8 @@ const PROSE_RULES = 'Never force push, never run git reset --hard or git clean -
 export const ARMS = {
   baseline: { prompt: null, pluginDirs: [], promptSuffix: null },
   terse: { prompt: TERSE_PROMPT, pluginDirs: [], promptSuffix: null },
-  'replies-tight': { prompt: REPLY_RULES.tight, pluginDirs: [], promptSuffix: null },
-  'replies-terse': { prompt: REPLY_RULES.terse, pluginDirs: [], promptSuffix: null },
+  'compression-low': { prompt: COMPRESSION_RULES.low, pluginDirs: [], promptSuffix: null },
+  'compression-high': { prompt: COMPRESSION_RULES.high, pluginDirs: [], promptSuffix: null },
   'yagni-oneliner': { prompt: 'Build only what the task needs now, in as few lines as you can.', pluginDirs: [], promptSuffix: null },
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
   'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },
