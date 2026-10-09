@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { blankCommandText, GIT_PREFIX_SOURCE } from './command-text.mjs';
 import { isProcessEntry, runBashGuard } from './guard-runner.mjs';
 
-// The prefix is shared with writing-guard: the command word, then every global
+// The prefix: the command word, then every global
 // option, in any order, before the subcommand; matching only a fixed pair would let
 // `git --no-pager reset --hard` through. A `.` before `git` marks a word such as
 // `.git`, not a command; a `/` does not, so `/usr/bin/git` and `./git` still match.

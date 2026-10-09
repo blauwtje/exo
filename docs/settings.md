@@ -31,14 +31,12 @@ A session hook loads these rules at startup, resume, clear and compaction. They 
 
 ## Bash guards
 
-A hook stops five kinds of command and says what to do instead.
+A hook stops three kinds of command and says what to do instead.
 
 | Guard | Acts on |
 |---|---|
-| Detach | A process started with `&`, `nohup`, `disown` or `setsid`. |
 | Destructive | A command that deletes a container, volume, database or credential. |
 | Git | A force push, `reset --hard`, `clean -f`, a stash drop, a force-delete of an unlanded branch, a whole-tree checkout or restore. |
 | Secrets | A shell read of a path your `Read(...)` deny entries protect. |
-| Writing | AI attribution in a commit, pull request or branch name, and a commit subject that is not a Conventional Commit. |
 
 How Codex differs is in [codex.md](codex.md).

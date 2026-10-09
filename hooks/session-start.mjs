@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SessionStart hook on startup, resume, clear and compact: builds one
 // additionalContext string, in order: a handoff pointer, a project-memory
-// pointer, the settings line, the book-command sentence, then the body of the
+// pointer, the settings line, then the body of the
 // route-skills skill (frontmatter dropped), the only skill invoked this way
 // because its frontmatter blocks model invocation. On Codex the Codex host note
 // and the body of the scannable output style follow, since Codex has neither.
@@ -15,7 +15,6 @@ import path from 'node:path';
 import process from 'node:process';
 import { currentHost } from '#host';
 import { readHookText } from '#hook-input';
-import { bookSentence } from '../skills/remember/scripts/approve-book.mjs';
 
 // A hook output string over this many characters reaches the model as a file
 // path and a 2,000-character preview, which would cut the rules themselves. The
@@ -169,10 +168,7 @@ if (fs.existsSync(skillFile)) {
   // from this one line instead of opening the settings files themselves.
   const settingsRun = runScript('skills/configure/scripts/settings.mjs', 'context');
   const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
-  // Once per session, and again after a clear or compaction, rather than on
-  // every prompt: the session judges which prompt corrects a fact.
-  const book = bookSentence(input.session_id);
-  const headText = `${pointers}${settings}\n\n${book === null ? '' : `${book}\n\n`}`;
+  const headText = `${pointers}${settings}\n\n`;
   const room = OUTPUT_CAP - headText.length;
   let body = skillBody(skillFile);
   if (body.length > room) {

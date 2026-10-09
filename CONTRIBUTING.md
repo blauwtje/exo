@@ -78,11 +78,10 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 
 ## Hooks
 
-`hooks/hooks.json` registers three commands, one hook process per event and matcher rather than one per feature: `hooks/session-start.mjs` on `SessionStart`, `hooks/dispatch-prompt.mjs` on `UserPromptSubmit` (reply expander), `hooks/dispatch-bash.mjs` on `PreToolUse` for `Bash` (the five Bash guards and booking approval). A dispatcher runs each step in its own try/catch, returns the first deny or block and joins the additional contexts. The writing guard has no `Edit|Write` entry, because it passes both.
+`hooks/hooks.json` registers three commands, one hook process per event and matcher rather than one per feature: `hooks/session-start.mjs` on `SessionStart`, `hooks/dispatch-prompt.mjs` on `UserPromptSubmit` (reply expander), `hooks/dispatch-bash.mjs` on `PreToolUse` for `Bash` (the three Bash guards). A dispatcher runs each step in its own try/catch, returns the first deny or block and joins the additional contexts.
 
-- **SessionStart** (startup, resume, clear, compaction): writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set), injects the `memory.mjs book` command with the session id so a session can book a user's correction of a repository fact in any language, and injects the `route-skills` body, because a skill body is read only when invoked and that one says when to invoke the others.
+- **SessionStart** (startup, resume, clear, compaction): writes the plugin-root pointer to `~/.claude/exo/plugin-root` (under `CLAUDE_CONFIG_DIR` when set) and injects the `route-skills` body, because a skill body is read only when invoked and that one says when to invoke the others.
 - **Delegate limits**: each agent that builds, reviews or repairs sets `maxTurns` in its frontmatter (60, `run-unit` 90); the harness ends a delegate at that turn.
-- **Booking approval** (`skills/remember/scripts/approve-book.mjs`): allows only the exact `memory.mjs book` command the session hook prints, so a booking shows no permission prompt and no user writes a rule naming an installed path. It prints nothing for any other command; a user's own deny or ask rule still wins, and a fault approves nothing.
 
 Each hook entry pins `"shell": "bash"` and `.gitattributes` forces LF; `CLAUDE.md` `## Environment` says why.
 

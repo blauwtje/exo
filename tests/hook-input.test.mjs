@@ -3,34 +3,17 @@
 // ends fails the read instead of hanging the hook.
 
 import assert from 'node:assert/strict';
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { HOOK_INPUT_TIMEOUT_MS } from '../lib/hook-input.mjs';
 import { environmentMs } from '../lib/script-flags.mjs';
-import { bookSentence } from '../skills/remember/scripts/approve-book.mjs';
 import { fixture } from './harness.mjs';
 
 const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const APPROVE_BOOK = path.join(REPOSITORY, 'skills', 'remember', 'scripts', 'approve-book.mjs');
 const READER = pathToFileURL(path.join(REPOSITORY, 'lib', 'hook-input.mjs')).href;
-const WRITE_DELAY_MS = 200;
-
-function runScript(script, args, input, { environment = {}, delayMs = 0 } = {}) {
-  return new Promise((resolve) => {
-    const child = execFile(
-      process.execPath,
-      [script, ...args],
-      { env: { ...process.env, ...environment }, timeout: 30_000 },
-      (error, stdout, stderr) => resolve({ code: error ? (error.code ?? 1) : 0, stdout: String(stdout), stderr: String(stderr) })
-    );
-    child.stdin.on('error', () => {});
-    if (input === null) return;
-    setTimeout(() => child.stdin.end(JSON.stringify(input)), delayMs);
-  });
-}
 
 async function readerScript(directory, timeoutMs) {
   const file = path.join(directory, 'read.mjs');
@@ -42,14 +25,6 @@ async function readerScript(directory, timeoutMs) {
   );
   return file;
 }
-
-test('approve-book prints its JSON when stdin is written late', async () => {
-  const command = bookSentence('s1').match(/`(node [^`]+)`/)[1];
-  const input = { tool_name: 'Bash', tool_input: { command } };
-  const result = await runScript(APPROVE_BOOK, [], input, { delayMs: WRITE_DELAY_MS });
-  assert.equal(result.stderr, '');
-  assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'allow');
-});
 
 test('the reader returns an empty text at once when stdin is ignored', async () => {
   const file = await readerScript(await fixture(), 5000);

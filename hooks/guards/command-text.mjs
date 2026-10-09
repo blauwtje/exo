@@ -13,7 +13,7 @@
 export const HEREDOC_OPERATOR = /<<(-?)[ \t]*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|\\?([A-Za-z_]\w*))/y;
 
 // The words that start a git invocation, up to and with the whitespace before the
-// subcommand, as regular-expression source for git-guard and writing-guard to
+// subcommand, as regular-expression source for git-guard to
 // share. Whitespace is a space, a tab or a `\`-newline continuation. The command
 // is `git` with an optional `.exe` and a closing quote, so a path such as
 // `/usr/bin/git` and a quoted `"git"` both count; the caller chooses what may

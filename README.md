@@ -98,7 +98,7 @@ Say what you want and Claude starts the skill that fits, or type `/exo:start <go
 | writes "The hook is not reading the setting, so the reminder never fires." | Under `replies=terse`, that reply reads "Hook not reading setting → reminder never fires." |
 | gets a bug report | `find-cause` builds a reproduction that fails on demand and names one cause before anything is fixed. |
 
-These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. Five Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all six settings.
+These hold in every session, no skill needed. Searches and reviews run in helpers, keeping their file dumps out of your context. Three Bash guards stop commands such as a force push. [docs/settings.md](docs/settings.md) lists every guard and all six settings.
 
 ## More
 

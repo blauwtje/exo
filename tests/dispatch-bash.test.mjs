@@ -1,7 +1,7 @@
-// The Bash dispatcher runs the five Bash guards and the memory-booking
-// approval in one process: it returns the first deny, joins the
-// contexts of the other steps, lets a faulting step fall through, passes every
-// other tool, and stands the guards down when the guards setting is off.
+// The Bash dispatcher runs the three Bash guards in one process: it returns
+// the first deny, joins the contexts of the other steps, lets a faulting step
+// fall through, passes every other tool, and stands the guards down when the
+// guards setting is off.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -35,9 +35,7 @@ const context = (text) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', 
 
 test('each guard denies through the dispatcher with its own text', async () => {
   const cases = [
-    ['git reset --hard', /git-guard/],
-    ['nohup sleep 1', /detach-guard/],
-    ['git commit -m "feat: x" -m "Co-Authored-By: Claude <noreply@anthropic.com>"', /writing-guard/]
+    ['git reset --hard', /git-guard/]
   ];
   for (const [command, pattern] of cases) {
     const decision = await output(command);
@@ -59,9 +57,8 @@ test('a command no step objects to produces no output', async () => {
   assert.equal(await output('git status'), null);
 });
 
-test('the memory-booking command is approved', async () => {
-  const decision = await output(`node "${MEMORY_SCRIPT}" book --claim "a fact" --quote "the words" --session "s"`);
-  assert.equal(decision.permissionDecision, 'allow');
+test('the memory-booking command is no longer approved', async () => {
+  assert.equal(await output(`node "${MEMORY_SCRIPT}" book --claim "a fact" --quote "the words" --session "s"`), null);
 });
 
 test('a call that is not a Bash command, and input that is not usable, produce no output', async () => {
@@ -87,7 +84,7 @@ test('the first deny is returned when two guards deny', async () => {
 test('a deny wins over an allow, and contexts are joined in step order', async () => {
   const allow = { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'ok' } };
   const steps = [step('a', allow), step('b', context('first')), step('c', deny('no one')), step('d', deny('no two')), step('e', context('second'))];
-  assert.deepEqual(await dispatchBash({}, steps, []), {
+  assert.deepEqual(await dispatchBash({}, steps), {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       permissionDecision: 'deny',
@@ -99,28 +96,18 @@ test('a deny wins over an allow, and contexts are joined in step order', async (
 
 test('a step that throws does not stop the steps after it', async () => {
   const broken = { name: 'broken', run: () => { throw new Error('boom'); } };
-  const denied = await dispatchBash({}, [broken, step('after', deny('still denied'))], []);
+  const denied = await dispatchBash({}, [broken, step('after', deny('still denied'))]);
   assert.equal(denied.hookSpecificOutput.permissionDecisionReason, 'still denied');
-  assert.equal(await dispatchBash({}, [broken, step('none', null)], []), null);
-});
-
-test('a denied call is not booked by the bookkeeping steps', async () => {
-  let booked = 0;
-  const counter = { name: 'counter', run: () => { booked += 1; return null; } };
-  const refused = await dispatchBash({}, [step('guard', deny('no'))], [counter]);
-  assert.equal(refused.hookSpecificOutput.permissionDecision, 'deny');
-  assert.equal(booked, 0);
-  assert.equal(await dispatchBash({}, [step('guard', null)], [counter]), null);
-  assert.equal(booked, 1);
+  assert.equal(await dispatchBash({}, [broken, step('none', null)]), null);
 });
 
 test('an awaited async step is merged like a sync one', async () => {
   const late = { name: 'late', run: async () => context('from the budget') };
-  assert.deepEqual(await dispatchBash({}, [], [late]), {
+  assert.deepEqual(await dispatchBash({}, [late]), {
     hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: 'from the budget' }
   });
   const broken = { name: 'broken', run: async () => { throw new Error('late boom'); } };
-  assert.equal(await dispatchBash({}, [], [broken]), null);
+  assert.equal(await dispatchBash({}, [broken]), null);
 });
 
 // A Bash call from a delegate whose transcript is 120k tokens deep: no step
