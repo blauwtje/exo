@@ -4,7 +4,7 @@ Writes GitHub issues for this repository and files them.
 
 ## When it runs
 
-You ask in plain words to file, open, write or split issues. Asking is the approval. exo asks once more only when it wants to split an issue you asked for as one.
+Only when you type `/exo:file-issues`, to file, open, write or split issues. Typing it is the approval. exo asks once more only when it wants to split an issue you asked for as one.
 
 ## What you get
 

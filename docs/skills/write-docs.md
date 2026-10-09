@@ -4,7 +4,7 @@ Writes docs, pull requests, issues, commit messages and changelog lines in plain
 
 ## When it runs
 
-You write or edit text someone reads later: a README, doc page, PR, issue or commit body, changelog line or brief.
+Only when you type `/exo:write-docs`, to write or edit text someone reads later: a README, doc page, PR, issue or commit body, changelog line or brief.
 
 Not for chat replies or code comments.
 

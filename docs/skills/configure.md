@@ -4,7 +4,7 @@ Shows and changes exo's settings.
 
 ## When it runs
 
-You run `/exo:configure`, or ask to see or change a setting, such as where specs go or the guards.
+Only when you type `/exo:configure`, to see or change a setting, such as where specs go or the guards.
 
 Not for Claude Code's own `settings.json`, permissions or hooks.
 

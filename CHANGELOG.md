@@ -28,6 +28,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `instruction-style.md` is the single owner of a terse house style for instruction files: `condition → action` bullets, no articles or filler, reasons only where they set a boundary, and boundary words, numbers and identifiers never dropped.
 - Skills, agents, the output style, `CLAUDE.md`, `README.md` and `CONTRIBUTING.md` follow that style, from 71,280 to 65,827 words across 98 files with no rule changed; four design-ui files a pressure run showed regressing keep their old text.
 
+- The `compression` low rule writes a question to the user in full sentences, like a security warning or a confirmation before an irreversible action.
+- The docs pages of `check-docs`, `write-docs`, `file-issues`, `edit-skills` and `configure` say each runs only when you type its command, and the `build` page no longer says a plan needs an `Allow:` line.
+
 ### Fixed
 
 - The plugin copy a benchmark arm loads leaves out `.claude/worktrees/` and every `.DS_Store`, and still copies uncommitted edits.
@@ -47,6 +50,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `land-task.mjs` no longer fails on a path the task already removed with `git rm`; the removal lands in the task's commit.
 - `run-plan.mjs` adds `.exo/` to the target repository's `info/exclude`, so a run leaves no untracked `.exo/` folder.
 - A confined run on macOS may write only its own `session-env/<session id>` folder, not other sessions' folders, which unconfined sessions read; a confined run on Linux keeps its GitHub isolation folder under the caller's temporary folder, so no `claude-isolation-*` folder is left behind.
+
+### Removed
+
+- `benchmarks/terse-drift.mjs`, its test and its `benchmarks/README.md` section: the harness measured `compression=high`, which no longer exists.
 
 ## 0.106.0 - 2026-10-08
 

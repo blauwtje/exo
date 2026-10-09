@@ -4,7 +4,7 @@ Writes and trims skills and agents, and tests that each rule changes what the mo
 
 ## When it runs
 
-You create, change or shorten a skill or agent.
+Only when you type `/exo:edit-skills`, to create, change or shorten a skill or agent.
 
 Not for a rule or `CLAUDE.md`, a one-off fix, or a limit a script can check.
 

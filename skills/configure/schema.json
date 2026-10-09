@@ -21,7 +21,7 @@
     "aliases": { "high": "low" },
     "legacy": { "key": "replies", "values": { "terse": "low", "tight": "low", "standard": "off" } },
     "rules": {
-      "low": "Compression is low: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning or a confirmation before an irreversible action is written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out.",
+      "low": "Compression is low: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning, a question to the user and a confirmation before an irreversible action are written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out.",
       "off": "Compression is off: full prose."
     },
     "label": "Compression",

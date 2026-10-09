@@ -4,7 +4,7 @@ Looks up how the exact version of a library you have installed behaves, instead 
 
 ## When it runs
 
-A code decision depends on an external library, framework, API or service, and a wrong guess would still compile but fail at runtime.
+Only when you type `/exo:check-docs`, for a code decision that depends on an external library, framework, API or service, where a wrong guess would still compile but fail at runtime.
 
 Not for questions this repository's own code answers, or general concepts.
 
