@@ -1,7 +1,6 @@
 // Pins the return contract between build and its exo:run-unit agent: a unit
-// ends its turn only when every block task is LANDED or BLOCKED, and the
-// caller reads a BUDGET line as unfinished work whose landed part only the
-// branch knows.
+// ends its turn only when every block task is LANDED or BLOCKED, and only the
+// branch knows what landed.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -76,14 +75,13 @@ test('build dispatches in the background, ends the turn, and never polls while a
   assert.ok(!dispatchStep.includes('run_in_background'), 'the lead demands no foreground flag');
   assert.ok(UNIT_AGENT.includes('`run_in_background: false`'), 'run-unit still dispatches build-task in the foreground');
   const routeStep = loopStep(6, RUN_LOOP);
-  for (const line of ['`LANDED`', '`BUDGET:`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
+  for (const line of ['`LANDED`', '`BLOCKED`']) assert.ok(routeStep.includes(line), `step 6 routes a ${line} return`);
   assert.ok(routeStep.includes('never read the report here'), 'a BLOCKED report path is passed on unread');
   assert.doesNotMatch(RUN_LOOP, /`OPEN`/);
 });
 
-test('build reads a BUDGET return as unfinished and asks the branch what landed', () => {
-  const routeStep = loopStep(6, RUN_LOOP);
-  assert.ok(routeStep.includes('`BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.'));
+test('build asks the branch what landed', () => {
+  assert.ok(!RUN_LOOP.includes('BUDGET'), 'run-unit can no longer return BUDGET:');
   const askStep = loopStep(3, RUN_LOOP);
   assert.ok(askStep.includes('**Ask the branch what landed.**'));
   assert.ok(askStep.includes('Only a `Plan-task:` commit decides what landed, never memory'));

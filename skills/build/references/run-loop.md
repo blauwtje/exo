@@ -23,6 +23,5 @@
    - No such tool: never shell it; report `Unverified: <command> (no mcp__*__<tool> in this session)`, no Done.
    - Failed call → bug fixer; rerun, then `land-task.mjs --fix`.
    - `BLOCKED` ends the turn asking its reason's question with the report path (`none`: no report), or hands the path to a fresh agent; never read the report here.
-   - `BUDGET:` means unfinished, whatever its `done` list says: a fresh unit takes the rest from step 3.
    - `BLOCKED all nested dispatch unavailable` asks to set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to 2+; if the user cannot, step 5 follows the direct route reference instead.
    - Loop to step 3; only a block, failure or question earns a message.
