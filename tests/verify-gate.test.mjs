@@ -51,8 +51,19 @@ test('splitFixOnlyPaths moves a stray path only trailer-less fix commits touched
   ]);
   assert.deepEqual(splitFixOnlyPaths(['a.js', 'b.js', 'c.js', 'd.js', 'e.js'], commitsByPath), {
     strays: ['b.js', 'c.js', 'd.js', 'e.js'],
-    fixOnly: [{ path: 'a.js', shas: ['2222222', '1111111'] }]
+    fixOnly: [{ path: 'a.js', shas: ['2222222', '1111111'] }],
+    lead: []
   });
+});
+
+test('splitFixOnlyPaths reads CHANGELOG.md touched only by trailer-less docs(changelog) commits as the lead\'s', () => {
+  const commit = (sha, subject, body = subject) => ({ sha, subject, body });
+  const lead = new Map([['CHANGELOG.md', [commit('abcdef1234', 'docs(changelog): record x')]]]);
+  assert.deepEqual(splitFixOnlyPaths(['CHANGELOG.md'], lead), { strays: [], fixOnly: [], lead: [{ path: 'CHANGELOG.md', shas: ['abcdef1'] }] });
+  const mixed = new Map([['CHANGELOG.md', [commit('abcdef1234', 'docs(changelog): record x'), commit('9999999999', 'feat: add', 'feat: add\n\nPlan-task: plan/1')]]]);
+  assert.deepEqual(splitFixOnlyPaths(['CHANGELOG.md'], mixed), { strays: ['CHANGELOG.md'], fixOnly: [], lead: [] });
+  const other = new Map([['NOTES.md', [commit('abcdef1234', 'docs(changelog): record x')]]]);
+  assert.deepEqual(splitFixOnlyPaths(['NOTES.md'], other).strays, ['NOTES.md']);
 });
 
 test('runnableProof reads a plain Proof as its command, and a backticked one as prose', () => {

@@ -193,20 +193,29 @@ function isTrailerlessFix({ subject, body }) {
   return /^fix(\([^)]*\))?!?:/.test(subject) && !/^Plan-task: /m.test(body);
 }
 
+/** The lead's CHANGELOG commit shape: a `docs(changelog)` subject and no `Plan-task: ` trailer line. */
+function isLeadChangelog({ subject, body }) {
+  return /^docs\(changelog\):/.test(subject) && !/^Plan-task: /m.test(body);
+}
+
 /**
  * Splits stray `paths` by their commits. `commitsByPath` maps a path to the `{ sha, subject, body }`
  * commits in the range that touch it, newest first. A path with commits, every one a trailer-less
- * `fix`, is fix-only, with the short shas of those commits; any other stray path stays a stray.
+ * `fix`, is fix-only, with the short shas of those commits; `CHANGELOG.md` with only trailer-less
+ * `docs(changelog)` commits is the lead's, same shape; any other stray path stays a stray.
  */
 export function splitFixOnlyPaths(paths, commitsByPath) {
   const strays = [];
   const fixOnly = [];
+  const lead = [];
   for (const path of paths) {
     const commits = commitsByPath.get(path) ?? [];
-    if (commits.length > 0 && commits.every(isTrailerlessFix)) fixOnly.push({ path, shas: commits.map((commit) => commit.sha.slice(0, 7)) });
+    const shas = commits.map((commit) => commit.sha.slice(0, 7));
+    if (commits.length > 0 && commits.every(isTrailerlessFix)) fixOnly.push({ path, shas });
+    else if (path === 'CHANGELOG.md' && commits.length > 0 && commits.every(isLeadChangelog)) lead.push({ path, shas });
     else strays.push(path);
   }
-  return { strays, fixOnly };
+  return { strays, fixOnly, lead };
 }
 
 /** The commits in `base..HEAD` that touch each of `paths`, newest first, as `splitFixOnlyPaths` reads them. */
@@ -541,7 +550,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   // The plan file committed on the branch is the run's input, not drift.
   const planFile = repoPathOf(planPath, root);
   const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
-  const { strays, fixOnly } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
+  const { strays, fixOnly, lead } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
   if (strays.length === 0) {
     lines.push('PASS stray-paths');
   } else {
@@ -549,6 +558,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     failed = true;
   }
   for (const { path, shas } of [...fixOnly].sort((a, b) => (a.path < b.path ? -1 : 1))) lines.push(`FIX-ONLY ${path} (${shas.join(',')})`);
+  for (const { path, shas } of lead) lines.push(`LEAD ${path} (${shas.join(',')})`);
 
   const claims = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => claimLines(task, root, planId));
   lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));
