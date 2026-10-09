@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { cachedPass, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
+import { cachedPass, codePass, recordPass, SLOW_GATE_MS, workingTreeKey } from '#check-cache';
 
 function repo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'check-cache-'));
@@ -105,6 +105,35 @@ test('an old cache in the scratch folder is ignored', () => {
   fs.mkdirSync(path.join(root, '.exo'));
   fs.writeFileSync(path.join(root, '.exo', 'check-cache.json'), JSON.stringify({ x: { tree: workingTreeKey(root), ms: 9 } }));
   assert.equal(cachedPass(root, 'x'), null);
+});
+
+test('codePass finds a pass when only CHANGELOG.md differs, and the entry stores the code key', () => {
+  const { root, git } = repo();
+  fs.writeFileSync(path.join(root, 'CHANGELOG.md'), 'one\n');
+  git('add', 'CHANGELOG.md');
+  git('commit', '-q', '-m', 'log');
+  recordPass(root, 'x', 5);
+  const entry = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'check-cache.json'), 'utf8')).x;
+  assert.match(entry.code, /^[0-9a-f]{40,64}$/);
+  assert.notEqual(entry.code, entry.tree);
+  fs.writeFileSync(path.join(root, 'CHANGELOG.md'), 'two\n');
+  assert.equal(cachedPass(root, 'x'), null);
+  assert.deepEqual(codePass(root, 'x'), { ms: 5, tree: entry.tree });
+  assert.equal(git('diff', '--cached', '--name-only'), '');
+});
+
+test('codePass misses on any other edit, on an unknown command and on an entry without code', () => {
+  const { root } = repo();
+  recordPass(root, 'x', 5);
+  assert.equal(codePass(root, 'y'), null);
+  fs.writeFileSync(path.join(root, 'a.txt'), 'two\n');
+  assert.equal(codePass(root, 'x'), null);
+  fs.writeFileSync(path.join(root, 'a.txt'), 'one\n');
+  const file = path.join(root, '.git', 'exo', 'check-cache.json');
+  const cache = JSON.parse(fs.readFileSync(file, 'utf8'));
+  delete cache.x.code;
+  fs.writeFileSync(file, JSON.stringify(cache));
+  assert.equal(codePass(root, 'x'), null);
 });
 
 test('SLOW_GATE_MS is one minute', () => {
