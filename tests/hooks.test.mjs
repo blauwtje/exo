@@ -170,8 +170,7 @@ test('each kept guard denies a sample that passes when that guard alone is remov
   fs.writeFileSync(path.join(project, '.claude', 'settings.json'), JSON.stringify({ permissions: { deny: ['Read(./.env)'] } }));
   const saved = { CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR, CLAUDE_PROJECT_DIR: process.env.CLAUDE_PROJECT_DIR };
   Object.assign(process.env, { CLAUDE_CONFIG_DIR: project, CLAUDE_PROJECT_DIR: project });
-  const noWrap = () => null;
-  const decide = (command, guards) => dispatchBash({ tool_name: 'Bash', cwd: project, tool_input: { command } }, guards, noWrap);
+  const decide = (command, guards) => dispatchBash({ tool_name: 'Bash', cwd: project, tool_input: { command } }, guards);
   try {
     assert.deepEqual(GUARDS.map((guard) => guard.name).sort(), Object.keys(GUARD_SAMPLES).sort());
     for (const guard of GUARDS) {

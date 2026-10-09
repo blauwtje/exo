@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 // The one PreToolUse hook on Bash: runs the three guards in one process, each
 // in its own try/catch, and returns the first deny. `guards` `off` stands them
-// down; an unreadable setting leaves them on. An allowed noisy command is
-// wrapped for compression. An unreadable input exits 0 with no output.
+// down; an unreadable setting leaves them on. An unreadable input exits 0 with
+// no output.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { settingValue } from '#settings-store';
-import { wrapCommand } from '../lib/compress-output.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
@@ -48,8 +47,8 @@ export function guardDecision(hookInput, denialFor) {
 export const GUARDS = [['git-guard', gitDenial], ['secret-guard', secretDenial], ['destructive-guard', destructiveDenial]]
   .map(([name, denialFor]) => ({ name, run: (hookInput) => guardDecision(hookInput, denialFor) }));
 
-// The first deny, else the first other decision, plus every step's context.
-async function runSteps(hookInput, steps) {
+// The one output, or null: the first deny, else the first other decision, plus every step's context.
+export async function dispatchBash(hookInput, steps = GUARDS) {
   const outputs = [];
   for (const step of steps) {
     try {
@@ -66,20 +65,6 @@ async function runSteps(hookInput, steps) {
   const contexts = outputs.map((output) => output.additionalContext).filter(Boolean);
   if (contexts.length > 0) merged.additionalContext = contexts.join('\n');
   return Object.keys(merged).length === 1 ? null : { hookSpecificOutput: merged };
-}
-
-// The one output, or null. A denied call is never wrapped; a wrapper fault runs the command as written.
-export async function dispatchBash(hookInput, guards = GUARDS, wrap = wrapCommand) {
-  const guarded = await runSteps(hookInput, guards);
-  if (guarded?.hookSpecificOutput.permissionDecision === 'deny') return guarded;
-  let wrapped = null;
-  try {
-    wrapped = wrap(hookInput);
-  } catch (error) {
-    console.error(`compress-output: ${error.message}`);
-  }
-  if (wrapped === null) return guarded;
-  return { hookSpecificOutput: { ...guarded?.hookSpecificOutput, ...wrapped.hookSpecificOutput } };
 }
 
 if (isMain(import.meta.url)) {
