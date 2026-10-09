@@ -15,7 +15,7 @@ argument-hint: <outcome to shape>
    - Asked for options: list them, recommend one, no file.
    - New wishes for briefed work reopen that brief.
 2. **Sort each point.**
-   - Answerable by running or reading → record it, never ask.
+   - Answerable by running or reading → record it.
    - Each open decision is a question, root decisions first.
    - A decision the user left open stays open whatever the code suggests.
    - Point the user would not notice → `Data:`.
@@ -25,12 +25,12 @@ argument-hint: <outcome to shape>
    - Recommend a loaded skill's prescribed pattern over an option it rules out.
    - Close with up to three lines on what was agreed; brief after the user's yes.
    - After a compaction → list decisions first.
-4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight ranges; never `cat`, `head` or `sed`.
+4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"`; read it; else `exo:locate-code`, at most eight ranges.
 5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; in plan mode an edit-needing proof is Task 1.
 6. **Store it** per `specs` in `exo settings:`, else `docs` (plan mode: the harness plan file).
    `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
-7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file>`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `exo:build`, even when asked; build starts in a clean chat.
+7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`; an MCP or `Design:` `loop:` line may stay: build with `exo:build`.
+8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build fresh, print its `--fresh` output; never load `exo:build`, even when asked.
    - Invoked by another stage or a workflow → ask nothing, return to the caller.
 
 ## References
@@ -38,10 +38,10 @@ argument-hint: <outcome to shape>
 | File | Read it when |
 |---|---|
 | `references/stored-brief.md` | The request names or extends a brief, issue or plan. |
-| `../route-skills/references/question.md` | Step 3 and each reply. |
 | `references/brief.md` | Before writing the brief. |
 | `references/task-list.md` | Before writing the task list. |
-| `references/example-plan.md` | Once, before the first task. |
+| `references/example-plan.md` | Before the first task. |
+| `../route-skills/references/question.md` | Step 3. |
 | `../build/references/data-migration.md` | When its first line applies. |
 | `../build/references/test-design.md` | When its first line applies. |
 | `../build/references/security.md` | When its first line applies. |
