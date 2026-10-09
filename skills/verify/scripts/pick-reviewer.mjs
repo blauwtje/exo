@@ -65,23 +65,33 @@ export function taskReviewer(task, changedPaths, route, taskDiff = '') {
 
 // A test file: under a `test`, `tests`, `spec` or `__tests__` folder, named `test_*`, or ending `.test.<ext>` or `_spec.<ext>`.
 export const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._-](?:test|spec)\.[^/.]+$/;
-// An added or removed line that only prints, or is blank or a comment.
-const OUTPUT_LINE = /^\s*$|^\s*(?:\/\/|\/\*|\*|#)|\b(?:console\.(?:log|error|warn|info)|process\.(?:stdout|stderr)\.write)\(/;
+// An added or removed line that is blank, a comment, or one whole output call:
+// the call starts the line, holds no nested call in its arguments and has no
+// statement after it. `#` is no comment here (it opens a private class member in
+// JS/TS) and `*` is one only as a block-comment continuation: `*/`, a bare `*`, or `* ` text
+// holding no `;`, so a code line such as `* 2;` keeps its review.
+const OUTPUT_LINE = /^\s*$|^\s*(?:\/\/|\/\*|\*(?:\/|$|\s[^;]*$))|^\s*(?:console\.(?:log|error|warn|info)|process\.(?:stdout|stderr)\.write)\([^()]*\)\s*;?\s*$/;
 
-/** Whether every added or removed line in the diff's non-test script files is blank, a comment or an output call. */
+/** Whether the diff changes a non-test script file and every added or removed line in those files is blank, a comment or one whole output call. */
 function outputOnly(taskDiff) {
   let file = null;
+  let header = false;
+  let counted = false;
   for (const line of taskDiff.split('\n')) {
     if (line.startsWith('diff --git ')) {
       file = line.slice(line.lastIndexOf(' b/') + 3);
-    } else if (/^(\+\+\+|---) /.test(line)) {
+      header = true;
+    } else if (line.startsWith('@@')) {
+      header = false;
+    } else if (header && /^(\+\+\+|---) /.test(line)) {
       continue;
     } else if ((line.startsWith('+') || line.startsWith('-')) && file !== null) {
       if (!SCRIPT_EXTENSIONS.has(extname(file)) || TEST_FILE.test(file)) continue;
       if (!OUTPUT_LINE.test(line.slice(1))) return false;
+      counted = true;
     }
   }
-  return true;
+  return counted;
 }
 
 /** The task's commits as one zero-context diff. */

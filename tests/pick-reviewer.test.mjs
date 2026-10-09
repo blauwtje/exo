@@ -159,5 +159,10 @@ test('taskReviewer sends a test-covered output-only script diff to no model revi
   assert.equal(taskReviewer(task, paths, 'block', diff('+const x = 1;')), REVIEWER_AGENTS.light);
   assert.equal(taskReviewer(task, ['lib/a.mjs'], 'block', diff('+console.log(1);')), REVIEWER_AGENTS.light);
   assert.equal(taskReviewer({ risk: 'data loss' }, paths, 'block', diff('+console.log(1);')), REVIEWER_AGENTS.light);
-  assert.equal(taskReviewer(task, paths, 'block', ''), none);
+  assert.equal(taskReviewer(task, paths, 'block', ''), REVIEWER_AGENTS.light);
+  assert.equal(taskReviewer(task, paths, 'block', diff('+console.log(1);').replace(/lib\/a\.mjs/g, 'tests/a.test.mjs')), REVIEWER_AGENTS.light);
+  for (const line of ['+fs.rmSync(dir); console.log(1)', '+console.log(x()); y = 1', '+process.exit(1); // console.log(1)', '+await rm(dir); console.log("done");', '+#secret = grant()', '+  * 2;', '-- x', '++ x']) {
+    assert.equal(taskReviewer(task, paths, 'block', diff(line)), REVIEWER_AGENTS.light, line);
+  }
+  assert.equal(taskReviewer(task, paths, 'block', diff('+console.log("done");\n+ * continued\n+ */')), none);
 });
