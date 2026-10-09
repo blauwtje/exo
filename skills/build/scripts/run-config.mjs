@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const CATALOG = new URL('./providers.json', import.meta.url);
+const CATALOG = new URL('../../../lib/run-providers.json', import.meta.url);
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
