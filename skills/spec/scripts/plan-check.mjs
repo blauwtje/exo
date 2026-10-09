@@ -270,8 +270,7 @@ function checkCompactFields(task) {
 }
 
 // run-plan.mjs runs a plan with no session to answer it, so `--loop` refuses,
-// by name, what only a session or a person could run: a missing `Allow:`, a
-// Success criterion that is not one backticked non-MCP command, an MCP
+// by name, what only a session or a person could run: a Success criterion that is not one backticked non-MCP command, an MCP
 // `Proof:` or passing `Run:`, an output redirect to a file, a `Design:` task
 // without a selected contract, and a `Branch:` that is the default branch.
 const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
@@ -284,7 +283,6 @@ function redirectsToFile(part) {
 function checkLoop(plan, root) {
   const basis = frameOf(plan.frame);
   const problems = [];
-  if (basis.allow === null) problems.push("loop: the plan's '## Plan basis' has no 'Allow:' line: add 'Allow: none' or the backticked commands the run may use");
   const criterion = [...(basis.successCriterion ?? '').matchAll(/`([^`]+)`/g)];
   if (criterion.length !== 1) problems.push("loop: the plan's '## Success criterion' is not one backticked command");
   else if (mcpToolCall(criterion[0][1].trim()) !== null) problems.push("loop: the plan's '## Success criterion' is an MCP call, which only a session can run");

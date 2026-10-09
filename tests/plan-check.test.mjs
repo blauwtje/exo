@@ -326,21 +326,21 @@ const LOOP_TASK = compactTask({ number: 1, title: 'feat(app): greet', files: ['s
 const loopPlan = (tasks = [LOOP_TASK]) => compactPlanFixture({ tasks }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nAllow: none');
 const loopProblems = (plan, root) => planCheckReport(plan, { loop: true, root }).lines.filter((line) => line.startsWith('loop: '));
 
-test('plan-check --loop passes a plan that names Allow:, one command criterion and a Bash Proof:', () => {
+test('plan-check --loop passes a plan with one command criterion and a Bash Proof:, with or without Allow:', () => {
   assert.equal(planCheckReport(loopPlan(), { loop: true }).ok, true);
+  assert.equal(planCheckReport(compactPlanFixture({ tasks: [LOOP_TASK] }), { loop: true }).ok, true);
   assert.equal(planCheckReport(loopPlan().replace('Allow: none', 'Allow: `npx eslint`, `git status`'), { loop: true }).ok, true);
 });
 
 test('plan-check without --loop ignores every loop field', () => {
   const plan = compactPlanFixture({ tasks: [LOOP_TASK] });
-  assert.equal(planCheckReport(plan).ok, true);
-  assert.equal(planCheckReport(plan, { loop: true }).ok, false);
+  const redirecting = plan.replace('`node --test` passes.', '`node --test > out.log` passes.');
+  assert.equal(planCheckReport(redirecting).ok, true);
+  assert.equal(planCheckReport(redirecting, { loop: true }).ok, false);
 });
 
-test('plan-check --loop refuses a plan with no Allow: line by name', () => {
-  const problems = loopProblems(compactPlanFixture({ tasks: [LOOP_TASK] }));
-  assert.equal(problems.length, 1);
-  assert.match(problems[0], /no 'Allow:' line/);
+test('plan-check --loop no longer asks for an Allow: line', () => {
+  assert.deepEqual(loopProblems(compactPlanFixture({ tasks: [LOOP_TASK] })), []);
 });
 
 test('plan-check --loop refuses a Success criterion that is not one backticked non-MCP command', () => {
