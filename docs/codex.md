@@ -51,7 +51,6 @@ Codex has no equivalent for some Claude Code features, so exo drops or approxima
 | Feature | On Codex |
 |---|---|
 | Delegate budget | Dropped. Codex has a different transcript. |
-| Output style `scannable` | Injected at session start, because Codex has no output styles. |
 | An agent's tool allowlist | Becomes a `read-only` or `workspace-write` sandbox. |
 | `maxTurns` | No field. |
 | Skill `model` and `effort` | Skills run at the session's model. |

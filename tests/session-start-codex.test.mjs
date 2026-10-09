@@ -1,5 +1,5 @@
 // Given a Codex-shaped SessionStart input with EXO_HOST=codex, the hook adds the
-// host note and the scannable style to the context, writes its pointer and
+// host note to the context, writes its pointer and
 // marker under the Codex home, and leaves the Claude config folder alone.
 
 import assert from 'node:assert/strict';
@@ -23,14 +23,13 @@ function run(extra, input = { session_id: 's1', source: 'startup', cwd: os.tmpdi
   return { home, output: JSON.parse(output) };
 }
 
-test('a Codex run injects the note and the style after the existing context and writes under .codex/exo', () => {
+test('a Codex run injects the note after the existing context and writes under .codex/exo', () => {
   const { home, output } = run({ EXO_HOST: 'codex' });
   try {
     const context = output.hookSpecificOutput.additionalContext;
     const settings = context.indexOf('exo settings:');
     const note = context.indexOf('# exo on Codex');
-    const style = context.indexOf('I scan:');
-    assert.ok(settings >= 0 && settings < note && note < style, `${settings} ${note} ${style}`);
+    assert.ok(settings >= 0 && settings < note, `${settings} ${note}`);
     assert.ok(context.includes(`The exo root is \`${REPOSITORY}\``), 'root not filled');
     assert.ok(!context.includes('{root}'), 'a placeholder is left');
     assert.ok(!context.includes('EXO_HOST=codex'), 'the note still names the host prefix');
@@ -68,12 +67,11 @@ test('a clear on Codex also leaves the Claude folder alone', () => {
   }
 });
 
-test('a Claude run gets no note, no style and the slash welcome', () => {
+test('a Claude run gets no note and the slash welcome', () => {
   const { home, output } = run({ EXO_HOST: 'claude' });
   try {
     const context = output.hookSpecificOutput.additionalContext;
     assert.ok(!context.includes('# exo on Codex'));
-    assert.ok(!context.includes('I scan:'));
     assert.match(output.systemMessage, /\/exo:start/);
     assert.ok(fs.existsSync(path.join(home, '.claude', 'exo', 'plugin-root')));
     assert.equal(fs.existsSync(path.join(home, '.codex')), false);

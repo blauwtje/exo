@@ -4,7 +4,7 @@
 // pointer, the settings line, then the body of the
 // route-skills skill (frontmatter dropped), the only skill invoked this way
 // because its frontmatter blocks model invocation. On Codex the Codex host note
-// and the body of the scannable output style follow, since Codex has neither.
+// follows, since Codex has no tool names to match.
 // It runs in Node so a host without `jq` still gets the injection.
 
 import { Buffer } from 'node:buffer';
@@ -109,13 +109,12 @@ function skillBody(skillFile) {
   return kept.join('\n').replace(/\n+$/, '');
 }
 
-// The Codex note and the scannable style follow the context above, whole and
-// last, so the cap cuts the context before them: the note maps every tool the
-// skills name, and the cut falls on the tail of the route-skills body.
+// The Codex note follows the context above, whole and last, so the cap cuts the
+// context before it: the note maps every tool the skills name, and the cut falls
+// on the tail of the route-skills body.
 function withCodexNote(context) {
   const note = fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd();
-  const style = skillBody(path.join(root, 'output-styles', 'scannable.md')).trim();
-  const tail = `\n\n${note}\n\n${style}`;
+  const tail = `\n\n${note}`;
   const bytesRoom = CODEX_TOKEN_CAP * 4 - Buffer.byteLength(tail);
   const bytes = Buffer.from(context);
   if (bytes.length <= bytesRoom) return `${context}${tail}`;

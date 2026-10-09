@@ -55,16 +55,16 @@ async function armSettings(extraArgs) {
 const skipWindows = { skip: process.platform === 'win32' && 'the runner refuses on Windows' };
 
 test('--output-style puts outputStyle in the settings of the with and without arms, keeping the disabled plugin', skipWindows, async () => {
-  const settings = await armSettings(['--output-style', 'exo:scannable']);
-  assert.equal(settings['sonnet-high-with-1.md'].outputStyle, 'exo:scannable');
-  assert.equal(settings['sonnet-high-without-1.md'].outputStyle, 'exo:scannable');
+  const settings = await armSettings(['--output-style', 'Explanatory']);
+  assert.equal(settings['sonnet-high-with-1.md'].outputStyle, 'Explanatory');
+  assert.equal(settings['sonnet-high-without-1.md'].outputStyle, 'Explanatory');
   assert.deepEqual(settings['sonnet-high-without-1.md'].enabledPlugins, { 'fixture-plugin@fixture-market': false });
 });
 
 test('--output-style puts outputStyle in the settings of the with and main arms', skipWindows, async () => {
-  const settings = await armSettings(['--output-style', 'exo:scannable', '--main-dir', '<main>']);
+  const settings = await armSettings(['--output-style', 'Explanatory', '--main-dir', '<main>']);
   assert.deepEqual(Object.keys(settings).sort(), ['sonnet-high-main-1.md', 'sonnet-high-with-1.md']);
-  for (const [answer, value] of Object.entries(settings)) assert.equal(value.outputStyle, 'exo:scannable', answer);
+  for (const [answer, value] of Object.entries(settings)) assert.equal(value.outputStyle, 'Explanatory', answer);
 });
 
 test('with no --output-style no arm gets an outputStyle', skipWindows, async () => {

@@ -277,7 +277,6 @@ function prepareRepository(options, workdir) {
   git(workdir, ['commit', '-q', '-m', 'seed']);
   fs.mkdirSync(path.join(workdir, '.claude'));
   fs.writeFileSync(path.join(workdir, '.claude', 'exo.json'), `${JSON.stringify({ replies: options.level })}\n`);
-  fs.writeFileSync(path.join(workdir, '.claude', 'settings.json'), `${JSON.stringify({ outputStyle: 'exo:scannable' })}\n`);
   fs.appendFileSync(path.join(workdir, '.git', 'info', 'exclude'), '.claude/\n');
 }
 
