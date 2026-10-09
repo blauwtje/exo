@@ -19,6 +19,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
+import { settingValue } from '#settings-store';
+import { reportCap } from '../../../verify/checks/return-caps.mjs';
 import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
@@ -75,7 +77,15 @@ function frameReport(frame) {
   ].join('\n')}\n`;
 }
 
-function taskBrief(task, frame, root) {
+// build-task's stated report cap, scaled by the compression setting, so the
+// brief carries the number the agent writes to.
+function reportCapLines(compression) {
+  const prompt = fs.readFileSync(path.join(SKILL_DIRECTORY, '..', '..', 'agents', 'build-task.md'), 'utf8');
+  const cap = reportCap(prompt, compression);
+  return cap === null ? [] : [`Report cap: ${cap} lines`];
+}
+
+function taskBrief(task, frame, root, compression) {
   return [
     `Goal: ${frame.goal}`,
     ...successCriterionLines(frame),
@@ -86,6 +96,7 @@ function taskBrief(task, frame, root) {
     'Decisions for these paths:',
     ...bulletLines(bulletsFor(task, frame.decisions)),
     ...visualDirectionLines(task, frame),
+    ...reportCapLines(compression),
     'Modify ranges:',
     ...bulletLines(modifyRanges(task, root)),
     '',
@@ -97,9 +108,9 @@ function taskBrief(task, frame, root) {
 
 // The brief sits in the run checkout's scratch directory, which git ignores
 // and a wave's worktrees do not share, so a worktree never commits it.
-function writeBrief(task, frame, root, briefDirectory) {
+function writeBrief(task, frame, root, briefDirectory, compression) {
   const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
-  fs.writeFileSync(briefPath, taskBrief(task, frame, root));
+  fs.writeFileSync(briefPath, taskBrief(task, frame, root, compression));
   return briefPath;
 }
 
@@ -110,7 +121,7 @@ function designLine(task) {
   return match === null ? 'Design: none' : `Design: ${match[1]}`;
 }
 
-function taskLines(task, frame, root, briefDirectory) {
+function taskLines(task, frame, root, briefDirectory, compression) {
   const drift = driftOf(task, root);
   return [
     `Task ${task.number}: ${task.title}`,
@@ -118,7 +129,7 @@ function taskLines(task, frame, root, briefDirectory) {
     ...(task.proof === null ? [] : [`Proof: ${task.proof}`]),
     ...task.section.split('\n').filter((line) => line.startsWith('Run: ')),
     ...(drift.length === 0 ? ['Drift: none'] : drift.map((item) => `PLAN DRIFT: Task ${task.number}: ${item}`)),
-    `Brief: ${writeBrief(task, frame, root, briefDirectory)}`
+    `Brief: ${writeBrief(task, frame, root, briefDirectory, compression)}`
   ];
 }
 
@@ -208,9 +219,17 @@ export function proofsReport({ planPath, planText, root }) {
   return lines.length === 0 ? 'Landed: none\n' : `${lines.join('\n')}\n`;
 }
 
+function compressionLevel() {
+  try {
+    return settingValue('compression');
+  } catch {
+    return 'off';
+  }
+}
+
 // Writes a brief file for each task of the next wave and returns the report
 // that names them.
-export function nextTaskReport({ planPath, planText, root }) {
+export function nextTaskReport({ planPath, planText, root, compression = compressionLevel() }) {
   const plan = parseTasks(planPath, planText);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
@@ -236,7 +255,7 @@ export function nextTaskReport({ planPath, planText, root }) {
     return `${lines.join('\n')}\n`;
   }
   const briefDirectory = scratchPath(root, 'briefs');
-  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory));
+  for (const task of wave) lines.push('', ...taskLines(task, frame, root, briefDirectory, compression));
   return `${lines.join('\n')}\n`;
 }
 
