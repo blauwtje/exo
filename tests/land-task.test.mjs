@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { checkTask, fixLand, landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
 import { proofRecordPath } from '#plan-tasks';
+import { workingTreeKey } from '#check-cache';
 import { compactPlanFixture, compactTask, fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
@@ -193,7 +194,8 @@ test('a passing Land gate and Proof are recorded with their time, and no land-ga
   const cache = JSON.parse(await fs.readFile(path.join(root, '.exo/check-cache.json'), 'utf8'));
   assert.deepEqual(Object.keys(cache).sort(), ['node tests/app.test.mjs', 'true']);
   assert.equal(typeof cache.true.ms, 'number');
-  assert.equal(cache.true.tree.length, 40);
+  assert.equal(cache.true.tree, workingTreeKey(root));
+  assert.equal(cache['node tests/app.test.mjs'].tree, cache.true.tree);
   await assert.rejects(fs.access(path.join(root, '.exo/land-gate-compact.json')));
 });
 
@@ -234,6 +236,8 @@ test('a failing Land gate is refused before anything commits, naming the command
     /Land gate "echo gate broke && exit 1" failed:\ngate broke/
   );
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+  const cache = JSON.parse(await fs.readFile(path.join(root, '.exo/check-cache.json'), 'utf8').catch(() => '{}'));
+  assert.ok(!('echo gate broke && exit 1' in cache));
 });
 
 test('a plan with no Land gate line lands as before', async () => {
@@ -319,6 +323,7 @@ async function compactCheckout(plan = COMPACT_PLAN) {
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
+  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n'); // as in a real checkout
   await editApp(root);
   return { root, planPath: path.join(root, 'docs/plans/compact.md') };
 }
@@ -449,7 +454,8 @@ test('a long-format task lands on its passing Run: commands, skipping a red step
   assert.match(result.stdout, /^Proof: node tests\/app\.test\.mjs: pass \(exit 0\)\n {2}# pass 3\n {2}# fail 0$/m);
   assert.doesNotMatch(result.stdout, /^Proof: false/m);
   const cache = JSON.parse(await fs.readFile(path.join(root, '.exo/check-cache.json'), 'utf8'));
-  assert.ok('node tests/app.test.mjs' in cache);
+  assert.deepEqual(Object.keys(cache).sort(), ['node tests/app.test.mjs', 'true']);
+  assert.equal(cache['node tests/app.test.mjs'].tree, workingTreeKey(root));
 });
 
 test('a landing records each passed proof as the report\'s Proof line, its command, exit status and pass count', async () => {

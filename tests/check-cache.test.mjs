@@ -34,10 +34,27 @@ test('an uncommitted edit to a tracked file misses, and the index stays untouche
   assert.equal(git('diff', '--cached', '--name-only'), '');
 });
 
-test('an untracked file does not change the key', () => {
-  const { root } = repo();
-  const before = workingTreeKey(root);
+test('a new untracked file makes a recorded pass miss, and its content is in the key', () => {
+  const { root, git } = repo();
+  recordPass(root, 'x', 5);
+  assert.deepEqual(cachedPass(root, 'x'), { ms: 5 });
   fs.writeFileSync(path.join(root, 'new.txt'), 'x\n');
+  assert.equal(cachedPass(root, 'x'), null);
+  const first = workingTreeKey(root);
+  fs.writeFileSync(path.join(root, 'new.txt'), 'y\n');
+  assert.notEqual(workingTreeKey(root), first);
+  assert.equal(git('diff', '--cached', '--name-only'), '');
+});
+
+test('an ignored file and the scratch folder do not change the key', () => {
+  const { root, git } = repo();
+  fs.writeFileSync(path.join(root, '.gitignore'), 'skip.txt\n');
+  git('add', '.gitignore');
+  git('commit', '-q', '-m', 'ignore');
+  const before = workingTreeKey(root);
+  fs.writeFileSync(path.join(root, 'skip.txt'), 'x\n');
+  fs.mkdirSync(path.join(root, '.exo'));
+  fs.writeFileSync(path.join(root, '.exo', 'note.txt'), 'x\n');
   assert.equal(workingTreeKey(root), before);
 });
 
