@@ -18,7 +18,7 @@
 //
 //   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
 //
-// Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN or STRAY line per check, then the REVIEWER line,
+// Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check, then the REVIEWER line,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
 // checks` bullet, so the run ends on every task and the checks only the user can make.
 // A FAIL line for a Proof or the Success criterion names why in brackets, the
@@ -44,6 +44,10 @@
 // `fix` with a test file in `Files:`) whose commits change no test file; a WARN line, which
 // does not fail, for each assertion a test file loses, each `.skip` or `.only` it gains and
 // each lint, type or coverage suppression comment any non-prose file gains.
+// A changed path outside every task's Files that only trailer-less `fix(...)` commits in
+// base..HEAD touched prints `FIX-ONLY <path> (<short shas>)`, newest first, after the PASS or
+// STRAY lines: a report line, not drift, so it does not fail. A path any task-trailer or non-fix
+// commit touched, or one with no commit in the range, stays a STRAY line.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -182,6 +186,41 @@ function repoPathOf(planPath, root) {
 export function findStrayPaths(tasks, paths) {
   const declared = new Set(tasks.flatMap((task) => task.files.map((file) => file.path)));
   return paths.filter((path) => !declared.has(path));
+}
+
+/** The fix commit shape: a `fix` subject and no `Plan-task: ` trailer line. */
+function isTrailerlessFix({ subject, body }) {
+  return /^fix(\([^)]*\))?!?:/.test(subject) && !/^Plan-task: /m.test(body);
+}
+
+/**
+ * Splits stray `paths` by their commits. `commitsByPath` maps a path to the `{ sha, subject, body }`
+ * commits in the range that touch it, newest first. A path with commits, every one a trailer-less
+ * `fix`, is fix-only, with the short shas of those commits; any other stray path stays a stray.
+ */
+export function splitFixOnlyPaths(paths, commitsByPath) {
+  const strays = [];
+  const fixOnly = [];
+  for (const path of paths) {
+    const commits = commitsByPath.get(path) ?? [];
+    if (commits.length > 0 && commits.every(isTrailerlessFix)) fixOnly.push({ path, shas: commits.map((commit) => commit.sha.slice(0, 7)) });
+    else strays.push(path);
+  }
+  return { strays, fixOnly };
+}
+
+/** The commits in `base..HEAD` that touch each of `paths`, newest first, as `splitFixOnlyPaths` reads them. */
+function commitsTouching(paths, root, base) {
+  const commitsByPath = new Map();
+  if (base === undefined) return commitsByPath;
+  for (const path of paths) {
+    const log = execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'log', '--no-renames', '--format=%x01%H%x00%B', `${base}..HEAD`, '--', path], { encoding: 'utf8', maxBuffer: Infinity });
+    commitsByPath.set(path, log.split('\x01').filter((entry) => entry !== '').map((entry) => {
+      const [sha, body] = entry.split('\0');
+      return { sha, subject: body.split('\n')[0], body };
+    }));
+  }
+  return commitsByPath;
 }
 
 /** The paths of `files` that no path in `changed` covers; a `*` path reads as a glob, a path ending `/` as a folder. */
@@ -403,7 +442,7 @@ async function mapLimited(items, limit, work) {
 }
 
 /**
- * The plan's checks, one PASS/FAIL/SKIP/SESSION/UNRUN/STRAY line each, then the REVIEWER
+ * The plan's checks, one PASS/FAIL/SKIP/SESSION/UNRUN/STRAY/FIX-ONLY line each, then the REVIEWER
  * line. `planPath` names the plan whose id its landed trailers carry; `root`
  * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
@@ -517,13 +556,15 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const changed = changedPaths({ base });
   // The plan file committed on the branch is the run's input, not drift.
   const planFile = repoPathOf(planPath, root);
-  const strays = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
+  const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
+  const { strays, fixOnly } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
   if (strays.length === 0) {
     lines.push('PASS stray-paths');
   } else {
     for (const path of strays) lines.push(`STRAY ${path}`);
     failed = true;
   }
+  for (const { path, shas } of [...fixOnly].sort((a, b) => (a.path < b.path ? -1 : 1))) lines.push(`FIX-ONLY ${path} (${shas.join(',')})`);
 
   const claims = plan.tasks.filter((task) => landed.has(task.number)).flatMap((task) => claimLines(task, root, planId));
   lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));

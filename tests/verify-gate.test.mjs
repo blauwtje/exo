@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { parsePlan } from '#plan-tasks';
-import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
+import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/verify/scripts/verify.mjs', import.meta.url));
@@ -36,6 +36,20 @@ test('findStrayPaths keeps only paths no task declared', () => {
   ];
   assert.deepEqual(findStrayPaths(tasks, ['src/app.js', 'src/extra.js']), ['src/extra.js']);
   assert.deepEqual(findStrayPaths(tasks, ['src/app.js', 'src/broken.js']), []);
+});
+
+test('splitFixOnlyPaths moves a stray path only trailer-less fix commits touched to fixOnly', () => {
+  const fix = (sha, subject = 'fix(app): repair', body = subject) => ({ sha, subject, body });
+  const commitsByPath = new Map([
+    ['a.js', [fix('2222222222'), fix('1111111111', 'fix!: break')]],
+    ['b.js', [fix('3333333333', 'fix(app): x', 'fix(app): x\n\nPlan-task: plan/1')]],
+    ['c.js', [fix('4444444444'), fix('5555555555', 'feat(app): add', 'feat(app): add')]],
+    ['d.js', [fix('6666666666', 'fixup: nope', 'fixup: nope')]]
+  ]);
+  assert.deepEqual(splitFixOnlyPaths(['a.js', 'b.js', 'c.js', 'd.js', 'e.js'], commitsByPath), {
+    strays: ['b.js', 'c.js', 'd.js', 'e.js'],
+    fixOnly: [{ path: 'a.js', shas: ['2222222', '1111111'] }]
+  });
 });
 
 test('runnableProof reads a plain Proof as its command, and a backticked one as prose', () => {
@@ -477,6 +491,45 @@ test('a change outside every declared Files prints a STRAY line and exits 1', as
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
   assert.equal(result.code, 1);
   assert.ok(result.stdout.includes('STRAY src/extra.js'));
+});
+
+test('a path changed only by trailer-less fix commits prints FIX-ONLY and passes; a task or non-fix commit on it stays STRAY', async () => {
+  const plan = '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n';
+  const root = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  const base = git(root, 'rev-parse', 'HEAD');
+  landTask(root, 1);
+  const commit = async (file, message, ...more) => {
+    await writeFile(path.join(root, file), `${message}\n`, { flag: 'a' });
+    git(root, 'add', '-A');
+    git(root, 'commit', '-m', message, ...more);
+    return git(root, 'rev-parse', '--short', 'HEAD');
+  };
+  const first = await commit('src/helper.js', 'fix(app): repair helper');
+  const second = await commit('src/helper.js', 'fix(app): repair helper again');
+  await commit('src/mixed.js', 'fix(app): repair mixed');
+  await commit('src/mixed.js', 'chore: more mixed', '-m', 'Plan-task: plan/1');
+  await commit('src/other.js', 'feat(app): other');
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--base', base, '--check-command', 'node check.js'], { cwd: root });
+  const lines = result.stdout.trim().split('\n');
+  assert.equal(result.code, 1);
+  assert.ok(lines.includes('STRAY src/mixed.js'), result.stdout);
+  assert.ok(lines.includes('STRAY src/other.js'), result.stdout);
+  assert.ok(!lines.some((line) => line.startsWith('STRAY src/helper.js')), result.stdout);
+  assert.ok(lines.includes(`FIX-ONLY src/helper.js (${second},${first})`), result.stdout);
+
+  const only = await gitRepository({ 'src/app.js': 'export const greet = () => "hi";\n', 'plan.md': plan, 'check.js': CLEAN_CHECK });
+  const onlyBase = git(only, 'rev-parse', 'HEAD');
+  landTask(only, 1);
+  await writeFile(path.join(only, 'src', 'helper.js'), 'export const h = 1;\n');
+  git(only, 'add', '-A');
+  git(only, 'commit', '-m', 'fix(app): repair helper');
+  const sha = git(only, 'rev-parse', '--short', 'HEAD');
+  const clean = await run(SCRIPT, ['--plan', 'plan.md', '--base', onlyBase, '--check-command', 'node check.js'], { cwd: only });
+  assert.ok(clean.stdout.includes(`FIX-ONLY src/helper.js (${sha})`), clean.stdout);
+  assert.ok(clean.stdout.includes('PASS stray-paths'), clean.stdout);
+  assert.ok(!clean.stdout.includes('STRAY'), clean.stdout);
+  assert.equal(clean.code, 0, clean.stdout + clean.stderr);
 });
 
 test('the plan file committed on the branch is the run\'s input, not a stray path', async () => {

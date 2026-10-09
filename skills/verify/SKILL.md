@@ -13,10 +13,10 @@ effort: high
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
    - Script runs each landed task's Proof command, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate.
    - Then the gate once: first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, else `npm test` with no `check` script.
-   - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun none of its checks.
-   - `WARN` line (claims-diff per landed task) → list it in the report; never ends the turn.
+   - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
+   - `WARN` line (claims-diff per task) or `FIX-ONLY` line → list in the report; never ends the turn.
    - `SESSION <check>` line names an `mcp:<tool> <args>` call the script skips → call `mcp__<server>__<tool>` with those args yourself, not through Bash.
-   - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; that `FAIL` ends the turn too.
+   - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; that `FAIL` ends the turn.
    - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the report.
 2. **Review the branch.** `REVIEWER: none` → skip to step 4.
    - Otherwise dispatch the `exo:review-branch` agent, setting its `model` and `effort` to the `REVIEWER:` line's `model=` and `effort=`, unless the budget rule sets others.
