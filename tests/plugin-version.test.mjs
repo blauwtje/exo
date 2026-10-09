@@ -103,6 +103,24 @@ test('fails on a new file with nothing under Unreleased', (t) => {
   assert.equal(verdict(root).FAIL, 1);
 });
 
+test('warns, not fails, on a feature branch with nothing under Unreleased', (t) => {
+  const root = publishedRoot(t, '0.1.0');
+  gitIn(root, 'checkout', '-q', '-b', 'feat/x');
+  addSkill(root);
+
+  const counts = verdict(root);
+  assert.equal(counts.WARN, 1);
+  assert.equal(counts.FAIL, 0);
+});
+
+test('fails on a detached HEAD with nothing under Unreleased', (t) => {
+  const root = publishedRoot(t, '0.1.0');
+  gitIn(root, 'checkout', '-q', '--detach');
+  addSkill(root);
+
+  assert.equal(verdict(root).FAIL, 1);
+});
+
 test('passes the same new file once Unreleased records it, without a raise', (t) => {
   const root = publishedRoot(t, '0.1.0');
   addSkill(root);

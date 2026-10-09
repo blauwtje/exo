@@ -130,10 +130,17 @@ export function checkPluginVersion(report, repository) {
   }
 
   const unreleased = sectionBody(changelog, UNRELEASED_HEADING);
-  report.assert(
-    unreleased !== null && unreleased !== '',
-    name,
-    `every manifest carries ${declared}; the changes since ${BASE_REF} wait under ${UNRELEASED_HEADING}`,
-    `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`
-  );
+  if (unreleased !== null && unreleased !== '') {
+    report.result('PASS', name, `every manifest carries ${declared}; the changes since ${BASE_REF} wait under ${UNRELEASED_HEADING}`);
+    return;
+  }
+  const missing = `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`;
+  // Only the lead writes the changelog line, at landing: a branch waits for it, while
+  // the default branch and a detached HEAD (CI on a pull request) must already carry it.
+  const branch = git(repository, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
+  if (branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
+    report.result('WARN', name, `${missing}; the lead writes it at landing`);
+    return;
+  }
+  report.result('FAIL', name, missing);
 }
