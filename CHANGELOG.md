@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.110.0 - 2026-10-09
+
 ### Highlights
 
 **A `build` or `verify` run now ends on three short status lines and one decision; proofs, checks and manual checks go to `.exo/run-report.md`.**
