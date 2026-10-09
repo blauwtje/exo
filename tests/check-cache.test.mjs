@@ -86,8 +86,25 @@ test('a second command keeps the first entry', () => {
 test('a corrupt cache file reads as empty', () => {
   const { root } = repo();
   recordPass(root, 'a', 1);
-  fs.writeFileSync(path.join(root, '.exo', 'check-cache.json'), 'not json');
+  fs.writeFileSync(path.join(root, '.git', 'exo', 'check-cache.json'), 'not json');
   assert.equal(cachedPass(root, 'a'), null);
+});
+
+test('a linked worktree shares the cache of the repository', () => {
+  const { root, git } = repo();
+  const linked = `${root}-linked`;
+  git('worktree', 'add', '-q', '--detach', linked);
+  recordPass(root, 'x', 7);
+  assert.deepEqual(cachedPass(linked, 'x'), { ms: 7 });
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'check-cache.json')), false);
+  assert.deepEqual(fs.readdirSync(path.join(root, '.git', 'exo')), ['check-cache.json']);
+});
+
+test('an old cache in the scratch folder is ignored', () => {
+  const { root } = repo();
+  fs.mkdirSync(path.join(root, '.exo'));
+  fs.writeFileSync(path.join(root, '.exo', 'check-cache.json'), JSON.stringify({ x: { tree: workingTreeKey(root), ms: 9 } }));
+  assert.equal(cachedPass(root, 'x'), null);
 });
 
 test('SLOW_GATE_MS is one minute', () => {
