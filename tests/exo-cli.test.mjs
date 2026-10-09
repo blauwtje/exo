@@ -13,7 +13,7 @@ const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.
 
 const STUB = `
 import fs from 'node:fs';
-fs.appendFileSync(process.env.STUB_RECORD, JSON.stringify(process.argv.slice(2)) + '\\n');
+fs.appendFileSync(process.env.STUB_RECORD, JSON.stringify([process.cwd(), ...process.argv.slice(2)]) + '\\n');
 `;
 
 const planText = (root, branch) => [
@@ -260,18 +260,45 @@ test('with no argument a plan under docs/plans is found too', async () => {
   assert.equal(git(context.root, 'branch', '--show-current'), 'feat/fresh');
 });
 
-test('worktree: the checkout the plugin-root pointer names stays on main and the branch is built in a worktree', async () => {
-  const context = await setup();
+async function pointed(context) {
   const config = await fixture();
   await fs.mkdir(path.join(config, 'exo'), { recursive: true });
   await fs.writeFile(path.join(config, 'exo', 'plugin-root'), `${context.root}\n`);
-  const result = await run(CLI, ['run', 'docs/specs/new.md', '--claude', context.stub], {
-    cwd: context.root,
-    env: { STUB_RECORD: context.record, HOME: context.home, CLAUDE_CONFIG_DIR: config }
-  });
+  return config;
+}
+
+const runPointed = (context, config) => run(CLI, ['run', 'docs/specs/new.md', '--claude', context.stub], {
+  cwd: context.root,
+  env: { STUB_RECORD: context.record, HOME: context.home, CLAUDE_CONFIG_DIR: config }
+});
+
+test('worktree: the checkout the plugin-root pointer names stays on main and the branch is built in a worktree, reused by a second run', async () => {
+  const context = await setup();
+  const config = await pointed(context);
+  const result = await runPointed(context, config);
   assert.equal(git(context.root, 'branch', '--show-current'), 'main', result.stdout + result.stderr);
-  const tree = path.join(context.root, '.worktrees', 'feat-new');
+  const tree = await fs.realpath(path.join(context.root, '.worktrees', 'feat-new'));
   assert.equal(git(tree, 'branch', '--show-current'), 'feat/new');
+  const first = await calls(context);
+  assert.ok(first.length > 0, result.stdout + result.stderr);
+  for (const line of first) assert.equal(await fs.realpath(JSON.parse(line)[0]), tree);
+  const again = await runPointed(context, config);
+  assert.equal(again.code, result.code, again.stdout + again.stderr);
+  assert.doesNotMatch(again.stderr, /worktree add/);
+  assert.equal(git(context.root, 'branch', '--show-current'), 'main');
+  const second = (await calls(context)).slice(first.length);
+  assert.ok(second.length > 0, again.stdout + again.stderr);
+  for (const line of second) assert.equal(await fs.realpath(JSON.parse(line)[0]), tree);
+});
+
+test('worktree: the main checkout already on the plan branch refuses with exit 2 and the git switch hint', async () => {
+  const context = await setup();
+  const config = await pointed(context);
+  git(context.root, 'switch', '-q', '-c', 'feat/new');
+  const result = await runPointed(context, config);
+  assert.equal(result.code, 2, result.stdout + result.stderr);
+  assert.match(result.stderr, /^exo: branch feat\/new is checked out in the main checkout .*git switch main/m);
+  assert.deepEqual(await calls(context), []);
 });
 
 test('worktree: a checkout the pointer does not name is switched in place', async () => {

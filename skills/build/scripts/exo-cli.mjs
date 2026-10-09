@@ -76,6 +76,7 @@ function putOnBranch(root, wanted) {
 /** The path of a worktree for `wanted` under `<root>/.worktrees/`, reused when one holds the branch, else added (the branch created from the default branch when missing). */
 function worktreeFor(root, wanted) {
   const held = worktrees(root).find((tree) => tree.branch === wanted);
+  if (held?.main) throw new Refusal(`branch ${wanted} is checked out in the main checkout ${held.path}, which the loaded exo runs from; run git switch ${defaultBranch(root) ?? '<default branch>'} there first`);
   if (held !== undefined) return held.path;
   const where = path.join(root, '.worktrees', wanted.replaceAll('/', '-'));
   const exists = gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${wanted}`]) !== null;
