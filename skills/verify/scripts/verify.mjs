@@ -609,8 +609,9 @@ async function main(argv) {
   // Resolved before the chdir below, so a relative --plan keeps naming the caller's file.
   const planPath = path.resolve(flags.plan);
   const planText = fs.readFileSync(planPath, 'utf8');
-  if (flags.root !== undefined) process.chdir(flags.root);
-  const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root: flags.root, base: flags.base });
+  const root = flags.root === undefined ? undefined : path.resolve(flags.root);
+  if (root !== undefined) process.chdir(root);
+  const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root, base: flags.base });
   process.stdout.write(`${lines.join('\n')}\n`);
   const reportPath = writeRunReport(lines, { planPath, planText, root: path.resolve('.') });
   process.stdout.write(`REPORT ${reportPath}\n`);

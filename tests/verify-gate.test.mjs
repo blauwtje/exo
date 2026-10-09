@@ -123,6 +123,20 @@ test('a landed task, a clean check and no stray paths print PASS lines and one R
   assert.deepEqual(result.stdout.trim().split('\n'), ['PASS Task 1', 'PASS success-criterion', 'PASS stray-paths', 'PASS claims-diff', reviewLine(root, 1, REVIEWER_AGENTS.light), 'OVERLAP none', 'DONE Task 1: feat(app): greet', `REPORT ${path.join(root, '.exo', 'run-report.md')}`]);
 });
 
+test('a relative --root names the checkout from the caller directory, not from inside it', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
+    'check.js': CLEAN_CHECK
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', path.join(root, 'plan.md'), '--root', path.basename(root), '--check-command', 'node check.js'], { cwd: path.dirname(root) });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /PASS Task 1/);
+  assert.match(result.stdout, new RegExp(`REVIEW Task 1 ${git(root, 'rev-parse', 'HEAD')}`));
+});
+
 test('a landed task whose Proof fails prints FAIL and exits 1', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
