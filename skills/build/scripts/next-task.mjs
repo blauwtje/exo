@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { settingValue } from '#settings-store';
-import { reportCap } from '../../../verify/checks/return-caps.mjs';
+import { reportCap } from '#return-caps';
 import { decisionsPathOf, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, proofRecordPath, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or

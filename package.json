@@ -7,6 +7,7 @@
   "type": "module",
   "imports": {
     "#budgets": "./verify/budgets.mjs",
+    "#commit-text": "./lib/commit-text.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",
@@ -21,6 +22,7 @@
     "#confine-claude": "./lib/confine-claude.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
     "#prose-density": "./lib/prose-density.mjs",
+    "#return-caps": "./verify/checks/return-caps.mjs",
     "#scratch-exclude": "./lib/scratch-exclude.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-extensions": "./lib/script-extensions.mjs",

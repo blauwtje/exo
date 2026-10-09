@@ -47,7 +47,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
-import { attributionProblem, branchNameProblem, subjectProblem } from '../../../lib/commit-text.mjs';
+import { attributionProblem, branchNameProblem, subjectProblem } from '#commit-text';
 import { returnToDefault } from './return-to-default.mjs';
 
 export const USAGE_EXIT = 2;

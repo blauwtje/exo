@@ -31,7 +31,7 @@ import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { mcpToolCall } from '#mcp-tool-call';
-import { attributionProblem, subjectProblem } from '../../../lib/commit-text.mjs';
+import { attributionProblem, subjectProblem } from '#commit-text';
 
 /** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
