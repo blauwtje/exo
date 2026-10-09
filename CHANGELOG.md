@@ -11,12 +11,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 **A confined `claude` run on macOS can no longer write preferences, send Apple Events, open apps or reach LaunchServices, and on Linux your user settings no longer widen what it may write.**
 
+**`exo run` runs a plan's tasks one fresh session at a time on the provider you choose (Claude, DeepSeek or Z.ai), and each loop session runs in Claude Code's sandbox.**
+
 ### Added
 
+- `exo run` runs the newest plan in a loop on a new branch and refuses a dirty tree; `exo setup` and `exo run config` set the provider, effort and keys.
+- `exo run --provider claude|deepseek|zai` picks the provider from `lib/run-providers.json`, with its effort mapped and its key read from `~/.config/exo/keys.env`.
+- A loop run reports each task's peak context and flags a task over its budget, 60k tokens by default.
+- Each loop task prompt carries a learnings file that earlier tasks append to.
+- Loop sessions run in Claude Code's sandbox by default; only `land-task` and `verify` run outside it, and the run stops if a session changes the plan file. Native Windows keeps the allowlist.
 - `pressure.mjs --output-style <name>` runs both arms under the named output style, so a cut to an output style can be pressure-tested.
 - `pressure.mjs` prints each run's cost from its result event on the arm line and a total per arm for each cell, so a run's spend is measured, not estimated.
 
 ### Changed
+
+- A loop task prompt carries the task's own text and four rules in place of pointing at the plan.
+- A loop plan gates each landing on `npm run check`, and `plan-check --loop` refuses a loop plan with `Land gate: none`.
+- `harnesses/codex/generated/` is no longer committed; the Codex installer builds the tree from the sources.
 
 - The session-start "Using exo" text drops the lines a with-and-without routing run showed change nothing, from 389 to 264 words.
 - design-ui keeps one copy of its quality floor in `build-pass.md`, of its motion steps in `motion.md` and of its capture steps in `phase-build.md`; the build-ui agent and the other phases point there, and each pointer still carries the step a builder needs without opening the target.
