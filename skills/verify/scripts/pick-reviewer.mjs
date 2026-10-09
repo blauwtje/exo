@@ -65,12 +65,13 @@ export function taskReviewer(task, changedPaths, route, taskDiff = '') {
 
 // A test file: under a `test`, `tests`, `spec` or `__tests__` folder, named `test_*`, or ending `.test.<ext>` or `_spec.<ext>`.
 export const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._-](?:test|spec)\.[^/.]+$/;
-// An added or removed line that is blank, a comment, or one whole output call:
-// the call starts the line, holds no nested call in its arguments and has no
-// statement after it. `#` is no comment here (it opens a private class member in
-// JS/TS) and `*` is one only as a block-comment continuation: `*/`, a bare `*`, or `* ` text
-// holding no `;`, so a code line such as `* 2;` keeps its review.
-const OUTPUT_LINE = /^\s*$|^\s*(?:\/\/|\/\*|\*(?:\/|$|\s[^;]*$))|^\s*(?:console\.(?:log|error|warn|info)|process\.(?:stdout|stderr)\.write)\([^()]*\)\s*;?\s*$/;
+// An added or removed line that is blank, a comment, or one whole output call.
+// A comment fills the whole line: `//` to the end, a `/* ... */` closing at the
+// end, or a lone `/*`, `/**` or `*/`. `#` is no comment here (it opens a private
+// class member in JS/TS) and a line starting with `*` is none: with `-U0` it cannot
+// be told from code such as `* factor`. The output call starts the line, holds no
+// nested call in its arguments and has no statement after it.
+const OUTPUT_LINE = /^\s*$|^\s*(?:\/\/|\/\*(?:(?!\*\/).)*\*\/\s*$|\/\*\*?\s*$|\*\/\s*$)|^\s*(?:console\.(?:log|error|warn|info)|process\.(?:stdout|stderr)\.write)\([^()]*\)\s*;?\s*$/;
 
 /** Whether the diff changes a non-test script file and every added or removed line in those files is blank, a comment or one whole output call. */
 function outputOnly(taskDiff) {

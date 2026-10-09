@@ -161,8 +161,9 @@ test('taskReviewer sends a test-covered output-only script diff to no model revi
   assert.equal(taskReviewer({ risk: 'data loss' }, paths, 'block', diff('+console.log(1);')), REVIEWER_AGENTS.light);
   assert.equal(taskReviewer(task, paths, 'block', ''), REVIEWER_AGENTS.light);
   assert.equal(taskReviewer(task, paths, 'block', diff('+console.log(1);').replace(/lib\/a\.mjs/g, 'tests/a.test.mjs')), REVIEWER_AGENTS.light);
-  for (const line of ['+fs.rmSync(dir); console.log(1)', '+console.log(x()); y = 1', '+process.exit(1); // console.log(1)', '+await rm(dir); console.log("done");', '+#secret = grant()', '+  * 2;', '-- x', '++ x']) {
+  for (const line of ['+fs.rmSync(dir); console.log(1)', '+console.log(x()); y = 1', '+process.exit(1); // console.log(1)', '+await rm(dir); console.log("done");', '+#secret = grant()', '+  * 2;', '+  * factor', '+ * b * c', '+ * x = f()', '+/* x */ foo();', '+*/ run(dir);', '-- x', '++ x']) {
     assert.equal(taskReviewer(task, paths, 'block', diff(line)), REVIEWER_AGENTS.light, line);
   }
-  assert.equal(taskReviewer(task, paths, 'block', diff('+console.log("done");\n+ * continued\n+ */')), none);
+  assert.equal(taskReviewer(task, paths, 'block', diff('+ * continued')), REVIEWER_AGENTS.light);
+  assert.equal(taskReviewer(task, paths, 'block', diff('+/**\n+ */\n+/* x */\n+/**/\n+/*\n+// y')), none);
 });
