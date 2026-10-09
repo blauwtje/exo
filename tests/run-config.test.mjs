@@ -20,6 +20,7 @@ test('the catalog ships claude, deepseek and zai', () => {
   assert.deepEqual(Object.keys(config.providers), ['claude', 'deepseek', 'zai']);
   assert.equal(config.defaults.provider, 'claude');
   assert.equal(config.defaults.contextBudget, 60000);
+  assert.deepEqual(config.defaults.sandbox, { enabled: true, allowedDomains: [] });
   assert.deepEqual(config.providers.claude.env, {});
   assert.deepEqual(config.providers.deepseek.efforts, ['high', 'max']);
   assert.equal(config.providers.zai.env.API_TIMEOUT_MS, '3000000');
@@ -37,6 +38,12 @@ test('run.json merges over the catalog without dropping other keys', () => {
   assert.equal(config.providers.zai.model, 'glm-x');
   assert.equal(config.providers.zai.env.ANTHROPIC_BASE_URL, 'https://api.z.ai/api/anthropic');
   assert.ok(config.providers.mine);
+});
+
+test('run.json overrides one sandbox key and keeps the other', () => {
+  const home = tempHome();
+  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { sandbox: { allowedDomains: ['registry.npmjs.org'] } } }));
+  assert.deepEqual(loadRunConfig({ home }).defaults.sandbox, { enabled: true, allowedDomains: ['registry.npmjs.org'] });
 });
 
 test('readKeys parses NAME=value lines and skips comments and blanks', () => {

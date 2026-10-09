@@ -8,14 +8,21 @@
 //
 // Held to one task by code: the script names task n on stdin and in
 // EXO_RUN_TASK, which land-task's pin enforces; every spawn runs under
-// `--permission-mode dontAsk` with an allowlist built from the plan and a deny
-// list for history and remote writes and raw `git commit`, so land-task is the
-// only committer. After each process, HEAD may hold no new commit or one whose
-// parent is the old HEAD and whose only Plan-task trailer names n; the branch
-// and every `refs/remotes/*` ref must not move. Anything else stops as a
+// `--permission-mode dontAsk` with a deny list for history and remote writes
+// and raw `git commit`, so land-task is the only committer. By default each
+// spawn also runs in Claude Code's sandbox (`--settings`): Bash writes only
+// inside the checkout, reaches only run.json's `sandbox.allowedDomains`, and
+// runs with no allow rule; land-task (in the tail also verify.mjs and
+// run-probes.mjs) is the one command excluded from it, since it runs the
+// Proof and the Land gate. Those come from the plan, so the plan's hash is
+// taken at start and checked after each process. Native Windows, or run.json
+// `sandbox.enabled: false`, falls back to an allowlist built from the plan.
+// After each process, HEAD may hold no new commit or one whose parent is the
+// old HEAD and whose only Plan-task trailer names n; the branch, every
+// `refs/remotes/*` ref and the plan must not change. Anything else stops as a
 // breach, and the script undoes nothing. A push to a path or URL moves no
-// `refs/remotes/*` ref, so the ref check misses it: the deny list and
-// dontAsk's no-rule-no-run are the guard against it.
+// `refs/remotes/*` ref, so the ref check misses it: the deny list, the
+// sandbox's network block and dontAsk's no-rule-no-run are the guard.
 //
 // Exits 0 on done with gate PASS, 1 on any other stop, 2 on a refusal or bad
 // arguments. Logs, summary.txt, tasks.json ([{ number, title, passes }], a task
@@ -23,6 +30,7 @@
 // gate passes) go to .exo/run-plan/<plan-id>/<UTC time>/.
 
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -165,16 +173,53 @@ const spellings = (file) => [...new Set([file, realpathOr(file)])];
 const pathRule = (tool, directory) => spellings(directory).map((spelling) => `${tool}(/${spelling.split(path.sep).join('/')}/**)`);
 const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((spelling) => [`Bash(node "${spelling}" *)`, `Bash(node ${spelling} *)`]));
 
-/** The allowlist one process gets: reads, edits in the root, exo's scripts, the plan's commands, read-only git and inspection. */
-export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT }) {
+/** exo's scripts that run outside the sandbox: they run the plan's Proof and gates, which fail inside it. */
+const unsandboxedScripts = (tail) => (tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]);
+
+/**
+ * Whether this run's sessions use Claude Code's sandbox: `{ enabled: true, allowedDomains }`
+ * or `{ enabled: false, reason }`. `config` is the loaded run config.
+ */
+export function sandboxMode(config, { platform = process.platform } = {}) {
+  if (platform === 'win32') return { enabled: false, reason: 'native Windows has no sandbox' };
+  const sandbox = config?.defaults?.sandbox ?? {};
+  if (sandbox.enabled === false) return { enabled: false, reason: 'sandbox.enabled is false in run.json' };
+  return { enabled: true, allowedDomains: Array.isArray(sandbox.allowedDomains) ? sandbox.allowedDomains.map(String) : [] };
+}
+
+/** The `--settings` object for one process, or null with the sandbox off. */
+export function sandboxSettings(mode, { tail = false } = {}) {
+  if (!mode.enabled) return null;
+  const excludedCommands = [...new Set(unsandboxedScripts(tail).flatMap((file) => spellings(file).flatMap((spelling) => [`node "${spelling}"`, `node ${spelling}`])))];
+  return {
+    sandbox: {
+      enabled: true,
+      allowUnsandboxedCommands: false,
+      failIfUnavailable: true,
+      excludedCommands,
+      network: { allowedDomains: mode.allowedDomains }
+    }
+  };
+}
+
+/**
+ * The allowlist one process gets: reads, edits in the root and exo's scripts; with the sandbox off
+ * also the plan's commands, read-only git and inspection. Sandboxed Bash needs no rule, so with the
+ * sandbox on only the scripts that run outside it get one.
+ */
+export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT, sandbox = false }) {
+  const paths = [
+    ...[root, pluginRoot, path.dirname(planPath)].flatMap((directory) => pathRule('Read', directory)),
+    ...pathRule('Edit', root),
+    ...pathRule('Write', root)
+  ];
+  if (sandbox) return [...new Set([...paths, ...scriptRules(unsandboxedScripts(tail))])];
   const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.nextTask, SCRIPT.landTask, SCRIPT.mcpToolCall];
   const commands = loopCommands(plan)
     .filter((entry) => entry.field !== 'Success criterion')
     .flatMap((entry) => entry.parts.map((part) => `Bash(${part} *)`));
   return [...new Set([
-    ...[root, pluginRoot, path.dirname(planPath)].flatMap((directory) => pathRule('Read', directory)),
-    ...pathRule('Edit', root),
-    ...pathRule('Write', root),
+    ...paths,
     ...scriptRules(scripts),
     ...commands,
     ...READ_ONLY_GIT.map((command) => `Bash(git ${command} *)`),
@@ -182,11 +227,12 @@ export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PL
   ])];
 }
 
-function claudeArgs({ model, effort, budget, allow }) {
+function claudeArgs({ model, effort, budget, allow, settings = null }) {
   return [
     '-p', '--permission-mode', 'dontAsk', '--permission-prompts', 'none',
     '--output-format', 'stream-json', '--verbose', '--model', model, '--effort', effort,
     ...(budget === undefined ? [] : ['--max-budget-usd', budget]),
+    ...(settings === null ? [] : ['--settings', typeof settings === 'string' ? settings : JSON.stringify(settings)]),
     '--allowedTools', ...allow,
     '--disallowedTools', ...DENY_RULES
   ];
@@ -221,7 +267,8 @@ function chooseProvider(flags, home) {
     model: flags.model ?? provider.model,
     // A variable whose catalog value names a key is shown, never printed.
     shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
-    contextBudget: config.defaults.contextBudget
+    contextBudget: config.defaults.contextBudget,
+    sandbox: sandboxMode(config)
   };
 }
 
@@ -446,8 +493,11 @@ async function main(argv) {
   const planId = planIdOf(planPath);
   const landedAtStart = landedTasks(plan.tasks, root, planId);
   const cap = maxIterations ?? 2 * (plan.tasks.length - landedAtStart.length);
-  const taskAllow = allowRules({ root, planPath, plan });
-  const tailAllow = allowRules({ root, planPath, plan, tail: true });
+  const sandbox = provider.sandbox;
+  const taskAllow = allowRules({ root, planPath, plan, sandbox: sandbox.enabled });
+  const tailAllow = allowRules({ root, planPath, plan, tail: true, sandbox: sandbox.enabled });
+  const taskSettings = sandboxSettings(sandbox);
+  const tailSettings = sandboxSettings(sandbox, { tail: true });
   const learnings = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'learnings.md');
   const buildPrompt = (number) => {
     const task = plan.tasks.find((entry) => entry.number === number);
@@ -460,7 +510,10 @@ async function main(argv) {
       `1. Change only the files this task lists. If a registry, index or test list must name the new file and is not listed, end on \`Task ${number}: BLOCKED <file> is missing from the file list\`.`,
       '2. Make the task\'s proof command pass.',
       '3. Land through land-task as the build skill says, never with git commit.',
-      `4. Read ${learnings} first, and before ending append one line on anything the next task should know.`
+      `4. Read ${learnings} first, and before ending append one line on anything the next task should know.`,
+      ...(sandbox.enabled
+        ? ['5. Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. land-task reruns the proof outside the sandbox, so land when those are the only failures left.']
+        : [])
     ].join('\n');
   };
 
@@ -474,7 +527,10 @@ async function main(argv) {
       'Env:', ...provider.shown.map(([variable, value]) => `  ${variable}=${value}`),
       `Caps: ${cap} iterations, ${timeoutMs / 60_000} minutes per session, ${provider.contextBudget} tokens of context per task`,
       `Order: ${order.length === 0 ? 'every task has landed' : order.map((number) => `Task ${number}`).join(', ')}`,
-      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow: ['<allow>'] }).join(' ')}`,
+      sandbox.enabled
+        ? `Sandbox: on, writes in ${root}, network: ${sandbox.allowedDomains.length === 0 ? 'none' : sandbox.allowedDomains.join(', ')}`
+        : `Sandbox: off (${sandbox.reason})`,
+      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null }).join(' ')}`,
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
       'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
@@ -508,9 +564,14 @@ async function main(argv) {
   writeTasks();
   fs.writeFileSync(progressFile, `# Progress\n\nPlan: ${planPath}\nBranch: ${branch}\n\n`);
 
-  const spawnOne = async ({ prompt, allow, pin, log }) => {
+  // land-task runs the plan's Proof and Land gate outside the sandbox, so a session must not rewrite them.
+  const planHash = () => (isFileOnDisk(planPath) ? createHash('sha256').update(fs.readFileSync(planPath)).digest('hex') : 'missing');
+  const planAtStart = planHash();
+  const planBreach = () => (planHash() === planAtStart ? null : 'plan changed');
+
+  const spawnOne = async ({ prompt, allow, settings, pin, log }) => {
     const before = snapshot(root);
-    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow, settings }), {
       cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs
     });
     return { before, outcome, parsed: parseStream(outcome.text) };
@@ -536,14 +597,14 @@ async function main(argv) {
     const n = task.number;
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
-    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n) + retryNote, allow: taskAllow, pin: `${planId}/${n}`, log });
+    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n) + retryNote, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     // A denial is only logged: the task is judged by whether it landed, and a run that landed nothing counts toward the stall limit.
     const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);
     const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied };
     run.records.push(record);
 
-    const breach = breachOf(root, before, { trailer });
+    const breach = planBreach() ?? breachOf(root, before, { trailer });
     if (breach !== null) {
       stop = `breach in iteration ${iteration}: ${breach}`;
       break;
@@ -583,9 +644,9 @@ async function main(argv) {
   if (stop === undefined) {
     iteration += 1;
     const log = path.join(logDir, 'tail.log');
-    const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, pin: null, log });
+    const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, settings: tailSettings, pin: null, log });
     run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
-    const breach = breachOf(root, before);
+    const breach = planBreach() ?? breachOf(root, before);
     const notLoaded = breach === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
     if (breach !== null) stop = `breach in iteration ${iteration}: ${breach}`;
     else if (notLoaded !== null) stop = `exo not loaded: ${notLoaded}`;
