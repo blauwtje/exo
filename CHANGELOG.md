@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- The branch reviewer must write a `Probe:` line for each `fix` finding, and its report file is named the deliverable.
+- `merge-reviews.mjs` prints a `DEMOTED <n>` line with how many `fix` findings it demoted to `report` and why.
+- `verify` sends a test-covered diff that only changes script output to no model review.
+- The review fixer leaves text a landed plan task removed, and reverts and reports a fix that fails the plan's land gate.
+
+### Fixed
+
+- `verify.mjs` accepts a relative `--root`.
+- `verify` reports a branch reviewer that returns without its report file as `BLOCKED` instead of continuing.
+
 ## 0.111.0 - 2026-10-09
 
 ### Highlights
