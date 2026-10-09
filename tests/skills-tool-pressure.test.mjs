@@ -301,7 +301,7 @@ test('--main-dir turns the without arm into a main arm that loads the second cop
   assert.doesNotMatch(outcome.stdout, /without/);
 });
 
-test('--setting-sources reaches every run of both arms, and is absent when not given', async () => {
+test('--setting-sources reaches every run of both arms, and when not given is absent on macOS and the Linux default project,local elsewhere', async () => {
   const clone = await pluginClone();
   const main = await pluginClone();
   const out = await fixture();
@@ -311,7 +311,12 @@ test('--setting-sources reaches every run of both arms, and is absent when not g
   assert.ok(given.calls.every((call) => call.includes('--setting-sources project,local')), given.calls.join('\n'));
   const omitted = await runPressure('plain', ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', await fixture(), '--runs', '1']);
   assert.equal(omitted.code, 0, omitted.stderr);
-  assert.ok(omitted.calls.every((call) => !call.includes('--setting-sources')), omitted.calls.join('\n'));
+  // Off macOS the confined run adds --setting-sources project,local itself,
+  // so user settings cannot widen its writes.
+  const sourcesWhenOmitted = process.platform === 'darwin' ? [] : ['project,local'];
+  for (const call of omitted.calls) {
+    assert.deepEqual([...call.matchAll(/--setting-sources[ =](\S*)/g)].map((match) => match[1]), sourcesWhenOmitted, call);
+  }
 });
 
 test('a skill loaded from outside the arm\'s copy prints a WRONG COPY line and exits 1', async () => {
