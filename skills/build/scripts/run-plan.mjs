@@ -239,7 +239,7 @@ function claudeArgs({ model, effort, budget, allow, settings = null }) {
   ];
 }
 
-/** A copy of the runner's env for one child: the provider's env and mapped effort on top, a cap on one Bash call's timeout unless the env sets one, and no Anthropic key for another host. */
+/** A copy of the runner's env for one child: the provider's env and mapped effort on top, the task pin, the session markers removed, and no Anthropic key for another host. */
 export function childEnv(pin, provider) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
