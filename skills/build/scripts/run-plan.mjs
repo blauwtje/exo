@@ -4,7 +4,7 @@
 // then one verify process and verify.mjs itself, ending on one stop line.
 //
 //   node run-plan.mjs <plan.md> [--root <dir>] [--max-iterations <n>] [--timeout <minutes>]
-//     [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--claude <path>] [--dry-run]
+//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--claude <path>] [--dry-run]
 //
 // Held to one task by code: the script names task n on stdin and in
 // EXO_RUN_TASK, which land-task's pin enforces; every spawn runs under
@@ -24,6 +24,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +32,7 @@ import { defaultBranch, frameOf, landedTasks, loopCommands, parsePlan, planIdOf,
 import { isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 
 const KILL_GRACE_MS = 5000;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -181,21 +183,36 @@ function claudeArgs({ model, effort, budget, allow }) {
   ];
 }
 
-function childEnv(pin) {
+/** A copy of the runner's env for one child: the provider's env and mapped effort on top, and no Anthropic key for another host. */
+export function childEnv(pin, provider) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   delete env.EXO_RUN_TASK;
   if (pin !== null) env.EXO_RUN_TASK = pin;
-  return env;
+  if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
+  return { ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
 }
 
-/** Model and effort from build-task's frontmatter, read at start rather than hard-coded. */
-function buildTaskDefaults() {
-  const text = fs.readFileSync(path.join(PLUGIN_ROOT, 'agents', 'build-task.md'), 'utf8');
-  const frontmatter = text.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+/** The provider for this run, or a Refusal: the catalog and run.json, keys.env, and `--provider`, `--effort` over the defaults. */
+function chooseProvider(flags, home) {
+  let config;
+  try {
+    config = loadRunConfig({ home });
+  } catch (error) {
+    throw new Refusal(`${path.join(configDir(home), 'run.json')} does not load: ${error.message}`);
+  }
+  const asked = flags.effort ?? config.defaults.effort;
+  if (!config.efforts.includes(asked)) throw new Refusal(`unknown effort "${asked}"; use one of ${config.efforts.join(', ')}`);
+  const name = flags.provider ?? config.defaults.provider;
+  const provider = resolveProvider(config, name, readKeys(path.join(configDir(home), 'keys.env')), asked, home);
+  if (provider.refused !== undefined) throw new Refusal(provider.refused);
   return {
-    model: frontmatter.match(/^model: *(.+)$/m)?.[1].trim() ?? 'sonnet',
-    effort: frontmatter.match(/^effort: *(.+)$/m)?.[1].trim() ?? 'high'
+    ...provider,
+    asked,
+    model: flags.model ?? provider.model,
+    // A variable whose catalog value names a key is shown, never printed.
+    shown: Object.entries(provider.env).map(([variable, value]) => [variable, String(config.providers[name].env[variable]).includes('${') ? '<from keys.env>' : value]),
+    contextBudget: config.defaults.contextBudget
   };
 }
 
@@ -329,7 +346,10 @@ function preflight(planArgument, flags) {
   const branch = gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD']);
   const wanted = basis.branch?.trim() ?? null;
   if (wanted === null) throw new Refusal("the plan's '## Plan basis' names no Branch:");
-  if (branch !== wanted) throw new Refusal(`the checkout is on branch ${branch ?? '(detached)'}, not the plan's Branch: ${wanted}`);
+  if (branch !== wanted) {
+    const exists = gitOut(root, ['show-ref', '--verify', '--quiet', `refs/heads/${wanted}`]) !== null;
+    throw new Refusal(`the checkout is on branch ${branch ?? '(detached)'}, not the plan's Branch: ${wanted}; run git switch ${exists ? '' : '-c '}${wanted}`);
+  }
   if (wanted === defaultBranch(root)) throw new Refusal(`Branch: ${wanted} is the default branch`);
   const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
   if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
@@ -386,7 +406,7 @@ async function main(argv) {
   const [planArgument, ...rest] = argv;
   if (planArgument === undefined || planArgument.startsWith('--')) throw new UsageError('the first argument names the plan file');
   const flags = parseFlags(rest, {
-    root: 'value', 'max-iterations': 'value', timeout: 'value', model: 'value', effort: 'value',
+    root: 'value', provider: 'value', 'max-iterations': 'value', timeout: 'value', model: 'value', effort: 'value',
     'max-budget-usd': 'value', claude: 'value', 'dry-run': 'boolean'
   });
   const maxIterations = numberFlag(flags['max-iterations'], 'max-iterations', { integer: true });
@@ -402,9 +422,15 @@ async function main(argv) {
     return 2;
   }
   const { claude, planPath, root, plan, branch } = context;
-  const defaults = buildTaskDefaults();
-  const model = flags.model ?? defaults.model;
-  const effort = flags.effort ?? defaults.effort;
+  let provider;
+  try {
+    provider = chooseProvider(flags, os.homedir());
+  } catch (error) {
+    if (!(error instanceof Refusal)) throw error;
+    process.stdout.write(`run-plan: refused: ${error.message}\n`);
+    return 2;
+  }
+  const { model, effort } = provider;
   const planId = planIdOf(planPath);
   const landedAtStart = landedTasks(plan.tasks, root, planId);
   const cap = maxIterations ?? 2 * (plan.tasks.length - landedAtStart.length);
@@ -416,6 +442,11 @@ async function main(argv) {
     const order = taskOrder(plan.tasks, landedAtStart);
     const first = order[0];
     process.stdout.write([
+      `Provider: ${provider.name}`,
+      `Model: ${model}`,
+      `Effort: ${provider.asked} -> ${effort}`,
+      'Env:', ...provider.shown.map(([variable, value]) => `  ${variable}=${value}`),
+      `Caps: ${cap} iterations, ${timeoutMs / 60_000} minutes per session, ${provider.contextBudget} tokens of context per task`,
       `Order: ${order.length === 0 ? 'every task has landed' : order.map((number) => `Task ${number}`).join(', ')}`,
       `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow: ['<allow>'] }).join(' ')}`,
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
@@ -453,7 +484,7 @@ async function main(argv) {
   const spawnOne = async ({ prompt, allow, pin, log }) => {
     const before = snapshot(root);
     const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow }), {
-      cwd: root, env: childEnv(pin), prompt, log, timeoutMs
+      cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs
     });
     return { before, outcome, parsed: parseStream(outcome.text) };
   };

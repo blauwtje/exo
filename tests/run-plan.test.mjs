@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { resolveClaude, parseStream } from '../skills/build/scripts/run-plan.mjs';
+import { childEnv, resolveClaude, parseStream } from '../skills/build/scripts/run-plan.mjs';
 import { fixture, git, gitRepository, run } from './harness.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
@@ -27,7 +27,8 @@ const scenario = JSON.parse(fs.readFileSync(process.env.STUB_SCENARIO, 'utf8'));
 const record = process.env.STUB_RECORD;
 const stdin = fs.readFileSync(0, 'utf8');
 const index = fs.existsSync(record) ? fs.readFileSync(record, 'utf8').split('\\n').filter(Boolean).length : 0;
-fs.appendFileSync(record, JSON.stringify({ argv: process.argv.slice(2), stdin, pin: process.env.EXO_RUN_TASK ?? null, marker: process.env.CLAUDECODE ?? null }) + '\\n');
+fs.appendFileSync(record, JSON.stringify({ argv: process.argv.slice(2), stdin, pin: process.env.EXO_RUN_TASK ?? null, marker: process.env.CLAUDECODE ?? null,
+  env: Object.fromEntries(Object.entries(process.env).filter(([name]) => /^(ANTHROPIC_|CLAUDE_CODE_EFFORT_LEVEL$|CLAUDE_CODE_ALWAYS_ENABLE_EFFORT$|API_TIMEOUT_MS$)/.test(name))) }) + '\\n');
 const step = scenario.steps[index] ?? {};
 const emit = (event) => process.stdout.write(JSON.stringify(event) + '\\n');
 const init = { type: 'system', subtype: 'init', cwd: process.cwd(), session_id: 'session-1', permissionMode: 'dontAsk',
@@ -101,8 +102,13 @@ async function setup(options = {}) {
   const tools = await fixture();
   const stub = path.join(tools, 'claude.mjs');
   await fs.writeFile(stub, STUB);
-  return { root, plan, bare, tools, stub };
+  const home = await fixture();
+  await fs.mkdir(path.join(home, '.config', 'exo'), { recursive: true });
+  await fs.writeFile(path.join(home, '.config', 'exo', 'keys.env'), `DEEPSEEK_API_KEY=${FAKE_KEYS.deepseek}\nZAI_API_KEY=${FAKE_KEYS.zai}\n`);
+  return { root, plan, bare, tools, stub, home, env: {} };
 }
+
+const FAKE_KEYS = { deepseek: 'fake-deepseek-key-1f3a', zai: 'fake-zai-key-9c7e' };
 
 async function runPlan(context, steps, args = []) {
   const scenario = path.join(context.tools, 'scenario.json');
@@ -110,7 +116,7 @@ async function runPlan(context, steps, args = []) {
   await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, steps }));
   const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...args], {
     cwd: context.root,
-    env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1' }
+    env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1', HOME: context.home, ...context.env }
   });
   const text = await fs.readFile(record, 'utf8').catch(() => '');
   const calls = text.split('\n').filter(Boolean).map((line) => JSON.parse(line));
@@ -279,6 +285,119 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.equal(result.calls.length, 0);
   assert.match(result.stdout, /Order: Task 1, Task 2/);
   assert.match(result.stdout, /--task 1/);
+});
+
+const SPAWN_ONCE = ['--max-iterations', '1'];
+const lastCall = (result) => result.calls.at(-1);
+
+test('provider: each provider sends its model, env and the mapped effort for every level', async () => {
+  const context = await setup();
+  context.env = { ANTHROPIC_API_KEY: 'fake-anthropic-key-5b2d' };
+  const mapped = {
+    claude: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' },
+    deepseek: { low: 'high', medium: 'high', high: 'high', xhigh: 'max', max: 'max' },
+    zai: { low: 'low', medium: 'high', high: 'high', xhigh: 'max', max: 'max' }
+  };
+  const models = { claude: 'sonnet', deepseek: 'deepseek-flash', zai: 'glm-5.3' };
+  for (const [provider, levels] of Object.entries(mapped)) {
+    for (const [asked, sent] of Object.entries(levels)) {
+      const call = lastCall(await runPlan(context, [{}], [...SPAWN_ONCE, '--provider', provider, '--effort', asked]));
+      assert.equal(call.argv[call.argv.indexOf('--effort') + 1], sent, `${provider} ${asked}`);
+      assert.equal(call.argv[call.argv.indexOf('--model') + 1], models[provider]);
+      assert.equal(call.env.CLAUDE_CODE_EFFORT_LEVEL, sent, `${provider} ${asked}`);
+      if (provider === 'claude') {
+        assert.equal(call.env.ANTHROPIC_API_KEY, 'fake-anthropic-key-5b2d');
+        assert.equal(call.env.ANTHROPIC_AUTH_TOKEN, undefined);
+        assert.equal(call.env.CLAUDE_CODE_ALWAYS_ENABLE_EFFORT, undefined);
+      } else {
+        assert.equal(call.env.ANTHROPIC_API_KEY, undefined, 'an Anthropic key never reaches another host');
+        assert.equal(call.env.ANTHROPIC_AUTH_TOKEN, FAKE_KEYS[provider]);
+        assert.equal(call.env.CLAUDE_CODE_ALWAYS_ENABLE_EFFORT, '1');
+        assert.equal(call.env.ANTHROPIC_MODEL, models[provider]);
+      }
+    }
+  }
+  const zai = lastCall(await runPlan(context, [{}], [...SPAWN_ONCE, '--provider', 'zai']));
+  assert.equal(zai.env.API_TIMEOUT_MS, '3000000');
+  assert.equal(zai.env.ANTHROPIC_BASE_URL, 'https://api.z.ai/api/anthropic');
+  const overridden = lastCall(await runPlan(context, [{}], [...SPAWN_ONCE, '--provider', 'zai', '--model', 'glm-other']));
+  assert.equal(overridden.argv[overridden.argv.indexOf('--model') + 1], 'glm-other');
+});
+
+test('provider: the default is claude on sonnet at medium effort', async () => {
+  const call = lastCall(await runPlan(await setup(), [{}], SPAWN_ONCE));
+  assert.equal(call.argv[call.argv.indexOf('--model') + 1], 'sonnet');
+  assert.equal(call.argv[call.argv.indexOf('--effort') + 1], 'medium');
+  assert.equal(call.env.CLAUDE_CODE_EFFORT_LEVEL, 'medium');
+});
+
+test('provider: one defined only in run.json runs, and run.json can change the default provider', async () => {
+  const context = await setup();
+  const local = { model: 'local-1', efforts: ['medium'], env: { ANTHROPIC_BASE_URL: 'http://localhost:9' } };
+  await fs.writeFile(path.join(context.home, '.config', 'exo', 'run.json'), JSON.stringify({ providers: { local } }));
+  const call = lastCall(await runPlan(context, [{}], [...SPAWN_ONCE, '--provider', 'local', '--effort', 'max']));
+  assert.equal(call.argv[call.argv.indexOf('--model') + 1], 'local-1');
+  assert.equal(call.argv[call.argv.indexOf('--effort') + 1], 'medium');
+  assert.equal(call.env.ANTHROPIC_BASE_URL, 'http://localhost:9');
+  await fs.writeFile(path.join(context.home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { provider: 'zai' } }));
+  const byDefault = lastCall(await runPlan(context, [{}], SPAWN_ONCE));
+  assert.equal(byDefault.env.ANTHROPIC_AUTH_TOKEN, FAKE_KEYS.zai);
+});
+
+test('provider: a missing key, an unknown provider and an unknown effort exit 2 with no spawn', async () => {
+  const context = await setup();
+  await fs.rm(path.join(context.home, '.config', 'exo', 'keys.env'));
+  for (const [args, why] of [[['--provider', 'deepseek'], /Missing key for deepseek.*DEEPSEEK_API_KEY=/], [['--provider', 'nope'], /Unknown provider "nope"/], [['--effort', 'ultra'], /unknown effort "ultra"/]]) {
+    const result = await runPlan(context, [{}], args);
+    assert.match(result.stop, /^run-plan: refused: /);
+    assert.match(result.stop, why);
+    assert.equal(result.code, 2);
+    assert.equal(result.calls.length, 0);
+  }
+});
+
+test('provider: no key value reaches stdout, the log directory or the dry run', async () => {
+  const context = await setup();
+  const logged = await runPlan(context, [{ result: 'Done.' }], [...SPAWN_ONCE, '--provider', 'deepseek']);
+  const dry = await runPlan(context, [{}], ['--dry-run', '--provider', 'deepseek', '--effort', 'xhigh']);
+  assert.match(dry.stdout, /^Provider: deepseek$/m);
+  assert.match(dry.stdout, /^Model: deepseek-flash$/m);
+  assert.match(dry.stdout, /^Effort: xhigh -> max$/m);
+  assert.match(dry.stdout, /^  ANTHROPIC_AUTH_TOKEN=<from keys\.env>$/m);
+  assert.match(dry.stdout, /^  ANTHROPIC_BASE_URL=https:\/\/api\.deepseek\.com\/anthropic$/m);
+  assert.match(dry.stdout, /^Caps: 4 iterations, 60 minutes per session, 60000 tokens of context per task$/m);
+  const texts = [logged.stdout, logged.stderr, dry.stdout, dry.stderr];
+  const logs = path.join(context.root, '.exo', 'run-plan');
+  for (const entry of await fs.readdir(logs, { recursive: true, withFileTypes: true })) {
+    if (entry.isFile()) texts.push(await fs.readFile(path.join(entry.parentPath, entry.name), 'utf8'));
+  }
+  assert.ok(texts.length > 4, 'the log directory holds files');
+  for (const text of texts) for (const key of Object.values(FAKE_KEYS)) assert.ok(!text.includes(key), `a key leaked: ${key}`);
+});
+
+test('childEnv: the runner changes only the copy it hands the child, never its own env', () => {
+  const before = { ...process.env };
+  process.env.ANTHROPIC_API_KEY = 'fake-anthropic-key-5b2d';
+  const env = childEnv('plan/1', { name: 'zai', effort: 'high', env: { ANTHROPIC_AUTH_TOKEN: 'fake-token' } });
+  assert.equal(env.ANTHROPIC_API_KEY, undefined);
+  assert.equal(env.ANTHROPIC_AUTH_TOKEN, 'fake-token');
+  assert.equal(env.CLAUDE_CODE_EFFORT_LEVEL, 'high');
+  assert.equal(env.EXO_RUN_TASK, 'plan/1');
+  assert.equal(process.env.ANTHROPIC_API_KEY, 'fake-anthropic-key-5b2d');
+  assert.equal(process.env.ANTHROPIC_AUTH_TOKEN, before.ANTHROPIC_AUTH_TOKEN);
+  assert.equal(process.env.CLAUDE_CODE_EFFORT_LEVEL, before.CLAUDE_CODE_EFFORT_LEVEL);
+  if (before.ANTHROPIC_API_KEY === undefined) delete process.env.ANTHROPIC_API_KEY;
+  else process.env.ANTHROPIC_API_KEY = before.ANTHROPIC_API_KEY;
+});
+
+test('refused: a wrong branch names the git switch that fixes it, with -c when the branch is missing', async () => {
+  const missing = await setup({ branch: 'feat/other' });
+  const existing = await setup();
+  git(existing.root, 'switch', '-q', 'main');
+  const first = await runPlan(missing, [land(1)]);
+  assert.match(first.stop, /; run git switch -c feat\/other$/);
+  const second = await runPlan(existing, [land(1)]);
+  assert.match(second.stop, /; run git switch feat\/run$/);
 });
 
 test('resolveClaude finds claude.exe on Windows, refuses a .cmd-only PATH and a PATH without claude', () => {
