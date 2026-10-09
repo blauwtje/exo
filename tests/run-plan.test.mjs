@@ -533,6 +533,7 @@ test('childEnv: the runner changes only the copy it hands the child, never its o
   assert.equal(env.ANTHROPIC_AUTH_TOKEN, 'fake-token');
   assert.equal(env.CLAUDE_CODE_EFFORT_LEVEL, 'high');
   assert.equal(env.EXO_RUN_TASK, 'plan/1');
+  assert.equal(env.BASH_MAX_TIMEOUT_MS, process.env.BASH_MAX_TIMEOUT_MS ?? '180000', 'one Bash call is capped unless the env sets its own');
   assert.equal(process.env.ANTHROPIC_API_KEY, 'fake-anthropic-key-5b2d');
   assert.equal(process.env.ANTHROPIC_AUTH_TOKEN, before.ANTHROPIC_AUTH_TOKEN);
   assert.equal(process.env.CLAUDE_CODE_EFFORT_LEVEL, before.CLAUDE_CODE_EFFORT_LEVEL);

@@ -73,6 +73,8 @@ const READ_ONLY_GIT = ['status', 'diff', 'log', 'show', 'rev-parse', 'ls-files']
 const READ_ONLY_INSPECT = ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n'];
 const STALL_LIMIT = 2;
 const DEFAULT_TIMEOUT_MINUTES = 60;
+// Longest a session's Bash call may run: a hung command (a sandboxed dotnet test waited 301 s) stops here, not at the 600 s the model may ask for.
+const BASH_MAX_TIMEOUT_MS = '180000';
 
 class Refusal extends Error {}
 
@@ -240,14 +242,14 @@ function claudeArgs({ model, effort, budget, allow, settings = null }) {
   ];
 }
 
-/** A copy of the runner's env for one child: the provider's env and mapped effort on top, and no Anthropic key for another host. */
+/** A copy of the runner's env for one child: the provider's env and mapped effort on top, a cap on one Bash call's timeout unless the env sets one, and no Anthropic key for another host. */
 export function childEnv(pin, provider) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   delete env.EXO_RUN_TASK;
   if (pin !== null) env.EXO_RUN_TASK = pin;
   if (provider.name !== 'claude') delete env.ANTHROPIC_API_KEY;
-  return { ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
+  return { BASH_MAX_TIMEOUT_MS, ...env, ...provider.env, CLAUDE_CODE_EFFORT_LEVEL: provider.effort };
 }
 
 /** The provider for this run, or a Refusal: the catalog and run.json, keys.env, and `--provider`, `--effort` over the defaults. */
