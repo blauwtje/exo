@@ -15,18 +15,17 @@ effort: high
    - Then the gate once: first backticked command of the plan's `Success criterion`, else its `Land gate:`, else `npm run check`, else `npm test` with no `check` script.
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun none of its checks.
    - `WARN` line (claims-diff per landed task) → list it in the report; never ends the turn.
-   - `SESSION <check>` line names an `mcp:<tool> <args>` call the script skips → call the `mcp__<server>__<tool>` tool with those args yourself, not through Bash.
+   - `SESSION <check>` line names an `mcp:<tool> <args>` call the script skips → call `mcp__<server>__<tool>` with those args yourself, not through Bash.
    - Record it as `PASS <check>` or `FAIL <check> (<why>)` in the gate's output; that `FAIL` ends the turn too.
    - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the report.
-2. **Review the branch.** `REVIEWER: none` skips steps 2-3; go to step 4.
+2. **Review the branch.** `REVIEWER: none` → skip to step 4.
    - Otherwise dispatch the `exo:review-branch` agent, setting its `model` and `effort` to the `REVIEWER:` line's `model=` and `effort=`, unless the budget rule sets others.
-   - Pass: plan path, branch, checkout, base.
    - Pass: code standard path from `CLAUDE.md` or `AGENTS.md`, else `${CLAUDE_SKILL_DIR}/../route-skills/references/code-standard.md`.
    - Pass: review rules path `${CLAUDE_SKILL_DIR}/references/review-rules.md`.
-   - Pass: implementer report directory `<checkout>/.exo/`, findings path `<checkout>/.exo/branch-review.md`.
+   - Pass: plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`, findings path `<checkout>/.exo/branch-review.md`.
    - `BLOCKED` → end the turn with its report.
-   - Reviewer reads the plan, the diff and the `Red:` lines of the implementer reports only.
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a second review through `codex exec` on the same plan and diff, and append its findings to the findings path before step 3; `none` or a decline → say nothing.
+   - Reviewer reads only the plan, diff and implementer `Red:` lines.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a `codex exec` second review of the same plan and diff; append its findings to the findings path before step 3; `none` or a decline → say nothing.
 3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
    - `fix=0` → step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
    - After the dispatch → follow `references/repair.md`.

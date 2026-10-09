@@ -5,7 +5,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { basename, extname } from 'node:path';
-import { onPath } from '../../../harnesses/on-path.mjs';
+import { onPath } from '#on-path';
 import { readKindTable } from '#model-kinds';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { parseFlags, UsageError, isMain } from '#script-flags';
