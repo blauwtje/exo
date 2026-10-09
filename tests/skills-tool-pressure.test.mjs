@@ -336,13 +336,15 @@ async function setupScript(body) {
   return script;
 }
 
-test('--setup runs the script right before every run, and the runs go one at a time, alternating arms', async () => {
+test('--setup runs the script right before every run, and the runs go one at a time, alternating arms', async (t) => {
   const clone = await pluginClone();
   const out = await fixture();
   // Each setup first moves the logs of the runs before it into STAND_IN_LOG, so
   // that log holds every step in order.
   const drain = 'for log in "$STAND_IN_RUNS"/*/scratch/calls.log; do [ -f "$log" ] && cat "$log" >> "$STAND_IN_LOG" && rm "$log"; done\n';
   const script = await setupScript(`${drain}echo setup >> "$STAND_IN_LOG"\necho rebuilt\n`);
+  // The runner creates this setup's case folder, /tmp/exo-pressure/<its folder name>.
+  t.after(() => fs.rm(path.join('/tmp/exo-pressure', path.basename(path.dirname(script))), { recursive: true, force: true }));
   const outcome = await runPressure('paced', (cwd) => ['--cells', 'sonnet:high', '--plugin-dir', clone, '--out', out, '--runs', '2', '--setup', path.relative(cwd, script)]);
   assert.equal(outcome.code, 0, outcome.stderr);
   const steps = outcome.calls.map((call) => {
@@ -405,7 +407,7 @@ test('--cells-for prints the kind\'s cell and each budget replacement as a --cel
   assert.equal(critic.code, 0, critic.stderr);
   assert.equal(critic.stdout, 'opus:high,sonnet:high,opus:xhigh\n');
   const build = await cellsFor('agents/build-task.md');
-  assert.equal(build.stdout, 'sonnet:high\n');
+  assert.equal(build.stdout, 'sonnet:medium\n');
 });
 
 test('--cells-for adds every per-call kind a budget runs the file on, deep and high review and the hard twins', async () => {

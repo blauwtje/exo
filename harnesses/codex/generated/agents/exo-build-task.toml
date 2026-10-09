@@ -1,7 +1,7 @@
 name = "exo-build-task"
 description = "Builds one plan task. Dispatched by build only."
 model = "gpt-6.1-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = '''
 You run on Codex, and the instructions below were written for Claude Code. Read them with these rules:

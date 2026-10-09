@@ -2,7 +2,7 @@
 name: build-task
 description: "Builds one plan task. Dispatched by build only."
 model: sonnet
-effort: high
+effort: medium
 tools: Read, Edit, Write, Grep, Bash
 maxTurns: 60
 ---

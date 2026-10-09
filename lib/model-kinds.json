@@ -28,6 +28,7 @@
   },
   "kinds": {
     "build": { "tier": "standard", "effort": "high" },
+    "build-task": { "tier": "standard", "effort": "medium" },
     "hardest": { "tier": "strong", "effort": "high" },
     "review": { "tier": "standard", "effort": "high" },
     "review-deep": { "tier": "strong", "effort": "high" },
@@ -47,7 +48,7 @@
     "build": { "kind": "coordinate" }
   },
   "agents": {
-    "agents/build-task.md": { "kind": "build" },
+    "agents/build-task.md": { "kind": "build-task" },
     "agents/build-ui.md": { "kind": "build" },
     "agents/critique-ui.md": { "kind": "review-deep" },
     "agents/fetch-docs.md": { "kind": "research" },

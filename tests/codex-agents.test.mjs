@@ -66,7 +66,7 @@ test('each file holds the decided fields and drops maxTurns and omitClaudeMd', (
 test('model and effort resolve through the codex block, shifted up one step on the strong tier', () => {
   const build = generated('exo-build-task');
   assert.equal(field(build, 'model'), 'gpt-6.1-sol');
-  assert.equal(field(build, 'model_reasoning_effort'), 'high');
+  assert.equal(field(build, 'model_reasoning_effort'), 'medium');
   const critique = generated('exo-critique-ui');
   assert.equal(field(critique, 'model'), 'gpt-6.1-sol');
   assert.equal(field(critique, 'model_reasoning_effort'), 'xhigh');
