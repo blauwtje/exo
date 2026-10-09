@@ -93,6 +93,13 @@ test('a finding line not in the one-line shape is counted as unread, with its fi
   assert.equal(clean.unreadFix, 0);
 });
 
+test('an unread finding lifts a CLEAN verdict to FINDINGS', () => {
+  const merged = mergeReviews([{ name: 'task-1', text: 'CLEAN\n\n## a.mjs:3\ndefect | x | fix\n' }]);
+  assert.equal(merged.verdict, 'FINDINGS');
+  assert.equal(merged.unread, 1);
+  assert.equal(merged.counts.defect, 0);
+});
+
 test('the unread count is printed on its own line only above zero', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'merge-reviews-'));
   const heading = path.join(root, 'task-1.md');

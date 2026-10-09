@@ -57,7 +57,7 @@ export function mergeReviews(reports) {
     });
     sections.push(`## ${name}\n\n${lines.join('\n').trim()}\n`);
   }
-  if (verdict === 'CLEAN' && counts.defect + counts.hazard + counts.question > 0) verdict = 'FINDINGS';
+  if (verdict === 'CLEAN' && counts.defect + counts.hazard + counts.question + unread > 0) verdict = 'FINDINGS';
   const head = `${verdict}\n\n`;
   const tail = `Count: defect=${counts.defect} hazard=${counts.hazard} question=${counts.question} fix=${counts.fix}\n`;
   return { verdict, counts, demoted, unread, unreadFix, text: `${head}${sections.join('\n')}\n${tail}` };
