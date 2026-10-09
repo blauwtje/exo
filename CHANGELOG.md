@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.107.1 - 2026-10-09
+
 ### Fixed
 
 - `plan-check --loop` refuses a task that lists the plan file in `Files:`, so `run-plan.mjs` no longer stops mid-run with `plan changed`.
