@@ -21,8 +21,9 @@ You review one branch against the plan and the standard; a fixer repairs from yo
 - A task with no naming commit, an untouched `Files:` path or a lacked proof is a `defect` marked `report`.
 - Against the standard: forwarding abstractions, copied blocks, duplicate sources of truth, swallowed failures, narrating comments, dead code, unexplained suppressions.
 - A deleted test, removed or loosened assertion, or added skip marker is a `defect` marked `report` with the removed text as evidence, unless the plan names it a non-goal or a task asks for it.
-- A task is test-first when it carries `Risk:`, its `implementer-<n>.md` report reads `Test first: yes`, or its heading type is `fix` and its `Files:` hold a test file.
-- A test-first task is a `defect` marked `report` with its task number when its commit adds no test observing the changed behavior, or when its report quotes a passing run with no `Red:` failing run before it.
+- Read implementer reports only for their `Red:` lines, listed with `grep -n -A1 '^Red:' <implementer report directory>/implementer-*.md`; every other claim in a report stays unread, because the plan and the diff decide.
+- A task is test-first when it carries `Risk:`, its `Red:` line follows `Test first: yes`, or its heading type is `fix` and its `Files:` hold a test file.
+- A test-first task is a `defect` marked `report` with its task number when its commit adds no test observing the changed behavior, or when its `Red:` line reads `none` or is missing.
 
 ## Boundaries
 

@@ -5,6 +5,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { basename, extname } from 'node:path';
+import { onPath } from '../../../harnesses/on-path.mjs';
 import { readKindTable } from '#model-kinds';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { parseFlags, UsageError, isMain } from '#script-flags';
@@ -42,6 +43,11 @@ export const MANIFESTS = [
 /** The deep reviewer pick (the light agent plus call model and effort) when a landed task carries a `Risk:`, a manifest changed or a signature changed; diff size no longer picks it. */
 export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
   return riskTasks || manifestChanged || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light;
+}
+
+/** Whether verify may offer the opt-in second review through Codex: only when `codex` is on `PATH`. */
+export function codexOffer(env = process.env) {
+  return onPath('codex', env);
 }
 
 /** Whether the diff touches a manifest or lockfile. */
@@ -87,7 +93,11 @@ function measureEffort() {
 }
 
 function main(argv) {
-  parseFlags(argv, { effort: 'boolean' });
+  const flags = parseFlags(argv, { effort: 'boolean', codex: 'boolean' });
+  if (flags.codex) {
+    process.stdout.write(`${codexOffer() ? 'offer' : 'none'}\n`);
+    return;
+  }
   // The reviewer pick lives in verify.mjs, which reads the plan's `Risk:` fields
   // this command cannot see, so only one pick of the reviewer exists.
   process.stdout.write(`${measureEffort()}\n`);

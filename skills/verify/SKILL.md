@@ -25,6 +25,8 @@ effort: high
    - Pass: review rules path `${CLAUDE_SKILL_DIR}/references/review-rules.md`.
    - Pass: implementer report directory `<checkout>/.exo/`, findings path `<checkout>/.exo/branch-review.md`.
    - `BLOCKED` → end the turn with its report.
+   - Reviewer reads the plan, the diff and the `Red:` lines of the implementer reports only.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a second review through `codex exec` on the same plan and diff, and append its findings to the findings path before step 3; `none` or a decline → say nothing.
 3. **Repair the findings.** A `FINDINGS` verdict with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, with the text of `../build/review-fixer-prompt.md` and the report path.
    - `fix=0` → step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
    - After the dispatch → follow `references/repair.md`.

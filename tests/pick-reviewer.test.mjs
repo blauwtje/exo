@@ -2,10 +2,11 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { codexOffer, FILE_LIMIT, LINE_LIMIT, REVIEWER_AGENTS, parseNumstat, pickEffort, pickReviewer, signatureChangedSince, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
 import { commitFiles, git, gitRepository, run } from './harness.mjs';
 
@@ -114,6 +115,26 @@ test('--effort prints low for a version-only bump with no dependency added', asy
   const result = await run(SCRIPT, ['--effort'], { cwd: root });
   assert.equal(result.code, 0);
   assert.equal(result.stdout, 'low\n');
+});
+
+test('codexOffer holds only when codex is a file on PATH', async () => {
+  const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-path-'));
+  assert.equal(codexOffer({ PATH: bin }), false);
+  await fs.writeFile(path.join(bin, process.platform === 'win32' ? 'codex.EXE' : 'codex'), '');
+  assert.equal(codexOffer({ PATH: bin }), true);
+});
+
+test('review-branch reads implementer reports for their Red: lines only', async () => {
+  const agent = await fs.readFile(path.join(AGENTS_DIRECTORY, `${light}.md`), 'utf8');
+  assert.match(agent, /only for their `Red:` lines/);
+  assert.doesNotMatch(agent, /report quotes a passing run/);
+});
+
+test('--codex prints offer or none by PATH', async () => {
+  const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
+  const result = await run(SCRIPT, ['--codex'], { cwd: root, env: { ...process.env, PATH: path.dirname(process.execPath) } });
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^(offer|none)\n$/);
 });
 
 test('--effort with --base is rejected', async () => {
