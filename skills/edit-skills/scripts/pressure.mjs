@@ -291,7 +291,14 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
     const runFolder = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
     const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
     for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
-    const roots = setupScript === undefined ? [scratch, tmp] : [scratch, tmp, caseFolder(setupScript)];
+    const roots = [scratch, tmp];
+    if (setupScript !== undefined) {
+      // The sandbox resolves every root, and a setup need not create the case
+      // folder, so it must exist before the sandbox is built.
+      const runCase = caseFolder(setupScript);
+      fs.mkdirSync(runCase, { recursive: true });
+      roots.push(runCase);
+    }
     const settingsAt = arm.flags.indexOf('--settings');
     const armSettings = settingsAt === -1 ? undefined : JSON.parse(arm.flags[settingsAt + 1]);
     const settings = outputStyle === undefined ? armSettings : { ...armSettings, outputStyle };
