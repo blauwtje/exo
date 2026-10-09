@@ -71,7 +71,7 @@ The hooks need `bash` on `PATH`. On Windows, Git Bash runs them; support is best
 
 ## Use
 
-Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. A feature runs `spec` → `build` → `verify` → `ship`, and each stage asks which one runs next. A bug goes to `find-cause` first.
+Say what you want and Claude starts the skill that fits, or type `/exo:start <goal>` to have it pick one. Five skills never start from plain words and need their command typed: `edit-skills`, `write-docs`, `file-issues`, `configure` and `check-docs`. A feature runs `spec` → `build` → `verify` → `ship`, and each stage asks which one runs next. A bug goes to `find-cause` first.
 
 | You want to | Skill |
 |---|---|
