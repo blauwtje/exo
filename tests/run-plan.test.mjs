@@ -9,7 +9,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { childEnv, resolveClaude, parseStream } from '../skills/build/scripts/run-plan.mjs';
+import { allowRules, childEnv, parseStream, resolveClaude, sandboxMode, sandboxSettings } from '../skills/build/scripts/run-plan.mjs';
+import { parsePlan } from '../lib/plan-tasks.mjs';
 import { fixture, git, gitRepository, run } from './harness.mjs';
 
 const RUNNER = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
@@ -17,8 +18,8 @@ const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.ur
 
 // The stub: one step of the scenario per call, chosen by how many calls the
 // record already holds. A step may land tasks (one commit per entry, each
-// carrying the trailers listed), push the branch, hang, report denials or a
-// plugin error, and end on one or two result events.
+// carrying the trailers listed), push the branch, edit the plan, hang, report
+// denials or a plugin error, and end on one or two result events.
 const STUB = `
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -42,6 +43,7 @@ for (const commit of step.commits ?? []) {
   git('commit', '-q', '-m', 'feat: stub', ...commit.trailers.flatMap((trailer) => ['-m', trailer]));
 }
 if (step.push) git('push', '-q', 'origin', 'HEAD');
+if (step.editPlan) fs.appendFileSync(scenario.planPath, '- Proof: node -e 1\\n');
 if (step.hang) setInterval(() => {}, 1000);
 else {
   const result = (text, turns, cost, denials) => ({ type: 'result', subtype: 'success', is_error: false, num_turns: turns,
@@ -114,7 +116,7 @@ const FAKE_KEYS = { deepseek: 'fake-deepseek-key-1f3a', zai: 'fake-zai-key-9c7e'
 async function runPlan(context, steps, args = []) {
   const scenario = path.join(context.tools, 'scenario.json');
   const record = path.join(context.tools, 'calls.jsonl');
-  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, steps }));
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps }));
   const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...args], {
     cwd: context.root,
     env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1', HOME: context.home, ...context.env }
@@ -129,6 +131,23 @@ async function runPlan(context, steps, args = []) {
   }
   const lines = result.stdout.trim().split('\n');
   return { ...result, calls, stop: lines.at(-1) };
+}
+
+const allowOf = (call) => call.argv.slice(call.argv.indexOf('--allowedTools') + 1, call.argv.indexOf('--disallowedTools'));
+const settingsOf = (call) => (call.argv.includes('--settings') ? JSON.parse(call.argv[call.argv.indexOf('--settings') + 1]) : null);
+const SCRIPTS = path.join(PLUGIN_ROOT, 'skills', 'build', 'scripts');
+const SANDBOX_RULE = /^5\. Bash runs in a sandbox\. A command that fails with "Operation not permitted" or EPERM hit the sandbox/m;
+const sandboxOff = (context) => fs.writeFile(path.join(context.home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { sandbox: { enabled: false } } }));
+
+/** The allowlist with the sandbox off: the plan's commands, read-only git and inspection. */
+function assertPlanAllowlist(call) {
+  const allow = allowOf(call);
+  assert.ok(allow.includes('Bash(node --version *)'));
+  assert.ok(allow.includes('Bash(git status *)'));
+  for (const command of ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n']) {
+    for (const rule of [`Bash(${command})`, `Bash(${command} *)`]) assert.ok(allow.includes(rule), rule);
+  }
+  for (const rule of ['Bash(sed *)', 'Bash(sed)', 'Bash(python3 *)', 'Bash(find *)']) assert.ok(!allow.includes(rule), rule);
 }
 
 const land = (number) => ({ commits: [{ file: number === 1 ? 'a.txt' : 'b.txt', trailers: [`Plan-task: plan/${number}`] }] });
@@ -153,16 +172,8 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const deny = result.calls[0].argv.slice(result.calls[0].argv.indexOf('--disallowedTools') + 1);
   for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
   assert.ok(result.calls[0].argv.includes(`Edit(/${context.root}/**)`));
-  assert.ok(result.calls[0].argv.includes('Bash(node --version *)'));
-  const mcpCheck = path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs');
-  for (const rule of [`Bash(node "${mcpCheck}" *)`, `Bash(node ${mcpCheck} *)`]) assert.ok(result.calls[0].argv.includes(rule), rule);
-  for (const call of [result.calls[0], result.calls[2]]) {
-    const allow = call.argv.slice(call.argv.indexOf('--allowedTools') + 1, call.argv.indexOf('--disallowedTools'));
-    for (const command of ['ls', 'cat', 'grep', 'head', 'tail', 'wc', 'sed -n']) {
-      for (const rule of [`Bash(${command})`, `Bash(${command} *)`]) assert.ok(allow.includes(rule), rule);
-    }
-    for (const rule of ['Bash(sed *)', 'Bash(sed)', 'Bash(python3 *)', 'Bash(find *)']) assert.ok(!allow.includes(rule), rule);
-  }
+  assert.match(prompt, SANDBOX_RULE);
+  assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
   const summary = await fs.readFile(path.join(result.stdout.match(/^Logs: (.+)$/m)[1], 'summary.txt'), 'utf8');
   assert.match(summary, /Task 1: [0-9a-f]{7,}/);
@@ -315,6 +326,76 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.equal(result.calls.length, 0);
   assert.match(result.stdout, /Order: Task 1, Task 2/);
   assert.match(result.stdout, /--task 1/);
+  assert.ok(result.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: none\n`), result.stdout);
+  assert.match(result.stdout, /--settings <sandbox settings>/);
+  assert.doesNotMatch(result.stdout, /Bash\(git status \*\)|Bash\(node --version \*\)/);
+  await sandboxOff(context);
+  const off = await runPlan(context, [land(1)], ['--dry-run']);
+  assert.match(off.stdout, /^Sandbox: off \(sandbox\.enabled is false in run\.json\)$/m);
+  assert.match(off.stdout, /^  Bash\(git status \*\)$/m);
+  assert.doesNotMatch(off.stdout, /--settings/);
+});
+
+test('sandbox: every process gets sandbox settings excluding only exo\'s gate scripts, and no Bash rule for sandboxed commands', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
+  const landTask = path.join(SCRIPTS, 'land-task.mjs');
+  const verify = path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs');
+  for (const [index, call] of result.calls.entries()) {
+    const { sandbox } = settingsOf(call);
+    assert.equal(sandbox.enabled, true);
+    assert.equal(sandbox.allowUnsandboxedCommands, false);
+    assert.equal(sandbox.failIfUnavailable, true);
+    assert.deepEqual(sandbox.network, { allowedDomains: [] });
+    for (const command of [`node "${landTask}"`, `node ${landTask}`]) assert.ok(sandbox.excludedCommands.includes(command), command);
+    assert.equal(sandbox.excludedCommands.some((command) => command.includes('verify.mjs')), index === 2, 'verify.mjs is excluded only in the tail');
+    const allow = allowOf(call);
+    for (const rule of ['Bash(git status *)', 'Bash(node --version *)', 'Bash(ls *)', 'Bash(cat *)']) assert.ok(!allow.includes(rule), rule);
+    assert.ok(!allow.some((rule) => rule.includes('next-task.mjs') || rule.includes('mcp-tool-call.mjs')));
+    for (const rule of [`Bash(node "${landTask}" *)`, `Bash(node ${landTask} *)`, `Edit(/${context.root}/**)`]) assert.ok(allow.includes(rule), rule);
+    assert.equal(allow.includes(`Bash(node ${verify} *)`), index === 2);
+    assert.ok(call.argv.slice(call.argv.indexOf('--disallowedTools') + 1).includes('Bash(git push *)'));
+  }
+});
+
+test('sandbox: run.json sandbox.enabled false keeps the plan allowlist, passes no settings and drops the sandbox rule', async () => {
+  const context = await setup();
+  await sandboxOff(context);
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
+  for (const call of result.calls) assert.equal(settingsOf(call), null);
+  assertPlanAllowlist(result.calls[0]);
+  assertPlanAllowlist(result.calls[2]);
+  const mcpCheck = path.join(PLUGIN_ROOT, 'lib', 'mcp-tool-call.mjs');
+  const nextTask = path.join(SCRIPTS, 'next-task.mjs');
+  for (const rule of [`Bash(node "${mcpCheck}" *)`, `Bash(node ${mcpCheck} *)`, `Bash(node ${nextTask} *)`]) assert.ok(allowOf(result.calls[0]).includes(rule), rule);
+  assert.doesNotMatch(result.calls[0].stdin, SANDBOX_RULE);
+});
+
+test('sandbox: native Windows runs with the sandbox off and the same allowlist as sandbox.enabled false', async () => {
+  const root = '/r';
+  const planPath = '/r/docs/plan.md';
+  const plan = parsePlan(planText(root));
+  const windows = sandboxMode({ defaults: { sandbox: { enabled: true, allowedDomains: [] } } }, { platform: 'win32' });
+  assert.deepEqual(windows, { enabled: false, reason: 'native Windows has no sandbox' });
+  assert.equal(sandboxSettings(windows), null);
+  assert.equal(sandboxSettings(windows, { tail: true }), null);
+  assert.deepEqual(sandboxMode({ defaults: { sandbox: { enabled: false } } }, { platform: 'darwin' }), { enabled: false, reason: 'sandbox.enabled is false in run.json' });
+  assert.deepEqual(sandboxMode({ defaults: { sandbox: { allowedDomains: ['registry.npmjs.org'] } } }, { platform: 'linux' }), { enabled: true, allowedDomains: ['registry.npmjs.org'] });
+  const off = allowRules({ root, planPath, plan, sandbox: windows.enabled });
+  assert.deepEqual(off, allowRules({ root, planPath, plan }));
+  for (const rule of ['Bash(git status *)', 'Bash(node --version *)', 'Bash(ls)']) assert.ok(off.includes(rule), rule);
+  assert.ok(!allowRules({ root, planPath, plan, sandbox: true }).includes('Bash(git status *)'));
+});
+
+test('breach: a process that edits the plan stops the run and leaves the edit in place', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ ...land(1), editPlan: true }, land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: breach in iteration 1: plan changed', result.stdout + result.stderr);
+  assert.equal(result.code, 1);
+  assert.equal(result.calls.length, 1);
+  assert.match(await fs.readFile(context.plan, 'utf8'), /- Proof: node -e 1\n$/);
 });
 
 const SPAWN_ONCE = ['--max-iterations', '1'];
