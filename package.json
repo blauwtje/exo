@@ -7,6 +7,7 @@
   "type": "module",
   "imports": {
     "#budgets": "./verify/budgets.mjs",
+    "#check-cache": "./lib/check-cache.mjs",
     "#commit-text": "./lib/commit-text.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",
