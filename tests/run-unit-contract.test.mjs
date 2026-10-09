@@ -92,3 +92,12 @@ test('build asks the branch what landed', () => {
 test('the run-unit agent has its own turn limit sized for an eight-task block', () => {
   assert.match(UNIT_AGENT, /^maxTurns: 90$/m);
 });
+
+test('run-unit sends a landed task\'s review in the same foreground message as its next build', () => {
+  const step = loopStep(3, UNIT_AGENT);
+  assert.ok(step.includes('Add one `exo:review-branch` dispatch to that same message for each task landed since the last dispatch'));
+  assert.ok(step.includes('pick-reviewer.mjs" --task <n> --plan <plan> --root <checkout>'));
+  assert.ok(step.includes('`run_in_background: false`'));
+  assert.ok(step.includes('review-rules.md` `## Dispatch` with scope `task <shas>`'));
+  assert.ok(step.includes('send the last landed task\'s review alone'));
+});
