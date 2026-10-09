@@ -61,6 +61,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `land-task.mjs` no longer fails on a path the task already removed with `git rm`; the removal lands in the task's commit.
 - `run-plan.mjs` adds `.exo/` to the target repository's `info/exclude`, so a run leaves no untracked `.exo/` folder.
 - A confined run on macOS may write only its own `session-env/<session id>` folder, not other sessions' folders, which unconfined sessions read; a confined run on Linux keeps its GitHub isolation folder under the caller's temporary folder, so no `claude-isolation-*` folder is left behind.
+- The pressure runner's `--setting-sources` test expects Linux's default `project,local` when none is given, so `npm run check` passes on the Linux release runner again and pushes cut a release.
 
 ### Removed
 
