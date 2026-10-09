@@ -17,7 +17,7 @@ Ordered by how often people use each skill. **type it** marks a skill the model 
 | `refactor` | Restructures code without changing its behavior | "rename X", "move Y", "split this module" |
 | `save-session` **type it** | Saves where a session is, for a fresh one after `/clear` | Type `/exo:save-session`, then `/clear` |
 | `file-issues` | Files GitHub issues | "turn this into issues" |
-| `configure` | Shows or changes an exo setting | "set replies to standard" |
+| `configure` | Shows or changes an exo setting | "set compression to off" |
 | `remember` **type it** | Books a correction about this repository, or approves a claim two sessions have booked | Type `/exo:remember` |
 
 ## Rarely

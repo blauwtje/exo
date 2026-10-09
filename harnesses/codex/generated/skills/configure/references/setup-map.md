@@ -12,7 +12,7 @@
 
 ## The order
 
-`scope`, `specs`, `replies`, `budget`, `workspace`, `ship`, `guards`. `scope` decides the layer for every setting after it.
+`scope`, `specs`, `compression`, `budget`, `workspace`, `ship`, `guards`. `scope` decides the layer for every setting after it.
 
 | Option of `scope` | What it gives |
 |---|---|
