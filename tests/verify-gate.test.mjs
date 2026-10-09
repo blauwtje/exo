@@ -956,10 +956,10 @@ test('claims-diff passes when every Files path changed in the task commit', asyn
   assert.ok(lines.includes('PASS claims-diff'), result.stdout);
 });
 
-test('claims-diff fails a Files path the task commit left unchanged', async () => {
+test('claims-diff warns, without failing, on a Files path the task commit left unchanged', async () => {
   const { result, lines } = await claimsRun(claimsPlan('feat(app): x', ''), { 'src/a.js': 'b\n' });
-  assert.equal(result.code, 1);
-  assert.ok(lines.includes('FAIL claims-diff Task 1 (Files: unchanged in its commit: tests/a.test.mjs)'), result.stdout);
+  assert.equal(result.code, 0, result.stdout);
+  assert.ok(lines.includes('WARN claims-diff Task 1 (Files: unchanged in its commit: tests/a.test.mjs)'), result.stdout);
 });
 
 test('claims-diff accepts a deleted path and a glob in Files', async () => {

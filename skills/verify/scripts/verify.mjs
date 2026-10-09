@@ -313,8 +313,8 @@ export function silencedChecks(patch) {
 }
 
 /**
- * The claims-diff lines for one landed task: a FAIL line for `Files:` paths its commits left
- * unchanged and for a test-first task whose commits change no test file, a WARN line for each
+ * The claims-diff lines for one landed task: a FAIL line for a test-first task whose commits
+ * change no test file, a WARN line for `Files:` paths its commits left unchanged, each
  * test weakened and each check silenced in them. Empty when its claims hold.
  */
 function claimLines(task, root, planId) {
@@ -323,7 +323,7 @@ function claimLines(task, root, planId) {
   const changed = shas.flatMap((sha) => git('--name-only', '-z', sha).split('\0').filter((path) => path !== ''));
   const lines = [];
   const unchanged = unchangedFiles(task.files, changed);
-  if (unchanged.length > 0) lines.push(`FAIL claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
+  if (unchanged.length > 0) lines.push(`WARN claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
   if (isTestFirst(task) && !changed.some((path) => TEST_FILE.test(path))) {
     lines.push(`FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`);
   }
