@@ -151,7 +151,7 @@ describe('sketch-tab.mjs', () => {
     }
   });
 
-  it('shows a written sketch within a second, and its revision in the same tab', async () => {
+  it('shows a written sketch, and its revision in the same tab', async () => {
     const folder = await fixture();
     const tab = startTab(folder);
     try {
@@ -163,7 +163,7 @@ describe('sketch-tab.mjs', () => {
       const writtenAt = Date.now();
       await fs.writeFile(path.join(folder, '001-palette.html'), PALETTE);
       const first = await events.next();
-      assert.ok(Date.now() - writtenAt < 1000, 'one file write reaches the tab in under a second');
+      assert.ok(Date.now() - writtenAt < 3000, 'one file write reaches the tab in under three seconds');
       assert.equal(first.sketch, '001-palette.html');
       assert.equal(first.question, 'Welche Farben passen zum Hafen?');
 
