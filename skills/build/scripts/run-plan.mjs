@@ -18,7 +18,9 @@
 // dontAsk's no-rule-no-run are the guard against it.
 //
 // Exits 0 on done with gate PASS, 1 on any other stop, 2 on a refusal or bad
-// arguments. Logs and summary.txt go to .exo/run-plan/<plan-id>/<UTC time>/.
+// arguments. Logs, summary.txt, tasks.json ([{ number, title, passes }], a task
+// flipped after its landing) and progress.md (ending on RUN COMPLETE when the
+// gate passes) go to .exo/run-plan/<plan-id>/<UTC time>/.
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -440,6 +442,14 @@ async function main(argv) {
     run.landings.set(number, { before: true, sha: (taskCommits(task, root, planId)[0] ?? '').slice(0, 12) });
   }
 
+  const tasksFile = path.join(logDir, 'tasks.json');
+  const progressFile = path.join(logDir, 'progress.md');
+  const passes = new Set(landedAtStart);
+  const writeTasks = () => fs.writeFileSync(tasksFile, `${JSON.stringify(plan.tasks.map((task) => ({ number: task.number, title: task.title, passes: passes.has(task.number) })), null, 2)}\n`);
+  const progress = (line) => fs.appendFileSync(progressFile, `${line}\n`);
+  writeTasks();
+  fs.writeFileSync(progressFile, `# Progress\n\nPlan: ${planPath}\nBranch: ${branch}\n\n`);
+
   const spawnOne = async ({ prompt, allow, pin, log }) => {
     const before = snapshot(root);
     const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow }), {
@@ -489,6 +499,9 @@ async function main(argv) {
       stall = 0;
       retryNote = '';
       run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
+      passes.add(n);
+      writeTasks();
+      progress(`- Task ${n}: landed ${run.landings.get(n).sha}, iteration ${iteration}`);
       for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
         const file = line.slice(3);
         if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
@@ -529,6 +542,7 @@ async function main(argv) {
       if (pass) exitCode = 0;
     }
   }
+  if (exitCode === 0) progress('RUN COMPLETE');
 
   const lines = summaryLines(run, `run-plan: stop: ${stop}`);
   fs.writeFileSync(path.join(logDir, 'summary.txt'), `${lines.join('\n')}\n`);

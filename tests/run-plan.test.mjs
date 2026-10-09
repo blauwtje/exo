@@ -50,7 +50,7 @@ else {
 }
 `;
 
-const planText = (root, { allow = 'Allow: none', branch = 'feat/run' } = {}) => [
+const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none' } = {}) => [
   '# Plan: runner fixture',
   '',
   '## Goal',
@@ -60,7 +60,7 @@ const planText = (root, { allow = 'Allow: none', branch = 'feat/run' } = {}) => 
   `Repository: ${root}`,
   `Branch: ${branch}`,
   'Worktree setup: none',
-  'Land gate: none',
+  `Land gate: ${gate}`,
   'Lint: none',
   allow,
   '',
@@ -147,6 +147,21 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.match(summary, /Task 1: [0-9a-f]{7,}/);
   assert.match(summary, /Open both files\./);
   assert.equal(summary.trim().split('\n').at(-1), result.stop);
+  const logDir = result.stdout.match(/^Logs: (.+)$/m)[1];
+  const tasks = JSON.parse(await fs.readFile(path.join(logDir, 'tasks.json'), 'utf8'));
+  assert.deepEqual(tasks.map((task) => [task.number, task.passes]), [[1, true], [2, true]]);
+  const progress = await fs.readFile(path.join(logDir, 'progress.md'), 'utf8');
+  assert.match(progress, /Task 1: landed/);
+  assert.equal(progress.trim().split('\n').at(-1), 'RUN COMPLETE');
+});
+
+test('progress: a capped run flips no task and writes no RUN COMPLETE', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{}], ['--max-iterations', '1']);
+  const logDir = result.stdout.match(/^Logs: (.+)$/m)[1];
+  const tasks = JSON.parse(await fs.readFile(path.join(logDir, 'tasks.json'), 'utf8'));
+  assert.deepEqual(tasks.map((task) => task.passes), [false, false]);
+  assert.doesNotMatch(await fs.readFile(path.join(logDir, 'progress.md'), 'utf8'), /RUN COMPLETE/);
 });
 
 test('scratch: the run leaves no untracked .exo/ and lists it once in info/exclude, however often it runs', async () => {
@@ -245,10 +260,10 @@ test('refused: the default branch, a tracked change, a failing plan-check and a 
   git(onDefault.root, 'switch', '-q', 'main');
   const changed = await setup();
   await fs.writeFile(path.join(changed.root, 'README.md'), 'edited\n');
-  const noAllow = await setup({ allow: 'Worktree setup: none' });
+  const badGate = await setup({ gate: 'node --version > out.txt' });
   const noClaude = await setup();
   noClaude.stub = path.join(noClaude.tools, 'missing.mjs');
-  for (const [context, why] of [[onMain, /branch/], [onDefault, /is the default branch/], [changed, /tracked change in the checkout: README\.md;/], [noAllow, /plan-check/], [noClaude, /claude/]]) {
+  for (const [context, why] of [[onMain, /branch/], [onDefault, /is the default branch/], [changed, /tracked change in the checkout: README\.md;/], [badGate, /plan-check/], [noClaude, /claude/]]) {
     const result = await runPlan(context, [land(1)]);
     assert.match(result.stop, /^run-plan: refused: /);
     assert.match(result.stop, why);
