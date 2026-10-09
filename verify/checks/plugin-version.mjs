@@ -47,7 +47,7 @@ function changelogText(repository) {
   return fs.existsSync(file) ? repository.text(file) : '';
 }
 
-export function checkPluginVersion(report, repository) {
+export function checkPluginVersion(report, repository, { strict = false } = {}) {
   const name = 'plugin version';
   const manifests = [PACKAGE_FILE, PLUGIN_FILE, MARKETPLACE_FILE];
   if (!manifests.every((manifest) => fs.existsSync(repository.join(manifest)))) {
@@ -137,9 +137,10 @@ export function checkPluginVersion(report, repository) {
   const missing = `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`;
   // Only the lead writes the changelog line, at landing: a branch waits for it, while
   // the default branch and a detached HEAD (CI on a pull request) must already carry it.
+  // `strict` demands it on any branch.
   const branch = git(repository, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
-  if (branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
-    report.result('WARN', name, `${missing}; the lead writes it at landing`);
+  if (!strict && branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
+    report.result('PASS', name, `every manifest carries ${declared}; the tree differs from ${BASE_REF} and the lead writes the ${UNRELEASED_HEADING} line at landing`);
     return;
   }
   report.result('FAIL', name, missing);

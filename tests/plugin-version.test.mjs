@@ -103,14 +103,25 @@ test('fails on a new file with nothing under Unreleased', (t) => {
   assert.equal(verdict(root).FAIL, 1);
 });
 
-test('warns, not fails, on a feature branch with nothing under Unreleased', (t) => {
+test('passes a feature branch that waits for its Unreleased line', (t) => {
   const root = publishedRoot(t, '0.1.0');
   gitIn(root, 'checkout', '-q', '-b', 'feat/x');
   addSkill(root);
 
   const counts = verdict(root);
-  assert.equal(counts.WARN, 1);
+  assert.equal(counts.PASS, 1);
+  assert.equal(counts.WARN, 0);
   assert.equal(counts.FAIL, 0);
+});
+
+test('fails the same feature branch under strict', (t) => {
+  const root = publishedRoot(t, '0.1.0');
+  gitIn(root, 'checkout', '-q', '-b', 'feat/x');
+  addSkill(root);
+
+  const report = createReport();
+  checkPluginVersion(report, createRepository(root), { strict: true });
+  assert.equal(report.counts().FAIL, 1);
 });
 
 test('fails on a detached HEAD with nothing under Unreleased', (t) => {
