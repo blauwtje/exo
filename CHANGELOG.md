@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.108.0 - 2026-10-09
+
 ### Highlights
 
 **`exo run` now updates main and tidies merged branches itself, prints one timed line per event and ends on a plain summary of at most six lines.**
