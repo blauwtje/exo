@@ -324,7 +324,7 @@ test('plan-check does not flag a plan whose tasks form one Depends on chain, wit
 
 const LOOP_TASK = compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' });
 const loopPlan = (tasks = [LOOP_TASK]) => compactPlanFixture({ tasks }).replace('Branch: feat/fixture', 'Branch: feat/fixture\nAllow: none');
-const loopProblems = (plan, root) => planCheckReport(plan, { loop: true, root }).lines.filter((line) => line.startsWith('loop: '));
+const loopProblems = (plan, root, planPath) => planCheckReport(plan, { loop: true, root, planPath }).lines.filter((line) => line.startsWith('loop: '));
 
 test('plan-check --loop passes a plan with one command criterion and a Bash Proof:, with or without Allow:', () => {
   assert.equal(planCheckReport(loopPlan(), { loop: true }).ok, true);
@@ -395,6 +395,16 @@ test('plan-check --loop refuses a Branch: that names the default branch', async 
   assert.equal(problems.length, 1);
   assert.match(problems[0], /Branch: main.*default branch/);
   assert.deepEqual(loopProblems(loopPlan(), root), []);
+});
+
+test('plan-check --loop refuses a task that lists the plan file in Files:', async () => {
+  const planTask = compactTask({ number: 1, title: 'docs(plan): tick', files: ['./docs/plans/p.md'], proof: 'node --test tests/app.test.mjs' });
+  const plan = loopPlan([planTask]);
+  const root = await gitRepository({ 'src/app.js': GOOD_CODE, 'docs/plans/p.md': plan });
+  assert.deepEqual(loopProblems(plan, root, `${root}/docs/plans/p.md`), [
+    "loop: Task 1: lists the plan file in Files:, which stops run-plan with 'plan changed'; move that edit to a session after the run"
+  ]);
+  assert.deepEqual(loopProblems(loopPlan(), root, `${root}/docs/plans/p.md`), []);
 });
 
 test('plan-check --loop refuses Land gate: none or a missing one while package.json has a check or test script', async () => {

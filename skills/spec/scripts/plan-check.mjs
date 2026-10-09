@@ -272,14 +272,19 @@ function checkCompactFields(task) {
 // run-plan.mjs runs a plan with no session to answer it, so `--loop` refuses,
 // by name, what only a session or a person could run: a Success criterion that is not one backticked non-MCP command, an MCP
 // `Proof:` or passing `Run:`, an output redirect to a file, a `Design:` task
-// without a selected contract, a `Branch:` that is the default branch, and a
-// missing or `none` `Land gate:` while package.json has a full check to run.
+// without a selected contract, a `Branch:` that is the default branch, a task
+// whose `Files:` lists the plan file itself, which run-plan.mjs reads as a
+// changed plan, and a missing or `none` `Land gate:` while package.json has a
+// full check to run.
 const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
 const QUOTED = /"(?:\\.|[^"\\])*"|'[^']*'/g;
 
 function redirectsToFile(part) {
   return [...part.replace(QUOTED, '""').matchAll(REDIRECT)].some((match) => !match[2].startsWith('&') && match[2] !== '/dev/null');
 }
+
+const realPath = (filePath) => (fs.existsSync(filePath) ? fs.realpathSync(filePath) : path.resolve(filePath));
+const repoPath = (filePath) => path.normalize(filePath).split(path.sep).join('/').replace(/^\.\//, '');
 
 // Unattended, each task lands only when the repository's full check passes,
 // so the task that breaks it repairs it, not the end of the run.
@@ -294,9 +299,10 @@ function checkLoopLandGate(basis, root) {
   return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes`];
 }
 
-function checkLoop(plan, root) {
+function checkLoop(plan, root, planPath) {
   const basis = frameOf(plan.frame);
   const problems = [];
+  const planFile = root === undefined || planPath === undefined ? null : repoPath(path.relative(realPath(root), realPath(planPath)));
   const criterion = [...(basis.successCriterion ?? '').matchAll(/`([^`]+)`/g)];
   if (criterion.length !== 1) problems.push("loop: the plan's '## Success criterion' is not one backticked command");
   else if (mcpToolCall(criterion[0][1].trim()) !== null) problems.push("loop: the plan's '## Success criterion' is an MCP call, which only a session can run");
@@ -308,6 +314,9 @@ function checkLoop(plan, root) {
     }
     if (task.design && !(basis.visualDirection ?? '').includes('contract-selected.json')) {
       problems.push(`loop: Task ${task.number}: names 'Design:' but '## Visual direction' names no contract-selected.json`);
+    }
+    if (planFile !== null && task.files.some((file) => repoPath(file.path) === planFile)) {
+      problems.push(`loop: Task ${task.number}: lists the plan file in Files:, which stops run-plan with 'plan changed'; move that edit to a session after the run`);
     }
   }
   for (const { field, task, parts } of loopCommands(plan)) {
@@ -324,9 +333,10 @@ function checkLoop(plan, root) {
  * Reads `planText` and returns `{ ok, lines }`: the problems found, or the
  * one ok line. `root` names the repository the plan targets, so a task's
  * Modify: entry can be checked against it; omit it to skip that one check.
- * `loop` adds the problems that keep run-plan.mjs from running the plan.
+ * `loop` adds the problems that keep run-plan.mjs from running the plan;
+ * `planPath`, the plan's own file, lets it refuse a task that edits it.
  */
-export function planCheckReport(planText, { root, loop = false } = {}) {
+export function planCheckReport(planText, { root, loop = false, planPath } = {}) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
@@ -354,7 +364,7 @@ export function planCheckReport(planText, { root, loop = false } = {}) {
         ])),
     ...checkSharedFiles(plan.tasks),
     ...checkWorktreeSetup(plan.tasks, plan.frame),
-    ...(loop ? checkLoop(plan, resolvedRoot) : [])
+    ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
   if (problems.length > 0) return { ok: false, lines: problems };
   const largest = plan.tasks.reduce((best, task) => {
@@ -369,7 +379,7 @@ function main(argv) {
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true });
+  const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true, planPath: flags.plan });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;
 }
