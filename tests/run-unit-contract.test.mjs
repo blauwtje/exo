@@ -101,3 +101,9 @@ test('run-unit sends a landed task\'s review in the same foreground message as i
   assert.ok(step.includes('review-rules.md` `## Dispatch` with scope `task <shas>`'));
   assert.ok(step.includes('send the last landed task\'s review alone'));
 });
+
+test('run-unit sends a landing refusal other than PLAN DRIFT back to its writer at most twice', () => {
+  const step = loopStep(4, UNIT_AGENT);
+  assert.ok(step.includes('A refusal other than `PLAN DRIFT` goes by SendMessage to its writer, verbatim, at most twice; never rerun a proof.'));
+  assert.ok(step.includes('`PLAN DRIFT`, a writer\'s `FAIL` or a third refusal goes to step 3; push nothing.'));
+});

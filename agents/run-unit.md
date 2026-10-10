@@ -13,11 +13,10 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 
 1. **Ask the branch what landed.** Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines.
   - A `Next:` or `Wave:` task outside this block means a block task waits on a `BLOCKED` one; return each `BLOCKED <n> waits on <m>`.
-2. **Take the task from the script's output**, never from the plan file: it prints `Brief: <path>`.
+2. **Take the task from the script's output**, never the plan file: it prints `Brief: <path>`.
   - A `Design:` task is returned `BLOCKED <n> Design: task`.
-3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message, after `date +%s`.
-  - Build up to three tasks here on `Drift: none`.
-  - Else a wave builds per `<skill>/references/wave-worktrees.md`.
+3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message after `date +%s`.
+  - Build up to three tasks here on `Drift: none`, else a wave per `<skill>/references/wave-worktrees.md`.
   - Add one `exo:review-branch` dispatch to that same message for each task landed since the last dispatch, unless `node "<skill>/../verify/scripts/pick-reviewer.mjs" --task <n> --plan <plan> --root <checkout>` reads `none`; foreground, its `model` and `effort`.
   - Brief it per `<skill>/../verify/references/review-rules.md` `## Dispatch` with scope `task <shas>`.
   - No build left → send the last landed task's review alone.
@@ -25,17 +24,17 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A repair goes to `exo:solve-hard`, with the dispatch's `model` and `effort`, and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
-4. **Commit a green task.** Done means `GREEN`, never a report you wrote, since land-task runs each `Run:` or `Proof:` itself; else step 3.
+4. **Commit a green task.** Done means `GREEN`, never a report you wrote; land-task runs each `Run:` or `Proof:`. Else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
-  - A report refusal goes by SendMessage to its writer, verbatim; never rerun a proof.
-  - Any other refusal sends it to step 3; push nothing.
+  - A refusal other than `PLAN DRIFT` goes by SendMessage to its writer, verbatim, at most twice; never rerun a proof.
+  - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.
   - A wave lands and removes its worktrees per that reference's steps 3 and 4; a failed task returns to step 3.
   - Return to step 1 until every block task has a `LANDED` or `BLOCKED` line.
 
 ## Stop
 
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
-- Ask the user nothing: a choice or build `BLOCKED` returns it `BLOCKED` with question, options.
+- Ask the user nothing: a choice or build `BLOCKED` returns `BLOCKED` with question, options.
 - Delete no data or branch, run no `git stash`: `BLOCKED` with options.
 
 ## Return
