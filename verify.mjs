@@ -33,6 +33,7 @@ import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkModelKinds } from './verify/checks/model-kinds.mjs';
 import { checkCodexOverrides } from './verify/checks/codex-overrides.mjs';
 import { checkQuestionOptions } from './verify/checks/question-options.mjs';
+import { checkPaidRuns } from './verify/checks/paid-runs.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { codePass } from '#check-cache';
 import { runSelfTest } from './verify/self-test.mjs';
@@ -102,6 +103,7 @@ if (!values.static) checkPluginVersion(report, repository, { strict: reused !== 
 checkModelKinds(report, repository);
 checkCodexOverrides(report, repository);
 checkQuestionOptions(report, repository);
+checkPaidRuns(report, repository);
 checkInstructionDensity(report, repository);
 
 if (values.static) {

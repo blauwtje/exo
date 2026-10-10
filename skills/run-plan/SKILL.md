@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # Run a plan headless
 
-Start the cheap loop on one plan: each unlanded task runs in a fresh `claude -p` process, then one verify process, no context carried between tasks. The enemy is a session that builds tasks itself while the script runs, so two writers race on one branch. The overcorrection is a session that adds flags or retries the script never asked for.
+Start the cheap loop on the plan the user invokes run-plan on: each unlanded task runs in a fresh `claude -p` process, then one verify process, no context carried between tasks. The enemy is a session that builds tasks itself while the script runs, so two writers race on one branch. The overcorrection is a session that adds flags or retries the script never asked for.
 
 ## Run
 
