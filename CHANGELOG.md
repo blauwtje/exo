@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `build` writes a run's fixed rules (Goal, Success criterion, report cap, boundaries) once to `.exo/run-rules.md`, and each task brief names that file instead of repeating them (#101).
+- `verify` and `build` hand the review fixer, drift repairer and bug fixer their prompt by path instead of pasting its text (#101).
+- `design-ui` writes the per-run build keys once to `$RUN/build-rules.md`, and each `exo:build-ui` call names it plus only its per-scope keys (#101).
+
 ## 0.114.0 - 2026-10-10
 
 ### Highlights
