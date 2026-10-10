@@ -12,11 +12,11 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 
 1. **Reproduce.** Read an existing log, profile or `.exo/` report on the path first. One command reproduces it, else evidence, no fix.
    - Send long output to `<scratch>/debug-repro.log`, `<scratch>` from `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs" debug`; read with `tail -n 40`.
-   - No infrastructure: reproduce unstubbed at the first owning function below; no sign-off.
-2. **Instrument.** Keep two hypotheses; observe once at their first divergence.
-3. **Isolate.** Remove inputs or branches until one more clears it; two rounds standing end it.
-4. **Predict, then fix.** State the causal line, changed output and why; change only that; drop old patches.
-5. **Prove.** Re-run the repro, isolated case and suite per Step 1. Return to Step 1 when the repair reaches a second owner or resists one reading.
+   - Steps 1-5 → read `references/loop.md` first.
+2. **Instrument.**
+3. **Isolate.**
+4. **Predict, then fix.**
+5. **Prove.**
 6. **Retain project knowledge.** Per the table.
 7. **Fresh eyes.** No PR review: run `node "${CLAUDE_SKILL_DIR}/../../lib/size-facts.mjs"`; when it prints `changed files` above 2 or `dependency-added yes`, or the fix crosses a public signature, persisted format or security boundary, run `code-review` at `node "${CLAUDE_SKILL_DIR}/../verify/scripts/pick-reviewer.mjs" --effort`'s level (`skip`, `low` or `medium`); fix under Step 5. End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after find-cause --artifact none`'s output when edits to build remain; else end on `ship`.
    - Invoked by a stage or workflow: ask nothing, return to caller.
@@ -30,6 +30,7 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 | `investigator-prompt.md` | b |
 | `fixer-prompt.md` | c |
 | `../build/references/performance.md` | Speed |
+| `references/loop.md` | 1-5 |
 | `references/profiling.md` | Trace |
 | `../build/references/critique.md` | No review |
 | `../build/references/security.md` | When its first line applies. |

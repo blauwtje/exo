@@ -23,6 +23,7 @@ const EXPECTED_OWNER_ROWS = {
     '../build/references/data-migration.md',
     '../build/references/test-design.md',
     'references/handoff.md',
+    'references/loop.md',
     '../build/references/project-knowledge.md',
   ],
   'skills/build/SKILL.md': [
