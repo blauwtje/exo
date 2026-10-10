@@ -318,14 +318,24 @@ function runVerifier(verifier, caseRoot, changed) {
   });
 }
 
+// The distinct checks a verifier run failed, by the label each `[FAIL] <check>: <detail>` line carries.
+export function failedChecks(output) {
+  return [...new Set([...output.matchAll(/^\[FAIL\] (.+?): /gm)].map((match) => match[1]))];
+}
+
 // Returns the failure text for one scenario, or null when it behaved as expected.
+// A reject scenario names the one check that must reject it: a rejection by any
+// other check proves nothing about the check the mutation attacks.
 export function judgeScenario(scenario, run) {
-  const expect = scenario.expect ?? 'reject';
-  if (expect === 'reject' && run.status === 0) return `${scenario.name} was not rejected`;
-  if (expect === 'accept' && run.status !== 0) {
+  if (scenario.expect === 'accept') {
+    if (run.status === 0) return null;
     return `${scenario.name} was rejected: ${run.output.split('\n').join(' ').trim()}`;
   }
-  return null;
+  const failed = failedChecks(run.output);
+  const actual = failed.length === 0 ? 'none' : failed.join(', ');
+  if (!scenario.check) return `${scenario.name} names no check to reject it (failed: ${actual})`;
+  if (run.status !== 0 && failed.length === 1 && failed[0] === scenario.check) return null;
+  return `${scenario.name} expected only ${scenario.check} to fail (failed: ${actual})`;
 }
 
 // Returns the failure text for one scenario, or null when it behaved as expected.
