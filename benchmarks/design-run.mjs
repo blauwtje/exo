@@ -8,7 +8,11 @@
 // reported as excluded, never added, so work before or after the run cannot
 // inflate its figures. finalContext is the prompt size of the last in-window
 // response of the main session alone, input plus both cache counts, never
-// output or a delegate's. The closing reply after the last checkpoint falls
+// output or a delegate's. firstPreviewMs is the time from the window start to
+// the first preview the user could see, or null when the run showed none: the
+// earlier of the first sketch file's modification under sketches/ and the first
+// main-session Bash call inside the window that runs pick.mjs without --check.
+// The closing reply after the last checkpoint falls
 // outside the window: that is the ceiling of a window read from files. The
 // transcript format is internal to the harness; a line that does not parse is
 // skipped.
@@ -93,6 +97,46 @@ function runWindow(runDirectory) {
   return { startMs, endMs: Math.max(...times) };
 }
 
+// The name sketch-tab.mjs serves: a sketch file, not a dotfile or other path.
+const SKETCH_NAME = /^[A-Za-z0-9][\w.-]*\.html$/;
+
+// The earliest modification among the run's sketch files, or null.
+function firstSketchMs(runDirectory) {
+  const directory = path.join(runDirectory, 'sketches');
+  if (!fs.existsSync(directory)) return null;
+  const times = fs.readdirSync(directory)
+    .filter((name) => SKETCH_NAME.test(name))
+    .map((name) => fs.statSync(path.join(directory, name)))
+    .filter((stat) => stat.isFile())
+    .map((stat) => stat.mtimeMs);
+  return times.length === 0 ? null : Math.min(...times);
+}
+
+// The earliest main-session Bash call inside the window that opens the picker:
+// it runs pick.mjs without --check. Every line is read, not one per response
+// id, because each tool_use of a response sits on its own line under that id.
+function firstPickerMs(transcript, startMs, endMs) {
+  let first = null;
+  for (const line of fs.readFileSync(transcript, 'utf8').split('\n')) {
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (entry?.type !== 'assistant' || typeof entry.timestamp !== 'string') continue;
+    const content = entry.message?.content;
+    if (!Array.isArray(content)) continue;
+    const atMs = Date.parse(entry.timestamp);
+    if (!(atMs >= startMs && atMs <= endMs)) continue;
+    const opensPicker = content.some((block) => block?.type === 'tool_use' && block.name === 'Bash'
+      && typeof block.input?.command === 'string'
+      && /pick\.mjs/.test(block.input.command) && !/--check\b/.test(block.input.command));
+    if (opensPicker && (first === null || atMs < first)) first = atMs;
+  }
+  return first;
+}
+
 // The latest modification among the files one checkpoint prefix matches, or null.
 function checkpointTime(runDirectory, prefix) {
   const directory = path.join(runDirectory, path.dirname(prefix));
@@ -132,6 +176,8 @@ function main() {
     const time = checkpointTime(runDirectory, prefix);
     if (time !== null) marks.push({ checkpoint: prefix, atMs: Math.round(time - startMs) });
   }
+  const previews = [firstSketchMs(runDirectory), firstPickerMs(transcript, startMs, endMs)].filter((time) => time !== null);
+  const firstPreviewMs = previews.length === 0 ? null : Math.round(Math.min(...previews) - startMs);
   const report = {
     transcript,
     run: runDirectory,
@@ -140,6 +186,7 @@ function main() {
     responses: inside.length,
     counts: sumCounts(inside),
     finalContext,
+    firstPreviewMs,
     excluded: { responses: outside.length, counts: sumCounts(outside) },
     marks
   };

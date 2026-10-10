@@ -67,6 +67,7 @@ test('design-run counts only the responses inside the run window and reports the
   assert.equal(report.excluded.responses, 2);
   assert.equal(report.excluded.counts.output, 70);
   assert.equal(report.finalContext, 10);
+  assert.equal(report.firstPreviewMs, null);
   assert.deepEqual(report.marks, [
     { checkpoint: 'context.json', atMs: 0 },
     { checkpoint: 'renders/baseline-', atMs: 90_000 },
@@ -90,6 +91,48 @@ test('design-run reports finalContext from the last in-window main-session respo
   const result = await runDesignRun(['--transcript', transcript, '--run', run]);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).finalContext, 4510);
+});
+
+function bashCall(id, timestamp, command) {
+  return { type: 'assistant', uuid: `u-${id}-${timestamp}`, timestamp, message: { id, model: 'claude-opus-5', role: 'assistant', content: [{ type: 'tool_use', id: `t-${timestamp}`, name: 'Bash', input: { command } }], usage: { input_tokens: 10, output_tokens: 1 } } };
+}
+
+test('design-run reports firstPreviewMs from the first sketch file of a sketch run', async () => {
+  const root = await fixture();
+  const transcript = path.join(root, 'session.jsonl');
+  await writeLines(transcript, [assistant('msg_inside', '2026-09-11T10:02:00.000Z', 30)]);
+  const run = await writeRun(root);
+  await fs.mkdir(path.join(run, 'sketches'));
+  const sketches = [
+    ['.hidden.html', '2026-09-11T10:00:40.000Z'],
+    ['001-directions.html', '2026-09-11T10:01:30.000Z'],
+    ['002-directions.html', '2026-09-11T10:03:00.000Z']
+  ];
+  for (const [name, time] of sketches) {
+    const file = path.join(run, 'sketches', name);
+    await fs.writeFile(file, '<p>x</p>');
+    await fs.utimes(file, new Date(time), new Date(time));
+  }
+
+  const result = await runDesignRun(['--transcript', transcript, '--run', run]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).firstPreviewMs, 60_000);
+});
+
+test('design-run reports firstPreviewMs from the first pick.mjs call of a picker run, ignoring --check', async () => {
+  const root = await fixture();
+  const transcript = path.join(root, 'session.jsonl');
+  await writeLines(transcript, [
+    bashCall('msg_check', '2026-09-11T10:01:00.000Z', 'node scripts/pick.mjs --check --run "$RUN"'),
+    assistant('msg_pick', '2026-09-11T10:01:30.000Z', 5),
+    bashCall('msg_pick', '2026-09-11T10:01:30.000Z', 'node scripts/pick.mjs --run "$RUN"'),
+    bashCall('msg_later', '2026-09-11T10:03:00.000Z', 'node scripts/pick.mjs --run "$RUN"')
+  ]);
+  const run = await writeRun(root);
+
+  const result = await runDesignRun(['--transcript', transcript, '--run', run]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).firstPreviewMs, 60_000);
 });
 
 test('design-run fails when no response falls inside the run window', async () => {

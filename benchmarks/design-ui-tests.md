@@ -1,6 +1,6 @@
 # design-ui tests
 
-Three fixed prompts check that design-ui keeps the quality and fullness of the best earlier run, looks unique per project and ends under 120k tokens of context. The user alone judges quality against the best run; no critic agent scores a test.
+Three fixed prompts check that design-ui keeps the quality and fullness of the best earlier run, looks unique per project and ends under 100k tokens of context. The user alone judges quality against the best run; no critic agent scores a test.
 
 ## Setup
 
@@ -23,13 +23,14 @@ Three fixed prompts check that design-ui keeps the quality and fullness of the b
 - Each font and the accent carry a clause naming this product and this user.
 - A pick seen in another project shows the warning on the color and font line, in the reply's language.
 - An empty folder got the Vite, React, TypeScript, Tailwind and shadcn stack.
-- The main session read `build-pass.md` whole before its first edit, and dispatched no `exo:build-ui` page build.
+- The main session read only `## The build floor` and `## Proof` of `build-pass.md` before its first edit, and dispatched no `exo:build-ui` page build.
 - Amounts render in a proportional family with `tabular-nums`, never a monospace family.
 - Both `final` captures, at 390 and 1440 wide, are newer than every edited file.
 - Every pass left its own numbered report and captures.
 - The check-ui summary reached the transcript as at most two lines.
 - The motion bar of `build-pass.md` is complete, reduced motion included.
-- `node benchmarks/design-run.mjs --transcript <session .jsonl> --run <run directory>` reports a final context under 120k tokens.
+- `node benchmarks/design-run.mjs --transcript <session .jsonl> --run <run directory>` reports a final context under 100k tokens.
+- On a run that showed looks to choose from, the same report gives a `firstPreviewMs` under 300000.
 
 ## Across the three runs
 
