@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- check-ui reports nine more named anti-patterns as `potential` findings with file and line: `nested-card`, `uppercase-kicker`, `icon-tile-heading`, `identical-card-row`, `numbered-marker`, `italic-accent-heading`, `pulsing-dot`, `filler-word` and `em-dash-copy`; the critic's checklist in `visual-critique.md` names each form of them check-ui cannot detect.
+
 ## 0.116.1 - 2026-10-10
 
 ### Fixed
