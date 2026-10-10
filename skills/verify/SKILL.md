@@ -9,11 +9,13 @@ effort: high
 
 ## The loop
 
-1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
+1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base> --reviews-only` first: only the review lines, no gate.
+   - Then in one message: the full run in the background, step 2's dispatch.
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
    - `SKIP`, `WARN`, `FIX-ONLY` or `SESSION` line → read `references/gate-lines.md`.
-   - Then the gate once: the `Success criterion`'s first backticked command, else its `Land gate:`, else `npm run check`, else `npm test` with no `check` script.
+   - The gate runs once: the `Success criterion`'s first backticked command, else its `Land gate:`, else `npm run check`, else `npm test`.
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
+   - Step 3 starts after the full run prints no `FAIL` or `STRAY`.
 2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
    - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
    - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.

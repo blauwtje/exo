@@ -15,7 +15,10 @@
 // `OVERLAP` lines of review-overlap.mjs, so a caller knows who reviews what. Reads the plan through #plan-tasks, the same
 // module land-task.mjs uses, so both agree on which task actually landed.
 //
-//   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>]
+//   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
+//
+// `--reviews-only` prints only the REVIEW, REVIEWED and OVERLAP lines: it runs no proof and no gate, records no pass and writes no report.
+// Without it the gate command starts beside the Proofs and both are awaited together.
 //
 // Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check, then one REVIEW (or REVIEWED, when `.exo/review-<sha7>.md` holds a verdict) line per landed task and the OVERLAP lines,
 // then one DONE or OPEN line per task and one MANUAL line per `## Manual
@@ -452,16 +455,46 @@ async function mapLimited(items, limit, work) {
 }
 
 /**
+ * One REVIEW line per landed task, REVIEWED when its last commit's review record holds a verdict,
+ * then the OVERLAP lines; with no base there is no range of commits to read.
+ */
+function reviewLines(plan, landed, { root, planId, base }) {
+  const lines = [];
+  const route = planRoute(plan.tasks).route;
+  let exoNames = [];
+  try {
+    exoNames = fs.readdirSync(path.join(path.resolve(root ?? '.'), '.exo'));
+  } catch {}
+  for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
+    const shas = taskCommits(task, root, planId);
+    const exoDir = path.join(path.resolve(root ?? '.'), '.exo');
+    const name = shas.length === 0 ? undefined : exoNames.find((entry) => {
+      const hex = /^review-([0-9a-f]{7,})\.md$/.exec(entry)?.[1];
+      return hex !== undefined && shas[0].startsWith(hex);
+    });
+    const record = name === undefined ? null : path.join(exoDir, name);
+    if (record !== null && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
+      lines.push(`REVIEWED Task ${task.number} ${record}`);
+    } else {
+      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId))}`);
+    }
+  }
+  lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
+  return lines;
+}
+
+/**
  * The plan's checks, one PASS/FAIL/SKIP/SESSION/UNRUN/STRAY/FIX-ONLY line each, then the REVIEWER
  * line. `planPath` names the plan whose id its landed trailers carry; `root`
  * names the checkout the gate reads landed commits and runs
  * commands in; `base` the revision the diff and stray check compare against.
  */
-export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv) } = {}) {
+export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
   const planId = planIdOf(planPath);
   const landed = new Set(landedTasks(plan.tasks, root, planId));
+  if (reviewsOnly) return { lines: reviewLines(plan, landed, { root, planId, base }), failed: false };
   const lines = [];
   let failed = false;
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
@@ -511,8 +544,12 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     proofRuns.push({ number: task.number, command });
   }
 
-  // Proofs run up to PROOF_CONCURRENCY at once; their lines keep task order.
-  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS))));
+  // The gate starts at once, beside the Proofs, which run up to PROOF_CONCURRENCY at a time; their lines keep task order.
+  const gateRuns = !gateSkipped && gateMcpCall === null && cachedPass(root, gateCommand) === null;
+  const [proofResults, gateRun] = await Promise.all([
+    mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS)))),
+    gateRuns ? runCommand(gateCommand, environmentMs('EXO_GATE_TIMEOUT_MS', GATE_TIMEOUT_MS)) : null
+  ]);
   proofRuns.forEach((run, index) => {
     if (run.line) {
       lines.push(run.line);
@@ -534,10 +571,9 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     lines.push('UNRUN success-criterion (Land gate: none)');
   } else if (gateMcpCall !== null) {
     lines.push(`SESSION success-criterion (${gateMcpCall}; run it as an MCP tool call)`);
-  } else if (cachedPass(root, gateCommand) !== null) {
+  } else if (!gateRuns) {
     lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
-    const gateRun = await runCommand(gateCommand, environmentMs('EXO_GATE_TIMEOUT_MS', GATE_TIMEOUT_MS));
     // The SUMMARY rule binds any gate whose output prints a SUMMARY line, whatever
     // the command; a gate that prints none, as another project's `npm run check`
     // does, is judged on its exit code alone. A run that exits 0 yet fails names its
@@ -582,28 +618,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));
   if (claims.some((line) => line.startsWith('FAIL '))) failed = true;
 
-  // One REVIEW line per landed task, REVIEWED when its last commit's review record holds a verdict.
-  const route = planRoute(plan.tasks).route;
-  let exoNames = [];
-  try {
-    exoNames = fs.readdirSync(path.join(path.resolve(root ?? '.'), '.exo'));
-  } catch {}
-  for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
-    const shas = taskCommits(task, root, planId);
-    const exoDir = path.join(path.resolve(root ?? '.'), '.exo');
-    const name = shas.length === 0 ? undefined : exoNames.find((entry) => {
-      const hex = /^review-([0-9a-f]{7,})\.md$/.exec(entry)?.[1];
-      return hex !== undefined && shas[0].startsWith(hex);
-    });
-    const record = name === undefined ? null : path.join(exoDir, name);
-    if (record !== null && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
-      lines.push(`REVIEWED Task ${task.number} ${record}`);
-    } else {
-      lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId))}`);
-    }
-  }
-  // With no base there is no range of commits to read.
-  lines.push(...(base === undefined ? ['OVERLAP none'] : formatOverlaps(findOverlaps(readChanges(base, root))).split('\n')));
+  lines.push(...reviewLines(plan, landed, { root, planId, base }));
   for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
   for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
   return { lines, failed };
@@ -628,15 +643,16 @@ function writeRunReport(lines, { planPath, planText, root }) {
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value', 'reviews-only': 'boolean' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
   // Resolved before the chdir below, so a relative --plan keeps naming the caller's file.
   const planPath = path.resolve(flags.plan);
   const planText = fs.readFileSync(planPath, 'utf8');
   const root = flags.root === undefined ? undefined : path.resolve(flags.root);
   if (root !== undefined) process.chdir(root);
-  const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root, base: flags.base });
+  const { lines, failed } = await runGate(planText, { planPath, checkCommand: flags['check-command'], root, base: flags.base, reviewsOnly: flags['reviews-only'] === true });
   process.stdout.write(`${lines.join('\n')}\n`);
+  if (flags['reviews-only']) return;
   const reportPath = writeRunReport(lines, { planPath, planText, root: path.resolve('.') });
   process.stdout.write(`REPORT ${reportPath}\n`);
   if (failed) process.exitCode = 1;

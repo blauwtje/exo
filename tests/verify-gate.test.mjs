@@ -1101,3 +1101,37 @@ test('a gate that passed on this tree is skipped on the next run, and a tracked 
   await writeFile(path.join(root, 'check.js'), `${CLEAN_CHECK}\n`);
   assert.ok((await run(SCRIPT, args, { cwd: root })).stdout.startsWith('PASS success-criterion'));
 });
+
+test('--reviews-only prints only the review lines, runs no proof or gate and records no pass', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(1)"\n',
+    'check.js': FAILING_CHECK
+  });
+  landTask(root, 1);
+
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--reviews-only', '--check-command', 'node check.js'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trim().split('\n');
+  assert.ok(lines.every((line) => /^(?:REVIEW|REVIEWED|OVERLAP) /.test(line)), result.stdout);
+  assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ')), result.stdout);
+  const full = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(full.stdout.includes('FAIL success-criterion'), 'the flag recorded no pass, so the full run still runs the gate');
+});
+
+test('the gate starts while a slow Proof runs, and the lines keep their order', async () => {
+  const slow = 'node -e "setTimeout(() => {}, 1500)"';
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': `### Task 1: feat(app): greet\nDepends on: none | Files: \`src/app.js\` | Data: none | Proof: ${slow}\n`,
+    'check.js': `setTimeout(() => console.log('SUMMARY FAIL=0 WARN=0 UNRUN=0'), 1500);\n`
+  });
+  landTask(root, 1);
+
+  const started = Date.now();
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  const elapsed = Date.now() - started;
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(result.stdout.split('\n').slice(0, 2), ['PASS Task 1', 'PASS success-criterion']);
+  assert.ok(elapsed < 2900, `the two 1.5s commands overlapped (took ${elapsed}ms)`);
+});
