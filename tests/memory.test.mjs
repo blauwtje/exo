@@ -357,3 +357,84 @@ test('a user claim worded "review: ..." is proposed exactly as a user claim', as
   assert.doesNotMatch(proposed.stdout, /undefined|\(key:/);
   assert.match(proposed.stdout, /^review: keep it short$/m);
 });
+
+async function count(root) {
+  const counted = await memory(root, 'propose', '--count');
+  assert.equal(counted.code, 0, counted.stderr);
+  return counted.stdout.trim();
+}
+
+test('a rejected review key is skipped until a session outside the rejection books it again', async () => {
+  const root = await repository();
+  await memory(root, 'book', ...REVIEW, '--key', 'unchecked ref', '--claim', 'a ref was never checked', '--session', 'one');
+  await memory(root, 'book', ...REVIEW, '--key', 'unchecked ref', '--claim', 'a ref went unchecked', '--session', 'two');
+  assert.equal(await count(root), '1');
+  const rejected = await memory(root, 'reject', '--key', 'Unchecked  Ref', '--session', 'rejecting');
+  assert.equal(rejected.code, 0, rejected.stderr);
+  assert.equal(await count(root), '0');
+  const proposed = await memory(root, 'propose');
+  assert.doesNotMatch(proposed.stdout, /a ref (was never checked|went unchecked)/);
+  assert.ok(proposed.stdout.includes(`no claim is attested in ${ATTESTATIONS_REQUIRED} sessions yet`), proposed.stdout);
+  await memory(root, 'book', ...REVIEW, '--key', 'unchecked ref', '--claim', 'a ref was never checked', '--session', 'one');
+  await memory(root, 'book', ...REVIEW, '--key', 'unchecked ref', '--claim', 'a ref was never checked', '--session', 'rejecting');
+  assert.equal(await count(root), '0');
+  await memory(root, 'book', ...REVIEW, '--key', 'unchecked ref', '--claim', 'a ref was never checked', '--session', 'three');
+  assert.equal(await count(root), '1');
+  assert.equal(stateOf(root).rejected['review:unchecked ref'], undefined);
+});
+
+test('a rejected plain claim is skipped until a session outside the rejection books it again', async () => {
+  const root = await repository();
+  await attested(root, 'the suite runs under node --test');
+  assert.equal(await count(root), '1');
+  const rejected = await memory(root, 'reject', '--claim', 'the suite runs under node --test', '--session', 'two');
+  assert.equal(rejected.code, 0, rejected.stderr);
+  assert.equal(await count(root), '0');
+  const proposed = await memory(root, 'propose');
+  assert.doesNotMatch(proposed.stdout, /the suite runs under node --test/);
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'again', '--session', 'one');
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'again', '--session', 'two');
+  assert.equal(await count(root), '0');
+  await memory(root, 'book', '--claim', 'the suite runs under node --test', '--quote', 'once more', '--session', 'three');
+  assert.equal(await count(root), '1');
+});
+
+test('a rejection survives write, retire and verify of other lines', async () => {
+  const root = await repository();
+  fs.writeFileSync(path.join(root, 'release.yml'), 'jobs:\n');
+  await attested(root, 'a rejected lesson');
+  await memory(root, 'reject', '--claim', 'a rejected lesson', '--session', 'two');
+  await attested(root, 'the release workflow cuts the version');
+  const written = await memory(root, 'write', '--claim', 'the release workflow cuts the version', '--refs', 'release.yml');
+  assert.equal(written.code, 0, written.stderr);
+  await memory(root, 'retire', '--claim', 'the release workflow cuts the version');
+  await attested(root, 'the release workflow ships the tag');
+  await memory(root, 'write', '--claim', 'the release workflow ships the tag', '--refs', 'release.yml');
+  fs.rmSync(path.join(root, 'release.yml'));
+  const verified = await memory(root, 'verify');
+  assert.match(verified.stdout, /1 dropped/);
+  assert.equal(await count(root), '0');
+  assert.deepEqual(stateOf(root).rejected['a rejected lesson'].sessions.sort(), ['one', 'two']);
+});
+
+test('reject without --session or with both or neither of --key and --claim exits 1 with its usage line', async () => {
+  const root = await repository();
+  for (const args of [
+    ['reject', '--key', 'k'],
+    ['reject', '--session', 'one'],
+    ['reject', '--key', 'k', '--claim', 'c', '--session', 'one']
+  ]) {
+    const result = await memory(root, ...args);
+    assert.equal(result.code, 1, args.join(' '));
+    assert.match(result.stderr, /reject needs --session and exactly one of --key or --claim/);
+  }
+  assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
+});
+
+test('reject of a name that is not a candidate is refused and writes nothing', async () => {
+  const root = await repository();
+  const result = await memory(root, 'reject', '--key', 'never booked', '--session', 'one');
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /refused: no candidate is booked as review:never booked/);
+  assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
+});
