@@ -86,12 +86,20 @@ function writeAtomic(file, text) {
   fs.renameSync(temporary, file);
 }
 
-const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [] });
+const emptyInstall = (scope, project) => ({ scope, ...(project === undefined ? {} : { project }), skills: [], links: [], agents: [], hooks: [], excludes: [], created: [] });
+
+// The paths an install can have created, by name; `.codex` is a project folder only.
+const CREATED = ['.agents', '.agents/skills', '.codex/agents', '.codex/hooks.json', '.codex'];
+
+function createdPath(name, where) {
+  return { '.agents': path.dirname(where.skillsDir), '.agents/skills': where.skillsDir, '.codex/agents': where.agentsDir, '.codex/hooks.json': where.hooksFile, '.codex': path.dirname(where.agentsDir) }[name];
+}
 
 function validInstall(entry) {
   return isPlain(entry)
     && SCOPES.includes(entry.scope)
     && (entry.scope === 'user' ? entry.project === undefined : typeof entry.project === 'string' && path.isAbsolute(entry.project))
+    && Array.isArray(entry.created) && entry.created.every((name) => CREATED.includes(name) && (name !== '.codex' || entry.scope !== 'user'))
     && Array.isArray(entry.excludes) && entry.excludes.every((line) => typeof line === 'string' && EXCLUDE_LINE.test(line))
     && Array.isArray(entry.skills) && entry.skills.every((skill) => isPlain(skill) && SKILL_NAME.test(skill.name)
       && Array.isArray(skill.files) && skill.files.every((file) => isPlain(file) && typeof file.path === 'string' && typeof file.sha256 === 'string'))
@@ -107,11 +115,11 @@ function readInstalls(file) {
   const notRecord = new Error(`${file} is not an exo install record; fix or move it, nothing was written`);
   if (!isPlain(record)) throw notRecord;
   if (Array.isArray(record.installs)) {
-    const installs = record.installs.map((entry) => (isPlain(entry) ? { excludes: [], ...entry } : entry));
+    const installs = record.installs.map((entry) => (isPlain(entry) ? { excludes: [], created: [], ...entry } : entry));
     if (!installs.every(validInstall)) throw notRecord;
     return installs;
   }
-  const old = { scope: 'user', skills: [], links: record.skills, agents: record.agents, hooks: record.hooks, excludes: [] };
+  const old = { scope: 'user', skills: [], links: record.skills, agents: record.agents, hooks: record.hooks, excludes: [], created: [] };
   if (!validInstall(old)) throw notRecord;
   return [old];
 }
@@ -317,11 +325,13 @@ function writeExclude(file, lines) {
   writeAtomic(file, `${lines.join('\n').replace(/\n+$/, '')}\n`);
 }
 
-function planHooks(hooksFile, removed, additions, writes) {
+function planHooks(hooksFile, removed, additions, writes, dropEmpty = false) {
   const current = readJson(hooksFile);
   if (current === undefined && Object.keys(additions).length === 0) return [];
   const { config, added } = mergeHooks(current ?? {}, removed, additions);
-  if (!isDeepStrictEqual(config, current)) writes.push(() => writeAtomic(hooksFile, jsonText(config)));
+  const empty = isDeepStrictEqual(config, {}) || isDeepStrictEqual(config, { hooks: {} });
+  if (dropEmpty && empty && current !== undefined) writes.push(() => fs.unlinkSync(hooksFile));
+  else if (!isDeepStrictEqual(config, current)) writes.push(() => writeAtomic(hooksFile, jsonText(config)));
   return added;
 }
 
@@ -399,6 +409,10 @@ function planInstall({ root, env, scope, project }, verb = 'installed') {
   const { skills, agents } = generated(root, exoRoot, skillDirOf);
   const next = emptyInstall(scope, project);
   const interim = emptyInstall(scope, project);
+  const names = CREATED.filter((name) => name !== '.codex' || scope !== 'user');
+  const created = [...new Set([...old.created, ...names.filter((name) => statOf(createdPath(name, where)) === undefined)])];
+  next.created.push(...created);
+  interim.created.push(...created);
   const conflicts = [];
   const notes = [];
   const writes = [];
@@ -505,7 +519,18 @@ function planRemove(install, installs, env) {
   releaseLinks(install.links, where.skillsDir, writes, notes);
   for (const skill of install.skills) releaseFiles(path.join(where.skillsDir, safeName(skill.name, SKILL_NAME, 'skill')), skill.files, writes, notes);
   releaseAgents(install.agents, where.agentsDir, writes, notes);
-  planHooks(where.hooksFile, install.hooks, {}, writes);
+  planHooks(where.hooksFile, install.hooks, {}, writes, install.created.includes('.codex/hooks.json'));
+  // Folders this install created go last, deepest first; rmdir refuses one that holds anything.
+  writes.push(() => {
+    for (const name of ['.agents/skills', '.agents', '.codex/agents', '.codex']) {
+      if (!install.created.includes(name)) continue;
+      try {
+        fs.rmdirSync(createdPath(name, where));
+      } catch {
+        // Not empty, or gone: leave it.
+      }
+    }
+  });
   const rest = installs.filter((entry) => !sameInstall(entry, install));
   writes.push(() => {
     if (rest.length > 0) {

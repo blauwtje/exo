@@ -229,8 +229,8 @@ test('a local rerun changes nothing, and remove takes back its files and only it
   remove(selector(paths, { scope: 'local', project }));
   assert.deepEqual(excludeOf(project), ['*.log']);
   assert.deepEqual(readJson(path.join(project, '.codex', 'hooks.json')), { hooks: { PreToolUse: [foreign] } });
-  assert.deepEqual(fs.readdirSync(path.join(project, '.agents', 'skills')), []);
-  assert.deepEqual(fs.readdirSync(path.join(project, '.codex', 'agents')), []);
+  assert.equal(fs.existsSync(path.join(project, '.agents')), false);
+  assert.equal(fs.existsSync(path.join(project, '.codex', 'agents')), false);
   assert.equal(fs.existsSync(recordPath(paths)), false);
 });
 
@@ -414,7 +414,7 @@ test('user, local and project installs share one record and are removed one by o
   assert.equal(fs.existsSync(path.join(one, '.agents', 'skills', SKILL)), true);
   remove(selector(paths));
   assert.equal(fs.existsSync(recordPath(paths)), false);
-  assert.deepEqual(fs.readdirSync(path.join(one, '.agents', 'skills')), []);
+  assert.equal(fs.existsSync(path.join(one, '.agents')), false);
 });
 
 test('the old single-target record stays one user install beside a new local install', () => {
@@ -628,4 +628,16 @@ test('the defaults come from CODEX_HOME and the home folder', () => {
   assert.equal(fs.existsSync(recordPath(paths)), true);
   assert.equal(fs.existsSync(path.join(paths.home, 'agents', AGENT_NAMES[0])), true);
   assert.equal(fs.existsSync(path.join(paths.base, '.agents', 'skills', SKILL, 'SKILL.md')), true);
+});
+
+test('a forged created list cannot name a path outside the fixed set', () => {
+  const paths = sandbox();
+  const project = projectIn(paths);
+  fs.mkdirSync(path.join(paths.home, 'exo'));
+  for (const created of [['../outside'], ['/etc'], ['.git'], [1], 'x']) {
+    fs.writeFileSync(recordPath(paths), JSON.stringify({ version: 2, installs: [{ scope: 'local', project, skills: [], links: [], agents: [], hooks: [], excludes: [], created }] }));
+    assert.throws(() => remove(selector(paths)), /not an exo install record/);
+  }
+  fs.writeFileSync(recordPath(paths), JSON.stringify({ version: 2, installs: [{ scope: 'user', skills: [], links: [], agents: [], hooks: [], excludes: [], created: ['.codex'] }] }));
+  assert.throws(() => remove(selector(paths)), /not an exo install record/);
 });

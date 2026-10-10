@@ -317,7 +317,7 @@ test('the shipped Codex adapter installs and removes per project through run', a
   assert.equal(fs.existsSync(path.join(project, '.codex', 'hooks.json')), true);
   assert.match(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /^\/\.codex\/hooks\.json$/m);
   assert.equal(await run(['--harness', 'codex', '--remove', '--scope', 'local', '--project', project], options), 0);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(project, '.codex', 'hooks.json'), 'utf8')), { hooks: {} });
+  for (const created of ['.codex', '.agents']) assert.equal(fs.existsSync(path.join(project, created)), false, created);
   assert.doesNotMatch(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /\.codex/);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'exo')), false);
 });
@@ -337,4 +337,26 @@ test('the shipped Codex adapter reports an update as updated, not installed', as
   assert.match(out.text(), /installed \d+ skills/);
   assert.equal(await run(['--harness', 'codex', '--update', '--pulled', '--scope', 'user'], options), 0, err.text() + out.text());
   assert.match(out.text(), /updated \d+ skills/);
+});
+
+test('the shipped Codex adapter removes the folders it created and keeps those that existed before', async () => {
+  const real = saved.find((adapter) => adapter.name === 'codex');
+  assert.ok(real);
+  register(real);
+  const home = folder('codex-keep-home');
+  const bin = folder('codex-keep-bin');
+  fs.writeFileSync(path.join(bin, 'codex'), '#!/bin/sh\n', { mode: 0o755 });
+  const project = folder('codex-keep-project');
+  fs.mkdirSync(path.join(project, '.git'), { recursive: true });
+  fs.mkdirSync(path.join(project, '.codex', 'agents'), { recursive: true });
+  const env = { HOME: home, CODEX_HOME: path.join(home, '.codex'), PATH: bin };
+  const out = sink();
+  const err = sink();
+  const options = { cwd: base, root: REPO, env, input: new PassThrough(), stdout: out.stream, stderr: err.stream, interactive: false };
+  assert.equal(await run(['--harness', 'codex', '--scope', 'local', '--project', project], options), 0, err.text() + out.text());
+  assert.equal(await run(['--harness', 'codex', '--update', '--pulled', '--scope', 'local', '--project', project], options), 0, err.text() + out.text());
+  assert.equal(await run(['--harness', 'codex', '--remove', '--scope', 'local', '--project', project], options), 0, err.text() + out.text());
+  assert.deepEqual(fs.readdirSync(path.join(project, '.codex')), ['agents']);
+  assert.deepEqual(fs.readdirSync(path.join(project, '.codex', 'agents')), []);
+  assert.equal(fs.existsSync(path.join(project, '.agents')), false);
 });
