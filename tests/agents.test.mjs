@@ -196,8 +196,13 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const before = ["Rerun step 1's `verify.mjs`", 'run-probes.mjs', 'the scope `fix diff`'].map((text) => repairAfter.indexOf(text));
   const fixCommit = repairAfter.indexOf('land-task.mjs" --fix');
   assert.ok(before.every((index) => index !== -1 && index < fixCommit), 'verify starts the gate rerun, the probes and the fix diff review together, before the fix commit');
-  assert.ok(repairAfter.includes('A `FAIL` or `STRAY` line from `verify.mjs` ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
-  assert.ok(repairAfter.includes('A `FAIL probe` line ends the turn'), 'verify stops on a failing probe');
+  const stops = [
+    /A `FAIL` or `STRAY` line from `verify\.mjs` ends the turn[^\n]*fixes uncommitted/,
+    /A `FAIL probe` line ends the turn[^\n]*fixes uncommitted/,
+    /No file at `<checkout>\/\.exo\/fix-review\.md`[^\n]*end the turn `BLOCKED`[^\n]*fixes uncommitted/,
+  ].map((pattern) => repairAfter.search(pattern));
+  assert.ok(stops.every((index) => index !== -1 && index < fixCommit), 'a FAIL or STRAY line, a FAIL probe line or a missing fix-review.md ends the turn with fixes uncommitted, before the fix commit');
+  assert.ok(Math.min(...stops) > Math.max(...before), 'verify checks the stops only after starting the rerun, the probes and the fix diff review');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
   assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'verify points to the report rule and ends on one decision');
   assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
