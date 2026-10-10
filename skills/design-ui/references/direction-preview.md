@@ -2,7 +2,7 @@
 
 Put the built directions in front of the person deciding as real comps at full size, one at a time, checked first, and let one click settle it. The enemy is a comparison nobody can judge: near-identical sketches that differ in one colour, a scaled thumbnail, or a broken comp the chooser is the first to see. The overcorrection is a preview so staged that the chooser picks a presentation instead of a direction.
 
-This file owns the screen that asks for a direction; the `visual-direction` reference owns what a direction is.
+This file owns the live comps that ask for a direction on request; the `sketch-tab` reference owns the direction round, and the `visual-direction` reference owns what a direction is.
 
 ## Contents
 
@@ -28,7 +28,7 @@ This file owns the screen that asks for a direction; the `visual-direction` refe
 - `--unchecked` answers that exit 3 alone, never a failing or unread check.
 - Write each comp's source directly from its contract: no template, generator, or patch script stands between the two, because a pipeline costs the minutes it was meant to save.
 - A comp the chooser still reports broken is repaired after the click, checked again, and the picker reruns once.
-- Run the picker only on the user's words asking for working or live comps, after the message that names its price as `## Asking` of the `intake` reference says.
+- Run the picker only on the user's words asking for working or live comps, after the message that names its price as `## The direction offer` of the `intake` reference says.
 - Every other visual choice belongs to the `sketch-tab` reference.
 
 ## What the comp owes the screen

@@ -75,7 +75,7 @@ The one pass only; the full run follows `## Full run builders` alone.
 
 ## The comp
 
-Full redesign only; a bounded redesign, tweak, sketch and new piece write none, and rung 3 writes none because its chosen direction comp already is the builder's `COMP`.
+Full redesign only; a bounded redesign, tweak, sketch and new piece write none, and rung 3 writes none: after live comps its chosen direction comp is the builder's `COMP`, after a sketch round pick the build takes no `COMP`.
 
 - Before the page or foundation dispatch, dispatch one fresh `exo:build-ui` with `SCOPE=comp:focal`; this session reads only its report.
 - The comp = the chosen direction's focal region as a local page in `$RUN/comp/`, with `$RUN/comp.md` listing each region.
