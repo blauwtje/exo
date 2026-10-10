@@ -49,6 +49,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/test-first.md',
     'references/project-knowledge.md',
     'references/performance.md',
+    'references/rolling-window.md',
   ],
   'skills/check-docs/SKILL.md': [],
   'skills/run-plan/SKILL.md': [],

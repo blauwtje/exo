@@ -36,24 +36,25 @@ effort: medium
 | `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
 | `references/tail.md` | Step 7. |
-| `references/task-mode.md` | Step 1, with `--task <n>`. |
+| `references/task-mode.md` | Step 1, `--task <n>`. |
 | `references/no-spec.md` | No spec step 1. |
-| `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |
-| `references/wave-worktrees.md` | `references/run-loop-direct.md`, for a `Wave:` line. |
+| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
+| `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
+| `references/rolling-window.md` | Never here: the unit reads it. |
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
-| `bug-fixer-prompt.md` | Step 6, on a failed deferred MCP call. |
+| `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |
 | `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
-| `references/design-tasks.md` | Step 4, for a `Design:` line; its `## The delegate` is never here. |
+| `references/design-tasks.md` | Step 4, `Design:` line; its `## The delegate` never here. |
 | `reviewer-prompt.md` | No spec step 7. |
-| `references/fresh-eyes.md` | No spec step 7; run it. |
-| `references/critique.md` | No spec step 7's last fallback. |
+| `references/fresh-eyes.md` | No spec step 7. |
+| `references/critique.md` | No spec step 7, last fallback. |
 | `references/security.md` | When its first line applies. |
 | `references/data-migration.md` | When its first line applies. |
 | `references/test-design.md` | When its first line applies. |
-| `references/test-first.md` | No spec, test-first work, before naming the first boundary. |
+| `references/test-first.md` | No spec test-first work, before the first boundary. |
 | `references/project-knowledge.md` | No spec step 6, when its first line applies. |
-| `references/performance.md` | No spec, speed-only work, before measuring. |
-| `../route-skills/references/question.md` | Before asking the user to pick among options. |
+| `references/performance.md` | No spec speed-only work, before measuring. |
+| `../route-skills/references/question.md` | Before asking the user to pick. |
 
 Report: `ship`'s overview as this turn's one report; the proofs stay in the `REPORT` file's `## Proofs`, which the message names.
