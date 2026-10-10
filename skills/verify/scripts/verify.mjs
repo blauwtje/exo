@@ -58,6 +58,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
+import { killTree } from '#process-tree';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { proofsReport } from '#proofs-report';
@@ -408,7 +409,7 @@ function runCommand(command, timeoutMs) {
       resolve(result);
     };
     const timer = setTimeout(() => {
-      try { process.kill(process.platform === 'win32' ? child.pid : -child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); }
+      killTree(child.pid);
       finish({ ok: false, code: null, signal: null, timedOutMs: timeoutMs, output, ms: Date.now() - started });
     }, timeoutMs);
     child.stdout.on('data', (chunk) => { output += chunk; });
