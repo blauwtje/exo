@@ -172,7 +172,10 @@ const SCENARIOS = [
     replaceText(root, 'skills/design-ui/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
   { name: 'dangling-sibling-script-link', check: 'Markdown references', mutate: (root) =>
     replaceText(root, 'skills/start/SKILL.md', 'per `../route-skills/references/question.md`', 'per `../route-skills/references/absent.md`') },
-  { name: 'noncanonical-skill-replacement', check: 'skill set', mutate: (root) => {
+  // Every check that reads a SKILL.md treats the nested copy as a process file
+  // whose relative links and owner contract no longer resolve, and routing loses spec.
+  { name: 'noncanonical-skill-replacement',
+    check: ['skill set', 'process structure', 'Markdown references', 'routing', 'reference tables'], mutate: (root) => {
     const nested = path.join(root, 'skills/spec/spec');
     fs.mkdirSync(nested);
     fs.renameSync(path.join(root, 'skills/spec/SKILL.md'), path.join(nested, 'SKILL.md'));
@@ -237,9 +240,11 @@ const SCENARIOS = [
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\nmodel: bogus') },
   { name: 'effort-duplicate', check: 'YAML frontmatter', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\neffort: xhigh\neffort: high') },
-  { name: 'effort-without-name', check: 'YAML frontmatter', mutate: (root) =>
+  // The Codex generator requires name and description too, so both checks reject it.
+  { name: 'effort-without-name', check: ['YAML frontmatter', 'codex overrides'], mutate: (root) =>
     dropLines(root, 'skills/find-cause/SKILL.md', 'name:') },
-  { name: 'effort-without-description', check: 'YAML frontmatter', mutate: (root) =>
+  // The Codex generator requires name and description too, so both checks reject it.
+  { name: 'effort-without-description', check: ['YAML frontmatter', 'codex overrides'], mutate: (root) =>
     dropLines(root, 'skills/find-cause/SKILL.md', 'description:') },
   { name: 'effort-unknown-key', check: 'YAML frontmatter', mutate: (root) =>
     replaceText(root, 'skills/find-cause/SKILL.md', 'name: find-cause', 'name: find-cause\nmodel-effort: high') },
@@ -258,7 +263,8 @@ const SCENARIOS = [
     'Record family, provenance `chosen`, the matched traits as `matchEvidence`', 'Record the family') },
   { name: 'dropped-quiet-region-jobs', check: 'shared contracts', mutate: (root) => replaceText(root, 'skills/design-ui/references/visual-direction.md',
     'Every planned quiet region carries one named job', 'Large quiet regions are fine as breathing room') },
-  { name: 'broken-skill-script', check: 'skill scripts', mutate: (root) =>
+  // Both checks run node --check on a skill script, so both reject it.
+  { name: 'broken-skill-script', check: ['skill scripts', 'javascript syntax'], mutate: (root) =>
     append(root, 'skills/design-ui/scripts/capture.mjs', '\nexport function broken( {\n') },
   // The whole copy exceeds a new reference's token ceiling; its first half
   // is copy enough for the one-home rule.
