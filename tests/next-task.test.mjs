@@ -192,6 +192,17 @@ test('a task of at most two files keeps only the bullets naming its paths and le
   assert.match(first, /^Context for these paths and symbols:\n- `src\/app\.js` exports `greet`\.$/m);
 });
 
+test('a small task keeps a bullet naming its basename or a parent directory, not a sibling file or another directory\'s file', async () => {
+  const { root, planPath } = await checkout();
+  const planText = PLAN.replace('- `src/other.js` is untouched.', '- `src/other.js` is untouched.\n- `lib/app.js` is not it.\n- app.js stays synchronous.\n- Everything in `src/` is plain ESM.');
+  nextTaskReport({ planPath, planText, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, /^- app\.js stays synchronous\.$/m);
+  assert.match(brief, /^- Everything in `src\/` is plain ESM\.$/m);
+  assert.doesNotMatch(brief, /lib\/app\.js/);
+  assert.doesNotMatch(brief, /`src\/other\.js` is untouched/);
+});
+
 test('a wave of two writes two briefs, and a task outside the wave gets none', async () => {
   const { root, planPath } = await checkout();
   nextTaskReport({ planPath, planText: PLAN, root });

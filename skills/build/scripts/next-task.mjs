@@ -29,9 +29,21 @@ import { driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, p
 // task of at most two files, whose brief stays small.
 const SMALL_TASK_FILES = 2;
 
+// A bullet names a file when it holds the full path, the basename as a whole
+// word not preceded by `/`, the region, or a parent directory as a whole path
+// not followed by a further segment.
+const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function namesFile(bullet, file) {
+  if (bullet.includes(file.path) || (file.region !== null && bullet.includes(file.region))) return true;
+  const segments = file.path.split('/');
+  const basename = new RegExp(`(?<![\\w/])${escaped(segments.at(-1))}(?!\\w)`);
+  const directories = segments.slice(0, -1).map((_, index) => escaped(segments.slice(0, index + 1).join('/')));
+  return basename.test(bullet) || directories.some((directory) => new RegExp(`(?<![\\w/.-])${directory}(?:/(?![\\w.-])|(?![\\w/-]))`).test(bullet));
+}
+
 function bulletsFor(task, bullets) {
-  const names = task.files.flatMap((file) => [file.path, file.region]).filter((name) => name !== null);
-  const named = bullets.filter((bullet) => names.some((name) => bullet.includes(name)));
+  const named = bullets.filter((bullet) => task.files.some((file) => namesFile(bullet, file)));
   return named.length === 0 && task.files.length > SMALL_TASK_FILES ? bullets : named;
 }
 
