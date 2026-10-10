@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.119.2 - 2026-10-10
+
 ### Fixed
 
 - A plan's `Parallel:` line now names tasks only when it reads `none`, `every task` or a task-number list such as `Tasks 1, 2 and 3`. Before, every digit counted, so `2, 3 (after 10 s)` also named task 10. Any other text opts no task in, and plan-check reports it.
