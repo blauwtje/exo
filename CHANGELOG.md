@@ -7,6 +7,29 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**A plan task's builder now runs the land gate itself and fixes a small failure on the spot, and exo's own per-task gate runs only the static checks, so a task is no longer refused for a missing changelog line.**
+
+### Added
+
+- `node verify.mjs --static` (`npm run validate:static`) runs every check except the test suite, the plugin version check and the self-test.
+
+### Changed
+
+- `land-task.mjs --check` also runs `Lint:` and the `Land gate:`, so a builder sees a gate failure before it reports and the landing reuses the pass.
+- A task with at most two files gets a brief with only the plan bullets that name its paths.
+- The builder fixes a `Lint:` or `Land gate:` failure from `--check` itself, at most twice, before it returns `FAIL`.
+- `run-unit` sends a landing refusal back to the builder that wrote the task, at most twice, before a `solve-hard` repair.
+- The branch reviewer runs only single test files and `Probe:` commands, never `verify.mjs`, `npm run check`, `npm run validate` or `npm test`; a finding that needs the full suite becomes a `question`.
+- This repository's plan tasks gate on `npm run validate:static`, and `CONTRIBUTING.md` says `npm run validate` also runs the script tests.
+
+### Fixed
+
+- The strict reuse test in `tests/check-reuse.test.mjs` fails as intended right after a release, when `## Unreleased` is empty.
+- The `Land gate:` and every command `verify.mjs` runs stop at a deadline and fail with `timed out after <n>s` instead of hanging.
+- `run-unit` edits and commits no file itself, so it no longer writes `CHANGELOG.md` lines the lead keeps for itself.
+
 ## 0.111.2 - 2026-10-10
 
 ### Fixed
