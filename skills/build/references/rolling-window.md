@@ -19,7 +19,7 @@
    - The run's checkout never holds uncommitted work while the window is open.
 6. **Stalled slot.**
    - After six `wait-report.mjs` runs with no new report, each waiting slot returns `BLOCKED <n> no report`.
-   - Its folder is saved and removed per wave worktrees step 4.
+   - Its folder is saved and removed per wave worktrees step 4, which waits for that slot's build to return.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
    - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build stays foreground with `run_in_background: false`.

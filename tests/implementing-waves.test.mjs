@@ -24,7 +24,9 @@ test('the run creates, lands and removes every wave worktree itself', () => {
   assert.ok(!section.includes('run_in_background'), 'the lead demands no foreground flag on a wave dispatch');
   assert.ok(section.includes('git cherry-pick <sha>'));
   assert.ok(section.includes('git cherry-pick --abort'));
-  assert.ok(section.includes('remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>'));
+  assert.ok(section.includes('remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root> --report "<root>-task-<n>/.exo/implementer-<n>.md"'), 'removal waits for the build report');
+  assert.ok(section.includes('wait-report.mjs --any'), 'the run waits for a running build before any removal');
+  assert.ok(!section.includes('adds `--force`'), 'no removal passes --force');
   assert.ok(section.includes('git worktree list'));
   assert.ok(section.includes('Never dispatch a build with the dispatch tool\'s worktree isolation'), 'a wave builds only in folders the run makes');
   assert.ok(!section.includes('isolated delegate returned'), 'no wave task lands from an isolated delegate');
@@ -98,7 +100,7 @@ test('a unit wave builds in worktrees and keeps each green task per wave-worktre
   assert.ok(!commitStep.includes('only when every report in it is green'), 'no unit wave waits on every report');
   assert.ok(!commitStep.includes('no task of it commits'), 'a failed sibling costs no green task');
   assert.ok(!UNIT_AGENT.includes('git cherry-pick'), 'the landing command has one owner');
-  assert.ok(WAVE_WORKTREES.includes('a failed sibling never discards a green task: for each green task in plan order'));
+  assert.ok(WAVE_WORKTREES.includes('A failed sibling never discards a green task: for each green task in plan order'));
   assert.ok(WAVE_WORKTREES.includes('on the run branch `git cherry-pick <sha>`'));
   const authorization = loopStep(1).match(/Invoking build authorizes [^.]+\./);
   assert.ok(authorization[0].includes("a wave's worktrees beside it"));
@@ -117,16 +119,17 @@ test('a wave stops and lands nothing when it dirties the run\'s checkout', () =>
   assert.ok(section.includes("record `git -C <root> status --porcelain` as this wave's baseline"), 'step 1 records the baseline before dispatch');
   assert.ok(section.includes("First run `git -C <root> status --porcelain` again and compare it with step 1's baseline"), 'step 3 checks it again before landing');
   assert.ok(section.includes('stop, show the listed paths, land nothing from this wave'), 'a dirtied checkout lands nothing');
-  assert.ok(section.includes('go to step 4, which force-removes it as a discarded wave'), 'the worktrees are still removed');
+  assert.ok(section.includes('go to step 4, which removes it as a discarded wave'), 'the worktrees are still removed');
   assert.ok(section.includes("excluded by `lib/scratch-exclude.mjs`"), '.exo/ never counts as dirt');
 });
 
 test('a wave lands each green task past a failed sibling and saves every diff before a worktree goes', () => {
   const section = WAVE_WORKTREES;
-  assert.ok(section.includes('a failed sibling never discards a green task: for each green task in plan order'), 'a failed sibling costs no green task');
+  assert.ok(section.includes('A failed sibling never discards a green task: for each green task in plan order'), 'a failed sibling costs no green task');
   assert.ok(section.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'), 'the diff lands in the .exo/ remove-worktree.mjs copies');
-  assert.ok(section.includes('and only after its patch is written'), '--force waits for the saved diff');
-  assert.ok(section.includes('a folder whose diff is unsaved is never force-removed'));
+  assert.ok(section.includes('--patch "<root>-task-<n>/.exo/task-<n>.patch"` only once it is written'), '--patch waits for the saved diff');
+  assert.ok(section.includes('`--force` is refused'));
+  assert.ok(section.includes('A folder whose diff is unsaved, or that it refused, is never removed'));
   assert.ok(!section.includes('With every report green'), 'no wave waits on every report before landing');
 });
 
@@ -152,7 +155,7 @@ test('the direct fallback builds a printed wave per wave-worktrees.md and keeps 
   assert.ok(!RUN_LOOP.includes('diff --cached'), 'the save command has one owner');
   assert.ok(WAVE_WORKTREES.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'));
   assert.ok(WAVE_WORKTREES.includes('the patch counts as written only once `test -s` finds it non-empty'), 'a saved diff is confirmed non-empty');
-  assert.ok(WAVE_WORKTREES.includes('a folder whose diff is unsaved is never force-removed'));
+  assert.ok(WAVE_WORKTREES.includes('A folder whose diff is unsaved, or that it refused, is never removed'));
 });
 
 test('the build table names the direct route as the wave reference\'s reader, and run-loop.md\'s lock leaves with its size', async () => {
