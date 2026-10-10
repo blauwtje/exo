@@ -145,14 +145,16 @@ function deferredLines(task) {
 // The brief's text: the frame fields that name the task's paths, then the
 // task section once. `run-plan.mjs` prints it in the session's prompt.
 export function taskBrief(task, frame, root) {
+  const rulesPath = scratchPath(root, 'run-rules.md');
+  const hasRules = fs.existsSync(rulesPath);
+  const direction = visualDirectionLines(task, frame);
   return [
-    `Goal: ${frame.goal}`,
-    ...successCriterionLines(frame),
+    ...(hasRules ? [`Rules: ${rulesPath}`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
     ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
     ...sectionLines(task, 'Context for these paths and symbols:', frame.context),
     ...sectionLines(task, 'Decisions for these paths:', frame.decisions),
-    ...visualDirectionLines(task, frame),
-    ...reportCapLines(),
+    ...(hasRules && direction.length === 1 ? [] : direction),
+    ...(hasRules ? [] : reportCapLines()),
     ...deferredLines(task),
     ...modifyRangeLines(task, root),
     '',

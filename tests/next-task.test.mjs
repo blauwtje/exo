@@ -8,9 +8,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { blockReport, frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
+import { BOUNDARY_LINES, blockReport, frameOnlyReport, nextTaskReport } from '../skills/build/scripts/next-task.mjs';
 import { BLOCK_TASK_LIMIT } from '#plan-tasks';
 import { proofsReport } from '#proofs-report';
+import { scratchPath } from '#scratch-path';
 import { briefFixture, compactTask, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/next-task.mjs', import.meta.url));
@@ -452,4 +453,22 @@ test('with --in-flight tasks the report prints a Start: line in place of Next: o
   const report = nextTaskReport({ planPath, planText: PLAN, root, inFlight: [1] });
   assert.match(report, /^Start: Task 3$/m);
   assert.doesNotMatch(report, /^(Wave|Next):/m);
+});
+
+test('with the run rules file present, the brief names it in one Rules: line and drops Goal, Visual direction: none and Report cap', async () => {
+  const { root, planPath } = await checkout();
+  const rulesPath = scratchPath(root, 'run-rules.md');
+  await fs.mkdir(path.dirname(rulesPath), { recursive: true });
+  await fs.writeFile(rulesPath, 'rules\n');
+  nextTaskReport({ planPath, planText: PLAN, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, new RegExp(`^Rules: ${rulesPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'), brief);
+  assert.doesNotMatch(brief, /^(Goal|Success criterion|Visual direction|Report cap):/m);
+  assert.match(brief, /^### Task 1: Greet$/m);
+});
+
+test('every boundary line appears verbatim in lean.md or fix-review.md', async () => {
+  const read = (relative) => fs.readFile(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
+  const sources = (await Promise.all(['../skills/route-skills/references/lean.md', '../agents/fix-review.md'].map(read))).join('\n');
+  for (const line of BOUNDARY_LINES) assert.ok(sources.includes(line), line);
 });
