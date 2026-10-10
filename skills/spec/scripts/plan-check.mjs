@@ -166,12 +166,13 @@ function checkSharedFiles(tasks) {
 }
 
 // task-list.md's '## Checkpoint' item says 'Parallel:' reads 'none', 'every
-// task' or task numbers; any other text opts no task into a wave, so a line
-// that reads otherwise is flagged rather than quietly naming nothing.
+// task' or task numbers such as 'Tasks 1, 2 and 3', with no range or clause;
+// any other text opts no task into a wave, so a line that reads otherwise is
+// flagged rather than quietly naming nothing.
 function checkParallelForm(frame) {
   const { parallelLine } = frameOf(frame);
   if (parallelLine === null || parallelValueValid(parallelLine)) return [];
-  return [`'Parallel: ${parallelLine}' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3'`];
+  return [`the plan's '## Checkpoint' line 'Parallel: ${parallelLine}' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3'`];
 }
 
 // task-list.md's '## Checkpoint' item says 'Parallel:' names only tasks whose
