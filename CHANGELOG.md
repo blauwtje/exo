@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.115.0 - 2026-10-10
+
 ### Added
 
 - Verify check `paid runs` (`verify/checks/paid-runs.mjs`) fails when a line in a skill, agent or output-style body names `claude -p`, `pressure.mjs` or `benchmarks/run.mjs` without naming the user's request as its trigger (#103).
