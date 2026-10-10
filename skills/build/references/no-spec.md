@@ -21,6 +21,7 @@ A decided change with no plan file runs these steps instead of the loop.
    - Keep every mutating edit idempotent, so retries land the same state.
    - Hook reports the context budget crossed → at a green state write landed and open edits to `<scratch>/implement-next.md`, report that a clear comes next.
 5. **Prove.**
+   - Risky change → read the test-design reference first.
    - *Done* needs a `Proof: <command or MCP tool> -> <output>` line from a real call this session made on input it did not write, else `Unverified: <reason>` with no Done.
    - Proof is not a test runner, unless `package.json` names no `bin` and no `scripts.start`.
    - Risky change → quote failing output before the first production edit, passing output after.

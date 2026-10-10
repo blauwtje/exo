@@ -14,6 +14,8 @@ This session reads the state only, never the plan's `## Visual direction` or the
 
 ## The delegate
 
+The session never reads this section; only the delegate does.
+
 1. Load `design-ui` and enter it at Route rung 2.
    - Before entering, write the plan's `Contract:` to `$RUN/contract-selected.json` and the task's `Files:` lines to `$RUN/files.md` as `<path>:<first>-<last>`.
    - The recorded direction outranks your own reading of the task; it was settled with the user.
