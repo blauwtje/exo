@@ -360,3 +360,73 @@ test('the shipped Codex adapter removes the folders it created and keeps those t
   assert.deepEqual(fs.readdirSync(path.join(project, '.codex', 'agents')), []);
   assert.equal(fs.existsSync(path.join(project, '.agents')), false);
 });
+
+function codexSandbox(name) {
+  const home = folder(`${name}-home`);
+  const bin = folder(`${name}-bin`);
+  fs.writeFileSync(path.join(bin, 'codex'), '#!/bin/sh\n', { mode: 0o755 });
+  const env = { HOME: home, CODEX_HOME: path.join(home, '.codex'), PATH: bin };
+  const out = sink();
+  const err = sink();
+  const options = { cwd: base, root: REPO, env, input: new PassThrough(), stdout: out.stream, stderr: err.stream, interactive: false };
+  return { home, env, out, err, options };
+}
+
+test('the shipped Codex adapter removes the user folders it created', async () => {
+  const real = saved.find((adapter) => adapter.name === 'codex');
+  assert.ok(real);
+  register(real);
+  const { home, out, err, options } = codexSandbox('codex-user');
+  assert.equal(await run(['--harness', 'codex', '--scope', 'user'], options), 0, err.text() + out.text());
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills')), true);
+  assert.equal(await run(['--harness', 'codex', '--remove', '--scope', 'user'], options), 0, err.text() + out.text());
+  for (const created of [['.agents', 'skills'], ['.agents'], ['.codex', 'agents'], ['.codex', 'hooks.json']]) {
+    assert.equal(fs.existsSync(path.join(home, ...created)), false, created.join('/'));
+  }
+});
+
+test('the shipped Codex adapter keeps the user folders and hooks.json that existed before', async () => {
+  const real = saved.find((adapter) => adapter.name === 'codex');
+  assert.ok(real);
+  register(real);
+  const { home, out, err, options } = codexSandbox('codex-user-keep');
+  fs.mkdirSync(path.join(home, '.agents', 'skills'), { recursive: true });
+  fs.mkdirSync(path.join(home, '.codex', 'agents'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.codex', 'hooks.json'), '{"hooks": {}}\n');
+  assert.equal(await run(['--harness', 'codex', '--scope', 'user'], options), 0, err.text() + out.text());
+  assert.equal(await run(['--harness', 'codex', '--remove', '--scope', 'user'], options), 0, err.text() + out.text());
+  assert.deepEqual(fs.readdirSync(path.join(home, '.agents', 'skills')), []);
+  assert.deepEqual(fs.readdirSync(path.join(home, '.codex', 'agents')), []);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(home, '.codex', 'hooks.json'), 'utf8')), { hooks: {} });
+});
+
+test('the shipped Codex adapter refuses a record whose created list leaves the fixed set and changes nothing', async () => {
+  const real = saved.find((adapter) => adapter.name === 'codex');
+  assert.ok(real);
+  register(real);
+  const { home, out, err, options } = codexSandbox('codex-forged');
+  const outside = folder('codex-forged-outside');
+  fs.writeFileSync(path.join(outside, 'keep.txt'), 'keep\n');
+  const record = path.join(home, '.codex', 'exo', 'installed.json');
+  fs.mkdirSync(path.dirname(record), { recursive: true });
+  fs.writeFileSync(record, JSON.stringify({ version: 2, installs: [{ scope: 'user', skills: [], links: [], agents: [], hooks: [], excludes: [], created: ['../outside'] }] }));
+  const snapshot = () => {
+    const rows = [];
+    const walk = (current) => {
+      for (const name of fs.readdirSync(current).sort()) {
+        const full = path.join(current, name);
+        if (fs.lstatSync(full).isDirectory()) {
+          rows.push(`${full}/`);
+          walk(full);
+        } else rows.push(`${full} ${fs.readFileSync(full, 'utf8')}`);
+      }
+    };
+    walk(home);
+    walk(outside);
+    return rows;
+  };
+  const before = snapshot();
+  assert.equal(await run(['--harness', 'codex', '--remove', '--scope', 'user'], options), 1);
+  assert.match(err.text() + out.text(), /not an exo install record/);
+  assert.deepEqual(snapshot(), before);
+});
