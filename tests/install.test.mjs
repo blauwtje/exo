@@ -321,3 +321,20 @@ test('the shipped Codex adapter installs and removes per project through run', a
   assert.doesNotMatch(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /\.codex/);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'exo')), false);
 });
+
+test('the shipped Codex adapter reports an update as updated, not installed', async () => {
+  const real = saved.find((adapter) => adapter.name === 'codex');
+  assert.ok(real);
+  register(real);
+  const home = folder('codex-update-home');
+  const bin = folder('codex-update-bin');
+  fs.writeFileSync(path.join(bin, 'codex'), '#!/bin/sh\n', { mode: 0o755 });
+  const env = { HOME: home, CODEX_HOME: path.join(home, '.codex'), PATH: bin };
+  const out = sink();
+  const err = sink();
+  const options = { cwd: base, root: REPO, env, input: new PassThrough(), stdout: out.stream, stderr: err.stream, interactive: false };
+  assert.equal(await run(['--harness', 'codex', '--scope', 'user'], options), 0, err.text() + out.text());
+  assert.match(out.text(), /installed \d+ skills/);
+  assert.equal(await run(['--harness', 'codex', '--update', '--pulled', '--scope', 'user'], options), 0, err.text() + out.text());
+  assert.match(out.text(), /updated \d+ skills/);
+});

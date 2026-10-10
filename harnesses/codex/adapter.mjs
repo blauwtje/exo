@@ -386,7 +386,7 @@ function planSkill({ skillDir, files, oldSkill, oldLink, writes, conflicts }) {
   return { entry, interim };
 }
 
-function planInstall({ root, env, scope, project }) {
+function planInstall({ root, env, scope, project }, verb = 'installed') {
   if (!SCOPES.includes(scope)) throw new Error(`Codex scope must be one of ${SCOPES.join(', ')}, got ${JSON.stringify(scope)}`);
   if (scope === 'user' && project !== undefined) throw new Error('Codex user scope takes no project folder');
   if (scope !== 'user') checkProject({ root, env, scope, project });
@@ -482,7 +482,7 @@ function planInstall({ root, env, scope, project }) {
       () => writeAtomic(where.recordFile, jsonText({ version: 2, installs: withInstall(installs, next) }))
     ],
     notes,
-    summary: `installed ${next.skills.length} skills (${fileCount} files), ${next.agents.length} agents and ${next.hooks.length} hook groups into ${scope === 'user' ? where.codexHome : project}`
+    summary: `${verb} ${next.skills.length} skills (${fileCount} files), ${next.agents.length} agents and ${next.hooks.length} hook groups into ${scope === 'user' ? where.codexHome : project}`
   };
 }
 
@@ -553,7 +553,7 @@ export function update(record) {
   return combine(installs.map((entry) => {
     // A project folder deleted since the install has nothing to update; --remove drops its record.
     if (entry.scope !== 'user' && !statOf(entry.project)?.isDirectory()) return { summary: `skipped ${entry.scope} install in ${entry.project}`, notes: [`${entry.project} is not a folder; run --remove to drop its record`] };
-    return apply(planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }));
+    return apply(planInstall({ root: record.root, env: record.env, scope: entry.scope, project: entry.project }, 'updated'));
   }));
 }
 
