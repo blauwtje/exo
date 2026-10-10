@@ -3,7 +3,9 @@
 // back backgrounded needs no `sleep` command, which the harness blocks. A stale
 // report from an earlier run never counts.
 //
-// Usage: wait-report.mjs --since <epoch seconds> --report <path> [--report <path>...] [--timeout <seconds>]
+// Usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--report <path>...] [--any] [--timeout <seconds>]
+// --since is given once for all reports or once per --report, paired in order;
+// --any returns as soon as one report is fresh and prints only the fresh paths.
 // Exit 0 prints each report path; exit 2 prints `waiting <paths>` at the
 // deadline; exit 1 is a bad argument.
 
@@ -20,34 +22,47 @@ function isFresh(reportPath, sinceMs) {
   return stats.size > 0 && stats.mtimeMs >= sinceMs;
 }
 
-export async function waitForReports({ reports, sinceSeconds, timeoutSeconds }) {
-  const sinceMs = sinceSeconds * 1000;
+// `sinceSeconds` is one number for all reports or an array paired in order with
+// `reports`. Returns the reports still pending: all of them must be fresh, or
+// with `any` one is enough, so the caller reads the fresh ones as the rest.
+export async function waitForReports({ reports, sinceSeconds, timeoutSeconds, any = false }) {
+  const sinceMs = reports.map((_, index) => 1000 * (Array.isArray(sinceSeconds) ? sinceSeconds[index] : sinceSeconds));
+  const pendingNow = () => reports.filter((reportPath, index) => !isFresh(reportPath, sinceMs[index]));
   const deadline = Date.now() + timeoutSeconds * 1000;
-  let pending = reports.filter((reportPath) => !isFresh(reportPath, sinceMs));
-  while (pending.length > 0 && Date.now() < deadline) {
+  const done = (pending) => (any ? pending.length < reports.length : pending.length === 0);
+  let pending = pendingNow();
+  while (!done(pending) && Date.now() < deadline) {
     await delay(Math.min(POLL_INTERVAL_MS, Math.max(0, deadline - Date.now())));
-    pending = pending.filter((reportPath) => !isFresh(reportPath, sinceMs));
+    pending = pendingNow();
   }
   return pending;
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { since: 'value', report: 'list', timeout: 'value' });
-  if (!/^\d+$/.test(flags.since ?? '')) throw new UsageError("flag '--since' needs epoch seconds");
+  const flags = parseFlags(argv, { since: 'list', report: 'list', timeout: 'value', any: 'boolean' });
+  if (flags.since === undefined || !flags.since.every((text) => /^\d+$/.test(text))) {
+    throw new UsageError("flag '--since' needs epoch seconds");
+  }
   if (flags.report === undefined) throw new UsageError("flag '--report' names a report path");
+  if (flags.since.length !== 1 && flags.since.length !== flags.report.length) {
+    throw new UsageError("flag '--since' is given once or once per '--report'");
+  }
   const timeoutText = flags.timeout ?? String(DEFAULT_TIMEOUT_SECONDS);
   if (!/^\d+$/.test(timeoutText)) throw new UsageError("flag '--timeout' needs seconds");
+  const sinceSeconds = flags.since.map(Number);
   const pending = await waitForReports({
     reports: flags.report,
-    sinceSeconds: Number(flags.since),
+    sinceSeconds: sinceSeconds.length === 1 ? sinceSeconds[0] : sinceSeconds,
     timeoutSeconds: Number(timeoutText),
+    any: flags.any === true,
   });
-  if (pending.length > 0) {
+  const fresh = flags.report.filter((reportPath) => !pending.includes(reportPath));
+  if (flags.any ? fresh.length === 0 : pending.length > 0) {
     process.stdout.write(`waiting ${pending.join(' ')}\n`);
     process.exitCode = 2;
     return;
   }
-  process.stdout.write(`${flags.report.join('\n')}\n`);
+  process.stdout.write(`${fresh.join('\n')}\n`);
 }
 
 if (isMain(import.meta.url)) {

@@ -56,3 +56,43 @@ test('bad arguments exit 1', () => {
   assert.equal(waitReport(['--since', 'soon', '--report', '/tmp/x']).status, 1);
   assert.equal(waitReport(['--since', '1']).status, 1);
 });
+
+test('--any exits 0 at once printing only the fresh report', () => {
+  const dir = reportDir();
+  const fresh = path.join(dir, 'implementer-1.md');
+  const missing = path.join(dir, 'implementer-2.md');
+  fs.writeFileSync(fresh, 'GREEN\n');
+  const since = String(Math.floor(Date.now() / 1000) - 5);
+  const run = waitReport(['--any', '--since', since, '--report', missing, '--report', fresh, '--timeout', '2']);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout.trim(), fresh);
+});
+
+test('--any with no fresh report exits 2 naming all', () => {
+  const dir = reportDir();
+  const missing = path.join(dir, 'implementer-2.md');
+  const run = waitReport(['--any', '--since', '1', '--report', missing, '--timeout', '1']);
+  assert.equal(run.status, 2);
+  assert.equal(run.stdout.trim(), `waiting ${missing}`);
+});
+
+test('--since per report pairs in order: a report older than its own slot start is stale', () => {
+  const dir = reportDir();
+  const one = path.join(dir, 'implementer-1.md');
+  const two = path.join(dir, 'implementer-2.md');
+  fs.writeFileSync(one, 'GREEN\n');
+  fs.writeFileSync(two, 'GREEN\n');
+  const now = Math.floor(Date.now() / 1000);
+  const run = waitReport(['--any', '--since', String(now - 5), '--since', String(now + 3600),
+    '--report', one, '--report', two, '--timeout', '1']);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout.trim(), one);
+  const stale = waitReport(['--since', String(now - 5), '--since', String(now + 3600),
+    '--report', one, '--report', two, '--timeout', '1']);
+  assert.equal(stale.status, 2);
+  assert.equal(stale.stdout.trim(), `waiting ${two}`);
+});
+
+test('a --since count matching neither one nor the report count exits 1', () => {
+  assert.equal(waitReport(['--since', '1', '--since', '2', '--report', '/tmp/x']).status, 1);
+});
