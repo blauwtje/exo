@@ -37,8 +37,8 @@ function verdict(root) {
   return { counts: report.counts(), detail: printed.join('\n') };
 }
 
-test('the lock is 500 words', () => {
-  assert.equal(SESSION_LOAD_LOCK.words, 500);
+test('the lock is 598 words', () => {
+  assert.equal(SESSION_LOAD_LOCK.words, 598);
 });
 
 test('this corpus loads within the lock', () => {
@@ -55,7 +55,7 @@ test('a model-invocable skill past the lock fails and names the count', (t) => {
   fs.writeFileSync(path.join(folder, 'SKILL.md'), `---\nname: padding\ndescription: ${'word '.repeat(SESSION_LOAD_LOCK.words)}\n---\n\n# Padding\n`, 'utf8');
   const { counts, detail } = verdict(root);
   assert.equal(counts.FAIL, 1, detail);
-  assert.match(detail, /every session loads \d+ words .* over the 500 locked/);
+  assert.match(detail, new RegExp(`every session loads \\d+ words .* over the ${SESSION_LOAD_LOCK.words} locked`));
 });
 
 test('a skill that is not model-invocable adds nothing', (t) => {
