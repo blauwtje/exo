@@ -52,6 +52,8 @@ Settle what the run needs before building: questions worth asking, where the run
 - Directions 2 or 3 → asks to choose: rung 3 of `## Route` follows with that many directions, taking option A without the offer.
 - Those directions → first-screen comps in the picker under the `direction-preview` reference, never a sketch; a sketch hides how a direction looks as a product.
 - Rung 5 → drop the Directions question; its settled identity fixes the look.
+- Brief asks for a restrained or minimal look, or DESIGN.md names commitment level *restrained* → drop the Directions question; the run builds one direction.
+- Redesign of an app view, dashboard, admin page or internal tool, restraint not asked → keep the Directions question.
 - Ask names its user → drop the Users question.
 - Ask says decide yourself → drop the whole form.
 - No answer can arrive, as in a headless run → send no form.
