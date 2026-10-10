@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `node install.mjs --update` reports a re-applied Codex install as `updated N skills …`; a plain install still says `installed`.
+- `node install.mjs --remove` deletes a Codex `.agents/skills` or `agents` folder and a `hooks.json` the install created once no exo entry is left in it; one that existed before the install stays, also when empty. `installed.json` records these paths in a new `created` list; an install recorded before this change keeps its folders on remove.
+
 ## 0.115.3 - 2026-10-10
 
 ### Fixed
