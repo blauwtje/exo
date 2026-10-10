@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The pressure build benchmark plans in `setup.sh` and `setup-ledger-twelve-untested.sh` now write their `Parallel:` line as a task-number list. Their prose lines named no task under the stricter reading, so both plans ran serially.
+
 ## 0.119.2 - 2026-10-10
 
 ### Fixed
