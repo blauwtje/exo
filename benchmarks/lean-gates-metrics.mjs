@@ -215,6 +215,12 @@ export function gateFacts(calls) {
   return { verifyCall, verifyRan: verifyCall !== undefined, reviewDispatched, routes };
 }
 
+// Bash calls that run `memory.mjs book --source review`; a quoted mention or a
+// user booking does not count.
+export function reviewBookings(calls) {
+  return calls.filter((call) => call.name === 'Bash' && /(^|[;&|\n]\s*)node\s+"?\S*memory\.mjs"?\s+book\b[^\n]*--source\s+review\b/.test(String(call.input.command ?? ''))).length;
+}
+
 // Whether one shell command runs the whole test suite.
 export function isFullSuiteCommand(command) {
   if (typeof command !== 'string') return false;

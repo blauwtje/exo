@@ -23,7 +23,7 @@ import process from 'node:process';
 import { confinedClaude } from '#confine-claude';
 import { writeCellUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
-import { gateFacts, readJsonl, toolCalls } from './lean-gates-metrics.mjs';
+import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { claudeArguments, pluginVariants, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
@@ -149,7 +149,8 @@ function landedTasks(repository) {
 async function measureFlow(repository, review, usage) {
   const transcript = usage === null ? '' : fs.readFileSync(usage.transcript, 'utf8');
   // Null when the transcript is gone, so a lost session never reads as a skipped gate.
-  const gates = usage === null ? null : gateFacts(toolCalls(readJsonl(usage.transcript)));
+  const calls = usage === null ? null : toolCalls(readJsonl(usage.transcript));
+  const gates = calls === null ? null : gateFacts(calls);
   let check;
   try {
     check = await checkFlow(repository);
@@ -169,6 +170,7 @@ async function measureFlow(repository, review, usage) {
     verifyRan: gates?.verifyRan ?? null,
     reviewDispatched: gates?.reviewDispatched ?? null,
     routes: gates?.routes ?? null,
+    reviewBookings: calls === null ? null : reviewBookings(calls),
     leadPeakTokens: usage?.leadPeakTokens ?? null
   };
 }

@@ -9,7 +9,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { fileURLToPath } from 'node:url';
-import { gateFacts, isFullSuiteCommand, parsePlanTasks, parseReviewerReturn, parseReviewReport, toolCalls } from '../benchmarks/lean-gates-metrics.mjs';
+import { gateFacts, isFullSuiteCommand, parsePlanTasks, parseReviewerReturn, parseReviewReport, reviewBookings, toolCalls } from '../benchmarks/lean-gates-metrics.mjs';
 
 function bash(id, command, result) {
   return [
@@ -36,6 +36,16 @@ test('gateFacts reads verify, the review dispatch and next-task routes from tool
   assert.equal(gateFacts(skill).verifyRan, true);
 });
 import { fixture } from './harness.mjs';
+
+test('reviewBookings counts a review booking call, not a user booking or a quoted mention', () => {
+  const calls = toolCalls([
+    ...bash('a', "cd repo\nnode \"/x/skills/remember/scripts/memory.mjs\" book --source review --key 'r@p' --claim 'c' --session 's'", 'booked'),
+    ...bash('b', "node /x/skills/remember/scripts/memory.mjs book --claim 'c' --quote 'q' --session 's'", 'booked'),
+    ...bash('c', "echo 'node memory.mjs book --source review'", ''),
+    ...bash('d', 'cat skills/verify/references/lessons.md', 'node memory.mjs book --source review --key k')
+  ]);
+  assert.equal(reviewBookings(calls), 1);
+});
 
 const METRICS = fileURLToPath(new URL('../benchmarks/lean-gates-metrics.mjs', import.meta.url));
 const SESSION = 'aaaaaaaa-1111-2222-3333-444444444444';
