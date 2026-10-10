@@ -294,3 +294,12 @@ test('the branch reviewer keeps each finding on one line and shows an example th
   assert.match(reviewer.body, /each on one line, no heading per finding/, 'a finding shares one line');
   assert.match(reviewer.body, /^\S+:\d+-\d+;.*\b(defect|hazard|question)\b.*\b(fix|report)\n {2}Probe: \S/m, 'an example finding line with its Probe line');
 });
+
+test('the branch reviewer confirms with one test file or Probe command, never the full suite', () => {
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+  assert.match(reviewer.body, /single test file or `Probe:` command/, 'only a single test file or Probe command');
+  for (const banned of ['`verify.mjs`', '`npm run check`', '`npm run validate`', '`npm test`']) {
+    assert.ok(reviewer.body.includes(banned), `${banned} is named as forbidden`);
+  }
+  assert.match(reviewer.body, /needs the full suite → `question`/, 'a full-suite finding goes to question');
+});
