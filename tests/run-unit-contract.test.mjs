@@ -36,6 +36,7 @@ test('the unit waits for every dispatched report with wait-report.mjs, at most s
   assert.ok(dispatchStep.includes('scripts/wait-report.mjs'));
   assert.ok(dispatchStep.includes('at most six runs'));
   assert.ok(dispatchStep.includes('never a `sleep` command'));
+  assert.ok(dispatchStep.includes('Await review reports once, after the last build landed.'));
 });
 
 test('the unit ends its turn only with every block task LANDED or BLOCKED', () => {

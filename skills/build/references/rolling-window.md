@@ -28,3 +28,4 @@
 8. **Wait.**
    - Run `wait-report.mjs --any` with one `--report` and one `--since` per running slot.
    - Exit 0 prints the fresh reports; each is a slot that returned, so land it per step 3.
+   - Every wait, also after a land or a repair message, is `wait-report.mjs --any` over the running builds' reports only, never a shell loop or `sleep`; each fresh report lands before the next wait.

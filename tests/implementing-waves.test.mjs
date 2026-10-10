@@ -179,3 +179,7 @@ test('build-task waits in the foreground, never Monitor or a leading sleep', () 
   assert.ok(DELEGATE_WAIT_PARTS.every((part) => IMPLEMENTER_AGENT.includes(part)), 'the Standard section carries the wait line');
   assert.ok(!IMPLEMENTER_AGENT.includes('background over 1 min'), 'no rule tells the delegate to background a proof');
 });
+
+test('the rolling window waits only through wait-report --any, landing each fresh report before the next wait', () => {
+  assert.ok(ROLLING_WINDOW.includes("Every wait, also after a land or a repair message, is `wait-report.mjs --any` over the running builds' reports only, never a shell loop or `sleep`; each fresh report lands before the next wait."));
+});
