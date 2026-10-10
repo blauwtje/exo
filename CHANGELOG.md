@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.120.2 - 2026-10-10
+
 ### Highlights
 
 **Reports to you open with at most three short lines: what happened, whether it worked, and what you must do now; details go to the run notes.**
