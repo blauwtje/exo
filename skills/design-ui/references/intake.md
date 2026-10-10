@@ -17,7 +17,7 @@ Settle what the run needs before building: questions worth asking, where the run
 - Visual choice → never a terminal question, except option B; a named color is not the seen color.
 - Visual choice → a sketch, one plain-words question after option B, or decided.
 - Name the decision an answer changes before asking anything; a question with no named decision is not asked.
-- Sort each question: would the user answer better by seeing it?
+- Sort each question by one test: would the user answer better by seeing it?
 - Scope, content, data, behavior → terminal questions; a question on a visual topic is not a visual question.
 - Beyond form and offer → ask only while an open fact blocks a decision brief, repository and Phase 1 cannot settle; name that decision in the question.
 - Rungs 3, 5, 6 of `## Route` → show completed scope as one form, after Phase 1, before Direction.
@@ -43,7 +43,7 @@ Settle what the run needs before building: questions worth asking, where the run
 - `display-font`, `body-font` or `accent` in DESIGN.md front matter = saved pick: plan reuses it, shortlists only missing picks.
 - Plan names its picks → save each new one with `reference.mjs --display-font "<font>" --body-font "<font>" --accent "<color>" --root <repository>`.
 - Then run `node <skill dir>/scripts/picks.mjs --project <repository> --display "<font>" --body "<font>" --accent "<color>"`; prints the picks line, each repeated pick marked "also used in <n> earlier projects".
-- Before the first product edit → send that line to the user in the conversation's language, also when no product was named.
+- Before the first product edit → send that printed line to the user in the conversation's language, also with no product named.
 - Send it whole; a line rewritten from the plan drops the repeat marks.
 - Repeat → warns, blocks nothing: no question, keep the picks; the user decides whether to steer.
 - `picks.mjs` failure → drops the warning, never the run; the line says the earlier-project check did not run.
@@ -51,7 +51,7 @@ Settle what the run needs before building: questions worth asking, where the run
 - Option 1 wording → build one design right away; 2 and 3 → show that many to choose from.
 - Directions 1 → run stays on its rung: one direction, no sketch.
 - Directions 2 or 3 → asks to choose: rung 3 of `## Route` follows with that many directions, option A without the offer.
-- Those directions → one sketch round under `## The direction round` of the `sketch-tab` reference, not comps.
+- Those directions → one sketch round under sketch-tab `## The direction round`, not comps.
 - Rung 5 → drop the Directions question; its settled identity fixes the look.
 - Restrained or minimal look asked, or DESIGN.md commitment level *restrained* → drop the Directions question; one direction.
 - App view, dashboard, admin page or internal tool redesign, restraint not asked → keep the Directions question.
