@@ -78,6 +78,7 @@ Full redesign only; a bounded redesign, tweak, sketch and new piece write none, 
 
 - Before the page or foundation dispatch, dispatch one fresh `exo:build-ui` with `SCOPE=comp:focal`; this session reads only its report.
 - The comp = the chosen direction's focal region as a local page in `$RUN/comp/`, with `$RUN/comp.md` listing each region.
+- The `comp:focal` call passes `URL=file://$RUN/comp/index.html`, `FILES` the content ranges the session read, and `REFERENCES` the files under `$SKILL/references/` the plan names; the capture's `<url>` is that `URL`.
 - The builder renders it with `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label comp --out "$RUN/renders"`.
 - The page, foundation and surface builders get `COMP=$RUN/comp/`.
 

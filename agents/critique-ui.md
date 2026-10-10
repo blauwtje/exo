@@ -36,7 +36,7 @@ Budget: you have 12 turns; the run ends mid-step, without notice, when they are 
 5. Write `$RUN/faults.md`:
    - First line: `disposition: fix`, `disposition: ship` or `disposition: direction`.
    - Then one block per fault, in the five lines the fault contract in `$SKILL/references/visual-critique.md` fixes, and nothing else.
-   - Comp given → each region of `comp.md` whose post-build render drifts from the comp render at the same width is one fault, listed first.
+   - Comp given → drift faults follow the drift rule of `## The fault contract` in `$SKILL/references/visual-critique.md`.
    - Every `content-clipped` and `element-overlap` finding is a fault.
    - `disposition: direction` means one fault names the direction itself; say which contract field failed, because the caller reports it to the user as the open action instead of re-running the direction.
 

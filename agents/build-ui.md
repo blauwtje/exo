@@ -44,16 +44,16 @@ Files:
 
 Read these and nothing else before writing, one batch where files are independent. Reference section → find its `## ` heading with `Grep -n`, then Read with offset and limit through the next heading. Motion sections = `$SKILL/references/motion.md`'s `## Motion thesis`, `## Job gate`, `## Timing` and `## Reduced motion`.
 
-- Page: `$SKILL/references/build-pass.md` whole, first; `$RUN/plan.md`; `$RUN/contract-selected.json`; the `COMP` folder, `$RUN/comp.md` and both `comp-` renders in `$RUN/renders/` when given; `$RUN/user.md`; the `FILES` ranges; `$SKILL/references/stack.md` when the plan picks the default stack; motion sections.
-- Foundation: `$RUN/contract-selected.json`; `$RUN/comp.md` and both `comp-` renders when `COMP` is given; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes`; motion sections.
-- Surface: `$RUN/contract-selected.json`; `$RUN/comp.md` and both `comp-` renders when `COMP` is given; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for this surface's treatment; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes`; motion sections; `$SKILL/references/phase-build.md`'s `## Capture, look, fix once`.
+- Page: `$SKILL/references/build-pass.md` whole, first; `$RUN/plan.md`; `$RUN/contract-selected.json`; the `COMP` folder when given, and `$RUN/comp.md` and both `comp-` renders in `$RUN/renders/` when `COMP` is `$RUN/comp/`; `$RUN/user.md`; the `FILES` ranges; `$SKILL/references/stack.md` when the plan picks the default stack; motion sections.
+- Foundation: `$RUN/contract-selected.json`; `$RUN/comp.md` and both `comp-` renders when `COMP` is `$RUN/comp/`; the inventory, whole; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md` whole; `$SKILL/references/stack.md` whole; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes`; motion sections.
+- Surface: `$RUN/contract-selected.json`; `$RUN/comp.md` and both `comp-` renders when `COMP` is `$RUN/comp/`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for this surface's treatment; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes`; motion sections; `$SKILL/references/phase-build.md`'s `## Capture, look, fix once`.
 - Comp `comp:focal`: `$RUN/contract-selected.json`; `$RUN/plan.md`; `$RUN/user.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; motion sections; `$SKILL/references/phase-build.md`'s `## The comp`.
 - Comp `comp:<n>`: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; motion sections; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps`.
 - Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name; `$SKILL/references/build-pass.md`'s `## The build floor`. No inventory, no foundation report, no other reference unless the brief names one.
 
 **Page scope.**
 
-- Build the whole page from the plan; the focal region matches the `COMP` and is never restyled toward a template, then then run the type-check, lint and tests of `build-pass.md`'s `## Proof`; the session starts the preview, runs check-ui and captures.
+- Build the whole page from the plan; the focal region matches the `COMP` and is never restyled toward a template; then run the type-check, lint and tests of `build-pass.md`'s `## Proof`; the session starts the preview, runs check-ui and captures.
 - Write `$RUN/build-<PASS>.md`, at most 20 lines: paths written, plan items built and any missing, each motion bar item of `motion.md` built or missing, the proof's result.
 - `SendMessage` from the session listing faults → repair every one in one pass, then rewrite that report with each fault `fixed` or `open`.
 
@@ -91,9 +91,8 @@ Check and repair:
 **Comp scope (`comp:focal`).**
 
 - Build the chosen direction's focal region as a local page in `$RUN/comp/` from `$RUN/plan.md` and the `FILES` content; no app file is edited.
-- Write `$RUN/comp.md`: one line per region, its name and what it shows.
 - Run the `capture.mjs` command of `## The comp` in `phase-build` with `$URL`; read both captures, repair faults in one pass.
-- Write `$RUN/comp-report.md`, at most 8 lines: paths written, both capture paths, each fault `fixed` or `open`.
+- Write `$RUN/comp.md`, at most 8 lines: paths written, both capture paths, the focal region's name, each named sub-region.
 
 **Repair scope (`repair:<surface>`).**
 
