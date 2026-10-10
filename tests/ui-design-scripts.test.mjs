@@ -743,6 +743,13 @@ describe('check-ui.mjs named anti-patterns', () => {
     assert.equal(nested[0].confidence, 'potential');
   });
 
+  it('counts no icon tile as a card in nested-card', async () => {
+    const findings = await findingsFor({
+      'page.html': '<div class="card"><div class="icon-tile"></div><div class="tile-icon"></div></div>\n'
+    });
+    assert.deepEqual(ofType(findings, 'nested-card'), []);
+  });
+
   it('reports an uppercase label over a heading, not an eyebrow or an inline span', async () => {
     const findings = await findingsFor({
       'page.html': [

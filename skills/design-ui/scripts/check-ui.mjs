@@ -258,10 +258,11 @@ function classTokens(openTag) {
   return classValue(openTag).split(' ').filter(Boolean);
 }
 
-/** A card or tile: a class token card or tile, or ending in -card, -tile, Card or Tile; or a tag named Card or ending in Card. */
+/** A card or tile: a class token card or tile, or ending in -card, -tile, Card or Tile; or a tag named Card or ending in Card. A token naming an icon tile
+ *  (holding both icon and tile, such as icon-tile) is no card. */
 function isCardTag(openTag) {
   const name = tagName(openTag);
-  return /Card$/.test(name) || classTokens(openTag).some((token) => /^(?:card|tile)$|(?:-card|-tile|Card|Tile)$/.test(token));
+  return /Card$/.test(name) || classTokens(openTag).some((token) => /^(?:card|tile)$|(?:-card|-tile|Card|Tile)$/.test(token) && !/icon.*tile|tile.*icon/i.test(token));
 }
 
 /** Runs of markup text between `>` and the next `<` that look like copy: no `{`, `}`, `=` or `;` beyond an entity such as `&mdash;`. The bodies of
