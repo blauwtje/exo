@@ -462,9 +462,21 @@ test('with the run rules file present, the brief names it in one Rules: line and
   await fs.writeFile(rulesPath, 'rules\n');
   nextTaskReport({ planPath, planText: PLAN, root });
   const brief = await fs.readFile(briefPath(root, 1), 'utf8');
-  assert.match(brief, new RegExp(`^Rules: ${rulesPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'), brief);
+  assert.equal(brief.split('\n')[0], `Rules: read ${rulesPath} first; it holds this run's Goal, Success criterion, report cap and boundaries.`);
+  assert.doesNotMatch(brief, /^The task section:$/m);
   assert.doesNotMatch(brief, /^(Goal|Success criterion|Visual direction|Report cap):/m);
   assert.match(brief, /^### Task 1: Greet$/m);
+});
+
+test('a rules file that exists but cannot be read leaves the brief with its own Goal and Report cap', async () => {
+  const { root, planPath } = await checkout();
+  await fs.mkdir(scratchPath(root, 'run-rules.md'), { recursive: true });
+  nextTaskReport({ planPath, planText: PLAN, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.doesNotMatch(brief, /^Rules:/m);
+  assert.match(brief, /^Goal: /m);
+  assert.match(brief, /^Report cap: /m);
+  assert.match(brief, /^The task section:$/m);
 });
 
 test('every boundary line appears verbatim in lean.md or fix-review.md', async () => {

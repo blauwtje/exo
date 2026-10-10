@@ -142,14 +142,24 @@ function deferredLines(task) {
   return [...new Set(commands.filter((command) => mcpToolCall(command) !== null))].map((command) => `Deferred: ${command}`);
 }
 
+function readable(file) {
+  try {
+    fs.readFileSync(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // The brief's text: the frame fields that name the task's paths, then the
 // task section once. `run-plan.mjs` prints it in the session's prompt.
 export function taskBrief(task, frame, root) {
   const rulesPath = scratchPath(root, 'run-rules.md');
-  const hasRules = fs.existsSync(rulesPath);
+  // A rules file that exists but cannot be read counts as absent, so the brief keeps its own lines.
+  const hasRules = readable(rulesPath);
   const direction = visualDirectionLines(task, frame);
   return [
-    ...(hasRules ? [`Rules: ${rulesPath}`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
+    ...(hasRules ? [`Rules: read ${rulesPath} first; it holds this run's Goal, Success criterion, report cap and boundaries.`] : [`Goal: ${frame.goal}`, ...successCriterionLines(frame)]),
     ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
     ...sectionLines(task, 'Context for these paths and symbols:', frame.context),
     ...sectionLines(task, 'Decisions for these paths:', frame.decisions),
@@ -158,7 +168,7 @@ export function taskBrief(task, frame, root) {
     ...deferredLines(task),
     ...modifyRangeLines(task, root),
     '',
-    'The task section:',
+    ...(hasRules ? [] : ['The task section:']),
     task.section,
     ''
   ].join('\n');
