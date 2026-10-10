@@ -2,6 +2,10 @@
 // repairs each problem line instead of reading the whole plan back.
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { Buffer } from 'node:buffer';
 import { test } from 'node:test';
 import { parsePlan } from '#plan-tasks';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
@@ -447,4 +451,19 @@ test('plan-check --loop refuses Land gate: none or a missing one while package.j
   assert.match(loopProblems(withGate('none'), testRoot)[0], /set 'Land gate: npm test'/);
   const bareRoot = await gitRepository({ 'src/app.js': GOOD_CODE, 'package.json': JSON.stringify({ scripts: { build: 'echo ok' } }) });
   assert.deepEqual(loopProblems(withGate('none'), bareRoot), []);
+});
+
+test('plan-check flags a derived name with its line, only where the derivation check exists', () => {
+  const name = Buffer.from('d2F5ZmluZGVy', 'base64').toString('utf8');
+  const lines = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'] })] }).split('\n');
+  lines[4] += ` ${name}`;
+  const plan = lines.join('\n');
+  const exoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-check-exo-'));
+  fs.mkdirSync(path.join(exoRoot, 'verify/checks'), { recursive: true });
+  fs.writeFileSync(path.join(exoRoot, 'verify/checks/derivation.mjs'), '');
+  const flagged = planCheckReport(plan, { root: exoRoot });
+  assert.equal(flagged.ok, false);
+  assert.ok(flagged.lines.some((line) => line.startsWith(`line 5: derived name '${name}'`)));
+  const otherRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-check-other-'));
+  assert.ok(!planCheckReport(plan, { root: otherRoot }).lines.some((line) => line.includes('derived name')));
 });

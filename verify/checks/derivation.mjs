@@ -47,7 +47,7 @@ const NOTICE_FILES = [
   'THIRD-PARTY-NOTICES.md', 'THIRD_PARTY_NOTICES.md'
 ];
 
-function derivedNames() {
+export function derivedNames() {
   return ENCODED_NAMES.map((encoded) => Buffer.from(encoded, 'base64').toString('utf8'));
 }
 

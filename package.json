@@ -10,6 +10,7 @@
     "#check-cache": "./lib/check-cache.mjs",
     "#commit-text": "./lib/commit-text.mjs",
     "#config-directory": "./lib/config-directory.mjs",
+    "#derivation": "./verify/checks/derivation.mjs",
     "#export-signatures": "./lib/export-signatures.mjs",
     "#hook-input": "./lib/hook-input.mjs",
     "#host": "./lib/host.mjs",

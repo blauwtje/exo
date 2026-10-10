@@ -6,7 +6,8 @@
 // between two tasks with no Depends on chain between them, and a plan with
 // two such independent tasks and no Worktree setup: line, a compact task
 // whose Proof: runs the whole suite, and a Parallel: line in none of its
-// accepted forms. With --loop it also refuses what
+// accepted forms, and in the exo repository a name the derivation check
+// refuses in every tracked file. With --loop it also refuses what
 // run-plan.mjs cannot run unattended. Planning runs
 // this instead of reading the finished plan back.
 
@@ -14,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBranch, frameOf, loopCommands, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { derivedNames } from '#derivation';
 import { mcpToolCall } from '#mcp-tool-call';
 import { wholeSuiteKeys } from '#suite-command';
 
@@ -364,6 +366,20 @@ function checkLoop(plan, root, planPath) {
   return [...problems, ...checkLoopLandGate(basis, root)];
 }
 
+// The derivation check refuses these names in every tracked file of exo, so a
+// brief that holds one fails the land gate late; the scan runs only where that
+// check lives.
+function checkDerivedNames(planText, resolvedRoot) {
+  if (resolvedRoot === undefined || !fs.existsSync(path.join(resolvedRoot, 'verify/checks/derivation.mjs'))) return [];
+  const names = derivedNames();
+  return planText.split('\n').flatMap((line, index) => {
+    const lowered = line.toLowerCase();
+    return names
+      .filter((name) => lowered.includes(name))
+      .map((name) => `line ${index + 1}: derived name '${name}', which the derivation check refuses in every tracked file: reword it`);
+  });
+}
+
 /**
  * Reads `planText` and returns `{ ok, lines }`: the problems found, or the
  * one ok line. `root` names the repository the plan targets, so a task's
@@ -397,6 +413,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
           ...checkSize(task),
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
+    ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
     ...checkParallelForm(plan.frame),
     ...checkParallelDisjoint(plan.tasks, plan.frame),
