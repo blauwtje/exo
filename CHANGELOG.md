@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `verify` no longer reports a path under a `Files:` entry ending in `/` as stray: such an entry covers every path under it, as `land-task.mjs` already reads it.
+- `remove-worktree.mjs` keeps every `docs/specs/` file git does not track in `.exo/kept/<worktree>/docs/specs/` before it removes the worktree, so an uncommitted brief is no longer lost.
+- `remove-worktree.mjs` no longer deletes its kept copy when `git worktree remove` fails after deleting part of the worktree: the copy stays and the error names where.
+
 ## 0.115.1 - 2026-10-10
 
 ### Changed
