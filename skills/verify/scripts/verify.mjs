@@ -584,10 +584,19 @@ export async function runGate(planText, { planPath, checkCommand, root = process
 
   // One REVIEW line per landed task, REVIEWED when its last commit's review record holds a verdict.
   const route = planRoute(plan.tasks).route;
+  let exoNames = [];
+  try {
+    exoNames = fs.readdirSync(path.join(path.resolve(root ?? '.'), '.exo'));
+  } catch {}
   for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
     const shas = taskCommits(task, root, planId);
-    const record = shas.length === 0 ? null : path.join(path.resolve(root ?? '.'), '.exo', `review-${shas[0].slice(0, 7)}.md`);
-    if (record !== null && fs.existsSync(record) && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
+    const exoDir = path.join(path.resolve(root ?? '.'), '.exo');
+    const name = shas.length === 0 ? undefined : exoNames.find((entry) => {
+      const hex = /^review-([0-9a-f]{7,})\.md$/.exec(entry)?.[1];
+      return hex !== undefined && shas[0].startsWith(hex);
+    });
+    const record = name === undefined ? null : path.join(exoDir, name);
+    if (record !== null && /\b(CLEAN|FINDINGS|BLOCKED)\b/.test(fs.readFileSync(record, 'utf8'))) {
       lines.push(`REVIEWED Task ${task.number} ${record}`);
     } else {
       lines.push(`REVIEW Task ${task.number} ${shas.join(',')}: ${taskReviewer(task, taskPaths(task, root, planId), route, taskDiffOf(task, root, planId))}`);

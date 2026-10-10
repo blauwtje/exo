@@ -797,6 +797,20 @@ test('REVIEW: a recorded review with a verdict prints REVIEWED with the record p
   assert.ok(!done.stdout.includes('REVIEW Task 1'), done.stdout);
 });
 
+test('REVIEW: a record under an 8-character commit id prints REVIEWED, one whose id is not a prefix of the commit stays REVIEW', async () => {
+  const { root } = await reviewRun({ 'plan.md': RISK_PLAN(' ') }, { commits: [['feat: x', 'Plan-task: plan/1', { 'src/app.js': 'export const greet = () => "hello";\n' }]] });
+  const sha = git(root, 'rev-parse', 'HEAD');
+  await mkdir(path.join(root, '.exo'), { recursive: true });
+  const other = path.join(root, '.exo', `review-${sha[0] === '0' ? '1' : '0'}${sha.slice(1, 8)}.md`);
+  await writeFile(other, 'Verdict: CLEAN\n');
+  const open = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(open.stdout.includes(`REVIEW Task 1 ${sha}:`), open.stdout);
+  const record = path.join(root, '.exo', `review-${sha.slice(0, 8)}.md`);
+  await writeFile(record, 'Verdict: CLEAN\n');
+  const done = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
+  assert.ok(done.stdout.split('\n').includes(`REVIEWED Task 1 ${record}`), done.stdout);
+});
+
 test('REVIEW: the OVERLAP lines list a file two tasks changed, and OVERLAP none otherwise', async () => {
   const plan = ['### Task 1: feat(app): a', 'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"', '',
     '### Task 2: feat(app): b', 'Depends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"', ''].join('\n');
