@@ -5,6 +5,7 @@ Settle what the run needs before building: questions worth asking, where the run
 ## Contents
 
 - [Asking](#asking)
+- [The direction offer](#the-direction-offer)
 - [The run directory](#the-run-directory)
 - [Symptoms](#symptoms)
 - [Settled identity](#settled-identity)
@@ -14,54 +15,57 @@ Settle what the run needs before building: questions worth asking, where the run
 
 - Visual choice = color, type, spacing, layout, motion, imagery, any choice between looks.
 - Visual choice → never a terminal question, except option B; a named color is not the seen color.
-- Visual choice → reaches the user as a sketch, as one plain-words question after option B, or is decided.
+- Visual choice → a sketch, one plain-words question after option B, or decided.
 - Name the decision an answer changes before asking anything; a question with no named decision is not asked.
-- Sort each question by one test: would the user answer it better by seeing it?
-- Scope, content, data, behavior → terminal questions; a question about a visual topic is not a visual question.
-- Beyond the form and the offer → ask only while an open fact blocks a decision brief, repository and Phase 1 cannot settle; name that decision inside the question.
-- Rungs 3, 5 and 6 of `## Route` → show the completed scope as one form, after Phase 1, before Direction.
-- Form order: single-select Users question, multi-select Scope question, single-select Directions question.
-- Product or style question → never ask; a product or style counts only when the user names one in the ask.
+- Sort each question: would the user answer better by seeing it?
+- Scope, content, data, behavior → terminal questions; a question on a visual topic is not a visual question.
+- Beyond form and offer → ask only while an open fact blocks a decision brief, repository and Phase 1 cannot settle; name that decision in the question.
+- Rungs 3, 5, 6 of `## Route` → show completed scope as one form, after Phase 1, before Direction.
+- Form order: Users single-select, Scope multi-select, Directions single-select.
+- Product or style question → never ask; one counts only when the ask names it.
 - `header` tab → conversation's language, at most 12 characters: Users "For whom", Scope "What's in", Directions "Designs".
-- Every question and option → plain words for someone without design knowledge.
+- Every question and option → plain words for a non-designer.
 - No jargon or abbreviation in a tab, question or option, such as scope, reference, directions or SLA, in any language.
-- Users question first; the user the screen serves decides its layout, density and main action.
-- Users options → three or four people Phase 1 evidence suggests, in everyday words: who, which device, how often, doing what.
+- Users question first; the screen's user decides its layout, density and main action.
+- Users options → 3-4 people Phase 1 evidence suggests, everyday words: who, device, how often, task.
 - Best-evidenced user → option A, recommended.
-- Scope options → at most four, each one completed scope group from the inventory.
-- Scope option name → what the user will see on screen, not an inventory group label.
-- Reachable states and fixed scope groups of an admin, dashboard or tool screen → never a Scope option; the build always carries them.
-- Scope answer ticks every option, none, or says decide yourself → build every group.
-- Scope answer ticks some → build ticked groups plus every fixed group.
+- Scope options → at most four, each one completed inventory scope group.
+- Scope option name → what the user sees on screen, not an inventory group label.
+- Reachable states and fixed groups of an admin, dashboard or tool screen → never a Scope option; always built.
+- Scope ticks every option, none, or decide yourself → build every group.
+- Scope ticks some → build ticked groups plus every fixed group.
 - Before the form → run `node <skill dir>/scripts/reference.mjs --root <repository>`; prints the product saved in docs/design/DESIGN.md, or nothing.
-- Saved product → state in one line, "Look: <product>, from DESIGN.md"; each project keeps its own look.
-- Product or style the ask names → wins over the saved product.
+- Saved product → one line, "Look: <product>, from DESIGN.md"; each project keeps its own look.
+- Product or style the ask names → beats the saved product.
 - `reference.mjs --set "<name>" --root <repository>` → only for a product or style the user named.
-- Named or saved product → sets the mood, the nearest of the four in `## Mood to look` of the `phase-direction` reference.
-- No product → choose that mood yourself from the user, the subject and any mood the ask names.
-- `display-font`, `body-font` or `accent` in DESIGN.md's front matter = saved pick: plan reuses it, shortlists only the missing picks.
+- Named or saved product → sets the mood, nearest of the four in phase-direction `## Mood to look`.
+- No product → choose that mood yourself from the user, subject and any mood the ask names.
+- `display-font`, `body-font` or `accent` in DESIGN.md front matter = saved pick: plan reuses it, shortlists only missing picks.
 - Plan names its picks → save each new one with `reference.mjs --display-font "<font>" --body-font "<font>" --accent "<color>" --root <repository>`.
 - Then run `node <skill dir>/scripts/picks.mjs --project <repository> --display "<font>" --body "<font>" --accent "<color>"`; prints the picks line, each repeated pick marked "also used in <n> earlier projects".
-- Before the first product edit → send that printed line to the user, translated into the conversation's language, also when no product was named.
+- Before the first product edit → send that line to the user in the conversation's language, also when no product was named.
 - Send it whole; a line rewritten from the plan drops the repeat marks.
-- Repeat → warns, blocks nothing: no question about it, keep the picks; the user decides whether to steer.
+- Repeat → warns, blocks nothing: no question, keep the picks; the user decides whether to steer.
 - `picks.mjs` failure → drops the warning, never the run; the line says the earlier-project check did not run.
 - Directions question → "How many designs should I show you first?" in the conversation's language, options 1, 2, 3 in order.
-- Option 1 wording → build one design right away; options 2 and 3 → show that many to choose from.
+- Option 1 wording → build one design right away; 2 and 3 → show that many to choose from.
 - Directions 1 → run stays on its rung: one direction, no sketch.
-- Directions 2 or 3 → asks to choose: rung 3 of `## Route` follows with that many directions, taking option A without the offer.
-- Those directions → first-screen comps in the picker under the `direction-preview` reference, never a sketch; a sketch hides how a direction looks as a product.
+- Directions 2 or 3 → asks to choose: rung 3 of `## Route` follows with that many directions, option A without the offer.
+- Those directions → one sketch round under `## The direction round` of the `sketch-tab` reference, not comps.
 - Rung 5 → drop the Directions question; its settled identity fixes the look.
-- Brief asks for a restrained or minimal look, or DESIGN.md names commitment level *restrained* → drop the Directions question; the run builds one direction.
-- Redesign of an app view, dashboard, admin page or internal tool, restraint not asked → keep the Directions question.
+- Restrained or minimal look asked, or DESIGN.md commitment level *restrained* → drop the Directions question; one direction.
+- App view, dashboard, admin page or internal tool redesign, restraint not asked → keep the Directions question.
 - Ask names its user → drop the Users question.
 - Ask says decide yourself → drop the whole form.
 - No answer can arrive, as in a headless run → send no form.
 - No Scope answer → build every group, named in one line before Direction.
 - No Users answer, or decide yourself → the user the ask names, else option A's user.
 - No Directions answer, or decide yourself → one direction.
-- Before Direction → state the user in one line (role, device, how often, main task) and write it to `$RUN/user.md`.
-- Rung 3 of `## Route`, a user asking to see or choose between looks → offer the preview once; no other rung offers it.
+- Before Direction → state the user in one line (role, device, how often, main task), written to `$RUN/user.md`.
+- Rung 3 of `## Route`, a user asking to see or choose between looks → offer the preview once, per `## The direction offer`; no other rung offers it.
+
+## The direction offer
+
 - Offer → form's last question, in place of the Directions question.
 - Offer follows the question shape; user answers with the letter:
 
@@ -69,14 +73,14 @@ Settle what the run needs before building: questions worth asking, where the run
   **How should we pick the new look?**
   I will make <n> looks. You can see them first or let me choose.
 
-  - **(A) Show me**: open each of the <n> full screen in your browser, one at a time.
+  - **(A) Show me**: sketches of the <n> looks open in your browser in about a minute.
   - **(B) Describe them**: I explain each look here in a few words.
   - **(C) You choose**: I build <the recommended look in plain words>.
 
   Recommended: (A), because seeing the looks beats reading about them, and (C) skips your say.
   ```
 
-- Option A → build first-screen comps, open the picker under the `direction-preview` reference; the click names the contract the `phase-direction` reference then freezes.
+- Option A → one sketch round under `## The direction round` of the `sketch-tab` reference; the click names the contract the `phase-direction` reference then freezes.
 - Every later visual choice the user asks to see → one sketch in the sketch tab under the `sketch-tab` reference, no second offer.
 - Option B → one more question whose options are the looks, each one plain line.
 - Option B letter → names the contract the `phase-direction` reference freezes, as a click would.
@@ -86,7 +90,7 @@ Settle what the run needs before building: questions worth asking, where the run
 - User then asks to see options → opens the tab, no second offer.
 - Each such choice → one line: the choice and its cost if wrong, never why.
 - Correction → apply without a question back.
-- Before full comps through `pick.mjs` → say in plain words each takes a few minutes.
+- Before full live comps through `pick.mjs` → say in plain words each takes a few minutes; a sketch round needs no warning.
 
 ## The run directory
 
