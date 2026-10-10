@@ -28,7 +28,7 @@ Resolve the surface from the markup and style files in the working-tree diff, th
 
 1. **Tweak:** the tweak path.
 2. **Handed a direction:** a plan's `Contract:` or a brief's `contract-selected.json` is copied to `$RUN/contract-selected.json` and resumes at one-pass step 5.
-3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: the offer in `## Asking` of `references/intake.md`.
+3. **Asked to choose:** the user asks to see or choose between looks, or the brief's `## Visual direction` names the user as chooser: `## The direction offer` of `references/intake.md`, then the sketch round.
 4. **Sketch:** the sketch path.
 5. **Settled identity:** the evidence `## Settled identity` of `references/intake.md` lists, while neither the user nor the brief lets it be replaced: the plan keeps that identity. A component library in the manifest is not that evidence on its own.
 6. **Everything else**, a landing or marketing page included: the scope form in `references/intake.md`, then one direction in the plan from its mood and the nearest sibling surface.
@@ -42,7 +42,7 @@ The default for every rung but 1 and 4; `exo:build-ui` writes the code, since co
 1. **Context.** Read the Phase 1 sections of `references/phase-detail.md`.
 2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`.
 3. **Check the plan** per `## Every rung` of `references/phase-direction.md`.
-4. **Build pass.** Read `references/build-pass.md` whole.
+4. **Build pass.** Read `## The build floor` and `## Proof` of `references/build-pass.md`.
 5. **Build.** Dispatch fresh `exo:build-ui` per `## Where the build runs` of `references/phase-build.md`, after `## The comp` on a full redesign.
 6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3.
 7. **Finish on a fresh capture.** Take its step 4.
@@ -52,6 +52,7 @@ The default for every rung but 1 and 4; `exo:build-ui` writes the code, since co
 The parts below run only when the user's own words ask for them; a page's size, rung or genre never starts them.
 
 - **Variants or a picker** ("show me options", "let me choose"): rung 3.
+- **Working or live comps**: `## The comps` of `references/phase-direction.md`.
 - **A survey, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
 
 ## References
@@ -59,24 +60,26 @@ The parts below run only when the user's own words ask for them; a page's size, 
 - Load only the sections a row names, all if none.
 - Read a section by `offset`/`limit` from `grep -n '^## '`, never `cat`, `awk` or `sed`, since Bash persists long output.
 - Never Read a `tool-results/` file the run holds, which loads it twice.
+- Each section → read once per run; a phase's sections → one message of parallel Reads.
+- Preview, rung 3 before the click → only Phase 1 and `preview:` sections; other Phase 2 ones after the pick.
 
 | File | Read it when |
 |---|---|
-| `references/intake.md` | Before Phase 1: `## Asking`, `## The run directory`; `## Symptoms` for a reported fault; `## Settled identity` when Route rungs 1-4 miss. |
-| `../route-skills/references/question.md` | Opt-in: Phase 2 on rung 3, before the preview offer. |
+| `references/intake.md` | Before Phase 1: `## Asking`, `## The run directory`; preview: `## The direction offer`; `## Symptoms` for a reported fault; `## Settled identity` when Route rungs 1-4 miss. |
+| `../route-skills/references/question.md` | Never on rung 3; a question beyond the form and the offer. |
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the full run. |
-| `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or a read-only planning mode. |
+| `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; preview: `## Mood to look`, `## Rung 3`, `## Judgment`; the rest on a live-comp request or a read-only planning mode. |
 | `references/phase-build.md` | One-pass step 5: `## Where the build runs`; steps 6-7 and every path's capture: `## Capture, look, fix once`; full run, before the first edit: `## The mechanics`, `## Judgment`. |
-| `references/build-pass.md` | Whole: sketch Phase 3, one-pass step 4; full run Phase 3 `## Slop tropes` alone. |
-| `references/stack.md` | Phase 2: `## Which stack`; the rest when it picks the default stack. |
+| `references/build-pass.md` | One-pass step 4: `## The build floor`, `## Proof`; sketch Phase 3: whole. |
+| `references/stack.md` | Phase 2 and preview: `## Which stack`; the rest when it picks the default stack, `## Scaffold` and `## Theme` builder-only on the one pass. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
-| `references/sketch-tab.md` | Opt-in: before the first visual choice other than the direction that the user asked to see. |
-| `references/direction-preview.md` | Opt-in: Phase 2 on rung 3, after `--check` reports ok and before the offer or the first comp. |
+| `references/sketch-tab.md` | Preview: `## The commands`, `## The direction round`, `## The answer`; whole before the first other visual choice the user asked to see. |
+| `references/direction-preview.md` | Live comps on request only: after `--check` reports ok, before the first comp. |
 | `references/composition.md` | Phase 1 `## Inventory before layout`; Phase 2 `## Turn subject evidence into a system`, `## Choose structures from relationships`, `## Write a composition contract`; full run Phase 3 `## Build density without clutter`, `## Surface obligations`, `## Responsive recomposition`. |
-| `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list`, `## Pairing`; full run Phase 3 the rest. |
+| `references/typography.md` | When choosing or changing type: Phase 2 `## Source by character, not by list`, `## Pairing`; preview: `## Pairing`; full run Phase 3 the rest. |
 | `references/controls.md` | Full run, before styling a control: `## Tactile hierarchy`, `## Labels`, plus `## Anatomy of the composite controls` for a composite. |
 | `references/implementation.md` | Full run, before writing CSS or component code: `## Where code lives`, `## One styling mechanism`, `## Tokens and palette derivation`, `## Responsive type and layout`, `## Banned patterns`, `## Finish — browser surfaces`. |
-| `references/motion.md` | Every build, before the first animation: `## Motion thesis`, `## Job gate`, `## Timing`, `## Reduced motion`; full run Phase 3 `## Materials`; `## Scroll and view transitions` or `## Continuity contract` when the build uses one, `## Judgment` for an animation library. |
+| `references/motion.md` | Builder alone on the one pass; else before the first animation: `## Motion thesis`, `## Job gate`, `## Timing`, `## Reduced motion`; full run Phase 3 `## Materials`; `## Scroll and view transitions` or `## Continuity contract` when the build uses one, `## Judgment` for an animation library. |
 | `references/interaction-qa.md` | Full run Phase 3 for controls, flows, disclosure or reachable states, but `## Pre-ship interaction sweep`, Phase 5 alone. |
 | `references/feedback-and-status.md` | Full run Phase 3 when the surface waits on the network, applies a change before its response, or reports status outside the changed region; Phase 5 `## Sweep` alone. |
 | `references/visual-critique.md` | Opt-in Phase 4: `exo:critique-ui` step 1's sections. |
