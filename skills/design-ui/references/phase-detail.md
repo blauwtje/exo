@@ -74,6 +74,7 @@ The floor checked before the critique is `## The build floor` of the `build-pass
 - A `general-purpose` delegate on `sonnet`, dispatched with `RUN`, `SKILL` and `REPO`, reads and runs this section.
 - It writes `$RUN/qa.md`, at most 20 lines, and returns only the qa.md path and line 1.
 - Line 1 of qa.md is `qa=complete|incomplete|blocked`; line 2 is the checks line.
+- Line 3 is `dials density=<n> variance=<n> motion=<n>`, the contract's final numbers; the closing message repeats it.
 - Then one line per open item, the performance numbers each tagged `measured`, `unthrottled` or `not measured`, and the candidate-rule lines.
 - Read line 1 of the final stage's `scripts/checkpoint.mjs --stage final` call: `stage=final renders=<n> blocking390=<n> blocking1440=<n> blockingStatic=<n> new=<n> predating=<n> ignored=<n>`.
 - Before reporting complete → repair every blocking finding, repair or name every new `potential` finding, per the `phase-build` reference `## Judgment`.

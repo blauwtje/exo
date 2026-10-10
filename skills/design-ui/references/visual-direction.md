@@ -2,6 +2,18 @@
 
 Decide the direction from references, render it, and select it before production code changes. The enemy is the direction chosen as prose and never seen: adjectives standing in for a rendered page. The overcorrection is forcing variants onto a task whose direction is already settled.
 
+## Contents
+
+- [Design context first](#design-context-first)
+- [Palette](#palette)
+- [Reference, variant, selection](#reference-variant-selection)
+- [Direction contract](#direction-contract)
+- [Dials](#dials)
+- [Material, depth, and atmosphere](#material-depth-and-atmosphere)
+- [Visual material and imagery](#visual-material-and-imagery)
+- [Whole-page visual logic](#whole-page-visual-logic)
+- [Judgment](#judgment)
+
 ## Design context first
 
 - Read the `approval_status` field `scripts/context.mjs --status` reports before asking whether a DESIGN.md decision is approved; open the body, through `--surface` and `--needs`, only for the sections the task needs.
@@ -58,6 +70,22 @@ Settled design system, local component inside one, or tweak → one direction, n
 - Each value carries a machine-readable payload and its evidence; built-in vocabulary supplies shapes, not the option set.
 - `--check` proves divergence, filled fields, and expectations, and names the allowed vocabulary of any field it rejects.
 - `--select` prints the frozen contract; redirected into the run directory's `contract-selected.json`, it is what Build, the critique, and QA read.
+
+## Dials
+
+Density, variance and motion are integers from 1 to 10. Density 1 is airy and 10 packed; variance 1 is a template layout and 10 an unexpected composition; motion 1 is feedback only and 10 choreographed.
+
+| Product kind | Density | Variance | Motion |
+| --- | --- | --- | --- |
+| Internal tool | 8 | 3 | 2 |
+| B2B SaaS | 7 | 4 | 3 |
+| Consumer app | 5 | 6 | 5 |
+| Editorial | 4 | 7 | 4 |
+| E-commerce | 6 | 5 | 4 |
+
+- Product kind in the table → start the dials from its row.
+- Product kind not listed → start from the nearest row and name that row.
+- Evidence from Phase 1 or the brief moves a dial → move it and give one reason in the contract.
 
 ## Material, depth, and atmosphere
 

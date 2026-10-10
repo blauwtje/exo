@@ -18,6 +18,8 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Give the display font, the body font and the accent hue one plan clause each naming this user and this product, as in "for <user> <task> in <product>", because a reason that fits any page is no reason.
 - Derive faces and hues from the subject, the user and a named or saved product, never from a seed.
 - Draw each plan ASCII layout in at most 8 lines per width, because the plan holds at most 25 lines.
+- Fill the contract's `dials` from the `visual-direction` reference's `## Dials` table: `density`, `variance` and `motion`, `start` as `table:<kind>`, and one string in `reasons` for each dial moved from its row.
+- On the one pass without a contract, record the same dials, `start` and `reasons` in `$RUN/plan.md`.
 - Freeze the selection and start Build in the turn the direction's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
 
 ## Mood to look
