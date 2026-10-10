@@ -47,8 +47,13 @@ test('a changelog-only difference reuses the suite and self-test and still runs 
 
 test('plugin version runs strict on a reused pass: a changelog without the line fails', (t) => {
   const root = copy(t);
-  recordPass(root, 'npm run check', 1);
   const changelog = path.join(root, 'CHANGELOG.md');
+  const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  // origin/main carries an Unreleased line, so stripping it leaves CHANGELOG.md the only difference.
+  fs.writeFileSync(changelog, fs.readFileSync(changelog, 'utf8').replace(/^## Unreleased\n/m, '## Unreleased\n\n### Fixed\n\n- A base line.\n'));
+  git('commit', '-q', '-am', 'unreleased line');
+  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  recordPass(root, 'npm run check', 1);
   fs.writeFileSync(changelog, fs.readFileSync(changelog, 'utf8').replace(/^## Unreleased\n[\s\S]*?(?=^## \d)/m, '## Unreleased\n\n'));
   const { stdout } = run(root);
   assert.match(stdout, /\[FAIL\] plugin version:/);
