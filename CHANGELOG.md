@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.115.2 - 2026-10-10
+
 ### Fixed
 
 - `verify` no longer reports a path under a `Files:` entry ending in `/` as stray: such an entry covers every path under it, as `land-task.mjs` already reads it.
