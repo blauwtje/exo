@@ -10,7 +10,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Lead only orchestrates: every edit, fix and failed-check repair → worktree subagent; independent parts in parallel.
 - `CHANGELOG.md` → only the lead writes it, so subagent branches never conflict on it.
 - Subagent → one concern; brief with two unrelated parts → two subagents.
-- `exo:spec` and `exo:build` → lead runs them itself; code reading goes to `exo:locate-code`, tasks to `exo:run-unit`.
+- `exo:spec` and `exo:build` → lead runs them itself; code reading goes to `exo:locate-code`, tasks to `exo:run-unit`; the lead writes the brief itself.
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's.
 - Handover between phases → the brief and `.exo/` files.
 - Land in one integration worktree under `.worktrees/`: merge subagent branches, add `CHANGELOG.md` lines, fetch, rebase onto `origin/main`.

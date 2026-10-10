@@ -1105,8 +1105,9 @@ test('a gate that passed on this tree is skipped on the next run, and a tracked 
 test('--reviews-only prints only the review lines, runs no proof or gate and records no pass', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
-    'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(1)"\n',
-    'check.js': FAILING_CHECK
+    'plan.md': '### Task 1: feat(app): greet\nDepends on: none | Files: `src/app.js` | Data: none | Proof: node -e "process.exit(0)"\n',
+    'check.js': CLEAN_CHECK,
+    '.gitignore': '.exo/\n'
   });
   landTask(root, 1);
 
@@ -1116,7 +1117,8 @@ test('--reviews-only prints only the review lines, runs no proof or gate and rec
   assert.ok(lines.every((line) => /^(?:REVIEW|REVIEWED|OVERLAP) /.test(line)), result.stdout);
   assert.ok(lines.some((line) => line.startsWith('REVIEW Task 1 ')), result.stdout);
   const full = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root });
-  assert.ok(full.stdout.includes('FAIL success-criterion'), 'the flag recorded no pass, so the full run still runs the gate');
+  assert.ok(full.stdout.includes('PASS success-criterion'), full.stdout);
+  assert.ok(!full.stdout.includes('SKIP success-criterion'), 'the flag recorded no pass, so the full run still runs the gate');
 });
 
 test('the gate starts while a slow Proof runs, and the lines keep their order', async () => {

@@ -463,8 +463,10 @@ function reviewLines(plan, landed, { root, planId, base }) {
   const route = planRoute(plan.tasks).route;
   let exoNames = [];
   try {
-    exoNames = fs.readdirSync(path.join(path.resolve(root ?? '.'), '.exo'));
-  } catch {}
+    exoNames = fs.readdirSync(path.join(path.resolve(root ?? '.'), '.exo')).sort();
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
   for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
     const shas = taskCommits(task, root, planId);
     const exoDir = path.join(path.resolve(root ?? '.'), '.exo');
