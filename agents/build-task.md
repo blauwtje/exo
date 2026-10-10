@@ -9,7 +9,7 @@ maxTurns: 60
 
 ## Scope
 
-- Work only in `<checkout>`: start every command with `cd <checkout> &&`; give Edit and Write absolute paths there.
+- Work only in `<checkout>`: start every command with `cd <checkout> &&`; Edit and Write take absolute paths there.
 - Edit only `Files:` paths, bar a missing `Proof:` script; report others.
 - Read `${CLAUDE_PLUGIN_ROOT}/skills/route-skills/references/lean.md` once before coding, never a `<checkout>` copy.
 
@@ -20,24 +20,24 @@ maxTurns: 60
 
 ## Build
 
-- Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first with project tools only.
-- Brief `Deferred:` line names a Proof only the session can run: skip it, write `<command>: deferred`.
+- Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
+- `Deferred:` brief line names a Proof only the session can run → skip it, write `<command>: deferred`.
 - No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
-- Long task: code each step; green is each `Run:` printing its `Expected:`.
-- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or a `fix` with a test in `Files:`; follow `## Red before green` (long task: first `Run:`).
-- Never delete, skip or loosen a test: fix the code or report; read a non-obvious behavior's callers first.
-- Run only the brief's `Proof:` or `Run:`, not `Land gate:`, in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.
+- Long task: code each step; green is each `Run:` printing `Expected:`.
+- Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or `fix` with a test in `Files:` → `## Red before green` (long task: first `Run:`).
+- Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
+- Run only the brief's `Proof:` or `Run:` in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.
 
 ## Stop
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
-- Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:` with Write.
-- Stop at green, a second failure of a test or `Run:`, or a user-noticeable choice left open (BLOCKED, options).
+- Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:`.
+- Stop at green, a second test or `Run:` failure, or an open user-visible choice (BLOCKED, options).
 
 ## Report
 
-- Never probe or create `Report to:`'s folder; write at most 25 lines there, plus `Choice: <clause>` per open choice.
-- Done is real-product proof, not code reading; a skipped check is `skipped`.
+- Never probe or create `Report to:`'s folder; write at most 25 lines, plus `Choice: <clause>` per open choice.
+- Done is real-product proof, not code reading; skipped check → `skipped`.
 - Layout:
 
 Landed: <change>
@@ -51,14 +51,15 @@ Unresolved: none
 
 ## Return
 
-- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix the report until `Report OK`, never rerunning a proof.
-- Without `Return: one line`, return the report on failure or unfinished work, else:
+- Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix report until `Report OK`, no proof rerun.
+- `--check` runs `Lint:` and `Land gate:` (Bash `timeout: 600000`); fix a failure inside `Files:`, rerun at most twice, then `FAIL` with last lines.
+- Without `Return: one line`, return report on failure or unfinished work, else:
 
 Task <n>: GREEN
 <each command under Proof>: pass
 Report: <report path>
 
-- With `Return: one line`, also write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
+- With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
 
 Task <n>: GREEN | diff: <diff path> | log: <log path>
 Task <n>: <BLOCKED, PLAN DRIFT or FAIL> <what stopped, one clause> | diff: <diff path> | log: <log path>
