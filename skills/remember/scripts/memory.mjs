@@ -8,6 +8,7 @@
 //   node memory.mjs retire --claim "<the claim>"
 //   node memory.mjs book --source review --key <key> --claim "<defect>" --session <id> [--quote "<text>"]
 //   node memory.mjs propose [--count]
+//   node memory.mjs reject --session <id> (--key <key> | --claim "<the claim>")
 //
 // Every command takes --cwd naming the repository, defaulting to the process
 // working directory.
@@ -35,7 +36,7 @@ function readState(cwd) {
   try {
     text = fs.readFileSync(stateFile(cwd), 'utf8');
   } catch (error) {
-    if (error.code === 'ENOENT') return { candidates: {}, lines: [] };
+    if (error.code === 'ENOENT') return { candidates: {}, lines: [], rejected: {} };
     throw error;
   }
   let parsed;
@@ -44,7 +45,7 @@ function readState(cwd) {
   } catch (error) {
     throw new Error(`${stateFile(cwd)} is not valid JSON: ${error.message}`);
   }
-  return { candidates: parsed.candidates ?? {}, lines: parsed.lines ?? [] };
+  return { candidates: parsed.candidates ?? {}, lines: parsed.lines ?? [], rejected: parsed.rejected ?? {} };
 }
 
 const HEADER = '# Project memory\n\nexo writes this file. Do not edit it by hand: run `/exo:remember` instead.';
@@ -88,9 +89,18 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// A rejection holds against the sessions that already saw the claim when the
+// user turned it down; only a session outside that list brings it back, because
+// a repeat from a listed session is the same evidence the user already weighed.
+function revive(state, name, session) {
+  const rejection = state.rejected[name];
+  if (rejection !== undefined && !rejection.sessions.includes(session)) delete state.rejected[name];
+}
+
 // A second booking from the same session replaces that session's quote rather
 // than counting twice: a session that repeats itself has still seen the claim once.
 function book(state, claim, quote, session) {
+  revive(state, claim, session);
   const attestations = (state.candidates[claim] ?? []).filter((entry) => entry.session !== session);
   attestations.push({ session, date: today(), quote });
   state.candidates[claim] = attestations;
@@ -105,15 +115,18 @@ function normalizeKey(key) {
 // defect differently still count as one lesson.
 function bookReview(state, key, claim, quote, session) {
   const name = `review:${key}`;
+  revive(state, name, session);
   const attestations = (state.candidates[name] ?? []).filter((entry) => entry.session !== session);
   attestations.push({ session, date: today(), quote, claim, source: 'review' });
   state.candidates[name] = attestations;
   return attestations.length;
 }
 
+// A rejected candidate keeps its attestations but is not proposed, so ship's
+// count of ready lessons drops to what the user has not yet turned down.
 function proposable(state) {
   return Object.entries(state.candidates)
-    .filter(([, attestations]) => attestations.length >= ATTESTATIONS_REQUIRED)
+    .filter(([name, attestations]) => attestations.length >= ATTESTATIONS_REQUIRED && state.rejected[name] === undefined)
     .map(([claim, attestations]) => ({ claim, attestations }));
 }
 
@@ -158,8 +171,9 @@ function writeClaim(cwd, state, claim, refs, replaces, name = claim) {
     throw new Error(`refused: "${claim}" is already live, written ${live.written}. Supersede it with --replaces or retire it rather than writing it twice`);
   }
   const written = today();
-  const next = { candidates: { ...state.candidates }, lines: state.lines.map((line) => ({ ...line })) };
+  const next = { candidates: { ...state.candidates }, lines: state.lines.map((line) => ({ ...line })), rejected: { ...state.rejected } };
   delete next.candidates[name];
+  delete next.rejected[name];
   if (replaces !== undefined) {
     const predecessor = next.lines.find((line) => line.claim === replaces && isLive(line));
     if (predecessor === undefined) throw new Error(`refused: no live line reads "${replaces}"`);
@@ -295,7 +309,7 @@ if (command === 'paths') {
     const state = readState(cwd);
     const { lines, live, dropped } = verifyLines(cwd, state);
     for (const entry of dropped) console.log(`dropped "${entry.claim}": ${entry.missing.join(', ')}`);
-    if (dropped.length > 0) writeState(cwd, { candidates: state.candidates, lines });
+    if (dropped.length > 0) writeState(cwd, { candidates: state.candidates, lines, rejected: state.rejected });
     console.log(`${live} line${live === 1 ? '' : 's'} verified, ${dropped.length} dropped`);
   } catch (error) {
     fail(error.message);
@@ -307,11 +321,29 @@ if (command === 'paths') {
     const target = state.lines.find((line) => line.claim === values.claim && isLive(line));
     if (target === undefined) throw new Error(`refused: no live line reads "${values.claim}"`);
     const lines = state.lines.map((line) => (line === target ? { ...line, retired: { date: today() } } : line));
-    writeState(cwd, { candidates: state.candidates, lines });
+    writeState(cwd, { candidates: state.candidates, lines, rejected: state.rejected });
     console.log(`retired "${values.claim}"`);
   } catch (error) {
     fail(error.message);
   }
+} else if (command === 'reject') {
+  // The user turned the proposal down: the candidate is recorded as rejected
+  // rather than deleted, so its attestations stay and a later session can revive it.
+  if (values.session === undefined || (values.key === undefined) === (values.claim === undefined)) {
+    fail('reject needs --session and exactly one of --key or --claim');
+  }
+  try {
+    const state = readState(cwd);
+    const name = values.key === undefined ? values.claim : `review:${normalizeKey(values.key)}`;
+    const attestations = state.candidates[name];
+    if (attestations === undefined) throw new Error(`refused: no candidate is booked as ${name}`);
+    const sessions = [...new Set([...attestations.map((entry) => entry.session), values.session])];
+    state.rejected[name] = { date: today(), sessions };
+    writeState(cwd, state);
+    console.log(`rejected ${name}; proposed again once a session outside ${sessions.join(', ')} books it`);
+  } catch (error) {
+    fail(error.message);
+  }
 } else {
-  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write, verify or retire`);
+  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write, verify, retire or reject`);
 }
