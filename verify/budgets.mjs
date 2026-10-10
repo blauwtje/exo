@@ -29,7 +29,7 @@ export const HOOK_LINES_LOCK = { lines: 894, measured: '2026-10-09' };
 // Words every session loads before the first prompt: the session-start output,
 // each model-invocable skill's name and description, each agent's name and
 // description; verify/checks/session-load.mjs fails above it.
-export const SESSION_LOAD_LOCK = { words: 500, measured: '2026-10-09' };
+export const SESSION_LOAD_LOCK = { words: 598, measured: '2026-10-10' };
 // Entries in verify/instruction-density-allowlist.txt; a lower count after
 // --prune is copied in by hand, and tests fail until it is.
 export const INSTRUCTION_DENSITY_ALLOWLIST_LOCK = { entries: 0, measured: '2026-10-02' };

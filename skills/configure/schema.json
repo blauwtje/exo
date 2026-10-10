@@ -21,7 +21,7 @@
     "aliases": { "high": "low" },
     "legacy": { "key": "replies", "values": { "terse": "low", "tight": "low", "standard": "off" } },
     "rules": {
-      "low": "Compression is low: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning, a question to the user and a confirmation before an irreversible action are written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out.",
+      "low": "Compression is low: no preamble, recap, filler or hedging. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole, and a security warning, a question to the user and a confirmation before an irreversible action are written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out. Every report to the user opens with at most three short plain lines: what happened, whether it worked, and what the user must do now, or that nothing is needed. Hashes, counts, paths, deviations and review notes go to the run report (`.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup), else to the file the work already wrote, behind one pointer line, and are not repeated; with neither file they wait until asked. A choice for the user is one question with at most three one-line options, recommended first. No table or nested list unless the user asks for detail.",
       "off": "Compression is off: full prose."
     },
     "label": "Compression",
