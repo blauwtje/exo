@@ -28,6 +28,7 @@ Work in this order:
 
 ## Merge-ready is the end
 
+- A watch stops at merge-ready; only an explicit merge moves to the skill's step 7.
 - Never rewrite history or retarget a base on a branch others may have pulled unless the user names it first.
 
 ## Report

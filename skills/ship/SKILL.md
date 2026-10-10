@@ -19,17 +19,15 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
    - No issue → run `node "${CLAUDE_SKILL_DIR}/../file-issues/scripts/repo-fields.mjs"` and its `--size` form.
 5. **Verify**, for `pr-merge`: hand the diff to `verify`; `FAIL` pushes nothing.
-   - `PASS` or `PASS+NOTES` → record verdict and `patch-id=` under `## Verification`, via `gh pr edit <n> --body-file <f>` on an open PR.
-   - Reuse a recorded verdict past `--verdict-current <patch-id>`; `stale` reruns it.
+   - Record or reuse a verdict per `references/pr-merge.md`.
 6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.
    - Steps: push, open, wait for checks (stops after 20 minutes, exit 124), gate from the API, merge, confirm.
    - `DIRTY` exits 4, other stops 1, asking `(A) Resolve conflicts` or `(B) Stop`, leaving it open.
    - A fix → rerun step 5, never `--merge`.
    - `open-pr` or a merge request stops after three fix rounds, watch included.
-7. **Merge.** Print `gh pr list --json number,title,baseRefName,headRefName` in order.
-   - Each gets a step 5 verdict via `gh pr view <n> --json headRefOid,baseRefName,title,body`; `FAIL` drops out.
+7. **Merge.** List and verify each per `references/pr-merge.md`.
    - `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` under `run_in_background` gates and merges each; a stop never halts others.
-8. **Comments and watching.** A watch stops at merge-ready; only an explicit merge moves to step 7.
+8. **Comments and watching** per their references.
 
 ## References
 
@@ -42,5 +40,6 @@ allowed-tools: Bash(node *repo-fields.mjs*)
 | `references/merge-conflicts.md` | Conflicts, step 6 or watch. |
 | `references/pr-comments.md` | Comments, watch. |
 | `references/watch.md` | Watching. |
+| `references/pr-merge.md` | Steps 5 and 7. |
 
 Report: each line `ship.mjs` prints, the checkout line included (branch for Keep local), status via `gh pr view <n> --json state,isDraft`, `gh pr ready <n>` if draft, `git worktree remove <path>` if merged.

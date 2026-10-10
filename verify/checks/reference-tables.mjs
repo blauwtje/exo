@@ -71,6 +71,7 @@ const EXPECTED_OWNER_ROWS = {
     'references/merge-conflicts.md',
     'references/pr-comments.md',
     'references/watch.md',
+    'references/pr-merge.md',
   ],
   'skills/remember/SKILL.md': [
     '../route-skills/references/question.md',
