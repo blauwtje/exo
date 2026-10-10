@@ -8,11 +8,13 @@ Branch reviewer follows these when the dispatch names this file.
 - Pass: this file's path, plan path, branch, checkout, base, implementer report directory `<checkout>/.exo/`.
 - Pass: scope `task <shas>` from the `REVIEW` line, or `overlap` with the `OVERLAP` lines.
 - No `REVIEW` line (run-unit) → shas from `git log --format=%h --grep "^Plan-task: <plan id>/<n>$"`; the anchors keep `<n>` from matching `<n>0`..`<n>9`.
-- Pass: report path `<checkout>/.exo/review-<sha7>.md`, sha7 from the line's first sha; for `overlap`, `<checkout>/.exo/review-overlap.md`.
+- Pass: findings path, named as input to `merge-reviews.mjs` (for `fix diff`, verify's repair step 4), `<checkout>/.exo/review-<sha7>.md`, sha7 from the line's first sha; for `overlap`, `<checkout>/.exo/review-overlap.md`.
 - Scope `task` → also pass three to five concrete questions, written from the task's heading, `Data:`, `Risk:` and Acceptance line.
 - Reviewer reads only the plan, diff and implementer `Red:` lines.
-- Reviewer return with no report file at its report path, whatever its return line → still pass that path to `merge-reviews.mjs`, which merges it as `BLOCKED`.
-- Merged `verdict=BLOCKED` → end the turn with its report, naming each task without a report; no resume, no redispatch.
+- Reviewer return with no file at its findings path, whatever its return line → the dispatcher with SendMessage resumes it once, naming the path as input to `merge-reviews.mjs`.
+- Dispatcher without SendMessage (run-unit) → no resume.
+- File still missing → pass that path to `merge-reviews.mjs` anyway, which merges it as `BLOCKED`.
+- Merged `verdict=BLOCKED` → end the turn with its report, naming each task without a findings file; no second resume, no redispatch.
 - Merge prints `UNREAD <n>` → list each unread finding in the `REPORT` file as `report`, name the count in the message; no fixer dispatch, no rerun, no rewriting the finding into one-line shape.
 
 ## Probe

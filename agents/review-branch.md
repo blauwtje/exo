@@ -30,7 +30,7 @@ Review one branch against plan and standard; fixer repairs from report alone.
 
 ## Report
 
-Write report to the findings path the dispatch names; report file is the deliverable.
+Write findings to the findings path the dispatch names: input to `merge-reviews.mjs`.
 - Verdict first: `CLEAN` (none), `FINDINGS` (some), `BLOCKED` (plan, base, diff unreadable).
 - Findings by file, ascending line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `hazard`, `question`); rule; one-sentence evidence; `fix`/`report`.
 - Each `fix` finding → `  Probe: <command>` under it, per `## Probe` in `skills/verify/references/review-rules.md`.
