@@ -299,6 +299,18 @@ test('a timed-out Proof is refused with timed out after <n>s, its process tree s
   await assert.rejects(fs.access(marker));
 });
 
+// bash exits 0 at once, but a background child holds the output pipe past the deadline.
+test('a Proof whose bash exits 0 while a background child outlives the deadline is refused, not cached as a pass', async () => {
+  const command = '(sleep 5) & true';
+  const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', command));
+  await writeReport(root, `Landed: src/app.js\nProof:\n- \`${command}\`: pass\nUnresolved: none\n`);
+  const head = git(root, 'rev-parse', 'HEAD');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: { EXO_PROOF_TIMEOUT_MS: '300' } });
+  assert.equal(result.code, 1, result.stderr);
+  assert.match(result.stderr, /failed \(timed out after 0\.3s\)/);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+});
+
 test('a plan with no Land gate line lands as before', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

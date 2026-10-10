@@ -300,7 +300,7 @@ function runProof(task, command, root, field) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs });
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
-  if (proofRun.status === 0) {
+  if (proofRun.status === 0 && !proofRun.timedOut) {
     recordPass(root, command, Date.now() - started, before);
     return { command, tail };
   }
