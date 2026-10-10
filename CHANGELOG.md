@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.111.2 - 2026-10-10
+
 ### Fixed
 
 - `merge-reviews.mjs` counts a review finding not written on one line and prints it as `UNREAD <n>`, so `fix=0` no longer hides a `fix` finding.
