@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.113.0 - 2026-10-10
+
 ### Highlights
 
 **`run-unit` now builds a `Wave:` line as a rolling window: up to four tasks build at once, each in its own worktree, and a finished task lands and frees its slot right away instead of waiting for the whole batch.**
