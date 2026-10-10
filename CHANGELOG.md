@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The verifier self-test now names the check each reject scenario must trip and fails a scenario unless exactly those checks fail. Before, any failing check passed it, so a mutation caught by the wrong check stayed green. Scenarios that had drifted onto the wrong check now aim at their own check again.
+
 ## 0.119.0 - 2026-10-10
 
 ### Added
