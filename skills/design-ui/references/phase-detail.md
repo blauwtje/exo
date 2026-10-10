@@ -23,7 +23,7 @@ Per-phase detail the skill body omits: Phase 1 context, the build floor, render 
 
 ## Full run
 
-Full run starts only when the user asks for a survey, parallel builders, a critique or QA; it replaces the one pass's capture, look and fix steps.
+Full run starts only when the user asks for a survey, a critique or QA; it replaces the one pass's capture, look and fix steps.
 
 - Phase 1 runs none of `## Context` here.
 - Surface renders → this session first takes the baseline pair under `## The critique dispatch`.

@@ -14,13 +14,6 @@ Bind this session and every builder:
 - That stage writes `$RUN/check-ui-baseline.json` for both viewports.
 - Every later checkpoint call finds that file itself and passes it to check-ui as `--baseline`, so `comparison` holds the counts the report quotes.
 
-Where the build runs:
-
-- Phase 1's file list splits the page into two or more surfaces with disjoint files → one `SCOPE=foundation` call first.
-- Then one call per surface, all in one message, in the turn foundation.md returns, per `## Full run builders`.
-- `FILES` is the Phase 1 path list; this session captures, looks and judges.
-- One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges; this session captures, looks and judges.
-
 Proof: `## Proof` of the `build-pass` reference, plus:
 
 - The repository checks of that `## Proof` → before the next `scripts/check-ui.mjs` run.
@@ -28,14 +21,26 @@ Proof: `## Proof` of the `build-pass` reference, plus:
 - `--all` adds `target-size-enhanced` and media-query px findings to the summary → pass it only when the user asks for AAA or breakpoint review; the report file always holds them.
 - Run proof once the last edit lands, here or after every builder has returned.
 
+## Where the build runs
+
+The one pass only; the full run follows `## Full run builders` alone.
+
+- Phase 1's file list splits the page into two or more surfaces with disjoint files → one `SCOPE=foundation` call first.
+- Then one call per surface, all in one message, in the turn foundation.md returns.
+- Split → before the foundation call, this session writes its Phase 1 path and line-range list to `$RUN/files.md` and passes that file as each call's `FILES`.
+- Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow the `## Full run builders` bullets.
+- One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges.
+- Every route → this session captures, looks and judges.
+
 ## Full run builders
 
 - Each call: a few lines naming `RUN=<run dir> SCOPE=<foundation or a surface> SKILL=<skill dir> REPO=<repository root> FILES=$RUN/files.md REFERENCES=<the reference rows whose predicate its scope meets> URL=<the surface's url, for a surface scope that renders>`.
-- `$RUN/files.md` = Phase 1 list of paths and line ranges this session wrote, so a builder opens no whole file.
+- `$RUN/files.md` = Phase 1 list of paths and line ranges, so a builder opens no whole file; `exo:survey-ui` writes it on the full run, this session on a one-pass split.
 - One call with `SCOPE=foundation` writes the tokens file, base layer and the primitives the inventory repeats, and returns foundation.md.
 - Project with no pages and no UI framework → that call also scaffolds the stack and runs every `shadcn add` the inventory needs, because parallel surface builders running the CLI race on `package.json`.
 - This session then starts the dev server and passes its url as each surface's `URL`.
-- Then one call per surface, all in one message, each given that foundation.md, even for an inventory of one or two surfaces.
+- Then one call per surface, all in one message, each given that foundation.md.
+- Full run → every inventory surface gets its own builder, even an inventory of one; the one-surface rule of `## Where the build runs` binds the one pass only.
 - Send them in the turn foundation.md returns, reading nothing but that report first; every surface builder waits on each turn between.
 - Every report at most 20 lines; code stays on disk; this session reads reports, not code.
 

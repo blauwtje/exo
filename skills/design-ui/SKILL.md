@@ -43,7 +43,7 @@ The default for every rung but 1 and 4; `exo:build-ui` writes the code, since co
 2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names any named or saved product, the hex color and font line, the motion thesis and ASCII layouts at 1440 and 390; send the user `scripts/picks.mjs`'s line.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise until none is missing.
 4. **Build pass.** Read `references/build-pass.md` whole.
-5. **Build.** Dispatch fresh `exo:build-ui`, `model: "opus"`, `SCOPE: page`, with the rung 3 comp; read its report only.
+5. **Build.** Dispatch fresh `exo:build-ui`, `model: "opus"`, with the rung 3 comp, under `## Where the build runs` of `references/phase-build.md`: `SCOPE: page`, or a foundation call then one call per surface when surfaces have disjoint files; read reports only.
 6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3, sending the fault list to the builder.
 7. **Finish on a fresh capture.** Take its step 4; a page is done only on a capture after its last edit.
 
@@ -52,7 +52,7 @@ The default for every rung but 1 and 4; `exo:build-ui` writes the code, since co
 The parts below run only when the user's own words ask for them; a page's size, rung or genre never starts them.
 
 - **Variants or a picker** ("show me options", "let me choose"): rung 3.
-- **A survey, parallel builders, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
+- **A survey, a critique or QA** ("run the full process", "critique it"): `## Full run` of `references/phase-detail.md`, where `exo:survey-ui` writes `$RUN/inventory.md`.
 
 ## References
 
@@ -66,7 +66,7 @@ The parts below run only when the user's own words ask for them; a page's size, 
 | `../route-skills/references/question.md` | Opt-in: Phase 2 on rung 3, before the preview offer. |
 | `references/phase-detail.md` | Phase 1: `## Context`, `## Precedence`, `## Judgment`, and `## The build floor` off the one pass; the rest on the full run. |
 | `references/phase-direction.md` | Phase 2, before the plan: `## Every rung`, `## Mood to look`, `## Judgment`; the rest on opt-in rung 3 or a read-only planning mode. |
-| `references/phase-build.md` | One-pass steps 6-7 and every path's capture: `## Capture, look, fix once`; full run, before the first edit: `## The mechanics`, `## Judgment`. |
+| `references/phase-build.md` | One-pass step 5: `## Where the build runs`; steps 6-7 and every path's capture: `## Capture, look, fix once`; full run, before the first edit: `## The mechanics`, `## Judgment`. |
 | `references/build-pass.md` | Whole: sketch Phase 3, one-pass step 4; full run Phase 3 `## Slop tropes` alone. |
 | `references/stack.md` | Phase 2: `## Which stack`; the rest when it picks the default stack. |
 | `references/visual-direction.md` | Phase 2, without `## Design context first` and, off rung 3, `## Reference, variant, selection`; Phase 1 the former alone for a design system in the repository or docs/design/DESIGN.md. |
