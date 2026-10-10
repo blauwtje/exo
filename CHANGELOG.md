@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.114.3 - 2026-10-10
+
 ### Changed
 
 - `design-ui` dispatches `exo:build-ui` on its own `sonnet` frontmatter instead of `model: "opus"`; a test now fails when a builder agent (`build-task`, `build-ui`, `fix-review`, `run-unit`) resolves to the strong tier or a dispatch names it with the strong model, and `skill-shape.md` states the rule: builders run standard, only judges and hard repairs may run strong (#99).
