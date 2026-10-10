@@ -347,3 +347,13 @@ test('write --key refuses a key booked in one session and, after two, writes the
   assert.equal(state.candidates['review:k1'], undefined);
   assert.equal(state.lines[0].quotes.length, 2);
 });
+
+test('a user claim worded "review: ..." is proposed exactly as a user claim', async () => {
+  const root = await repository();
+  await memory(root, 'book', '--claim', 'review: keep it short', '--quote', 'said so', '--session', 'one');
+  await memory(root, 'book', '--claim', 'review: keep it short', '--quote', 'said so again', '--session', 'two');
+  const proposed = await memory(root, 'propose');
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.doesNotMatch(proposed.stdout, /undefined|\(key:/);
+  assert.match(proposed.stdout, /^review: keep it short$/m);
+});

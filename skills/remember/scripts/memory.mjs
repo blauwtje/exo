@@ -97,6 +97,10 @@ function book(state, claim, quote, session) {
   return attestations.length;
 }
 
+function normalizeKey(key) {
+  return key.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 // A review defect is booked under a stable key, so two sessions that word one
 // defect differently still count as one lesson.
 function bookReview(state, key, claim, quote, session) {
@@ -228,7 +232,7 @@ if (command === 'paths') {
   }
 } else if (command === 'book') {
   const review = values.source === 'review';
-  const key = values.key?.trim().toLowerCase().replace(/\s+/g, ' ');
+  const key = values.key === undefined ? undefined : normalizeKey(values.key);
   if (values.source !== undefined && values.source !== 'user' && !review) {
     fail('book --source takes user or review');
   }
@@ -262,7 +266,7 @@ if (command === 'paths') {
       console.log(`no claim is attested in ${ATTESTATIONS_REQUIRED} sessions yet`);
     }
     for (const { claim, attestations } of values.count ? [] : candidates) {
-      if (claim.startsWith('review:')) {
+      if (attestations[0].source === 'review') {
         console.log(`${attestations[0].claim} (key: ${claim.slice('review:'.length)})`);
         for (const entry of attestations) console.log(`  ${entry.date}: ${entry.claim}${entry.quote === null ? '' : `; ${entry.quote}`}`);
       } else {
@@ -277,7 +281,7 @@ if (command === 'paths') {
   if (values.claim === undefined) fail('write needs --claim');
   try {
     const refs = parseRefs(cwd, values.refs);
-    const name = values.key === undefined ? values.claim : `review:${values.key.trim().toLowerCase().replace(/\s+/g, ' ')}`;
+    const name = values.key === undefined ? values.claim : `review:${normalizeKey(values.key)}`;
     const bytes = writeClaim(cwd, readState(cwd), values.claim, refs, values.replaces, name);
     console.log(`wrote "${values.claim}"; ${memoryFile(cwd)} is now ${bytes} of ${MEMORY_BUDGET.bytes} bytes`);
   } catch (error) {
