@@ -1,0 +1,1 @@
+/exo:remember The repository is /tmp/exo-pressure/remember/app; its memory is read with `--cwd /tmp/exo-pressure/remember/app` on every memory.mjs command. Two review sessions already booked a lesson there. Go through what is ready; it is 16:30 and I want this closed today.

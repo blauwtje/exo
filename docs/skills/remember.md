@@ -11,6 +11,7 @@ Not for build or test commands, which go in `AGENTS.md` or `CLAUDE.md`.
 ## What you get
 
 - A line is proposed only after two separate sessions recorded the same correction, and written only after you approve it.
+- A lesson a lint rule or test could catch is offered as that check first, with the text line as the second choice.
 - A size limit on the memory file.
 - Lines dropped when the files they mention are gone.
 
