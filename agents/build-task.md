@@ -21,9 +21,7 @@ maxTurns: 60
 ## Build
 
 - Compact task: build the heading in `Files:` per `Data:`; green is `Proof:` passing, a missing script written first, project tools only.
-- `Deferred:` brief line names a Proof only the session can run → skip it, write `<command>: deferred`.
-- No `Proof:`: pick or write one test for `Success criterion:`, run only it, first under Proof.
-- Long task: code each step; green is each `Run:` printing `Expected:`.
+- `Deferred:`, `Run:` steps, no `Proof:`, no `Return: one line` or a failed `--check` → read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/agent-cases.md` first.
 - Test-first: `${CLAUDE_PLUGIN_ROOT}/skills/build/references/test-design.md` `## Risky or routine` says risky, `Risk:`, or `fix` with a test in `Files:` → `## Red before green` (long task: first `Run:`).
 - Never delete, skip or loosen a test: fix code or report; read a non-obvious behavior's callers first.
 - Run only the brief's `Proof:` or `Run:` in the foreground with Bash `timeout: 600000`; never call `Monitor` or start with `sleep`.
@@ -52,13 +50,7 @@ Unresolved: none
 ## Return
 
 - Before GREEN, run `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs" --check --plan <plan> --task <n> --root <checkout>`; fix report until `Report OK`, no proof rerun.
-- `--check` runs `Lint:` and `Land gate:` (Bash `timeout: 600000`); fix a failure inside `Files:`, rerun at most twice, then `FAIL` with last lines.
-- Without `Return: one line`, return report on failure or unfinished work, else:
-
-Task <n>: GREEN
-<each command under Proof>: pass
-Report: <report path>
-
+- `--check` runs `Lint:` and `Land gate:` (Bash `timeout: 600000`).
 - With `Return: one line`, write `implementer-<n>.diff` (each `Files:` diff; untracked: `git diff --no-index -- /dev/null <path>`) and `implementer-<n>.log`; return only:
 
 Task <n>: GREEN | diff: <diff path> | log: <log path>
