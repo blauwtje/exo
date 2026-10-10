@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.120.1 - 2026-10-10
+
 ### Fixed
 
 - `design-ui` fast preview text agrees with itself again: rung 3, the direction offer, the planning turn, `picked.json`, the sketch-round line and id rules, the one-repair comp loop and `COMP` after a sketch pick no longer contradict each other. The fill-script ban covers every filled contract again, and a comp fault left `open` is named before the picker opens.
