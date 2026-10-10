@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.112.0 - 2026-10-10
+
 ### Highlights
 
 **A plan task's builder now runs the land gate itself and fixes a small failure on the spot, and exo's own per-task gate runs only the static checks, so a task is no longer refused for a missing changelog line.**
