@@ -19,13 +19,17 @@
 // `-3`, ... when that name is taken too), so no kept file is ever overwritten,
 // and on any refusal it drops the new folder and moves the old one back,
 // unless git already deleted a file the new folder copied, when both stay.
+// `--report <file>` refuses while that file is absent: the wave's build writes
+// its report last, so an absent one means the build has not returned. A dirty
+// worktree goes only with `--patch <file>`, a non-empty file holding its work;
+// there is no `--force`.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
-/** Moving an existing kept folder aside failed, a copy into the run's `.exo/` failed, the worktree still holds an uncopied `.exo/` file or an uncopied `docs/specs/` file git does not track, or git refused the removal: nothing was removed, and a moved kept folder is back under its own name, unless git removed part of the worktree, when the kept folder and a moved one stay. */
+/** The build report is absent, the patch file is absent or empty, moving an existing kept folder aside failed, a copy into the run's `.exo/` failed, the worktree still holds an uncopied `.exo/` file or an uncopied `docs/specs/` file git does not track, or git refused the removal: nothing was removed, and a moved kept folder is back under its own name, unless git removed part of the worktree, when the kept folder and a moved one stay. */
 export class RemoveWorktreeError extends Error {}
 
 // Where the spec skill writes a brief, relative to the checkout root.
@@ -82,7 +86,13 @@ function moveAside(folder) {
   return target;
 }
 
-export function removeWorktree({ worktree, run, force = false, kept = false }) {
+export function removeWorktree({ worktree, run, report, patch, kept = false }) {
+  if (report !== undefined && !fs.existsSync(report)) {
+    throw new RemoveWorktreeError(`build report '${report}' is absent, so the build has not returned; removed nothing`);
+  }
+  if (patch !== undefined && !(fs.existsSync(patch) && fs.statSync(patch).size > 0)) {
+    throw new RemoveWorktreeError(`patch '${patch}' is absent or empty, so the worktree's work is not saved; removed nothing`);
+  }
   const keptRoot = path.join(run, '.exo', 'kept', path.basename(worktree));
   const keptTarget = `${keptRoot}/`;
   const briefs = untrackedFiles(worktree, SPECS);
@@ -113,7 +123,7 @@ export function removeWorktree({ worktree, run, force = false, kept = false }) {
     rollBack();
     throw error;
   }
-  const failure = gitRemoveFailure({ worktree, run, force });
+  const failure = gitRemoveFailure({ worktree, run, discard: patch !== undefined });
   if (failure !== undefined) {
     // Git can fail after deleting part of the worktree: once a file copied
     // into `keptRoot` is gone there, that copy is the only one left, so it
@@ -176,8 +186,8 @@ function copyChecked({ worktree, exo, keptRoot, keptTarget, briefs }) {
 
 // Runs `git worktree remove` and returns the first line of git's error, or
 // undefined once the worktree is removed.
-function gitRemoveFailure({ worktree, run, force }) {
-  const args = ['-C', run, 'worktree', 'remove', ...(force ? ['--force'] : []), worktree];
+function gitRemoveFailure({ worktree, run, discard }) {
+  const args = ['-C', run, 'worktree', 'remove', ...(discard ? ['--force'] : []), worktree];
   try {
     execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (error) {
@@ -187,10 +197,10 @@ function gitRemoveFailure({ worktree, run, force }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { worktree: 'value', run: 'value', force: 'boolean', kept: 'boolean' });
+  const flags = parseFlags(argv, { worktree: 'value', run: 'value', report: 'value', patch: 'value', kept: 'boolean' });
   if (flags.worktree === undefined) throw new UsageError("flag '--worktree' names the worktree to remove");
   if (flags.run === undefined) throw new UsageError("flag '--run' names the run's checkout");
-  process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, force: flags.force ?? false, kept: flags.kept ?? false }));
+  process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, report: flags.report, patch: flags.patch, kept: flags.kept ?? false }));
 }
 
 if (isMain(import.meta.url)) {

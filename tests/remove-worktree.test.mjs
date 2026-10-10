@@ -6,6 +6,7 @@
 // git refuses; when git removed part of it, both kept folders stay.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -247,7 +248,7 @@ test('a tracked docs/specs/ file alone keeps nothing and leaves the message unch
   assert.equal(fs.existsSync(path.join(root, '.exo', 'kept')), false);
 });
 
-test('git refusal over an untracked brief leaves no kept folder, and --force keeps the brief', async () => {
+test('git refusal over an untracked brief leaves no kept folder, and --patch keeps the brief', async () => {
   const { root, worktree } = await runWithWorktree();
   writeFile(worktree, 'docs/specs/topic.md', 'untracked brief\n');
 
@@ -259,11 +260,61 @@ test('git refusal over an untracked brief leaves no kept folder, and --force kee
   assert.equal(fs.existsSync(path.join(root, '.exo', 'kept', path.basename(worktree))), false);
   assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
 
-  removeWorktree({ worktree, run: root, force: true });
+  const patch = path.join(root, 'task-1.patch');
+  fs.writeFileSync(patch, 'diff --git a/x b/x\n');
+  removeWorktree({ worktree, run: root, patch });
 
   const brief = path.join(root, '.exo', 'kept', path.basename(worktree), 'docs', 'specs', 'topic.md');
   assert.equal(fs.readFileSync(brief, 'utf8'), 'untracked brief\n');
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
+});
+
+test('--patch refuses and removes nothing while the patch file is absent or empty', async () => {
+  const { root, worktree } = await runWithWorktree();
+  writeFile(worktree, '.exo/report.md', 'report\n');
+  fs.writeFileSync(path.join(worktree, 'src', 'app.js'), 'dirty\n');
+  const patch = path.join(root, 'task-1.patch');
+
+  for (const prepare of [() => {}, () => fs.writeFileSync(patch, '')]) {
+    prepare();
+    assert.throws(() => removeWorktree({ worktree, run: root, patch }), (error) => {
+      assert.ok(error instanceof RemoveWorktreeError);
+      assert.match(error.message, /patch/);
+      return true;
+    });
+    assert.equal(fs.existsSync(path.join(root, '.exo', 'report.md')), false);
+    assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+  }
+});
+
+test('--report refuses and removes nothing while the report file is absent, then removes once it exists', async () => {
+  const { root, worktree } = await runWithWorktree();
+  writeFile(worktree, '.exo/other.md', 'other\n');
+  const report = path.join(worktree, '.exo', 'implementer-1.md');
+
+  assert.throws(() => removeWorktree({ worktree, run: root, report }), (error) => {
+    assert.ok(error instanceof RemoveWorktreeError);
+    assert.match(error.message, /report/);
+    return true;
+  });
+  assert.equal(fs.existsSync(path.join(root, '.exo', 'other.md')), false);
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+
+  fs.writeFileSync(report, 'done\n');
+  removeWorktree({ worktree, run: root, report });
+
+  assert.equal(fs.readFileSync(path.join(root, '.exo', 'implementer-1.md'), 'utf8'), 'done\n');
+  assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
+});
+
+test('the command line rejects --force as a usage error', async () => {
+  const { root, worktree } = await runWithWorktree();
+  const script = path.resolve('skills/build/scripts/remove-worktree.mjs');
+
+  const result = spawnSync('node', [script, '--force', '--worktree', worktree, '--run', root], { encoding: 'utf8' });
+
+  assert.equal(result.status, 2);
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
 });
 
 // A read-only parent lets git delete every file inside the worktree and
