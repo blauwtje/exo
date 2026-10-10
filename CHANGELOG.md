@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.121.2 - 2026-10-10
+
 ### Highlights
 
 - **An exo run waits less: verify starts its reviews while the gate runs, build lands each task as soon as it reports, and verify no longer reviews a task build already reviewed.**
