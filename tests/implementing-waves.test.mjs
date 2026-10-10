@@ -12,6 +12,7 @@ const DELEGATE_WAIT_PARTS = ['foreground with Bash `timeout: 600000`', 'never ca
 const read = (relative) => fs.readFileSync(new URL(`../skills/${relative}`, import.meta.url), 'utf8');
 const WORKSPACE = read('build/references/workspace.md');
 const WAVE_WORKTREES = read('build/references/wave-worktrees.md');
+const ROLLING_WINDOW = read('build/references/rolling-window.md');
 const IMPLEMENTER_BRIEF = read('build/implementer-prompt.md');
 const IMPLEMENTER_AGENT = fs.readFileSync(new URL('../agents/build-task.md', import.meta.url), 'utf8');
 
@@ -90,6 +91,9 @@ test('a unit wave builds in worktrees and keeps each green task per wave-worktre
   assert.ok(dispatchStep.includes('in one message'));
   const commitStep = loopStep(4, UNIT_AGENT);
   assert.ok(commitStep.includes('A `Wave:` slot lands per `rolling-window.md` step 3'));
+  const landStep = ROLLING_WINDOW.match(/^3\. \*\*Land\.\*\*[\s\S]*?(?=\n\d+\. |$(?![\s\S]))/m)[0];
+  assert.ok(landStep.includes('land it alone per wave worktrees step 3'), 'a green slot lands per wave-worktrees.md');
+  assert.ok(landStep.includes('its folder leaves per wave worktrees step 4'), 'a landed slot removes its worktree');
   assert.ok(commitStep.includes('a failed task returns to step 3'));
   assert.ok(!commitStep.includes('only when every report in it is green'), 'no unit wave waits on every report');
   assert.ok(!commitStep.includes('no task of it commits'), 'a failed sibling costs no green task');

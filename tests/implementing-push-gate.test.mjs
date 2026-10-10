@@ -27,7 +27,7 @@ function loopStep(number, text = RUN_LOOP) {
 test('step 1 settles the workspace before any dispatch and pushes nothing', () => {
   const branchStep = loopStep(1);
   assert.ok(branchStep.includes('Settle where the run commits.'));
-  assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before the first dispatch, or No spec step 3. |'), 'the workspace is read before the first dispatch');
+  assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |'), 'the workspace is read before the first dispatch');
   assert.ok(RUN_LOOP.indexOf('Settle where the run commits') < RUN_LOOP.indexOf('`exo:run-unit` agent'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
