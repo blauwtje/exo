@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.115.1 - 2026-10-10
+
 ### Changed
 
 - The `verify`, `find-cause`, `build`, `spec`, `ship` and `design-ui` skill bodies and the `run-unit`, `build-task` and `review-branch` agent bodies sit at least 10% under their token ceiling: text only some paths need moved into references, no rule dropped.
