@@ -163,3 +163,27 @@ test('an unknown flag prints the usage line and exits 2', async () => {
   assert.equal(result.code, 2);
   assert.equal(result.stderr, "start-run: unknown flag '--help'\nusage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]\n");
 });
+
+test('a starting call writes the run rules file silently, and --find-only writes none', async () => {
+  const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
+  await fs.writeFile(path.join(root, 'docs/plans/one.md'), plan(root, 'main'));
+  const home = await noHomePlans();
+  const rules = path.join(root, '.exo', 'run-rules.md');
+
+  await run(SCRIPT, ['--root', root, '--find-only'], { cwd: root, env: { HOME: home } });
+  await assert.rejects(fs.access(rules));
+
+  const result = await run(SCRIPT, ['--root', root], { cwd: root, env: { HOME: home } });
+  assert.equal(result.code, 0, result.stderr);
+  assert.ok(!result.stdout.includes('run-rules'), result.stdout);
+  const text = await fs.readFile(rules, 'utf8');
+  assert.match(text, /^Goal: The fixture proves the plan picker\.$/m);
+  assert.match(text, /^Report cap: \d+ lines$/m);
+});
+
+test('each boundary line appears verbatim in lean.md or fix-review.md', async () => {
+  const { BOUNDARY_LINES } = await import('../skills/build/scripts/next-task.mjs');
+  const source = (await Promise.all(['skills/route-skills/references/lean.md', 'agents/fix-review.md']
+    .map((file) => fs.readFile(fileURLToPath(new URL(`../${file}`, import.meta.url)), 'utf8')))).join('\n');
+  for (const line of BOUNDARY_LINES) assert.ok(source.includes(line), line);
+});

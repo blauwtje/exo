@@ -113,6 +113,26 @@ function reportCapLines() {
   return cap === null ? [] : [`Report cap: ${cap} lines`];
 }
 
+/** The boundary lines every builder keeps; each is verbatim in lean.md or fix-review.md. */
+export const BOUNDARY_LINES = [
+  'Make the smallest change that fully does what the user asked.',
+  'Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.',
+  'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy.'
+];
+
+/** The run's fixed rules as one file's text, written once by start-run.mjs. */
+export function runRules(frame) {
+  return [
+    `Goal: ${frame.goal}`,
+    ...successCriterionLines(frame),
+    'Visual direction: none, unless the brief names one',
+    ...reportCapLines(),
+    'Boundaries:',
+    ...BOUNDARY_LINES.map((line) => `- ${line}`),
+    ''
+  ].join('\n');
+}
+
 // The Proof: and Run: commands that name an MCP tool, which only the session
 // can call, so a builder reads them off the brief instead of probing each one.
 function deferredLines(task) {

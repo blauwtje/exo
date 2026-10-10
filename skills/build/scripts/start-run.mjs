@@ -26,6 +26,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { scratchPath } from '#scratch-path';
+import { runRules } from './next-task.mjs';
 import { frameOf, parsePlan, PlanError } from '#plan-tasks';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
@@ -99,9 +101,11 @@ function main(argv) {
   const checkout = flags.checkout ?? root;
   const branch = checkoutBranch(checkout);
   execFileSync(process.execPath, [SCRATCH_EXCLUDE], { cwd: root });
+  const frame = planFrame(planPath);
+  if (frame !== null) fs.writeFileSync(scratchPath(checkout, 'run-rules.md'), runRules(frame));
   const onBranch = branch === '' ? 'detached HEAD' : `branch ${branch}`;
   process.stdout.write(`start-run: run started: plan ${planPath}, checkout ${checkout} on ${onBranch}. Step 1 is done; never rerun start-run in this run.\n`);
-  const planBranch = planFrame(planPath)?.branch;
+  const planBranch = frame?.branch;
   if (planBranch && planBranch !== branch) {
     const switchArgs = branchExists(checkout, planBranch) ? planBranch : `-c ${planBranch}`;
     process.stdout.write(`start-run: note: checkout ${checkout} is on ${branch || 'detached HEAD'}, not the plan's Branch: ${planBranch}. If the workspace answer is ${planBranch}, run \`git -C ${checkout} switch ${switchArgs}\` and do not rerun start-run.\n`);
