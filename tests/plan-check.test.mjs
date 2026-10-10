@@ -107,6 +107,16 @@ test('plan-check does not flag a Parallel: pair sharing a Files: path through a 
   assert.ok(!report.lines.some((line) => line.includes('Parallel: line')));
 });
 
+test('plan-check flags a Parallel: line in none of its accepted forms and passes each accepted form', () => {
+  const tasks = [goodTask({ number: 1 }), goodTask({ number: 2, files: ['- Modify: `src/other.js` (`greet`)'] })];
+  const report = (parallel) => planCheckReport(planFixture({ worktreeSetup: 'none', parallel, tasks }));
+  assert.ok(report('2, 3 (after 10 s)').lines.includes(
+    "'Parallel: 2, 3 (after 10 s)' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3'"));
+  for (const parallel of ['none.', 'every task.', 'Tasks 1 and 2.', 'Task 1, 2.', '1 and 2']) {
+    assert.ok(!report(parallel).lines.some((line) => line.includes('Parallel:')), parallel);
+  }
+});
+
 function compactTasks(count) {
   return Array.from({ length: count }, (_, index) => compactTask({
     number: index + 1,
