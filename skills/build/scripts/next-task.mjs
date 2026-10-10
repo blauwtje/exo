@@ -24,12 +24,22 @@ import { proofLines, proofsReport } from '#proofs-report';
 import { driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
-// regions; with no match, every bullet, because a brief that drops a fact
-// turns it into a guess.
+// regions; with no match, every bullet for a task of three or more files,
+// because a brief that drops a fact turns it into a guess, and none for a
+// task of at most two files, whose brief stays small.
+const SMALL_TASK_FILES = 2;
+
 function bulletsFor(task, bullets) {
   const names = task.files.flatMap((file) => [file.path, file.region]).filter((name) => name !== null);
   const named = bullets.filter((bullet) => names.some((name) => bullet.includes(name)));
-  return named.length === 0 ? bullets : named;
+  return named.length === 0 && task.files.length > SMALL_TASK_FILES ? bullets : named;
+}
+
+// A heading with its bullets; a small task's empty heading is left out.
+function sectionLines(task, heading, bullets) {
+  const lines = bulletsFor(task, bullets);
+  if (lines.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
+  return [heading, ...bulletLines(lines)];
 }
 
 function bulletLines(bullets) {
@@ -54,6 +64,12 @@ function modifyRanges(task, root) {
       const range = regionRange(fs.readFileSync(target, 'utf8'), file.region);
       return range === null ? [] : [`\`${file.path}:${range.start}-${range.end}\``];
     });
+}
+
+function modifyRangeLines(task, root) {
+  const ranges = modifyRanges(task, root);
+  if (ranges.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
+  return ['Modify ranges:', ...bulletLines(ranges)];
 }
 
 function successCriterionLines(frame) {
@@ -100,17 +116,13 @@ export function taskBrief(task, frame, root) {
   return [
     `Goal: ${frame.goal}`,
     ...successCriterionLines(frame),
-    'Non-goals touching these paths:',
-    ...bulletLines(bulletsFor(task, frame.nonGoals)),
-    'Context for these paths and symbols:',
-    ...bulletLines(bulletsFor(task, frame.context)),
-    'Decisions for these paths:',
-    ...bulletLines(bulletsFor(task, frame.decisions)),
+    ...sectionLines(task, 'Non-goals touching these paths:', frame.nonGoals),
+    ...sectionLines(task, 'Context for these paths and symbols:', frame.context),
+    ...sectionLines(task, 'Decisions for these paths:', frame.decisions),
     ...visualDirectionLines(task, frame),
     ...reportCapLines(),
     ...deferredLines(task),
-    'Modify ranges:',
-    ...bulletLines(modifyRanges(task, root)),
+    ...modifyRangeLines(task, root),
     '',
     'The task section:',
     task.section,

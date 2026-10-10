@@ -153,11 +153,43 @@ test('a task brief and the --frame report carry the plan\'s Decisions bullets, t
   assert.match(frameReport, /^Decisions for these paths:\n- `src\/app\.js` keeps `greet` synchronous\.\n- `src\/wave\.js` is generated\.$/m);
 });
 
-test('a plan with no Decisions section prints Decisions for these paths: - none', async () => {
+function threeFilePlan() {
+  return planFixture({ worktreeSetup: 'none', tasks: [
+    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)', '- Create: `src/b.js`', '- Create: `src/c.js`'], subject: 'feat(app): greet' })
+  ] });
+}
+
+test('a three-file task with no Decisions section prints Decisions for these paths: - none', async () => {
   const { root, planPath } = await checkout();
-  nextTaskReport({ planPath, planText: PLAN, root });
+  const planText = threeFilePlan();
+  nextTaskReport({ planPath, planText, root });
   const brief = await fs.readFile(briefPath(root, 1), 'utf8');
   assert.match(brief, /^Decisions for these paths:\n- none$/m);
+});
+
+test('a three-file task with no bullet naming its paths keeps every bullet', async () => {
+  const { root, planPath } = await checkout();
+  const planText = threeFilePlan().replace('`src/app.js` exports `greet`.', '`src/zzz.js` exports `hello`.').replace('- `src/other.js` is untouched.', '- `src/yyy.js` is untouched.');
+  nextTaskReport({ planPath, planText, root });
+  const brief = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.match(brief, /^- `src\/zzz\.js` exports `hello`\.$/m);
+  assert.match(brief, /^- `src\/yyy\.js` is untouched\.$/m);
+});
+
+test('a task of at most two files keeps only the bullets naming its paths and leaves out an empty heading and an empty Modify ranges', async () => {
+  const { root, planPath } = await checkout();
+  nextTaskReport({ planPath, planText: PLAN, root });
+  const brief = await fs.readFile(briefPath(root, 3), 'utf8');
+  assert.doesNotMatch(brief, /^Non-goals touching these paths:/m);
+  assert.doesNotMatch(brief, /^Context for these paths and symbols:/m);
+  assert.doesNotMatch(brief, /^Decisions for these paths:/m);
+  assert.doesNotMatch(brief, /^Modify ranges:/m);
+  assert.doesNotMatch(brief, /src\/other\.js/);
+  assert.match(brief, /^Goal: The fixture proves the plan reader\.$/m);
+  assert.match(brief, /^The task section:$/m);
+  const first = await fs.readFile(briefPath(root, 1), 'utf8');
+  assert.doesNotMatch(first, /src\/other\.js/);
+  assert.match(first, /^Context for these paths and symbols:\n- `src\/app\.js` exports `greet`\.$/m);
 });
 
 test('a wave of two writes two briefs, and a task outside the wave gets none', async () => {
