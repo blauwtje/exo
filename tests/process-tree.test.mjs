@@ -1,14 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { killTree, runTreeSync } from '#process-tree';
 
 test('on Windows killTree runs taskkill with /T and /F on the pid', () => {
   const calls = [];
-  killTree(4242, { platform: 'win32', run: (...args) => calls.push(args) });
+  killTree(4242, { platform: 'win32', run: (...args) => { calls.push(args); return { status: 0 }; } });
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], 'taskkill');
   assert.deepEqual(calls[0][1], ['/pid', '4242', '/T', '/F']);
+});
+
+test('on Windows killTree falls back to killing the pid when taskkill fails', { skip: process.platform === 'win32' }, async () => {
+  const child = spawn('sleep', ['30']);
+  const closed = new Promise((resolve) => child.on('close', resolve));
+  killTree(child.pid, { platform: 'win32', run: () => ({ status: 1, error: new Error('ENOENT') }) });
+  const outcome = await Promise.race([closed.then(() => 'killed'), new Promise((resolve) => setTimeout(() => resolve('alive'), 2000))]);
+  child.kill('SIGKILL');
+  assert.equal(outcome, 'killed');
 });
 
 test('off Windows killTree kills the whole process group, grandchild included', { skip: process.platform === 'win32' }, async () => {
@@ -32,7 +42,19 @@ test('runTreeSync returns merged output and the exit status', () => {
 test('runTreeSync runs the command in cwd and passes quotes through untouched', () => {
   const result = runTreeSync(`pwd; echo "a 'b' \\$HOME"`, { cwd: '/tmp', timeoutMs: 10000 });
   assert.equal(result.status, 0);
+  assert.equal(result.output.split('\n')[0], realpathSync('/tmp'));
   assert.match(result.output, /a 'b' \$HOME/);
+});
+
+test('runTreeSync returns an error when bash cannot spawn', () => {
+  const path = process.env.PATH;
+  process.env.PATH = '/nonexistent';
+  try {
+    const result = runTreeSync('true', { cwd: process.cwd(), timeoutMs: 5000 });
+    assert.ok(result.error instanceof Error);
+  } finally {
+    process.env.PATH = path;
+  }
 });
 
 test('runTreeSync stops a command and its background child at the deadline', { skip: process.platform === 'win32' }, async () => {
