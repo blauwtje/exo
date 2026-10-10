@@ -1,6 +1,6 @@
 # Drift repairer prompt
 
-The text `build` hands the `exo:solve-hard` agent for a task that reported `PLAN DRIFT`. The delegate rewrites that task alone in the grammar of `../spec/references/task-list.md`; fill `<task list spec>` with that file's absolute path.
+The prompt `build` names to the `exo:solve-hard` agent by absolute path, with the fill values and no pasted text, for a task that reported `PLAN DRIFT`. The delegate rewrites that task alone in the grammar of `../spec/references/task-list.md`; fill `<task list spec>` with that file's absolute path.
 
 ```text
 Plan repair of task <n> in <plan path>, repository <root>.

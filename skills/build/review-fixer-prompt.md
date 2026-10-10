@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The text `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS` with `fix=1` or more. The agent repairs from the review report alone; `verify` keeps the gate rerun and the commit.
+The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS` with `fix=1` or more. The dispatch line carries this file's absolute path and the fill values (plan path, root, base, report path), never the prompt text. The agent repairs from the review report alone; `verify` keeps the gate rerun and the commit.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>, report <report path>.
