@@ -28,7 +28,7 @@ The `instruction density` check fails a list item of three or more sentences and
 
 The `boundary words` check compares each `.md` file under `skills/`, `agents/`, `rules/` and `hooks/` that exists at `origin/main` and in the working tree, counting `only`, `not`, `no`, `never`, `every`, `each`, `all`, `full`, `except` and `unless` as whole words, and fails when a count falls; it is `UNRUN` without `origin/main`. A deliberate drop is named as `Drops: <word> in <path>[, <word> in <path>]`, in a plan task's field line (land-task passes it to the land gate as `EXO_DROPS` and copies it into a compact task's commit body) or in a commit body since `origin/main`. `--boundary-base <dir>` reads the base files from a directory, which the verifier self-test uses because its fixture has no git history.
 
-The `derivation` check fails when a name exo does not own reaches a shipped file, or a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names sit base64-encoded in `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids.
+The `derivation` check fails when a name exo does not own reaches a shipped file, or a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names sit base64-encoded in `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids. `plan-check.mjs` scans a brief that targets this repository for the same names and names each with its line, so a plan is reworded before its first land gate.
 
 ## Editing a skill
 
