@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- design-ui contracts carry three dials, `density`, `variance` and `motion`, each an integer from 1 to 10; `direction.mjs --check` rejects a missing or out-of-range dial as `invalid-dial` and names the field.
+- design-ui starts its dials from a product-kind table in `visual-direction.md` (internal tool, B2B SaaS, consumer app, editorial, e-commerce), or from DESIGN.md when it records them; each moved dial carries one reason, and the final report names the three numbers.
+- DESIGN.md records the dials in `Principles and visual direction`, only after you approve a durable identity, and they then outrank the table.
+
+### Changed
+
+- design-ui's scope form drops its Directions question when the brief or DESIGN.md asks for restraint; every other redesign of an app view, dashboard, admin page or internal tool keeps it.
+
 ## 0.117.0 - 2026-10-10
 
 ### Added
