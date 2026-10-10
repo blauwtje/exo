@@ -20,7 +20,7 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - Draw each plan ASCII layout in at most 8 lines per width, because the plan holds at most 25 lines.
 - Fill the contract's `dials` from the `visual-direction` reference's `## Dials` table: `density`, `variance` and `motion`, `start` as DESIGN.md when its dials line sets them, else `table:<kind>`, and one string in `reasons` for each dial moved from its row.
 - On the one pass without a contract, record the same dials, `start` and `reasons` in `$RUN/plan.md`.
-- Freeze the selection and start Build in the turn the direction round's click or exit 3 arrives, because the checked contracts are already on disk and builders return reports of at most 20 lines.
+- Freeze the selection and start Build in the turn the direction round's click or exit 3 arrives, because at most one contract is left to fill and check, and builders return reports of at most 20 lines.
 
 ## Mood to look
 
@@ -41,17 +41,17 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 
 ## Rung 3
 
-Rung 3 of the skill's `## Route`, reached only when the user asks to see or choose between looks, a Directions answer of 2 or 3 included, runs deal, derive, sketch, click, selection.
+Rung 3 of the skill's `## Route`, reached only when the user asks to see or choose between looks, a Directions answer of 2-3 included, runs deal, derive, sketch, click, selection.
 
-- Write the space and the labels as JSON directly, never through a generator or fill script, because the script costs the minutes it was meant to save.
+- Write the space, filled contracts and labels as JSON directly, never through a generator or fill script, because a script costs the minutes it saves.
 - Derive an axis space from Phase 1 evidence and write it as `$RUN/space.json` in the shape `scripts/direction.mjs --shape` prints.
 - Deal with `scripts/direction.mjs --plan --seed <token> --space "$RUN/space.json" --variants <n> > "$RUN/contracts.json"`, `--seed` one token this session picks, `<n>` the Directions answer, else 3.
 - Derive from each dealt contract only mood, palette, type pair and layout idea.
 - Write `$RUN/sketches/<nnn>-directions.html` as `## The direction round` of the `sketch-tab` reference says, then run its `--serve` and `--wait`.
-- Make no offer and ask nothing before the sketch, because the request to see or choose is the offer.
+- Make no second offer and ask nothing before the sketch; the scope form held the offer or the Directions question.
 - Click → fill only the picked contract, write it as a one-contract container to `$RUN/picked.json`, `--check --contracts "$RUN/picked.json" --space "$RUN/space.json"` it to status ok, then `--select --contracts "$RUN/picked.json" --index 0 --space "$RUN/space.json" > "$RUN/contract-selected.json"`.
 - Exit 3 → the recommended panel's contract is the picked one.
-- Select without the round only where the user delegated the choice or a read-only planning mode allows no tab; record the rationale in the contract.
+- Select without the round only where the user delegated the choice, took option B or C, or a read-only planning mode allows no tab; record the rationale in the contract.
 - Every `--check` and `--select` call passes that `--space` file.
 
 ## The comps
@@ -74,7 +74,7 @@ Open only on a request for working or live comps; all run the picker under the `
 ## A planning turn
 
 - A planning turn routes by `## Route` and makes the offer on rung 3 only, because the user asked to choose there.
-- On option A, it builds the comps and runs the picker as `## The comps` says, which changes no production code, and freezes the clicked contract.
+- On option A, it runs the sketch round as `## Rung 3` says, which changes no production code, and freezes the clicked contract.
 - On option B, it freezes the contract the user's letter named the same way.
 - On option C, or on any other rung, it writes the space file, deals `--plan --seed <token> --space <file> --variants 2`, keeps and fills one contract, `--check`s it, and freezes it with `--select --index 0 --space <file>`.
 - The plan records the selection under `## Visual direction` as `Contract: docs/design/direction.json`.

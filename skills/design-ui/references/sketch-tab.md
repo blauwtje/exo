@@ -32,7 +32,7 @@ Sketch = `$RUN/sketches/<nnn>-<topic>.html`, numbered in asking order. A revisio
 - Palette → the header and call to action wearing it, not loose swatches alone.
 - Fragment: no doctype, no head, no reset.
 - Tab shell is structural only; it adds focus ring and keyboard handling.
-- At most 60 lines in all, own `<style>`, no script, no build step.
+- At most 60 lines in all, except 50 per panel in the direction round; own `<style>`, no script, no build step.
 - Type question → may link one https font stylesheet.
 - Opens with `<title>`: the question in the user's language and plain words; the tab shows it above the sketch.
 - Two to four options, each one element carrying `data-choice="<id>"` and a visible name.
@@ -49,7 +49,7 @@ The direction choice is one file, `$RUN/sketches/<nnn>-directions.html`, because
 - Panel → that direction's first screen, real copy from the Phase 1 inventory, own inline `<style>` from the contract's palette, type pair and layout idea, at most 50 lines.
 - One https font stylesheet serves every pair.
 - Panels side by side at 1280 pixels wide, stacked below 700.
-- Every other rule of `## One question, one file` and `## The answer` holds.
+- `<title>` first, no doctype, head or script; each panel a visible name and `aria-label`.
 
 ## The answer
 

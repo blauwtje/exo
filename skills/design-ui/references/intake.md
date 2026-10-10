@@ -81,11 +81,11 @@ Settle what the run needs before building: questions worth asking, where the run
   ```
 
 - Option A → one sketch round under `## The direction round` of the `sketch-tab` reference; the click names the contract the `phase-direction` reference then freezes.
-- Every later visual choice the user asks to see → one sketch in the sketch tab under the `sketch-tab` reference, no second offer.
+- Every later visual choice the user asks to see → one sketch under the `sketch-tab` reference, no second offer.
 - Option B → one more question whose options are the looks, each one plain line.
 - Option B letter → names the contract the `phase-direction` reference freezes, as a click would.
 - After option B → each later visual choice decided from the picked contract as on option C, unless the user asks to see it.
-- Option C or exit 3 → the `--recommend` contract is the selection.
+- Option C or exit 3 → the recommended contract is the selection.
 - After option C or exit 3 → no visual question for the rest of the session; decide each further visual choice from the contract and Phase 1 evidence.
 - User then asks to see options → opens the tab, no second offer.
 - Each such choice → one line: the choice and its cost if wrong, never why.
@@ -96,7 +96,7 @@ Settle what the run needs before building: questions worth asking, where the run
 
 - Every run past a tweak, one pass included → writes under one directory outside the repository, `/private/tmp/designing/<repository basename>-<YYYYMMDD-HHMM>/`, called `$RUN` below; create before Phase 1, name once in the transcript.
 - Every `node scripts/*.mjs` call → redirect stdout into `$RUN`; read needed fields with `jq` or `sed -n`, never the whole file; a JSON line in the transcript is carried into every later turn.
-- `$RUN` holds user.md, `context.json`, `contracts.json`, `recommended.json`, `contract-selected.json`, `sketches/`, `variant-<n>/`, `renders/`, `comp/` and `$RUN/comp.md` of a full redesign, and run reports inventory.md, foundation.md, `build-<surface>.md`, faults.md.
+- `$RUN` holds user.md, `context.json`, `contracts.json`, `picked.json`, `contract-selected.json`, `sketches/`, `variant-<n>/`, `renders/`, `comp/` and `$RUN/comp.md` of a full redesign, and run reports inventory.md, foundation.md, `build-<surface>.md`, faults.md.
 - Each pass → own numbered report `build-<n>.md`; after its last checkpoint copy `renders/` to `renders-<n>/`, `<n>` = pass number from 1, so no pass overwrites an earlier one.
 - `direction.mjs --select` prints the frozen contract; the redirect into `$RUN/contract-selected.json` writes it.
 - Agents receive `$RUN`, exchange files under it, return reports, never file contents.
