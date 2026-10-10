@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.115.4 - 2026-10-10
+
 ### Fixed
 
 - `node install.mjs --update` reports a re-applied Codex install as `updated N skills …`; a plain install still says `installed`.
