@@ -37,6 +37,7 @@ A decided change with no plan file follows `references/no-spec.md`. After a comp
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |
 | `references/wave-worktrees.md` | `references/run-loop-direct.md`, `Wave:` line. |
 | `references/rolling-window.md` | Never here: the unit reads it. |
+| `references/agent-cases.md` | Never here: the agents read it. |
 | `implementer-prompt.md` | Never here: the unit reads it. |
 | `drift-repairer-prompt.md` | Never here: the unit reads it. |
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |

@@ -21,9 +21,9 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
   - No build left → send the last landed task's review alone.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
-  - A repair → `exo:solve-hard` with the dispatch's `model`, `effort` and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
+  - A repair, a choice, a block or no dispatch tool → read `<skill>/references/agent-cases.md` `## run-unit` first.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
-4. **Commit a green task.** Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`; else step 3.
+4. **Commit a green task.** Done means `GREEN`, never your report; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A refusal other than `PLAN DRIFT` goes by SendMessage to its writer, verbatim, at most twice; never rerun a proof.
   - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.
@@ -33,9 +33,7 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 ## Stop
 
 - Your turn ending is your return: never end it while a block task lacks a `LANDED` or `BLOCKED` line.
-- Ask the user nothing: a choice or build `BLOCKED` returns `BLOCKED`, question, options.
 - Delete no data or branch, run no `git stash`: `BLOCKED` with options.
-- Edit, write or commit no file yourself: builds edit, land-task commits.
 
 ## Return
 
@@ -43,4 +41,3 @@ One line per task, no report text, at most eight lines:
 
 - `LANDED <n>` for a committed task, plus ` pending <command>` per `Pending:` line.
 - `BLOCKED <n> <reason> <report path>` for any other task, the path `none` without a report.
-- `BLOCKED all nested dispatch unavailable`, alone, when no tool dispatches.

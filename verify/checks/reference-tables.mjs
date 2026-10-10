@@ -28,6 +28,7 @@ const EXPECTED_OWNER_ROWS = {
   'skills/build/SKILL.md': [
     'references/run-loop.md',
     'references/run-loop-direct.md',
+    'references/agent-cases.md',
     'references/run-loop-inline.md',
     'references/tail.md',
     'references/task-mode.md',
