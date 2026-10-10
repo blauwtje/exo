@@ -105,6 +105,7 @@ function filledContainer(seed = 'atlas', variants = 2, source = space()) {
       display: chosenRole('Tidemark Serif'),
       body: chosenRole('Harbor Sans')
     };
+    contract.dials = { density: 4, variance: 6, motion: 3, start: 'table:dashboard', reasons: { variance: 'the brief asks for an unexpected composition' } };
     contract.materialLight = 'one light source at the upper left; shadows agree on direction';
     contract.motion = { decision: 'entrance fade under 200ms', reducedMotion: 'no transform, opacity only' };
     contract.expectations = [
@@ -301,6 +302,33 @@ describe('direction.mjs --check', () => {
     assert.equal(report.status, 'invalid');
     assert.ok(report.findings.some((entry) => entry.code === 'unfilled-field'),
       `no unfilled-field in ${report.findings.map((entry) => entry.code).join(', ')}`);
+  });
+
+  it('rejects a missing dials object as missing-field', () => {
+    assert.ok(codesFor((container) => { delete container.contracts[0].dials; }).includes('missing-field'));
+  });
+
+  it('rejects each missing or out-of-range dial, naming dials.<name>', () => {
+    for (const bad of [undefined, null, 0, 11, 4.5, '4']) {
+      for (const name of ['density', 'variance', 'motion']) {
+        const container = filledContainer();
+        container.contracts[0].dials[name] = bad;
+        const found = checkContracts(container, space()).findings.filter((entry) => entry.code === 'invalid-dial');
+        assert.equal(found.length, 1, `${name}=${String(bad)}`);
+        assert.ok(found[0].detail.includes(`dials.${name}`), found[0].detail);
+      }
+    }
+  });
+
+  it('fails an unfilled skeleton on invalid-dial', () => {
+    const report = checkContracts(planDirections({ seed: 'atlas', variants: 2, space: space() }), space());
+    assert.ok(report.findings.some((entry) => entry.code === 'invalid-dial'));
+  });
+
+  it('accepts dials at both bounds', () => {
+    const container = filledContainer();
+    Object.assign(container.contracts[0].dials, { density: 1, variance: 10, motion: 1 });
+    assert.ok(!checkContracts(container, space()).findings.some((entry) => entry.code === 'invalid-dial'));
   });
 
   it('fails nominal-only divergence: same axes, different prose', () => {

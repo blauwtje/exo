@@ -28,6 +28,10 @@
 // chosen, with matchEvidence (the traits it fits) and loadSource, or repository
 // or brief, with sourceEvidence. --check rejects a chosen family that
 // scripts/overused-fonts.mjs bans.
+// A contract's dials is {density, variance, motion, start, reasons}: each dial
+// an integer 1..10, filled by the session; --check rejects any other value as
+// invalid-dial and names dials.<name>. start names the source (table:<kind> or
+// DESIGN.md); reasons maps each moved dial to one string.
 // A contract's seed is <container seed>:<n>, n being the index --plan dealt it
 // at, so a container may hold any subset of the dealt contracts in any order;
 // --check re-deals index n and rejects axes that differ from that deal.
@@ -243,6 +247,7 @@ function contractSkeleton(seed, index, axes) {
     type: { traits: {}, display: emptyRole(), body: emptyRole() },
     materialLight: '',
     motion: { decision: '', reducedMotion: '' },
+    dials: { density: null, variance: null, motion: null, start: '', reasons: {} },
     expectations: []
   };
 }
@@ -429,8 +434,18 @@ function fontFindings(contract, variant) {
 }
 
 const REQUIRED_CONTRACT_FIELDS = [
-  'axes', 'subjectMappings', 'ground', 'quietRegions', 'palette', 'type', 'materialLight', 'motion', 'expectations'
+  'axes', 'subjectMappings', 'ground', 'quietRegions', 'palette', 'type', 'materialLight', 'motion', 'dials', 'expectations'
 ];
+
+const DIAL_NAMES = ['density', 'variance', 'motion'];
+
+function dialFindings(contract, variant) {
+  return DIAL_NAMES.filter((name) => {
+    const value = contract.dials?.[name];
+    return !Number.isInteger(value) || value < 1 || value > 10;
+  }).map((name) => finding('invalid-dial', variant,
+    `dials.${name} is ${JSON.stringify(contract.dials?.[name] ?? null)}; it must be an integer from 1 to 10`));
+}
 
 // The skeleton `--plan` emits carries every required key already, so presence
 // alone proves nothing: these are the leaves a variant is undesigned without.
@@ -506,6 +521,7 @@ function contractFindings(contract, index, { space, seed }) {
     return findings;
   }
   findings.push(...substanceFindings(contract, index));
+  findings.push(...dialFindings(contract, index));
   findings.push(...axisFindings(contract, space, index));
   if (dealtIndex !== null) findings.push(...dealtAxisFindings(contract, space, seed, dealtIndex, index));
   findings.push(...evidenceReferenceFindings(contract, space, index));
