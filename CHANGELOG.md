@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.118.0 - 2026-10-10
+
 ### Added
 
 - design-ui contracts carry three dials, `density`, `variance` and `motion`, each an integer from 1 to 10; `direction.mjs --check` rejects a missing or out-of-range dial as `invalid-dial` and names the field.
