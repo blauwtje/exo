@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- Verify check `paid runs` (`verify/checks/paid-runs.mjs`) fails when a line in a skill, agent or output-style body names `claude -p`, `pressure.mjs` or `benchmarks/run.mjs` without naming the user's request as its trigger (#103).
+
+### Changed
+
+- `edit-skills` reads `benchmarks/results/` and earlier `pressure.mjs` answers first and starts a paid pressure run or blind-eval clone only when the user asks or no stored result covers the edited file; `run-plan` names the user's invocation as its `claude -p` trigger (#103).
+- `find-cause` and `build`'s performance loop read an existing log, profile or `.exo/` report before reproducing or measuring anew (#103).
+- `verify`'s repair step states the review cap once: one branch review, one repair, one review of the fix diff, then land or report (#103).
+
 ## 0.114.3 - 2026-10-10
 
 ### Changed
