@@ -13,13 +13,13 @@
    - Then `next-task.mjs --in-flight` refills.
 4. **Close the window.**
    - New path in the run's checkout against the baseline, or a cherry-pick conflict → close the window to refills.
-   - The turn ends only after every in-flight slot returned or blocked and every slot folder left per wave worktrees step 4.
+   - The turn ends only after every in-flight slot returned or blocked and every slot folder left per wave worktrees step 4, or stalled and named in the return.
 5. **Repair.**
    - A repair takes a fresh slot worktree at the current `HEAD`.
    - The run's checkout never holds uncommitted work while the window is open.
 6. **Stalled slot.**
    - After six `wait-report.mjs` runs with no new report, each waiting slot returns `BLOCKED <n> no report`.
-   - Its folder is saved and removed per wave worktrees step 4, which waits for that slot's build to return.
+   - Its folder stays in place: `remove-worktree.mjs --report` refuses while the report is absent; the line names the folder and that refusal, and step 4's wait does not run again for this slot.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
    - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build stays foreground with `run_in_background: false`.

@@ -23,9 +23,9 @@ Each task of a wave, as `build` step 4 forms it, builds in its own worktree, so 
    - Cherry-pick conflict → `git cherry-pick --abort`, no manual resolve: a resolved conflict is a commit no task branch holds.
    - Landed tasks stay; after step 4 the turn ends naming the conflicting task.
 4. **Remove.**
-   - For each folder the run made, first save its diff: `git -C "<root>-task-<n>" add -A && git -C "<root>-task-<n>" diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"`.
-   - Folder differing from `<base>` → the patch counts as written only once `test -s` finds it non-empty.
    - First wait with `wait-report.mjs --any` (six runs) for every running build of the wave.
+   - For each folder the run made, then save its diff: `git -C "<root>-task-<n>" add -A && git -C "<root>-task-<n>" diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"`.
+   - Folder differing from `<base>` → the patch counts as written only once `test -s` finds it non-empty.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root> --report "<root>-task-<n>/.exo/implementer-<n>.md"`, the report a build writes last.
    - It copies the folder's `.exo/` into the run's `.exo/`, and `docs/specs/` files git does not track into `.exo/kept/`, then removes the folder; it refuses, removing nothing, while the report or a copy is missing.
    - A dirty folder whose task did not land adds `--patch "<root>-task-<n>/.exo/task-<n>.patch"` only once it is written; `--force` is refused.

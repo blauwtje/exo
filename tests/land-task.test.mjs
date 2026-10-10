@@ -1243,6 +1243,7 @@ test('the Land gate sees the task Drops: value as EXO_DROPS in --check and landi
   assert.equal(await seen(checked.root), `[${drops}]`);
   await fs.rm(path.join(checked.root, 'gate.out'));
   landTask({ planText, planPath: checked.planPath, number: 1, root: checked.root, reportText: PASS_REPORT });
+  assert.equal(await seen(checked.root), `[${drops}]`);
   assert.match(git(checked.root, 'log', '-1', '--format=%B'), new RegExp(`^Plan-task: compact/1\\nDrops: ${drops}$`, 'm'));
   assert.equal(process.env.EXO_DROPS, undefined);
   const plain = await compactCheckout(plan(''));

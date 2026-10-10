@@ -129,6 +129,10 @@ test('a wave lands each green task past a failed sibling and saves every diff be
   assert.ok(section.includes('diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"'), 'the diff lands in the .exo/ remove-worktree.mjs copies');
   assert.ok(section.includes('--patch "<root>-task-<n>/.exo/task-<n>.patch"` only once it is written'), '--patch waits for the saved diff');
   assert.ok(section.includes('`--force` is refused'));
+  assert.ok(section.indexOf('wait-report.mjs --any') < section.indexOf('diff --cached <base>'), 'the wait for running builds comes before the diff is saved');
+  assert.ok(section.includes('other than a refused folder'), 'a refused folder may stay listed');
+  assert.ok(ROLLING_WINDOW.includes('Its folder stays in place'), 'a stalled slot keeps its folder');
+  assert.ok(ROLLING_WINDOW.includes('the line names the folder and that refusal'), 'the stalled line names the folder and the refusal');
   assert.ok(section.includes('A folder whose diff is unsaved, or that it refused, is never removed'));
   assert.ok(!section.includes('With every report green'), 'no wave waits on every report before landing');
 });
