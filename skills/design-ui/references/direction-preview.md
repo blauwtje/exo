@@ -19,16 +19,16 @@ This file owns the screen that asks for a direction; the `visual-direction` refe
 
 - Each comp's builder runs `pick.mjs --check --variant <n>` on its own comp before the picker starts, because the chooser must never be the first to see a broken comp.
 - `pick.mjs --check` renders each comp full page at 390 and 1440 wide through the capture and check-ui scripts, and writes the PNGs and a `check-ui.json` under each variant's `checked/`.
-- Read every capture at both widths and every `check-ui.json` with the Read tool; a capture nobody viewed checks nothing.
+- The comp builder reads every capture at both widths and its `check-ui.json` with the Read tool; a capture nobody viewed checks nothing. The lead reads `comp-<n>.md` only.
 - Fix each fault they show: horizontal overflow, a section cut off or missing, overlapping text, unreadable contrast, an empty band, a broken image or font.
-- Rerun `pick.mjs --check` after every fix, and read the new captures, until none of those faults is left.
+- Repair once, re-check and read the new captures, then report every fault left in `comp-<n>.md`; no second repair.
 - The picker refuses to start, exit 2, while a variant lacks a capture at 390 or 1440 newer than its own files, so any edit after a check needs another check.
 - Only then write the labels file and start `pick.mjs` under the Bash tool's `run_in_background`.
 - When `pick.mjs --check` exits 3, no capture engine exists: start the picker with `--unchecked` and tell the user in one line that the comps were not checked.
 - `--unchecked` answers that exit 3 alone, never a failing or unread check.
 - Write each comp's source directly from its contract: no template, generator, or patch script stands between the two, because a pipeline costs the minutes it was meant to save.
 - A comp the chooser still reports broken is repaired after the click, checked again, and the picker reruns once.
-- Run the picker only when the user asks to see or choose directions, after the message that names its price as `## Asking` of the `intake` reference says.
+- Run the picker only on the user's words asking for working or live comps, after the message that names its price as `## Asking` of the `intake` reference says.
 - Every other visual choice belongs to the `sketch-tab` reference.
 
 ## What the comp owes the screen
@@ -112,4 +112,4 @@ A contract may carry a chooser-only `signature`, so the tab shows its material r
 
 - A human selection of a rendered variant outranks the recommendation this skill seated first.
 - The chooser's own language outranks the script's English last resort, and plain words outrank exact ones.
-- A comp the check shows clean at both widths outranks a more ambitious comp it shows broken: cut ambition before repairing a second time.
+- A comp the check shows clean at both widths outranks a more ambitious comp it shows broken: repair once, re-check, report what is left.

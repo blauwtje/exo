@@ -83,10 +83,10 @@ Check and repair:
 
 1. Run the `CHECK` command.
 2. Read both captures it prints and its `check-ui.json`; list each fault `## Before the picker` of `direction-preview` names.
-3. Repair every listed fault, return to step 1 until none is left; before a second repair, cut ambition per that reference's `## Judgment`.
+3. Fix every listed fault in one pass (repair once), then run step 1 again and read the new captures; no second repair.
 
 - Check exits 2 or 3 → report its message as blocked.
-- Write `$RUN/comp-<n>.md`, at most 8 lines: paths written, both capture paths, each fault with `fixed` or `open`, one sentence on what sets this direction apart as built.
+- Write `$RUN/comp-<n>.md`, at most 8 lines: paths written, both capture paths, each fault left after the re-check as `open` (fixed ones as `fixed`), one sentence on what sets this direction apart as built.
 
 **Comp scope (`comp:focal`).**
 
