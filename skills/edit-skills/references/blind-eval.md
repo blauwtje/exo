@@ -8,7 +8,7 @@
 ## Steps
 
 1. Get two clones: pre-edit worktree (or the commit before the change) as baseline, edited worktree as changed.
-2. Run `pressure.mjs --prompt <the same case file> --cells <cell> --plugin-dir <clone>` once per clone.
+2. Stored `with` answers for both clones → judge those. The user asks for a run, or a clone has none → run `pressure.mjs --prompt <the same case file> --cells <cell> --plugin-dir <clone>` once per clone.
 3. Read only the `with` answer files (full, untruncated); each clone's `without` answers are the same skill-less answers twice.
 4. Label the two clones' `with` answers A and B, alternating which letter holds the changed answers so no pattern forms across evals; keep the mapping yourself.
 5. Copy only the labels and full answer texts into a scratch file for the judge; never write "baseline", "changed", "old" or "new" into it.

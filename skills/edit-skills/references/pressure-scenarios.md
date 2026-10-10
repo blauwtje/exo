@@ -30,7 +30,7 @@ One pressure gives a usable case. Skill guards a habit → stack three; one that
 ## Running it
 
 1. Save the case to a prompt file.
-2. Run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`. It runs both arms of every cell `--runs` times (default 3) in parallel, each confined to a scratch directory outside the repository (writes nowhere else, `~/.claude` included), and writes each full answer to its own file in `--out`.
+2. The user asks for a run, or no stored answers cover the case → run `scripts/pressure.mjs --prompt <file> --cells <model:effort,...> --plugin-dir <clone>`. It runs both arms of every cell `--runs` times (default 3) in parallel, each confined to a scratch directory outside the repository (writes nowhere else, `~/.claude` included), and writes each full answer to its own file in `--out`.
 3. Comparing against `main` → add `--main-dir <main clone>`; it swaps the without arm for a `main` arm. Any run: a `WRONG COPY` line, exit 1, voids a run that loaded another copy.
 4. Copy the chosen action and justification word for word from the `without` answer files; that wording is what the skill must answer.
 5. Keep the prompt and both justifications in the edit's report.
