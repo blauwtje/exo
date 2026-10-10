@@ -344,8 +344,9 @@ export function failedChecks(output) {
 }
 
 // Returns the failure text for one scenario, or null when it behaved as expected.
-// A reject scenario names the one check that must reject it: a rejection by any
-// other check proves nothing about the check the mutation attacks.
+// A reject scenario names the check that must reject it, or the exact list of
+// checks where one rule is enforced twice: a rejection by any other check proves
+// nothing about the check the mutation attacks.
 export function judgeScenario(scenario, run) {
   if (scenario.expect === 'accept') {
     if (run.status === 0) return null;
@@ -353,9 +354,11 @@ export function judgeScenario(scenario, run) {
   }
   const failed = failedChecks(run.output);
   const actual = failed.length === 0 ? 'none' : failed.join(', ');
-  if (!scenario.check) return `${scenario.name} names no check to reject it (failed: ${actual})`;
-  if (run.status !== 0 && failed.length === 1 && failed[0] === scenario.check) return null;
-  return `${scenario.name} expected only ${scenario.check} to fail (failed: ${actual})`;
+  const expected = [...new Set([scenario.check ?? []].flat())];
+  if (expected.length === 0) return `${scenario.name} names no check to reject it (failed: ${actual})`;
+  const exact = failed.length === expected.length && expected.every((check) => failed.includes(check));
+  if (run.status !== 0 && exact) return null;
+  return `${scenario.name} expected exactly ${expected.join(', ')} to fail (failed: ${actual})`;
 }
 
 // Returns the failure text for one scenario, or null when it behaved as expected.
