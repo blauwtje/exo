@@ -253,6 +253,21 @@ test('a failing Land gate is refused before anything commits, naming the command
   assert.ok(!('echo gate broke && exit 1' in cache));
 });
 
+test('a Land gate past its deadline is stopped and refused with timed out after <n>s, and nothing commits', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  process.env.EXO_LAND_GATE_TIMEOUT_MS = '300';
+  try {
+    assert.throws(
+      () => landTask({ planPath, planText: withLandGate('sleep 5'), number: 1, root }),
+      /Land gate "sleep 5" failed:\ntimed out after 0\.3s/
+    );
+  } finally {
+    delete process.env.EXO_LAND_GATE_TIMEOUT_MS;
+  }
+  assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
+});
+
 test('a plan with no Land gate line lands as before', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

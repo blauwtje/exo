@@ -26,7 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { exportSignatures } from '#export-signatures';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -484,9 +484,11 @@ function runLandGate(landGate, root) {
   }
   const before = workingTreeKey(root);
   const started = Date.now();
-  const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
+  // EXO_LAND_GATE_TIMEOUT_MS overrides the deadline for a test.
+  const deadlineMs = environmentMs('EXO_LAND_GATE_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8', timeout: deadlineMs, maxBuffer: 64 * 1024 * 1024 });
   if (gate.status !== 0) {
-    const timedOut = gate.error?.code === 'ETIMEDOUT' ? `timed out after ${PROOF_TIMEOUT_MS / 1000}s` : '';
+    const timedOut = gate.error?.code === 'ETIMEDOUT' ? `timed out after ${deadlineMs / 1000}s` : '';
     const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${timedOut || (gate.error?.message ?? '')}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
