@@ -7,6 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `npm run validate:static` and `npm run check` fail when a changed `.md` file under `skills/`, `agents/`, `rules/` or `hooks/` holds fewer of a boundary word (`only`, `not`, `no`, `never`, `every`, `each`, `all`, `full`, `except`, `unless`) than on `origin/main`, naming the file, word and both counts; a `Drops: <word> in <path>` line in the task, which `land-task` passes to the land gate and writes into the commit body, allows a deliberate drop (#117).
+
+### Fixed
+
+- `remove-worktree.mjs` no longer takes `--force`; with `--report` or `--patch` it refuses while a build's report is missing or its saved diff is empty, and `wave-worktrees.md` and `rolling-window.md` keep a still-running or stalled build's worktree in place and name it in the `BLOCKED` line (#115).
+- `verify` again skips review for a test-covered change to an output-only script under `skills/` or `hooks/`, which no longer counts as instruction text.
+
 ## 0.120.2 - 2026-10-10
 
 ### Highlights
