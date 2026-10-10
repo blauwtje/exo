@@ -215,3 +215,16 @@ test('the reader rejects a bad codex shift, null effort or low twin', () => {
   assert.throws(codex((block) => { block.codexTwins['exo-nope-low'] = { from: 'agents/build-task.md', kind: 'nope', description: 'x' }; }), /codexTwins exo-nope-low: unknown kind nope/);
   assert.throws(codex((block) => { block.codexTwins['exo-build-task-low'] = { from: 'agents/build-task.md', kind: 'build', budget: 'low', description: 'x' }; }), /exo-build-task-low: kind build is not on a tier the low budget swaps/);
 });
+
+const BUILDER_KINDS = ['build', 'build-task', 'coordinate'];
+const BUILDER_AGENTS = ['agents/build-task.md', 'agents/build-ui.md', 'agents/fix-review.md', 'agents/run-unit.md'];
+
+test('every builder agent is on a builder kind, and no builder kind resolves to the strong tier', () => {
+  for (const file of BUILDER_AGENTS) {
+    assert.ok(BUILDER_KINDS.includes(table.agents[file].kind), `${file} is on kind ${table.agents[file].kind}`);
+  }
+  const { strong } = table.providers[table.provider].tiers;
+  for (const kind of BUILDER_KINDS) {
+    assert.notEqual(table.kinds[kind].model, strong, `kind ${kind} resolves to the strong tier ${strong}`);
+  }
+});
