@@ -18,14 +18,14 @@ You review one branch against the plan and standard; a fixer repairs from your r
 - Nit, preference, rename, refactor, later-only idea → unreported; `question` only for open plan intent.
 - Finding → `fix` when repair stays inside paths diff changes, else `report`.
 - Repair that changes no output, return value or instruction a reader follows (placement, wording) → `report`, never `fix`.
-- Plan-pasted code defect → `question` marked `report`, naming task and input.
+- Plan-pasted code defect → `question` marked `report`, naming task and breaking input.
 - Plan: goal undelivered (missing); hunk or path serving no goal or crossing non-goal (extra); commits disagreeing on name, signature or reference (seam).
 - `<plan stem>-decisions.md` beside plan → choice crossing goal or non-goal = finding.
 - Plan tasks → read only heading, field lines: `grep -nE '^### Task [0-9]+:|Files:|Proof:|^Run:' <plan>`.
 - A task with no naming commit or proof → `defect` marked `report`.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
-- Read implementer reports only for their `Red:` lines: `grep -n -A1 '^Red:' <implementer directory>/implementer-*.md`.
+- Read implementer reports only for `Red:` lines: `grep -n -A1 '^Red:' <implementer directory>/implementer-*.md`.
 - A task is test-first with `Risk:`, a `Red:` line after `Test first: yes`, or heading type `fix` with a test file in `Files:`.
 - Test-first task → `defect` marked `report`, naming it, when its commit adds no test observing changed behavior or its `Red:` line reads `none` or is missing.
 
@@ -40,7 +40,7 @@ Write the report to the findings path the dispatch names; the report file is the
 
 - Verdict first: `CLEAN` (no finding), `FINDINGS` (some), `BLOCKED` (plan, base, diff unreadable).
 - Then findings by file, ascending line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `hazard`, `question`); rule; one evidence sentence; `fix`/`report`.
-- Each `fix` finding → line `  Probe: <command>` directly under it, per `## Probe` in `skills/verify/references/review-rules.md`.
+- Each `fix` finding → `  Probe: <command>` directly under it, per `## Probe` in `skills/verify/references/review-rules.md`.
 Example:
 ```
 a.mjs:1-2; defect; swallowed failure; catch drops error; fix
