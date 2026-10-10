@@ -268,6 +268,37 @@ test('a Land gate past its deadline is stopped and refused with timed out after 
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
+// A grandchild the gate started must die with it, else it outlives the refusal.
+const survivorCommand = (marker) => `(sleep 1.5; touch ${marker}) & sleep 10`;
+
+test('a timed-out Land gate stops the processes it started too', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const marker = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-tree-')), 'survivor');
+  process.env.EXO_LAND_GATE_TIMEOUT_MS = '300';
+  try {
+    assert.throws(() => landTask({ planPath, planText: withLandGate(survivorCommand(marker)), number: 1, root }), /timed out after 0\.3s/);
+  } finally {
+    delete process.env.EXO_LAND_GATE_TIMEOUT_MS;
+  }
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+  await assert.rejects(fs.access(marker));
+});
+
+test('a timed-out Proof is refused with timed out after <n>s, its process tree stopped, and nothing commits', async () => {
+  const marker = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'exo-tree-')), 'survivor');
+  const command = survivorCommand(marker);
+  const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', command));
+  await writeReport(root, `Landed: src/app.js\nProof:\n- \`${command}\`: pass\nUnresolved: none\n`);
+  const head = git(root, 'rev-parse', 'HEAD');
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: { EXO_PROOF_TIMEOUT_MS: '300' } });
+  assert.equal(result.code, 1, result.stderr);
+  assert.match(result.stderr, /failed \(timed out after 0\.3s\)/);
+  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+  await assert.rejects(fs.access(marker));
+});
+
 test('a plan with no Land gate line lands as before', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

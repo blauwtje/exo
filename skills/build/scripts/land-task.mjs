@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
 import { exportSignatures } from '#export-signatures';
+import { runTreeSync } from '#process-tree';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { BLOCK_TASK_LIMIT, decisionsPathOf, frameOf, isolatedCheckout, landedTasks, nextWave, parsePlan, PlanError, planIdOf, planRoute, planTaskTrailer, proofRecordPath, routeLine, waveLine } from '#plan-tasks';
@@ -295,16 +296,16 @@ function runProof(task, command, root, field) {
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
   const before = workingTreeKey(root);
   const started = Date.now();
-  const proofRun = spawnSync('bash', ['-e', '-c', `exec 2>&1\n${command}`], {
-    cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
-  });
-  const tail = (proofRun.stdout ?? '').split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
+  // EXO_PROOF_TIMEOUT_MS overrides the deadline for a test.
+  const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
+  const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs });
+  const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   if (proofRun.status === 0) {
     recordPass(root, command, Date.now() - started, before);
     return { command, tail };
   }
   let reason = `exit ${proofRun.status}`;
-  if (proofRun.error?.code === 'ETIMEDOUT') reason = `timed out after ${PROOF_TIMEOUT_MS / 1000}s`;
+  if (proofRun.timedOut) reason = `timed out after ${deadlineMs / 1000}s`;
   else if (proofRun.error !== undefined) reason = `spawn error ${proofRun.error.message}`;
   else if (proofRun.signal !== null) reason = `signal ${proofRun.signal}`;
   throw new LandingError([`Task ${task.number}: the ${field}: command "${command}" failed (${reason}):`, ...tail].join('\n'));
@@ -486,10 +487,10 @@ function runLandGate(landGate, root) {
   const started = Date.now();
   // EXO_LAND_GATE_TIMEOUT_MS overrides the deadline for a test.
   const deadlineMs = environmentMs('EXO_LAND_GATE_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8', timeout: deadlineMs, maxBuffer: 64 * 1024 * 1024 });
-  if (gate.status !== 0) {
-    const timedOut = gate.error?.code === 'ETIMEDOUT' ? `timed out after ${deadlineMs / 1000}s` : '';
-    const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${timedOut || (gate.error?.message ?? '')}`.trim();
+  const gate = runTreeSync(landGate, { cwd: root, timeoutMs: deadlineMs });
+  if (gate.status !== 0 || gate.timedOut) {
+    const timedOut = gate.timedOut ? `timed out after ${deadlineMs / 1000}s` : '';
+    const output = `${gate.output}${timedOut || (gate.error?.message ?? '')}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
   recordPass(root, landGate, Date.now() - started, before);
