@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.121.0 - 2026-10-10
+
 ### Added
 
 - `npm run validate:static` and `npm run check` fail when a changed `.md` file under `skills/`, `agents/`, `rules/` or `hooks/` holds fewer of a boundary word (`only`, `not`, `no`, `never`, `every`, `each`, `all`, `full`, `except`, `unless`) than on `origin/main`, naming the file, word and both counts; a `Drops: <word> in <path>` line in the task, which `land-task` passes to the land gate and writes into the commit body, allows a deliberate drop (#117).
