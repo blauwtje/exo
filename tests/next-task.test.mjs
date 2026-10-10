@@ -85,11 +85,17 @@ test('the wave admits only the tasks the Checkpoint Parallel: line names', async
   assert.match(named.stdout, /^Wave: Task 1, Task 3$/m);
 });
 
-test('a plan with no Parallel: line builds every task serially', async () => {
+test('a plan with no Parallel: line waves its disjoint tasks and keeps an overlapping one out', async () => {
   const { root, planPath } = await checkout();
-  const report = nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: plannedTasks(4) }), root });
-  assert.match(report, /^Next: Task 1$/m);
-  assert.doesNotMatch(report, /^Wave: /m);
+  const wave = nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: plannedTasks(3) }), root });
+  assert.match(wave, /^Wave: Task 1, Task 2, Task 3$/m);
+  const task = (number, files, extra = {}) => taskSection({ number, title: `Part ${number}`, files, subject: `feat(app): part ${number}`, ...extra });
+  const overlap = [task(1, ['- Create: `src/a.js`']), task(2, ['- Create: `src/a.js`']), task(3, ['- Create: `src/c.js`'])];
+  assert.match(nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: overlap }), root }), /^Wave: Task 1, Task 3$/m);
+  const alone = [task(1, []), task(2, ['- Create: `src/b.js`'])];
+  assert.doesNotMatch(nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: alone }), root }), /^Wave: /m);
+  const design = [task(1, ['- Create: `src/a.js`'], { design: true }), task(2, ['- Create: `src/b.js`'])];
+  assert.doesNotMatch(nextTaskReport({ planPath, planText: planFixture({ worktreeSetup: 'none', tasks: design }), root }), /^Wave: /m);
 });
 
 test('a checkout under .claude/worktrees/ builds one task at a time, while the main checkout still forms the wave', async () => {

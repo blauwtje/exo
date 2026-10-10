@@ -163,7 +163,17 @@ test('a wave admits only the tasks the Checkpoint Parallel: line names', () => {
   assert.deepEqual(named.parallel, [1, 3]);
   assert.equal(frameOf(parallelOf('- Parallel: every task.')).parallel, null);
   assert.deepEqual(frameOf(parallelOf('- Parallel: none.')).parallel, []);
-  assert.deepEqual(frameOf(parsePlan(planFixture({ tasks: [bare(1, 'none')] })).frame).parallel, [], 'no Parallel: line means every task serial');
+  assert.equal(frameOf(parsePlan(planFixture({ tasks: [bare(1, 'none')] })).frame).parallel, null, 'no Parallel: line restricts nothing');
+  const unlined = parsePlan(planFixture({ worktreeSetup: 'none', tasks: [
+    taskSection({ number: 1, title: 'T1', files: ['- Create: `a.js`'], subject: 'feat: t1' }),
+    taskSection({ number: 2, title: 'T2', files: ['- Create: `b.js`'], subject: 'feat: t2' }),
+    taskSection({ number: 3, title: 'T3', files: ['- Create: `a.js`'], subject: 'feat: t3' }),
+    taskSection({ number: 4, title: 'T4', files: [], subject: 'feat: t4' }),
+    taskSection({ number: 5, title: 'T5', design: true, files: ['- Create: `c.js`'], subject: 'feat: t5' })
+  ] }));
+  assert.deepEqual(nextWave(unlined.tasks, [], 'none', frameOf(unlined.frame).parallel).map((task) => task.number), [1, 2]);
+  assert.deepEqual(nextWave(unlined.tasks, [1, 2, 3], 'none', null).map((task) => task.number), [4]);
+  assert.deepEqual(nextWave(unlined.tasks, [1, 2, 3, 4], 'none', null).map((task) => task.number), [5]);
   const { tasks } = parsePlan(compactPlanFixture({ tasks: [1, 2, 3, 4].map((number) => bare(number, 'none')) }));
   const numbers = (parallel) => nextWave(tasks, [], 'none', parallel).map((task) => task.number);
   assert.deepEqual(numbers(null), [1, 2, 3, 4]);
