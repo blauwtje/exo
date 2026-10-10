@@ -188,10 +188,10 @@ function repoPathOf(planPath, root) {
   return path.relative(top, fs.realpathSync(planPath)).split(path.sep).join('/');
 }
 
-/** A changed path outside every task's declared Files is a stray edit. */
+/** A changed path outside every task's declared Files is a stray edit; a Files entry ending in `/` covers every path under it, as in land-task.mjs. */
 export function findStrayPaths(tasks, paths) {
-  const declared = new Set(tasks.flatMap((task) => task.files.map((file) => file.path)));
-  return paths.filter((path) => !declared.has(path));
+  const declared = tasks.flatMap((task) => task.files.map((file) => file.path));
+  return paths.filter((path) => !declared.some((entry) => entry === path || (entry.endsWith('/') && path.startsWith(entry))));
 }
 
 /** The fix commit shape: a `fix` subject and no `Plan-task: ` trailer line. */

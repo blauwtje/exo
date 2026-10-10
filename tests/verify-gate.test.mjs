@@ -42,6 +42,14 @@ test('findStrayPaths keeps only paths no task declared', () => {
   assert.deepEqual(findStrayPaths(tasks, ['src/app.js', 'src/broken.js']), []);
 });
 
+test('findStrayPaths treats a Files: entry ending in / as covering every path under it', () => {
+  const tasks = [{ number: 1, files: [{ path: 'src/lib/' }] }];
+  assert.deepEqual(
+    findStrayPaths(tasks, ['src/lib/util.js', 'src/lib/deep/more.js', 'src/library.js', 'docs/readme.md']),
+    ['src/library.js', 'docs/readme.md']
+  );
+});
+
 test('splitFixOnlyPaths moves a stray path only trailer-less fix commits touched to fixOnly', () => {
   const fix = (sha, subject = 'fix(app): repair', body = subject) => ({ sha, subject, body });
   const commitsByPath = new Map([
