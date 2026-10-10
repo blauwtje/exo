@@ -11,7 +11,8 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | Command | What it runs |
 |---|---|
 | `npm run check` | The gate before any commit: the verifier, its self-test and the script tests. |
-| `npm run validate` | The structural checks over the skill corpus. |
+| `npm run validate` | The structural checks over the skill corpus and the script tests. |
+| `npm run validate:static` | The structural checks only, no script tests. |
 | `npm test` | The script, hook and benchmark tests under `tests/`. |
 | `npm run smoke` | A real session that lists the `exo:` skills. It calls a model. |
 | `claude plugin validate .` | The harness's own manifest check. |
