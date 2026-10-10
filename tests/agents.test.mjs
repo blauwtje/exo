@@ -20,7 +20,7 @@ const SUPPORTED_KEYS = [
   'disallowedTools', 'skills', 'remember', 'background', 'omitClaudeMd', 'isolation',
 ];
 const KNOWN_TOOLS = [
-  'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill',
+  'Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Agent', 'WebFetch', 'WebSearch', 'NotebookEdit', 'Skill', 'SendMessage',
 ];
 const ORDINAL_TURNS = { tenth: 10, fifteenth: 15, twentieth: 20, thirtieth: 30, fortieth: 40, fiftieth: 50 };
 

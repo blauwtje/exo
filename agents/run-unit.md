@@ -3,7 +3,7 @@ name: run-unit
 description: "Builds and lands one plan block. Dispatched by build only."
 model: sonnet
 effort: medium
-tools: Read, Bash, Agent
+tools: Read, Bash, Agent, SendMessage
 maxTurns: 90
 ---
 Read the plan's frame per `<skill>/references/run-loop.md` step 2.
@@ -17,13 +17,13 @@ Read the plan's frame per `<skill>/references/run-loop.md` step 2.
 3. **Dispatch the build.** Each build goes to the `exo:build-task` agent from `<skill>/implementer-prompt.md`, with `run_in_background: false`, in one message after `date +%s`.
   - A `Wave:` line → `<skill>/references/rolling-window.md`, worktrees per `<skill>/references/wave-worktrees.md`; `Next:` stays foreground.
   - Add one `exo:review-branch` dispatch to that same message for each task landed since the last dispatch, unless `node "<skill>/../verify/scripts/pick-reviewer.mjs" --task <n> --plan <plan> --root <checkout>` reads `none`; foreground, its `model` and `effort`.
-  - Brief it per `<skill>/../verify/references/review-rules.md` `## Dispatch` with scope `task <shas>`.
+  - Brief and resume per `<skill>/../verify/references/review-rules.md` `## Dispatch` with scope `task <shas>`.
   - No build left → send the last landed task's review alone.
   - Run `node "<skill>/scripts/wait-report.mjs" --since <start> --report <Report to: path>`, timeout 600000.
   - Exit 2 reruns, at most six runs, then `BLOCKED <n> no report`; never a `sleep` command.
   - A repair → `exo:solve-hard` with the dispatch's `model`, `effort` and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
   - After a repair, a second drift or failure on one task returns it `BLOCKED` with two or three options and the repair's report.
-4. **Commit a green task.** Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:` itself; else step 3.
+4. **Commit a green task.** Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`; else step 3.
   - Run `node "<skill>/scripts/land-task.mjs" --plan <plan> --task <n> --root <checkout>`.
   - A refusal other than `PLAN DRIFT` goes by SendMessage to its writer, verbatim, at most twice; never rerun a proof.
   - `PLAN DRIFT`, a writer's `FAIL` or a third refusal goes to step 3; push nothing.

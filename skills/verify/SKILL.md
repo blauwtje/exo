@@ -16,18 +16,18 @@ effort: high
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
    - `WARN` or `FIX-ONLY` line → list in the report; never ends the turn.
    - `SESSION <check>` line names a skipped `mcp:<tool> <args>` call → call `mcp__<server>__<tool>` with those args, not through Bash.
-   - Record `PASS <check>` or `FAIL <check> (<why>)` in the gate output; that `FAIL` ends the turn.
+   - Record `PASS <check>` or `FAIL <check> (<why>)` in gate output; that `FAIL` ends the turn.
    - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the `REPORT` file.
 2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
-   - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting its `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
+   - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
    - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
    - Each dispatch follows `references/review-rules.md` `## Dispatch`.
-   - `BLOCKED` → end the turn with its report.
+   - After resume, `BLOCKED` → end the turn with its report.
    - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, `REVIEWED` records included; its line is step 3's verdict.
    - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a `codex exec` second review of the same plan and diff; append its findings to the findings path before step 3; `none` or a decline → say nothing.
    - `--land` → skip that offer.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.
-   - `fix=0` → step 4, with no `exo:fix-review` dispatch, rerun or fix commit.
+   - `fix=0` → step 4, no `exo:fix-review` dispatch, rerun or fix commit.
    - After the dispatch → follow `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
    - `--land` → pass `--land` to `ship`.

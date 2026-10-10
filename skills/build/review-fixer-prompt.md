@@ -1,11 +1,11 @@
 # Review fixer prompt
 
-The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS` with `fix=1` or more. The dispatch line carries this file's absolute path and the fill values (plan path, root, base, report path), never the prompt text. The agent repairs from the review report alone; `verify` keeps the gate rerun and the commit.
+The prompt `verify` step 3 hands the `exo:fix-review` agent when the branch review returns `FINDINGS` with `fix=1` or more. The dispatch line carries this file's absolute path and the fill values (plan path, root, base, findings path), never the prompt text. The agent repairs from the findings file alone; `verify` keeps the gate rerun and the commit.
 
 ```text
-Review fix for <plan path>, repository <root>, base <base>, report <report path>.
+Review fix for <plan path>, repository <root>, base <base>, findings file <findings path>, input to `run-probes.mjs`.
 
-You fix the findings a branch review wrote to the report above. Read the report and, for each finding marked `fix`, only the `file:start-end` range it names; the reviewer already read the rest. Leave every `report` finding and every `question` unchanged.
+You fix the findings a branch review wrote to the findings file above. Read it and, for each finding marked `fix`, only the `file:start-end` range it names; the reviewer already read the rest. Leave every `report` finding and every `question` unchanged.
 
 Make the smallest change that fully does what the user asked.
 Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.
@@ -18,10 +18,10 @@ After the fixes, run the plan's `Land gate:` command once, if the plan has one. 
 Run no full test suite (`npm test`, `npm run check`); only the commands above.
 Search only the files a finding names; no repository-wide search except the `grep` on the plan above.
 Give each command a timeout of at most 120 seconds; one that times out counts as failed, rerun once with a narrower scope.
-Output over forty lines → redirect to a log beside the report.
-Fix whose command or probe still fails after two attempts → revert it; it counts as reported, both outputs in the report.
+Output over forty lines → redirect to a log beside the findings file.
+Fix whose command or probe still fails after two attempts → revert it; it counts as reported, both outputs in the findings file.
 
-Append `fixed` or `reported: <one-clause reason>` to each finding line in the report, not its `Probe:` line.
+Append `fixed` or `reported: <one-clause reason>` to each finding line in the findings file, not its `Probe:` line.
 Run no git command that writes; commit nothing.
 Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence. Report it with two or three options instead.
 
