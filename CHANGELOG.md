@@ -7,6 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**Reports to you open with at most three short lines: what happened, whether it worked, and what you must do now; details go to the run notes.**
+
+### Changed
+
+- The low compression rule now carries the short-report rule (at most three plain lines first, details in `.exo/kept/<run>/run-report.md`, no table or nested list unless asked), and the per-skill report formats in `verify`, `ship`, `find-cause`, `refactor`, `route-skills` and `build` point at it (#119).
+- A question to the user offers two or three options, recommended first; the `configure` menus and setup walk follow the same cap, and `tests/question-shape.mjs` rejects more than three (#119).
+
+### Fixed
+
+- `verify` reviews a task that changes only instruction text under `skills/`, `agents/`, `rules/` or `hooks/`, or `CLAUDE.md`/`AGENTS.md`, with the light reviewer instead of skipping it as `none (text only)`; plain docs still skip review (#118).
+
 ## 0.120.1 - 2026-10-10
 
 ### Fixed
