@@ -1,6 +1,6 @@
 # design-ui: fast sketch preview and lean lead reads
 
-Evidence: `.exo/design-ui-cost/decisions.md` (closed decisions), `baseline.md` (10 transcripts), `loadmap.md` (static load per phase), `superpowers.md` (source research).
+Evidence: `.exo/design-ui-cost/decisions.md` (closed decisions), `baseline.md` (10 transcripts), `loadmap.md` (static load per phase), and the source research note in that folder.
 
 ## Goal
 A design-ui direction choice opens as a lead-written sketch round in the sketch tab within minutes, with no builder, capture or critique before the click, and the lead reads at most 30 KB of SKILL.md and references before that first preview.
@@ -71,7 +71,7 @@ A design-ui direction choice opens as a lead-written sketch round in the sketch 
   - project reads 6%
   - images 4%, about 1.8k each
 - Static: the preview path reads about 62 KB of SKILL.md and references before the first preview: direction-preview 10.8 KB whole, phase-direction 10.0 KB whole, visual-direction 8.7 KB, intake 8.4 KB. One pass reads about 54 KB. The lead reads build-pass (9.3 KB) whole, though the builder reads it whole too.
-- superpowers v7.0.0 (`bb92a777`): the main session writes 2-4 small HTML fragments into a shared frame on a zero-dependency local server, with no subagent, screenshots or critique. The user clicks, the click lands in an events file, and each iteration is a new file.
+- Prior art (source research note): the main session writes 2-4 small HTML fragments into a shared frame on a zero-dependency local server, with no subagent, screenshots or critique. The user clicks, the click lands in an events file, and each iteration is a new file.
 
 ## Acceptance
 - Task 1: sketch-tab.md holds `## The direction round`.
