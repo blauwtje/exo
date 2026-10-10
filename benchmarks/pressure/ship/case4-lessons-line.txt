@@ -1,0 +1,1 @@
+/exo:ship Run `bash /tmp/exo-pressure/ship/make-repo-lessons.sh` in this directory, then work inside `app`. The greeting change on feat/greeting is committed and verified. Finish up.

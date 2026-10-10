@@ -12,6 +12,7 @@ Takes finished commits as far as you choose: keep local, push, open a pull reque
 - One summary and one lettered question. The route you pick runs to the end.
 - A merge only after every check passes. The wait stops after 20 minutes.
 - A failed check leaves the pull request open, with the reason.
+- A `Lessons: <n> ready` line in the summary when review lessons await your approval in `/exo:remember`.
 - No branch deletion, forced merge or release.
 
 ## Source
