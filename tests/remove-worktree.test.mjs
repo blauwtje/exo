@@ -3,7 +3,7 @@
 // that name to <name>-<stamp>/) and every docs/specs/ file git does not track
 // into .exo/kept/<name>/docs/specs/ before it removes the worktree, and refuses
 // to remove it, with any moved kept folder back in place, when a copy fails or
-// git refuses.
+// git refuses; when git removed part of it, both kept folders stay.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -248,6 +248,37 @@ test('git refusal over an untracked brief leaves no kept folder, and --force kee
   const brief = path.join(root, '.exo', 'kept', path.basename(worktree), 'docs', 'specs', 'topic.md');
   assert.equal(fs.readFileSync(brief, 'utf8'), 'untracked brief\n');
   assert.doesNotMatch(git(root, 'worktree', 'list'), new RegExp(worktree));
+});
+
+// A read-only parent lets git delete every file inside the worktree and
+// then fail on the worktree folder itself, whatever order readdir gives.
+test('--kept keeps the copy and the moved-aside folder when git removes part of the worktree', { skip: process.getuid?.() === 0 || process.platform === 'win32' }, async () => {
+  const root = await gitRepository({ 'src/app.js': 'export function greet() {}\n', ...IGNORED_DOCS });
+  excludeScratch(root);
+  const parent = `${root}-locked`;
+  const worktree = path.join(parent, 'task');
+  git(root, 'worktree', 'add', '--detach', worktree, 'HEAD');
+  const keptRoot = path.join(root, '.exo', 'kept');
+  writeFile(keptRoot, 'task/earlier.md', 'earlier\n');
+  writeFile(worktree, '.exo/report.md', 'report\n');
+  writeFile(worktree, 'docs/specs/topic.md', 'the brief\n');
+  fs.chmodSync(parent, 0o555);
+
+  try {
+    assert.throws(() => removeWorktree({ worktree, run: root, kept: true }), (error) => {
+      assert.ok(error instanceof RemoveWorktreeError);
+      assert.match(error.message, new RegExp(`git removed part of '${worktree}'.*; the copy stays in '${path.join(keptRoot, 'task')}/'`));
+      return true;
+    });
+    assert.equal(fs.existsSync(path.join(worktree, 'docs', 'specs', 'topic.md')), false);
+    assert.equal(fs.readFileSync(path.join(keptRoot, 'task', 'docs', 'specs', 'topic.md'), 'utf8'), 'the brief\n');
+    assert.equal(fs.readFileSync(path.join(keptRoot, 'task', 'report.md'), 'utf8'), 'report\n');
+    const stamped = fs.readdirSync(keptRoot).filter((name) => name !== 'task');
+    assert.equal(stamped.length, 1);
+    assert.equal(fs.readFileSync(path.join(keptRoot, stamped[0], 'earlier.md'), 'utf8'), 'earlier\n');
+  } finally {
+    fs.chmodSync(parent, 0o755);
+  }
 });
 
 test('git refusal restores an existing kept folder moved aside for a brief', async () => {

@@ -17,14 +17,15 @@
 // writes that kept folder (`--kept`, or a brief to keep) and it already exists,
 // it first moves it aside to `<worktree basename>-<UTC date-time>/` (`-2`,
 // `-3`, ... when that name is taken too), so no kept file is ever overwritten,
-// and on any refusal it drops the new folder and moves the old one back.
+// and on any refusal it drops the new folder and moves the old one back,
+// unless git already deleted a file the new folder copied, when both stay.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
-/** Moving an existing kept folder aside failed, a copy into the run's `.exo/` failed, the worktree still holds an uncopied `.exo/` file or an uncopied `docs/specs/` file git does not track, or git refused the removal: nothing was removed, and a moved kept folder is back under its own name. */
+/** Moving an existing kept folder aside failed, a copy into the run's `.exo/` failed, the worktree still holds an uncopied `.exo/` file or an uncopied `docs/specs/` file git does not track, or git refused the removal: nothing was removed, and a moved kept folder is back under its own name, unless git removed part of the worktree, when the kept folder and a moved one stay. */
 export class RemoveWorktreeError extends Error {}
 
 // Where the spec skill writes a brief, relative to the checkout root.
@@ -108,19 +109,38 @@ export function removeWorktree({ worktree, run, force = false, kept = false }) {
       throw new RemoveWorktreeError(`moving '${keptTarget}' aside failed: ${error.message}; removed nothing`);
     }
   }
-  let counts;
+  // The kept folder at `keptRoot` is this call's own (any earlier one was
+  // moved aside above), so a refusal drops it and moves the earlier one back:
+  // a retry then sees the state from before this call.
+  const rollBack = () => {
+    if (!ownsKept) return;
+    fs.rmSync(keptRoot, { recursive: true, force: true });
+    if (movedTo !== undefined) fs.renameSync(movedTo, keptRoot);
+  };
+  let copied;
   try {
-    counts = copyThenRemove({ worktree, run, force, exo, keptRoot, keptTarget, briefs });
+    copied = copyChecked({ worktree, exo, keptRoot, keptTarget, briefs });
   } catch (error) {
-    // The kept folder at `keptRoot` is this call's own (any earlier one was
-    // moved aside above), so drop it and move the earlier one back: a retry
-    // then sees the state from before this call.
-    if (ownsKept) {
-      fs.rmSync(keptRoot, { recursive: true, force: true });
-      if (movedTo !== undefined) fs.renameSync(movedTo, keptRoot);
-    }
+    rollBack();
     throw error;
   }
+  const failure = gitRemoveFailure({ worktree, run, force });
+  if (failure !== undefined) {
+    // Git can fail after deleting part of the worktree: once a file copied
+    // into `keptRoot` is gone there, that copy is the only one left, so it
+    // stays, and the earlier folder keeps its stamped name.
+    const keptSources = [
+      ...copied.briefs.map((relative) => path.join(worktree, SPECS, relative)),
+      ...(kept ? copied.exo.map((relative) => path.join(worktree, '.exo', relative)) : []),
+    ];
+    if (!keptSources.every((source) => fs.existsSync(source))) {
+      const earlier = movedTo === undefined ? '' : `; the earlier one stays in '${movedTo}/'`;
+      throw new RemoveWorktreeError(`git removed part of '${worktree}' and then failed: ${failure}; the copy stays in '${keptTarget}'${earlier}`);
+    }
+    rollBack();
+    throw new RemoveWorktreeError(`git refused to remove '${worktree}': ${failure}`);
+  }
+  const counts = { exo: copied.exo.length, briefs: copied.briefs.length };
   const briefNote = counts.briefs === 0 ? '' : `; kept ${counts.briefs} ${SPECS}/ file(s) in '${keptTarget}${SPECS}/'`;
   const moved = movedTo === undefined ? '' : `; moved existing '${keptTarget}' to '${movedTo}/'`;
   return `Copied ${counts.exo} .exo/ file(s) from '${worktree}' to '${kept ? keptTarget : run}'${briefNote}${moved}; removed '${worktree}'\n`;
@@ -156,20 +176,25 @@ function refuseMissed(worktree, folder, listed, copied) {
 
 // Copies the worktree's `.exo/` files under `exo.root` and its untracked
 // `docs/specs/` files under the kept folder, checks git sees none left
-// uncopied, then removes the worktree; returns both copied counts.
-function copyThenRemove({ worktree, run, force, exo, keptRoot, keptTarget, briefs }) {
+// uncopied, and returns both copied lists.
+function copyChecked({ worktree, exo, keptRoot, keptTarget, briefs }) {
   const exoCopied = copyFiles(exoFiles(worktree), path.join(worktree, '.exo'), exo.root, { from: `${worktree}/.exo/`, to: exo.target });
   const briefsCopied = copyFiles(briefs, path.join(worktree, SPECS), path.join(keptRoot, SPECS), { from: `${worktree}/${SPECS}/`, to: `${keptTarget}${SPECS}/` });
   refuseMissed(worktree, '.exo/', ignoredExoFiles(worktree), exoCopied);
   refuseMissed(worktree, `${SPECS}/`, untrackedSpecFiles(worktree), briefsCopied);
+  return { exo: exoCopied, briefs: briefsCopied };
+}
+
+// Runs `git worktree remove` and returns the first line of git's error, or
+// undefined once the worktree is removed.
+function gitRemoveFailure({ worktree, run, force }) {
   const args = ['-C', run, 'worktree', 'remove', ...(force ? ['--force'] : []), worktree];
   try {
     execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (error) {
-    const reason = String(error.stderr ?? error.message).split('\n')[0];
-    throw new RemoveWorktreeError(`git refused to remove '${worktree}': ${reason}`);
+    return String(error.stderr ?? error.message).split('\n')[0];
   }
-  return { exo: exoCopied.length, briefs: briefsCopied.length };
+  return undefined;
 }
 
 function main(argv) {
