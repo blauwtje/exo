@@ -26,6 +26,7 @@ effort: high
    - `fix=0` → step 4, no `exo:fix-review` dispatch, rerun or fix commit.
    - After the dispatch → follow `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
+   - `defect` lines in the findings → first book each per `references/lessons.md`; a refused or denied booking blocks nothing.
    - `--land` → pass `--land` to `ship`.
 
 ## References
@@ -34,6 +35,7 @@ effort: high
 |---|---|
 | `references/review-rules.md` | Step 2, each dispatch. |
 | `references/repair.md` | Step 3, after the fixer returns. |
+| `references/lessons.md` | Step 4, when the findings hold a `defect`. |
 | `references/gate-lines.md` | Step 1, a line its pointer names. |
 | `references/plan-checks.md` | Never here: the reviewer reads it. |
 

@@ -9,6 +9,9 @@
 #   red:    `npm test` passes, but Task 2's Proof fails, because shout drops
 #           the exclamation mark the plan asks for and its test pins that.
 #   noplan: the same branch with no plan file anywhere.
+#   defect: the green branch plus `.exo/review-<sha7>.md` records that make
+#           `verify.mjs` print REVIEWED for both tasks; Task 2's record holds
+#           one `defect` finding marked `report` whose evidence has a backtick.
 # It then runs verify.mjs on the green and red variants, so a rerun
 # of setup.sh proves the fixture still gates as described.
 set -euo pipefail
@@ -22,9 +25,9 @@ mkdir -p "$root"
 
 cat > "$root/make-app.sh" <<'SCRIPT'
 #!/usr/bin/env bash
-# Usage: make-app.sh green|red|noplan. Builds ./app on feat/greeting.
+# Usage: make-app.sh green|red|noplan|defect. Builds ./app on feat/greeting.
 set -euo pipefail
-variant="${1:?variant green, red or noplan}"
+variant="${1:?variant green, red, noplan or defect}"
 
 git init -q -b main app
 cd app
@@ -105,14 +108,28 @@ test('shout capitalises', () => assert.equal(shout('hi'), 'HI$bang'));
 EOF2
 git add -A
 git commit -qm "feat(shout): shout a word" -m "Plan-task: greeting/2"
+if [ "$variant" = defect ]; then
+  mkdir -p .exo
+  echo '.exo/' >> .git/info/exclude
+  printf 'CLEAN\n\nCount: defect=0 hazard=0 question=0\nUnread: none\n' > ".exo/review-$(git rev-parse --short=7 HEAD~1).md"
+  cat > ".exo/review-$(git rev-parse --short=7 HEAD).md" <<'EOF2'
+FINDINGS
+
+src/shout.js:1-3; defect; unchecked input; shout() calls `word.toUpperCase()` with no type check, so shout(null) throws a TypeError; report
+
+Count: defect=1 hazard=0 question=0
+Unread: none
+EOF2
+fi
 echo "repository ready in $(pwd) on feat/greeting, two commits ahead of main"
 SCRIPT
 chmod +x "$root/make-app.sh"
 
-# Self-check: the green variant passes the gate, the red one fails Task 2's Proof.
+# Self-check: the green variant passes the gate, the red one fails Task 2's Proof,
+# and the defect variant prints REVIEWED for both tasks.
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
-for variant in green red; do
+for variant in green red defect; do
   mkdir "$scratch/$variant"
   (cd "$scratch/$variant" && bash "$root/make-app.sh" "$variant" > /dev/null)
 done
@@ -123,4 +140,6 @@ if (cd "$scratch/red/app" && node "$verify" --plan docs/plans/greeting.md --root
 fi
 grep -Eq '^PASS Task 2( |$)' "$scratch/green.out" || { echo "setup.sh: the green variant printed no PASS Task 2 line" >&2; exit 1; }
 grep -Eq '^FAIL Task 2( |$)' "$scratch/red.out" || { echo "setup.sh: the red variant printed no FAIL Task 2 line" >&2; exit 1; }
-echo "fixture script placed in $root; green passes the gate, red fails Task 2"
+(cd "$scratch/defect/app" && node "$verify" --plan docs/plans/greeting.md --root . --base main > "$scratch/defect.out" 2> /dev/null)
+[ "$(grep -c '^REVIEWED Task' "$scratch/defect.out")" = 2 ] || { echo "setup.sh: the defect variant did not print REVIEWED for both tasks" >&2; exit 1; }
+echo "fixture script placed in $root; green passes the gate, red fails Task 2, defect is reviewed"
