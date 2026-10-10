@@ -7,6 +7,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **An exo run waits less: verify starts its reviews while the gate runs, build lands each task as soon as it reports, and verify no longer reviews a task build already reviewed.**
+
+### Changed
+
+- `verify` prints its review lines first with `verify.mjs --reviews-only` and dispatches the reviews while the full gate runs in the background; the gate also runs alongside the task proofs, and a `FAIL` or `STRAY` still stops the run before any repair.
+- `verify`'s repair round runs the gate rerun and the probes alongside the fix-diff review; the fix commit still waits for all three.
+- `build`'s run-unit waits only through `wait-report.mjs --any` on build reports, lands each fresh report before the next wait and awaits the reviews once after the last build, never through a shell loop or `sleep`.
+- `spec` reads the repo map first, calls `exo:locate-code` in the foreground only for a range the map leaves unnamed, and learns plan-check's rules from its output, not its source.
+- This repository's lead runs `exo:spec` and `exo:build` itself and verify as one fresh subagent with no checks beyond the skill's.
+
+### Fixed
+
+- `verify` finds build's per-task review record when git abbreviates the commit id to more than 7 characters, so a task build already reviewed is no longer reviewed again; a changed task still gets a new review.
+
 ## 0.121.1 - 2026-10-10
 
 ### Fixed
