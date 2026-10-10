@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.114.0 - 2026-10-10
+
 ### Highlights
 
 **`build` now builds tasks with disjoint `Files:` sets in parallel without a `Parallel:` line, and `design-ui` splits a page into parallel surface builders when their files are disjoint.**
