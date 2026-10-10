@@ -537,9 +537,10 @@ function checkReport(task, reportText, reportPath) {
   return { proofCommand, pending };
 }
 
-// The stray-path and report checks landTask runs first, alone: nothing runs
-// the Proof, commits, lints, gates or records, so a builder can run it before
-// it reports.
+// The stray-path and report checks landTask runs first, then Lint and the Land
+// gate as landTask runs them, a failure refusing closed: nothing runs the
+// Proof or commits, so a builder can run it before it reports and fix a
+// trivial gate failure itself.
 export function checkTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {
   refuseOutsidePin(pin, planPath, number);
   refuseMismatchedToplevel(root);
@@ -549,7 +550,10 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   refuseMcpProofUnderPin(pin, task);
   refuseStrayPaths(task, root, planPath, siblingWorkOf(plan, task, root, planPath, false));
   checkReport(task, reportText, reportPath);
-  return `Report OK: Task ${number}\n`;
+  const frame = frameOf(plan.frame);
+  runLint(frame.lint, task.files.map((file) => file.path), root);
+  const gateLine = runLandGate(frame.landGate, root) ?? '';
+  return `${gateLine}Report OK: Task ${number}\n`;
 }
 
 export function landTask({ planText, number, root, reportText = null, reportPath = '--report', planPath, pin = null }) {

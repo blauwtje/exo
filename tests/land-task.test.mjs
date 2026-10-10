@@ -958,6 +958,25 @@ test('--check validates the stray paths and the report, and commits nothing', as
   assert.match(stray.stderr, /outside Files: `src\/extra\.js`/);
 });
 
+test('--check runs the Land gate and Lint, refusing a failure and returning a skip line before Report OK', async () => {
+  const withBasis = (line) => COMPACT_PLAN.replace('## Plan basis\n', `## Plan basis\n${line}\n`);
+  const check = async (planText) => {
+    const { root, planPath } = await compactCheckout(planText);
+    await writeReport(root, PASS_REPORT);
+    return { root, planPath, planText: await fs.readFile(planPath, 'utf8') };
+  };
+  const gate = await check(withBasis('Land gate: echo gate broke && exit 1'));
+  assert.throws(() => checkTask({ ...gate, number: 1, reportText: PASS_REPORT }), /Land gate "echo gate broke && exit 1" failed:\ngate broke/);
+  const lint = await check(withBasis('Lint: false'));
+  assert.throws(() => checkTask({ ...lint, number: 1, reportText: PASS_REPORT }), /Lint "false" failed/);
+  const ok = await check(withBasis('Land gate: true'));
+  assert.equal(checkTask({ ...ok, number: 1, reportText: PASS_REPORT }), 'Report OK: Task 1\n');
+  assert.equal(
+    checkTask({ ...ok, number: 1, reportText: PASS_REPORT }),
+    'Land gate "true" skipped: it already passed on this tree.\nReport OK: Task 1\n'
+  );
+});
+
 // A block's builders share one checkout: task 2's files sit uncommitted while
 // task 1 checks and lands.
 const SIBLING_PLAN = compactPlanFixture({ tasks: [
