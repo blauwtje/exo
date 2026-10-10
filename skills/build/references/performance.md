@@ -6,7 +6,7 @@ Wrong output or timeout → main `find-cause` loop, unless speed is the only sym
 
 ## The loop
 
-1. **Measure the reported path.** Repository benchmark or profiler exists → use it; else time the end-to-end region the complaint names. Ad hoc timer → run the same input five times, record median plus spread (`maximum - minimum`).
+1. **Measure the reported path.** Read an existing log, profile or `.exo/` report on it before measuring anew. Repository benchmark or profiler exists → use it, else time the end-to-end region the complaint names; ad hoc timer → run the same input five times, record median plus spread (`maximum - minimum`).
 2. **Locate the bottleneck.** Profile or timing breakdown. Follow the largest measured region on the reported path, not the code that looks most expensive.
 3. **Change one mechanism.** Smallest edit targeting that region. No adjacent cleanup bundled.
 4. **Repeat the measurement.** Same tool, input, warm/cold state, run count. Record new median and spread.
