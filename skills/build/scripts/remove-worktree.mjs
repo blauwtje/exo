@@ -6,20 +6,29 @@
 // worktree's `.exo/` into the run's `.exo/`, then removes the worktree; it
 // refuses and removes nothing when a copy fails or when the worktree's
 // ignored files still list a `.exo/` path this run did not copy.
-// `--kept` copies into `<run>/.exo/kept/<worktree basename>/` instead, so
+// A spec brief at `docs/specs/<topic>.md` is often ignored or untracked, so
+// `git worktree remove` deletes it too: every file under the worktree's
+// `docs/specs/` that git does not track goes the same way to `docs/specs/`
+// inside the kept folder, `<run>/.exo/kept/<worktree basename>/`, checked
+// against git's own list; a tracked one stays with git.
+// `--kept` copies the `.exo/` files into the kept folder instead, so
 // many worktrees removed into one checkout keep their same-named files apart
-// and leave the run's own `.exo/` alone; when that folder already exists it
-// first moves it aside to `<worktree basename>-<UTC date-time>/` (`-2`, `-3`,
-// ... when that name is taken too), so no kept report is ever overwritten, and
-// on any refusal it drops the new folder and moves the old one back.
+// and leave the run's own `.exo/` alone. When this call
+// writes that kept folder (`--kept`, or a brief to keep) and it already exists,
+// it first moves it aside to `<worktree basename>-<UTC date-time>/` (`-2`,
+// `-3`, ... when that name is taken too), so no kept file is ever overwritten,
+// and on any refusal it drops the new folder and moves the old one back.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
-/** Moving an existing `--kept` folder aside failed, a copy into the run's `.exo/` failed, the worktree still holds an uncopied `.exo/` file, or git refused the removal: nothing was removed, and a moved `--kept` folder is back under its own name. */
+/** Moving an existing kept folder aside failed, a copy into the run's `.exo/` failed, the worktree still holds an uncopied `.exo/` file or an uncopied `docs/specs/` file git does not track, or git refused the removal: nothing was removed, and a moved kept folder is back under its own name. */
 export class RemoveWorktreeError extends Error {}
+
+// Where the spec skill writes a brief, relative to the checkout root.
+const SPECS = 'docs/specs';
 
 // Every regular file under `<root>/.exo/`, as a path relative to `.exo/`
 // itself, so the same relative path names both the source and the copy's
@@ -56,6 +65,22 @@ function ignoredExoFiles(worktree) {
     .map((entry) => entry.slice('.exo/'.length));
 }
 
+// Every file under the worktree's `docs/specs/` that git does not track,
+// ignored (`!!`) or untracked (`??`), as a path relative to `docs/specs/`.
+// `--ignored=traditional` with `--untracked-files=all` lists each file inside
+// an ignored or untracked directory, where `matching` or the default would
+// give only the one directory entry; the pathspec keeps the walk to
+// `docs/specs/`. A tracked file is left out: git keeps it in the branch.
+function untrackedSpecFiles(worktree) {
+  const args = ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=traditional', '--untracked-files=all', '--', SPECS];
+  return execFileSync('git', args, { encoding: 'utf8' })
+    .split('\0')
+    .filter((line) => line.startsWith('?? ') || line.startsWith('!! '))
+    .map((line) => line.slice(3))
+    .filter((entry) => entry.startsWith(`${SPECS}/`))
+    .map((entry) => entry.slice(SPECS.length + 1));
+}
+
 // Moves `folder` to `<folder>-<UTC date-time>`, with `-2`, `-3`, ... added
 // until the name is free, and returns the new path. The stamp has no colons,
 // so it is a valid Windows file name, and sorts by time.
@@ -68,52 +93,75 @@ function moveAside(folder) {
 }
 
 export function removeWorktree({ worktree, run, force = false, kept = false }) {
-  const destinationRoot = kept ? path.join(run, '.exo', 'kept', path.basename(worktree)) : path.join(run, '.exo');
-  const target = kept ? `${destinationRoot}/` : `${run}/.exo/`;
+  const keptRoot = path.join(run, '.exo', 'kept', path.basename(worktree));
+  const keptTarget = `${keptRoot}/`;
+  const briefs = untrackedSpecFiles(worktree);
+  const exo = kept ? { root: keptRoot, target: keptTarget } : { root: path.join(run, '.exo'), target: `${run}/.exo/` };
+  // This call owns the kept folder when it writes there, with `--kept` or for
+  // a brief; both modes share the move-aside below and the rollback after it.
+  const ownsKept = kept || briefs.length > 0;
   let movedTo;
-  if (kept && fs.existsSync(destinationRoot)) {
+  if (ownsKept && fs.existsSync(keptRoot)) {
     try {
-      movedTo = moveAside(destinationRoot);
+      movedTo = moveAside(keptRoot);
     } catch (error) {
-      throw new RemoveWorktreeError(`moving '${target}' aside failed: ${error.message}; removed nothing`);
+      throw new RemoveWorktreeError(`moving '${keptTarget}' aside failed: ${error.message}; removed nothing`);
     }
   }
-  let count;
+  let counts;
   try {
-    count = copyThenRemove({ worktree, run, force, destinationRoot, target });
+    counts = copyThenRemove({ worktree, run, force, exo, keptRoot, keptTarget, briefs });
   } catch (error) {
-    // The kept folder at `destinationRoot` is this call's own (any earlier
-    // one was moved aside above), so drop it and move the earlier one back:
-    // a retry then sees the state from before this call.
-    if (kept) {
-      fs.rmSync(destinationRoot, { recursive: true, force: true });
-      if (movedTo !== undefined) fs.renameSync(movedTo, destinationRoot);
+    // The kept folder at `keptRoot` is this call's own (any earlier one was
+    // moved aside above), so drop it and move the earlier one back: a retry
+    // then sees the state from before this call.
+    if (ownsKept) {
+      fs.rmSync(keptRoot, { recursive: true, force: true });
+      if (movedTo !== undefined) fs.renameSync(movedTo, keptRoot);
     }
     throw error;
   }
-  const moved = movedTo === undefined ? '' : `; moved existing '${target}' to '${movedTo}/'`;
-  return `Copied ${count} .exo/ file(s) from '${worktree}' to '${kept ? target : run}'${moved}; removed '${worktree}'\n`;
+  const briefNote = counts.briefs === 0 ? '' : `; kept ${counts.briefs} ${SPECS}/ file(s) in '${keptTarget}${SPECS}/'`;
+  const moved = movedTo === undefined ? '' : `; moved existing '${keptTarget}' to '${movedTo}/'`;
+  return `Copied ${counts.exo} .exo/ file(s) from '${worktree}' to '${kept ? keptTarget : run}'${briefNote}${moved}; removed '${worktree}'\n`;
 }
 
-// Copies the worktree's `.exo/` files under `destinationRoot`, checks git sees
-// none left uncopied, then removes the worktree; returns the copied count.
-function copyThenRemove({ worktree, run, force, destinationRoot, target }) {
+// Copies each relative path from under `source` to the same path under
+// `destination` and returns the copied list; any failure becomes a
+// RemoveWorktreeError naming the two labels.
+function copyFiles(relatives, source, destination, labels) {
   const copied = [];
   try {
-    for (const relative of exoFiles(worktree)) {
-      const destination = path.join(destinationRoot, relative);
-      fs.mkdirSync(path.dirname(destination), { recursive: true });
-      fs.copyFileSync(path.join(worktree, '.exo', relative), destination);
+    for (const relative of relatives) {
+      const to = path.join(destination, relative);
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.copyFileSync(path.join(source, relative), to);
       copied.push(relative);
     }
   } catch (error) {
-    throw new RemoveWorktreeError(`copying '${worktree}/.exo/' to '${target}' failed: ${error.message}`);
+    throw new RemoveWorktreeError(`copying '${labels.from}' to '${labels.to}' failed: ${error.message}`);
   }
+  return copied;
+}
+
+// Refuses when git's own list, read after copying, names a file under
+// `folder` that the copy did not take.
+function refuseMissed(worktree, folder, listed, copied) {
   const copiedSet = new Set(copied);
-  const missed = ignoredExoFiles(worktree).filter((relative) => !copiedSet.has(relative));
+  const missed = listed.filter((relative) => !copiedSet.has(relative));
   if (missed.length > 0) {
-    throw new RemoveWorktreeError(`'${worktree}' still holds uncopied .exo/ file(s): ${missed.join(', ')}`);
+    throw new RemoveWorktreeError(`'${worktree}' still holds uncopied ${folder} file(s): ${missed.join(', ')}`);
   }
+}
+
+// Copies the worktree's `.exo/` files under `exo.root` and its untracked
+// `docs/specs/` files under the kept folder, checks git sees none left
+// uncopied, then removes the worktree; returns both copied counts.
+function copyThenRemove({ worktree, run, force, exo, keptRoot, keptTarget, briefs }) {
+  const exoCopied = copyFiles(exoFiles(worktree), path.join(worktree, '.exo'), exo.root, { from: `${worktree}/.exo/`, to: exo.target });
+  const briefsCopied = copyFiles(briefs, path.join(worktree, SPECS), path.join(keptRoot, SPECS), { from: `${worktree}/${SPECS}/`, to: `${keptTarget}${SPECS}/` });
+  refuseMissed(worktree, '.exo/', ignoredExoFiles(worktree), exoCopied);
+  refuseMissed(worktree, `${SPECS}/`, untrackedSpecFiles(worktree), briefsCopied);
   const args = ['-C', run, 'worktree', 'remove', ...(force ? ['--force'] : []), worktree];
   try {
     execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -121,7 +169,7 @@ function copyThenRemove({ worktree, run, force, destinationRoot, target }) {
     const reason = String(error.stderr ?? error.message).split('\n')[0];
     throw new RemoveWorktreeError(`git refused to remove '${worktree}': ${reason}`);
   }
-  return copied.length;
+  return { exo: exoCopied.length, briefs: briefsCopied.length };
 }
 
 function main(argv) {

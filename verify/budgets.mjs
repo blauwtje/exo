@@ -67,7 +67,7 @@ export const REFERENCE_TOKEN_LOCKS = {
   'skills/build/references/data-migration.md': 874,
   'skills/build/references/security.md': 999,
   'skills/build/references/test-design.md': 862,
-  'skills/build/references/wave-worktrees.md': 916,
+  'skills/build/references/wave-worktrees.md': 930,
   'skills/ship/references/pr-prep.md': 772,
 };
 // skills/route-skills/references/lean.md, read before every code edit, sits

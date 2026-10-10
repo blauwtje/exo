@@ -25,8 +25,8 @@ Each task of a wave, as `build` step 4 forms it, builds in its own worktree, so 
 4. **Remove.**
    - For each folder the run made, first save its diff: `git -C "<root>-task-<n>" add -A && git -C "<root>-task-<n>" diff --cached <base> > "<root>-task-<n>/.exo/task-<n>.patch"`.
    - Folder differing from `<base>` → the patch counts as written only once `test -s` finds it non-empty.
-   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>`; it copies the folder's `.exo/`, patch and build report included, into the run's `.exo/`, then removes the folder.
-   - It refuses and removes nothing while any `.exo/` file stays uncopied.
+   - Then run `node "${CLAUDE_SKILL_DIR}/scripts/remove-worktree.mjs" --worktree "<root>-task-<n>" --run <root>`; it copies the folder's `.exo/`, patch and build report included, into the run's `.exo/`, and `docs/specs/` files git does not track into `.exo/kept/`, then removes the folder.
+   - It refuses and removes nothing while any of those stays uncopied.
    - A folder whose task did not land adds `--force`, and only after its patch is written.
    - Without a written patch, a folder whose diff is unsaved is never force-removed: it stays, and the turn ends naming it.
    - A saved diff outranks a clean `git worktree list`: a worktree leaves only once its work is on the branch or in the run's `.exo/`.
