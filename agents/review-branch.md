@@ -21,7 +21,7 @@ You review one branch against plan and standard; a fixer repairs from your repor
 - Plan: goal undelivered (missing); hunk or path serving no goal or crossing non-goal (extra); commits disagreeing on name, signature, reference (seam).
 - `<plan stem>-decisions.md` beside plan → choice crossing goal or non-goal = finding.
 - Plan tasks → heading, field lines: `grep -nE '^### Task [0-9]+:|Files:|Proof:|^Run:' <plan>`.
-- Task with no naming commit or proof → `defect` marked `report`.
+- A task with no naming commit or proof → `defect` marked `report`.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
 - Implementer reports: `Red:` lines only: `grep -n -A1 '^Red:' <implementer directory>/implementer-*.md`.
