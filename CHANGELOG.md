@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.120.0 - 2026-10-10
+
 ### Highlights
 
 **`design-ui` now shows a first preview within minutes: the direction choice opens as a lead-written sketch round, and the lead reads far less before it.**
