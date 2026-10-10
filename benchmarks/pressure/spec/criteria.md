@@ -9,7 +9,7 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 - Each question opens with a title line `**<title>**`, unnumbered outside a batch, a plain everyday question of about ten words at most.
 - Each question has two short sentences of context at most, only what the user needs to choose.
 - No file name the user need not open, setting or field name, flag, model name, token count, endpoint or other technical term in a title, an option or the recommendation.
-- Three or four options, two only when no honest third route exists, each on its own line as `- **(A) Label**: what the user gets`, the label one to three words, the text one short plain clause on what the user gets or gives up.
+- Two or three options, two only when no honest third route exists, each on its own line as `- **(A) Label**: what the user gets`, the label one to three words, the text one short plain clause on what the user gets or gives up.
 - A is always the recommended option; no option is marked "(recommended)" and no other option carries a mark.
 - The last line is `Recommended: (A), because <why A beats the others>`, one plain clause, not inside an option line.
 - No `---` separator and no `Without an answer` line.

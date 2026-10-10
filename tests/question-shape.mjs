@@ -1,11 +1,12 @@
 // Parses one rendered exo question and asserts the limits of the shape in
 // `skills/route-skills/references/question.md`: a bold title of at most about
-// ten words, at most two context sentences, two to four lettered options in
+// ten words, at most two context sentences, two or three lettered options in
 // order, and the `Recommended: (A), because` line last.
 
 import assert from 'node:assert/strict';
 
-const OPTION = /^- \*\*\(([A-D])\) [^*]+\*\*: \S/;
+// Parses any letter so a fourth option fails the count, not the blank-line check.
+const OPTION = /^- \*\*\(([A-Z])\) [^*]+\*\*: \S/;
 
 /** Asserts that `text`, one rendered question, keeps every limit of the shape. */
 export function assertQuestionShape(text) {
@@ -21,8 +22,8 @@ export function assertQuestionShape(text) {
   const options = [];
   let index = blank + 1;
   while (OPTION.test(lines[index] ?? '')) options.push(lines[index++].match(OPTION)[1]);
-  assert.ok(options.length >= 2 && options.length <= 4, `${options.length} options`);
-  assert.deepEqual(options, ['A', 'B', 'C', 'D'].slice(0, options.length), 'options lettered in order from A');
+  assert.ok(options.length >= 2 && options.length <= 3, `${options.length} options`);
+  assert.deepEqual(options, ['A', 'B', 'C'].slice(0, options.length), 'options lettered in order from A');
   assert.equal(lines[index], '', 'a blank line after the options');
   assert.equal(index + 2, lines.length, 'the recommendation is the last line');
   assert.match(lines.at(-1), /^Recommended: \(A\), because \S/);

@@ -49,6 +49,19 @@ test('the example is one short question with three options and the recommendatio
   assert.ok(words.length <= 70, `the example runs to ${words.length} words`);
 });
 
+test('the shared shape check rejects a fourth option', () => {
+  const question = (letters) => [
+    '**Which route do you want?**',
+    'Pick one.',
+    '',
+    ...letters.map((letter) => `- **(${letter}) Route ${letter}**: you get ${letter}`),
+    '',
+    'Recommended: (A), because it is simplest',
+  ].join('\n');
+  assertQuestionShape(question(['A', 'B', 'C']));
+  assert.throws(() => assertQuestionShape(question(['A', 'B', 'C', 'D'])), /4 options/);
+});
+
 // The old shape: middle-dot option lines, bold or not, and titles, the arrow
 // reason, and the line for a missing answer.
 const OLD_SHAPE = [/^\s*-\s+(\*\*)?[A-J] · /m, /\*\*\d+ · /, /^\s*['"`]?→ [A-Z]\. /m, /Without an answer,/];
