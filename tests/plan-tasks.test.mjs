@@ -182,6 +182,25 @@ test('a wave admits only the tasks the Checkpoint Parallel: line names', () => {
   assert.deepEqual(numbers([2, 3]), [1]);
 });
 
+test('a Parallel: line names only the task numbers of its accepted forms', () => {
+  const parallel = (value) => frameOf(parsePlan(compactPlanFixture({ tasks: [1, 2, 3, 4].map((number) => bare(number, 'none')) })
+    .replace('- Parallel: every task.', `- Parallel: ${value}`)).frame).parallel;
+  assert.deepEqual(parallel('Tasks 1, 2 and 3.'), [1, 2, 3]);
+  assert.deepEqual(parallel('Tasks 1 and 2.'), [1, 2]);
+  assert.deepEqual(parallel('Tasks 1, 2, 3 and 16.'), [1, 2, 3, 16]);
+  assert.deepEqual(parallel('Task 2.'), [2]);
+  assert.deepEqual(parallel('1, 3.'), [1, 3]);
+  assert.deepEqual(parallel('tasks 1, 2, and 4'), [1, 2, 4]);
+  assert.deepEqual(parallel('none'), []);
+  assert.deepEqual(parallel('None.'), []);
+  assert.equal(parallel('every task'), null);
+  assert.equal(parallel('Every task.'), null);
+  assert.deepEqual(parallel('2, 3 (after 10 s)'), [], 'prose digits name no task');
+  assert.deepEqual(parallel('Tasks 1, 2 and 4; Task 3 after Task 1.'), [], 'a trailing clause names no task');
+  assert.deepEqual(parallel('every task needs no earlier task except task 9'), [], 'prose after every task is not every task');
+  assert.deepEqual(parallel('all.'), []);
+});
+
 test('driftOf reports a Modify: region that is missing, duplicated or already changed', async () => {
   const root = await fixture();
   const target = path.join(root, 'app.js');
