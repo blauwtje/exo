@@ -84,11 +84,12 @@ test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four 
 
 test('a unit wave builds in worktrees and keeps each green task per wave-worktrees.md', () => {
   const dispatchStep = loopStep(3, UNIT_AGENT);
-  assert.ok(dispatchStep.includes('else a wave per `<skill>/references/wave-worktrees.md`'), 'the reference owns the wave');
+  assert.ok(dispatchStep.includes('A `Wave:` line → `<skill>/references/rolling-window.md`, worktrees per `<skill>/references/wave-worktrees.md`; `Next:` stays foreground'), 'the references own the wave');
+  assert.ok(!dispatchStep.includes('up to three tasks here'), 'no shared-checkout mode');
   assert.ok(WAVE_WORKTREES.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(dispatchStep.includes('in one message'));
   const commitStep = loopStep(4, UNIT_AGENT);
-  assert.ok(commitStep.includes("A wave lands and removes its worktrees per that reference's steps 3 and 4"));
+  assert.ok(commitStep.includes('A `Wave:` slot lands per `rolling-window.md` step 3'));
   assert.ok(commitStep.includes('a failed task returns to step 3'));
   assert.ok(!commitStep.includes('only when every report in it is green'), 'no unit wave waits on every report');
   assert.ok(!commitStep.includes('no task of it commits'), 'a failed sibling costs no green task');
