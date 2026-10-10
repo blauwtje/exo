@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.114.1 - 2026-10-10
+
 ### Changed
 
 - `build` writes a run's fixed rules (Goal, Success criterion, report cap, boundaries) once to `.exo/run-rules.md`, and each task brief names that file instead of repeating them (#101).
