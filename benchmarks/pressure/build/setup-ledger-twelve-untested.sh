@@ -175,7 +175,7 @@ Every task's `node scripts/prove.mjs <name>` exits 0 and `npm test` is green.
 ## Checkpoint
 
 - Blocks first: none.
-- Parallel: every task needs no earlier task except task 9, which needs task 2, and task 10, which needs task 3.
+- Parallel: Tasks 1, 2, 3, 4, 5, 6, 7, 8, 11 and 12.
 - Shared state: none; each task writes only its own `src/ledger/<file>.js` and `test/<file>.test.js`.
 - Smallest safe split: one task per helper.
 

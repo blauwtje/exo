@@ -235,7 +235,7 @@ throws on the inputs below. `scripts/proof-cases.json` holds the cases each
 ## Checkpoint
 
 - Blocks first: none.
-- Parallel: tasks 1, 2, 3, 4, 5, 6, 8, 10, 11 and 12 need no earlier task; task 7 needs task 5 and task 9 needs task 1.
+- Parallel: Tasks 1, 2, 3, 4, 5, 6, 8, 10, 11 and 12.
 - Shared state: none; every task writes only its own `src/<file>.js` and `test/<file>.test.js`.
 - Smallest safe split: one task per function.
 
