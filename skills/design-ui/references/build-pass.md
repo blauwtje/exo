@@ -61,6 +61,7 @@ A trope stays only when a `contract-selected.json` field, the plan or the brief'
 
 - `overused-font`, `uniform-card-shadow`, `radial-halo`, `thin-border-wide-shadow`, `edge-accent-card`, `gradient-text`, `transition-all`, `emoji-in-markup`, `aggressive-gradient-ground`, `kicker-above-heading`.
 - `purple-palette`, `neon-on-dark`, `cream-ground`, `tinted-glow`, `pill-button`, `bounce-easing`, `card-entrance`, `monospace-label`, `invented-content`, `hard-offset-shadow`.
+- `nested-card`, `uppercase-kicker`, `icon-tile-heading`, `identical-card-row`, `numbered-marker`, `italic-accent-heading`, `pulsing-dot`, `filler-word`, `em-dash-copy`.
 
 By category:
 

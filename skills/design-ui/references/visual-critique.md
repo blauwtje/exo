@@ -79,6 +79,18 @@ When a tell removes a default, replacement parity applies (the `visual-direction
 
 Judge each rendered trope against the `build-pass` reference's `## Slop tropes`, the one list.
 
+Source misses these forms of the nine source-read tropes; judge them in the render:
+
+- `nested-card` → a surface inside a surface that no card-named class or component marks.
+- `uppercase-kicker` → a small caps label over a heading, set by a stylesheet rule or text-transform.
+- `icon-tile-heading` → a rounded icon tile built from a background image, a pseudo-element or a component.
+- `identical-card-row` → equal-looking cards with different class strings, or a row a component or loop renders.
+- `numbered-marker` → 01, 02, 03 markers written in the stylesheet, as counters or pseudo-elements.
+- `italic-accent-heading` → one heading word in a different style through a stylesheet rule or a component.
+- `pulsing-dot` → a pulsing dot drawn by a pseudo-element or a component.
+- `filler-word` → filler copy fed from data, a translation file or a CMS.
+- `em-dash-copy` → em dashes in copy fed from data, a translation file or a CMS.
+
 ## The fault contract
 
 - Fault with no `Target:` line → dropped.

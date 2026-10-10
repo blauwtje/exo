@@ -228,6 +228,53 @@ function openTags(text, name) {
   return tags;
 }
 
+/** The tag name of an open tag's text. */
+function tagName(openTag) {
+  return /^<([\w.-]+)/.exec(openTag)[1];
+}
+
+/** Offset just after the close tag matching the element opened at openIndex, counting same-name open and close
+ *  tags; a self-closing `/>` closes itself, and -1 means the element never closes. */
+function elementEnd(text, openIndex, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tags = new RegExp(`<(/?)${escaped}(?![\\w-])(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi');
+  tags.lastIndex = openIndex;
+  let depth = 0;
+  for (let match = tags.exec(text); match; match = tags.exec(text)) {
+    if (match[1]) depth -= 1;
+    else if (!match[0].endsWith('/>')) depth += 1;
+    if (depth === 0) return tags.lastIndex;
+  }
+  return -1;
+}
+
+/** The whitespace-separated tokens of a quoted class or className value in an open tag; none for any other form. */
+function classValue(openTag) {
+  const match = /\bclass(?:Name)?\s*=\s*(["'])([\s\S]*?)\1/.exec(openTag);
+  return match ? match[2].trim().replace(/\s+/g, ' ') : '';
+}
+
+function classTokens(openTag) {
+  return classValue(openTag).split(' ').filter(Boolean);
+}
+
+/** A card or tile: a class token card or tile, or ending in -card, -tile, Card or Tile; or a tag named Card or ending in Card. */
+function isCardTag(openTag) {
+  const name = tagName(openTag);
+  return /Card$/.test(name) || classTokens(openTag).some((token) => /^(?:card|tile)$|(?:-card|-tile|Card|Tile)$/.test(token));
+}
+
+/** Runs of markup text between `>` and the next `<` that look like copy: no `{`, `}`, `=` or `;` beyond an entity such as `&mdash;`. The bodies of
+ *  script, style, code and pre, and an .astro frontmatter block, are blanked first with newlines kept. */
+function copySegments(text, extension) {
+  const blank = (code) => code.replace(/[^\r\n]/g, ' ');
+  let copy = text.replace(/(<(script|style|code|pre)\b[^>]*>)([\s\S]*?)(<\/\2\s*>)/gi, (all, open, name, body, close) => open + blank(body) + close);
+  if (extension === '.astro') copy = copy.replace(/^---[ \t]*\r?\n[\s\S]*?\r?\n---/, blank);
+  return [...copy.matchAll(/(?<=>)[^<>]+(?=<)/g)]
+    .filter((match) => !/[{}=;]/.test(match[0].replace(/&#?\w+;/g, '')))
+    .map((match) => ({ text: match[0], index: match.index }));
+}
+
 function tagFindings(text, relative, starts, { tag, type, required, confidence, threshold, note }) {
   const findings = [];
   for (const match of openTags(text, tag)) {
@@ -807,6 +854,168 @@ function pillMarkupFindings(text, relative, starts) {
   })];
 }
 
+// --- named anti-patterns read from markup source ---
+
+const ROUNDED = /^rounded(?:-(?:sm|md|lg|xl|2xl|3xl|full)|-\[[^\]]*\])?$/;
+const UPPERCASE_KICKER =
+  /<(\w+)[^>]*\bclass(?:Name)?\s*=\s*["'][^"']*(?<![\w-])uppercase(?![\w-])[^"']*["'][^>]*>(?:(?!<\/\1>)[\s\S])*?<\/\1>\s*<h[1-3]\b/gi;
+const ICON_TAG = /^<[\w.]*Icon(?![\w-])(?:"[^"]*"|'[^']*'|\{[^}]*\}|[^>"'{])*\/>$/;
+const FILLER_WORD =
+  /\b(?:leverag|seamless|unlock|elevat|robust|empower|effortless|transform|streamlin|cutting-edge|supercharg|world-class|unleash|next-generation|revolutioni[sz]|game-changing)\w*/gi;
+const PULSE_SIZE = /^(?:size|h|w)-(?:0\.5|1|1\.5|2|2\.5|3)$/;
+const SURFACE_TOKEN = /^(?:border|shadow(?:-\S+)?|bg-\S+)$/;
+
+function isIconOnly(inner) {
+  const svgs = inner.match(/<svg(?![\w-])/gi) ?? [];
+  return (svgs.length === 1 && /^<svg(?![\w-])/i.test(inner) && /<\/svg\s*>$/i.test(inner)) || ICON_TAG.test(inner);
+}
+
+function namedPatternFindings(text, relative, starts, extension) {
+  const tags = openTags(text, '[A-Za-z][\\w.-]*');
+  const at = (index, type, measured, threshold, note) => finding({
+    type, confidence: 'potential', selector: `${relative}:${lineNumber(starts, index)}`, measured, threshold, note
+  });
+  const findings = [];
+
+  const cards = tags.filter((tag) => isCardTag(tag[0]));
+  const nested = new Set();
+  for (const outer of cards) {
+    const end = elementEnd(text, outer.index, tagName(outer[0]));
+    for (const inner of cards) if (inner.index > outer.index && inner.index < end) nested.add(inner);
+  }
+  for (const inner of nested) {
+    findings.push(at(inner.index, 'nested-card', inner[0].replace(/\s+/g, ' ').slice(0, 80),
+      'one surface level; hierarchy from space and type',
+      'a card inside a card'));
+  }
+
+  for (const match of text.matchAll(UPPERCASE_KICKER)) {
+    const open = match[0].slice(0, match[0].indexOf('>') + 1);
+    if (/eyebrow|kicker|overline/i.test(classValue(open))) continue;
+    findings.push(at(match.index, 'uppercase-kicker', match[0].replace(/\s+/g, ' ').slice(0, 80),
+      'hierarchy carried by the heading itself',
+      'uppercase label stacked over the heading'));
+  }
+
+  const tiles = [];
+  for (const tag of tags) {
+    if (tag[0].endsWith('/>') || !classTokens(tag[0]).some((token) => ROUNDED.test(token))) continue;
+    const end = elementEnd(text, tag.index, tagName(tag[0]));
+    if (end === -1) continue;
+    const inner = text.slice(tag.index + tag[0].length, end).replace(/<\/[\w.-]+\s*>$/, '').trim();
+    const heading = /\s*<h[1-4](?![\w-])/y;
+    heading.lastIndex = end;
+    if (isIconOnly(inner) && heading.test(text)) tiles.push(tag);
+  }
+  if (tiles.length >= 3) {
+    findings.push(at(tiles[0].index, 'icon-tile-heading', `${tiles.length} icon tiles above headings`,
+      'icons that carry meaning, or none',
+      'rounded icon tile over a heading, repeated down the page'));
+  }
+
+  const candidates = new Map();
+  for (const tag of tags) {
+    const name = tagName(tag[0]);
+    const tokens = classTokens(tag[0]);
+    const surface = /^(?:div|article|section|li)$/.test(name)
+      && tokens.some((token) => ROUNDED.test(token)) && tokens.some((token) => SURFACE_TOKEN.test(token));
+    if (isCardTag(tag[0]) || surface) candidates.set(tag.index, { tag, name, cls: classValue(tag[0]) });
+  }
+  const consumed = new Set();
+  for (const [index, first] of candidates) {
+    if (consumed.has(index)) continue;
+    let run = 1;
+    let current = first;
+    for (;;) {
+      const end = elementEnd(text, current.tag.index, current.name);
+      if (end === -1) break;
+      const space = /\s*/y;
+      space.lastIndex = end;
+      space.test(text);
+      const next = candidates.get(space.lastIndex);
+      if (!next || next.name !== first.name || next.cls !== first.cls) break;
+      consumed.add(space.lastIndex);
+      run += 1;
+      current = next;
+    }
+    if (run < 3) continue;
+    findings.push(at(index, 'identical-card-row', `${run} × ${first.name}.${first.cls.split(' ').filter(Boolean).join('.')}`,
+      'cards that differ in size or weight by what they hold',
+      'identical cards in a row'));
+  }
+
+  const lists = tags.filter((tag) => tagName(tag[0]).toLowerCase() === 'ol')
+    .map((tag) => [tag.index, elementEnd(text, tag.index, 'ol')]);
+  const markers = [...text.matchAll(/<([\w.-]+)[^>]*>\s*0[1-9]\.?\s*<\/\1>/g)]
+    .filter((match) => !lists.some(([start, end]) => match.index > start && match.index < end));
+  if (markers.length >= 3) {
+    findings.push(at(markers[0].index, 'numbered-marker', `${markers.length} numbered markers`,
+      'numbers only where the order matters, in an ol',
+      '01, 02, 03 markers on content that is no sequence'));
+  }
+
+  for (const heading of tags.filter((tag) => /^h[1-3]$/i.test(tagName(tag[0])))) {
+    const end = elementEnd(text, heading.index, tagName(heading[0]));
+    if (end === -1) continue;
+    const start = heading.index + heading[0].length;
+    const content = text.slice(start, end);
+    for (const child of openTags(content, '[A-Za-z][\\w.-]*')) {
+      const name = tagName(child[0]);
+      if (!/^(?:em|i)$/i.test(name) && !classTokens(child[0]).includes('italic')) continue;
+      const childEnd = elementEnd(content, child.index, name);
+      if (childEnd === -1 || content.slice(child.index + child[0].length, childEnd).replace(/<[^>]*>/g, '').trim() === '') continue;
+      findings.push(at(start + child.index, 'italic-accent-heading', child[0].slice(0, 80),
+        'one voice in the heading',
+        'italic word set against the rest of the heading'));
+    }
+  }
+
+  for (const tag of tags) {
+    const tokens = classTokens(tag[0]);
+    if (!tokens.some((token) => /^animate-(?:ping|pulse)$/.test(token)) || !tokens.includes('rounded-full')) continue;
+    if (!tokens.some((token) => PULSE_SIZE.test(token)) || /\baria-live\b|\brole\s*=\s*["']status["']/i.test(tag[0])) continue;
+    findings.push(at(tag.index, 'pulsing-dot', tag[0].replace(/\s+/g, ' ').slice(0, 80),
+      'motion that reports a live state to assistive technology too',
+      'pulsing status dot with no live state behind it'));
+  }
+
+  const copy = copySegments(text, extension);
+  for (const segment of copy) {
+    for (const word of segment.text.matchAll(FILLER_WORD)) {
+      findings.push(at(segment.index + word.index, 'filler-word', word[0],
+        'plain verbs that say what the product does',
+        'filler word in the copy'));
+    }
+  }
+  const dashLines = new Set();
+  for (const segment of copy) {
+    for (const dash of segment.text.matchAll(/—|&mdash;|&#8212;|&#x2014;/gi)) {
+      const line = lineNumber(starts, segment.index + dash.index);
+      if (dashLines.has(line)) continue;
+      dashLines.add(line);
+      findings.push(at(segment.index + dash.index, 'em-dash-copy', text.slice(starts[line - 1], starts[line] ?? text.length).trim().slice(0, 80),
+        'sentences punctuated with commas and full stops',
+        'em dash in the copy'));
+    }
+  }
+  return findings;
+}
+
+/** A stylesheet rule for a small round dot with an infinite animation. */
+function pulsingDotRuleFindings(body, where) {
+  const animation = `${declaration(body, 'animation') ?? ''} ${declaration(body, 'animation-iteration-count') ?? ''}`;
+  const radius = declaration(body, 'border-radius') ?? '';
+  const width = lengthPx(declaration(body, 'width'));
+  if (!/\binfinite\b/i.test(animation) || !(/^50%$/.test(radius) || firstLengthPx(radius) >= 999)) return [];
+  if (width === null || width > 16) return [];
+  return [finding({
+    type: 'pulsing-dot', confidence: 'potential', selector: where,
+    measured: `width ${width}px, border-radius ${radius}, ${animation.trim()}`,
+    threshold: 'motion that reports a live state to assistive technology too',
+    note: 'pulsing status dot with no live state behind it'
+  })];
+}
+
 const CUBIC_BEZIER = /cubic-bezier\(\s*[\d.]+\s*,\s*(-?[\d.]+)\s*,\s*[\d.]+\s*,\s*(-?[\d.]+)\s*\)/gi;
 const BOUNCE_NAME =
   /\banimate-bounce\b|@keyframes\s+[\w-]*bounce|animation(?:-name)?\s*:[^;]*\bbounce|\bbounce\s*:\s*(?:0?\.\d*[1-9]|1\b)/i;
@@ -889,6 +1098,7 @@ function ruleFindings(rules, shadows) {
     findings.push(...pillButtonFindings(selector, body, where));
     findings.push(...cardEntranceFindings(selector, body, where));
     findings.push(...monospaceLabelFindings(selector, body, where));
+    findings.push(...pulsingDotRuleFindings(body, where));
     const background = declaration(body, 'background(?:-image)?');
     const gap = background && /linear-gradient\(/i.test(background) && isGroundSelector(selector)
       ? gradientHueGap(background)
@@ -985,6 +1195,7 @@ export async function staticAudit(directory) {
     if (isMarkup) findings.push(...kickerFindings(text, relative, starts));
     if (isMarkup) findings.push(...markupFindings(text, relative, starts));
     if (isMarkup) findings.push(...pillMarkupFindings(text, relative, starts));
+    if (isMarkup) findings.push(...namedPatternFindings(text, relative, starts, extension));
   }
   findings.push(...uniformShadowFindings(shadows));
   return findings;
