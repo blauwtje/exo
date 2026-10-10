@@ -7,6 +7,26 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`run-unit` now builds a `Wave:` line as a rolling window: up to four tasks build at once, each in its own worktree, and a finished task lands and frees its slot right away instead of waiting for the whole batch.**
+
+### Added
+
+- `wait-report.mjs --any` returns as soon as one report is fresh, with a `--since` per report.
+- `next-task.mjs --in-flight` prints a `Start:` line naming only the tasks that may start beside the ones already building.
+- Codex rewrites a background agent dispatch.
+
+### Changed
+
+- `run-unit` runs a `Wave:` line as a rolling window of at most four builds, each in its own worktree; the rules live in `skills/build/references/rolling-window.md`, and the mode with up to three builds in the shared checkout is gone.
+
+### Fixed
+
+- A timed-out Proof or Land gate in `land-task.mjs` now stops its whole process tree, not only `bash`, so a killed `npm run validate` no longer keeps writing in the checkout.
+- `verify.mjs` kills a timed-out command's whole tree on Windows with `taskkill /T /F`, so a grandchild no longer keeps it from exiting.
+- A small task's brief keeps the plan bullets that name its file by basename or directory.
+
 ## 0.112.0 - 2026-10-10
 
 ### Highlights
