@@ -278,3 +278,72 @@ test('a state file that does not parse fails every command with one line, never 
     assert.doesNotMatch(result.stderr, /\n\s+at /, `${args[0]} printed a stack`);
   }
 });
+
+const REVIEW = ['--source', 'review'];
+
+function stateOf(root) {
+  return JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+}
+
+test('a review booking without --key exits 1 with the usage line and writes no memory.json', async () => {
+  const root = await repository();
+  const result = await memory(root, 'book', ...REVIEW, '--claim', 'a defect', '--session', 'one');
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /book --source review needs --key, --claim and --session/);
+  assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
+});
+
+test('a review booking without --quote passes', async () => {
+  const root = await repository();
+  const result = await memory(root, 'book', ...REVIEW, '--key', 'unchecked-ref', '--claim', 'a ref was never checked', '--session', 'one');
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, new RegExp(`booked "a ref was never checked" under key unchecked-ref: 1 of ${ATTESTATIONS_REQUIRED} sessions`));
+  const [attestation] = stateOf(root).candidates['review:unchecked-ref'];
+  assert.equal(attestation.quote, null);
+  assert.equal(attestation.source, 'review');
+});
+
+test('a key booked in two sessions and two letter cases is proposed once, and reaches no memory line', async () => {
+  const root = await repository();
+  await memory(root, 'book', ...REVIEW, '--key', 'Unchecked  Ref', '--claim', 'first wording of the defect', '--session', 'one');
+  await memory(root, 'book', ...REVIEW, '--key', 'unchecked ref', '--claim', 'second wording of the defect', '--session', 'two');
+  const proposed = await memory(root, 'propose');
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /first wording of the defect \(key: unchecked ref\)/);
+  assert.match(proposed.stdout, /second wording of the defect/);
+  const count = await memory(root, 'propose', '--count');
+  assert.equal(count.stdout.trim(), '1');
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.doesNotMatch(rendered, /wording of the defect/);
+  assert.deepEqual(stateOf(root).lines, []);
+});
+
+test('--key without --source review exits 1', async () => {
+  const root = await repository();
+  const result = await memory(root, 'book', '--key', 'k', '--claim', 'c', '--quote', 'q', '--session', 'one');
+  assert.equal(result.code, 1);
+  assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
+});
+
+test('a user booking attestation holds exactly session, date and quote', async () => {
+  const root = await repository();
+  await memory(root, 'book', '--claim', 'a user claim', '--quote', 'said so', '--session', 'one');
+  const [attestation] = stateOf(root).candidates['a user claim'];
+  assert.deepEqual(Object.keys(attestation).sort(), ['date', 'quote', 'session']);
+});
+
+test('write --key refuses a key booked in one session and, after two, writes the approved claim and drops the candidate', async () => {
+  const root = await repository();
+  await memory(root, 'book', ...REVIEW, '--key', 'k1', '--claim', 'raw wording one', '--quote', 'q one', '--session', 'one');
+  const refused = await memory(root, 'write', '--key', 'k1', '--claim', 'approved lesson', '--refs', '');
+  assert.equal(refused.code, 1);
+  assert.match(refused.stderr, /attested in 1 session/);
+  await memory(root, 'book', ...REVIEW, '--key', 'k1', '--claim', 'raw wording two', '--session', 'two');
+  const written = await memory(root, 'write', '--key', 'k1', '--claim', 'approved lesson', '--refs', '');
+  assert.equal(written.code, 0, written.stderr);
+  const rendered = fs.readFileSync(path.join(root, '.git', 'exo', 'memory.md'), 'utf8');
+  assert.match(rendered, /- approved lesson \(refs: \)/);
+  const state = stateOf(root);
+  assert.equal(state.candidates['review:k1'], undefined);
+  assert.equal(state.lines[0].quotes.length, 2);
+});

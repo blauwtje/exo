@@ -6,6 +6,8 @@
 //   node memory.mjs paths
 //   node memory.mjs render
 //   node memory.mjs retire --claim "<the claim>"
+//   node memory.mjs book --source review --key <key> --claim "<defect>" --session <id> [--quote "<text>"]
+//   node memory.mjs propose [--count]
 //
 // Every command takes --cwd naming the repository, defaulting to the process
 // working directory.
@@ -95,6 +97,16 @@ function book(state, claim, quote, session) {
   return attestations.length;
 }
 
+// A review defect is booked under a stable key, so two sessions that word one
+// defect differently still count as one lesson.
+function bookReview(state, key, claim, quote, session) {
+  const name = `review:${key}`;
+  const attestations = (state.candidates[name] ?? []).filter((entry) => entry.session !== session);
+  attestations.push({ session, date: today(), quote, claim, source: 'review' });
+  state.candidates[name] = attestations;
+  return attestations.length;
+}
+
 function proposable(state) {
   return Object.entries(state.candidates)
     .filter(([, attestations]) => attestations.length >= ATTESTATIONS_REQUIRED)
@@ -130,8 +142,8 @@ function budgetRefusal(state, bytes) {
 
 // The write happens only after the user approved the proposal, which is why this
 // runs as its own command rather than at the end of propose.
-function writeClaim(cwd, state, claim, refs, replaces) {
-  const attestations = state.candidates[claim] ?? [];
+function writeClaim(cwd, state, claim, refs, replaces, name = claim) {
+  const attestations = state.candidates[name] ?? [];
   if (attestations.length < ATTESTATIONS_REQUIRED) {
     throw new Error(`refused: "${claim}" is attested in ${attestations.length} session(s), and ${ATTESTATIONS_REQUIRED} are required`);
   }
@@ -143,7 +155,7 @@ function writeClaim(cwd, state, claim, refs, replaces) {
   }
   const written = today();
   const next = { candidates: { ...state.candidates }, lines: state.lines.map((line) => ({ ...line })) };
-  delete next.candidates[claim];
+  delete next.candidates[name];
   if (replaces !== undefined) {
     const predecessor = next.lines.find((line) => line.claim === replaces && isLive(line));
     if (predecessor === undefined) throw new Error(`refused: no live line reads "${replaces}"`);
@@ -195,7 +207,10 @@ const { values, positionals } = parseArgs({
     quote: { type: 'string' },
     session: { type: 'string' },
     refs: { type: 'string' },
-    replaces: { type: 'string' }
+    replaces: { type: 'string' },
+    key: { type: 'string' },
+    source: { type: 'string' },
+    count: { type: 'boolean' }
   }
 });
 
@@ -212,26 +227,48 @@ if (command === 'paths') {
     fail(error.message);
   }
 } else if (command === 'book') {
-  if (values.claim === undefined || values.quote === undefined || values.session === undefined) {
+  const review = values.source === 'review';
+  const key = values.key?.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (values.source !== undefined && values.source !== 'user' && !review) {
+    fail('book --source takes user or review');
+  }
+  if (values.key !== undefined && !review) fail('book --key needs --source review');
+  if (review && (!key || values.claim === undefined || values.session === undefined)) {
+    fail('book --source review needs --key, --claim and --session');
+  }
+  if (!review && (values.claim === undefined || values.quote === undefined || values.session === undefined)) {
     fail('book needs --claim, --quote and --session');
   }
   try {
     const state = readState(cwd);
-    const attestations = book(state, values.claim, values.quote, values.session);
-    writeState(cwd, state);
-    console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
+    if (review) {
+      const attestations = bookReview(state, key, values.claim, values.quote ?? null, values.session);
+      writeState(cwd, state);
+      console.log(`booked "${values.claim}" under key ${key}: ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
+    } else {
+      const attestations = book(state, values.claim, values.quote, values.session);
+      writeState(cwd, state);
+      console.log(`booked "${values.claim}": ${attestations} of ${ATTESTATIONS_REQUIRED} sessions`);
+    }
   } catch (error) {
     fail(error.message);
   }
 } else if (command === 'propose') {
   try {
     const candidates = proposable(readState(cwd));
-    if (candidates.length === 0) {
+    if (values.count) {
+      console.log(candidates.length);
+    } else if (candidates.length === 0) {
       console.log(`no claim is attested in ${ATTESTATIONS_REQUIRED} sessions yet`);
     }
-    for (const { claim, attestations } of candidates) {
-      console.log(claim);
-      for (const entry of attestations) console.log(`  ${entry.date}: ${entry.quote}`);
+    for (const { claim, attestations } of values.count ? [] : candidates) {
+      if (claim.startsWith('review:')) {
+        console.log(`${attestations[0].claim} (key: ${claim.slice('review:'.length)})`);
+        for (const entry of attestations) console.log(`  ${entry.date}: ${entry.claim}${entry.quote === null ? '' : `; ${entry.quote}`}`);
+      } else {
+        console.log(claim);
+        for (const entry of attestations) console.log(`  ${entry.date}: ${entry.quote}`);
+      }
     }
   } catch (error) {
     fail(error.message);
@@ -240,7 +277,8 @@ if (command === 'paths') {
   if (values.claim === undefined) fail('write needs --claim');
   try {
     const refs = parseRefs(cwd, values.refs);
-    const bytes = writeClaim(cwd, readState(cwd), values.claim, refs, values.replaces);
+    const name = values.key === undefined ? values.claim : `review:${values.key.trim().toLowerCase().replace(/\s+/g, ' ')}`;
+    const bytes = writeClaim(cwd, readState(cwd), values.claim, refs, values.replaces, name);
     console.log(`wrote "${values.claim}"; ${memoryFile(cwd)} is now ${bytes} of ${MEMORY_BUDGET.bytes} bytes`);
   } catch (error) {
     fail(error.message);
