@@ -39,4 +39,4 @@ effort: high
 | `references/gate-lines.md` | Step 1, a line its pointer names. |
 | `references/plan-checks.md` | Never here: the reviewer reads it. |
 
-Report: `REPORT` file gets `Changed`, chores, `report` findings. Message: three state lines (outcome; tasks and checks counted, open tasks named; branch and `REPORT` path), `question` findings, one decision: `FAIL`, else `question`, else `ship`.
+Report: `REPORT` file gets `Changed`, chores, `report` findings. Message: the session's report rule, three lines with the `REPORT` path as the pointer, `question` findings, one decision: `FAIL`, else `question`, else `ship`.

@@ -198,8 +198,8 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   assert.ok(repairAfter.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
   assert.ok(repairAfter.includes('a `FAIL probe` line ends the turn'), 'verify stops on a failing probe');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
-  assert.match(verifying, /^Report:[^\n]*three state lines[^\n]*one decision/m, 'verify ends on three state lines and one decision');
-  assert.match(verifying, /^Report:[^\n]*open tasks named[^\n]*`question` findings/m, 'open tasks and question findings stay in the message');
+  assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'verify points to the report rule and ends on one decision');
+  assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
   assert.match(verifying, /^Report:[^\n]*`FAIL`, else `question`, else `ship`/m, 'verify orders the one decision');
   assert.ok(fixerPrompt.includes('run the `Run:` command, else the `Proof:` command, of every plan task'), 'the fixer falls back to Proof: for a compact task');
   assert.ok(fixerPrompt.includes("grep -nE 'Files:|Proof:|Run:'"), 'the fixer finds Files:, Proof: and Run: unanchored');

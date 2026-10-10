@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 # Closing
 
-- Final message = report: outcome, check proving it with its result (read-only claim → its evidence), any check not run, then one open action for user; never a question back.
+- Final message = the session's report rule; never a question back.
 - Choice made for user → one line with its cost if wrong.
 - Request readable two ways → name rival reading.
 - Question ends turn only when choice is user's and routes differ; read `references/question.md` first, ask nothing else, run nothing before answer.

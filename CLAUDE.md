@@ -24,7 +24,7 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Cleanup → drop a stash made on a run branch once its content is on `main`; leave every other stash untouched.
 - Every shell wait loop, such as `until <condition>; do sleep N; done` → deadline: counter inside loop, exit with error after a set number of rounds. Not GNU `timeout`; stock macOS lacks it.
 - This workflow outranks the workspace question in `skills/build/references/workspace.md` and the pull-request route in `ship`: ask nothing about where to commit.
-- Report that changed exo → last line tells user to run `/reload-plugins`.
+- Report that changed exo → action line tells user to run `/reload-plugins`.
 
 ## Commands
 

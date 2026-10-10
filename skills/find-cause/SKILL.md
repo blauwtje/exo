@@ -38,4 +38,4 @@ d. **Report.** Read only status lines and Report fields. After compaction, re-ru
 | `../build/references/test-design.md` | When its first line applies. |
 | `../build/references/project-knowledge.md` | 6 |
 
-Report: mechanism, up to ten proof lines, log path, test and fix SHAs; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.
+Report: the session's report rule with the debug log path as the pointer; mechanism, proof lines and SHAs go to the log; unproven: `Repro`, `Expected`, `Actual`, `Hypotheses`.
