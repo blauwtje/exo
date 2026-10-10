@@ -1,6 +1,6 @@
-// The verifier's own test: mutate a throwaway copy of the corpus and require the
-// verifier to reject each mutation, plus a set of benign variations it must still
-// accept. A verifier nobody attacks reports green on a corpus that has rotted.
+// The verifier's own test: mutate a throwaway copy of the corpus and require
+// each mutation to be rejected by exactly the check or checks its scenario names,
+// plus a set of benign variations the verifier must still accept. A verifier nobody attacks reports green on a corpus that has rotted.
 //
 // Each scenario keeps its name, so a failure names the same scenario on every run.
 
@@ -170,8 +170,9 @@ const SCENARIOS = [
       '# Extra\n\nReject it. The enemy is excess. The overcorrection is omission.\n\n## Judgment\n\n- Stop.\n') },
   { name: 'dangling-script-link', check: 'skill scripts', mutate: (root) =>
     replaceText(root, 'skills/design-ui/references/visual-critique.md', 'scripts/check-ui.mjs', 'scripts/absent.mjs') },
-  { name: 'dangling-sibling-script-link', check: 'Markdown references', mutate: (root) =>
-    replaceText(root, 'skills/start/SKILL.md', 'per `../route-skills/references/question.md`', 'per `../route-skills/references/absent.md`') },
+  // The broken name keeps the byte length, so ship's body budget is unaffected.
+  { name: 'dangling-sibling-script-link', check: 'skill scripts', mutate: (root) =>
+    replaceText(root, 'skills/ship/SKILL.md', '../remember/scripts/memory.mjs', '../remember/scripts/absent.mjs') },
   // Every check that reads a SKILL.md treats the nested copy as a process file
   // whose relative links and owner contract no longer resolve, and routing loses spec.
   { name: 'noncanonical-skill-replacement',
@@ -266,8 +267,8 @@ const SCENARIOS = [
   // Both checks run node --check on a skill script, so both reject it.
   { name: 'broken-skill-script', check: ['skill scripts', 'javascript syntax'], mutate: (root) =>
     append(root, 'skills/design-ui/scripts/capture.mjs', '\nexport function broken( {\n') },
-  // The whole copy exceeds a new reference's token ceiling; its first half
-  // is copy enough for the one-home rule.
+  // The one-home rule matches the file name alone; half the copy keeps the new
+  // reference under its token ceiling, which the whole copy exceeds.
   { name: 'copied-data-migration', check: 'reference tables', mutate: (root) => {
     const lines = read(root, 'skills/build/references/data-migration.md').split('\n');
     write(root, 'skills/spec/references/data-migration.md', lines.slice(0, Math.ceil(lines.length / 2)).join('\n'));
