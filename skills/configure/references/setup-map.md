@@ -22,12 +22,14 @@
 
 ## Each setting
 
-Ask each setting with the plain texts its entry in `../schema.json` holds, never its key; the user picks from what each answer gives.
+Ask each setting with the plain texts its entry in `../schema.json` holds, never its key; the user picks from what each answer gives. Each question holds at most three lettered options, like `settings.mjs menu`.
 
-- The title is its `question`; a `typed` line, when present, is the context.
-- First option = current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a recommended answer that changed a value would turn `a` into a change the user never read. Value with no entry → shown as written.
-- Every other `choices` entry follows as `- **(<letter>) <label>**: <gives>`, then `Keep the rest`, which keeps every setting not yet asked.
+- The title is its `question`; the context is its `typed` line, when present, then the `Or type` line.
+- (A) = current value, as `- **(A) Keep <label>**: <gives>` from its `choices` entry; a recommended answer that changed a value would turn `a` into a change the user never read. Value with no entry → shown as written.
+- (B) and (C) → the first two other `choices` entries, in schema order, as `- **(<letter>) <label>**: <gives>`.
+- Every remaining `choices` entry, then `Keep the rest` → typed answers, in one context line: ``Or type `<value>` for <label> (<gives>) or `rest` for Keep the rest (keeps every setting not yet asked).``
 - `scope` has no `Keep the rest`.
+- Answer the `Or type` line names → counts as that pick, like a letter.
 
 ## Judgment
 

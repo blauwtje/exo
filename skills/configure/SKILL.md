@@ -24,12 +24,14 @@ Values when this skill loaded, each with its layer:
 
 ## One setting
 
-Take the first step the request and letters so far leave open.
+Take the first step the request and answers so far leave open.
+
+- Answer a menu's `Or type` line names → counts as that pick, like its letter, at every step: topic, setting or value.
 
 1. **Relay.** Request only asks to see the settings → relay the `show` block above as the whole reply, run nothing. Keep its ```` ```text ```` fence unchanged; rows line up only in a monospace block.
-2. **Pick the setting.** Request names none → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply; user answers with a letter.
-   - Topic letter → run `menu work`, `menu places` or `menu safety`, in the menu's order, relayed the same way.
-3. **Ask the value.** Setting known, no value → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way. For `ship`, a typed answer also counts: a value its context line names.
+2. **Pick the setting.** Request names none → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu`, relay its output unchanged as the whole reply.
+   - Topic picked → run `menu work`, `menu places` or `menu safety`, relayed the same way.
+3. **Ask the value.** Setting known, no value → run `node "${CLAUDE_SKILL_DIR}/scripts/settings.mjs" menu <key>`, relay it the same way.
 4. **Ask the layer.** Key `show` lists, setting and value known, no layer → ask:
    ```text
    **Who should this apply to?**
