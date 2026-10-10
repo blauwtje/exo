@@ -66,34 +66,40 @@ const SCENARIOS = [
     write(root, file, `${read(root, file)}\n${padding}\n`);
   } },
   // build's body sits at its STAGE_BODY_TOKENS lock, so the stance paragraph
-  // added here also trims two References descriptions by more bytes than it
+  // added here also trims three References descriptions by more bytes than it
   // costs: the mutation reaches the slim-shape check instead of the lock.
   { name: 'slim-skill-stance-paragraph', mutate: (root) => {
     replaceText(root, 'skills/build/SKILL.md',
       '# Implementing a plan\n', '# Implementing a plan\n\nRun it. The enemy is drift. The overcorrection is stalling.\n');
     replaceText(root, 'skills/build/SKILL.md',
-      'Before asking the user to pick among options.', 'Before asking.');
+      'Before asking the user to pick.', 'Before asking.');
+    replaceText(root, 'skills/build/SKILL.md',
+      'No spec step 7, last fallback.', 'No spec step 7.');
     replaceText(root, 'skills/build/SKILL.md',
       'Never here: the unit reads it.', 'Never here.');
   } },
-  // build's body sits at its STAGE_BODY_TOKENS lock; trimming one
-  // References description offsets the added Judgment section's bytes.
+  // build's body sits at its STAGE_BODY_TOKENS lock; trimming two
+  // References descriptions offsets the added Judgment section's bytes.
   { name: 'slim-skill-judgment-section', mutate: (root) => {
     replaceText(root, 'skills/build/SKILL.md',
       '\n## References\n', '\n## Judgment\n\n- Stop.\n\n## References\n');
     replaceText(root, 'skills/build/SKILL.md',
-      'Before asking the user to pick among options.', 'Before asking.');
+      'Before asking the user to pick.', 'Before asking.');
+    replaceText(root, 'skills/build/SKILL.md',
+      'No spec step 7, last fallback.', 'No spec step 7.');
   } },
   { name: 'slim-skill-unnumbered-steps', mutate: (root) => write(root, 'skills/spec/SKILL.md',
     read(root, 'skills/spec/SKILL.md').replace(/^\d+\. /gm, '- ')) },
-  // build's body sits at its STAGE_BODY_TOKENS lock; the two trims below pay
+  // build's body sits at its STAGE_BODY_TOKENS lock; the three trims below pay
   // for the inserted paragraph, so the mutation reaches the opening-heading
   // check instead of the byte lock.
   { name: 'slim-skill-heading-opens-on-paragraph', mutate: (root) => {
     replaceText(root, 'skills/build/SKILL.md',
       '## The loop\n', '## The loop\n\nIt runs until the plan lands or a repair pass ends it.\n');
     replaceText(root, 'skills/build/SKILL.md',
-      'Before asking the user to pick among options.', 'Before asking.');
+      'Before asking the user to pick.', 'Before asking.');
+    replaceText(root, 'skills/build/SKILL.md',
+      'No spec step 7, last fallback.', 'No spec step 7.');
     replaceText(root, 'skills/build/SKILL.md',
       'Never here: the unit reads it.', 'Never here.');
   } },
