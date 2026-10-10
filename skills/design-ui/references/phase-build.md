@@ -1,6 +1,6 @@
 # Phase 3: Build
 
-One `exo:build-ui` page scope builds the whole page by default; per-surface builders only on user request for parallel builders or the full run. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
+One `exo:build-ui` agent in page scope builds a page of one surface or of surfaces sharing a file. Two or more surfaces with disjoint files build in parallel. Make one call per surface; no request is needed. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
 
 ## The mechanics
 
@@ -16,8 +16,10 @@ Bind this session and every builder:
 
 Where the build runs:
 
-- One pass → one `exo:build-ui` page scope, from the plan and Phase 1 ranges; this session captures, looks and judges.
-- Per-surface `exo:build-ui` agents → only on user request for parallel builders or the full run.
+- Phase 1's file list splits the page into two or more surfaces with disjoint files → one `SCOPE=foundation` call first.
+- Then one call per surface, all in one message, in the turn foundation.md returns, per `## Full run builders`.
+- `FILES` is the Phase 1 path list; this session captures, looks and judges.
+- One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges; this session captures, looks and judges.
 
 Proof: `## Proof` of the `build-pass` reference, plus:
 

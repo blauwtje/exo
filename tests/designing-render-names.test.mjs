@@ -101,6 +101,13 @@ test('SKILL.md reads phase-detail.md whole at Phase 1 and phase-build.md dispatc
   assert.match(build, /`exo:build-ui` agent/, 'phase-build.md dispatch names the exo:build-ui agent');
 });
 
+test('phase-build.md splits disjoint surfaces into parallel builders without a request', () => {
+  const build = DOCS.find(({ file }) => file.endsWith('skills/design-ui/references/phase-build.md')).text;
+  assert.match(build, /two or more surfaces with disjoint files → one `SCOPE=foundation` call first\.\n- Then one call per surface, all in one message/, 'split rule names foundation then one call per disjoint surface');
+  assert.match(build, /One surface or shared files → one `exo:build-ui` page scope/, 'one surface or shared files stays one page scope');
+  assert.doesNotMatch(build, /only on user request for parallel builders/, 'parallel builders need no user request');
+});
+
 test('every evidence file a design-ui doc or agent reads is one checkpoint.mjs writes', () => {
   let named = 0;
   for (const { file, text } of DOCS) {
