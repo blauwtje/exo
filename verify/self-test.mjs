@@ -319,17 +319,22 @@ function runVerifier(verifier, caseRoot, changed) {
 }
 
 // Returns the failure text for one scenario, or null when it behaved as expected.
-async function runScenario(scenario, verifier, repository, selfRoot) {
-  const caseRoot = path.join(selfRoot, scenario.name);
-  copyVerificationFixture(repository, caseRoot);
-  scenario.mutate(caseRoot);
+export function judgeScenario(scenario, run) {
   const expect = scenario.expect ?? 'reject';
-  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot));
   if (expect === 'reject' && run.status === 0) return `${scenario.name} was not rejected`;
   if (expect === 'accept' && run.status !== 0) {
     return `${scenario.name} was rejected: ${run.output.split('\n').join(' ').trim()}`;
   }
   return null;
+}
+
+// Returns the failure text for one scenario, or null when it behaved as expected.
+async function runScenario(scenario, verifier, repository, selfRoot) {
+  const caseRoot = path.join(selfRoot, scenario.name);
+  copyVerificationFixture(repository, caseRoot);
+  scenario.mutate(caseRoot);
+  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot));
+  return judgeScenario(scenario, run);
 }
 
 export async function runSelfTest(report, repository) {
