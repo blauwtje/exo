@@ -27,14 +27,15 @@ The one pass only; the full run follows `## Full run builders` alone.
 
 - Phase 1's file list splits the page into two or more surfaces with disjoint files → one `SCOPE=foundation` call first.
 - Then one call per surface, all in one message, in the turn foundation.md returns.
-- Split → before the foundation call, this session writes its Phase 1 path and line-range list to `$RUN/files.md` and passes that file as each call's `FILES`.
+- Split → before the foundation call, this session writes its Phase 1 path and line-range list to `$RUN/files.md` and names it in `FILES=` of `$RUN/build-rules.md`.
 - Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow the `## Full run builders` bullets.
 - One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges.
 - Every route → this session captures, looks and judges.
 
 ## Full run builders
 
-- Each call: a few lines naming `RUN=<run dir> SCOPE=<foundation or a surface> SKILL=<skill dir> REPO=<repository root> FILES=$RUN/files.md REFERENCES=<the reference rows whose predicate its scope meets> URL=<the surface's url, for a surface scope that renders>`.
+- This session writes `$RUN/build-rules.md` once beside `$RUN/files.md`, one line each: `RUN=<run dir>`, `SKILL=<skill dir>`, `REPO=<repository root>`, `FILES=$RUN/files.md`.
+- Each call: a few lines naming `RULES=$RUN/build-rules.md SCOPE=<foundation or a surface> REFERENCES=<the reference rows whose predicate its scope meets> URL=<the surface's url, for a surface scope that renders>`.
 - `$RUN/files.md` = Phase 1 list of paths and line ranges, so a builder opens no whole file; `exo:survey-ui` writes it on the full run, this session on a one-pass split.
 - One call with `SCOPE=foundation` writes the tokens file, base layer and the primitives the inventory repeats, and returns foundation.md.
 - Project with no pages and no UI framework → that call also scaffolds the stack and runs every `shadcn add` the inventory needs, because parallel surface builders running the CLI race on `package.json`.
