@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.116.0 - 2026-10-10
+
 ### Added
 
 - `verify` books each `defect` the branch review reports as a candidate lesson (`memory.mjs book --source review --key <key>`); two sessions with the same key make it proposable, `ship`'s overview names how many are ready for `/exo:remember`, and `remember` offers a lint rule or test before a text line when a check can catch the claim. Nothing reaches `memory.md` without your approval.
