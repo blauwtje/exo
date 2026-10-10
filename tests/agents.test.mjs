@@ -282,11 +282,12 @@ test('the branch reviewer holds the test-first rule and the missing-Red: rule', 
   }
 });
 
-test('the branch reviewer requires a Probe line under each fix finding and names the report file its deliverable', () => {
+test('the branch reviewer requires a Probe line under each fix finding and names merge-reviews.mjs as the reader of its findings file', () => {
   const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
   assert.match(reviewer.body, /`  Probe: <command>`/, 'each fix finding carries a Probe line');
   assert.match(reviewer.body, /## Probe/, 'the Probe rule points to review-rules.md ## Probe');
-  assert.match(reviewer.body, /report file is the deliverable/, 'the report file is the deliverable');
+  assert.match(reviewer.body, /input to `merge-reviews\.mjs`/, 'merge-reviews.mjs reads the findings file');
+  assert.doesNotMatch(reviewer.body, /report file is the deliverable/, 'the old deliverable wording is gone');
 });
 
 test('the branch reviewer keeps each finding on one line and shows an example the merge parser reads', () => {
