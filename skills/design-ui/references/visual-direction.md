@@ -84,8 +84,9 @@ Density, variance and motion are integers from 1 to 10. Density 1 is airy and 10
 | Editorial | 4 | 7 | 4 |
 | E-commerce | 6 | 5 | 4 |
 
-- Product kind in the table → start the dials from its row.
-- Product kind not listed → start from the nearest row and name that row.
+- DESIGN.md holds a dials line → start the dials from it, not from the table.
+- No DESIGN.md dials line and the product kind in the table → start the dials from its row.
+- No DESIGN.md dials line and the product kind not listed → start from the nearest row and name that row.
 - Evidence from Phase 1 or the brief moves a dial → move it and give one reason in the contract.
 
 ## Material, depth, and atmosphere
