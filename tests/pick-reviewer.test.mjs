@@ -134,6 +134,13 @@ test('taskReviewer picks deep only for a security boundary, light for another Ri
   assert.equal(taskReviewer(task(null), ['package.json'], 'block'), 'none (text only)');
   assert.equal(taskReviewer(task(null), ['a.md'], 'block'), 'none (text only)');
   assert.equal(taskReviewer(task(null), ['a.mjs'], 'inline'), 'none (inline route)');
+  for (const name of ['skills/x/SKILL.md', 'agents/a.md', 'rules/r.md', 'hooks/hooks.json', '.claude/skills/x/SKILL.md', 'CLAUDE.md', 'sub/AGENTS.md']) {
+    assert.equal(taskReviewer(task(null), [name], 'block'), light, name);
+  }
+  assert.equal(taskReviewer(task(null), ['skills/x/SKILL.md'], 'inline'), 'none (inline route)');
+  for (const name of ['README.md', 'CHANGELOG.md', 'docs/a.md', 'myskills/a.md']) {
+    assert.equal(taskReviewer(task(null), [name], 'block'), 'none (text only)', name);
+  }
 });
 
 test('--task prints the reviewer from the task commits', async () => {

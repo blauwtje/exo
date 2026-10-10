@@ -48,16 +48,27 @@ export function pickReviewer({ riskTasks, manifestChanged, signatureChanged }) {
   return riskTasks || manifestChanged || signatureChanged ? REVIEWER_AGENTS.deep : REVIEWER_AGENTS.light;
 }
 
+const INSTRUCTION_FOLDERS = ['skills', 'agents', 'rules', 'hooks'];
+const INSTRUCTION_FILES = ['CLAUDE.md', 'AGENTS.md'];
+
+function isInstructionPath(name) {
+  const segments = name.split('/');
+  return segments.some((segment) => INSTRUCTION_FOLDERS.includes(segment)) || INSTRUCTION_FILES.includes(segments.at(-1));
+}
+
 /**
  * One landed task's reviewer: the deep pick only for `Risk: security boundary`;
- * the light pick for another `Risk:` or a changed script file; `none (text only)`
- * for a task changing no script file; `none (inline route)` for an inline-route
- * task without `Risk:`.
+ * the light pick for another `Risk:`, a changed script file or a changed
+ * instruction-text path (a `skills`, `agents`, `rules` or `hooks` segment, or a
+ * `CLAUDE.md` or `AGENTS.md` basename); `none (text only)` for any other task
+ * changing no script file; `none (inline route)` for an inline-route task
+ * without `Risk:`.
  */
 export function taskReviewer(task, changedPaths, route, taskDiff = '') {
   if (task.risk !== null && /security boundary/i.test(task.risk)) return REVIEWER_AGENTS.deep;
   if (task.risk !== null) return REVIEWER_AGENTS.light;
   if (route === 'inline') return 'none (inline route)';
+  if (changedPaths.some(isInstructionPath)) return REVIEWER_AGENTS.light;
   if (!changedPaths.some((name) => SCRIPT_EXTENSIONS.has(extname(name)))) return 'none (text only)';
   if (changedPaths.some((name) => TEST_FILE.test(name)) && outputOnly(taskDiff)) return 'none (output only, test covered)';
   return REVIEWER_AGENTS.light;
