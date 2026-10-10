@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.121.1 - 2026-10-10
+
 ### Fixed
 
 - `plan-check.mjs` fails a brief that targets the exo repository when it holds a name the `derivation` check refuses, naming each name with its line, so the plan is reworded before its first land gate instead of blocking every task there (#116).
