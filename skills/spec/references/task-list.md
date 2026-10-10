@@ -6,7 +6,7 @@ Reader has no context: no implicit file, shape or step.
 
 1. `## Goal`: one sentence naming result.
 2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; no repo yet → `Branch: main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
-   - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line run builds one task at a time.
+   - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
    - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; a task lands only on a pass; breaking task fixes it. Per task only for a full check under 60 s, else verify runs it once.
    - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips a task's `Files:`.
    - `Allow:` → each backticked command a task runs that no other field names, else `none`.
@@ -26,7 +26,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 - `Proof:` → shows this task landed, not the suite.
 - Runnable result → prove on real project input with its own command, else builder script using only its tools, never a test alone.
 - MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not a shell.
-- `Data:` → structure holding result, not its fields or logic; ask before one changing a public signature or persisted format.
+- `Data:` → structure holding result, not fields or logic; ask before one changing a public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
 - Heading → `land-task`'s conventional-commit subject.
 - The task stages `Files:`; no `Commit:` block.
