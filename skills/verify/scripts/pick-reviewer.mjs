@@ -52,6 +52,7 @@ const INSTRUCTION_FOLDERS = ['skills', 'agents', 'rules', 'hooks'];
 const INSTRUCTION_FILES = ['CLAUDE.md', 'AGENTS.md'];
 
 function isInstructionPath(name) {
+  if (SCRIPT_EXTENSIONS.has(extname(name))) return false;
   const segments = name.split('/');
   return segments.some((segment) => INSTRUCTION_FOLDERS.includes(segment)) || INSTRUCTION_FILES.includes(segments.at(-1));
 }
@@ -59,8 +60,8 @@ function isInstructionPath(name) {
 /**
  * One landed task's reviewer: the deep pick only for `Risk: security boundary`;
  * the light pick for another `Risk:`, a changed script file or a changed
- * instruction-text path (a `skills`, `agents`, `rules` or `hooks` segment, or a
- * `CLAUDE.md` or `AGENTS.md` basename); `none (text only)` for any other task
+ * instruction-text path (a non-script file under a `skills`, `agents`, `rules` or
+ * `hooks` segment, or a `CLAUDE.md` or `AGENTS.md` basename); `none (text only)` for any other task
  * changing no script file; `none (inline route)` for an inline-route task
  * without `Risk:`.
  */

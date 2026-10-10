@@ -172,5 +172,8 @@ test('taskReviewer sends a test-covered output-only script diff to no model revi
     assert.equal(taskReviewer(task, paths, 'block', diff(line)), REVIEWER_AGENTS.light, line);
   }
   assert.equal(taskReviewer(task, paths, 'block', diff('+ * continued')), REVIEWER_AGENTS.light);
+  const skillDiff = diff('+console.log(1);').replace(/lib\/a\.mjs/g, 'skills/x/scripts/a.mjs');
+  assert.equal(taskReviewer(task, ['skills/x/scripts/a.mjs', 'tests/a.test.mjs'], 'block', skillDiff), none);
+  assert.equal(taskReviewer(task, ['hooks/h.mjs'], 'block', skillDiff), REVIEWER_AGENTS.light);
   assert.equal(taskReviewer(task, paths, 'block', diff('+/**\n+ */\n+/* x */\n+/**/\n+/*\n+// y')), none);
 });

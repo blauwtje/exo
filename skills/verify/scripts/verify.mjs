@@ -10,7 +10,7 @@
 // the final check), and a
 // stray-path check that the diff touched nothing outside a task's declared
 // Files, save the plan file itself. Ends on one `REVIEW Task <n> <shas>: <reviewer>` line per landed
-// task (deep reviewer for `Risk: security boundary`, light for another Risk, a script file or a path under a `skills`, `agents`, `rules` or `hooks` folder or named `CLAUDE.md` or `AGENTS.md`,
+// task (deep reviewer for `Risk: security boundary`, light for another Risk, a script file or a non-script path under a `skills`, `agents`, `rules` or `hooks` folder or named `CLAUDE.md` or `AGENTS.md`,
 // else `none (text only)`; `none (inline route)` for an inline-route task without Risk), then the
 // `OVERLAP` lines of review-overlap.mjs, so a caller knows who reviews what. Reads the plan through #plan-tasks, the same
 // module land-task.mjs uses, so both agree on which task actually landed.
