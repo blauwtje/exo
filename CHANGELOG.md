@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.116.1 - 2026-10-10
+
 ### Fixed
 
 - A lesson you decline in `/exo:remember`, or turn into a check, no longer keeps `ship`'s `Lessons: <n> ready` line up: `memory.mjs reject` records it, and `propose` skips it until a session outside the rejection books it again.
