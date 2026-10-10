@@ -239,9 +239,9 @@ test('menu asks for a topic, with a topic for its setting, and with a key for a 
   const space = await workspace({ project: { specs: 'issues' } });
   const topicQuestion = await settings(space, ['menu']);
   assert.equal(topicQuestion.code, 0, topicQuestion.stderr);
-  assert.ok(topicQuestion.stdout.trimEnd().endsWith('**What would you like to change?**\nPick a topic to change one setting in it; the rest stay as they are.\n\n- **(A) Keep as is**: change nothing\n- **(B) How I work**: how I write to you and how much effort tasks get\n- **(C) Where work goes**: where plans, code changes and finished work end up\n- **(D) Safety**: what I block\n\nRecommended: (A), because your current settings keep working, and the others change how I behave from now on.'), topicQuestion.stdout);
+  assert.ok(topicQuestion.stdout.trimEnd().endsWith('**What would you like to change?**\nPick a topic to change one setting in it; the rest stay as they are. Or type `safety` for Safety (what I block).\n\n- **(A) Keep as is**: change nothing\n- **(B) How I work**: how I write to you and how much effort tasks get\n- **(C) Where work goes**: where plans, code changes and finished work end up\n\nRecommended: (A), because your current settings keep working, and the others change how I behave from now on.'), topicQuestion.stdout);
   const settingQuestion = await settings(space, ['menu', 'places']);
-  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**Which part of where work goes?**\n\n- **(A) Keep as is**: change nothing\n- **(B) Plans**: where I save the plan for a change (now: GitHub issue)\n- **(C) Code changes**: where I put code changes (now: Ask me)\n- **(D) Finished work**: what happens once work is done (now: Ask me)\n\nRecommended: (A), because nothing changes, and the others each lead to one question about that setting.'), settingQuestion.stdout);
+  assert.ok(settingQuestion.stdout.trimEnd().endsWith('**Which part of where work goes?**\nOr type `ship` for Finished work (what happens once work is done).\n\n- **(A) Keep as is**: change nothing\n- **(B) Plans**: where I save the plan for a change (now: GitHub issue)\n- **(C) Code changes**: where I put code changes (now: Ask me)\n\nRecommended: (A), because nothing changes, and the others each lead to one question about that setting.'), settingQuestion.stdout);
   const valueQuestion = await settings(space, ['menu', 'specs']);
   assert.ok(valueQuestion.stdout.trimEnd().endsWith('**Where should I save the plan for a change?**\n\n- **(A) Keep GitHub issue**: an issue on GitHub, no file\n- **(B) Docs folder**: a file in your repository\n- **(C) Both**: a file plus a matching GitHub issue\n\nRecommended: (A), because it keeps what you have now, and any other answer changes it from now on.'), valueQuestion.stdout);
   assert.doesNotMatch(valueQuestion.stdout, /replies/);
@@ -267,7 +267,7 @@ test('the topics hold every setting once, and every setting has plain question t
   const topics = (await Promise.all(['work', 'places', 'safety'].map((topic) => settings(space, ['menu', topic])))).map((result) => result.stdout).join('\n');
   for (const [key, entry] of Object.entries(schema)) {
     for (const field of ['label', 'about', 'question']) assert.ok(entry[field], `${key} lacks ${field}`);
-    assert.equal(topics.split(`**: ${entry.about} (now:`).length - 1, 1, `${key} sits in one topic`);
+    assert.equal(topics.split(`${entry.about} (now:`).length + topics.split(`for ${entry.label} (${entry.about})`).length - 2, 1, `${key} sits in one topic`);
     for (const option of entry.options ?? []) assert.ok(entry.choices?.[option], `${key} lacks a choice for ${option}`);
   }
 });
@@ -373,10 +373,10 @@ test('guards is on by default and off when the project sets it', async () => {
   assert.match(rejected.stderr, /guards=maybe is not one of on, off/);
 });
 
-test('a value past the third pick is named as a typed answer', async () => {
+test('a value past the second pick is named as a typed answer', async () => {
   const result = await settings(await workspace(), ['menu', 'ship']);
-  assert.ok(result.stdout.includes('**What should happen once work is finished?**\nOr type `local` for Keep it here (nothing leaves this machine).\n\n- **(A) Keep Ask me**'), result.stdout);
-  assert.doesNotMatch(result.stdout, /\(E\)/);
+  assert.ok(result.stdout.includes('**What should happen once work is finished?**\nOr type `push` for Push (pushed straight up, no pull request) or `local` for Keep it here (nothing leaves this machine).\n\n- **(A) Keep Ask me**'), result.stdout);
+  assert.doesNotMatch(result.stdout, /\(D\)/);
 });
 
 test('a stored old budget name reads as its new level', async () => {

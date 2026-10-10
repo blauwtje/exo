@@ -153,13 +153,13 @@ function show(root) {
 
 // The overview plus the one question that moves a change forward: which topic
 // without an argument, which setting with a topic, which value with a key.
-// Every question holds Keep plus at most three picks, the four letters the
-// question shape allows: the topics keep the first answer to four letters, and
-// a value past the third pick is named in the context line as a typed answer.
+// Every question holds Keep plus at most two picks, three options in all: a
+// topic, setting or value past the second pick is named in the context line as
+// a typed answer.
 // Keep is always A, the recommended answer, and the plain texts come from the
 // schema's `label`, `about`, `question`, `typed` and `choices`. The option lines
 // sit outside the fence because bold renders only there.
-const MAX_PICKS = 3;
+const MAX_PICKS = 2;
 const TOPICS = {
   work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['compression', 'budget'] },
   places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
@@ -178,14 +178,19 @@ function plainValue(key, value) {
 function menu(root, name) {
   const stack = layers(root);
   if (name === undefined) {
-    const picks = Object.values(TOPICS).map((topic) => `${topic.label}**: ${topic.about}`);
-    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', 'Pick a topic to change one setting in it; the rest stay as they are.', 'Keep as is**: change nothing', picks, 'your current settings keep working, and the others change how I behave from now on.')].join('\n'));
+    const topics = Object.entries(TOPICS);
+    const picks = topics.slice(0, MAX_PICKS).map(([, topic]) => `${topic.label}**: ${topic.about}`);
+    const rest = topics.slice(MAX_PICKS).map(([key, topic]) => `\`${key}\` for ${topic.label} (${topic.about})`);
+    const context = ['Pick a topic to change one setting in it; the rest stay as they are.', rest.length > 0 ? `Or type ${rest.join(' or ')}.` : ''].filter(Boolean).join(' ');
+    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', context, 'Keep as is**: change nothing', picks, 'your current settings keep working, and the others change how I behave from now on.')].join('\n'));
     return;
   }
   if (Object.hasOwn(TOPICS, name)) {
     const topic = TOPICS[name];
-    const picks = topic.keys.map((key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`);
-    console.log([...overview(topic.keys, stack), '', ...question(topic.question, '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
+    const line = (key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`;
+    const picks = topic.keys.slice(0, MAX_PICKS).map(line);
+    const rest = topic.keys.slice(MAX_PICKS).map((key) => `\`${key}\` for ${SCHEMA[key].label} (${SCHEMA[key].about})`);
+    console.log([...overview(topic.keys, stack), '', ...question(topic.question, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
     return;
   }
   if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
