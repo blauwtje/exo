@@ -1,6 +1,6 @@
 // Deterministic verification of the skill corpus: no model calls, no network.
 //
-//   node verify.mjs [--repository-root <dir>] [--self-test] [--no-reuse]
+//   node verify.mjs [--repository-root <dir>] [--self-test] [--no-reuse] [--static]
 //
 // Exits 1 when any check failed.
 
@@ -45,6 +45,8 @@ const { values } = parseArgs({
     'self-test': { type: 'boolean', default: false },
     // Under --self-test, run the suite and the verifier self-test even when `npm run check` already passed on this code.
     'no-reuse': { type: 'boolean', default: false },
+    // Skip the test suite, the plugin version check and the self-test: the per-task gate.
+    static: { type: 'boolean', default: false },
     // Newline-separated script paths relative to the root; only these are parsed.
     // Absent means every script is parsed.
     'changed-scripts': { type: 'string' }
@@ -91,16 +93,20 @@ checkSkillScripts(report, repository, changedScripts);
 // static checks, which can read CHANGELOG.md, still run, and the version check demands its line.
 const reused = values['self-test'] && !values['no-reuse'] ? codePass(root, 'npm run check') : null;
 const reusedDetail = reused === null ? '' : `reused from the npm run check pass on tree ${reused.tree}`;
-if (reused === null) checkSkillScriptBehavior(report, repository);
+if (values.static) {
+  // skipped: no line printed
+} else if (reused === null) checkSkillScriptBehavior(report, repository);
 else report.result('PASS', 'skill script behavior', reusedDetail);
 checkGitWhitespace(report, repository);
-checkPluginVersion(report, repository, { strict: reused !== null });
+if (!values.static) checkPluginVersion(report, repository, { strict: reused !== null });
 checkModelKinds(report, repository);
 checkCodexOverrides(report, repository);
 checkQuestionOptions(report, repository);
 checkInstructionDensity(report, repository);
 
-if (reused !== null) report.result('PASS', 'verifier self-test', reusedDetail);
+if (values.static) {
+  // skipped: no line printed
+} else if (reused !== null) report.result('PASS', 'verifier self-test', reusedDetail);
 else if (values['self-test']) await runSelfTest(report, repository);
 
 const counts = report.counts();

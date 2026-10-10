@@ -41,6 +41,7 @@
   },
   "scripts": {
     "validate": "node verify.mjs",
+    "validate:static": "node verify.mjs --static",
     "validate:self": "node verify.mjs --self-test",
     "test": "node --test --test-concurrency=2 \"tests/*.test.mjs\"",
     "smoke": "bash tests/smoke.sh",
