@@ -93,6 +93,7 @@ test('Claude-only tool terms map to their Codex equivalents', () => {
     ['starts `npm run dev` under the Bash tool\'s `run_in_background`, never', 'starts `npm run dev` in a background `exec_command` session polled with `write_stdin`, never'],
     ['`--merge <n>` under `run_in_background` gates', '`--merge <n>` in a background `exec_command` session polled with `write_stdin` gates'],
     ['agent from `x.md`, with `run_in_background: false`, in one message', 'agent from `x.md`, then waits for it with `wait_agent`, in one message'],
+    ['agent from `x.md`, with `run_in_background: true`, in one message', 'agent from `x.md`, without `wait_agent`, in one message'],
     ['resume `failed` via SendMessage.', 'resume `failed` by a follow-up message.'],
     ['goes by SendMessage to its writer', 'goes by a follow-up message to its writer'],
     ['A `SendMessage` from the session lists faults', 'A follow-up message from the session lists faults'],
