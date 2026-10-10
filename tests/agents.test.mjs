@@ -193,10 +193,11 @@ test('build sends a FINDINGS review to a build-kind fixer from review-fixer-prom
   const repairStep = verifying.match(/^3\. \*\*Repair the findings\.\*\*[\s\S]*?(?=^4\. )/m)[0];
   const repairAfter = fs.readFileSync(path.join(skillsRoot, 'verify', 'references', 'repair.md'), 'utf8');
   assert.ok(repairStep.includes('`references/repair.md`'), 'step 3 hands the work after the fixer to repair.md');
-  const order = ["Rerun step 1's `verify.mjs`", 'run-probes.mjs', 'the scope `fix diff`', 'land-task.mjs" --fix'].map((text) => repairAfter.indexOf(text));
-  assert.ok(order.every((index, position) => index !== -1 && (position === 0 || index > order[position - 1])), 'verify reruns the gate, then the probes, then reviews the fix diff, before the fix commit');
-  assert.ok(repairAfter.includes('a `FAIL` or `STRAY` line ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
-  assert.ok(repairAfter.includes('a `FAIL probe` line ends the turn'), 'verify stops on a failing probe');
+  const before = ["Rerun step 1's `verify.mjs`", 'run-probes.mjs', 'the scope `fix diff`'].map((text) => repairAfter.indexOf(text));
+  const fixCommit = repairAfter.indexOf('land-task.mjs" --fix');
+  assert.ok(before.every((index) => index !== -1 && index < fixCommit), 'verify starts the gate rerun, the probes and the fix diff review together, before the fix commit');
+  assert.ok(repairAfter.includes('A `FAIL` or `STRAY` line from `verify.mjs` ends the turn'), 'verify stops on a FAIL or STRAY line after the rerun');
+  assert.ok(repairAfter.includes('A `FAIL probe` line ends the turn'), 'verify stops on a failing probe');
   assert.match(repairStep, /`fix=0`[^\n]*no `exo:fix-review` dispatch/, 'verify skips the fixer when the review holds no fix finding');
   assert.match(verifying, /^Report:[^\n]*report rule[^\n]*three lines[^\n]*`REPORT` path[^\n]*one decision/m, 'verify points to the report rule and ends on one decision');
   assert.match(verifying, /^Report:[^\n]*`question` findings/m, 'question findings stay in the message');
