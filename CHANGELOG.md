@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.114.2 - 2026-10-10
+
 ### Fixed
 
 - `merge-reviews.mjs` reads a finding's weight from the field after `file:line`, so a weight word in the evidence text (such as "question 2") no longer miscounts a `hazard` as a `question` (#111).
