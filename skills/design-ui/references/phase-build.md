@@ -30,6 +30,8 @@ The one pass only; the full run follows `## Full run builders` alone.
 - Split → before the foundation call, this session writes its Phase 1 path and line-range list to `$RUN/files.md` and names it in `FILES=` of `$RUN/build-rules.md`.
 - Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow the `## Full run builders` bullets.
 - One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges.
+- Rung 3 → the builder gets the selected comp.
+- This session reads builder reports only.
 - Every route → this session captures, looks and judges.
 
 ## Full run builders

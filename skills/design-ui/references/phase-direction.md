@@ -10,6 +10,9 @@ Settle one direction before any production code changes, from Phase 1 evidence. 
 - The direction settles composition and visual material together: the contract names it and every region carries it.
 - The plan names the user's three most important tasks, most frequent first, because a screen ordered by its data serves no task.
 - Order the layout by those tasks: the first takes the most prominent region and the nearest controls, the third the least space.
+- Do not default an open axis — composition, type, chromatic hierarchy, surface treatment, imagery, motion — to absence: restraint on one axis needs a brief-side reason and expression on the others.
+- The plan names any named or saved product, the hex color and font line, the motion thesis and ASCII layouts at 1440 and 390; send the user `scripts/picks.mjs`'s line.
+- Check the plan: list each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise until none is missing.
 - Tag each major layout choice on its plan line with the Laws of UX rule deciding it: Hick, Fitts, Jakob, Von Restorff or another.
 - Before the plan, shortlist three faces and three accent hues, then drop the first of each, since the first to mind is the house default.
 - Give the display font, the body font and the accent hue one plan clause each naming this user and this product, as in "for <user> <task> in <product>", because a reason that fits any page is no reason.

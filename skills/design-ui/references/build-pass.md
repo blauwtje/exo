@@ -14,6 +14,7 @@ Build the one pass from this file, read whole and once; where the `stack` refere
 ## Character
 
 - Each screen → one standout element carrying the direction's boldest move; supporting regions stay designed but quieter.
+- Redesign → also fails when supporting regions stay generic while one focal point carries the design, or a large empty area has no content, grouping, pacing, or staging job.
 - Ground and every surface → tinted from the palette, not pure white or a neutral grey default.
 - White cards on a grey ground with a single accent color → never; that kit reads as generated.
 - Solid ground → lit from one direction: two neighbours of the ground color, under 8° of hue between stops.
