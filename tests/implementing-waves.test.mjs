@@ -73,7 +73,7 @@ test('the direct route reads the diff stat on a GREEN return and hands a stop\'s
 test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four tasks at most, disjoint `Files:`', () => {
   const askStep = loopStep(1, UNIT_AGENT);
   assert.ok(askStep.includes('Run `node "<skill>/scripts/next-task.mjs" --plan <plan> --root <checkout>` and read its `Landed:` and `Next:` or `Wave:` lines'));
-  assert.ok(loopStep(2, UNIT_AGENT).includes("**Take the task from the script's output**, never from the plan file"));
+  assert.ok(loopStep(2, UNIT_AGENT).includes("**Take the task from the script's output**, never the plan file"));
   const task = (number, path) => ({ number, dependsOn: [], design: false, files: path ? [{ path }] : [] });
   const disjoint = [1, 2, 3, 4, 5].map((number) => task(number, `src/file-${number}.mjs`));
   assert.deepEqual(nextWave(disjoint, [], null).map((t) => t.number), [1], 'no `Worktree setup:`, no wave');
@@ -84,7 +84,7 @@ test('a wave comes only from next-task.mjs, which needs `Worktree setup:`, four 
 
 test('a unit wave builds in worktrees and keeps each green task per wave-worktrees.md', () => {
   const dispatchStep = loopStep(3, UNIT_AGENT);
-  assert.ok(dispatchStep.includes('a wave builds per `<skill>/references/wave-worktrees.md`'), 'the reference owns the wave');
+  assert.ok(dispatchStep.includes('else a wave per `<skill>/references/wave-worktrees.md`'), 'the reference owns the wave');
   assert.ok(WAVE_WORKTREES.includes('git worktree add --detach "<root>-task-<n>" HEAD'));
   assert.ok(dispatchStep.includes('in one message'));
   const commitStep = loopStep(4, UNIT_AGENT);

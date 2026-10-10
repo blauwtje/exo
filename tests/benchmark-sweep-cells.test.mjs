@@ -69,7 +69,7 @@ test('every fixture is reviewed seeded and as a control at each effort', () => {
 test('a review cell runs the branch reviewer body as its system prompt, without the frontmatter', () => {
   const review = selectCells(cells, ['review'])[0];
   const prompt = flagValue(claudeArguments(review), '--append-system-prompt');
-  assert.match(prompt, /You review one branch against the plan/);
+  assert.match(prompt, /You review one branch against plan and standard/);
   assert.doesNotMatch(prompt, /^---/);
   assert.doesNotMatch(prompt, /effort: medium/);
 });
