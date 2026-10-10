@@ -59,3 +59,26 @@ test('an accept scenario the verifier rejects fails with its output', () => {
   assert.match(failure, /benign was rejected/);
   assert.match(failure, /process structure/);
 });
+
+const several = { name: 'twice-enforced', check: ['YAML frontmatter', 'codex overrides'] };
+
+test('a reject scenario naming several checks passes when exactly those fail', () => {
+  assert.equal(judgeScenario(several, { status: 1, output: output('YAML frontmatter', 'codex overrides') }), null);
+});
+
+test('a reject scenario naming several checks fails when one of them does not fail', () => {
+  const failure = judgeScenario(several, { status: 1, output: output('YAML frontmatter') });
+  assert.match(failure, /twice-enforced/);
+  assert.match(failure, /codex overrides/);
+});
+
+test('a reject scenario naming several checks fails when another check also fails', () => {
+  const failure = judgeScenario(several, { status: 1, output: output('YAML frontmatter', 'codex overrides', 'routing') });
+  assert.match(failure, /twice-enforced/);
+  assert.match(failure, /routing/);
+});
+
+test('a reject scenario naming an empty list of checks fails', () => {
+  const failure = judgeScenario({ name: 'empty-list', check: [] }, { status: 1, output: output('routing') });
+  assert.match(failure, /empty-list/);
+});
