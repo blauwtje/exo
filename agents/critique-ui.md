@@ -20,6 +20,7 @@ Budget: you have 12 turns; the run ends mid-step, without notice, when they are 
 - `RUN`: absolute run directory. `SKILL`: absolute directory of the design-ui skill.
 - `$RUN/renders/` holds the post-build pair, `post-build-390x844-fullpage.png` and `post-build-1440x900-fullpage.png`.
 - `$RUN/renders/` also holds the `baseline-` pair when the surface rendered before the run; a missing baseline pair is not a missing input.
+- `$RUN/comp.md` and the `comp-390x844-fullpage.png` / `comp-1440x900-fullpage.png` pair in `$RUN/renders/` are optional input when a full redesign wrote a comp; a missing comp is not a missing input.
 - `$RUN/contract-selected.json` holds the direction, when the run has one.
 - `$RUN/critic-evidence.json` holds the layout findings, the render delta and the style inspection for this stage.
 - Name each missing or unreadable input on the first line of your file and review the rest; a missing input is evidence, not a stop.
@@ -35,6 +36,7 @@ Budget: you have 12 turns; the run ends mid-step, without notice, when they are 
 5. Write `$RUN/faults.md`:
    - First line: `disposition: fix`, `disposition: ship` or `disposition: direction`.
    - Then one block per fault, in the five lines the fault contract in `$SKILL/references/visual-critique.md` fixes, and nothing else.
+   - Comp given → each region of `comp.md` whose post-build render drifts from the comp render at the same width is one fault, listed first.
    - Every `content-clipped` and `element-overlap` finding is a fault.
    - `disposition: direction` means one fault names the direction itself; say which contract field failed, because the caller reports it to the user as the open action instead of re-running the direction.
 

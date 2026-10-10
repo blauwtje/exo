@@ -43,7 +43,7 @@ The default for every rung but 1 and 4; `exo:build-ui` writes the code, since co
 2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`.
 3. **Check the plan** per `## Every rung` of `references/phase-direction.md`.
 4. **Build pass.** Read `references/build-pass.md` whole.
-5. **Build.** Dispatch fresh `exo:build-ui` per `## Where the build runs` of `references/phase-build.md`.
+5. **Build.** Dispatch fresh `exo:build-ui` per `## Where the build runs` of `references/phase-build.md`, after `## The comp` on a full redesign.
 6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3.
 7. **Finish on a fresh capture.** Take its step 4.
 

@@ -104,6 +104,9 @@ Target: src/styles/tide-table.css, .tide-footnotes { padding-inline }
 Repair: raise padding-inline from 0 to the page gutter token.
 ```
 
+- Comp given → each region of `$RUN/comp.md` whose post-build render drifts from the comp render at the same width is one fault whose `Defect:` opens `drifts from comp:`.
+- Drift faults come first and sit outside the three-or-four count.
+
 Set covers at least one content or relationship fault (missing content, broken relationship) and at least one craft fault (absent atmosphere, motion below the bar, untransitioned states, unthemed browser finish).
 
 "Looks polished or premium" is not a finding.

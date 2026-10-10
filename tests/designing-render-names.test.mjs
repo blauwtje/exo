@@ -10,7 +10,7 @@ import { test } from 'node:test';
 
 const ROOT = new URL('../', import.meta.url);
 const CHECKPOINTS = ['baseline', 'post-build', 'final'];
-const LABEL_VALUES = [...CHECKPOINTS, '<checkpoint>'];
+const LABEL_VALUES = [...CHECKPOINTS, 'comp', '<checkpoint>'];
 const VIEWPORTS = JSON.parse(
   fs.readFileSync(new URL('skills/design-ui/assets/viewports.json', ROOT), 'utf8')
 ).capture;

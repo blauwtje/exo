@@ -2,6 +2,18 @@
 
 One `exo:build-ui` agent in page scope builds a page of one surface or of surfaces sharing a file. Two or more surfaces with disjoint files build in parallel. Make one call per surface; no request is needed. The enemy is a builder brief that only forwards edits this session could type. The overcorrection is skipping the capture the one pass ends with.
 
+## Contents
+
+- [The mechanics](#the-mechanics)
+- [Where the build runs](#where-the-build-runs)
+- [Full run builders](#full-run-builders)
+- [Sizes](#sizes)
+- [The comp](#the-comp)
+- [The sketch path](#the-sketch-path)
+- [The piece path](#the-piece-path)
+- [Capture, look, fix once](#capture-look-fix-once)
+- [Judgment](#judgment)
+
 ## The mechanics
 
 Bind this session and every builder:
@@ -30,7 +42,8 @@ The one pass only; the full run follows `## Full run builders` alone.
 - Split → before the foundation call, this session writes its Phase 1 path and line-range list to `$RUN/files.md` and names it in `FILES=` of `$RUN/build-rules.md`.
 - Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow the `## Full run builders` bullets.
 - One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges.
-- Rung 3 → the builder gets the selected comp.
+- Rung 3 → the builder gets the selected comp as `COMP`.
+- Full redesign on another rung → `COMP=$RUN/comp/` from `## The comp`, to the page, foundation and every surface call.
 - This session reads builder reports only.
 - Every route → this session captures, looks and judges.
 
@@ -51,7 +64,22 @@ The one pass only; the full run follows `## Full run builders` alone.
 
 - **Sketch:** a demo, prototype or mock the request names as one, on `## The sketch path`: no variants, agents or critic; the floor holds.
 - **New piece:** a section, component or view inheriting the existing direction, on `## The piece path`. A piece that changes the page's hierarchy is a bounded redesign.
+- **Full redesign:** a `**Page or redesign:**` request of the skill's `## Size the request`.
+  - A new page, view or identity.
+  - A change on three or more of composition, palette, type, motion and content hierarchy.
+  - A report that the surface is empty, boring, generic, flat, unfinished or not distinctive.
+  - Writes the comp of `## The comp`.
+- **Bounded redesign:** a request naming one or two of those axes, or a piece that changes the page's hierarchy. Writes no comp.
 - **Tweak:** one element or named visual property changes, no region added. Change it, audit the touched surface, verify the floor, take step 4 of `## Capture, look, fix once` with `--out` under `/private/tmp/designing/`, stop; never expand a tweak into a redesign.
+
+## The comp
+
+Full redesign only; a bounded redesign, tweak, sketch and new piece write none, and rung 3 writes none because its chosen direction comp already is the builder's `COMP`.
+
+- Before the page or foundation dispatch, dispatch one fresh `exo:build-ui` with `SCOPE=comp:focal`; this session reads only its report.
+- The comp = the chosen direction's focal region as a local page in `$RUN/comp/`, with `$RUN/comp.md` listing each region.
+- The builder renders it with `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label comp --out "$RUN/renders"`.
+- The page, foundation and surface builders get `COMP=$RUN/comp/`.
 
 ## The sketch path
 
