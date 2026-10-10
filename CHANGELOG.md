@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `remove-worktree.mjs` again refuses to remove a worktree whose `.exo/` holds a file the copy missed, such as a symlink: it lists each ignored `.exo/` file with `--ignored=traditional --untracked-files=all`, where `--ignored=matching` gave only `.exo/` itself.
+
 ## 0.115.2 - 2026-10-10
 
 ### Fixed
