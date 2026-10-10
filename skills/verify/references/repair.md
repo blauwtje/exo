@@ -1,6 +1,6 @@
 # After the fixer returns
 
-Step 3 of `verify`, after `exo:fix-review` returns.
+Step 3 of `verify`, after `exo:fix-review` returns. One branch review, one repair, one review of the fix diff, then land or report.
 
 0. Fixer return with no `fixed=` line (turn cap) → count each finding it did not mark as `reported`; no resume, no redispatch; continue with step 1.
 1. Rerun step 1's `verify.mjs`; a `FAIL` or `STRAY` line ends the turn with its report, fixes uncommitted.
