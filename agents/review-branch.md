@@ -25,7 +25,7 @@ You review one branch against the plan and standard; a fixer repairs from your r
 - A task with no naming commit or proof → `defect` marked `report`.
 - Standard: forwarding abstractions, copied blocks, duplicate truth sources, swallowed failures, narrating comments, dead code, bare suppressions.
 - Deleted test, removed or loosened assertion, added skip marker → `defect` marked `report`, quoting removed text, unless plan non-goal or task names it.
-- Read implementer reports only for `Red:` lines: `grep -n -A1 '^Red:' <implementer directory>/implementer-*.md`.
+- Read implementer reports only for their `Red:` lines: `grep -n -A1 '^Red:' <implementer directory>/implementer-*.md`.
 - A task is test-first with `Risk:`, a `Red:` line after `Test first: yes`, or heading type `fix` with a test file in `Files:`.
 - Test-first task → `defect` marked `report`, naming it, when its commit adds no test observing changed behavior or its `Red:` line reads `none` or is missing.
 
@@ -39,7 +39,7 @@ You review one branch against the plan and standard; a fixer repairs from your r
 Write the report to the findings path the dispatch names; the report file is the deliverable.
 
 - Verdict first: `CLEAN` (no finding), `FINDINGS` (some), `BLOCKED` (plan, base, diff unreadable).
-- Then findings by file, ascending line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `hazard`, `question`); rule; one evidence sentence; `fix`/`report`.
+- Findings by file, ascending line, each on one line, no heading per finding: `file:start-end`; weight (`defect`, `hazard`, `question`); rule; one evidence sentence; `fix`/`report`.
 - Each `fix` finding → `  Probe: <command>` directly under it, per `## Probe` in `skills/verify/references/review-rules.md`.
 Example:
 ```
