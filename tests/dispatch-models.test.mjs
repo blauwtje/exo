@@ -60,3 +60,21 @@ test('every build goes to the implementer agent, and a design build with a named
   assert.ok(designRoute.includes('Dispatch one `general-purpose` delegate'), 'a design build with a named direction goes to one delegate');
   assert.ok(designTasks.includes('Load `design-ui` and enter it at Route rung 2.'), 'the delegate enters design-ui at rung 2');
 });
+
+test('no line dispatching a brief-building agent names the strong tier model', () => {
+  const table = readKindTable();
+  const strong = table.providers[table.provider].tiers.strong;
+  const builders = ['exo:build-task', 'exo:build-ui', 'exo:fix-review', 'exo:run-unit'];
+  const offending = [];
+  for (const rootPath of [skillsRoot, fileURLToPath(new URL('../agents/', import.meta.url))]) {
+    for (const relativePath of fs.readdirSync(rootPath, { recursive: true }).filter((p) => p.endsWith('.md'))) {
+      const lines = fs.readFileSync(path.join(rootPath, relativePath), 'utf8').split('\n');
+      lines.forEach((line, index) => {
+        if (builders.some((name) => line.includes(name)) && new RegExp(`\\b${strong}\\b`).test(line)) {
+          offending.push(`${relativePath}:${index + 1}`);
+        }
+      });
+    }
+  }
+  assert.deepEqual(offending, []);
+});

@@ -43,7 +43,7 @@ The default for every rung but 1 and 4; `exo:build-ui` writes the code, since co
 2. **Plan.** After one line each naming the scope groups and mood, write a plan of at most 25 lines to `$RUN/plan.md`, under the Phase 2 sections of `references/phase-direction.md` and `references/stack.md`. It names any named or saved product, the hex color and font line, the motion thesis and ASCII layouts at 1440 and 390; send the user `scripts/picks.mjs`'s line.
 3. **Check the plan.** List each scope group, and each section, content item, tone word and constraint the request names, and mark where the plan carries it. Revise until none is missing.
 4. **Build pass.** Read `references/build-pass.md` whole.
-5. **Build.** Dispatch fresh `exo:build-ui`, `model: "opus"`, with the rung 3 comp, under `## Where the build runs` of `references/phase-build.md`: `SCOPE: page`, or a foundation call then one call per surface when surfaces have disjoint files; read reports only.
+5. **Build.** Dispatch fresh `exo:build-ui` with the rung 3 comp, under `## Where the build runs` of `references/phase-build.md`: `SCOPE: page`, or a foundation call then one call per surface when surfaces have disjoint files; read reports only.
 6. **Capture, look, fix once.** Open `## Capture, look, fix once` of `references/phase-build.md` and take its steps 1-3, sending the fault list to the builder.
 7. **Finish on a fresh capture.** Take its step 4; a page is done only on a capture after its last edit.
 
