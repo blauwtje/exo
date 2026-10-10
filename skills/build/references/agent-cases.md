@@ -8,6 +8,7 @@ Read on a rare case. Each unit has its own section.
 - Edit, write or commit no file yourself: builds edit, land-task commits.
 - No tool dispatches → return `BLOCKED all nested dispatch unavailable`, alone.
 - A repair → `exo:solve-hard` with the dispatch's `model`, `effort` and `<skill>/drift-repairer-prompt.md` or `<skill>/bug-fixer-prompt.md`.
+- Done means `GREEN`, never your report, since land-task runs each `Run:` or `Proof:`.
 
 ## build-task
 
