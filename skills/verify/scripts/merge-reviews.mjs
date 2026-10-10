@@ -10,7 +10,7 @@ import { parseFlags, UsageError, isMain } from '#script-flags';
 const VERDICT_RANK = { CLEAN: 0, FINDINGS: 1, BLOCKED: 2 };
 const PROBE_LINE = /^\s*Probe:\s*\S/;
 const UNREAD = /\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
-const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
+const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
 
 /** The verdict word of a report: its first line naming one. */
 function verdictOf(text) {
