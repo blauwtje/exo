@@ -28,7 +28,7 @@ test('the question reference is the one place that defines the shape, with A rec
   assert.ok(!QUESTION.includes('numbered'), 'no batch of numbered questions');
   assert.ok(!QUESTION.includes('batch'), 'no batch of questions');
   assert.ok(!QUESTION.includes('asks them all'), 'no message asks several questions');
-  assert.ok(QUESTION.includes('**Three or four options.**'));
+  assert.ok(QUESTION.includes('**Two or three options.**'));
   assert.ok(QUESTION.includes('a question tool, a form or a picker is never used'));
   assert.ok(QUESTION.includes('`b`, `B` and `(b)` all pick B'));
   assert.ok(QUESTION.includes('take the recommendation and carry it out at once, like a letter: no recap, no confirmation question'));

@@ -18,7 +18,7 @@ Recommended: (A), because seeing the looks beats reading about them, and (C) ski
 1. **Title line.** `**<title>**`, plain everyday question, at most about ten words; no number, no `---` line.
 2. **Context.** At most two short sentences, only what the user needs to choose. Plain words anyone understands: no token counts, seconds, costs, tool, model or effort names, no file name the user need not open, no internal name unless the user picks between them.
 3. **Options.** One blank line, then `- **(A) Label**: what the user gets`, one per line, then one blank line. Label: one to three words; text: one short plain clause on what the user gets or gives up, enough to choose without asking back; never holds a command.
-4. **Three or four options.** Two only when no honest third route exists; a padded option is a fake choice.
+4. **Two or three options.** Two only when no honest third route exists; a padded option is a fake choice.
 5. **Recommendation.** `Recommended: (A), because <why A beats the others>`, one plain clause on one line. A is always the recommended option.
 6. **Size.** Under about 60 words outside the option labels; simple beats complete. Nothing follows the recommendation.
 7. **No tool.** Options are text in the reply; a question tool, a form or a picker is never used, except design-ui's scope form.
