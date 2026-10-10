@@ -24,10 +24,14 @@ argument-hint: <outcome to shape>
    - Recommend a loaded skill's prescribed pattern over an option it rules out.
    - Close with up to three lines on what was agreed; brief after the user's yes.
    - After a compaction → list decisions first.
-4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight ranges; never `cat`, `head` or `sed`.
+4. **Map, then locate.**
+   - First run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too) and read it.
+   - Range the map leaves unnamed → `exo:locate-code` in the foreground, at most eight ranges; read nothing it locates.
+   - Never `cat`, `head` or `sed`.
 5. **List tasks** per `references/task-list.md` and `references/brief.md`.
 6. **Store it** per `references/brief.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
+   - Learn plan-check's rules from its output, never its source.
 8. **Hand off** per `references/hand-off.md`: end on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output.
 
 ## References
