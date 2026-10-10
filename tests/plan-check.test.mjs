@@ -89,6 +89,18 @@ test('plan-check reports a task above 4 files as one to split', () => {
   assert.ok(report.lines.some((line) => line.includes('split Task 1')));
 });
 
+test('plan-check flags two Parallel: tasks that list the same Files: path', () => {
+  const tasks = [goodTask({ number: 1 }), goodTask({ number: 2 })];
+  const report = planCheckReport(planFixture({ worktreeSetup: 'none', parallel: 'Tasks 1 and 2.', tasks }));
+  assert.ok(report.lines.includes('Task 1 and Task 2 are both on the Parallel: line but both list Files: `src/app.js`'));
+});
+
+test('plan-check passes Parallel: tasks whose Files: sets are disjoint', () => {
+  const tasks = [goodTask({ number: 1 }), goodTask({ number: 2, files: ['- Modify: `src/other.js` (`greet`)'] })];
+  const report = planCheckReport(planFixture({ worktreeSetup: 'none', parallel: 'Tasks 1 and 2.', tasks }));
+  assert.ok(!report.lines.some((line) => line.includes('Parallel: line')));
+});
+
 function compactTasks(count) {
   return Array.from({ length: count }, (_, index) => compactTask({
     number: index + 1,

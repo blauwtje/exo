@@ -164,6 +164,24 @@ function checkSharedFiles(tasks) {
   return problems;
 }
 
+// task-list.md's '## Checkpoint' item says 'Parallel:' names only tasks whose
+// Files: sets share no path; plan-check flags each pair of named tasks that
+// list the same path. 'every task' and 'none' name no pair to compare.
+function checkParallelDisjoint(tasks, frame) {
+  const named = frameOf(frame).parallel ?? [];
+  const listed = tasks.filter((task) => named.includes(task.number));
+  const problems = [];
+  for (let i = 0; i < listed.length; i++) {
+    for (let j = i + 1; j < listed.length; j++) {
+      const secondPaths = new Set(listed[j].files.map((file) => file.path));
+      for (const filePath of new Set(listed[i].files.map((file) => file.path))) {
+        if (secondPaths.has(filePath)) problems.push(`Task ${listed[i].number} and Task ${listed[j].number} are both on the Parallel: line but both list Files: \`${filePath}\``);
+      }
+    }
+  }
+  return problems;
+}
+
 // task-list.md's '## Plan basis' item 2 asks for a 'Worktree setup:' line when
 // two tasks share no Depends on chain, since without it the run builds one
 // task at a time; plan-check flags the first such pair and the missing line,
@@ -366,6 +384,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
     ...checkSharedFiles(plan.tasks),
+    ...checkParallelDisjoint(plan.tasks, plan.frame),
     ...checkWorktreeSetup(plan.tasks, plan.frame),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
