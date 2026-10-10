@@ -56,7 +56,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
@@ -82,6 +82,7 @@ const TEST_FILES_PROOF = /^node --test( [\w./-]+)+$/;
 // Per-task Proofs spawned at once; a few overlap without starving the machine.
 const PROOF_CONCURRENCY = 3;
 // Deadlines: a Proof or the gate past its own is killed and fails closed.
+// EXO_PROOF_TIMEOUT_MS and EXO_GATE_TIMEOUT_MS override them for a test.
 const PROOF_TIMEOUT_MS = 540_000;
 const GATE_TIMEOUT_MS = 1_800_000;
 // Output lines kept under a failed check's FAIL line: enough for a stack trace or
@@ -510,7 +511,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   }
 
   // Proofs run up to PROOF_CONCURRENCY at once; their lines keep task order.
-  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, PROOF_TIMEOUT_MS)));
+  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS))));
   proofRuns.forEach((run, index) => {
     if (run.line) {
       lines.push(run.line);
@@ -535,7 +536,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else if (cachedPass(root, gateCommand) !== null) {
     lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
-    const gateRun = await runCommand(gateCommand, GATE_TIMEOUT_MS);
+    const gateRun = await runCommand(gateCommand, environmentMs('EXO_GATE_TIMEOUT_MS', GATE_TIMEOUT_MS));
     // The SUMMARY rule binds any gate whose output prints a SUMMARY line, whatever
     // the command; a gate that prints none, as another project's `npm run check`
     // does, is judged on its exit code alone. A run that exits 0 yet fails names its

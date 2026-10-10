@@ -246,6 +246,20 @@ test('an unmarked Proof naming a missing snake_case command fails with the mcp:<
   assert.equal(result.stdout.trim().split('\n')[0], 'FAIL Task 1 (exit 127, run_playtest_exo_missing looks like an MCP tool; write the Proof as mcp:run_playtest_exo_missing)');
 });
 
+test('a Proof and a gate past their deadlines are stopped and fail with timed out after <n>s', async () => {
+  const root = await gitRepository({
+    'src/app.js': 'export const greet = () => "hi";\n',
+    'plan.md': '### Task 1: feat(app): hang\nDepends on: none | Files: `src/app.js` | Data: none | Proof: sleep 5\n'
+  });
+  landTask(root, 1);
+
+  const started = Date.now();
+  const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'sleep 6'], { cwd: root, env: { EXO_PROOF_TIMEOUT_MS: '300', EXO_GATE_TIMEOUT_MS: '400' } });
+  assert.equal(result.code, 1);
+  assert.deepEqual(result.stdout.trim().split('\n').slice(0, 2), ['FAIL Task 1 (timed out after 0.3s)', 'FAIL success-criterion (timed out after 0.4s)']);
+  assert.ok(Date.now() - started < 4000, 'neither command ran to its end');
+});
+
 test('a failing check-command prints FAIL success-criterion', async () => {
   const root = await gitRepository({
     'src/app.js': 'export const greet = () => "hi";\n',
