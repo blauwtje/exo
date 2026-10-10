@@ -18,10 +18,15 @@ In this order:
 
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
 
+- `docs` → `docs/specs/<topic>.md`; plan mode → the harness plan file.
+
 ## The task list
 
 - Make the split and every design choice before writing the list; the builder runs on `sonnet` and cannot ask.
 - Choice the user would notice → Decisions.
+- Point the user would not notice → `Data:`.
+- Security-boundary task → name its reference in its heading or `Data:`.
+- Plan mode → an edit-needing proof is Task 1.
 - A task touching sandbox, deny rules, breach detection, task pin, land-task, or code deleting files or branches → `Risk: security boundary`.
 - Exception, open visual choice → its task carries `Design: design-ui`; `build` routes it by the brief's Visual direction.
 

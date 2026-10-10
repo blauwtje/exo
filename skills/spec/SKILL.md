@@ -18,7 +18,6 @@ argument-hint: <outcome to shape>
    - Answerable by running or reading → record it, never ask.
    - Each open decision is a question, root decisions first.
    - A decision the user left open stays open whatever the code suggests.
-   - Point the user would not notice → `Data:`.
    - Name the owning layer and a smaller alternative.
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`: decide nothing silently.
@@ -26,12 +25,10 @@ argument-hint: <outcome to shape>
    - Close with up to three lines on what was agreed; brief after the user's yes.
    - After a compaction → list decisions first.
 4. **Map, then locate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` (plan mode too); read it; else `exo:locate-code`, at most eight ranges; never `cat`, `head` or `sed`.
-5. **List tasks** per `references/task-list.md`; name a security-boundary task's reference in its heading or `Data:`; in plan mode an edit-needing proof is Task 1.
-6. **Store it** per `specs` in `exo settings:`, else `docs` (plan mode: the harness plan file).
-   `docs` → `docs/specs/<topic>.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
+5. **List tasks** per `references/task-list.md` and `references/brief.md`.
+6. **Store it** per `references/brief.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
-8. **Hand off.** End on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output; on Build here, load `exo:build` with `<brief path or #<n>> --land`; on Build fresh, print its `--fresh` output.
-   - Invoked by another stage or a workflow → ask nothing, return to the caller.
+8. **Hand off** per `references/hand-off.md`: end on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output.
 
 ## References
 
@@ -48,5 +45,6 @@ argument-hint: <outcome to shape>
 | `references/brief-in-an-issue.md` | `specs` is `issues` or `both`. |
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
+| `references/hand-off.md` | Step 8. |
 
 Report: the brief's location and next stage, or the current question.
