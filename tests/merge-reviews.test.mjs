@@ -110,3 +110,17 @@ test('the unread count is printed on its own line only above zero', async () => 
   await fs.writeFile(clean, FINDINGS);
   assert.ok(!(await run(SCRIPT, ['--root', root, '--report', clean])).stdout.includes('UNREAD'));
 });
+
+test('the weight is the field after file:line, not a weight word in the evidence text', () => {
+  const text = [
+    'FINDINGS',
+    '',
+    'a.mjs:3; hazard; rule; evidence mentions (question 2); fix',
+    '  Probe: grep -q x a.mjs',
+    'b.mjs:4; defect; rule; evidence mentions a hazard; report',
+    ''
+  ].join('\n');
+  const { counts, unread } = mergeReviews([{ name: 'task-1', text }]);
+  assert.deepEqual(counts, { defect: 1, hazard: 1, question: 0, fix: 1 });
+  assert.equal(unread, 0);
+});
