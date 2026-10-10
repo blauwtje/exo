@@ -51,35 +51,24 @@ function exoFiles(root) {
   return files;
 }
 
-// `.exo/` is excluded, not ignored by a tracked `.gitignore`, so only
-// `--ignored=matching` lists its individual files instead of collapsing them
-// into the single `.exo/` directory entry; this reads the worktree's own
-// ignored set, the ground truth for what a plain file walk could have missed
-// (a file created mid-copy, a permission git can see but fs cannot). `-z`
-// keeps a name with a space or non-ASCII byte unquoted.
-function ignoredExoFiles(worktree) {
-  const status = execFileSync('git', ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=matching'], { encoding: 'utf8' });
-  return status
-    .split('\0')
-    .map((line) => line.slice(3))
-    .filter((entry) => entry.startsWith('.exo/') && entry !== '.exo/')
-    .map((entry) => entry.slice('.exo/'.length));
-}
-
-// Every file under the worktree's `docs/specs/` that git does not track,
-// ignored (`!!`) or untracked (`??`), as a path relative to `docs/specs/`.
-// `--ignored=traditional` with `--untracked-files=all` lists each file inside
-// an ignored or untracked directory, where `matching` or the default would
-// give only the one directory entry; the pathspec keeps the walk to
-// `docs/specs/`. A tracked file is left out: git keeps it in the branch.
-function untrackedSpecFiles(worktree) {
-  const args = ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=traditional', '--untracked-files=all', '--', SPECS];
+// Every file under the worktree's `<folder>/` that git does not track,
+// ignored (`!!`) or untracked (`??`), as a path relative to `<folder>/`: the
+// worktree's own list, the ground truth for what a plain file walk could have
+// missed (a symlink, a file created mid-copy, a permission git can see but fs
+// cannot). `--ignored=traditional` with `--untracked-files=all` lists each
+// file inside an ignored or untracked directory, where `matching` or the
+// default would give only the one directory entry, such as the excluded
+// `.exo/`; the pathspec keeps the walk to `<folder>/`. A tracked file is left
+// out: git keeps it in the branch. `-z` keeps a name with a space or
+// non-ASCII byte unquoted.
+function untrackedFiles(worktree, folder) {
+  const args = ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=traditional', '--untracked-files=all', '--', folder];
   return execFileSync('git', args, { encoding: 'utf8' })
     .split('\0')
     .filter((line) => line.startsWith('?? ') || line.startsWith('!! '))
     .map((line) => line.slice(3))
-    .filter((entry) => entry.startsWith(`${SPECS}/`))
-    .map((entry) => entry.slice(SPECS.length + 1));
+    .filter((entry) => entry.startsWith(`${folder}/`))
+    .map((entry) => entry.slice(folder.length + 1));
 }
 
 // Moves `folder` to `<folder>-<UTC date-time>`, with `-2`, `-3`, ... added
@@ -96,7 +85,7 @@ function moveAside(folder) {
 export function removeWorktree({ worktree, run, force = false, kept = false }) {
   const keptRoot = path.join(run, '.exo', 'kept', path.basename(worktree));
   const keptTarget = `${keptRoot}/`;
-  const briefs = untrackedSpecFiles(worktree);
+  const briefs = untrackedFiles(worktree, SPECS);
   const exo = kept ? { root: keptRoot, target: keptTarget } : { root: path.join(run, '.exo'), target: `${run}/.exo/` };
   // This call owns the kept folder when it writes there, with `--kept` or for
   // a brief; both modes share the move-aside below and the rollback after it.
@@ -180,8 +169,8 @@ function refuseMissed(worktree, folder, listed, copied) {
 function copyChecked({ worktree, exo, keptRoot, keptTarget, briefs }) {
   const exoCopied = copyFiles(exoFiles(worktree), path.join(worktree, '.exo'), exo.root, { from: `${worktree}/.exo/`, to: exo.target });
   const briefsCopied = copyFiles(briefs, path.join(worktree, SPECS), path.join(keptRoot, SPECS), { from: `${worktree}/${SPECS}/`, to: `${keptTarget}${SPECS}/` });
-  refuseMissed(worktree, '.exo/', ignoredExoFiles(worktree), exoCopied);
-  refuseMissed(worktree, `${SPECS}/`, untrackedSpecFiles(worktree), briefsCopied);
+  refuseMissed(worktree, '.exo/', untrackedFiles(worktree, '.exo'), exoCopied);
+  refuseMissed(worktree, `${SPECS}/`, untrackedFiles(worktree, SPECS), briefsCopied);
   return { exo: exoCopied, briefs: briefsCopied };
 }
 

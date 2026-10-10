@@ -153,6 +153,22 @@ test('copies a .exo/ file whose name has a space', async () => {
   assert.equal(fs.readFileSync(path.join(root, '.exo', 'my report.md'), 'utf8'), 'spaced\n');
 });
 
+// The file walk copies regular files only, so a symlink is a `.exo/` file git
+// lists that the copy misses; symlinks need privileges on Windows.
+test('refuses and removes nothing when git lists a .exo/ file the copy missed', { skip: process.platform === 'win32' }, async () => {
+  const { root, worktree } = await runWithWorktree();
+  writeFile(worktree, '.exo/report.md', 'report\n');
+  fs.symlinkSync('report.md', path.join(worktree, '.exo', 'link.md'));
+
+  assert.throws(() => removeWorktree({ worktree, run: root }), (error) => {
+    assert.ok(error instanceof RemoveWorktreeError);
+    assert.match(error.message, /still holds uncopied \.exo\/ file\(s\): link\.md/);
+    return true;
+  });
+  assert.match(git(root, 'worktree', 'list'), new RegExp(worktree));
+  assert.ok(fs.lstatSync(path.join(worktree, '.exo', 'link.md')).isSymbolicLink());
+});
+
 function writeFile(root, relative, content) {
   fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
   fs.writeFileSync(path.join(root, relative), content);
