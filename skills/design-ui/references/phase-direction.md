@@ -64,6 +64,7 @@ Open only on a request for working or live comps; all run the picker under the `
 - Dispatch one `exo:build-ui` per contract with `SCOPE: comp:<n>`, all in one message, because comps built in this session fill its context before Build starts.
 - Hand each builder `RUN`, `REPO`, `SKILL`, the `FILES` ranges holding the surface's content, and as `CHECK` its folder and its `pick.mjs --check --variant <n>` command.
 - Read only each builder's two-line return and its `$RUN/comp-<n>.md`, never a comp's source or capture, because the builder checked and viewed them.
+- A fault a `comp-<n>.md` leaves `open` → name it to the user in one line before the picker opens, because the chooser is never the first to see a broken comp.
 - Start `pick.mjs` with `--comps "$RUN" --contracts "$RUN/finalists.json"` plus the builders' `--url` and `--source`, adding `--frame 390x844` only for a phone-first surface, since each comp otherwise fills the window width.
 - The picker prints the chosen index when the click arrives, or exits 3 and leaves the `--recommend` contract as the selection.
 - A `steer` in the answer is a revision: change the comps it names, check them again, and start the picker once more.

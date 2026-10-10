@@ -45,11 +45,11 @@ Sketch = `$RUN/sketches/<nnn>-<topic>.html`, numbered in asking order. A revisio
 
 The direction choice is one file, `$RUN/sketches/<nnn>-directions.html`, because the tab keeps one answer per file.
 
-- One `data-choice` panel per dealt contract, 2-3 (the Directions answer, else 3), recommended first; the one-axis rule does not apply.
-- Panel → that direction's first screen, real copy from the Phase 1 inventory, own inline `<style>` from the contract's palette, type pair and layout idea, at most 50 lines.
+- One `data-choice` panel per dealt contract, 2-3, recommended first and named so; the one-axis rule does not apply.
+- Panel → that direction's first screen, real copy from the Phase 1 inventory, own `<style>` from the contract's palette, type pair and layout idea, at most 50 lines.
 - One https font stylesheet serves every pair.
 - Panels side by side at 1280 pixels wide, stacked below 700.
-- `<title>` first, no doctype, head or script; each panel a visible name and `aria-label`.
+- `<title>` first, no doctype, head or script; each panel a visible name, `aria-label`, id of letters, digits, hyphens.
 
 ## The answer
 
