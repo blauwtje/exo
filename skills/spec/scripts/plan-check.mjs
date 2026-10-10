@@ -166,13 +166,16 @@ function checkSharedFiles(tasks) {
 
 // task-list.md's '## Checkpoint' item says 'Parallel:' names only tasks whose
 // Files: sets share no path; plan-check flags each pair of named tasks that
-// list the same path. 'every task' and 'none' name no pair to compare.
+// list the same path, unless a Depends on chain joins the two. 'every task'
+// and 'none' name no pair to compare.
 function checkParallelDisjoint(tasks, frame) {
   const named = frameOf(frame).parallel ?? [];
   const listed = tasks.filter((task) => named.includes(task.number));
+  const byNumber = new Map(tasks.map((task) => [task.number, task]));
   const problems = [];
   for (let i = 0; i < listed.length; i++) {
     for (let j = i + 1; j < listed.length; j++) {
+      if (reachesThrough(byNumber, listed[i].number, listed[j].number) || reachesThrough(byNumber, listed[j].number, listed[i].number)) continue;
       const secondPaths = new Set(listed[j].files.map((file) => file.path));
       for (const filePath of new Set(listed[i].files.map((file) => file.path))) {
         if (secondPaths.has(filePath)) problems.push(`Task ${listed[i].number} and Task ${listed[j].number} are both on the Parallel: line but both list Files: \`${filePath}\``);

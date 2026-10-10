@@ -101,6 +101,12 @@ test('plan-check passes Parallel: tasks whose Files: sets are disjoint', () => {
   assert.ok(!report.lines.some((line) => line.includes('Parallel: line')));
 });
 
+test('plan-check does not flag a Parallel: pair sharing a Files: path through a Depends on chain', () => {
+  const tasks = [goodTask({ number: 1 }), goodTask({ number: 2, dependsOn: '1' })];
+  const report = planCheckReport(planFixture({ worktreeSetup: 'none', parallel: 'Tasks 1 and 2.', tasks }));
+  assert.ok(!report.lines.some((line) => line.includes('Parallel: line')));
+});
+
 function compactTasks(count) {
   return Array.from({ length: count }, (_, index) => compactTask({
     number: index + 1,
