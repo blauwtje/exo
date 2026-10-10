@@ -7,6 +7,25 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`design-ui` now shows a first preview within minutes: the direction choice opens as a lead-written sketch round, and the lead reads far less before it.**
+
+### Added
+
+- `benchmarks/design-run.mjs` reports `firstPreviewMs`, the time from invocation to the first sketch or `pick.mjs` call, and the benchmark checklist wants it under 300000 on a preview run.
+- `tests/design-ui-read-budget.test.mjs` pins the lead's preview read set at 30,000 B and its one-pass read set at 46,000 B.
+
+### Changed
+
+- `design-ui` opens the direction choice as a sketch round the lead writes itself, and rung 3 routes to it. The direction offer moved from `## Asking` into its own `## The direction offer` section in `intake.md`, and `## Asking` may grow to 5,000 B.
+- The lead's `design-ui` read sets are trimmed to the sections each path needs, and the benchmark context budget reads 100k.
+- The live comp loop is capped at one repair, and comp captures stay with the builder.
+
+### Fixed
+
+- `design-ui` drops `COMP` after a sketch pick and leaves full-run capture to the critic.
+
 ## 0.119.3 - 2026-10-10
 
 ### Fixed
