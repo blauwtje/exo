@@ -440,3 +440,10 @@ test('the brief names a Proof that calls an MCP tool as Deferred:, and a shell P
   assert.match(await build('mcp:run_playtest zone-1'), /^Deferred: mcp:run_playtest zone-1$/m);
   assert.doesNotMatch(await build('node --test -- task.test'), /^Deferred:/m);
 });
+
+test('with --in-flight tasks the report prints a Start: line in place of Next: or Wave:', async () => {
+  const { root, planPath } = await checkout();
+  const report = nextTaskReport({ planPath, planText: PLAN, root, inFlight: [1] });
+  assert.match(report, /^Start: Task 3$/m);
+  assert.doesNotMatch(report, /^(Wave|Next):/m);
+});

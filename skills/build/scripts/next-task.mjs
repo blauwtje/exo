@@ -238,21 +238,21 @@ export function blockReport({ planPath, planText, root }) {
 
 // Writes a brief file for each task of the next wave and returns the report
 // that names them.
-export function nextTaskReport({ planPath, planText, root }) {
+export function nextTaskReport({ planPath, planText, root, inFlight = [] }) {
   const plan = parseTasks(planPath, planText);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   const route = planRoute(plan.tasks);
   const inline = route.route === 'inline';
   // The inline route builds in the run checkout, never in a wave's worktrees.
-  const wave = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel);
+  const wave = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel, inFlight);
   const lines = [
     `Plan: ${planPath}`,
     `Repository: ${frame.repository ?? 'none'}`,
     `Branch: ${frame.branch ?? 'none'}`,
     `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}`,
     routeLine(route),
-    waveLine(wave)
+    waveLine(wave, inFlight)
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;
   // On the inline route the lead builds every unlanded task in plan order, so
@@ -269,7 +269,7 @@ export function nextTaskReport({ planPath, planText, root }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'in-flight': 'value' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
@@ -280,7 +280,9 @@ function main(argv) {
   let report = nextTaskReport;
   if (flags.block) report = blockReport;
   if (flags.proofs) report = proofsReport;
-  process.stdout.write(report({ planPath: flags.plan, planText, root: flags.root ?? process.cwd() }));
+  const inFlight = (flags['in-flight'] ?? '').split(',').filter(Boolean).map(Number);
+  if (inFlight.some((number) => !Number.isInteger(number))) throw new UsageError("flag '--in-flight' names task numbers, comma separated");
+  process.stdout.write(report({ planPath: flags.plan, planText, root: flags.root ?? process.cwd(), inFlight }));
 }
 
 if (isMain(import.meta.url)) {

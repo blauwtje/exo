@@ -466,3 +466,15 @@ test('defaultBranch names the branch origin/HEAD or a local main or master gives
   git(root, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/trunk');
   assert.equal(defaultBranch(root), 'trunk');
 });
+
+test('with builds in flight, nextWave names only the ready tasks that may start beside them', () => {
+  const tasks = [1, 2, 3, 4, 5, 6].map((number) => taskSection({
+    number, title: `T${number}`, files: [`- Create: \`${number === 3 ? 'f1' : `f${number}`}\``], subject: `feat: t${number}`
+  }));
+  const plan = parsePlan(planFixture({ worktreeSetup: 'none', tasks }));
+  const numbers = (inFlight, setup = 'none') => nextWave(plan.tasks, [], setup, null, inFlight).map((task) => task.number);
+  assert.deepEqual(numbers([1]), [2, 4, 5], 'task 3 shares a path with the running task 1; the limit leaves three slots');
+  assert.deepEqual(numbers([1, 2, 4]), [5], 'one slot left');
+  assert.deepEqual(numbers([1, 2, 4, 5]), [], 'no slot left');
+  assert.deepEqual(numbers([1], null), [], 'no wave without a `Worktree setup:`');
+});
