@@ -81,6 +81,9 @@ const TEST_SUITE_PROOF = /^npm test( |$)/;
 const TEST_FILES_PROOF = /^node --test( [\w./-]+)+$/;
 // Per-task Proofs spawned at once; a few overlap without starving the machine.
 const PROOF_CONCURRENCY = 3;
+// Deadlines: a Proof or the gate past its own is killed and fails closed.
+const PROOF_TIMEOUT_MS = 540_000;
+const GATE_TIMEOUT_MS = 1_800_000;
 // Output lines kept under a failed check's FAIL line: enough for a stack trace or
 // a test summary, few enough that the report stays readable.
 const FAIL_TAIL_LINES = 20;
@@ -389,22 +392,34 @@ export function manualChecks(frame) {
 
 /**
  * Runs `command` through a shell to `{ ok, code, signal, output }`, `output` its stdout
- * and stderr together. When the shell cannot start, `code` holds the spawn error's code instead of an exit code.
+ * and stderr together; past `timeoutMs` it is killed and `timedOutMs` is set. When the shell cannot start, `code` holds the spawn error's code instead of an exit code.
  */
-function runCommand(command) {
+function runCommand(command, timeoutMs) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn(command, { shell: true });
+    const child = spawn(command, { shell: true, detached: process.platform !== 'win32' });
     let output = '';
+    let done = false;
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(result);
+    };
+    const timer = setTimeout(() => {
+      try { process.kill(process.platform === 'win32' ? child.pid : -child.pid, 'SIGKILL'); } catch { child.kill('SIGKILL'); }
+      finish({ ok: false, code: null, signal: null, timedOutMs: timeoutMs, output, ms: Date.now() - started });
+    }, timeoutMs);
     child.stdout.on('data', (chunk) => { output += chunk; });
     child.stderr.on('data', (chunk) => { output += chunk; });
-    child.on('error', (error) => resolve({ ok: false, code: error.code ?? error.message, signal: null, output }));
-    child.on('close', (code, signal) => resolve({ ok: code === 0, code, signal, output, ms: Date.now() - started }));
+    child.on('error', (error) => finish({ ok: false, code: error.code ?? error.message, signal: null, output }));
+    child.on('close', (code, signal) => finish({ ok: code === 0, code, signal, output, ms: Date.now() - started }));
   });
 }
 
 /** Why a command failed: the signal that killed it, else its exit code, else its spawn error. */
-function failReason({ code, signal }) {
+function failReason({ code, signal, timedOutMs }) {
+  if (timedOutMs !== undefined) return `timed out after ${timedOutMs / 1000}s`;
   if (signal !== null) return `signal ${signal}`;
   return typeof code === 'number' ? `exit ${code}` : `spawn error ${code}`;
 }
@@ -495,7 +510,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   }
 
   // Proofs run up to PROOF_CONCURRENCY at once; their lines keep task order.
-  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command)));
+  const proofResults = await mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, PROOF_TIMEOUT_MS)));
   proofRuns.forEach((run, index) => {
     if (run.line) {
       lines.push(run.line);
@@ -520,7 +535,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else if (cachedPass(root, gateCommand) !== null) {
     lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
-    const gateRun = await runCommand(gateCommand);
+    const gateRun = await runCommand(gateCommand, GATE_TIMEOUT_MS);
     // The SUMMARY rule binds any gate whose output prints a SUMMARY line, whatever
     // the command; a gate that prints none, as another project's `npm run check`
     // does, is judged on its exit code alone. A run that exits 0 yet fails names its

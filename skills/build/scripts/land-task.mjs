@@ -484,9 +484,10 @@ function runLandGate(landGate, root) {
   }
   const before = workingTreeKey(root);
   const started = Date.now();
-  const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8' });
+  const gate = spawnSync('bash', ['-e', '-c', landGate], { cwd: root, encoding: 'utf8', timeout: PROOF_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
   if (gate.status !== 0) {
-    const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${gate.error?.message ?? ''}`.trim();
+    const timedOut = gate.error?.code === 'ETIMEDOUT' ? `timed out after ${PROOF_TIMEOUT_MS / 1000}s` : '';
+    const output = `${gate.stdout ?? ''}${gate.stderr ?? ''}${timedOut || (gate.error?.message ?? '')}`.trim();
     throw new LandingError(`Land gate "${landGate}" failed:\n${output}`);
   }
   recordPass(root, landGate, Date.now() - started, before);
