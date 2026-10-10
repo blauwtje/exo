@@ -20,3 +20,11 @@
 6. **Stalled slot.**
    - After six `wait-report.mjs` runs with no new report, each waiting slot returns `BLOCKED <n> no report`.
    - Its folder is saved and removed per wave worktrees step 4.
+7. **Dispatch.**
+   - At most four slots build at once (`WAVE_LIMIT`).
+   - A window build goes to `exo:build-task` with `run_in_background: true`; this overrides `run-unit` step 3's flag; a `Next:` build stays foreground with `run_in_background: false`.
+   - A refill runs `next-task.mjs --in-flight <running task numbers, comma separated>` and reads its `Start: Task <n>[, Task <m>]` line.
+   - `Start: none` → no refill; wait for a running slot.
+8. **Wait.**
+   - Run `wait-report.mjs --any` with one `--report` and one `--since` per running slot.
+   - Exit 0 prints the fresh reports; each is a slot that returned, so land it per step 3.
