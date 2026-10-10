@@ -63,7 +63,7 @@ function dropFromLockedReference(root, relative, text) {
   padBack(root, relative, before);
 }
 
-const SCENARIOS = [
+export const SCENARIOS = [
   { name: 'invalid-yaml', check: 'YAML frontmatter', mutate: (root) => write(root, 'skills/spec/SKILL.md',
     read(root, 'skills/spec/SKILL.md').replace(/^name: spec$/gm, 'name: [spec')) },
   { name: 'missing-judgment', check: 'process structure', mutate: (root) =>
@@ -307,6 +307,10 @@ const SCENARIOS = [
     append(root, 'skills/route-skills/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
   { name: 'drifted-review-threshold', check: 'shared contracts', mutate: (root) =>
     replaceText(root, 'CONTRIBUTING.md', 'a manifest or lockfile changed', 'a manifest changed') },
+  // This sentence is held by no shared contract or lock; the run
+  // reads its base from the repository itself, since the fixture has no git history.
+  { name: 'dropped-boundary-word', check: 'boundary words', boundaryBase: true, mutate: (root) =>
+    replaceText(root, 'skills/file-issues/SKILL.md', 'transcript or log lines only,', 'transcript or log lines,') },
   { name: 'drifted-wait-bound', check: 'shared contracts', mutate: (root) =>
     replaceText(root, 'skills/ship/SKILL.md', 'stops after 20 minutes', 'stops after 30 minutes') },
 ];
@@ -332,9 +336,9 @@ function changedScripts(repository, caseRoot) {
   return changed;
 }
 
-function runVerifier(verifier, caseRoot, changed) {
+function runVerifier(verifier, caseRoot, changed, extra = []) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [verifier, '--repository-root', caseRoot, `--changed-scripts=${changed.join('\n')}`]);
+    const child = spawn(process.execPath, [verifier, '--repository-root', caseRoot, `--changed-scripts=${changed.join('\n')}`, ...extra]);
     let output = '';
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
@@ -369,11 +373,12 @@ export function judgeScenario(scenario, run) {
 }
 
 // Returns the failure text for one scenario, or null when it behaved as expected.
-async function runScenario(scenario, verifier, repository, selfRoot) {
+export async function runScenario(scenario, verifier, repository, selfRoot) {
   const caseRoot = path.join(selfRoot, scenario.name);
   copyVerificationFixture(repository, caseRoot);
   scenario.mutate(caseRoot);
-  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot));
+  const run = await runVerifier(verifier, caseRoot, changedScripts(repository, caseRoot),
+    scenario.boundaryBase ? ['--boundary-base', repository.root] : []);
   return judgeScenario(scenario, run);
 }
 

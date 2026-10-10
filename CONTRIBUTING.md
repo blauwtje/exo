@@ -26,6 +26,8 @@ CI runs `npm run check` on Node 24 on Ubuntu for every push to `main` and every 
 
 The `instruction density` check fails a list item of three or more sentences and a sentence over 40 words in the Markdown under `skills/`, `agents/` and `output-styles/`, outside fenced code, frontmatter, HTML comments, headings and tables; an inline code span counts as one word. `verify/instruction-density-allowlist.txt` names the offenders the tree held when the check began, and `INSTRUCTION_DENSITY_ALLOWLIST_LOCK` in `verify/budgets.mjs` caps its length. A line that no longer matches fails `npm test` until `node verify/instruction-density.mjs --prune` drops it; the command never adds a line and prints the new count to copy into the lock.
 
+The `boundary words` check compares each `.md` file under `skills/`, `agents/`, `rules/` and `hooks/` that exists at `origin/main` and in the working tree, counting `only`, `not`, `no`, `never`, `every`, `each`, `all`, `full`, `except` and `unless` as whole words, and fails when a count falls; it is `UNRUN` without `origin/main`. A deliberate drop is named as `Drops: <word> in <path>[, <word> in <path>]`, in a plan task's field line (land-task passes it to the land gate as `EXO_DROPS` and copies it into a compact task's commit body) or in a commit body since `origin/main`. `--boundary-base <dir>` reads the base files from a directory, which the verifier self-test uses because its fixture has no git history.
+
 The `derivation` check fails when a name exo does not own reaches a shipped file, or a third-party notice file appears at the repository root. `LICENSE` is the whole licence. The names sit base64-encoded in `verify/checks/derivation.mjs`, because a plaintext list would be the text the check forbids.
 
 ## Editing a skill

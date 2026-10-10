@@ -34,6 +34,7 @@ import { checkModelKinds } from './verify/checks/model-kinds.mjs';
 import { checkCodexOverrides } from './verify/checks/codex-overrides.mjs';
 import { checkQuestionOptions } from './verify/checks/question-options.mjs';
 import { checkPaidRuns } from './verify/checks/paid-runs.mjs';
+import { checkBoundaryWords } from './verify/checks/boundary-words.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
 import { codePass } from '#check-cache';
 import { runSelfTest } from './verify/self-test.mjs';
@@ -50,7 +51,9 @@ const { values } = parseArgs({
     static: { type: 'boolean', default: false },
     // Newline-separated script paths relative to the root; only these are parsed.
     // Absent means every script is parsed.
-    'changed-scripts': { type: 'string' }
+    'changed-scripts': { type: 'string' },
+    // Read the boundary-words base files from this directory instead of git: the self-test fixture has no history.
+    'boundary-base': { type: 'string' }
   }
 });
 
@@ -105,6 +108,7 @@ checkCodexOverrides(report, repository);
 checkQuestionOptions(report, repository);
 checkPaidRuns(report, repository);
 checkInstructionDensity(report, repository);
+checkBoundaryWords(report, repository, { baseDir: values['boundary-base'] === undefined ? null : path.resolve(values['boundary-base']) });
 
 if (values.static) {
   // skipped: no line printed
