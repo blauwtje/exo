@@ -990,6 +990,11 @@ test('--check runs the Land gate and Lint, refusing a failure and returning a sk
     checkTask({ ...ok, number: 1, reportText: PASS_REPORT }),
     'Land gate "true" skipped: it already passed on this tree.\nReport OK: Task 1\n'
   );
+  assert.match(landTask({ ...ok, number: 1, reportText: PASS_REPORT }), /^Land gate "true" skipped: it already passed on this tree\.$/m);
+  const changed = await check(withBasis('Land gate: true'));
+  checkTask({ ...changed, number: 1, reportText: PASS_REPORT });
+  await fs.appendFile(path.join(changed.root, 'src/app.js'), '// edited after the check\n');
+  assert.doesNotMatch(landTask({ ...changed, number: 1, reportText: PASS_REPORT }), /skipped/);
 });
 
 // A block's builders share one checkout: task 2's files sit uncommitted while
