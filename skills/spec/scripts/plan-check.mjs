@@ -4,15 +4,16 @@
 // with code, no placeholder, a size within the split threshold, every
 // Modify: path present in the target repository, and no shared Files: path
 // between two tasks with no Depends on chain between them, and a plan with
-// two such independent tasks and no Worktree setup: line, and a compact
-// task whose Proof: runs the whole suite. With --loop it also refuses what
+// two such independent tasks and no Worktree setup: line, a compact task
+// whose Proof: runs the whole suite, and a Parallel: line in none of its
+// accepted forms. With --loop it also refuses what
 // run-plan.mjs cannot run unattended. Planning runs
 // this instead of reading the finished plan back.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, defaultBranch, frameOf, loopCommands, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBranch, frameOf, loopCommands, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
 import { mcpToolCall } from '#mcp-tool-call';
 import { wholeSuiteKeys } from '#suite-command';
 
@@ -162,6 +163,15 @@ function checkSharedFiles(tasks) {
     }
   }
   return problems;
+}
+
+// task-list.md's '## Checkpoint' item says 'Parallel:' reads 'none', 'every
+// task' or task numbers; any other text opts no task into a wave, so a line
+// that reads otherwise is flagged rather than quietly naming nothing.
+function checkParallelForm(frame) {
+  const { parallelLine } = frameOf(frame);
+  if (parallelLine === null || parallelValueValid(parallelLine)) return [];
+  return [`'Parallel: ${parallelLine}' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3'`];
 }
 
 // task-list.md's '## Checkpoint' item says 'Parallel:' names only tasks whose
@@ -387,6 +397,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
     ...checkSharedFiles(plan.tasks),
+    ...checkParallelForm(plan.frame),
     ...checkParallelDisjoint(plan.tasks, plan.frame),
     ...checkWorktreeSetup(plan.tasks, plan.frame),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
