@@ -478,3 +478,14 @@ test('with builds in flight, nextWave names only the ready tasks that may start 
   assert.deepEqual(numbers([1, 2, 4, 5]), [], 'no slot left');
   assert.deepEqual(numbers([1], null), [], 'no wave without a `Worktree setup:`');
 });
+
+test('with builds in flight, a Design:, unnamed or path-less task waits, and a running task without Files blocks every start', () => {
+  const plan = (sections) => parsePlan(planFixture({ worktreeSetup: 'none', tasks: sections.map((options, index) => taskSection({
+    number: index + 1, title: `T${index + 1}`, files: [`- Create: \`f${index + 1}.js\``], subject: `feat: t${index + 1}`, ...options
+  })) })).tasks;
+  const started = (tasks, parallel = null) => nextWave(tasks, [], 'none', parallel, [1]).map((task) => task.number);
+  assert.deepEqual(started(plan([{}, { design: true }, {}])), [3], 'a Design: task waits');
+  assert.deepEqual(started(plan([{}, {}, {}]), [1, 3]), [3], 'a task the Parallel: line does not name waits');
+  assert.deepEqual(started(plan([{}, { files: [] }, {}])), [3], 'a task without Files paths waits');
+  assert.deepEqual(started(plan([{ files: [] }, {}, {}])), [], 'a running task without Files blocks every start');
+});
