@@ -7,6 +7,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `merge-reviews.mjs` reads a finding's weight from the field after `file:line`, so a weight word in the evidence text (such as "question 2") no longer miscounts a `hazard` as a `question` (#111).
+- `exo:review-branch` and `exo:fix-review` name their findings file as input to the next tool step (`merge-reviews.mjs`, verify's repair step, `run-probes.mjs`), not a report file, so Claude Code's subagent rule against report files no longer stops them writing it; a reviewer that returns without its file is resumed once by SendMessage, now also from `exo:run-unit`, before it merges as `BLOCKED` (#111).
+
 ## 0.114.1 - 2026-10-10
 
 ### Changed
