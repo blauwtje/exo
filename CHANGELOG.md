@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- A full design-ui redesign builds one comp of the chosen direction's focal region as a local page before Build, renders it at 390 and 1440, and hands it to the builder; the critic names each region whose build drifts from the comp. A bounded redesign, a tweak and a new piece write no comp.
+
 ## 0.118.0 - 2026-10-10
 
 ### Added
