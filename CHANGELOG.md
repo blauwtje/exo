@@ -7,6 +7,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+**`build` now builds tasks with disjoint `Files:` sets in parallel without a `Parallel:` line, and `design-ui` splits a page into parallel surface builders when their files are disjoint.**
+
+### Changed
+
+- A plan with no `Parallel:` line now restricts no task: `next-task.mjs` prints a `Wave:` line for ready tasks with disjoint `Files:` sets; a task with no `Files:`, a `Design:` task or an overlapping task still builds alone.
+- `spec` derives the `Parallel:` line from the tasks' `Files:` sets and `Depends on:` chains.
+- `design-ui` builds surfaces with disjoint files in parallel after the foundation scope, without the user asking for parallel builders.
+
+### Added
+
+- `plan-check.mjs` flags two tasks on the `Parallel:` line that list the same `Files:` path.
+
 ## 0.113.0 - 2026-10-10
 
 ### Highlights
