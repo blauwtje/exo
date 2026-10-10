@@ -54,6 +54,12 @@ function trailersOf(planId, number, signatures) {
   return [planTaskTrailer(planId, number), ...signatures.map((signature) => `Signature: ${signature}`)].join('\n');
 }
 
+// The value of the task's `Drops:` field (`<word> in <path>[, ...]`), read from its
+// field line since the plan parser keeps no such key; null when the task has none.
+function dropsOf(task) {
+  return task.section.match(/^Depends on: .*?\| Drops: ([^|\n]*?) *(?:\||$)/m)?.[1] || null;
+}
+
 // A compact task carries no `Commit:` block by design: its heading title is
 // the commit subject and its `Files:` field is the `git add` list, so this
 // derives the same shape land-task would otherwise read from the plan text.
@@ -67,7 +73,9 @@ function deriveCommit(task, number, planId, signatures, root) {
   const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
   const addArgs = task.files.filter((file) => !removed.has(file.path)).map((file) => shellQuote(file.path)).join(' ');
   const addLine = addArgs === '' ? '' : `git add ${addArgs}\n`;
-  return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(trailersOf(planId, number, signatures))}`;
+  const drops = dropsOf(task);
+  const trailers = trailersOf(planId, number, signatures) + (drops === null ? '' : `\nDrops: ${drops}`);
+  return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(trailers)}`;
 }
 
 // The `{ planId, number }` an `EXO_RUN_TASK` value pins this process to; null when the
@@ -476,7 +484,7 @@ function runLint(lint, files, root) {
 // gate is skipped, with one line returned, when it already passed on this
 // working tree or its last recorded pass took SLOW_GATE_MS or more, which
 // verify then runs once. A pass is recorded with its time.
-function runLandGate(landGate, root) {
+function runLandGate(landGate, root, drops = null) {
   if (landGate === null || landGate === 'none') return null;
   if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: it already passed on this tree.\n`;
   const last = lastPassMs(root, landGate);
@@ -487,7 +495,18 @@ function runLandGate(landGate, root) {
   const started = Date.now();
   // EXO_LAND_GATE_TIMEOUT_MS overrides the deadline for a test.
   const deadlineMs = environmentMs('EXO_LAND_GATE_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  const gate = runTreeSync(landGate, { cwd: root, timeoutMs: deadlineMs });
+  // EXO_DROPS reaches the gate child only: the child inherits this process's
+  // environment, so it is set for that one call and restored after.
+  const outerDrops = process.env.EXO_DROPS;
+  if (drops === null) delete process.env.EXO_DROPS;
+  else process.env.EXO_DROPS = drops;
+  let gate;
+  try {
+    gate = runTreeSync(landGate, { cwd: root, timeoutMs: deadlineMs });
+  } finally {
+    if (outerDrops === undefined) delete process.env.EXO_DROPS;
+    else process.env.EXO_DROPS = outerDrops;
+  }
   if (gate.status !== 0 || gate.timedOut) {
     const timedOut = gate.timedOut ? `timed out after ${deadlineMs / 1000}s` : '';
     const output = `${gate.output}${timedOut || (gate.error?.message ?? '')}`.trim();
@@ -556,7 +575,7 @@ export function checkTask({ planText, number, root, reportText = null, reportPat
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
-  const gateLine = runLandGate(frame.landGate, root) ?? '';
+  const gateLine = runLandGate(frame.landGate, root, dropsOf(task)) ?? '';
   return `${gateLine}Report OK: Task ${number}\n`;
 }
 
@@ -576,7 +595,7 @@ export function landTask({ planText, number, root, reportText = null, reportPath
   const proofs = proofCommands.map((command) => runProof(task, command, root, task.compact ? 'Proof' : 'Run'));
   const frame = frameOf(plan.frame);
   runLint(frame.lint, task.files.map((file) => file.path), root);
-  const gateLine = runLandGate(frame.landGate, root) ?? '';
+  const gateLine = runLandGate(frame.landGate, root, dropsOf(task)) ?? '';
   // The block runs under bash, as the plugin's hooks do; a host without bash
   // fails those hooks before this script runs.
   const commit = spawnSync('bash', ['-e', '-c', block], { cwd: root, encoding: 'utf8' });

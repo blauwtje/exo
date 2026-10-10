@@ -1230,3 +1230,24 @@ test('the pin reaches landTask, checkTask and fixLand through their argument', a
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
   assert.equal(checkTask({ ...call, pin: { planId: 'compact', number: 1 } }), 'Report OK: Task 1\n');
 });
+
+test('the Land gate sees the task Drops: value as EXO_DROPS in --check and landing, and the derived commit carries it', async () => {
+  const drops = 'only in skills/x/SKILL.md';
+  const plan = (task) => COMPACT_PLAN.replace('## Plan basis\n', '## Plan basis\nLand gate: echo "[$EXO_DROPS]" > gate.out && ! git diff --quiet\n')
+    .replace(/(### Task 1:.*\nDepends on: none \| Files: `src\/app\.js`)/, `$1${task}`);
+  const seen = async (root) => (await fs.readFile(path.join(root, 'gate.out'), 'utf8')).trim();
+  const checked = await compactCheckout(plan(` | Drops: ${drops}`));
+  await writeReport(checked.root, PASS_REPORT);
+  const planText = await fs.readFile(checked.planPath, 'utf8');
+  checkTask({ planText, planPath: checked.planPath, number: 1, root: checked.root, reportText: PASS_REPORT });
+  assert.equal(await seen(checked.root), `[${drops}]`);
+  await fs.rm(path.join(checked.root, 'gate.out'));
+  landTask({ planText, planPath: checked.planPath, number: 1, root: checked.root, reportText: PASS_REPORT });
+  assert.match(git(checked.root, 'log', '-1', '--format=%B'), new RegExp(`^Plan-task: compact/1\\nDrops: ${drops}$`, 'm'));
+  assert.equal(process.env.EXO_DROPS, undefined);
+  const plain = await compactCheckout(plan(''));
+  await writeReport(plain.root, PASS_REPORT);
+  landTask({ planText: await fs.readFile(plain.planPath, 'utf8'), planPath: plain.planPath, number: 1, root: plain.root, reportText: PASS_REPORT });
+  assert.equal(await seen(plain.root), '[]');
+  assert.doesNotMatch(git(plain.root, 'log', '-1', '--format=%B'), /Drops:/);
+});
