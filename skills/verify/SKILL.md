@@ -11,13 +11,9 @@ effort: high
 
 1. **Run the gate.** Run `node "${CLAUDE_SKILL_DIR}/scripts/verify.mjs" --plan <plan path> --root <checkout> --base <base>`.
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
-   - Script runs each landed task's Proof, except the gate command or a test-suite run (`npm test`, `node --test`) under a default gate; one passed on this tree prints `SKIP`.
+   - `SKIP`, `WARN`, `FIX-ONLY` or `SESSION` line → read `references/gate-lines.md`.
    - Then the gate once: the `Success criterion`'s first backticked command, else its `Land gate:`, else `npm run check`, else `npm test` with no `check` script.
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
-   - `WARN` or `FIX-ONLY` line → list in the report; never ends the turn.
-   - `SESSION <check>` line names a skipped `mcp:<tool> <args>` call → call `mcp__<server>__<tool>` with those args, not through Bash.
-   - Record `PASS <check>` or `FAIL <check> (<why>)` in gate output; that `FAIL` ends the turn.
-   - No `mcp__*__<tool>` tool → record `UNRUN <check>`, not `PASS`; list it in the `REPORT` file.
 2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
    - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
    - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
@@ -38,5 +34,6 @@ effort: high
 |---|---|
 | `references/review-rules.md` | Step 2, each dispatch. |
 | `references/repair.md` | Step 3, after the fixer returns. |
+| `references/gate-lines.md` | Step 1, a line its pointer names. |
 
 Report: `REPORT` file gets `Changed`, chores, `report` findings. Message: three state lines (outcome; tasks and checks counted, open tasks named; branch and `REPORT` path), `question` findings, one decision: `FAIL`, else `question`, else `ship`.
