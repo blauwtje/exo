@@ -71,6 +71,25 @@ test('a fixer cell prepares a branch carrying a real branch-review.md fixture', 
   assert.equal(published.filter((name) => name.endsWith('-sweep.md')).length, 1, published.join(', '));
 });
 
+test('meta.json records the plugin commit, and a second start keeps it', async () => {
+  const { env } = await fakeClaude();
+  const out = await fixture();
+  const results = await fixture();
+  const args = ['--set', 'fixer', '--confirm', '--concurrency', '1', '--out', out, '--results', results];
+  const first = await run(SWEEP, args, { env });
+  assert.equal(first.code, 0, first.stderr);
+  const file = path.join(out, 'meta.json');
+  const meta = JSON.parse(await fs.readFile(file, 'utf8'));
+  assert.deepEqual(Object.keys(meta.pluginCommits), [ROOT]);
+  assert.match(meta.pluginCommits[ROOT], /^[0-9a-f]{40}$/);
+  assert.equal(typeof meta.pluginDirty, 'boolean');
+  meta.pluginCommits[ROOT] = 'a'.repeat(40);
+  await fs.writeFile(file, JSON.stringify(meta));
+  const second = await run(SWEEP, args, { env });
+  assert.equal(second.code, 0, second.stderr);
+  assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).pluginCommits[ROOT], 'a'.repeat(40));
+});
+
 // A stand-in `claude` that records the plugin folder each call loads, whether
 // that folder holds the session build loop.
 async function loggingClaude() {

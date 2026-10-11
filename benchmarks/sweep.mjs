@@ -256,8 +256,14 @@ async function runPool(cells, limit, worker) {
   await Promise.all(lanes);
 }
 
-// A resumed run keeps the date and versions of its first start, so its
-// results file keeps one name.
+// Every cell loads this clone, or a copy of it for a plugin variant, so the
+// clone's HEAD is the plugin commit; same shape as benchmarks/run.mjs.
+function pluginCommits() {
+  return { [ROOT]: git(ROOT, ['rev-parse', 'HEAD']).trim() };
+}
+
+// A resumed run keeps the date, versions and plugin commit of its first start,
+// so its results file keeps one name.
 function readOrWriteMeta(runDirectory, options, cellCount) {
   const file = path.join(runDirectory, 'meta.json');
   if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -265,6 +271,8 @@ function readOrWriteMeta(runDirectory, options, cellCount) {
     date: new Date().toISOString().slice(0, 10),
     claudeVersion: execFileSync('claude', ['--version'], { encoding: 'utf8' }).trim(),
     node: process.version,
+    pluginCommits: pluginCommits(),
+    pluginDirty: git(ROOT, ['status', '--porcelain']).trim() !== '',
     sets: options.sets,
     cells: cellCount
   };
