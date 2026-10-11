@@ -55,6 +55,8 @@ test('a passing run with Land: local lands itself, reports and notifies once', a
   const c = await context();
   const result = await c.exo(['run', c.plan, '--claude', c.stub]);
   assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /^Next: exo run lands branch feat\/run per Land: local; 1 manual check are listed in the detail file$/m);
+  assert.doesNotMatch(result.stdout, /push it or open a pull request/);
   const { id, dir } = await runDirOf(c.root);
   const state = readState(c.root, id);
   assert.equal(state.phase, 'landed');

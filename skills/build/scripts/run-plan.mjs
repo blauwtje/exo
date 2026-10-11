@@ -833,11 +833,13 @@ async function main(argv) {
       run.verifyLines = `${gate.stdout ?? ''}`.split('\n').filter((line) => /^(FAIL|STRAY|WARN)\b/.test(line));
       const pass = gate.status === 0;
       const manual = (plan.frame['Manual checks'] ?? '').split('\n').filter((line) => line.startsWith('- ')).length;
+      // Under exo run (EXO_RUN_DIR set), exo-cli lands a passing run per the plan's Land: line.
+      const land = process.env.EXO_RUN_DIR ? frameOf(plan.frame).land : null;
       stop = {
         line: `done, ${plan.tasks.length}/${plan.tasks.length} tasks landed, gate ${pass ? 'PASS' : 'FAIL'}`,
         gate: pass ? 'PASS' : 'FAIL',
         next: pass
-          ? `review branch ${branch}, then push it or open a pull request${manual > 0 ? `; ${manual} manual check${manual === 1 ? '' : 's'} are listed in the detail file` : ''}`
+          ? `${land === null ? `review branch ${branch}, then push it or open a pull request` : `exo run lands branch ${branch} per Land: ${land}`}${manual > 0 ? `; ${manual} manual check${manual === 1 ? '' : 's'} are listed in the detail file` : ''}`
           : `read the failing lines in the detail file, fix them on ${branch}, then run exo run again`
       };
       if (pass) exitCode = 0;
