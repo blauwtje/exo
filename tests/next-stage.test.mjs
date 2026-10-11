@@ -81,6 +81,16 @@ test('CLI prints the fresh-chat lines with --fresh', async () => {
   assert.equal(result.stdout, freshReport({ after: 'spec', artifact: planPath }));
 });
 
+test('CLI hands off an issue brief #<n> from its scratch copy, reading its Design: tasks', async () => {
+  const plan = planFixture({ tasks: [
+    taskSection({ number: 1, title: 'Style', design: true, files: ['- Create: `src/app.css`'], subject: 'feat(app): style' })
+  ] }).replace('Quiet record.', 'Direction: pending at rung 2');
+  const root = await gitRepository({ '.exo/specs/42.md': plan });
+  const result = await run(SCRIPT, ['--after', 'spec', '--artifact', '#42', '--fresh'], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, `Type \`/clear\`, then \`/exo:build #42\`.\n${EFFORT_LINE}\n`);
+});
+
 test('after spec the fresh-chat lines name the runner command only when plan-check --loop passes', async () => {
   const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
   const redirecting = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs > out.log' })];

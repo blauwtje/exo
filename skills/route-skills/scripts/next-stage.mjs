@@ -36,8 +36,12 @@ const NEXT_STAGE = {
 // one still `Direction: pending at rung <n>`, builds that task in the next
 // stage's own session, so that stage keeps the session's model and pins the
 // effort of the build skill's kind instead of the delegate's.
-function designPending(planPath) {
-  const plan = parsePlan(fs.readFileSync(planPath, 'utf8'));
+// `artifact` resolves through briefFile, so an issue `#<n>` reads its scratch
+// copy; no brief file means no pending design.
+function designPending(artifact) {
+  const file = briefFile(artifact);
+  if (file === null) return false;
+  const plan = parsePlan(fs.readFileSync(file, 'utf8'));
   if (!plan.tasks.some((task) => task.design)) return false;
   const visualDirection = frameOf(plan.frame).visualDirection;
   return visualDirection === null || /^Direction: pending at rung \d+$/m.test(visualDirection);
