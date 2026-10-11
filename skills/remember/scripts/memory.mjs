@@ -234,7 +234,7 @@ function writeDecision(cwd, state, claim, refs) {
 // changed: the commit is gone from HEAD's history, or the refs gained more lines
 // than half of what they hold now.
 function decisionStatus(cwd, line) {
-  if (!line.commit) return 'settled';
+  if (!line.commit || line.refs.length === 0) return 'settled';
   if (git(cwd, 'merge-base', '--is-ancestor', line.commit, 'HEAD').status !== 0) return 'changed';
   const files = line.refs.map((ref) => resolveRef(cwd, ref).relative);
   const numstat = git(cwd, 'diff', '--numstat', line.commit, '--', ...files);

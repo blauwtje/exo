@@ -12,7 +12,7 @@ Not for a clear goal, a bug, or visual-only work.
 
 - One question at a time, with lettered options and a recommendation. Reply with a letter, or `ok` to take the recommendation.
 - Facts it can look up are looked up, not asked.
-- After the draft brief, a read-only agent (`exo:find-open-points`) finds every point a wrong guess would change. Points the code settles are recorded in the brief, and cheap-to-undo guesses go under `## Assumptions`. You are asked only the rest, usually 0-3, one at a time; your answers become numbered Decisions, remembered per project.
+- After the draft brief, a read-only agent (`exo:find-open-points`) finds every point a wrong guess would change. Points the code settles and cheap-to-undo guesses go under `## Assumptions`. You are asked only the rest, usually 0-3, one at a time; your answers become numbered Decisions, remembered per project.
 - A question you leave unanswered stays under `## Open points`, and build refuses the brief until it is answered.
 - A brief with a task list, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both.
 - Checks only you can make go in the brief's `## Manual checks`.

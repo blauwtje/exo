@@ -9,7 +9,7 @@ In this order:
 - **Goal:** the observable result, in one sentence.
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with its settling path, or exo for a second "I don't know".
 - **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
-- **Assumptions:** each `assume` point, one list item.
+- **Assumptions:** each `code` or `assume` point.
 - **Acceptance:** the observable checks and the highest seam running them, the one closest to what the user does.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; the run report holds them, not the final message.
 - **Visual direction:** new visual surface only: whether the existing identity stays or may be replaced, the ambition, who chooses between rendered directions.
@@ -40,7 +40,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 Dispatch the `exo:find-open-points` agent once on the brief.
 
-- `code` point → its answer into the brief; ask nothing.
+- `code` point → its answer under `## Assumptions`; ask nothing.
 - `assume` point → `## Assumptions`; ask nothing.
 - `user` point → ask it, one per message.
 - Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
