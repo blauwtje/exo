@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.121.3 - 2026-10-11
+
 ### Highlights
 
 - **By default, exo writes short plain text: short sentences, everyday words, and questions of about ten words with two or three short options.**
