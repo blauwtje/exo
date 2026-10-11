@@ -486,7 +486,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     retry: retryNote
   };
   return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Build session').split('\n').slice(1).join('\n').trim()
-    .replace(/\{\{(\w+)\}\}/g, (_, name) => fields[name])
+    .replace(/\[\[(\w+)\]\]/g, (_, name) => fields[name])
     .replace(/\n\n\n+/g, '\n\n');
 }
 
@@ -506,7 +506,7 @@ export function planPrompt({ plan, planPath, numbers, root }) {
     brief: ['Land nothing: the script lands each task after this session.', ...briefs].join('\n\n')
   };
   return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Plan session').split('\n').slice(1).join('\n').trim()
-    .replace(/\{\{(\w+)\}\}/g, (_, name) => fields[name]);
+    .replace(/\[\[(\w+)\]\]/g, (_, name) => fields[name]);
 }
 
 /** `{ mode }` for the unlanded tasks, or `{ refused }` when `--session plan` asks for tasks that share a path. */
