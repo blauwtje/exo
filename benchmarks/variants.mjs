@@ -21,7 +21,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const SKILL_LINE = 'exo skills, invoked as `exo:<name>`: build, check-docs, configure, design-ui, edit-skills, file-issues, find-cause, refactor, remember, save-session, ship, spec, start, verify, write-docs. Invoke the one whose description matches before the first tool call.';
 const SESSION_FILE = 'hooks/session-start.mjs';
-const ROUTE_FILE = 'skills/route-skills/SKILL.md';
+const ROUTE_FILE = 'hooks/session-routing.md';
 const DIRECT_LOOP = 'skills/build/references/run-loop-direct.md';
 
 const POINTER_EDIT = {
