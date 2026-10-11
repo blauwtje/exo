@@ -66,7 +66,7 @@ import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { proofsReport } from '#proofs-report';
 import { transcriptFolder } from '#confine-claude';
-import { contextPeaks, HARD_LIMIT } from '../../../lib/context-limits.mjs';
+import { contextPeaks, HARD_LIMIT } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { TEST_FILE, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
@@ -628,16 +628,26 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   return { lines, failed };
 }
 
-/** The `## Context` lines: peak context of each session and agent since the plan's first commit. */
+/**
+ * The `## Context` lines: peak context of each session and agent since the plan's first commit
+ * (the plan file's mtime when it has none), read from the main checkout's transcript folder and
+ * from the `--root` worktree's when it differs.
+ */
 function contextSection(planPath, root) {
-  const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+  const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   try {
-    const since = Number(git('log', '--reverse', '--format=%ct', '--', planPath).split('\n')[0]) * 1000;
+    let since;
+    try {
+      since = Number(git('log', '--diff-filter=A', '--format=%ct', '--', planPath).split('\n').filter(Boolean).pop()) * 1000;
+    } catch { /* plan outside the repository: no commit */ }
+    if (!Number.isFinite(since) || since <= 0) since = fs.statSync(planPath).mtimeMs;
     const main = path.dirname(path.resolve(root, git('rev-parse', '--git-common-dir')));
-    const rows = contextPeaks({ folder: transcriptFolder(fs.realpathSync(main)), since });
+    const folders = new Set([fs.realpathSync(main), fs.realpathSync(root)]);
+    const rows = [...folders].flatMap((folder) => contextPeaks({ folder: transcriptFolder(folder), since }));
+    rows.sort((a, b) => b.peak - a.peak);
     return rows.map(({ label, peak }) => `- ${label}: ${Math.round(peak / 1000)}k${peak >= HARD_LIMIT ? ' (over 100k)' : ''}`);
-  } catch {
-    return [];
+  } catch (error) {
+    return [`- not read: ${error.message.split('\n')[0]}`];
   }
 }
 

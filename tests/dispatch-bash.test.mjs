@@ -142,10 +142,10 @@ test('on Codex every guard is kept', async () => {
 });
 
 // A main-session transcript at 120k prompt tokens.
-async function mainSessionCall(command) {
+async function mainSessionCall(command, cacheRead = 115000) {
   const directory = await fs.realpath(await fixture());
   const transcript = path.join(directory, 'session.jsonl');
-  const usage = { input_tokens: 1000, cache_read_input_tokens: 115000, cache_creation_input_tokens: 4000, output_tokens: 700 };
+  const usage = { input_tokens: 1000, cache_read_input_tokens: cacheRead, cache_creation_input_tokens: 4000, output_tokens: 700 };
   await fs.writeFile(transcript, `${JSON.stringify({ type: 'assistant', message: { id: 'msg-main', usage } })}\n`);
   const hookInput = { session_id: 's1', tool_name: 'Bash', tool_input: { command }, transcript_path: transcript, cwd: directory };
   const outcome = await run(DISPATCHER, [], {
@@ -161,6 +161,12 @@ test('a main-session Bash call at 120k tokens is denied with the hand-off instru
   const decision = await mainSessionCall('git status');
   assert.equal(decision.permissionDecision, 'deny');
   assert.match(decision.permissionDecisionReason, /hand-off/);
+});
+
+test('a main-session Bash call between the soft and hard limit is allowed with the hand-off text', async () => {
+  const decision = await mainSessionCall('git status', 65000);
+  assert.equal(decision.permissionDecision, undefined);
+  assert.match(decision.additionalContext, /Finish your current step|exo:save-session/);
 });
 
 test('a guard deny wins over the context deny at 120k tokens', async () => {

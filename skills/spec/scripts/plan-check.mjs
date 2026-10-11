@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBranch, frameOf, loopCommands, openPoints, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
-import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '../../../lib/context-limits.mjs';
+import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { derivedNames } from '#derivation';
 import { mcpToolCall } from '#mcp-tool-call';
 import { wholeSuiteKeys } from '#suite-command';

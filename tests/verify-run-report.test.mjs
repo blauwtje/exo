@@ -60,10 +60,12 @@ test('a run lists peak context per session and agent under ## Context, highest f
   mkdirSync(path.join(folder, 's1', 'subagents'), { recursive: true });
   writeFileSync(path.join(folder, 's1.jsonl'), entry(40_000) + entry(55_000) + entry(30_000));
   writeFileSync(path.join(folder, 's1', 'subagents', 'agent-a1.jsonl'), entry(120_000));
+  writeFileSync(path.join(folder, 's1', 'subagents', 'agent-a1.meta.json'), JSON.stringify({ agentType: 'exo:run-unit' }));
+  writeFileSync(path.join(folder, 's1', 'subagents', 'agent-a2.jsonl'), entry(70_000));
 
   const result = await run(SCRIPT, ['--plan', 'plan.md', '--check-command', 'node check.js'], { cwd: root, env: { CLAUDE_CONFIG_DIR: config } });
   assert.equal(result.code, 0, result.stderr);
   const report = readFileSync(path.join(root, '.exo', 'run-report.md'), 'utf8');
-  assert.match(report, /^## Checks\n[\s\S]*^## Context\n- agent a1 \(session s1\): 120k \(over 100k\)\n- session s1: 55k\n\n## Manual checks/m);
+  assert.match(report, /^## Checks\n[\s\S]*^## Context\n- exo:run-unit a1 \(session s1\): 120k \(over 100k\)\n- subagent a2 \(session s1\): 70k\n- session s1: 55k\n\n## Manual checks/m);
   rmSync(config, { recursive: true, force: true });
 });
