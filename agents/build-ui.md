@@ -49,7 +49,7 @@ Read these and nothing else before writing, one batch where files are independen
 - Surface: `$RUN/contract-selected.json`; `$RUN/comp.md` and both `comp-` renders when `COMP` is `$RUN/comp/`; your inventory slice only; `$RUN/foundation.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/craft-recipes.md`'s section for this surface's treatment; `$SKILL/references/build-pass.md`'s `## Character`, `## The build floor` and `## Slop tropes`; motion sections; `$SKILL/references/phase-build.md`'s `## Capture, look, fix once`.
 - Comp `comp:focal`: `$RUN/contract-selected.json`; `$RUN/plan.md`; `$RUN/user.md`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; motion sections; `$SKILL/references/phase-build.md`'s `## The comp`.
 - Comp `comp:<n>`: entry `<n>` of `$RUN/finalists.json`; the `FILES` ranges; each `REFERENCES` file; `$SKILL/references/build-pass.md` whole; motion sections; `$SKILL/references/direction-preview.md`'s `## Before the picker`, `## What the comp owes the screen` and `## Stack comps`.
-- Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json`; the `FILES` ranges the faults name; `$SKILL/references/build-pass.md`'s `## The build floor`. No inventory, no foundation report, no other reference unless the brief names one.
+- Repair: `$RUN/faults.md`; `$RUN/critic-evidence.json` when present; the `FILES` ranges the faults name; `$SKILL/references/build-pass.md`'s `## The build floor`. No inventory, no foundation report, no other reference unless the brief names one.
 
 **Page scope.**
 
@@ -68,7 +68,7 @@ Read these and nothing else before writing, one batch where files are independen
 - Build the surface from its inventory slice on top of the foundation: every content obligation, every reachable state of every repeated component, the technique the content or brief names built as itself.
 - `COMP` given → build the focal region to match the comp, never restyled toward a template.
 - Never edit the foundation files; a missing primitive is reported, not added locally.
-- Then open `$SKILL/references/phase-build.md`'s `## Capture, look, fix once`, steps 1-3 only. Run its `capture.mjs` command for both viewports, full page, label `post-build`, with `$URL`, `$SKILL` as skill dir and `--out $RUN/renders/<SCOPE>`.
+- Then open `$SKILL/references/phase-build.md`'s `## Capture, look, fix once`, steps 1-3 only, not step 3's dispatch bullet. Run its `capture.mjs` command for both viewports, full page, label `post-build`, with `$URL`, `$SKILL` as skill dir and `--out $RUN/renders/<SCOPE>`.
 - Read both captures, list faults against the contract, your inventory slice and the floor, repair them in one pass; take no second capture.
 - No `URL`, or capture exits non-zero → skip those steps, report the capture as blocked.
 - Write `$RUN/build-<SCOPE>.md`, at most 20 lines: paths written, faults the capture showed with `fixed` or `open`, inventory items covered and any missing, primitives needed but missing from the foundation.

@@ -39,14 +39,14 @@ The one pass only; the full run follows `## Full run builders` alone.
 
 - Phase 1's file list splits the page into two or more surfaces with disjoint files → one `SCOPE=foundation` call first.
 - Then one call per surface, all in one message, in the turn foundation.md returns.
-- Split → before the foundation call, this session writes its Phase 1 path and line-range list to `$RUN/files.md` and names it in `FILES=` of `$RUN/build-rules.md`.
-- Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow the `## Full run builders` bullets.
-- One surface or shared files → one `exo:build-ui` page scope, from the plan and Phase 1 ranges.
+- Split → before the foundation call, this session writes its Phase 1 paths and line ranges to `$RUN/files.md` and names it in `FILES=` of `$RUN/build-rules.md`.
+- Split → call fields, the foundation scaffold, the dev server and each surface's `URL` follow `## Full run builders`.
+- One surface or shared files → one `exo:build-ui` page scope from the plan and Phase 1 ranges.
 - Rung 3 after live comps → the builder gets the selected comp as `COMP`.
 - After a sketch round pick → no `COMP`; the picked sketch is not a comp.
-- Full redesign on another rung → `COMP=$RUN/comp/` from `## The comp`, to the page, foundation and every surface call.
+- Full redesign on another rung → `COMP=$RUN/comp/` of `## The comp` to every page, foundation and surface call.
 - This session reads builder reports only.
-- Every route but the full run → this session captures, looks and judges; `## Full run` of phase-detail owns the full run's capture, look and judge.
+- Every route but the full run → this session captures, looks and judges; full run → phase-detail `## Full run`.
 
 ## Full run builders
 
@@ -103,8 +103,9 @@ No settled identity → extract the existing tokens and patterns, take the one p
 
 1. Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
 2. Read both captures; list each fault against the direction, the request, a named or saved product's finish and the floor.
-3. Write every fault to `$RUN/faults.md`; dispatch one fresh `exo:build-ui` per faulted surface with `SCOPE=repair:<surface>` as `phase-detail` defines it, never `SendMessage` to the page builder.
-4. Rerun step 1 with `--label final` and read both; a run is done only on a capture taken after its last edit. Later changes go to a fresh `SCOPE=repair:<surface>` dispatch.
+3. Repair every listed fault in one pass.
+   - This session dispatched builders → write faults and later changes to `$RUN/faults.md`, then one fresh `exo:build-ui` `SCOPE=repair:<surface>` per faulted surface, all in one message.
+4. Rerun step 1 with `--label final` and read both; a run is done only on a capture after its last edit.
 
 Read only the post-build and final pairs, never a state capture; a fault under repair adds one.
 
