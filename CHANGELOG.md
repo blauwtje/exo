@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **A session at `xhigh` or `max` effort now thinks harder only in the lead: every exo subagent runs at its own fixed effort.**
+
+### Changed
+
+- Every exo agent and every subagent dispatch in exo's skills pins its own effort; `locate-code` runs at `low`, and the build reviewer and design delegate keep the session's model at a fixed effort.
+
+### Added
+
+- `npm run validate:static` fails when an agent lacks `effort:`, or a skill dispatches a `general-purpose` delegate without a pinned effort, on the session's model wording, or as a fork.
+
 ## 0.121.3 - 2026-10-11
 
 ### Highlights
