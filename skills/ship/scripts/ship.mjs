@@ -47,6 +47,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
+import { inRun, recordDecision } from '#run-decision';
 import { attributionProblem, branchNameProblem, subjectProblem } from '#commit-text';
 import { returnToDefault } from './return-to-default.mjs';
 
@@ -172,7 +173,7 @@ function setRouteBlocked(onDefault, ghOk) {
 
 /** `Unasked: push` when the `ship` setting is `ask` and origin exists and a non-default branch is checked out, else `Unasked: none`. */
 function unaskedLine() {
-  if (settingValue('ship') !== 'ask' || !hasOrigin()) return 'Unasked: none';
+  if (settingValue('ship') !== 'ask' || !hasOrigin() || inRun()) return 'Unasked: none';
   const base = defaultBranch();
   const branch = currentBranch();
   return base !== null && branch !== '' && branch !== base ? 'Unasked: push' : 'Unasked: none';
@@ -202,7 +203,7 @@ function printRouteMenu() {
       return;
     }
     if (setting !== 'ask') console.log(`ship=${setting} cannot run: default branch unknown`);
-    for (const line of MENU_PUSH_ONLY) console.log(line);
+    printMenu(MENU_PUSH_ONLY);
     return;
   }
   const onDefault = currentBranch() === base && !inWorktree();
@@ -215,7 +216,17 @@ function printRouteMenu() {
     }
     console.log(`ship=${setting} cannot run: ${blocked}`);
   }
-  for (const line of !onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY) console.log(line);
+  printMenu(!onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY);
+}
+
+/** Prints `menu`; in a run, answers the `local` route and records that instead, as a run never asks. */
+function printMenu(menu) {
+  if (inRun()) {
+    recordDecision('ship', 'local', 'a run never asks which route ships');
+    console.log('route: local (run)');
+    return;
+  }
+  for (const line of menu) console.log(line);
 }
 
 /**

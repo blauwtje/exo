@@ -270,3 +270,16 @@ test('--routes: every non-ask setting leaves nothing unasked and keeps its route
     assert.equal(outcome.stdout, `route: ${setting} (set)\n`, setting);
   }
 });
+
+test('--routes: in a run, the menu is answered with the local route and one decision recorded', async () => {
+  const { workDir } = await shipRepository();
+  await featureBranch(workDir);
+  const runDir = await fixture();
+  const bin = await ghBin(true);
+  const outcome = await run(SHIP, ['--routes'], { cwd: workDir, env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_RUN: '1', EXO_RUN_DIR: runDir } });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, 'route: local (run)\nUnasked: none\n');
+  const decisions = (await fs.readFile(path.join(runDir, 'decisions.md'), 'utf8')).trim().split('\n');
+  assert.equal(decisions.length, 1);
+  assert.match(decisions[0], /^- ship: local \(/);
+});
