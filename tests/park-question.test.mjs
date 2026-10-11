@@ -21,3 +21,14 @@ test('task mode names the parked question for a choice it cannot rule', () => {
 test('run-unit relays the question per task', () => {
   assert.match(read('agents/run-unit.md'), /BLOCKED <n> NEEDS ANSWER: <question>/);
 });
+
+test('the lead asks parked questions after the wave and re-dispatches with the answer', () => {
+  for (const file of ['skills/build/references/run-loop.md', 'skills/build/references/run-loop-direct.md']) {
+    const text = read(file);
+    assert.match(text, /NEEDS ANSWER/);
+    assert.match(text, /after the wave/);
+    assert.match(text, /prompt only/);
+  }
+  assert.match(read('skills/build/references/agent-cases.md'), /NEEDS ANSWER: <question>/);
+  assert.match(read('docs/skills/build.md'), /rebuilt with your answer/);
+});
