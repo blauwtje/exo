@@ -103,8 +103,9 @@ test('run-unit sends a landed task\'s review in the same foreground message as i
   assert.ok(step.includes('send the last landed task\'s review alone'));
 });
 
-test('run-unit sends a landing refusal other than PLAN DRIFT to a fresh writer at most twice', () => {
+test('run-unit resumes a writer once for a missing report and sends any other landing refusal except PLAN DRIFT to a fresh writer at most twice', () => {
   const step = loopStep(4, UNIT_AGENT);
-  assert.ok(step.includes('A refusal other than `PLAN DRIFT` goes, verbatim, to a fresh `exo:build-task` from `<skill>/implementer-prompt.md` with the refusal text added, at most twice; never rerun a proof.'));
+  assert.ok(step.includes('`no build report at` refusal → SendMessage it verbatim to its writer, once.'));
+  assert.ok(step.includes('Other refusal except `PLAN DRIFT` → fresh `exo:build-task` from `<skill>/implementer-prompt.md` plus refusal verbatim, at most twice; never rerun a proof.'));
   assert.ok(step.includes('`PLAN DRIFT`, a writer\'s `FAIL` or a third refusal goes to step 3; push nothing.'));
 });
