@@ -501,3 +501,48 @@ test('plan-check does not follow a symlink to an ancestor folder', () => {
   const report = planCheckReport(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/'], proof: 'node --test tests/app.test.mjs' })] }), { root });
   assert.equal(report.ok, true, report.lines.join('; '));
 });
+
+async function productPlan(manifest, criterion) {
+  const root = await gitRepository({ 'package.json': JSON.stringify({ scripts: { check: 'echo ok' }, ...manifest }) });
+  return compactPlanFixture({ tasks: compactTasks(1) })
+    .replace('Repository: /tmp/fixture', `Repository: ${root}`)
+    .replace('`node --test` passes.', criterion);
+}
+
+test('plan-check flags an app plan whose Success criterion runs no product', async () => {
+  const report = planCheckReport(await productPlan({ bin: { tool: 'bin/tool.js' } }, '`npm test` passes.'));
+  assert.equal(report.ok, false);
+  assert.equal(report.lines.length, 1);
+  assert.match(report.lines[0], /runs no product.*tool.*Product run: none \(<reason>\)/);
+});
+
+test('plan-check accepts a Success criterion that runs a bin name, bin path or start form', async () => {
+  for (const [manifest, criterion] of [
+    [{ bin: { tool: 'bin/tool.js' } }, '`tool --help` passes.'],
+    [{ bin: { tool: 'bin/tool.js' } }, '`node ./bin/tool.js --help` passes.'],
+    [{ bin: 'bin/tool.js' }, '`node bin/tool.js` passes.'],
+    [{ scripts: { start: 'node .' } }, '`npm start` passes.'],
+    [{ scripts: { start: 'node .' } }, '`npm run start` passes.'],
+    [{ scripts: { start: 'node .' } }, '`mcp:browser_snapshot` passes.']
+  ]) {
+    assert.equal(planCheckReport(await productPlan(manifest, criterion)).ok, true, criterion);
+  }
+});
+
+test('plan-check does not take a longer word or path for a bin name', async () => {
+  const report = planCheckReport(await productPlan({ bin: { tool: 'bin/tool.js' } }, '`node --test tooling/tool.test.js` passes.'));
+  assert.equal(report.ok, false);
+});
+
+test('plan-check accepts Product run: none with a reason and flags one without', async () => {
+  const manifest = { bin: { tool: 'bin/tool.js' } };
+  const withReason = planCheckReport(await productPlan(manifest, '`npm test` passes.\nProduct run: none (docs only)'));
+  assert.equal(withReason.ok, true);
+  const bare = planCheckReport(await productPlan(manifest, '`npm test` passes.\nProduct run: none'));
+  assert.equal(bare.ok, false);
+  assert.match(bare.lines[0], /states no reason/);
+});
+
+test('plan-check leaves a library plan with no bin or start script unflagged', async () => {
+  assert.equal(planCheckReport(await productPlan({}, '`npm test` passes.')).ok, true);
+});

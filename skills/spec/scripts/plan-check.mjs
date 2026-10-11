@@ -18,6 +18,7 @@ import { codeBlocks, defaultBranch, frameOf, loopCommands, openPoints, parallelV
 import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '#context-limits';
 import { derivedNames } from '#derivation';
 import { mcpToolCall } from '#mcp-tool-call';
+import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { wholeSuiteKeys } from '#suite-command';
 
 const STEP_HEADING = /^Step \d+: .*$/;
@@ -294,6 +295,27 @@ function checkLandGate(frame, root) {
   return problems;
 }
 
+// A package that names a `bin` or `scripts.start` is a product, and its Success
+// criterion has to run it, or the plan states why not under that command:
+// 'Product run: none (<reason>)'. An mcp: criterion drives the product itself.
+function checkProductRun(frame, root) {
+  if (root === undefined || root === null) return [];
+  const terms = packageRunTerms(root);
+  const criterion = frame['Success criterion'] ?? '';
+  if (terms.length === 0 || criterion.trim() === '') return [];
+  const escape = criterion.match(/^Product run: none(?: \((.*)\))?\s*$/m);
+  if (escape !== null && (escape[1] ?? '').trim() !== '') return [];
+  const entries = packageEntryPoints(root).join(', ');
+  if (escape !== null) return [`the plan's 'Product run: none' states no reason: write 'Product run: none (<reason>)'`];
+  const runs = [...criterion.matchAll(/`([^`]+)`/g)].some((match) => {
+    const command = match[1].trim();
+    if (mcpToolCall(command) !== null) return true;
+    return terms.some((term) => new RegExp(`(?<![\\w/-])(?:\\./)?${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w/-]|\\.\\w)`).test(command));
+  });
+  if (runs) return [];
+  return [`the plan's '## Success criterion' runs no product, though package.json names ${entries}: run one in the command, or add 'Product run: none (<reason>)' under it`];
+}
+
 function checkFrame(frame) {
   const problems = [];
   if ((frame.Goal ?? '').trim() === '') problems.push("the plan has no '## Goal'");
@@ -427,6 +449,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
           ...checkPlanBasis(plan.frame),
           ...openPoints(planText).map((entry) => `the plan's '## Open points' still holds an unanswered question: ${entry}`),
           ...checkLandGate(plan.frame, resolvedRoot),
+          ...checkProductRun(plan.frame, resolvedRoot),
           ...checkAcceptanceCitations(plan.frame),
           ...plan.tasks.flatMap((task) => checkCompactFields(task))
         ]
