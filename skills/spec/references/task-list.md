@@ -1,7 +1,6 @@
 # The task list
 
 Reader has no context: no implicit file, shape or step.
-
 ## Sections, in order
 
 1. `## Goal`: one sentence naming result.
@@ -19,16 +18,16 @@ Reader has no context: no implicit file, shape or step.
 ```
 ### Task <n>: <type>(<scope>): <subject>
 
-Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one bare command>
+Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, one clause>[ | Design: <skill name>][ | Risk: <category>] | Proof: <one command>
 ```
 
-- `Files:` path ending in `/` → whole folder.
+- `Files:` ending `/` → whole folder.
 - `Proof:` → shows this task landed, not suite.
-- Runnable result → prove on real project input with its own command, else builder script using only its tools, never test alone.
+- Runnable result → prove on real input via its own command, else builder script using only its tools, never test alone.
 - MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not shell.
 - `Data:` → structure holding result, not fields or logic; ask before one changing public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
-- Heading → `land-task`'s conventional-commit subject.
+- Heading: `land-task`'s conventional-commit subject.
 - The task stages `Files:`; no `Commit:` block.
 - `Design:` → skill loaded first, only for page's look.
 
@@ -37,7 +36,7 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 1. **Verified names only.** List path or symbol only after reading its range.
 2. **One field line, one task.** Second field line, `Run:`, `Expected:` or code block → long-format, needing `Commit:`, `Run:`, `Expected:`.
 3. **Small tasks.** One heading, one concern; split only when `Files:` spans shared write target and independent one.
-   - Size → mid-size model lands it from its text in one fresh session.
+   - Size → one mid-size session lands it; (task + `Files:` bytes) / 4 over 25,000 fails.
    - `Files:` → also each registry, index or test list naming added file.
 4. **Shared write target.** File, key or branch two tasks touch → split, unless shared invariant earns `Depends on:` edge.
 5. **No manual task.** User-only check → one `## Manual checks` line.

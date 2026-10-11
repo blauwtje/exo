@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { codeBlocks, defaultBranch, frameOf, loopCommands, openPoints, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { BYTES_PER_TOKEN, TASK_SPLIT_TOKENS } from '../../../lib/context-limits.mjs';
 import { derivedNames } from '#derivation';
 import { mcpToolCall } from '#mcp-tool-call';
 import { wholeSuiteKeys } from '#suite-command';
@@ -97,6 +98,27 @@ function checkSize(task) {
     return [`Task ${task.number}: split Task ${task.number} (${size.lines} code lines, ${size.files} files)`];
   }
   return [];
+}
+
+function bytesUnder(target) {
+  let stat;
+  try {
+    stat = fs.statSync(target);
+  } catch {
+    return 0;
+  }
+  if (!stat.isDirectory()) return stat.size;
+  return fs.readdirSync(target).reduce((total, name) => total + bytesUnder(path.join(target, name)), 0);
+}
+
+// One agent lands a task from its text and its Files: paths, so their bytes
+// over 4 estimate the context it needs; over the split threshold fails.
+function checkContextSize(task, root) {
+  if (root === undefined || root === null) return [];
+  const bytes = Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + bytesUnder(path.join(root, file.path)), 0);
+  const tokens = Math.ceil(bytes / BYTES_PER_TOKEN);
+  if (tokens <= TASK_SPLIT_TOKENS) return [];
+  return [`Task ${task.number}: split Task ${task.number} (about ${tokens} tokens of task text and Files:, over ${TASK_SPLIT_TOKENS})`];
 }
 
 // task-list.md rule 1 asks for a verified path; a task's own Modify: entry
@@ -414,6 +436,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
           ...checkSize(task),
           ...checkFilesExist(task, resolvedRoot, byNumber)
         ])),
+    ...plan.tasks.flatMap((task) => checkContextSize(task, resolvedRoot)),
     ...checkDerivedNames(planText, resolvedRoot),
     ...checkSharedFiles(plan.tasks),
     ...checkParallelForm(plan.frame),

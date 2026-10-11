@@ -478,3 +478,18 @@ test('plan-check flags a derived name with its line, only where the derivation c
   const otherRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-check-other-'));
   assert.ok(!planCheckReport(plan, { root: otherRoot }).lines.some((line) => line.includes('derived name')));
 });
+
+test('plan-check fails a task whose text and Files: bytes pass the context estimate', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-size-'));
+  fs.mkdirSync(path.join(root, 'src'));
+  fs.writeFileSync(path.join(root, 'src', 'big.js'), 'x'.repeat(110_000));
+  fs.writeFileSync(path.join(root, 'src', 'small.js'), 'x');
+  const report = (files) => planCheckReport(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files, proof: 'node --test tests/app.test.mjs' })] }), { root });
+  const folder = report(['src/']);
+  assert.equal(folder.ok, false);
+  assert.ok(folder.lines.some((line) => line.includes('Task 1: split Task 1') && line.includes('tokens')));
+  assert.equal(report(['src/big.js']).ok, false);
+  const small = report(['src/small.js']);
+  assert.equal(small.ok, true, small.lines.join('; '));
+  assert.equal(planCheckReport(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/big.js'], proof: 'node --test tests/app.test.mjs' })] })).ok, true);
+});
