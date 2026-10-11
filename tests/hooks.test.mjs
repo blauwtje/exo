@@ -188,3 +188,18 @@ test('each kept guard denies a sample that passes when that guard alone is remov
     fs.rmSync(project, { recursive: true, force: true });
   }
 });
+
+test('the session hook with no exo settings injects the plain-text low compression rule', () => {
+  const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plain-'));
+  const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
+  const schema = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'skills', 'configure', 'schema.json'), 'utf8'));
+  try {
+    const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
+    const context = output.hookSpecificOutput.additionalContext;
+    assert.ok(context.includes(schema.compression.rules.low));
+    assert.ok(context.includes('A question to the user is one per message, in about 10 words'));
+  } finally {
+    fs.rmSync(configHome, { recursive: true, force: true });
+  }
+});
