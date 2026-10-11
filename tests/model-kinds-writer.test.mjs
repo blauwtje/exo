@@ -254,3 +254,24 @@ test('the inheritance scan names an agent without effort, an uncovered general-p
     'skills/alpha/SKILL.md:8: dispatches a fork, which takes the session\'s effort'
   ]);
 });
+
+test('a dispatches entry with a bare model word or a kind with no effort is a gap', () => {
+  const table = structuredClone(TABLE);
+  table.agents = {};
+  table.dispatches = [
+    { file: 'skills/alpha/SKILL.md', match: 'a `general-purpose` delegate on `sonnet` at `high` effort', kind: 'build' },
+    { file: 'skills/alpha/SKILL.md', match: 'a `general-purpose` agent with `sonnet` here', kind: 'build' },
+    { file: 'skills/alpha/SKILL.md', match: 'a `general-purpose` helper on `haiku` now', kind: 'lookup' }
+  ];
+  const alpha = [
+    '---', 'name: alpha', '---', '',
+    'Send a `general-purpose` delegate on `sonnet` at `high` effort.',
+    'Send a `general-purpose` agent with `sonnet` here.',
+    'Send a `general-purpose` helper on `haiku` now.', ''
+  ].join('\n');
+  const root = makeRoot({ 'skills/alpha/SKILL.md': alpha });
+  const gaps = findInheritanceGaps(root, table);
+  assert.equal(gaps.length, 2);
+  assert.match(gaps[0], /"a `general-purpose` agent with `sonnet` here" names a bare model/);
+  assert.match(gaps[1], /kind lookup with no effort/);
+});

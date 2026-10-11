@@ -192,8 +192,10 @@ export function findInheritanceGaps(root, table) {
     if (table.kinds[entry.kind].effort === null) gaps.push(`${file}: kind ${entry.kind} has no effort, ${INHERITANCE_NOTE}`);
   }
   const covered = new Map();
-  for (const { file, match } of table.dispatches) {
-    const { pattern } = dispatchSlot(file, match, table);
+  for (const { file, match, kind } of table.dispatches) {
+    const { pattern, withEffort } = dispatchSlot(file, match, table);
+    if (!withEffort) gaps.push(`${file}: dispatches entry "${match}" names a bare model, not "on \`<model>\`" or "${INHERIT_CLAUSE}" with an effort clause, ${INHERITANCE_NOTE}`);
+    if (table.kinds[kind].effort === null) gaps.push(`${file}: dispatches entry "${match}" has kind ${kind} with no effort, ${INHERITANCE_NOTE}`);
     covered.set(file, [...(covered.get(file) ?? []), pattern]);
   }
   for (const file of [...markdownFiles(root, 'skills'), ...markdownFiles(root, 'agents')]) {
