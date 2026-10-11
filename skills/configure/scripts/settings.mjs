@@ -161,8 +161,8 @@ function show(root) {
 // sit outside the fence because bold renders only there.
 const MAX_PICKS = 2;
 const TOPICS = {
-  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write to you and how much effort tasks get', keys: ['compression', 'budget'] },
-  places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code changes and finished work end up', keys: ['specs', 'workspace', 'ship'] },
+  work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['compression', 'budget'] },
+  places: { label: 'Where work goes', question: 'Which part of where work goes?', about: 'where plans, code and finished work go', keys: ['specs', 'workspace', 'ship'] },
   safety: { label: 'Safety', question: 'Which part of safety?', about: 'what I block', keys: ['guards'] }
 };
 
@@ -180,17 +180,17 @@ function menu(root, name) {
   if (name === undefined) {
     const topics = Object.entries(TOPICS);
     const picks = topics.slice(0, MAX_PICKS).map(([, topic]) => `${topic.label}**: ${topic.about}`);
-    const rest = topics.slice(MAX_PICKS).map(([key, topic]) => `\`${key}\` for ${topic.label} (${topic.about})`);
-    const context = ['Pick a topic to change one setting in it; the rest stay as they are.', rest.length > 0 ? `Or type ${rest.join(' or ')}.` : ''].filter(Boolean).join(' ');
-    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', context, 'Keep as is**: change nothing', picks, 'your current settings keep working, and the others change how I behave from now on.')].join('\n'));
+    const rest = topics.slice(MAX_PICKS).map(([key, topic]) => `\`${key}\` for ${topic.label}`);
+    const context = rest.length > 0 ? `Or type ${rest.join(' or ')}.` : '';
+    console.log([...overview(Object.keys(SCHEMA), stack), '', ...question('What would you like to change?', context, 'Keep as is**: change nothing', picks, 'your settings stay as they are')].join('\n'));
     return;
   }
   if (Object.hasOwn(TOPICS, name)) {
     const topic = TOPICS[name];
-    const line = (key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about} (now: ${plainValue(key, resolve(key, stack).value)})`;
+    const line = (key) => `${SCHEMA[key].label}**: ${SCHEMA[key].about}`;
     const picks = topic.keys.slice(0, MAX_PICKS).map(line);
-    const rest = topic.keys.slice(MAX_PICKS).map((key) => `\`${key}\` for ${SCHEMA[key].label} (${SCHEMA[key].about})`);
-    console.log([...overview(topic.keys, stack), '', ...question(topic.question, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : '', 'Keep as is**: change nothing', picks, 'nothing changes, and the others each lead to one question about that setting.')].join('\n'));
+    const rest = topic.keys.slice(MAX_PICKS).map((key) => `\`${key}\` for ${SCHEMA[key].label}`);
+    console.log([...overview(topic.keys, stack), '', ...question(topic.question, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : '', 'Keep as is**: change nothing', picks, 'nothing changes unless you pick another')].join('\n'));
     return;
   }
   if (!Object.hasOwn(SCHEMA, name)) throw unknownKey(name);
@@ -201,9 +201,9 @@ function menu(root, name) {
   const keep = kept ? `Keep ${kept.label}**: ${kept.gives}` : `Keep ${plainValue(name, current)}**: change nothing`;
   const others = Object.entries(choices).filter(([value]) => value !== String(current));
   const picks = others.slice(0, MAX_PICKS).map(([, choice]) => `${choice.label}**: ${choice.gives}`);
-  const rest = others.slice(MAX_PICKS).map(([value, choice]) => `\`${value}\` for ${choice.label} (${choice.gives})`);
+  const rest = others.slice(MAX_PICKS).map(([value, choice]) => `\`${value}\` for ${choice.label}`);
   const context = [entry.typed, rest.length > 0 ? `Or type ${rest.join(' or ')}.` : ''].filter(Boolean).join(' ');
-  console.log([...overview([name], stack), '', ...question(entry.question, context, keep, picks, 'it keeps what you have now, and any other answer changes it from now on.')].join('\n'));
+  console.log([...overview([name], stack), '', ...question(entry.question, context, keep, picks, 'nothing changes unless you pick another')].join('\n'));
 }
 
 // Appending to a file that lacks a final newline would glue the entry onto its last line.

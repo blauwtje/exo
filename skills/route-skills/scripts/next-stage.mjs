@@ -22,28 +22,28 @@ import { scratchPath, ScratchPathError } from '#scratch-path';
 // the stage offers that route. An option is `[label, what the user gets]`; its
 // letter comes from its place in the array. `open` replaces `context`,
 // `options` and `reason` while the artifact lists an open point.
-const ADJUST_BRIEF = ['Adjust the brief', 'change it before anything is built.'];
-const BUILD_HERE = ['Build here', 'I build and check it in this chat, then merge it into main, with no more questions.'];
-const BUILD_FRESH = ['Build fresh', 'start a clean chat and build it there.'];
+const ADJUST_BRIEF = ['Adjust the brief', 'change it before building'];
+const BUILD_HERE = ['Build here', 'I build, check and merge it here'];
+const BUILD_FRESH = ['Build fresh', 'a clean chat builds it'];
 
 const NEXT_STAGE = {
   'spec': {
     stage: 'build',
     title: 'Is the brief ready to build?',
-    context: (artifact) => `The brief is written at \`${artifact}\` with no open point.`,
+    context: (artifact) => `The brief at \`${artifact}\` has no open point.`,
     options: [BUILD_HERE, BUILD_FRESH, ADJUST_BRIEF],
-    reason: 'the brief settles every point and this chat builds, checks and merges it in one reply, while (B) restarts on a clean chat and (C) reopens a settled brief.',
+    reason: 'the brief has no open point',
     open: {
-      context: (artifact, count) => `The brief is written at \`${artifact}\` with ${count} open point${count === 1 ? '' : 's'} under \`## Open points\`.`,
+      context: (artifact, count) => `The brief at \`${artifact}\` has ${count} open point${count === 1 ? '' : 's'}.`,
       options: [ADJUST_BRIEF, BUILD_HERE, BUILD_FRESH],
-      reason: 'the open points get settled before anything is built, while (B) and (C) build on them unconfirmed.'
+      reason: 'open points should be settled first'
     }
   },
   'find-cause': {
     title: 'Should I build the fix?',
-    context: () => 'The cause is found and the fix is known.',
-    options: [['Build', 'build the fix now in this chat.'], ['Stop', 'nothing gets built, and the fault stays.']],
-    reason: 'this chat already knows what the fix needs, while (B) leaves the fault in place.'
+    context: () => 'The cause is found.',
+    options: [['Build', 'build the fix now'], ['Stop', 'nothing is built, the fault stays']],
+    reason: 'this chat knows the fix'
   }
 };
 

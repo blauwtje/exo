@@ -31,13 +31,13 @@ test('spec with no open point recommends building here: build here A, build fres
   const report = nextStageReport({ after: 'spec', artifact: planPath });
   assert.equal(report, [
     '**Is the brief ready to build?**',
-    `The brief is written at \`${planPath}\` with no open point.`,
+    `The brief at \`${planPath}\` has no open point.`,
     '',
-    '- **(A) Build here**: I build and check it in this chat, then merge it into main, with no more questions.',
-    '- **(B) Build fresh**: start a clean chat and build it there.',
-    '- **(C) Adjust the brief**: change it before anything is built.',
+    '- **(A) Build here**: I build, check and merge it here',
+    '- **(B) Build fresh**: a clean chat builds it',
+    '- **(C) Adjust the brief**: change it before building',
     '',
-    'Recommended: (A), because the brief settles every point and this chat builds, checks and merges it in one reply, while (B) restarts on a clean chat and (C) reopens a settled brief.'
+    'Recommended: (A), because the brief has no open point'
   ].join('\n') + '\n');
   assertQuestionShape(report);
   assert.equal(freshReport({ after: 'spec', artifact: planPath }), [
@@ -53,9 +53,9 @@ test('spec with an entry under ## Open points recommends adjusting the brief fir
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
   const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.ok(report.includes(`The brief is written at \`${planPath}\` with 2 open points under \`## Open points\`.`));
+  assert.ok(report.includes(`The brief at \`${planPath}\` has 2 open points.`));
   assert.match(report, /\n- \*\*\(A\) Adjust the brief\*\*: .*\n- \*\*\(B\) Build here\*\*: .*\n- \*\*\(C\) Build fresh\*\*: .*\n\n/);
-  assert.ok(report.endsWith('Recommended: (A), because the open points get settled before anything is built, while (B) and (C) build on them unconfirmed.\n'));
+  assert.ok(report.endsWith('Recommended: (A), because open points should be settled first\n'));
   assertQuestionShape(report);
 });
 
@@ -102,7 +102,7 @@ test('the fresh-chat route keeps the session model when a Design: task is still 
 
 test('find-cause asks build or stop with no fresh-chat route, unknown stage fails', async () => {
   const report = nextStageReport({ after: 'find-cause', artifact: 'none' });
-  assert.match(report, /\n- \*\*\(A\) Build\*\*: build the fix now in this chat\.\n- \*\*\(B\) Stop\*\*/);
+  assert.match(report, /\n- \*\*\(A\) Build\*\*: build the fix now\n- \*\*\(B\) Stop\*\*/);
   assert.ok(report.includes('\nRecommended: (A), because '));
   assert.ok(!report.includes('Without an answer'));
   assertQuestionShape(report);
