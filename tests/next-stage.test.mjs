@@ -33,7 +33,7 @@ test('spec with no open point recommends building here: build here A, build fres
     '**Is the brief ready to build?**',
     `The brief at \`${planPath}\` has no open point.`,
     '',
-    '- **(A) Build here**: I build, check and merge it here',
+    '- **(A) Build here**: I build, merge into main, no more questions',
     '- **(B) Build fresh**: a clean chat builds it',
     '- **(C) Adjust the brief**: change it before building',
     '',

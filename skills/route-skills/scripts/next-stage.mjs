@@ -23,7 +23,7 @@ import { scratchPath, ScratchPathError } from '#scratch-path';
 // letter comes from its place in the array. `open` replaces `context`,
 // `options` and `reason` while the artifact lists an open point.
 const ADJUST_BRIEF = ['Adjust the brief', 'change it before building'];
-const BUILD_HERE = ['Build here', 'I build, check and merge it here'];
+const BUILD_HERE = ['Build here', 'I build, merge into main, no more questions'];
 const BUILD_FRESH = ['Build fresh', 'a clean chat builds it'];
 
 const NEXT_STAGE = {
