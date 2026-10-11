@@ -113,6 +113,35 @@ test('EXO_RUN_DIR: a stale blocked marker is removed at start and a fresh one na
   await assert.rejects(fs.access(marker));
 });
 
+async function parkWrapper(context, task) {
+  const wrapper = path.join(context.tools, 'wrapper.mjs');
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nfs.writeFileSync(process.env.EXO_RUN_DIR + '/parked', 'Task ${task}: PARKED git push origin main\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
+  context.stub = wrapper;
+}
+
+test('EXO_RUN_DIR: a stale parked marker is removed at start and a fresh one naming the task stops the run with exit 3', async () => {
+  const { context, dir } = await runDirContext();
+  const marker = path.join(dir, 'parked');
+  await fs.writeFile(marker, 'Task 1: PARKED stale\n');
+  await parkWrapper(context, 1);
+  const result = await runPlan(context, [{ result: 'Worked on it.' }, { result: 'Worked on it.' }]);
+  assert.equal(result.stop, 'run-plan: stop: parked: git push origin main');
+  assert.equal(result.code, 3);
+  assert.equal(result.calls.length, 1);
+  await assert.rejects(fs.access(marker));
+});
+
+test('EXO_RUN_DIR: a parked marker naming the tail stops the run after the verify session', async () => {
+  const { context, dir } = await runDirContext();
+  const wrapper = path.join(context.tools, 'wrapper.mjs');
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nif (process.argv.join(' ').includes('/exo:verify') || fs.readFileSync(0, 'utf8').includes('/exo:verify')) fs.writeFileSync(process.env.EXO_RUN_DIR + '/parked', 'Task tail: PARKED git push origin main\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
+  context.stub = wrapper;
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: parked: git push origin main');
+  assert.equal(result.code, 3);
+  await assert.rejects(fs.access(path.join(dir, 'parked')));
+});
+
 test('EXO_RUN_DIR: a stale blocked marker never stops a run whose session writes none', async () => {
   const { context, dir } = await runDirContext();
   await fs.writeFile(path.join(dir, 'blocked'), 'Task 1: BLOCKED stale\n');

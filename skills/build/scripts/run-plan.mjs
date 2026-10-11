@@ -24,7 +24,7 @@
 // `refs/remotes/*` ref, so the ref check misses it: the deny list, the
 // sandbox's network block and dontAsk's no-rule-no-run are the guard.
 //
-// Exits 0 on done with gate PASS, 1 on any other stop, 2 on a refusal or bad
+// Exits 0 on done with gate PASS, 3 on a parked run (EXO_RUN_DIR's `parked` marker), 1 on any other stop, 2 on a refusal or bad
 // arguments. Logs, summary.txt, tasks.json ([{ number, title, passes }], a task
 // flipped after its landing) and progress.md (ending on RUN COMPLETE when the
 // gate passes) go to .exo/run-plan/<plan-id>/<UTC time>/.
@@ -701,7 +701,7 @@ async function main(argv) {
     process.stdout.write(`${line}\n`);
   };
   writeTasks();
-  if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
+  if (process.env.EXO_RUN_DIR) for (const name of ['blocked', 'parked']) fs.rmSync(path.join(process.env.EXO_RUN_DIR, name), { force: true });
   say(`run start: ${path.relative(root, planPath) || planPath}, branch ${branch}, ${plan.tasks.length} tasks (${plan.tasks.length - landedAtStart.length} to build)`);
 
   // land-task runs the plan's Proof and Land gate outside the sandbox, so a session must not rewrite them.
@@ -721,6 +721,16 @@ async function main(argv) {
   let retryNote = '';
   let iteration = 0;
   let stop;
+  // The run-gate hook's `parked` marker (`Task <name>: PARKED <command>`): its line when it names `name`, read and removed.
+  const takeParked = (name) => {
+    const file = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'parked') : null;
+    if (file === null || !fs.existsSync(file)) return null;
+    const line = fs.readFileSync(file, 'utf8').trim();
+    if (!line.startsWith(`Task ${name}: PARKED`)) return null;
+    fs.rmSync(file, { force: true });
+    return line.replace(/^Task \S+: PARKED\s*/, '');
+  };
+  const parkedStop = (line, log) => ({ line: `parked: ${line}`, why: `The run is parked: ${clip(line, 100)}`, next: `run exo approve for the open gate (see ${log}), then run exo run again`, parked: true });
   const fix = (log) => `read ${log}, fix the cause, then run exo run again`;
   for (;;) {
     const landed = landedTasks(plan.tasks, root, planId);
@@ -757,6 +767,12 @@ async function main(argv) {
     if (breach !== null) {
       say(`task ${n} stopped: ${breach}`);
       stop = { line: `breach in iteration ${iteration}: ${breach}`, why: `A session broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, undo what is wrong, then run exo run again` };
+      break;
+    }
+    const parked = takeParked(n);
+    if (parked !== null) {
+      say(`task ${n} parked: ${clip(parked, 80)}`);
+      stop = parkedStop(parked, log);
       break;
     }
     const notLoaded = exoError(parsed.init, PLUGIN_ROOT);
@@ -804,8 +820,10 @@ async function main(argv) {
     const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, settings: tailSettings, pin: null, log });
     run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
     const breach = planBreach() ?? breachOf(root, before);
-    const notLoaded = breach === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
+    const parked = breach === null ? takeParked('tail') : null;
+    const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
     if (breach !== null) stop = { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' };
+    else if (parked !== null) stop = { ...parkedStop(parked, log), gate: 'FAIL' };
     else if (notLoaded !== null) stop = { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' };
     else {
       const base = defaultBranch(root);
@@ -825,6 +843,7 @@ async function main(argv) {
       if (pass) exitCode = 0;
     }
   }
+  if (stop?.parked) exitCode = 3;
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
   if (exitCode === 0) fs.appendFileSync(progressFile, 'RUN COMPLETE\n');
 
