@@ -8,7 +8,8 @@
 // whose Proof: runs the whole suite, and a Parallel: line in none of its
 // accepted forms, and in the exo repository a name the derivation check
 // refuses in every tracked file. With --loop it also refuses what
-// run-plan.mjs cannot run unattended. Planning runs
+// run-plan.mjs cannot run unattended; --run, run-plan's own preflight, lets
+// a plan with no Land: line through. Planning runs
 // this instead of reading the finished plan back.
 
 import fs from 'node:fs';
@@ -244,13 +245,16 @@ function checkWorktreeSetup(tasks, frame) {
 // build's SKILL.md step 1 matches a plan to a checkout by the '## Plan
 // basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
 // frameOf); a compact plan with neither would parse but never be matched to
-// a checkout, so plan-check fails it here instead.
-function checkPlanBasis(frame) {
+// a checkout, so plan-check fails it here instead. A missing Land: line
+// fails at spec time only: on the run path (`run`) an old or benchmark plan
+// still runs and ends at phase passed without landing.
+function checkPlanBasis(frame, run) {
   const basis = frame['Plan basis'] ?? '';
   const problems = [];
   if (!/^Repository: .+$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Repository:' line");
   if (!/^Branch: .+$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Branch:' line");
-  if (!/^Land: (local|pr|push-main)$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Land:' line, or it is not one of local, pr, push-main");
+  const landOptional = run && !/^Land:/m.test(basis);
+  if (!landOptional && !/^Land: (local|pr|push-main)$/m.test(basis)) problems.push("the plan's '## Plan basis' has no 'Land:' line, or it is not one of local, pr, push-main");
   return problems;
 }
 
@@ -433,8 +437,10 @@ function checkDerivedNames(planText, resolvedRoot) {
  * Modify: entry can be checked against it; omit it to skip that one check.
  * `loop` adds the problems that keep run-plan.mjs from running the plan;
  * `planPath`, the plan's own file, lets it refuse a task that edits it.
+ * `run`, set by run-plan.mjs's preflight only, lets a plan with no `Land:`
+ * line through, which spec time refuses.
  */
-export function planCheckReport(planText, { root, loop = false, planPath } = {}) {
+export function planCheckReport(planText, { root, loop = false, planPath, run = false } = {}) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
@@ -447,7 +453,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
     ...(compactPlan
       ? [
           ...checkFrame(plan.frame),
-          ...checkPlanBasis(plan.frame),
+          ...checkPlanBasis(plan.frame, run),
           ...openPoints(planText).map((entry) => `the plan's '## Open points' still holds an unanswered question: ${entry}`),
           ...checkLandGate(plan.frame, resolvedRoot),
           ...checkProductRun(plan.frame, resolvedRoot),
@@ -479,11 +485,11 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', loop: 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', loop: 'boolean', run: 'boolean' });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(flags.plan, 'utf8');
-  const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true, planPath: flags.plan });
+  const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true, planPath: flags.plan, run: flags.run === true });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;
 }

@@ -43,7 +43,7 @@ else {
 }
 `;
 
-export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', open = null } = {}) => [
+export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', land = 'Land: local', open = null } = {}) => [
   '# Plan: runner fixture',
   '',
   '## Goal',
@@ -52,7 +52,7 @@ export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gat
   '## Plan basis',
   `Repository: ${root}`,
   `Branch: ${branch}`,
-  'Land: local',
+  land,
   'Worktree setup: none',
   `Land gate: ${gate}`,
   'Lint: none',

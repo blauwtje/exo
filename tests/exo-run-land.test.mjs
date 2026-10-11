@@ -13,9 +13,9 @@ import { STUB, setup } from './run-plan-fixture.mjs';
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
 
-/** A run context: every session first writes a clean branch review; with `park`, session 0 parks the run on a gate. */
-async function context({ park = false } = {}) {
-  const c = await setup();
+/** A run context: every session first writes a clean branch review; with `park`, session 0 parks the run on a gate; `options` go to the plan fixture. */
+async function context({ park = false, ...options } = {}) {
+  const c = await setup(options);
   const root = await fs.realpath(c.root);
   await fs.writeFile(path.join(c.tools, 'session.mjs'), STUB);
   await fs.writeFile(c.stub, `
@@ -74,6 +74,27 @@ test('a passing run with Land: local lands itself, reports and notifies once', a
   const again = await c.exo(['run', '--resume', id]);
   assert.equal(again.code, 2);
   assert.match(again.stderr, /already landed/);
+});
+
+test('a passing run of an old plan with no Land: line ends at passed with the push-or-PR advice and lands nothing', async () => {
+  const c = await context({ land: null });
+  assert.doesNotMatch(await fs.readFile(c.plan, 'utf8'), /^Land:/m);
+  const result = await c.exo(['run', c.plan, '--claude', c.stub]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /^Next: review branch feat\/run, then push it or open a pull request/m);
+  const { id, dir } = await runDirOf(c.root);
+  const state = readState(c.root, id);
+  assert.equal(state.phase, 'passed');
+  assert.equal(state.stage, 'build');
+  assert.equal(git(c.root, 'rev-parse', '--abbrev-ref', 'HEAD'), 'feat/run');
+  assert.ok(!git(c.root, 'ls-tree', '--name-only', 'main').split('\n').includes('a.txt'));
+  const report = (await fs.readFile(path.join(dir, 'report.md'), 'utf8')).split('\n');
+  assert.ok(report.includes('Phase: passed'), report.join('\n'));
+  assert.ok(report.includes('Land: none'));
+  assert.ok(report.includes('Landed: none'));
+  const notes = await c.notified();
+  assert.equal(notes.length, 1, notes.join('\n'));
+  assert.match(notes[0], /passed/);
 });
 
 test('a session gate parks the run; exo approve lands it', async () => {

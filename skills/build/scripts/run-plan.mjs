@@ -429,7 +429,7 @@ function preflight(planArgument, flags) {
   if (wanted === defaultBranch(root)) throw new Refusal(`Branch: ${wanted} is the default branch`);
   const tracked = gitOut(root, ['status', '--porcelain', '--untracked-files=no'], { trim: false });
   if (tracked !== '') throw new Refusal(`tracked change in the checkout: ${tracked.split('\n')[0].slice(3)}; commit it first`);
-  const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop'], { encoding: 'utf8' });
+  const check = spawnSync(process.execPath, [SCRIPT.planCheck, '--plan', planPath, '--root', root, '--loop', '--run'], { encoding: 'utf8' });
   if (check.status !== 0) {
     const lines = `${check.stdout}\n${check.stderr}`.split('\n').filter((line) => line.trim() !== '');
     throw new Refusal(`plan-check --loop fails: ${lines.find((line) => line.startsWith('loop: ')) ?? lines[0] ?? `exit ${check.status}`}`);

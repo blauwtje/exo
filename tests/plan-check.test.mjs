@@ -391,6 +391,17 @@ test('plan-check --loop passes a plan with one command criterion and a Bash Proo
   assert.equal(planCheckReport(loopPlan().replace('Allow: none', 'Allow: `npx eslint`, `git status`'), { loop: true }).ok, true);
 });
 
+test('plan-check --loop refuses a plan with no Land: line at spec time; --run, run-plan\'s preflight, lets it through but not an unknown one', () => {
+  const noLand = compactPlanFixture({ tasks: [LOOP_TASK] }).replace('Land: local\n', '');
+  const spec = planCheckReport(noLand, { loop: true });
+  assert.equal(spec.ok, false);
+  assert.ok(spec.lines.some((line) => line.includes("no 'Land:' line")));
+  assert.equal(planCheckReport(noLand, { loop: true, run: true }).ok, true);
+  const unknown = planCheckReport(noLand.replace('Branch: feat/fixture', 'Branch: feat/fixture\nLand: yolo'), { loop: true, run: true });
+  assert.equal(unknown.ok, false);
+  assert.ok(unknown.lines.some((line) => line.includes("no 'Land:' line")));
+});
+
 test('plan-check without --loop ignores every loop field', () => {
   const plan = compactPlanFixture({ tasks: [LOOP_TASK] });
   const redirecting = plan.replace('`node --test` passes.', '`node --test > out.log` passes.');
