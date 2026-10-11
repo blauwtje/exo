@@ -55,7 +55,6 @@ Read these and nothing else before writing, one batch where files are independen
 
 - Build the whole page from the plan; the focal region matches the `COMP` and is never restyled toward a template; then run the type-check, lint and tests of `build-pass.md`'s `## Proof`; the session starts the preview, runs check-ui and captures.
 - Write `$RUN/build-<PASS>.md`, at most 20 lines: paths written, plan items built and any missing, each motion bar item of `motion.md` built or missing, the proof's result.
-- `SendMessage` from the session listing faults → repair every one in one pass, then rewrite that report with each fault `fixed` or `open`.
 
 **Foundation scope.**
 

@@ -103,8 +103,8 @@ No settled identity → extract the existing tokens and patterns, take the one p
 
 1. Run `node <skill dir>/scripts/capture.mjs --url <url> --viewport 390x844 --viewport 1440x900 --full-page --label post-build --out "$RUN/renders"`.
 2. Read both captures; list each fault against the direction, the request, a named or saved product's finish and the floor.
-3. Repair every listed fault in one pass; on the one pass, `SendMessage` the list to the builder instead.
-4. Rerun step 1 with `--label final` and read both; a run is done only on a capture taken after its last edit. Later changes go to the builder that built the page.
+3. Write every fault to `$RUN/faults.md`; dispatch one fresh `exo:build-ui` per faulted surface with `SCOPE=repair:<surface>` as `phase-detail` defines it, never `SendMessage` to the page builder.
+4. Rerun step 1 with `--label final` and read both; a run is done only on a capture taken after its last edit. Later changes go to a fresh `SCOPE=repair:<surface>` dispatch.
 
 Read only the post-build and final pairs, never a state capture; a fault under repair adds one.
 
