@@ -6,14 +6,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
 import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
-import { FILE_LIMIT, LINE_LIMIT } from '../../skills/verify/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
 
 // A doc writes a small count as a word, so a pin built from a constant spells it.
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
-// The reviewer is picked on risk; the file and line limits still set the code-review effort.
-const EFFORT_LIMITS = [`${NUMBER_WORDS[FILE_LIMIT]} changed files`, `${LINE_LIMIT} changed lines`];
 const RISK_TRIGGER = 'carries a `Risk:` field, a manifest or lockfile changed or a public signature changed';
 
 const thousands = (value) => value.toLocaleString('en-US');
@@ -38,9 +35,6 @@ const PINNED_SENTENCES = {
     'Count these facts: over two source, test or config files change; a dependency is added; a public signature changes; a persisted format or security boundary is crossed; orientation missed a required file.',
     'After a compaction, rebuild what landed from the working-tree diff, not memory.',
     'When a symptom survives two fix attempts or a repair crosses a second owner, report both and hand it to `find-cause`.',
-  ],
-  'skills/build/references/fresh-eyes.md': [
-    ...EFFORT_LIMITS,
   ],
   'skills/check-docs/SKILL.md': [
     'Never end a turn on a research pass alone.',
