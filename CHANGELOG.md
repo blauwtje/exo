@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- The benchmark check that a run loaded exo now finds the `exo settings:` line in the session hook output, so exo runs no longer score as not loaded.
+
 ## 0.124.2 - 2026-10-11
 
 ### Highlights
