@@ -7,6 +7,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `plan-check` now refuses an app plan whose Success criterion runs no product. A bin, a start script or an `mcp:` call must be the first backticked command, or the plan states `Product run: none (<reason>)`.
+
+### Fixed
+
+- A `package.json` holding `null` no longer counts as having an entry point.
+
 ## 0.124.4 - 2026-10-11
 
 ### Changed
