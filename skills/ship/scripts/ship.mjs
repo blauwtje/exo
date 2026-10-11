@@ -147,11 +147,11 @@ const MENU_FULL = [
   '**Where should the commits go?**',
   CONTEXT,
   '',
-  '- **(A) Push and merge**: send the commits to GitHub and merge them once the automatic tests pass.',
-  '- **(B) Open PR**: send them to GitHub for review, and leave the merge to you.',
+  '- **(A) Push and merge**: merge on GitHub once tests pass.',
+  '- **(B) Open PR**: GitHub review; you merge.',
   '- **(C) Keep local**: nothing leaves this computer.',
   '',
-  'Recommended: (A), because the change lands only once the automatic tests pass, and (B) leaves the merge to you.'
+  'Recommended: (A), because it merges only after tests pass.'
 ];
 const MENU_PUSH_ONLY = [
   '**Where should the commits go?**',
@@ -160,7 +160,7 @@ const MENU_PUSH_ONLY = [
   '- **(A) Push**: send the commits to GitHub.',
   '- **(B) Keep local**: nothing leaves this computer.',
   '',
-  'Recommended: (A), because the commits are then safe off this computer, and (B) keeps them only here.'
+  'Recommended: (A), because it backs the commits up.'
 ];
 
 /** Why a set `ship` route other than `push` cannot run yet, or null when it can. */
