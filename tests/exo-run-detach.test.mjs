@@ -8,8 +8,10 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture, git, gitRepository, run } from './harness.mjs';
 import { acquireLock, createRun, readState, updateRun } from '../skills/build/scripts/run-state.mjs';
+import { STUB, setup as planSetup } from './run-plan-fixture.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
+const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.url)));
 
 const planText = (root) => [
   '# Plan: detach fixture', '', '## Goal', 'One file.', '',
@@ -34,8 +36,8 @@ async function setup() {
 
 const exo = (context, args) => run(CLI, args, { cwd: context.root, env: { HOME: context.home } });
 
-async function finalState(root, id) {
-  for (let round = 0; round < 100; round++) {
+async function finalState(root, id, rounds = 100) {
+  for (let round = 0; round < rounds; round++) {
     const state = readState(root, id);
     if (state && ['passed', 'stopped', 'refused', 'crashed'].includes(state.phase)) return state;
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -57,6 +59,54 @@ test('--detach returns one line at once, the child finishes the run and frees th
   assert.equal(state.log, path.join(context.root, '.exo', 'run', line[1], 'run.log'));
   await fs.access(state.log);
   await assert.rejects(fs.access(path.join(context.root, '.exo', 'run', 'lock')));
+});
+
+const isAlive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+test('a detached run with a fake claude outlives its parent and ends passed', async () => {
+  // run-plan's fixture repository and session stub, each session held for 1 s:
+  // two task sessions land the plan, the third plays the verify tail.
+  const context = await planSetup();
+  const root = await fs.realpath(context.root);
+  const SESSION_MS = 1000;
+  await fs.writeFile(path.join(context.tools, 'session.mjs'), STUB);
+  await fs.writeFile(context.stub, `await new Promise((resolve) => setTimeout(resolve, ${SESSION_MS}));\nawait import('./session.mjs');\n`);
+  const land = (file, number) => ({ commits: [{ file, trailers: [`Plan-task: plan/${number}`] }] });
+  const scenario = path.join(context.tools, 'scenario.json');
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps: [land('a.txt', 1), land('b.txt', 2), { result: 'Verify done.' }] }));
+  const env = { HOME: context.home, STUB_SCENARIO: scenario, STUB_RECORD: path.join(context.tools, 'calls.jsonl') };
+
+  const started = Date.now();
+  const result = await run(CLI, ['run', context.plan, '--detach', '--claude', context.stub], { cwd: root, env });
+  const parentMs = Date.now() - started;
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  assert.equal(result.stdout.trim().split('\n').length, 1, result.stdout);
+  const line = /^exo: run (\S+) started in the background \(pid (\d+)\)/.exec(result.stdout);
+  assert.ok(line, result.stdout);
+  assert.ok(parentMs < SESSION_MS / 2, `the parent took ${parentMs} ms`);
+
+  const [, id, printed] = line;
+  const pid = Number(printed);
+  const early = readState(root, id);
+  assert.equal(early.pid, pid);
+  assert.ok(isAlive(pid), 'the child outlives its parent');
+  assert.ok(!['passed', 'stopped', 'refused', 'crashed'].includes(early.phase), early.phase);
+
+  const state = await finalState(root, id, 600);
+  assert.equal(state.phase, 'passed', await fs.readFile(state.log, 'utf8'));
+  assert.equal(state.exitCode, 0);
+  assert.equal((await fs.readFile(env.STUB_RECORD, 'utf8')).trim().split('\n').length, 3, 'two task sessions and the verify tail ran');
+  await assert.rejects(fs.access(path.join(root, '.exo', 'run', 'lock')));
+  // The child writes the final phase just before it exits; give the exit a bounded moment.
+  for (let round = 0; round < 50 && isAlive(pid); round++) await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.ok(!isAlive(pid), 'the child is gone once the run is final');
 });
 
 test('a foreground run writes state with no log and releases the lock', async () => {
