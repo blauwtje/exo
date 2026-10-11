@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.124.0 - 2026-10-11
+
 ### Highlights
 
 - **Every session and agent now sees its context use: past 60k (lead) or 50k (subagent) it is told to wrap up, and past 100k its tools are refused.**
