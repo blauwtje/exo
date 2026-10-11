@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SessionStart hook: injects facts only, in order: a handoff pointer, a
 // project-memory pointer, the settings line, the Codex host note on Codex, then
-// hooks/session-rules.md when it exists. Node, so a host without `jq` works.
+// hooks/session-routing.md and hooks/session-rules.md when they exist. Node, so a host without `jq` works.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -77,6 +77,8 @@ const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configu
 const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';
 const parts = [`${pointers}${settings}`];
 if (onCodex) parts.push(fs.readFileSync(path.join(root, 'harnesses', 'codex', 'host-note.md'), 'utf8').replaceAll('{root}', root).trimEnd());
+const routingFile = path.join(root, 'hooks', 'session-routing.md');
+if (fs.existsSync(routingFile)) parts.push(fs.readFileSync(routingFile, 'utf8').trimEnd());
 const rulesFile = path.join(root, 'hooks', 'session-rules.md');
 if (fs.existsSync(rulesFile)) parts.push(fs.readFileSync(rulesFile, 'utf8').trimEnd());
 const additionalContext = parts.join('\n\n');

@@ -304,7 +304,7 @@ export const SCENARIOS = [
     write(root, relative, `${text}${'- filler line\n'.repeat(90)}`);
   } },
   { name: 'injected-body-over-ceiling', check: 'skill body budgets', mutate: (root) =>
-    append(root, 'skills/route-skills/SKILL.md', '- A line the injected body has no room for.\n'.repeat(30)) },
+    append(root, 'skills/route-skills/SKILL.md', '- A line the injected body has no room for.\n'.repeat(60)) },
   { name: 'drifted-review-threshold', check: 'shared contracts', mutate: (root) =>
     replaceText(root, 'CONTRIBUTING.md', 'a manifest or lockfile changed', 'a manifest changed') },
   // This sentence is held by no shared contract or lock; the run

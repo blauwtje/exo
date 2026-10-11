@@ -1,5 +1,5 @@
 // The session hook hands the model facts only: the settings line, the pointers
-// and the text of hooks/session-rules.md. Every start rewrites the plugin-root
+// and the text of hooks/session-routing.md and hooks/session-rules.md. Every start rewrites the plugin-root
 // pointer.
 
 import assert from 'node:assert/strict';
@@ -35,7 +35,7 @@ function runHookIn(env, cwd) {
   });
 }
 
-test('the session hook injects the settings line and the session rules, not the route-skills body', async () => {
+test('the session hook injects the settings line, the routing rules and the session rules, not the route-skills body', async () => {
   const configDirectory = await fixture();
   const result = await runHook({ CLAUDE_CONFIG_DIR: configDirectory });
   assert.equal(result.code, 0, result.stderr);
@@ -43,7 +43,8 @@ test('the session hook injects the settings line and the session rules, not the 
   const context = output.hookSpecificOutput.additionalContext;
   const rules = (await fs.readFile(path.join(PLUGIN_ROOT, 'hooks', 'session-rules.md'), 'utf8')).trimEnd();
   assert.ok(context.startsWith('exo settings:'), context.slice(0, 200));
-  assert.ok(context.endsWith(rules), context.slice(-200));
+  const routing = (await fs.readFile(path.join(PLUGIN_ROOT, 'hooks', 'session-routing.md'), 'utf8')).trimEnd();
+  assert.ok(context.endsWith(`${routing}\n\n${rules}`), context.slice(-400));
   for (const text of ROUTE_TEXTS) assert.ok(!context.includes(text), text);
   // No welcome: the message and its marker are gone.
   assert.equal(output.systemMessage, undefined);

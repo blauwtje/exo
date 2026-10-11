@@ -19,6 +19,7 @@ import { checkReferenceShape } from '../verify/checks/reference-shape.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const SESSION_RULES = 'hooks/session-rules.md';
+const SESSION_ROUTING = 'hooks/session-routing.md';
 // A counted description to shorten, so model-invocable; growth goes to padding skills instead.
 const COUNTED_SKILL = 'skills/build/SKILL.md';
 
@@ -29,6 +30,7 @@ function skillsFixture(t) {
   fs.cpSync(path.join(REPOSITORY_ROOT, 'skills'), path.join(root, 'skills'), { recursive: true });
   fs.mkdirSync(path.join(root, 'hooks'));
   fs.copyFileSync(path.join(REPOSITORY_ROOT, SESSION_RULES), path.join(root, SESSION_RULES));
+  fs.copyFileSync(path.join(REPOSITORY_ROOT, SESSION_ROUTING), path.join(root, SESSION_ROUTING));
   return root;
 }
 
@@ -87,7 +89,7 @@ function countedTotal(detail) {
 }
 
 function injectedBytes(detail) {
-  const measured = detail.match(/injects (\d+) bytes/);
+  const measured = detail.match(/inject (\d+) bytes/);
   assert.ok(measured, `no injected byte count in: ${detail}`);
   return Number(measured[1]);
 }
