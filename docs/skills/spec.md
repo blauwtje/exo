@@ -12,10 +12,11 @@ Not for a clear goal, a bug, or visual-only work.
 
 - One question at a time, with lettered options and a recommendation. Reply with a letter, or `ok` to take the recommendation.
 - Facts it can look up are looked up, not asked.
+- After the draft brief, a read-only agent (`exo:find-open-points`) finds every point a wrong guess would change. You are asked only the 0-3 it cannot settle from code or memory; your answers become numbered Decisions, remembered per project. The rest go under `## Assumptions`.
 - A brief with a task list, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both.
 - Checks only you can make go in the brief's `## Manual checks`.
 - New wishes for existing work update the existing brief.
-- A last question: build it here (recommended; builds, checks and merges in this chat with `--land`), build it in a fresh session, or change the brief.
+- A hand-off that asks nothing: build starts in a fresh session.
 
 Asked only for options, spec lists them, recommends one, and writes nothing.
 

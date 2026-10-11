@@ -1,6 +1,6 @@
 # The brief
 
-Brief = the decided outcome, in fixed sections a later session resumes from. The enemy is a brief carrying reasoning in place of decisions, so the next stage argues them again. The overcorrection is a section for work that has none, such as a visual direction for a change with no screen.
+Brief = the decided outcome, in fixed sections a later session resumes from.
 
 ## Sections
 
@@ -8,7 +8,8 @@ In this order:
 
 - **Goal:** one sentence describing the observable result.
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
-- **Open points:** only while a question or assumption the user has still to confirm remains; one list item each, none for a point Decisions closed. Entry listed → the handoff recommends adjusting the brief.
+- **Open points:** only a question for the user that stays unanswered; one list item each. Entry listed → plan-check flags it and build refuses the brief.
+- **Assumptions:** each `assume` point, one list item.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; the run report holds them, not the final message.
 - **Visual direction:** new visual surface only: whether the existing identity stays or may be replaced, the ambition, who chooses between rendered directions.
@@ -32,6 +33,15 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Judgment
 
-- `Open points` keeps that exact name; the handoff script reads `## Open points` to pick its recommendation.
-- `Visual direction` keeps that exact name; design-ui reads the brief's `## Visual direction`.
-- `## Visual direction` names an existing `contract-selected.json` → design-ui gets a decided direction; it resumes at Build and repeats no variant choice.
+- `Open points` keeps that exact name; plan-check and start-run read `## Open points`.
+- `## Visual direction` (exact name; design-ui reads it) names an existing `contract-selected.json` → design-ui gets a decided direction; it resumes at Build and repeats no variant choice.
+
+## Open points step
+
+Dispatch `exo:find-open-points` once on the brief file.
+
+- `code` point → record the answer in the brief; ask nothing.
+- `assume` point → one line under `## Assumptions`; ask nothing.
+- `user` point → ask the user, one per message.
+- Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
+- Unanswered `user` point → `## Open points`; no entry left → omit the section.

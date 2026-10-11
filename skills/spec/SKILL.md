@@ -32,16 +32,16 @@ argument-hint: <outcome to shape>
 6. **Store it** per `references/brief.md`; `issues`/`both` → `references/brief-in-an-issue.md`.
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
    - Learn plan-check's rules from its output, never its source.
-   - Then dispatch the `exo:find-open-points` agent on the brief file.
-8. **Hand off** per `references/hand-off.md`: end on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output.
+8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7's `plan-check.mjs`.
+9. **Hand off** per `references/hand-off.md`: end on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>>`'s output.
 
 ## References
 
 | File | Read it when |
 |---|---|
 | `references/stored-brief.md` | The request names or extends a brief, issue or plan. |
-| `../route-skills/references/question.md` | Step 3 and each reply. |
-| `references/brief.md` | Before writing the brief. |
+| `../route-skills/references/question.md` | Steps 3 and 8, and each reply. |
+| `references/brief.md` | Before writing the brief, and step 8. |
 | `references/task-list.md` | Before writing the task list. |
 | `references/example-plan.md` | Once, before the first task. |
 | `../build/references/data-migration.md` | When its first line applies. |
@@ -50,6 +50,6 @@ argument-hint: <outcome to shape>
 | `references/brief-in-an-issue.md` | `specs` is `issues` or `both`. |
 | `../file-issues/references/fields.md` | Before creating that issue. |
 | `references/architecture-sketch.md` | Two or more structural shapes compete. |
-| `references/hand-off.md` | Step 8. |
+| `references/hand-off.md` | Step 9. |
 
 Report: the brief's location and next stage, or the current question.
