@@ -19,6 +19,13 @@ test('xhigh and max raise the dispatch and keep its other fields', () => {
   }
 });
 
+test('a dispatch effort at or above the session level is kept', () => {
+  for (const [dispatch, level] of [['max', 'xhigh'], ['xhigh', 'xhigh'], ['max', 'max']]) {
+    assert.equal(agentEffort(input(level, { tool_input: { ...toolInput, effort: dispatch } })), null, `${dispatch} in ${level}`);
+  }
+  assert.equal(agentEffort(input('max', { tool_input: { ...toolInput, effort: 'xhigh' } })).hookSpecificOutput.updatedInput.effort, 'max');
+});
+
 test('other levels, agents and tools print nothing', () => {
   for (const level of ['low', 'medium', 'high', undefined, 'bogus']) assert.equal(agentEffort(input(level)), null, String(level));
   assert.equal(agentEffort(input('max', { tool_input: { ...toolInput, subagent_type: 'exo:other' } })), null);

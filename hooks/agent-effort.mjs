@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse hook on Agent: raises a dispatch of `exo:find-open-points` from its
 // pinned `high` to the session's effort when that is `xhigh` or `max`.
-// Anything else prints nothing, so the pinned floor stays.
+// A dispatch already at or above that level, or anything else, prints nothing.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
@@ -9,7 +9,7 @@ import { isMain } from '../lib/script-flags.mjs';
 
 export function agentEffort({ tool_name: tool, tool_input: input, effort } = {}) {
   const level = effort?.level;
-  if (tool !== 'Agent' || input?.subagent_type !== 'exo:find-open-points' || !['xhigh', 'max'].includes(level)) return null;
+  if (tool !== 'Agent' || input?.subagent_type !== 'exo:find-open-points' || !['xhigh', 'max'].includes(level) || [level, 'max'].includes(input.effort)) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: { ...input, effort: level } } };
 }
 
