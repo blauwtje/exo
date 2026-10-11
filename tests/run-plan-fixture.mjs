@@ -52,6 +52,7 @@ export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gat
   '## Plan basis',
   `Repository: ${root}`,
   `Branch: ${branch}`,
+  'Land: local',
   'Worktree setup: none',
   `Land gate: ${gate}`,
   'Lint: none',

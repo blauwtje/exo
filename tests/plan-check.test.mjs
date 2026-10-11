@@ -9,7 +9,14 @@ import { Buffer } from 'node:buffer';
 import { test } from 'node:test';
 import { parsePlan } from '#plan-tasks';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
-import { briefFixture, compactPlanFixture, compactTask, gitRepository, planFixture, taskSection } from './harness.mjs';
+import * as harness from './harness.mjs';
+
+const { compactTask, gitRepository, taskSection } = harness;
+// The harness fixtures predate the required Land: line; add it after Branch:.
+const withLand = (plan) => plan.replace(/^(Branch: .+)$/m, '$1\nLand: local');
+const briefFixture = (options) => withLand(harness.briefFixture(options));
+const compactPlanFixture = (options) => withLand(harness.compactPlanFixture(options));
+const planFixture = (options) => withLand(harness.planFixture(options));
 
 const GOOD_CODE = 'export function greet() {\n  return "hello";\n}';
 
@@ -134,9 +141,9 @@ function compactTasks(count) {
 const ACCEPTANCE_BULLET = '- An overdue task shows a badge in the warning tone.';
 const ACCEPTANCE_BULLET_WITH_CITATION = `${ACCEPTANCE_BULLET} (Task 1)`;
 
-test('plan-check prints ok for a 61-line brief with tasks, past the old 30-line compact cap', () => {
+test('plan-check prints ok for a 62-line brief with tasks, past the old 30-line compact cap', () => {
   const brief = briefFixture({ tasks: compactTasks(17) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
-  assert.equal(brief.split('\n').length, 61);
+  assert.equal(brief.split('\n').length, 62);
   const report = planCheckReport(brief);
   assert.equal(report.ok, true);
   assert.match(report.lines[0], /^plan-check: ok/);
@@ -280,6 +287,15 @@ test('plan-check fails a compact plan whose Plan basis lacks a Repository: or a 
     .replace('Branch: feat/fixture\n', ''));
   assert.equal(missingBranch.ok, false);
   assert.ok(missingBranch.lines.some((line) => line.includes("no 'Branch:' line")));
+});
+
+test('plan-check fails a compact plan whose Plan basis lacks a Land: line or names an unknown one', () => {
+  const missing = planCheckReport(compactPlanFixture({ tasks: compactTasks(1) }).replace('Land: local\n', ''));
+  assert.equal(missing.ok, false);
+  assert.ok(missing.lines.some((line) => line.includes("no 'Land:' line")));
+  const unknown = planCheckReport(compactPlanFixture({ tasks: compactTasks(1) }).replace('Land: local', 'Land: yolo'));
+  assert.equal(unknown.ok, false);
+  assert.ok(unknown.lines.some((line) => line.includes("no 'Land:' line")));
 });
 
 test('plan-check fails a compact plan missing Goal, Success criterion or a Checkpoint point', () => {
