@@ -1,4 +1,4 @@
-// The session hook hands the model facts only: the settings line, the pointers
+// The session hook hands the model only this context: the settings line, the pointers
 // and the text of hooks/session-routing.md and hooks/session-rules.md. Every start rewrites the plugin-root
 // pointer.
 

@@ -15,8 +15,8 @@ export const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
 // The date records when the number was measured; nothing enforces its age.
 // First-party documentation caps one hook output string at HOOK_OUTPUT_CAP
 // characters and hands the model a 2,000-character preview of a longer one.
-// hooks/session-start.mjs injects only facts and the text of
-// hooks/session-rules.md, which stays far under the cap.
+// hooks/session-start.mjs injects only this context: the pointers, the settings line
+// and the text of hooks/session-routing.md and hooks/session-rules.md, which stays far under the cap.
 export const HOOK_OUTPUT_CAP = { chars: 10000 };
 export const DESCRIPTION_TOTAL_LOCK = { chars: 2542, measured: '2026-10-08' };
 // Every plugin agent's description, in the Agent tool listing of every session.
