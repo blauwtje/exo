@@ -5,7 +5,10 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { agentEffort } from '../hooks/agent-effort.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { agentEffort, agentHook } from '../hooks/agent-effort.mjs';
 
 const HOOK = fileURLToPath(new URL('../hooks/agent-effort.mjs', import.meta.url));
 const toolInput = { subagent_type: 'exo:find-open-points', prompt: 'find', description: 'd' };
@@ -40,4 +43,24 @@ test('the script prints the output for max and nothing for garbage or empty inpu
   assert.equal(run('not json'), '');
   assert.equal(run(''), '');
   assert.equal(run(JSON.stringify(input('high'))), '');
+});
+
+function transcript(tokens) {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ctx-')), 't.jsonl');
+  fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
+  return file;
+}
+
+test('the context check joins the raise, and a context deny beats the allow', () => {
+  const warned = agentHook(input('max', { transcript_path: transcript(65000) })).hookSpecificOutput;
+  assert.equal(warned.permissionDecision, 'allow');
+  assert.equal(warned.updatedInput.effort, 'max');
+  assert.match(warned.additionalContext, /exo:save-session/);
+  const denied = agentHook(input('max', { transcript_path: transcript(120000) })).hookSpecificOutput;
+  assert.equal(denied.permissionDecision, 'deny');
+  assert.equal(denied.updatedInput, undefined);
+  const alone = agentHook(input('high', { transcript_path: transcript(65000) })).hookSpecificOutput;
+  assert.equal(alone.permissionDecision, undefined);
+  assert.match(alone.additionalContext, /Context use/);
+  assert.equal(agentHook(input('high', { transcript_path: transcript(1000) })), null);
 });

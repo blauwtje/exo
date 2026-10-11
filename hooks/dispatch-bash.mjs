@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // The one PreToolUse hook on Bash: runs the three guards in one process, each
-// in its own try/catch, and returns the first deny. `guards` `off` stands them
+// in its own try/catch, then the context check, and returns the first deny. `guards` `off` stands them
 // down; an unreadable setting leaves them on. An unreadable input exits 0 with
 // no output.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { settingValue } from '#settings-store';
+import { contextDecision } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
@@ -47,8 +48,20 @@ export function guardDecision(hookInput, denialFor) {
 export const GUARDS = [['git-guard', gitDenial], ['secret-guard', secretDenial], ['destructive-guard', destructiveDenial]]
   .map(([name, denialFor]) => ({ name, run: (hookInput) => guardDecision(hookInput, denialFor) }));
 
+// Last, so a guard's deny wins; a context deny still beats any allow.
+export const CONTEXT_STEP = {
+  name: 'context-limit',
+  run(hookInput) {
+    const decision = contextDecision(hookInput);
+    if (!decision) return null;
+    return { hookSpecificOutput: decision.deny
+      ? { permissionDecision: 'deny', permissionDecisionReason: decision.deny }
+      : { additionalContext: decision.additionalContext } };
+  }
+};
+
 // The one output, or null: the first deny, else the first other decision, plus every step's context.
-export async function dispatchBash(hookInput, steps = GUARDS) {
+export async function dispatchBash(hookInput, steps = [...GUARDS, CONTEXT_STEP]) {
   const outputs = [];
   for (const step of steps) {
     try {

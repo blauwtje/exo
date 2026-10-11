@@ -110,8 +110,7 @@ test('an awaited async step is merged like a sync one', async () => {
   assert.equal(await dispatchBash({}, [broken]), null);
 });
 
-// A Bash call from a delegate whose transcript is 120k tokens deep: no step
-// counts a delegate's tokens, so it passes like any other call.
+// A Bash call from a delegate whose transcript is 120k tokens deep.
 async function delegateCall() {
   const directory = await fixture();
   const transcript = path.join(directory, 'session.jsonl');
@@ -130,8 +129,10 @@ async function delegateCall() {
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;
 }
 
-test('a Bash call inside a delegate 120k tokens deep is not limited by the dispatcher', async () => {
-  assert.equal(await delegateCall(), null);
+test('a Bash call inside a delegate 120k tokens deep is denied with the report instruction', async () => {
+  const decision = await delegateCall();
+  assert.equal(decision.permissionDecision, 'deny');
+  assert.match(decision.permissionDecisionReason, /end now with your report/);
 });
 
 test('on Codex every guard is kept', async () => {
@@ -140,7 +141,7 @@ test('on Codex every guard is kept', async () => {
   assert.match(decision.permissionDecisionReason, /git-guard/);
 });
 
-// A main-session transcript at 120k prompt tokens, which nothing measures.
+// A main-session transcript at 120k prompt tokens.
 async function mainSessionCall(command) {
   const directory = await fs.realpath(await fixture());
   const transcript = path.join(directory, 'session.jsonl');
@@ -156,12 +157,18 @@ async function mainSessionCall(command) {
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;
 }
 
-test('a main-session Bash call at 120k tokens gets no notice', async () => {
-  assert.equal(await mainSessionCall('git status'), null);
+test('a main-session Bash call at 120k tokens is denied with the hand-off instruction', async () => {
+  const decision = await mainSessionCall('git status');
+  assert.equal(decision.permissionDecision, 'deny');
+  assert.match(decision.permissionDecisionReason, /hand-off/);
 });
 
-test('a guard-denied main-session Bash call at 120k tokens prints only the deny', async () => {
+test('a guard deny wins over the context deny at 120k tokens', async () => {
   const decision = await mainSessionCall('git reset --hard');
   assert.equal(decision.permissionDecision, 'deny');
-  assert.equal(decision.additionalContext, undefined);
+  assert.match(decision.permissionDecisionReason, /git-guard/);
+});
+
+test('a Codex-shaped input without a transcript gets no context output', async () => {
+  assert.equal(await output('git status', { env: { EXO_HOST: 'codex' } }), null);
 });

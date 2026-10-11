@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // PreToolUse hook on Agent: raises a dispatch of `exo:find-open-points` from its
 // pinned `high` to the session's effort when that is `xhigh` or `max`.
-// A dispatch already at or above that level, or anything else, prints nothing.
+// A dispatch already at or above that level, or anything else, prints nothing
+// unless the context check speaks.
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
+import { contextDecision } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
 export function agentEffort({ tool_name: tool, tool_input: input, effort } = {}) {
@@ -13,9 +15,20 @@ export function agentEffort({ tool_name: tool, tool_input: input, effort } = {})
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: { ...input, effort: level } } };
 }
 
+// The effort raise joined with the context check: a context deny wins over the
+// allow, else the context text rides along.
+export function agentHook(hookInput) {
+  const output = agentEffort(hookInput);
+  const decision = contextDecision(hookInput);
+  if (!decision) return output;
+  if (decision.deny) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: decision.deny } };
+  const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
+  return { hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: decision.additionalContext } };
+}
+
 if (isMain(import.meta.url)) {
   try {
-    const output = agentEffort(JSON.parse(await readHookText()));
+    const output = agentHook(JSON.parse(await readHookText()));
     if (output) process.stdout.write(`${JSON.stringify(output)}\n`);
   } catch {
     // Unreadable input leaves the dispatch as it is.
