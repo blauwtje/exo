@@ -198,6 +198,14 @@ test('phases landing, landed and parked exist; landed and parked are final; stag
   assert.equal(updateRun(root, 'a', { phase: 'parked', stage: 'landing' }).stage, 'landing');
 });
 
+test('gates: a multi-line action is kept as one line and taken by either form', () => {
+  const dir = tmp();
+  openGate(dir, { source: 'task 1', action: 'git push -f x\nrm -rf y', reason: 'denied' });
+  assert.deepEqual(readGates(dir).map((g) => g.action), ['git push -f x rm -rf y']);
+  approveGates(dir);
+  assert.equal(takeApproved(dir, 'git push -f x\nrm -rf y'), true);
+});
+
 test('gates: open once, approve, take once by exact trimmed action', () => {
   const dir = tmp();
   assert.deepEqual(readGates(dir), []);

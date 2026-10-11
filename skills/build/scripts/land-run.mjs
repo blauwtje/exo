@@ -15,7 +15,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch } from '#plan-tasks';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { openGate, takeApproved } from './run-state.mjs';
+import { openGate, readGates, takeApproved } from './run-state.mjs';
 
 const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'remove-worktree.mjs');
 const LAND_ANYWAY = 'land anyway';
@@ -40,7 +40,7 @@ function reviewProblem(runRoot, startedAt) {
   if (!(mtime >= Date.parse(startedAt))) return 'branch review is older than the run';
   const verdict = /^\s*(CLEAN|FINDINGS|BLOCKED)\b/.exec(text.split('\n')[0])?.[1];
   if (verdict === 'CLEAN') return null;
-  const fix = /^Count:.*\bfix=(\d+)/m.exec(text)?.[1];
+  const fix = [...text.matchAll(/^Count:.*\bfix=(\d+)/gm)].at(-1)?.[1];
   if (verdict === 'FINDINGS' && fix === '0') return null;
   return `branch review is ${verdict ?? 'unreadable'}${fix ? ` with fix=${fix}` : ''}`;
 }
@@ -74,7 +74,10 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
       return parked(`rebase ${branch} onto origin/${base} yourself in ${runRoot}`, 'rebase conflict');
     }
     const check = /`([^`]+)`/.exec(success)?.[1];
-    if (check && git(runRoot, 'rev-parse', 'HEAD').out !== before && !run(runRoot, 'sh', ['-c', check]).ok
+    const moved = git(runRoot, 'rev-parse', 'HEAD').out !== before;
+    // A re-check that parked earlier is not waived by the next call finding the branch already rebased.
+    const pending = readGates(runDir).some((g) => g.source === 'land' && g.status !== 'used' && g.reason.startsWith('re-check failed'));
+    if (check && (moved || pending) && !run(runRoot, 'sh', ['-c', check]).ok
       && !takeApproved(runDir, LAND_ANYWAY)) {
       return parked(LAND_ANYWAY, `re-check failed after rebase: ${check}`);
     }
@@ -96,7 +99,12 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
     const gh = run(runRoot, 'gh', ghArgs);
     if (!gh.ok) return parked(`gh ${ghArgs.join(' ')}`, `gh failed: ${gh.err.split('\n')[0]}`);
     const range = `${short(git(root, 'rev-parse', `origin/${base}`).out)}..${short(head)}`;
-    return landed({ range, pushed: `origin/${branch}`, prUrl: gh.out.split('\n').pop(), cleanup: 'branch kept' });
+    const notes = [];
+    if (!inPlace) {
+      const rm = run(root, process.execPath, [REMOVE_WORKTREE, '--kept', '--worktree', runRoot, '--run', root]);
+      notes.push(rm.ok ? 'worktree removed' : `worktree kept: ${(rm.err || rm.out).split('\n')[0]}`);
+    }
+    return landed({ range, pushed: `origin/${branch}`, prUrl: gh.out.split('\n').pop(), cleanup: [...notes, 'branch kept'].join('; ') });
   }
 
   // local and push-main: fast-forward the default branch onto the branch.
@@ -106,14 +114,19 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
   }
   const old = git(root, 'rev-parse', base).out;
   if (inPlace && !git(root, 'switch', base).ok) return parked(`switch ${root} to ${base}`, `cannot switch to ${base}`);
+  // An in-place park returns to the run branch, so the resumed call rebases it, not the default branch.
+  const parkedOnBranch = (action, reason) => {
+    if (inPlace) git(root, 'switch', branch);
+    return parked(action, reason);
+  };
   if (!git(root, 'merge', '--ff-only', branch).ok) {
-    return parked(`rebase ${branch} onto ${base} yourself in ${runRoot}`, `${base} cannot fast-forward to ${branch}`);
+    return parkedOnBranch(`rebase ${branch} onto ${base} yourself in ${runRoot}`, `${base} cannot fast-forward to ${branch}`);
   }
   const range = `${short(old)}..${short(git(root, 'rev-parse', base).out)}`;
   let pushed = null;
   if (mode === 'push-main') {
     const push = git(root, 'push', 'origin', base);
-    if (!push.ok) return parked(`fetch origin and rebase ${base} yourself in ${root}`, `push of ${base} failed: ${push.err.split('\n')[0]}`);
+    if (!push.ok) return parkedOnBranch(`fetch origin and rebase ${base} yourself in ${root}`, `push of ${base} failed: ${push.err.split('\n')[0]}`);
     pushed = `origin/${base}`;
   }
   const notes = [];

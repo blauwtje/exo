@@ -83,10 +83,13 @@ function writeGates(dir, gates) {
   writeAtomic(gatesFile(dir), text);
 }
 
+// A multi-line action reads as one line, so the gate line stays whole.
+const oneLine = (action) => action.replace(/\s*\n\s*/g, ' ').trim();
+
 // Adds an open gate unless one with the same source and action is already open.
 export function openGate(dir, { source, action, reason }) {
   const gates = readGates(dir);
-  const act = action.trim();
+  const act = oneLine(action);
   if (gates.some((g) => g.status === 'open' && g.source === source && g.action === act)) return;
   gates.push({ status: 'open', source, action: act, reason: reason.replace(/[()\n]/g, ' ').trim() });
   writeGates(dir, gates);
@@ -104,7 +107,7 @@ export function approveGates(dir) {
 // Marks the first approved gate whose action equals `action` used; true when there was one.
 export function takeApproved(dir, action) {
   const gates = readGates(dir);
-  const g = gates.find((x) => x.status === 'approved' && x.action === action.trim());
+  const g = gates.find((x) => x.status === 'approved' && x.action === oneLine(action));
   if (!g) return false;
   g.status = 'used';
   writeGates(dir, gates);

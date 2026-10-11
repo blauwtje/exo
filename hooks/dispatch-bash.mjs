@@ -46,11 +46,11 @@ export function guardDecision(hookInput, denialFor) {
 }
 
 // In this order, so the first deny wins.
-// In a run a git-guard or destructive-guard deny parks the run; secret-guard's stays plain.
+// In a run a git-guard or destructive-guard deny parks the run and an approval skips them; secret-guard's stays plain and always runs.
 export const GUARDS = [['git-guard', gitDenial, true], ['secret-guard', secretDenial, false], ['destructive-guard', destructiveDenial, true]]
   .map(([name, denialFor, parks]) => ({
     name,
-    guard: true,
+    guard: parks,
     run: (hookInput) => {
       const output = guardDecision(hookInput, denialFor);
       return parks ? parkOutput(hookInput, output) : output;

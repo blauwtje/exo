@@ -426,8 +426,9 @@ function runCommand(argv, { approving = false } = {}) {
     releaseLock(root, id);
     try {
       writeReport(root, id, phase, result);
-    } catch {
-      // the report is a convenience; the state already holds the outcome
+    } catch (error) {
+      // the state already holds the outcome; say the report is missing
+      process.stderr.write(`exo: report.md not written: ${error.message}\n`);
     }
     notify(id, phase);
   }

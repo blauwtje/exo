@@ -142,6 +142,14 @@ test('EXO_RUN_DIR: a parked marker naming the tail stops the run after the verif
   await assert.rejects(fs.access(path.join(dir, 'parked')));
 });
 
+test('EXO_RUN_DIR: a stale parked marker never stops a run whose session writes none', async () => {
+  const { context, dir } = await runDirContext();
+  await fs.writeFile(path.join(dir, 'parked'), 'Task 1: PARKED stale\n');
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS');
+  assert.equal(result.code, 0);
+});
+
 test('EXO_RUN_DIR: a stale blocked marker never stops a run whose session writes none', async () => {
   const { context, dir } = await runDirContext();
   await fs.writeFile(path.join(dir, 'blocked'), 'Task 1: BLOCKED stale\n');

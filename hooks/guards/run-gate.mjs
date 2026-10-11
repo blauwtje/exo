@@ -15,10 +15,10 @@ import { blankCommandText, GIT_PREFIX_SOURCE } from './command-text.mjs';
 
 const START = '(?:^|[;&|(\\n])[ \\t]*';
 const RULES = [
-  [/(?:^|[\s;&|(])npm +publish\b/, 'npm publish'],
+  [/(?:^|[\s;&|(])npm\b[^;&|\n]* +publish(?![\w.-])/, 'npm publish'],
   [/(?:^|[\s;&|(])gh +release\b/, 'gh release'],
-  [new RegExp(`${START}${GIT_PREFIX_SOURCE}push\\b[^;&|\\n]*(?:--tags\\b|[ \\t]tag[ \\t]|[ \\t]refs/tags/|[ \\t]v?\\d+\\.\\d+[^ \\t;&|\\n]*)`), 'a tag push'],
-  [/(?:^|[\s;&|(])(?:vercel|netlify|fly|flyctl)\b(?: +deploy)?/, 'a deploy']
+  [new RegExp(`${START}${GIT_PREFIX_SOURCE}push\\b[^;&|\\n]*(?:--(?:follow-)?tags\\b|[ \\t]tag[ \\t]|[ \\t:]refs/tags/|[ \\t]v?\\d+\\.\\d+[^ \\t;&|\\n]*)`), 'a tag push'],
+  [new RegExp(`${START}(?:(?:\\w+=\\S*|npx|pnpx|bunx)[ \\t]+)*(?:vercel(?![\\w-])|(?:netlify|fly|flyctl)[ \\t]+(?:[^;&|\\n]*[ \\t])?deploy\\b)`), 'a deploy']
 ];
 
 // The deny reason for a command, or null; shaped like a guard's `denialFor`.
@@ -37,8 +37,12 @@ export function parkOutput(hookInput, output, env = process.env) {
   const command = oneLine(hookInput.tool_input.command);
   const task = env.EXO_RUN_TASK?.split('/').pop() || 'tail';
   const reason = output.hookSpecificOutput.permissionDecisionReason;
-  openGate(env.EXO_RUN_DIR, { source: `task ${task}`, action: command, reason });
-  fs.writeFileSync(path.join(env.EXO_RUN_DIR, 'parked'), `Task ${task}: PARKED ${command}\n`);
+  try {
+    openGate(env.EXO_RUN_DIR, { source: `task ${task}`, action: command, reason });
+    fs.writeFileSync(path.join(env.EXO_RUN_DIR, 'parked'), `Task ${task}: PARKED ${command}\n`);
+  } catch {
+    return output; // No gate could be written: the deny stays plain rather than vanish.
+  }
   const why = `${reason} The run parks for approval; end with \`Task ${task}: BLOCKED parked\`.`;
   return { hookSpecificOutput: { ...output.hookSpecificOutput, permissionDecisionReason: why } };
 }
