@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { FLOW_BRANCH, FLOW_PLAN, FLOW_REQUEST } from './sweep-fixtures.mjs';
 import { NO_RUN, ROOT, SAFE_TASKS } from './tasks.mjs';
 
@@ -27,6 +28,9 @@ const PLAN_RUNS = [
   { model: 'fable', effort: 'high' },
   { model: 'fable', effort: 'xhigh' }
 ];
+
+// The run arms start exo run, whose sessions pass through this wrapper to run confined.
+const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta.url));
 
 const NO_ANSWER = 'Nobody can answer a question during this run.';
 const MINUTE_MS = 60 * 1000;
@@ -211,7 +215,9 @@ function flowCells() {
       id: 'flow-base',
       plugin: false,
       prompt: `Implement every task in ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
-    }
+    },
+    { ...shared, id: 'flow-run', runSession: 'plan', budgetUsd: '1', prompt: null },
+    { ...shared, id: 'flow-run-task', runSession: 'task', budgetUsd: '1', prompt: null }
   ];
 }
 
@@ -231,6 +237,18 @@ export function selectCells(cells, setNames) {
 // variant however many cells load it.
 export function pluginVariants(cells) {
   return [...new Set(cells.map((cell) => cell.pluginVariant).filter((name) => typeof name === 'string'))];
+}
+
+// The `node` arguments of a run arm: exo run builds the fixed plan with one
+// session per plan or per task, each through the confining wrapper.
+export function runArguments(cell, pluginDir = ROOT) {
+  return [
+    path.join(pluginDir, 'skills', 'build', 'scripts', 'exo-cli.mjs'), 'run', FLOW_PLAN,
+    '--session', cell.runSession,
+    '--max-run-usd', cell.budgetUsd,
+    '--plugin-dir', pluginDir,
+    '--claude', CONFINED_CHILD
+  ];
 }
 
 // Every call names this clone as its plugin, or the variant copy `pluginDir`

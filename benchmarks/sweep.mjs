@@ -21,10 +21,10 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { confinedClaude } from '#confine-claude';
-import { writeCellUsage } from './cell-usage.mjs';
+import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
-import { claudeArguments, pluginVariants, selectCells, sweepCells } from './sweep-cells.mjs';
+import { claudeArguments, pluginVariants, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
 import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { ROOT } from './tasks.mjs';
@@ -67,7 +67,11 @@ function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
     const pluginDir = cell.pluginVariant ? copies[cell.pluginVariant] : ROOT;
     const tmp = path.join(cellRoot, 'tmp');
     fs.mkdirSync(tmp, { recursive: true });
-    const run = confinedClaude({ args: claudeArguments(cell, pluginDir), roots: [cellRoot], cwd: workdir, tmp });
+    // A run arm starts exo run unconfined, as a user would; its sessions confine
+    // themselves through the wrapper, given the cell root here.
+    const run = cell.runSession
+      ? { command: process.execPath, args: runArguments(cell, pluginDir), env: { EXO_SWEEP_CELL_ROOT: cellRoot }, cwd: workdir }
+      : confinedClaude({ args: claudeArguments(cell, pluginDir), roots: [cellRoot], cwd: workdir, tmp });
     const child = spawn(run.command, run.args, {
       cwd: run.cwd,
       env: { ...process.env, ...run.env },
@@ -147,9 +151,10 @@ function landedTasks(repository) {
 // The hidden check reads the finished code, so it runs before the repository
 // is removed; a check that throws leaves the cell a record with no landed count.
 async function measureFlow(repository, review, usage) {
-  const transcript = usage === null ? '' : fs.readFileSync(usage.transcript, 'utf8');
+  // A run arm has no one transcript, so its gate facts stay null.
+  const transcript = usage?.transcript ? fs.readFileSync(usage.transcript, 'utf8') : '';
   // Null when the transcript is gone, so a lost session never reads as a skipped gate.
-  const calls = usage === null ? null : toolCalls(readJsonl(usage.transcript));
+  const calls = usage?.transcript ? toolCalls(readJsonl(usage.transcript)) : null;
   const gates = calls === null ? null : gateFacts(calls);
   let check;
   try {
@@ -208,6 +213,15 @@ function prepareRepository(cell, repository, origin) {
   else prepareFlowRepository(repository, origin, cell.kind === 'flow');
 }
 
+// The newest sessions.jsonl under the repository's run logs, or null.
+function runLedger(repository) {
+  const logs = path.join(repository, '.exo', 'run-plan');
+  if (!fs.existsSync(logs)) return null;
+  const ledgers = fs.readdirSync(logs, { recursive: true }).filter((name) => path.basename(name) === 'sessions.jsonl').map((name) => path.join(logs, name));
+  ledgers.sort((left, right) => fs.statSync(right).mtimeMs - fs.statSync(left).mtimeMs);
+  return ledgers[0] ?? null;
+}
+
 async function runCell(cell, runDirectory, copies) {
   const cellDirectory = path.join(runDirectory, cell.id);
   fs.mkdirSync(cellDirectory, { recursive: true });
@@ -218,7 +232,11 @@ async function runCell(cell, runDirectory, copies) {
     prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
     const outcome = await runClaude(cell, repository, cellRoot, cellDirectory, copies);
     const result = readResult(cellDirectory);
-    const usage = typeof result?.session_id === 'string' ? writeCellUsage(cellDirectory, result.session_id) : null;
+    const usage = cell.runSession
+      ? writeRunUsage(cellDirectory, runLedger(repository))
+      : typeof result?.session_id === 'string' ? writeCellUsage(cellDirectory, result.session_id) : null;
+    // Read before cellRoot goes; a build session without a hook means the cell measured no exo.
+    if (usage?.missingHooks > 0) throw new Error(`${cell.id}: exo hooks did not run`);
     const measured = await measureCell(cell, repository, usage, cellDirectory);
     const record = {
       id: cell.id,
@@ -229,7 +247,7 @@ async function runCell(cell, runDirectory, copies) {
       exitCode: outcome.exitCode,
       timedOut: outcome.timedOut,
       wallMs: outcome.wallMs,
-      costUsd: typeof result?.total_cost_usd === 'number' ? result.total_cost_usd : null,
+      costUsd: cell.runSession ? usage?.costUsd ?? null : typeof result?.total_cost_usd === 'number' ? result.total_cost_usd : null,
       tokens: usage === null ? null : Math.round(usage.counts.weightedInput + usage.counts.output),
       outputTokens: usage === null ? null : usage.counts.output,
       ...measured

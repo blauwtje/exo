@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { claudeArguments, pluginVariants, selectCells, sweepCells, SWEEP_MODELS } from '../benchmarks/sweep-cells.mjs';
+import { claudeArguments, pluginVariants, runArguments, selectCells, sweepCells, SWEEP_MODELS } from '../benchmarks/sweep-cells.mjs';
 import { FLOW_PLAN, FLOW_REQUEST } from '../benchmarks/sweep-fixtures.mjs';
 import { ROOT } from '../benchmarks/tasks.mjs';
 
@@ -14,14 +14,14 @@ function flagValue(args, flag) {
   return index === -1 ? null : args[index + 1];
 }
 
-test('the full set makes 49 calls: 33 review, 5 build, 5 fixer, 3 plan and 3 flow', () => {
-  assert.equal(selectCells(cells, ['all']).length, 49);
+test('the full set makes 51 calls: 33 review, 5 build, 5 fixer, 3 plan and 5 flow', () => {
+  assert.equal(selectCells(cells, ['all']).length, 51);
   assert.equal(selectCells(cells, ['review']).length, 33);
   assert.equal(selectCells(cells, ['build']).length, 5);
   assert.equal(selectCells(cells, ['fixer']).length, 5);
   assert.equal(selectCells(cells, ['plan']).length, 3);
-  assert.equal(selectCells(cells, ['flow']).length, 3);
-  assert.equal(selectCells(cells, ['plan', 'flow']).length, 6);
+  assert.equal(selectCells(cells, ['flow']).length, 5);
+  assert.equal(selectCells(cells, ['plan', 'flow']).length, 8);
 });
 
 test('an unknown set name stops the selection', () => {
@@ -29,7 +29,7 @@ test('an unknown set name stops the selection', () => {
 });
 
 test('every call names this clone as plugin, the cell model and the cell effort', () => {
-  for (const cell of cells.filter((candidate) => candidate.id !== 'flow-base')) {
+  for (const cell of cells.filter((candidate) => candidate.id !== 'flow-base' && !candidate.runSession)) {
     const args = claudeArguments(cell);
     assert.equal(flagValue(args, '--plugin-dir'), ROOT, cell.id);
     assert.equal(flagValue(args, '--model'), cell.model, cell.id);
@@ -55,7 +55,7 @@ test('the flow baseline runs the plan with no plugin and the exo flow cell keeps
   for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(baseline[key], exo[key], key);
   assert.ok(baseline.prompt.startsWith(`Implement every task in ${FLOW_PLAN}.`));
   assert.ok(!baseline.prompt.includes('exo:'));
-  assert.ok(cells.filter((cell) => cell.id !== 'flow-base').every((cell) => cell.plugin !== false));
+  assert.ok(cells.filter((cell) => cell.id !== 'flow-base' && !cell.runSession).every((cell) => cell.plugin !== false));
 });
 
 test('every fixture is reviewed seeded and as a control at each effort', () => {
@@ -90,6 +90,20 @@ test('the session flow cells run flow-c7 prompt on a cut variant and load the co
     assert.equal(cell.prompt, exo.prompt, cell.id);
     for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(cell[key], exo[key], `${cell.id} ${key}`);
     assert.equal(flagValue(claudeArguments(cell, '/tmp/copy'), '--plugin-dir'), '/tmp/copy', cell.id);
+  }
+});
+
+test('the run arms start exo run on the fixed plan, one session per plan or per task, through the confining wrapper', () => {
+  const [plan, task] = selectCells(cells, ['flow']).filter((cell) => cell.runSession);
+  assert.deepEqual([plan.id, plan.runSession, task.id, task.runSession], ['flow-run', 'plan', 'flow-run-task', 'task']);
+  for (const cell of [plan, task]) {
+    assert.equal(cell.budgetUsd, '1', cell.id);
+    const args = runArguments(cell, '/tmp/copy');
+    assert.deepEqual(args.slice(0, 3), ['/tmp/copy/skills/build/scripts/exo-cli.mjs', 'run', FLOW_PLAN], cell.id);
+    assert.equal(flagValue(args, '--session'), cell.runSession);
+    assert.equal(flagValue(args, '--max-run-usd'), '1');
+    assert.equal(flagValue(args, '--plugin-dir'), '/tmp/copy');
+    assert.match(flagValue(args, '--claude'), /benchmarks[\\/]confined-child\.mjs$/);
   }
 });
 

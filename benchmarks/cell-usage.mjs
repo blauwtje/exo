@@ -143,3 +143,31 @@ export function writeCellUsage(cellDirectory, sessionId) {
   fs.writeFileSync(path.join(cellDirectory, 'usage.json'), `${JSON.stringify(usage, null, 2)}\n`);
   return usage;
 }
+
+// A run arm has no single session: every id in the run's sessions.jsonl counts,
+// each message once, and costUsd sums the ledger. `missingHooks` lists the build
+// sessions in which no exo hook ran. Null when the ledger is missing.
+export function writeRunUsage(cellDirectory, ledgerFile) {
+  if (ledgerFile === null || !fs.existsSync(ledgerFile)) return null;
+  const sessions = fs.readFileSync(ledgerFile, 'utf8').split('\n').filter((line) => line.trim() !== '').map((line) => JSON.parse(line));
+  const calls = {};
+  const subagents = [];
+  for (const { sessionId } of sessions) {
+    const transcript = typeof sessionId === 'string' ? findTranscript(sessionId) : null;
+    if (transcript === null) continue;
+    Object.assign(calls, transcriptCalls(transcript));
+    subagents.push(...subagentTypes(transcript));
+  }
+  const usage = {
+    transcript: null,
+    counts: sumCounts(Object.values(calls)),
+    byModel: countsByModel(calls),
+    subagents,
+    leadPeakTokens: null,
+    costUsd: sessions.reduce((total, session) => total + (session.costUsd ?? 0), 0),
+    sessions: sessions.length,
+    missingHooks: sessions.filter((session) => ['task', 'plan'].includes(session.kind) && !(session.hooks > 0)).length
+  };
+  fs.writeFileSync(path.join(cellDirectory, 'usage.json'), `${JSON.stringify(usage, null, 2)}\n`);
+  return usage;
+}

@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { writeRunUsage } from '../benchmarks/cell-usage.mjs';
 import { ROOT } from '../benchmarks/tasks.mjs';
 import { fixture, run } from './harness.mjs';
 
@@ -23,7 +24,7 @@ test('without --confirm the sweep prints its call count and starts no claude pro
   const { env, marker } = await fakeClaude();
   const result = await run(SWEEP, ['--set', 'all'], { env });
   assert.equal(result.code, 2, result.stderr);
-  assert.match(result.stdout, /^49 claude -p calls planned, one per cell:/);
+  assert.match(result.stdout, /^51 claude -p calls planned, one per cell:/);
   assert.match(result.stdout, /review-safe-path-seeded-low: --model claude-opus-5-5 --effort low/);
   assert.match(result.stdout, /plan-fable-xhigh: --model claude-fable-5-1 --effort xhigh/);
   assert.match(result.stdout, /Re-run with --confirm/);
@@ -34,7 +35,7 @@ test('a named set counts only its cells', async () => {
   const { env, marker } = await fakeClaude();
   const result = await run(SWEEP, ['--set', 'plan,flow'], { env });
   assert.equal(result.code, 2, result.stderr);
-  assert.match(result.stdout, /^6 claude -p calls planned/);
+  assert.match(result.stdout, /^8 claude -p calls planned/);
   await assert.rejects(fs.access(marker));
 });
 
@@ -112,7 +113,7 @@ test('a session flow cell loads its variant copy and every other flow cell keeps
   const { env } = await loggingClaude();
   const out = await fixture();
   const results = await fixture();
-  const result = await run(SWEEP, ['--set', 'flow', '--confirm', '--concurrency', '1', '--out', out, '--results', results], { env });
+  const result = await run(SWEEP, ['--set', 'flow', '--cells', 'flow-c7,flow-session,flow-base', '--confirm', '--concurrency', '1', '--out', out, '--results', results], { env });
   assert.equal(result.code, 0, result.stderr);
   const logs = (await fs.readdir(out, { recursive: true })).filter((entry) => entry.endsWith('stderr.log'));
   const [exo, session, base] = await Promise.all(['flow-c7', 'flow-session', 'flow-base']
@@ -132,4 +133,51 @@ test('an unknown flag stops before any call', async () => {
   assert.equal(result.code, 1);
   assert.match(result.stderr, /unknown flag --sets/);
   await assert.rejects(fs.access(marker));
+});
+
+const CONFINED_CHILD = fileURLToPath(new URL('../benchmarks/confined-child.mjs', import.meta.url));
+
+test('the confining wrapper refuses to start claude without a cell root or outside it', async () => {
+  const { env, marker } = await fakeClaude();
+  const root = await fixture();
+  const outside = await fixture();
+  const bare = await run(CONFINED_CHILD, ['-p'], { env, cwd: root });
+  assert.equal(bare.code, 1);
+  assert.match(bare.stderr, /EXO_SWEEP_CELL_ROOT names no cell root/);
+  const escaped = await run(CONFINED_CHILD, ['-p'], { env: { ...env, EXO_SWEEP_CELL_ROOT: root }, cwd: outside });
+  assert.equal(escaped.code, 1);
+  assert.match(escaped.stderr, /outside the cell root/);
+  await assert.rejects(fs.access(marker));
+});
+
+// One transcript line per message id; a repeated id counts once across sessions.
+async function ledgerOf(sessions) {
+  const config = await fixture();
+  const project = path.join(config, 'projects', 'slug');
+  await fs.mkdir(project, { recursive: true });
+  const message = (id) => JSON.stringify({ type: 'assistant', message: { id, model: 'm', usage: { input_tokens: 10, output_tokens: 5 } } });
+  await fs.writeFile(path.join(project, 'a1.jsonl'), `${message('x')}\n${message('y')}\n`);
+  await fs.writeFile(path.join(project, 'b2.jsonl'), `${message('y')}\n${message('z')}\n`);
+  process.env.CLAUDE_CONFIG_DIR = config;
+  const directory = await fixture();
+  const ledger = path.join(directory, 'sessions.jsonl');
+  await fs.writeFile(ledger, sessions.map((session) => JSON.stringify(session)).join('\n') + '\n');
+  return { directory, ledger };
+}
+
+test('a run cell sums cost and tokens over the ledger sessions, each message once, and counts build sessions without hooks', async () => {
+  const { directory, ledger } = await ledgerOf([
+    { kind: 'task', task: 1, sessionId: 'a1', costUsd: 0.25, hooks: 3 },
+    { kind: 'review', task: null, sessionId: 'b2', costUsd: 0.5, hooks: 0 }
+  ]);
+  const usage = writeRunUsage(directory, ledger);
+  assert.equal(usage.costUsd, 0.75);
+  assert.equal(usage.counts.output, 15);
+  assert.equal(usage.missingHooks, 0);
+  assert.equal(JSON.parse(await fs.readFile(path.join(directory, 'usage.json'), 'utf8')).sessions, 2);
+});
+
+test('a build session whose hooks never ran marks the run cell as missing exo', async () => {
+  const { directory, ledger } = await ledgerOf([{ kind: 'plan', task: 1, sessionId: 'a1', costUsd: 0.1, hooks: 0 }]);
+  assert.equal(writeRunUsage(directory, ledger).missingHooks, 1);
 });
