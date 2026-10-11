@@ -450,49 +450,15 @@ function sectionOf(text, heading) {
 }
 
 /**
- * The first prompt of one task session: the task's brief and the rules it needs, read from
- * their one source files (task-mode.md, build-task.md, lean.md), so the session reads none of them
- * and runs neither next-task.mjs nor a land-task check.
+ * The first prompt of one task session: `run-task-prompt.md`'s `## Build session` filled with the
+ * task's brief and the one land command, so the session reads no skill or rule file and runs
+ * neither next-task.mjs nor a land-task check.
  */
-export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, pluginRoot = PLUGIN_ROOT, runDir = process.env.EXO_RUN_DIR }) {
+export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, retryNote = '', runDir = process.env.EXO_RUN_DIR }) {
   const task = plan.tasks.find((entry) => entry.number === number);
-  const fill = (text) => text
-    .replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIR)
-    .replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot)
-    .replaceAll('<checkout>', root)
-    .replaceAll('<plan>', planPath)
-    .replaceAll('<n>', String(number));
-  const taskMode = readText(SKILL_DIR, 'references', 'task-mode.md');
-  const builder = readText(pluginRoot, 'agents', 'build-task.md');
-  const lean = readText(pluginRoot, 'skills', 'route-skills', 'references', 'lean.md');
-  const drift = driftOf(task, root);
-  return [
-    `Land Task ${number} of ${planPath} in this session.`,
-    `Report to: ${path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`)}`,
-    ...drift.map((item) => `PLAN DRIFT: Task ${number}: ${item}`),
-    '',
-    'Brief:',
-    taskBrief(task, frameOf(plan.frame), root).trimEnd(),
-    '',
-    fill(sectionOf(taskMode, 'Rules')),
-    '',
-    ...(task.design ? [fill(sectionOf(taskMode, 'Design tasks')), ''] : []),
-    fill(sectionOf(builder, 'Git')),
-    '',
-    fill(sectionOf(builder, 'Build')),
-    '',
-    fill(sectionOf(builder, 'Stop')),
-    '',
-    fill(sectionOf(builder, 'Report')),
-    '',
-    `## Lean code\n\n${lean.slice(lean.indexOf('## ')).replaceAll('\n## ', '\n### ').replace(/^## /, '### ').trimEnd()}`,
-    '',
-    fill(sectionOf(taskMode, 'Finish')),
-    '',
-    '## This run',
-    '',
-    `- Change only the files this task lists. If a registry, index or test list must name the new file and is not listed, end on \`Task ${number}: BLOCKED <file> is missing from the file list\`.`,
+  const extra = [
     `- Read ${learnings} first, and before ending append one line on anything the next task should know.`,
+    ...(task.design ? [`- Design task: build by steps 1-3 of ${path.join(SKILL_DIR, 'references', 'design-tasks.md')} \`## The delegate\`, contract first, with \`$RUN\` as ${path.join(root, '.exo')}.`] : []),
     ...(runDir
       ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${path.join(runDir, 'decisions.md')}) and go on.`]
       : []),
@@ -500,6 +466,19 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, p
       ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. land-task reruns the proof outside the sandbox, so land when those are the only failures left.']
       : [])
   ].join('\n');
+  const fields = {
+    task: `Task ${number}`,
+    plan: planPath,
+    root,
+    report: path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`),
+    brief: [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n'),
+    extra,
+    land: `node "${SCRIPT.landTask}" --plan ${planPath} --task ${number} --root ${root}`,
+    retry: retryNote
+  };
+  return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Build session').split('\n').slice(1).join('\n').trim()
+    .replace(/\{\{(\w+)\}\}/g, (_, name) => fields[name])
+    .replace(/\n\n\n+/g, '\n\n');
 }
 
 function reportLines(root, number) {
@@ -646,7 +625,7 @@ async function main(argv) {
   const taskSettings = sandboxSettings(sandbox);
   const tailSettings = sandboxSettings(sandbox, { tail: true });
   const learnings = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'learnings.md');
-  const buildPrompt = (number) => taskPrompt({ plan, planPath, number, root, learnings, sandbox: sandbox.enabled });
+  const buildPrompt = (number, retryNote = '') => taskPrompt({ plan, planPath, number, root, learnings, sandbox: sandbox.enabled, retryNote });
 
   if (flags['dry-run']) {
     const order = taskOrder(plan.tasks, landedAtStart);
@@ -751,7 +730,7 @@ async function main(argv) {
     say(`task ${n} start${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
-    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n) + retryNote, allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
+    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     // A denial is only logged: the task is judged by whether it landed, and a run that landed nothing counts toward the stall limit.
     const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);

@@ -175,7 +175,14 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const prompt = result.calls[0].stdin;
   const learnings = path.join(context.root, '.exo', 'run-plan', 'plan', 'learnings.md');
   assert.ok(prompt.includes('### Task 1: feat(a): add a\nDepends on: none | Files: `a.txt`'), 'the task section');
-  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- Run one command per Bash call/m, /^## Git$/m, /^## Build$/m, /^## Lean code$/m, /^## Finish$/m]) assert.match(prompt, rule);
+  for (const rule of [/^- Change only the files/m, /^- Read .*learnings\.md first/m, /^- Run one command per Bash call/m, /^Land: /m]) assert.match(prompt, rule);
+  assert.match(prompt, /^- `Task 1: GREEN`$/m);
+  assert.match(prompt, /^- `Task 1: BLOCKED <reason>`/m);
+  assert.match(prompt, /^- `Task 1: PLAN DRIFT <reason>`/m);
+  for (const file of ['skills/build/references/task-mode.md', 'agents/build-task.md', 'skills/route-skills/references/lean.md']) {
+    const lines = (await fs.readFile(path.join(PLUGIN_ROOT, file), 'utf8')).split('\n').filter((line) => line.startsWith('- ') && !line.includes('smallest change'));
+    assert.ok(lines.every((line) => !prompt.includes(line)), `${file} text is not pasted`);
+  }
   assert.ok(prompt.includes(`node "${path.join(SCRIPTS, 'land-task.mjs')}" --plan ${context.plan} --task 1 --root ${context.root}`), 'the land command');
   assert.doesNotMatch(prompt, /^\/exo:build|## Design tasks|next-task\.mjs --plan|mcp-tool-call/m, 'no skill load, no design rule, no probe for a shell task');
   assert.equal(prompt.match(/### Task 1:/g).length, 1, 'the task section appears once');

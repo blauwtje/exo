@@ -43,6 +43,7 @@ A decided change with no plan file follows `references/no-spec.md`. After a comp
 | `bug-fixer-prompt.md` | Step 6, failed deferred MCP call. |
 | `review-fixer-prompt.md` | Never here: `verify` step 3 reads it. |
 | `references/design-tasks.md` | Step 4, `Design:` line. |
+| `run-task-prompt.md` | Never here: `run-plan.mjs` fills it. |
 | `reviewer-prompt.md` | No spec step 7. |
 | `references/fresh-eyes.md` | No spec step 7. |
 | `references/critique.md` | No spec step 7, last fallback. |

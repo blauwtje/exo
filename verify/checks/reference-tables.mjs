@@ -40,6 +40,7 @@ const EXPECTED_OWNER_ROWS = {
     'bug-fixer-prompt.md',
     'review-fixer-prompt.md',
     'drift-repairer-prompt.md',
+    'run-task-prompt.md',
     '../route-skills/references/question.md',
     'references/design-tasks.md',
     'reviewer-prompt.md',
