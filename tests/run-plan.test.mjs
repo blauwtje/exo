@@ -669,6 +669,9 @@ test('--session plan: one session builds both tasks, then the script lands each 
   assert.equal(result.calls[0].stdin.match(/### Task \d:/g).length, 2);
   const logs = await fs.readdir(path.join(context.root, '.exo', 'run-plan', 'plan'), { recursive: true });
   assert.ok(logs.some((name) => name.endsWith('land-task-1.log')) && logs.some((name) => name.endsWith('land-task-2.log')), logs.join());
+  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
+  const ledger = (await fs.readFile(path.join(logDir, 'sessions.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+  assert.deepEqual(ledger.map(({ kind, task }) => ({ kind, task })), [{ kind: 'plan', task: 1 }]);
 });
 
 test('--session plan: a plan that lists one path in two tasks exits 2 naming it; auto then picks task sessions', async () => {

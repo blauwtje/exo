@@ -741,15 +741,16 @@ async function main(argv) {
   const budgetStop = () => (runCap !== undefined && spent >= runCap
     ? { line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd, then run exo run again' }
     : null);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'build', task = null, sessionModel = model }) => {
+  // `kind` is the ledger's: task, plan, review or fix; a task or plan session gets the build tools.
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'task', task = null, sessionModel = model }) => {
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind, pluginDir }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind: ['task', 'plan'].includes(kind) ? 'build' : kind, pluginDir }), {
       cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const parsed = parseStream(outcome.text);
     spent += parsed.cost;
-    fs.appendFileSync(ledgerFile, `${JSON.stringify({ kind: kind === 'build' ? 'task' : kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
+    fs.appendFileSync(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
     return { before, outcome, parsed };
   };
 
@@ -809,7 +810,7 @@ async function main(argv) {
       const startedPlan = Date.now();
       say(`plan session start: tasks ${numbersText(order)}`);
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
-      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, task: first });
+      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
       const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
       const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`) };
       run.records.push(record);
