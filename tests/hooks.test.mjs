@@ -45,18 +45,18 @@ test('the SessionStart hook runs under bash on startup, resume, clear and compac
   assert.deepEqual(sessionStart[0].matcher.split('|').sort(), ['clear', 'compact', 'resume', 'startup']);
 });
 
-test('no hook runs a delegate budget, and only Bash has a PreToolUse entry', () => {
+test('no hook runs a delegate budget, and only Bash and Agent have a PreToolUse entry', () => {
   assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget')), []);
   const bashDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   assert.doesNotMatch(bashDispatcher, /delegate-budget/);
-  assert.deepEqual(hookEntries().filter((entry) => entry.event === 'PreToolUse').map((entry) => entry.matcher), ['Bash']);
+  assert.deepEqual(hookEntries().filter((entry) => entry.event === 'PreToolUse').map((entry) => entry.matcher), ['Bash', 'Agent']);
 });
 
 test('no Stop hook is registered', () => {
   assert.deepEqual(hookEntries().filter((entry) => entry.event === 'Stop'), []);
 });
 
-test('only SessionStart and PreToolUse Bash have hooks, and the prompt dispatcher is gone', () => {
+test('only SessionStart, PreToolUse Bash and PreToolUse Agent have hooks, and the prompt dispatcher is gone', () => {
   assert.deepEqual(Object.keys(HOOKS).sort(), ['PreToolUse', 'SessionStart']);
   for (const file of ['hooks/dispatch-prompt.mjs', 'hooks/dispatch-steps.mjs', 'hooks/guards/guard-runner.mjs']) {
     assert.equal(fs.existsSync(path.join(REPOSITORY, file)), false, file);
@@ -116,9 +116,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
-test('the plugin registers two hook commands, each under bash', () => {
+test('the plugin registers three hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 2, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 3, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 

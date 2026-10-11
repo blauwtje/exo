@@ -1,0 +1,36 @@
+// The Agent hook raises only the open-point agent, only to xhigh or max, and
+// keeps every other field of the dispatch.
+
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { agentEffort } from '../hooks/agent-effort.mjs';
+
+const HOOK = fileURLToPath(new URL('../hooks/agent-effort.mjs', import.meta.url));
+const toolInput = { subagent_type: 'exo:find-open-points', prompt: 'find', description: 'd' };
+const input = (level, overrides = {}) => ({ tool_name: 'Agent', tool_input: toolInput, effort: { level }, ...overrides });
+
+test('xhigh and max raise the dispatch and keep its other fields', () => {
+  for (const level of ['xhigh', 'max']) {
+    assert.deepEqual(agentEffort(input(level)), {
+      hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: { ...toolInput, effort: level } }
+    });
+  }
+});
+
+test('other levels, agents and tools print nothing', () => {
+  for (const level of ['low', 'medium', 'high', undefined, 'bogus']) assert.equal(agentEffort(input(level)), null, String(level));
+  assert.equal(agentEffort(input('max', { tool_input: { ...toolInput, subagent_type: 'exo:other' } })), null);
+  assert.equal(agentEffort(input('max', { tool_input: { prompt: 'x' } })), null);
+  assert.equal(agentEffort(input('max', { tool_name: 'Bash' })), null);
+  assert.equal(agentEffort({}), null);
+});
+
+test('the script prints the output for max and nothing for garbage or empty input', () => {
+  const run = (text) => execFileSync(process.execPath, [HOOK], { input: text }).toString();
+  assert.equal(JSON.parse(run(JSON.stringify(input('max')))).hookSpecificOutput.updatedInput.effort, 'max');
+  assert.equal(run('not json'), '');
+  assert.equal(run(''), '');
+  assert.equal(run(JSON.stringify(input('high'))), '');
+});
