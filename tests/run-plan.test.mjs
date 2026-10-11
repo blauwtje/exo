@@ -192,6 +192,11 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const deny = result.calls[0].argv.slice(result.calls[0].argv.indexOf('--disallowedTools') + 1);
   for (const rule of ['Bash(git push *)', 'Bash(gh *)', 'Bash(git commit *)', 'Bash(git stash *)', 'Bash(git clean *)', 'Bash(git restore *)', 'Bash(git reset *)', 'Bash(node *settings.mjs*)']) assert.ok(deny.includes(rule), rule);
   assert.ok(result.calls[0].argv.includes(`Edit(/${context.root}/**)`));
+  const argv = result.calls[0].argv;
+  assert.equal(argv[argv.indexOf('--tools') + 1], 'Read,Edit,Write,Bash,Grep,Glob');
+  assert.ok(deny.includes('mcp__*'));
+  for (const flag of ['--disable-slash-commands', '--include-hook-events']) assert.ok(argv.includes(flag), flag);
+  assert.ok(!argv.includes('--plugin-dir') && !argv.includes('--safe-mode'));
   assert.match(prompt, SANDBOX_RULE);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
   assert.equal(git(context.bare, 'for-each-ref'), remoteBefore);
@@ -403,6 +408,9 @@ test('dry run prints the order, the rules and the first prompt and spawns nothin
   assert.equal(result.calls.length, 0);
   assert.match(result.stdout, /Order: Task 1, Task 2/);
   assert.match(result.stdout, /--task 1/);
+  assert.match(result.stdout, /--tools Read,Edit,Write,Bash,Grep,Glob .*--disable-slash-commands --include-hook-events --allowedTools/);
+  const withPlugin = await runPlan(context, [land(1)], ['--dry-run', '--plugin-dir', '/tmp/exo-plugin']);
+  assert.match(withPlugin.stdout, /--plugin-dir \/tmp\/exo-plugin /);
   assert.ok(result.stdout.includes(`\nSandbox: on, writes in ${context.root}, network: none\n`), result.stdout);
   assert.match(result.stdout, /--settings <sandbox settings>/);
   assert.doesNotMatch(result.stdout, /Bash\(git status \*\)|Bash\(node --version \*\)/);

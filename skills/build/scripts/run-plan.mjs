@@ -4,7 +4,7 @@
 // then one verify process and verify.mjs itself, ending on one stop line.
 //
 //   node run-plan.mjs <plan.md> [--root <dir>] [--max-iterations <n>] [--timeout <minutes>]
-//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--claude <path>] [--dry-run]
+//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--claude <path>] [--plugin-dir <path>] [--dry-run]
 //
 // Held to one task by code: the script names task n on stdin and in
 // EXO_RUN_TASK, which land-task's pin enforces; every spawn runs under
@@ -229,7 +229,10 @@ export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PL
   ])];
 }
 
-function claudeArgs({ model, effort, budget, allow, settings = null }) {
+/** Tools per session kind; the tail session runs the verify skill, so it keeps the default tools and slash commands. */
+const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', review: 'Read,Write,Glob,Grep,Bash' };
+
+function claudeArgs({ model, effort, budget, allow, settings = null, kind = 'build', pluginDir = null }) {
   return [
     '-p', '--permission-mode', 'dontAsk', '--permission-prompts', 'none',
     '--output-format', 'stream-json', '--verbose', '--model', model, '--effort', effort,
@@ -237,8 +240,11 @@ function claudeArgs({ model, effort, budget, allow, settings = null }) {
     ...(settings === null ? [] : ['--settings', typeof settings === 'string' ? settings : JSON.stringify(settings)]),
     // No MCP servers: a run session uses none, and each configured server adds its tool schemas to every turn.
     '--strict-mcp-config',
+    ...(kind === 'tail' ? [] : ['--tools', SESSION_TOOLS[kind], '--disable-slash-commands']),
+    '--include-hook-events',
+    ...(pluginDir === null ? [] : ['--plugin-dir', pluginDir]),
     '--allowedTools', ...allow,
-    '--disallowedTools', ...DENY_RULES
+    '--disallowedTools', ...DENY_RULES, 'mcp__*'
   ];
 }
 
@@ -592,7 +598,7 @@ async function main(argv) {
   if (planArgument === undefined || planArgument.startsWith('--')) throw new UsageError('the first argument names the plan file');
   const flags = parseFlags(rest, {
     root: 'value', provider: 'value', 'max-iterations': 'value', timeout: 'value', model: 'value', effort: 'value',
-    'max-budget-usd': 'value', claude: 'value', 'dry-run': 'boolean'
+    'max-budget-usd': 'value', claude: 'value', 'plugin-dir': 'value', 'dry-run': 'boolean'
   });
   const maxIterations = numberFlag(flags['max-iterations'], 'max-iterations', { integer: true });
   const timeoutMs = (numberFlag(flags.timeout, 'timeout') ?? DEFAULT_TIMEOUT_MINUTES) * 60_000;
@@ -616,6 +622,7 @@ async function main(argv) {
     return 2;
   }
   const { model, effort } = provider;
+  const pluginDir = flags['plugin-dir'] === undefined ? null : path.resolve(flags['plugin-dir']);
   const planId = planIdOf(planPath);
   const landedAtStart = landedTasks(plan.tasks, root, planId);
   const cap = maxIterations ?? 2 * (plan.tasks.length - landedAtStart.length);
@@ -640,7 +647,7 @@ async function main(argv) {
       sandbox.enabled
         ? `Sandbox: on, writes in ${root}, network: ${sandbox.allowedDomains.length === 0 ? 'none' : sandbox.allowedDomains.join(', ')}`
         : `Sandbox: off (${sandbox.reason})`,
-      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null }).join(' ')}`,
+      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null, pluginDir }).join(' ')}`,
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
       'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
@@ -688,9 +695,9 @@ async function main(argv) {
   const planAtStart = planHash();
   const planBreach = () => (planHash() === planAtStart ? null : 'plan changed');
 
-  const spawnOne = async ({ prompt, allow, settings, pin, log }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'build' }) => {
     const before = snapshot(root);
-    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow, settings }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow, settings, kind, pluginDir }), {
       cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     return { before, outcome, parsed: parseStream(outcome.text) };
@@ -796,7 +803,7 @@ async function main(argv) {
     iteration += 1;
     say('all tasks landed, final review start');
     const log = path.join(logDir, 'tail.log');
-    const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, settings: tailSettings, pin: null, log });
+    const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, settings: tailSettings, pin: null, log, kind: 'tail' });
     run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
     const breach = planBreach() ?? breachOf(root, before);
     const parked = breach === null ? takeParked('tail') : null;
