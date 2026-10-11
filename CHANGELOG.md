@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.127.0 - 2026-10-11
+
 ### Added
 
 - `benchmarks/results/` now records the test-pollution value runs (seven `find-cause` versions) and the flow runs of 2026-10-11: exo never passed test-pollution, and on the four-task plan exo used 76% more weighted tokens than the baseline at equal quality.
