@@ -3,10 +3,10 @@
 ## Sections, in order
 
 1. `## Goal`: one sentence naming result.
-2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; no repo yet → `Branch: main`, executor runs `git init -b main` first, never an init step.
+2. `## Plan basis`: `Repository: <absolute root>`, `Branch: <branch>`; no repo → `Branch: main`; the executor runs `git init -b main` there before the first task, never an init step for the owner.
    - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
-   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass. Per task only for full check under 60 s, else verify runs it once.
-   - `Land:` → `ship` setting: `local`; `push` → `push-main`; `open-pr`, `pr-merge` → `pr`; `ask` → ask, recommend `local`.
+   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass. Per task only if full check under 60 s, else verify runs it once.
+   - `Land:` → `ship` setting; `push` → `push-main`; `open-pr`, `pr-merge` → `pr`; `ask` → recommend `local`.
    - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
    - `Allow:` → each backticked task command no other field names, else `none`.
 3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.
@@ -24,11 +24,11 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 
 - `Files:` ending `/` → whole folder.
 - `Proof:` → shows this task landed, not suite.
-- Runnable result → prove on real input via its own command, else builder script using only its tools, never test alone.
+- Runnable result → prove on real input via own command, else builder script using only its tools, never test alone.
 - MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not shell.
 - `Data:` → structure holding result, not fields or logic; ask before changing public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
-- Heading: `land-task`'s conventional-commit subject; the task stages `Files:`, no `Commit:` block.
+- Heading: `land-task`'s conventional-commit subject; `Files:` staged, no `Commit:` block.
 - `Design:` → skill loaded first, only for page's look.
 
 ## Rules
