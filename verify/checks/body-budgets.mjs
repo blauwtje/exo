@@ -1,6 +1,5 @@
 // Every SKILL.md body after its frontmatter stays within SKILL_BODY_TOKENS.ceiling
-// tokens, INJECTED_BODY_TOKENS.ceiling for the skill the session hook injects
-// and STAGE_BODY_TOKENS for a stage-path skill capped at 750 (760 for spec), because a body is paid for on every run of its skill while a reference costs
+// tokens, and STAGE_BODY_TOKENS for a stage-path skill capped at 750 (760 for spec), because a body is paid for on every run of its skill while a reference costs
 // nothing until the step that opens it. A body over its ceiling moves its bulk
 // to references/; the ceiling is never raised for one skill. Every plugin
 // agent body, stripped of its own frontmatter, stays within
@@ -9,7 +8,7 @@
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import { markdownBody } from '../markdown.mjs';
-import { BYTES_PER_TOKEN, SKILL_BODY_TOKENS, INJECTED_BODY_TOKENS, STAGE_BODY_TOKENS, AGENT_BODY_TOKENS } from '../budgets.mjs';
+import { BYTES_PER_TOKEN, SKILL_BODY_TOKENS, STAGE_BODY_TOKENS, AGENT_BODY_TOKENS } from '../budgets.mjs';
 
 function stripFrontmatter(text) {
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
@@ -25,9 +24,7 @@ export function checkBodyBudgets(report, repository) {
     const text = repository.text(file);
     const bodyBytes = Buffer.byteLength(markdownBody('SKILL.md', text), 'utf8');
     const tokens = Math.round(bodyBytes / BYTES_PER_TOKEN);
-    const ceiling = skill === INJECTED_BODY_TOKENS.skill
-      ? INJECTED_BODY_TOKENS.ceiling
-      : STAGE_BODY_TOKENS[skill] ?? SKILL_BODY_TOKENS.ceiling;
+    const ceiling = STAGE_BODY_TOKENS[skill] ?? SKILL_BODY_TOKENS.ceiling;
     const over = bodyBytes > ceiling * BYTES_PER_TOKEN;
     if (tokens > largest.tokens) largest = { tokens, skill };
     if (tokens > SKILL_BODY_TOKENS.realistic) aboveRealistic.push(`${skill} ${tokens}`);

@@ -42,11 +42,9 @@ export const MEMORY_BUDGET = { bytes: 2000, measured: '2026-09-18' };
 
 // Skill size. Tokens are the body's bytes after the frontmatter divided by
 // BYTES_PER_TOKEN, the sizing convention for skill text. The ceiling fails; realistic is the aim edit-skills
-// states and the checks name in their PASS detail. route-skills has its own
-// ceiling because hooks/session-start.mjs injects its body into every session.
+// states and the checks name in their PASS detail.
 export const BYTES_PER_TOKEN = 4;
 export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
-export const INJECTED_BODY_TOKENS = { skill: 'route-skills', ceiling: 518 };
 // The six stage-path skills, capped at 750 tokens each. spec sits above the
 // cap because its pinned gate sentences hold it at its measured 760.
 export const STAGE_BODY_TOKENS = {

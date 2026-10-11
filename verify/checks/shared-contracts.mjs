@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
-import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, INJECTED_BODY_TOKENS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
+import { BYTES_PER_TOKEN, DESCRIPTION_CHARS, REFERENCE_CONTENTS_LINES, SKILL_BODY_TOKENS } from '../budgets.mjs';
 import { FILE_LIMIT, LINE_LIMIT } from '../../skills/verify/scripts/pick-reviewer.mjs';
 import { ATTESTATIONS_REQUIRED } from '../../lib/memory-store.mjs';
 import { DEFAULT_MINUTES, TIMEOUT_EXIT } from '../../skills/ship/scripts/wait-checks.mjs';
@@ -103,7 +103,7 @@ const PINNED_SENTENCES = {
     'Every scope meets `## The build floor` of `$SKILL/references/build-pass.md`',
   ],
   'skills/edit-skills/SKILL.md': [
-    `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens, ${thousands(INJECTED_BODY_TOKENS.ceiling)} for the injected \`${INJECTED_BODY_TOKENS.skill}\`, and ${DESCRIPTION_CHARS.ceiling} characters.`,
+    `Aim the body at ${thousands(SKILL_BODY_TOKENS.realistic)} tokens (bytes after the frontmatter / ${BYTES_PER_TOKEN}) and the description at ${DESCRIPTION_CHARS.realistic} characters; the verifier fails ${thousands(SKILL_BODY_TOKENS.ceiling)} tokens and ${DESCRIPTION_CHARS.ceiling} characters.`,
     `A reference holds one topic and links to no other reference; over ${REFERENCE_CONTENTS_LINES} lines it opens with a contents list linking each section.`,
   ],
   'skills/edit-skills/references/description.md': [

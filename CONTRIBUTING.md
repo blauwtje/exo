@@ -44,7 +44,7 @@ A new skill needs all of: the folder `skills/<name>/`, its name in `EXPECTED_SKI
 
 Rename a skill with `node skills/edit-skills/scripts/rename-skill.mjs --from <old> --to <new>`. It moves the skill folder, its `docs/skills/` page and its pressure folder, then rewrites every word-bounded mention outside `CHANGELOG.md` and `benchmarks/results/`.
 
-A `SKILL.md` body after its frontmatter stays within `SKILL_BODY_TOKENS.ceiling` in `verify/budgets.mjs` (`INJECTED_BODY_TOKENS` for `route-skills`), counted as bytes / `BYTES_PER_TOKEN`, because a body is paid for on every run; bulk lives in `references/` and the body names the step that opens it. A reference longer than `REFERENCE_CONTENTS_LINES` opens with a contents list linking each `##` section, and no reference links to another. `PENDING_TRIM` lists the skills not yet trimmed to these. Split a skill in two only when the halves fire at different moments, because each skill adds its trigger to every session's listing.
+A `SKILL.md` body after its frontmatter stays within `SKILL_BODY_TOKENS.ceiling` in `verify/budgets.mjs`, counted as bytes / `BYTES_PER_TOKEN`, because a body is paid for on every run; bulk lives in `references/` and the body names the step that opens it. A reference longer than `REFERENCE_CONTENTS_LINES` opens with a contents list linking each `##` section, and no reference links to another. `PENDING_TRIM` lists the skills not yet trimmed to these. Split a skill in two only when the halves fire at different moments, because each skill adds its trigger to every session's listing.
 
 ## Adding a setting
 

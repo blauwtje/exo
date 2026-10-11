@@ -40,7 +40,7 @@ A skill earns its place only by stopping a mistake the model makes without it, i
 ## Form
 
 - Bulk material (template, worked example, checklist over 20 lines) → `references/`; body names when to open it.
-- Aim the body at 2,000 tokens (bytes after the frontmatter / 4) and the description at 200 characters; the verifier fails 2,500 tokens, 518 for the injected `route-skills`, and 250 characters.
+- Aim the body at 2,000 tokens (bytes after the frontmatter / 4) and the description at 200 characters; the verifier fails 2,500 tokens and 250 characters.
 - A reference holds one topic and links to no other reference; over 100 lines it opens with a contents list linking each section.
 - Text handed to a delegate → beside `SKILL.md` as `<role>-prompt.md`, with a References row naming the dispatching step; `references/` holds only what the skill reads itself.
 
