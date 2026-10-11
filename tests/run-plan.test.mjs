@@ -21,7 +21,7 @@ async function runPlan(context, steps, args = []) {
   const scenario = path.join(context.tools, 'scenario.json');
   const record = path.join(context.tools, 'calls.jsonl');
   await fs.writeFile(scenario, JSON.stringify({ pluginPath: context.pluginPath ?? PLUGIN_ROOT, planPath: context.plan, steps }));
-  const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...args], {
+  const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', context.stub, ...(args.includes('--session') ? [] : ['--session', 'task']), ...args], {
     cwd: context.root,
     env: { STUB_SCENARIO: scenario, STUB_RECORD: record, CLAUDECODE: '1', HOME: context.home, ...context.env }
   });
@@ -651,4 +651,40 @@ test('--max-run-usd: the ledger holds one line per session and the run stops bef
   const logDir = path.dirname(stopped.stdout.match(/^Details: (.+)$/m)[1]);
   const lines = (await fs.readFile(path.join(logDir, 'sessions.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
   assert.deepEqual(lines, [{ kind: 'task', task: 1, sessionId: 'session-1', costUsd: 0.02, hooks: 2 }]);
+});
+
+test('--session plan: one session builds both tasks, then the script lands each under its own pin and the tail follows', async () => {
+  const context = await setup({ gate: 'none' });
+  const wrapper = path.join(context.tools, 'lander.mjs');
+  // The stub's plan session writes both files and each report; the script's land-task then commits them.
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nif (!fs.existsSync(process.env.STUB_RECORD)) { for (const n of [1, 2]) { fs.writeFileSync(n === 1 ? 'a.txt' : 'b.txt', 'x\\n'); fs.mkdirSync('.exo', { recursive: true }); fs.writeFileSync('.exo/implementer-' + n + '.md', 'Landed: x\\nProof:\\nnode --version: pass\\n  v1\\nUnresolved: none\\n'); } }\nawait import(${JSON.stringify(context.stub)});\n`);
+  context.stub = wrapper;
+  const result = await runPlan(context, [{ result: 'Task 1: GREEN' }, { result: 'Verify done.' }], ['--session', 'plan']);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout);
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', null]);
+  assert.match(result.calls[0].stdin, /^Build Tasks 1, 2 of .*plan\.md in this session\./);
+  assert.match(result.calls[0].stdin, /Land nothing/);
+  assert.equal(result.calls[0].stdin.match(/### Task \d:/g).length, 2);
+  const logs = await fs.readdir(path.join(context.root, '.exo', 'run-plan', 'plan'), { recursive: true });
+  assert.ok(logs.some((name) => name.endsWith('land-task-1.log')) && logs.some((name) => name.endsWith('land-task-2.log')), logs.join());
+});
+
+test('--session plan: a plan that lists one path in two tasks exits 2 naming it; auto then picks task sessions', async () => {
+  const context = await setup();
+  const text = (await fs.readFile(context.plan, 'utf8')).replace('Files: `b.txt`', 'Files: `a.txt`');
+  await fs.writeFile(context.plan, text);
+  git(context.root, 'commit', '-q', '-am', 'docs: share a path');
+  const refused = await runPlan(context, [], ['--session', 'plan']);
+  assert.equal(refused.code, 2);
+  assert.match(refused.stdout, /refused: --session plan: more than one task lists a\.txt/);
+  const dry = await runPlan(context, [], ['--session', 'auto', '--dry-run']);
+  assert.match(dry.stdout, /^Session: task$/m);
+});
+
+test('--dry-run prints the chosen session mode: auto picks plan for a small disjoint plan', async () => {
+  const dry = await runPlan(await setup(), [], ['--session', 'auto', '--dry-run']);
+  assert.match(dry.stdout, /^Session: plan$/m);
+  assert.match(dry.stdout, /First prompt: Build Tasks 1, 2 of /);
+  const bad = await runPlan(await setup(), [], ['--session', 'both']);
+  assert.equal(bad.code, 2);
 });

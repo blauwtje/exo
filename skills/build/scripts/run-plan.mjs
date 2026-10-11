@@ -4,7 +4,7 @@
 // then one verify process and verify.mjs itself, ending on one stop line.
 //
 //   node run-plan.mjs <plan.md> [--root <dir>] [--max-iterations <n>] [--timeout <minutes>]
-//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--max-run-usd <x>] [--claude <path>] [--plugin-dir <path>] [--dry-run]
+//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--max-run-usd <x>] [--session auto|task|plan] [--claude <path>] [--plugin-dir <path>] [--dry-run]
 //
 // Held to one task by code: the script names task n on stdin and in
 // EXO_RUN_TASK, which land-task's pin enforces; every spawn runs under
@@ -36,7 +36,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { defaultBranch, driftOf, frameOf, landedTasks, loopCommands, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, INLINE_TASK_LIMIT, landedTasks, loopCommands, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
 import { isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
@@ -489,6 +489,34 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     .replace(/\n\n\n+/g, '\n\n');
 }
 
+/**
+ * The prompt of one plan session: `run-task-prompt.md`'s `## Plan session` filled with every listed
+ * task's brief. The session lands none; the script lands them afterwards.
+ */
+export function planPrompt({ plan, planPath, numbers, root }) {
+  const briefs = numbers.map((number) => {
+    const task = plan.tasks.find((entry) => entry.number === number);
+    return [...driftOf(task, root).map((item) => `PLAN DRIFT: Task ${number}: ${item}`), taskBrief(task, frameOf(plan.frame), root).trimEnd()].join('\n');
+  });
+  const fields = {
+    tasks: `${numbers.length === 1 ? 'Task' : 'Tasks'} ${numbers.join(', ')}`,
+    plan: planPath,
+    report: `${path.join(root, SCRATCH_FOLDER, 'implementer-<n>.md')}, one per task`,
+    brief: ['Land nothing: the script lands each task after this session.', ...briefs].join('\n\n')
+  };
+  return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Plan session').split('\n').slice(1).join('\n').trim()
+    .replace(/\{\{(\w+)\}\}/g, (_, name) => fields[name]);
+}
+
+/** `{ mode }` for the unlanded tasks, or `{ refused }` when `--session plan` asks for tasks that share a path. */
+export function sessionMode(flag, tasks) {
+  const seen = new Set();
+  const shared = tasks.flatMap((task) => task.files.map((file) => file.path)).find((file) => seen.size === seen.add(file).size);
+  if (flag === 'plan' && shared !== undefined) return { refused: `--session plan: more than one task lists ${shared}; use --session task` };
+  if (flag === 'auto') return { mode: tasks.length > 0 && tasks.length <= INLINE_TASK_LIMIT && shared === undefined && !tasks.some((task) => task.design) ? 'plan' : 'task' };
+  return { mode: flag };
+}
+
 function reportLines(root, number) {
   const file = path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
   if (!isFileOnDisk(file)) return [];
@@ -600,10 +628,12 @@ async function main(argv) {
   if (planArgument === undefined || planArgument.startsWith('--')) throw new UsageError('the first argument names the plan file');
   const flags = parseFlags(rest, {
     root: 'value', provider: 'value', 'max-iterations': 'value', timeout: 'value', model: 'value', effort: 'value',
-    'max-budget-usd': 'value', 'max-run-usd': 'value', claude: 'value', 'plugin-dir': 'value', 'dry-run': 'boolean'
+    'max-budget-usd': 'value', 'max-run-usd': 'value', session: 'value', claude: 'value', 'plugin-dir': 'value', 'dry-run': 'boolean'
   });
   const maxIterations = numberFlag(flags['max-iterations'], 'max-iterations', { integer: true });
   const timeoutMs = (numberFlag(flags.timeout, 'timeout') ?? DEFAULT_TIMEOUT_MINUTES) * 60_000;
+  const sessionFlag = flags.session ?? 'auto';
+  if (!['auto', 'task', 'plan'].includes(sessionFlag)) throw new UsageError("flag '--session' needs auto, task or plan");
   const sessionCap = numberFlag(flags['max-budget-usd'], 'max-budget-usd');
   const runCap = numberFlag(flags['max-run-usd'], 'max-run-usd');
 
@@ -629,6 +659,12 @@ async function main(argv) {
   const planId = planIdOf(planPath);
   const landedAtStart = landedTasks(plan.tasks, root, planId);
   const cap = maxIterations ?? 2 * (plan.tasks.length - landedAtStart.length);
+  const chosen = sessionMode(sessionFlag, plan.tasks.filter((task) => !landedAtStart.includes(task.number)));
+  if (chosen.refused !== undefined) {
+    process.stdout.write(`run-plan: refused: ${chosen.refused}\n`);
+    return 2;
+  }
+  const order = taskOrder(plan.tasks, landedAtStart);
   const sandbox = provider.sandbox;
   const taskAllow = allowRules({ root, planPath, plan, sandbox: sandbox.enabled });
   const tailAllow = allowRules({ root, planPath, plan, tail: true, sandbox: sandbox.enabled });
@@ -638,7 +674,6 @@ async function main(argv) {
   const buildPrompt = (number, retryNote = '') => taskPrompt({ plan, planPath, number, root, learnings, sandbox: sandbox.enabled, retryNote });
 
   if (flags['dry-run']) {
-    const order = taskOrder(plan.tasks, landedAtStart);
     const first = order[0];
     process.stdout.write([
       `Provider: ${provider.name}`,
@@ -646,6 +681,7 @@ async function main(argv) {
       `Effort: ${provider.asked} -> ${effort}`,
       'Env:', ...provider.shown.map(([variable, value]) => `  ${variable}=${value}`),
       `Caps: ${cap} iterations, ${timeoutMs / 60_000} minutes per session, ${provider.contextBudget} tokens of context per task`,
+      `Session: ${chosen.mode}`,
       `Order: ${order.length === 0 ? 'every task has landed' : order.map((number) => `Task ${number}`).join(', ')}`,
       sandbox.enabled
         ? `Sandbox: on, writes in ${root}, network: ${sandbox.allowedDomains.length === 0 ? 'none' : sandbox.allowedDomains.join(', ')}`
@@ -654,7 +690,7 @@ async function main(argv) {
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
       'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
-      `First prompt: ${first === undefined ? `/exo:verify ${planPath} Push nothing and open no pull request.` : buildPrompt(first)}`,
+      `First prompt: ${first === undefined ? `/exo:verify ${planPath} Push nothing and open no pull request.` : chosen.mode === 'plan' ? planPrompt({ plan, planPath, numbers: order, root }) : buildPrompt(first)}`,
       ''
     ].join('\n'));
     return 0;
@@ -730,8 +766,75 @@ async function main(argv) {
     return line.replace(/^Task \S+: PARKED\s*/, '');
   };
   const parkedStop = (line, log) => ({ line: `parked: ${line}`, why: `The run is parked: ${clip(line, 100)}`, next: `run exo approve for the open gate (see ${log}), then run exo run again`, parked: true });
+  // The stop a finished session earns for breaking a rule, parking or failing to load exo; null when none.
+  const unsafeStop = (n, before, trailer, parsed, log) => {
+    const breach = planBreach() ?? breachOf(root, before, { trailer });
+    if (breach !== null) {
+      say(`task ${n} stopped: ${breach}`);
+      return { line: `breach in iteration ${iteration}: ${breach}`, why: `A session broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, undo what is wrong, then run exo run again` };
+    }
+    const parked = takeParked(n);
+    if (parked !== null) {
+      say(`task ${n} parked: ${clip(parked, 80)}`);
+      return parkedStop(parked, log);
+    }
+    const notLoaded = exoError(parsed.init, PLUGIN_ROOT);
+    if (notLoaded === null) return null;
+    say(`task ${n} stopped: exo not loaded`);
+    return { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again' };
+  };
+  const blockedStop = (n, reason) => {
+    say(`task ${n} blocked: ${clip(reason, 80)}`);
+    return { line: `task ${n} blocked: ${reason}; re-plan with exo:spec`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 're-plan with /exo:spec, then run exo run again' };
+  };
+  const markLanded = (n, record, startedTask) => {
+    stall = 0;
+    retryNote = '';
+    run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
+    passes.add(n);
+    writeTasks();
+    say(`task ${n} landed ${run.landings.get(n).sha.slice(0, 7)}, ${record.turns} turns, ${money(record.cost)}, ${Math.round((Date.now() - startedTask) / 1000)}s`);
+    for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
+      const file = line.slice(3);
+      if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
+    }
+  };
+  // Plan mode: one session builds every task and lands none; the script then lands them in plan order, each under its own pin.
+  if (chosen.mode === 'plan' && order.length > 0) {
+    stop = budgetStop() ?? undefined;
+    const first = order[0];
+    if (stop === undefined) {
+      iteration += 1;
+      const startedPlan = Date.now();
+      say(`plan session start: tasks ${numbersText(order)}`);
+      const log = path.join(logDir, `iter-${iteration}-plan.log`);
+      const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, task: first });
+      const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
+      const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`) };
+      run.records.push(record);
+      if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
+      stop = unsafeStop(first, before, null, parsed, log) ?? undefined;
+      const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
+      if (stop === undefined && status !== null) stop = blockedStop(first, status[1] || last);
+      for (const n of stop === undefined ? order : []) {
+        const landLog = path.join(logDir, `land-task-${n}.log`);
+        const answer = spawnSync(process.execPath, [SCRIPT.landTask, '--plan', planPath, '--task', String(n), '--root', root], {
+          cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs
+        });
+        const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
+        fs.writeFileSync(landLog, output);
+        if (answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n)) {
+          markLanded(n, record, startedPlan);
+          continue;
+        }
+        say(`task ${n} not landed by the script: ${clip(lastLine(output), 80)}`);
+        retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${lastLine(output)}\nIts log: ${landLog}`;
+        break;
+      }
+    }
+  }
   const fix = (log) => `read ${log}, fix the cause, then run exo run again`;
-  for (;;) {
+  while (stop === undefined) {
     const landed = landedTasks(plan.tasks, root, planId);
     if (landed.length === plan.tasks.length) break;
     const task = readyTasks(plan.tasks, landed)[0];
@@ -764,43 +867,16 @@ async function main(argv) {
     const marker = markerFile !== null && fs.existsSync(markerFile) ? fs.readFileSync(markerFile, 'utf8').trim() : null;
     if (markerFile !== null) fs.rmSync(markerFile, { force: true });
 
-    const breach = planBreach() ?? breachOf(root, before, { trailer });
-    if (breach !== null) {
-      say(`task ${n} stopped: ${breach}`);
-      stop = { line: `breach in iteration ${iteration}: ${breach}`, why: `A session broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, undo what is wrong, then run exo run again` };
-      break;
-    }
-    const parked = takeParked(n);
-    if (parked !== null) {
-      say(`task ${n} parked: ${clip(parked, 80)}`);
-      stop = parkedStop(parked, log);
-      break;
-    }
-    const notLoaded = exoError(parsed.init, PLUGIN_ROOT);
-    if (notLoaded !== null) {
-      say(`task ${n} stopped: exo not loaded`);
-      stop = { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again' };
-      break;
-    }
+    stop = unsafeStop(n, before, trailer, parsed, log) ?? undefined;
+    if (stop !== undefined) break;
     if (landedTasks(plan.tasks, root, planId).includes(n)) {
-      stall = 0;
-      retryNote = '';
-      run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
-      passes.add(n);
-      writeTasks();
-      say(`task ${n} landed ${run.landings.get(n).sha.slice(0, 7)}, ${record.turns} turns, ${money(record.cost)}, ${Math.round((Date.now() - startedTask) / 1000)}s`);
-      for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
-        const file = line.slice(3);
-        if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
-      }
+      markLanded(n, record, startedTask);
       continue;
     }
     const statusLine = new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`);
     const blocked = marker?.match(statusLine) ?? (outcome.timedOut ? null : last.match(statusLine));
     if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
-      const reason = blocked?.[1] || last;
-      say(`task ${n} blocked: ${clip(reason, 80)}`);
-      stop = { line: `task ${n} blocked: ${reason}; re-plan with exo:spec`, why: `Task ${n} is blocked: ${clip(reason, 100)}`, next: 're-plan with /exo:spec, then run exo run again' };
+      stop = blockedStop(n, blocked?.[1] || last);
       break;
     }
     stall += 1;
