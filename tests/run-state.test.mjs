@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import {
   createRun, updateRun, readState, listRuns, acquireLock, releaseLock, newRunId, isAlive, runDir,
 } from '../skills/build/scripts/run-state.mjs';
@@ -93,4 +94,95 @@ test('newRunId is unique and isAlive tells live from dead pids', () => {
   assert.equal(isAlive(process.pid), true);
   assert.equal(isAlive(deadPid()), false);
   assert.equal(isAlive(null), false);
+});
+
+const MODULE = pathToFileURL(path.resolve('skills/build/scripts/run-state.mjs')).href;
+const CONTENDER = `
+import fs from 'node:fs';
+import path from 'node:path';
+const { createRun, acquireLock, releaseLock } = await import(process.argv[1]);
+const [, , mode, root, id, rounds] = process.argv;
+const wait = (name) => {
+  for (let i = 0; !fs.existsSync(path.join(root, name)); i++) {
+    if (i > 10000) process.exit(3);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1);
+  }
+};
+const lock = path.join(root, '.exo', 'run', 'lock');
+createRun(root, { id, plan: 'p' });
+fs.writeFileSync(path.join(root, 'ready-' + id), '');
+wait('go');
+if (mode === 'once') {
+  fs.writeFileSync(path.join(root, 'result-' + id), JSON.stringify(acquireLock(root, id)));
+  wait('end');
+} else {
+  let won = 0;
+  let broken = 0;
+  for (let i = 0; i < Number(rounds); i++) {
+    if (!acquireLock(root, id).ok) continue;
+    won++;
+    for (let k = 0; k < 20; k++) {
+      try { if (fs.readFileSync(lock, 'utf8').trim() !== id) broken++; } catch { broken++; }
+    }
+    releaseLock(root, id);
+  }
+  fs.writeFileSync(path.join(root, 'result-' + id), JSON.stringify({ won, broken }));
+}
+`;
+
+async function race(root, ids, mode, rounds = 0) {
+  const kids = ids.map((id) => new Promise((resolve) => {
+    spawn(process.execPath, ['--input-type=module', '-e', CONTENDER, MODULE, mode, root, id, String(rounds)], { stdio: 'ignore' })
+      .on('exit', resolve);
+  }));
+  const until = async (names) => {
+    for (let i = 0; !names.every((n) => fs.existsSync(path.join(root, n))); i++) {
+      if (i > 2000) throw new Error(`timed out waiting for ${names.join(', ')}`);
+      await new Promise((r) => setTimeout(r, 10));
+    }
+  };
+  await until(ids.map((id) => `ready-${id}`));
+  fs.writeFileSync(path.join(root, 'go'), '');
+  await until(ids.map((id) => `result-${id}`));
+  const results = Object.fromEntries(ids.map((id) => [id, JSON.parse(fs.readFileSync(path.join(root, `result-${id}`), 'utf8'))]));
+  const lockText = fs.existsSync(lock(root)) ? fs.readFileSync(lock(root), 'utf8').trim() : null;
+  const leftovers = fs.readdirSync(path.join(root, '.exo', 'run')).filter((n) => n.startsWith('lock.'));
+  fs.writeFileSync(path.join(root, 'end'), '');
+  assert.deepEqual(await Promise.all(kids), ids.map(() => 0));
+  return { results, lockText, leftovers };
+}
+
+test('a fresh lock is never seen empty or taken over by a live contender', async () => {
+  const root = tmp();
+  const { results, lockText, leftovers } = await race(root, ['a', 'b'], 'loop', 1500);
+  assert.equal(results.a.broken, 0);
+  assert.equal(results.b.broken, 0);
+  assert.equal(lockText, null);
+  assert.deepEqual(leftovers, []);
+});
+
+test('concurrent contenders on a stale lock: exactly one wins', async () => {
+  for (let round = 0; round < 3; round++) {
+    const root = tmp();
+    createRun(root, { id: 'dead', plan: 'p', pid: deadPid() });
+    assert.deepEqual(acquireLock(root, 'dead'), { ok: true });
+    const ids = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];
+    const { results, lockText, leftovers } = await race(root, ids, 'once');
+    const winners = ids.filter((id) => results[id].ok);
+    assert.equal(winners.length, 1, JSON.stringify(results));
+    assert.deepEqual(results[winners[0]], { ok: true, stale: 'dead' });
+    for (const id of ids) if (id !== winners[0]) assert.deepEqual(results[id], { ok: false, holder: winners[0] });
+    assert.equal(lockText, winners[0]);
+    assert.deepEqual(leftovers, []);
+  }
+});
+
+test('resume replaces a lock naming its own run; a refused acquire leaves no claim files', () => {
+  const root = tmp();
+  createRun(root, { id: 'a', plan: 'p' });
+  assert.deepEqual(acquireLock(root, 'a'), { ok: true });
+  assert.deepEqual(acquireLock(root, 'a'), { ok: true, stale: 'a' });
+  createRun(root, { id: 'b', plan: 'p' });
+  assert.deepEqual(acquireLock(root, 'b'), { ok: false, holder: 'a' });
+  assert.deepEqual(fs.readdirSync(path.join(root, '.exo', 'run')).sort(), ['a', 'b', 'lock']);
 });

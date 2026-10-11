@@ -74,38 +74,144 @@ export function listRuns(root) {
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt) || a.id.localeCompare(b.id));
 }
 
-// Take the lock for run `id`. Returns { ok: true, stale?: previousId } or
-// { ok: false, holder: id }. A lock whose run is final, missing or has a dead pid is stale.
-export function acquireLock(root, id) {
-  const file = lockFile(root);
-  fs.mkdirSync(runsDir(root), { recursive: true });
-  let stale;
-  for (let attempt = 0; attempt < 3; attempt++) {
+export function removeRun(root, id) {
+  fs.rmSync(runDir(root, id), { recursive: true, force: true });
+}
+
+// The lock is only ever made visible whole: its text is written to a scratch file first, then
+// linked (create) or renamed (takeover) into place. Each lock file instance has a key (inode and
+// mtime) that no later instance shares. Replacing or removing an instance needs a claim on its key:
+// claim files lock.<key>.<n> hold the claimant's pid, made by link so one contender wins each n,
+// and a claim left by a dead process passes to n + 1. An instance once replaced never returns, so
+// a late claimant finds a new key and backs off.
+
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+const claimFile = (root, key, n) => path.join(runsDir(root), `lock.${key}.${n}`);
+
+function scratch(root, text) {
+  const file = path.join(runsDir(root), `lock.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`);
+  fs.writeFileSync(file, text, { flag: 'wx' });
+  return file;
+}
+
+function drop(file) {
+  try {
+    fs.unlinkSync(file);
+  } catch {}
+}
+
+// Windows refuses to replace or unlink a file another process has open for a moment.
+function settle(fn) {
+  for (let attempt = 0; ; attempt++) {
     try {
-      fs.writeFileSync(file, `${id}\n`, { flag: 'wx' });
-      return stale ? { ok: true, stale } : { ok: true };
+      return fn();
+    } catch (err) {
+      if (attempt >= 40 || !['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+      pause(5);
+    }
+  }
+}
+
+// The lock as one file instance: { holder, key }, or null when there is none.
+function readLock(root) {
+  let fd;
+  try {
+    fd = fs.openSync(lockFile(root), 'r');
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+  try {
+    const { ino, mtimeNs } = fs.fstatSync(fd, { bigint: true });
+    return { holder: fs.readFileSync(fd, 'utf8').trim(), key: `${ino}-${mtimeNs}` };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+// Claim number n, or -1 while a live process holds the claim on `key`.
+function claim(root, key, token) {
+  for (let n = 0; n < 16; n++) {
+    try {
+      fs.linkSync(token, claimFile(root, key, n));
+      return n;
     } catch (err) {
       if (err.code !== 'EEXIST') throw err;
     }
-    let holder = '';
+    let pid = 0;
     try {
-      holder = fs.readFileSync(file, 'utf8').trim();
-    } catch {
-      continue;
-    }
-    const state = holder ? readState(root, holder) : null;
-    if (state && !FINAL_PHASES.includes(state.phase) && isAlive(state.pid)) return { ok: false, holder };
-    stale = holder || undefined;
-    try {
-      fs.unlinkSync(file);
+      pid = Number(fs.readFileSync(claimFile(root, key, n), 'utf8'));
     } catch {}
+    if (isAlive(pid)) return -1;
   }
-  return { ok: false, holder: '' };
+  return -1;
+}
+
+function unclaim(root, key, n) {
+  for (let k = 0; k <= n; k++) drop(claimFile(root, key, k));
+}
+
+// A lock naming `id` itself is left by an earlier process of the same run, which --resume replaces.
+function held(root, holder, id) {
+  if (holder === '' || holder === id) return false;
+  const state = readState(root, holder);
+  return state !== null && !FINAL_PHASES.includes(state.phase) && isAlive(state.pid);
+}
+
+// Take the lock for run `id`. Returns { ok: true, stale?: previousId } or { ok: false, holder: id }.
+// A lock whose run is final, missing or has a dead pid is stale. Callers write the run's state with
+// its live pid before taking the lock, so a contender never mistakes a fresh lock for a stale one.
+export function acquireLock(root, id) {
+  const file = lockFile(root);
+  fs.mkdirSync(runsDir(root), { recursive: true });
+  const mine = scratch(root, `${id}\n`);
+  let token = null;
+  let holder = '';
+  try {
+    for (let attempt = 0; attempt < 400; attempt++) {
+      try {
+        fs.linkSync(mine, file);
+        return { ok: true };
+      } catch (err) {
+        if (err.code !== 'EEXIST') throw err;
+      }
+      const lock = readLock(root);
+      if (lock === null) continue;
+      holder = lock.holder;
+      if (held(root, holder, id)) return { ok: false, holder };
+      token ??= scratch(root, `${process.pid}\n`);
+      const n = claim(root, lock.key, token);
+      if (n < 0) {
+        pause(5);
+        continue;
+      }
+      if (readLock(root)?.key === lock.key) {
+        settle(() => fs.renameSync(mine, file));
+        unclaim(root, lock.key, n);
+        return holder ? { ok: true, stale: holder } : { ok: true };
+      }
+      unclaim(root, lock.key, n);
+    }
+    return { ok: false, holder };
+  } finally {
+    drop(mine);
+    if (token) drop(token);
+  }
 }
 
 // Remove the lock only when `id` still owns it.
 export function releaseLock(root, id) {
+  let token = null;
   try {
-    if (fs.readFileSync(lockFile(root), 'utf8').trim() === id) fs.unlinkSync(lockFile(root));
-  } catch {}
+    const lock = readLock(root);
+    if (lock === null || lock.holder !== id) return;
+    token = scratch(root, `${process.pid}\n`);
+    const n = claim(root, lock.key, token);
+    if (n < 0) return;
+    if (readLock(root)?.key === lock.key) settle(() => fs.unlinkSync(lockFile(root)));
+    unclaim(root, lock.key, n);
+  } catch {
+  } finally {
+    if (token) drop(token);
+  }
 }

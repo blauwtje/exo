@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
 import { isMain } from '#script-flags';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
-import { FINAL_PHASES, acquireLock, createRun, isAlive, listRuns, newRunId, readState, releaseLock, runDir, updateRun } from './run-state.mjs';
+import { FINAL_PHASES, acquireLock, createRun, isAlive, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
 const CLI = fileURLToPath(import.meta.url);
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
@@ -293,8 +293,9 @@ function runCommand(argv) {
   let plan;
   let flags;
   let id = options.runId ?? options.resume ?? newRunId();
+  let old = null;
   if (options.resume !== null) {
-    const old = readState(root, id);
+    old = readState(root, id);
     if (old === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
     if (old.phase === 'passed') throw new Refusal(`refused: run ${id} already passed`);
     if (isAlive(old.pid) && !FINAL_PHASES.includes(old.phase)) throw new Refusal(`refused: run ${id} is still running (pid ${old.pid})`);
@@ -310,12 +311,17 @@ function runCommand(argv) {
 
   const child = options.runId !== null;
   if (!child) {
-    const lock = acquireLock(root, id);
-    if (!lock.ok) throw new Refusal(`refused: run ${lock.holder} is still running in this checkout; exo status shows it`);
-    if (lock.stale) process.stdout.write(`exo: took over the lock of run ${lock.stale}, whose process is gone\n`);
+    // State with this pid first, then the lock, so a contender never reads the lock as stale.
     const log = detach ? path.join(runDir(root, id), 'run.log') : null;
-    if (options.resume !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log });
+    if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log });
     else createRun(root, { id, plan, flags, detach, log });
+    const lock = acquireLock(root, id);
+    if (!lock.ok) {
+      if (old !== null) updateRun(root, id, { phase: old.phase, exitCode: old.exitCode, pid: old.pid, log: old.log });
+      else removeRun(root, id);
+      throw new Refusal(`refused: run ${lock.holder} is still running in this checkout; exo status shows it`);
+    }
+    if (lock.stale) process.stdout.write(`exo: took over the lock of run ${lock.stale}, whose process is gone\n`);
   }
 
   if (detach && !child) {
