@@ -37,5 +37,5 @@ A hook stops three kinds of command and says what to do instead.
 | Git | A force push, `reset --hard`, `clean -f`, a stash drop, a force-delete of an unlanded branch, a whole-tree checkout or restore. |
 | Secrets | A shell read of a path your `Read(...)` deny entries protect. |
 
-A second hook reads each session's and agent's context size on every tool call: past the soft limit (60k tokens for the lead, 50k for an agent) it asks it to finish its step and hand off, past the hard limit (100k) it refuses the tool.
+A second hook reads each session's and agent's context size on every tool call: past the soft limit (60k tokens for the lead and for an agent) it asks it to finish its step and hand off, with the lead delegating further work to fresh subagents; past the hard limit (100k) it refuses the tool, and the lead hands all remaining work to one fresh subagent.
 How Codex differs is in [codex.md](codex.md).
