@@ -1,10 +1,10 @@
 # route-skills
 
-The routing rules, shown when you ask for them.
+The routing rules: the core ones come with every session, the rest when you ask for them.
 
 ## When it runs
 
-Only when you call it. The session hook no longer injects it: at every session start, resume, `/clear` and compaction the hook adds only your current settings, a pointer to a saved session or memory for your branch, and the lines of `hooks/session-rules.md`.
+The session hook injects the routing rules from `hooks/session-routing.md` at every session start, resume, `/clear` and compaction, after your current settings, a pointer to a saved session or memory for your branch, and the lines of `hooks/session-rules.md`. The rest of route-skills runs only when you call it.
 
 ## What you get
 
