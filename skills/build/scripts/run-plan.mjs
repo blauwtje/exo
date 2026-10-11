@@ -41,6 +41,7 @@ import { isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { taskBrief } from './next-task.mjs';
+import { updateRun } from './run-state.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 
 const KILL_GRACE_MS = 5000;
@@ -592,6 +593,12 @@ function numberFlag(value, name, { integer = false } = {}) {
   return number;
 }
 
+// An exo run (EXO_RUN_DIR = <root>/.exo/run/<id>) gets its phase written; unset writes nothing.
+function setPhase(phase) {
+  const dir = process.env.EXO_RUN_DIR;
+  if (dir) updateRun(path.resolve(dir, '..', '..', '..'), path.basename(dir), { phase });
+}
+
 async function main(argv) {
   const [planArgument, ...rest] = argv;
   if (planArgument === undefined || planArgument.startsWith('--')) throw new UsageError('the first argument names the plan file');
@@ -655,6 +662,7 @@ async function main(argv) {
     return 0;
   }
 
+  setPhase('build');
   try {
     excludeScratch(root);
   } catch (error) {
@@ -773,6 +781,7 @@ async function main(argv) {
 
   let exitCode = 1;
   if (stop === undefined) {
+    setPhase('verify');
     iteration += 1;
     say('all tasks landed, final review start');
     const log = path.join(logDir, 'tail.log');
