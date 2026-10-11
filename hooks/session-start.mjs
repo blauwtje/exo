@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SessionStart hook: injects facts only, in order: a handoff pointer, a
+// SessionStart hook: injects only this context, in order: a handoff pointer, a
 // project-memory pointer, the settings line, the Codex host note on Codex, then
 // hooks/session-routing.md and hooks/session-rules.md when they exist. Node, so a host without `jq` works.
 
