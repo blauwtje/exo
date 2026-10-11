@@ -1,20 +1,20 @@
 # The brief
 
-Brief = the decided outcome, in fixed sections a later session resumes from.
+Brief = the decided outcome, in fixed sections a later session resumes from. Sections hold decisions, not their reasoning, which the next stage would argue again.
 
 ## Sections
 
 In this order:
 
 - **Goal:** one sentence describing the observable result.
-- **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with the path that settles it, or exo for a second "I don't know".
-- **Open points:** only a question for the user that stays unanswered; one list item each. Entry listed → plan-check flags it and build refuses the brief.
+- **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with its settling path, or exo for a second "I don't know".
+- **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
 - **Assumptions:** each `assume` point, one list item.
 - **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; the run report holds them, not the final message.
 - **Visual direction:** new visual surface only: whether the existing identity stays or may be replaced, the ambition, who chooses between rendered directions.
   - Frontend-design skill returns → add the path of its `contract-selected.json` with the contract's `title` and `description`.
-- **Plan basis**, **Success criterion**, **Checkpoint**, **Tasks**, in that order, each as the task-list specification defines it.
+- **Plan basis**, **Success criterion**, **Checkpoint**, **Tasks**, each as the task-list specification defines it.
 - Tasks stays last; a `## ` heading after a task ends that task.
 
 Store the brief where `specs` in the session's `exo settings:` line says, `docs` when that line is absent, and name its location in the same message.
@@ -23,7 +23,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## The task list
 
-- Make the split and every design choice before writing the list; the builder runs on `sonnet` and cannot ask.
+- Make the split and every design choice before writing the list; the `sonnet` builder cannot ask.
 - Choice the user would notice → Decisions.
 - Point the user would not notice → `Data:`.
 - Security-boundary task → name its reference in its heading or `Data:`.
@@ -33,15 +33,15 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Judgment
 
-- `Open points` keeps that exact name; plan-check and start-run read `## Open points`.
+- `## Open points` keeps that exact name; plan-check and start-run read it.
 - `## Visual direction` (exact name; design-ui reads it) names an existing `contract-selected.json` → design-ui gets a decided direction; it resumes at Build and repeats no variant choice.
 
 ## Open points step
 
 Dispatch the `exo:find-open-points` agent once on the brief.
 
-- `code` point → record the answer in the brief; ask nothing.
-- `assume` point → one line under `## Assumptions`; ask nothing.
-- `user` point → ask the user, one per message.
+- `code` point → its answer into the brief; ask nothing.
+- `assume` point → `## Assumptions`; ask nothing.
+- `user` point → ask it, one per message.
 - Each answer → next numbered line under `## Decisions`, closed by you; store it with `node "${CLAUDE_SKILL_DIR}/../remember/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`.
 - Unanswered `user` point → `## Open points`; no entry left → omit the section.
