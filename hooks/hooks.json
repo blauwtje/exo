@@ -35,6 +35,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Glob|Grep|WebFetch|WebSearch|Skill|NotebookEdit|ToolSearch|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/context-limit.mjs\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }
