@@ -22,6 +22,7 @@
     "#package-entry-point": "./lib/package-entry-point.mjs",
     "#page-chrome": "./lib/page-chrome.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
+    "#run-decision": "./lib/run-decision.mjs",
     "#process-tree": "./lib/process-tree.mjs",
     "#confine-claude": "./lib/confine-claude.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
