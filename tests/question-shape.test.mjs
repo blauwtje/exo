@@ -68,6 +68,21 @@ test('the shared shape check rejects a fourth option', () => {
   assert.throws(() => assertQuestionShape(valid.replace('it is simplest', 'it is the simplest and the cheapest of them all')), /reason/);
 });
 
+test('the shared shape check holds at the edges of each cap', () => {
+  const question = (title, options) => [
+    `**${title}**`,
+    '',
+    ...options,
+    '',
+    'Recommended: (A), because it is simplest',
+  ].join('\n');
+  const two = ['- **(A) Route A**: you get A', '- **(B) Route B**: you get B'];
+  assertQuestionShape(question('1/3 Which one of these ten routes should we take today?', two));
+  assert.throws(() => assertQuestionShape(question('Which route do you want', two)), /title ending in \?/);
+  assert.throws(() => assertQuestionShape(question('Which route do you want?', two.slice(0, 1))), /1 options/);
+  assert.throws(() => assertQuestionShape(question('Which route do you want?', [two[0].replace('you get A', 'you get one two three four five six seven'), two[1]])), /option text runs past 8 words/);
+});
+
 // The old shape: middle-dot option lines, bold or not, and titles, the arrow
 // reason, and the line for a missing answer.
 const OLD_SHAPE = [/^\s*-\s+(\*\*)?[A-J] · /m, /\*\*\d+ · /, /^\s*['"`]?→ [A-Z]\. /m, /Without an answer,/];

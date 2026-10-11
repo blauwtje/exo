@@ -5,16 +5,14 @@
 // the `Recommended: (A), because` line last, its reason at most 8 words.
 
 import assert from 'node:assert/strict';
-import { QUESTION_CAPS } from '../verify/checks/question-options.mjs';
+import { MAX_OPTIONS, QUESTION_CAPS, QUESTION_OPTION, QUESTION_REASON, QUESTION_TITLE } from '../verify/checks/question-options.mjs';
 
-// Parses any letter so a fourth option fails the count, not the blank-line check.
-const OPTION = /^- \*\*\(([A-Z])\) ([^*]+)\*\*: (\S.*)$/;
 const words = (text) => text.trim().split(/\s+/).length;
 
 /** Asserts that `text`, one rendered question, keeps every limit of the shape. */
 export function assertQuestionShape(text) {
   const lines = text.trim().split('\n');
-  const title = lines[0].match(/^\*\*(?:\d+\/\d+ )?([^*]+\?)\*\*$/);
+  const title = lines[0].match(QUESTION_TITLE);
   assert.ok(title, `a bold title ending in ?: ${lines[0]}`);
   assert.ok(words(title[1]) <= QUESTION_CAPS.title, `the title runs past 10 words: ${title[1]}`);
   const blank = lines.indexOf('');
@@ -25,17 +23,17 @@ export function assertQuestionShape(text) {
   for (const sentence of sentences) assert.ok(words(sentence) <= QUESTION_CAPS.context, `the context runs past 15 words: ${sentence}`);
   const options = [];
   let index = blank + 1;
-  while (OPTION.test(lines[index] ?? '')) {
-    const [, letter, label, body] = lines[index++].match(OPTION);
+  while (QUESTION_OPTION.test(lines[index] ?? '')) {
+    const [, letter, label, body] = lines[index++].match(QUESTION_OPTION);
     assert.ok(words(label) <= QUESTION_CAPS.label, `the label runs past 3 words: ${label}`);
     assert.ok(words(body) <= QUESTION_CAPS.option, `the option text runs past 8 words: ${body}`);
     options.push(letter);
   }
-  assert.ok(options.length >= 2 && options.length <= QUESTION_CAPS.label, `${options.length} options`);
+  assert.ok(options.length >= 2 && options.length <= MAX_OPTIONS, `${options.length} options`);
   assert.deepEqual(options, ['A', 'B', 'C'].slice(0, options.length), 'options lettered in order from A');
   assert.equal(lines[index], '', 'a blank line after the options');
   assert.equal(index + 2, lines.length, 'the recommendation is the last line');
-  const reason = lines.at(-1).match(/^Recommended: \(A\), because (\S.*)$/);
-  assert.ok(reason, `the recommendation line: ${lines.at(-1)}`);
-  assert.ok(words(reason[1]) <= QUESTION_CAPS.reason, `the reason runs past 8 words: ${reason[1]}`);
+  const reason = lines.at(-1).match(QUESTION_REASON);
+  assert.ok(reason?.[1] === 'A', `the recommendation line: ${lines.at(-1)}`);
+  assert.ok(words(reason[2]) <= QUESTION_CAPS.reason, `the reason runs past 8 words: ${reason[2]}`);
 }
