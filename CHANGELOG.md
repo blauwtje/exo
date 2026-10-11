@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.124.2 - 2026-10-11
+
 ### Highlights
 
 - **At its context limits the lead no longer stops or asks for a new session: it hands the remaining work to fresh subagents and the run carries on.**
