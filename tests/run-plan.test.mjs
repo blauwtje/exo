@@ -78,6 +78,49 @@ test('EXO_RUN_DIR: the run state shows build while tasks run and verify once the
   assert.equal(await phaseAfter([land(1), land(2), { result: 'Verify done.' }]), 'verify');
 });
 
+async function runDirContext() {
+  const context = await setup();
+  const dir = path.join(await fs.realpath(await fixture()), '.exo', 'run', 'id');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify({ id: 'id', phase: 'starting' }));
+  context.env = { EXO_RUN_DIR: dir };
+  return { context, dir };
+}
+
+test('EXO_RUN_DIR: the prompt names decisions.md and run-decision, the rules admit it, and decisions are reported before the stop line', async () => {
+  const { context, dir } = await runDirContext();
+  await fs.writeFile(path.join(dir, 'decisions.md'), '- workspace: branch (ask)\n');
+  await sandboxOff(context);
+  const result = await runPlan(context, [{ result: 'Task 1: BLOCKED nothing' }]);
+  const script = path.join(PLUGIN_ROOT, 'lib', 'run-decision.mjs');
+  assert.match(result.calls[0].stdin, new RegExp(`Never ask the user.*${script.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*${path.join(dir, 'decisions.md').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  assert.ok(allowOf(result.calls[0]).includes(`Bash(node ${script} *)`));
+  assert.match(result.stdout, /^Decisions: 1, in .*decisions\.md$/m);
+  const detail = (await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8')).split('\n').filter(Boolean);
+  assert.deepEqual(detail.slice(-3, -1), ['Decisions:', '- workspace: branch (ask)']);
+});
+
+test('EXO_RUN_DIR: a stale blocked marker is removed at start and a fresh one naming the task stops the run as BLOCKED', async () => {
+  const { context, dir } = await runDirContext();
+  const marker = path.join(dir, 'blocked');
+  await fs.writeFile(marker, 'Task 1: BLOCKED stale\n');
+  const wrapper = path.join(context.tools, 'wrapper.mjs');
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nfs.writeFileSync(process.env.EXO_RUN_DIR + '/blocked', 'Task 1: BLOCKED which database?\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
+  context.stub = wrapper;
+  const result = await runPlan(context, [{ result: 'Worked on it.' }, { result: 'Worked on it.' }]);
+  assert.equal(result.stop, 'run-plan: stop: task 1 blocked: which database?; re-plan with exo:spec');
+  assert.equal(result.calls.length, 1);
+  await assert.rejects(fs.access(marker));
+});
+
+test('EXO_RUN_DIR: a stale blocked marker never stops a run whose session writes none', async () => {
+  const { context, dir } = await runDirContext();
+  await fs.writeFile(path.join(dir, 'blocked'), 'Task 1: BLOCKED stale\n');
+  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS');
+  assert.doesNotMatch(result.stdout, /^Decisions/m);
+});
+
 test('EXO_RUN_DIR unset: the run state stays as it was', async () => {
   assert.equal(await phaseAfter([land(1), land(2), { result: 'Verify done.' }], { set: false }), 'starting');
 });

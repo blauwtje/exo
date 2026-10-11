@@ -40,6 +40,7 @@ import { defaultBranch, driftOf, frameOf, landedTasks, loopCommands, parsePlan, 
 import { isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { readDecisions } from '#run-decision';
 import { taskBrief } from './next-task.mjs';
 import { updateRun } from './run-state.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
@@ -49,6 +50,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
 const SCRIPT = {
   landTask: path.join(HERE, 'land-task.mjs'),
+  runDecision: path.join(PLUGIN_ROOT, 'lib', 'run-decision.mjs'),
   verify: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'verify.mjs'),
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
   planCheck: path.join(PLUGIN_ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs')
@@ -207,14 +209,14 @@ export function sandboxSettings(mode, { tail = false } = {}) {
  * also the plan's commands, read-only git and inspection. Sandboxed Bash needs no rule, so with the
  * sandbox on only the scripts that run outside it get one.
  */
-export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT, sandbox = false }) {
+export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PLUGIN_ROOT, sandbox = false, decisions = Boolean(process.env.EXO_RUN_DIR) }) {
   const paths = [
     ...[root, pluginRoot, path.dirname(planPath)].flatMap((directory) => pathRule('Read', directory)),
     ...pathRule('Edit', root),
     ...pathRule('Write', root)
   ];
   if (sandbox) return [...new Set([...paths, ...scriptRules(unsandboxedScripts(tail))])];
-  const scripts = tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask];
+  const scripts = [...(tail ? [SCRIPT.verify, SCRIPT.runProbes, SCRIPT.landTask] : [SCRIPT.landTask]), ...(decisions ? [SCRIPT.runDecision] : [])];
   const commands = loopCommands(plan)
     .filter((entry) => entry.field !== 'Success criterion')
     .flatMap((entry) => entry.parts.map((part) => `Bash(${part} *)`));
@@ -452,7 +454,7 @@ function sectionOf(text, heading) {
  * their one source files (task-mode.md, build-task.md, lean.md), so the session reads none of them
  * and runs neither next-task.mjs nor a land-task check.
  */
-export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, pluginRoot = PLUGIN_ROOT }) {
+export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, pluginRoot = PLUGIN_ROOT, runDir = process.env.EXO_RUN_DIR }) {
   const task = plan.tasks.find((entry) => entry.number === number);
   const fill = (text) => text
     .replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIR)
@@ -491,6 +493,9 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, p
     '',
     `- Change only the files this task lists. If a registry, index or test list must name the new file and is not listed, end on \`Task ${number}: BLOCKED <file> is missing from the file list\`.`,
     `- Read ${learnings} first, and before ending append one line on anything the next task should know.`,
+    ...(runDir
+      ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${path.join(runDir, 'decisions.md')}) and go on.`]
+      : []),
     ...(sandbox
       ? ['- Bash runs in a sandbox. A command that fails with "Operation not permitted" or EPERM hit the sandbox, not a bug in the task. land-task reruns the proof outside the sandbox, so land when those are the only failures left.']
       : [])
@@ -551,6 +556,8 @@ function summaryLines(run, stop) {
   else lines.push(stop.gate === 'PASS' ? 'Final check passed.' : `Final check failed: ${run.verifyLines[0] ?? 'see the detail file'}.`);
   const denied = records.reduce((sum, record) => sum + record.denied.length, 0);
   if (denied > 0) lines.push(`${denied} command${denied === 1 ? ' was' : 's were'} refused by the permission rules; the detail file lists them.`);
+  const decisions = process.env.EXO_RUN_DIR ? readDecisions(process.env.EXO_RUN_DIR) : [];
+  if (decisions.length > 0) lines.push(`Decisions: ${decisions.length}, in ${path.join(process.env.EXO_RUN_DIR, 'decisions.md')}`);
   lines.push(`Next: ${stop.next}`);
   lines.push(`Cost ${money(records.reduce((sum, record) => sum + record.cost, 0))}, time ${duration(run.elapsed())}.`);
   lines.push(`Details: ${path.join(logDir, 'summary.txt')}`);
@@ -582,6 +589,8 @@ function detailLines(run, stop) {
   if (run.uncommitted.size > 0) lines.push(`Uncommitted after a landing: ${[...run.uncommitted].join(', ')}`);
   const manual = (plan.frame['Manual checks'] ?? '').split('\n').filter((line) => line.startsWith('- '));
   if (manual.length > 0) lines.push('Manual checks:', ...manual);
+  const decisions = process.env.EXO_RUN_DIR ? readDecisions(process.env.EXO_RUN_DIR) : [];
+  if (decisions.length > 0) lines.push('Decisions:', ...decisions);
   lines.push(`run-plan: stop: ${stop.line}`);
   return lines;
 }
@@ -692,6 +701,7 @@ async function main(argv) {
     process.stdout.write(`${line}\n`);
   };
   writeTasks();
+  if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
   say(`run start: ${path.relative(root, planPath) || planPath}, branch ${branch}, ${plan.tasks.length} tasks (${plan.tasks.length - landedAtStart.length} to build)`);
 
   // land-task runs the plan's Proof and Land gate outside the sandbox, so a session must not rewrite them.
@@ -738,6 +748,11 @@ async function main(argv) {
     const record = { iteration, task: n, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied };
     run.records.push(record);
 
+    // The hook's marker is read and removed after every session, so none outlives its task.
+    const markerFile = process.env.EXO_RUN_DIR ? path.join(process.env.EXO_RUN_DIR, 'blocked') : null;
+    const marker = markerFile !== null && fs.existsSync(markerFile) ? fs.readFileSync(markerFile, 'utf8').trim() : null;
+    if (markerFile !== null) fs.rmSync(markerFile, { force: true });
+
     const breach = planBreach() ?? breachOf(root, before, { trailer });
     if (breach !== null) {
       say(`task ${n} stopped: ${breach}`);
@@ -763,7 +778,8 @@ async function main(argv) {
       }
       continue;
     }
-    const blocked = outcome.timedOut ? null : last.match(new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`));
+    const statusLine = new RegExp(`^Task ${n}: BLOCKED\\b\\s*(.*)$`);
+    const blocked = marker?.match(statusLine) ?? (outcome.timedOut ? null : last.match(statusLine));
     if (blocked !== null || (!outcome.timedOut && last.includes('PLAN DRIFT'))) {
       const reason = blocked?.[1] || last;
       say(`task ${n} blocked: ${clip(reason, 80)}`);
