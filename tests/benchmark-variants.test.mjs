@@ -27,7 +27,7 @@ test('every variant builds from this checkout and checks clean', () => {
 test('no-find-cause removes the skill folder and the route clause', (t) => {
   const copy = applyVariant('no-find-cause', freshCopy(t));
   assert.ok(!fs.existsSync(path.join(copy, 'skills', 'find-cause')));
-  assert.ok(!fs.readFileSync(path.join(copy, 'skills', 'route-skills', 'SKILL.md'), 'utf8').includes('find-cause'));
+  assert.ok(!fs.readFileSync(path.join(copy, 'hooks', 'session-routing.md'), 'utf8').includes('find-cause'));
 });
 
 test('a missing target text stops with an error naming the variant', (t) => {
