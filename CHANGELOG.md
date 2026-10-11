@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.122.0 - 2026-10-11
+
 ### Highlights
 
 - **A session at `xhigh` or `max` effort now thinks harder only in the lead: every exo subagent runs at its own fixed effort.**
