@@ -2,6 +2,8 @@
 // The terminal front of run-plan.mjs.
 //
 //   node exo-cli.mjs run [plan] [run-plan flags]
+//   node exo-cli.mjs run <plan> --detach | run --resume <id>
+//   node exo-cli.mjs status [<id>]
 //   node exo-cli.mjs run config [<key> <value>]
 //   node exo-cli.mjs setup
 //
@@ -20,7 +22,7 @@
 // upstream is gone, then runs run-plan.mjs with inherited stdio and exits with
 // its code. --dry-run and --help skip the fetch, fast-forward and deletion.
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -29,7 +31,9 @@ import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
 import { isMain } from '#script-flags';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
+import { FINAL_PHASES, acquireLock, createRun, isAlive, listRuns, newRunId, readState, releaseLock, runDir, updateRun } from './run-state.mjs';
 
+const CLI = fileURLToPath(import.meta.url);
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
 
 class Refusal extends Error {}
@@ -236,15 +240,23 @@ function configCommand(args) {
   process.stdout.write(`exo: ${key} = ${JSON.stringify(value)} written to ${file}\n`);
 }
 
-function runCommand(argv) {
-  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
-  if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
-  const given = argv[0] !== undefined && !argv[0].startsWith('--');
-  const flags = given ? argv.slice(1) : argv;
-  const plan = given ? path.resolve(argv[0]) : newestPlan(root);
-  if (plan === null) throw new Refusal('no plan under docs/specs/ or docs/plans/; pass one: exo run <plan>');
-  if (!given) process.stdout.write(`exo: plan ${plan}\n`);
+/** Takes `--detach`, `--resume <id>` and the internal `--run-id <id>` out of `argv`. */
+function runOptions(argv) {
+  const rest = [];
+  const options = { detach: false, resume: null, runId: null };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--detach') options.detach = true;
+    else if (argv[i] === '--resume' || argv[i] === '--run-id') {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--')) throw new Refusal(`${argv[i - 1]} needs a run id`);
+      options[argv[i - 1] === '--resume' ? 'resume' : 'runId'] = value;
+    } else rest.push(argv[i]);
+  }
+  return { ...options, rest };
+}
 
+/** Preflight and chores, then run-plan with inherited stdio; its exit code. */
+function buildRun(root, plan, flags, id) {
   const files = dirtyFiles(root);
   if (files.length > 0) {
     const list = files.join(' ');
@@ -268,7 +280,83 @@ function runCommand(argv) {
   if (chores) cleanUp(root, base, [branch, gitOut(root, ['symbolic-ref', '-q', '--short', 'HEAD'])]);
 
   const rootFlags = inTree ? ['--root', runRoot] : [];
-  return spawnSync(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit' }).status ?? 1;
+  const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
+  const done = spawnSync(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
+  return done.status ?? null;
+}
+
+function runCommand(argv) {
+  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
+  const options = runOptions(argv);
+  let { detach } = options;
+  let plan;
+  let flags;
+  let id = options.runId ?? options.resume ?? newRunId();
+  if (options.resume !== null) {
+    const old = readState(root, id);
+    if (old === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
+    if (old.phase === 'passed') throw new Refusal(`refused: run ${id} already passed`);
+    if (isAlive(old.pid) && !FINAL_PHASES.includes(old.phase)) throw new Refusal(`refused: run ${id} is still running (pid ${old.pid})`);
+    ({ plan, flags, detach } = old);
+  } else {
+    const given = options.rest[0] !== undefined && !options.rest[0].startsWith('--');
+    flags = given ? options.rest.slice(1) : options.rest;
+    plan = given ? path.resolve(options.rest[0]) : newestPlan(root);
+    if (plan === null) throw new Refusal('no plan under docs/specs/ or docs/plans/; pass one: exo run <plan>');
+    if (!given && options.runId === null) process.stdout.write(`exo: plan ${plan}\n`);
+    if (!fs.existsSync(plan)) throw new Refusal(`cannot read ${plan}: no such file`);
+  }
+
+  const child = options.runId !== null;
+  if (!child) {
+    const lock = acquireLock(root, id);
+    if (!lock.ok) throw new Refusal(`refused: run ${lock.holder} is still running in this checkout; exo status shows it`);
+    if (lock.stale) process.stdout.write(`exo: took over the lock of run ${lock.stale}, whose process is gone\n`);
+    const log = detach ? path.join(runDir(root, id), 'run.log') : null;
+    if (options.resume !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log });
+    else createRun(root, { id, plan, flags, detach, log });
+  }
+
+  if (detach && !child) {
+    const log = path.join(runDir(root, id), 'run.log');
+    const fd = fs.openSync(log, 'a');
+    const started = spawn(process.execPath, [CLI, 'run', plan, '--run-id', id, ...flags], { cwd: root, detached: true, stdio: ['ignore', fd, fd] });
+    started.unref();
+    fs.closeSync(fd);
+    updateRun(root, id, { pid: started.pid });
+    process.stdout.write(`exo: run ${id} started in the background (pid ${started.pid}); exo status ${id}, log ${log}\n`);
+    return 0;
+  }
+
+  let code = 1;
+  let phase = 'crashed';
+  try {
+    code = buildRun(root, plan, flags, id) ?? 1;
+    phase = code === 0 ? 'passed' : code === 2 ? 'refused' : 'stopped';
+  } catch (error) {
+    if (error instanceof Refusal) {
+      phase = 'refused';
+      code = 2;
+    }
+    throw error;
+  } finally {
+    updateRun(root, id, { phase, exitCode: code });
+    releaseLock(root, id);
+  }
+  return code;
+}
+
+function statusCommand(args) {
+  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
+  const runs = args[0] === undefined ? listRuns(root) : [readState(root, args[0])].filter(Boolean);
+  if (runs.length === 0) throw new Refusal(args[0] === undefined ? 'no runs in this checkout' : `no run ${args[0]} in this checkout`);
+  for (const run of runs) {
+    const gone = !FINAL_PHASES.includes(run.phase) && !isAlive(run.pid);
+    const note = gone ? `; process gone, continue with: exo run --resume ${run.id}` : '';
+    process.stdout.write(`${run.id}  ${run.phase}  ${path.basename(run.plan)}  pid ${run.pid}${run.log ? `  log ${run.log}` : ''}${note}\n`);
+  }
 }
 
 if (isMain(import.meta.url)) {
@@ -276,8 +364,9 @@ if (isMain(import.meta.url)) {
   try {
     if (command === 'setup') setupCommand();
     else if (command === 'run' && rest[0] === 'config') configCommand(rest.slice(1));
+    else if (command === 'status') statusCommand(rest);
     else if (command === 'run') process.exitCode = runCommand(rest);
-    else throw new Refusal('usage: exo run [plan] [run-plan flags] | exo run config [<key> <value>] | exo setup');
+    else throw new Refusal('usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup');
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;
     process.stderr.write(`exo: ${error.message}\n`);
