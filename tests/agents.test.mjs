@@ -310,3 +310,13 @@ test('the branch reviewer confirms with one test file or Probe command, never th
   }
   assert.match(reviewer.body, /needs the full suite → `question`/, 'a full-suite finding goes to question');
 });
+
+test('the open-points finder is read-only, runs the decisions check first and caps its report', () => {
+  const finder = agents.find((agent) => agent.frontmatter.name === 'find-open-points');
+  assert.deepEqual(finder.frontmatter.tools.split(', '), ['Read', 'Glob', 'Grep', 'Bash']);
+  assert.equal(finder.frontmatter.effort, 'high');
+  assert.equal(finder.frontmatter.model, agentKind('review-branch').model);
+  assert.ok(finder.body.indexOf('memory.mjs" decisions') > 0, 'no decisions run');
+  assert.ok(finder.body.includes('[code|assume|user]'));
+  assert.ok(finder.body.includes('Under 1.5k tokens'));
+});
