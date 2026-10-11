@@ -72,7 +72,7 @@ test('model and effort resolve through the codex block, shifted up one step on t
   assert.equal(field(critique, 'model_reasoning_effort'), 'xhigh');
   const lookup = generated('exo-locate-code');
   assert.equal(field(lookup, 'model'), 'gpt-6-luna');
-  assert.equal(field(lookup, 'model_reasoning_effort'), 'medium');
+  assert.equal(field(lookup, 'model_reasoning_effort'), 'low');
 });
 
 test('a low twin takes the low budget tier and keeps its source body', () => {

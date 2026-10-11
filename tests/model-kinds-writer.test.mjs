@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { findKindDrift, writeKinds } from '../verify/model-kinds.mjs';
+import { findInheritanceGaps, findKindDrift, writeKinds } from '../verify/model-kinds.mjs';
 
 const TABLE = {
   provider: 'claude',
@@ -18,7 +18,8 @@ const TABLE = {
     hardest: { model: 'opus', effort: 'max' },
     review: { model: 'sonnet', effort: 'high' },
     'review-deep': { model: 'opus', effort: 'max' },
-    lookup: { model: 'haiku', effort: null }
+    lookup: { model: 'haiku', effort: null },
+    peer: { model: 'inherit', effort: 'high' }
   },
   agents: {
     'agents/worker.md': { kind: 'build' },
@@ -72,6 +73,7 @@ test('the drift list names each file, field, expected and actual value', () => {
   assert.deepEqual(drift.filter((record) => record.file.startsWith('skills/')), [
     { file: 'skills/alpha/SKILL.md', field: 'effort', expected: 'high', actual: 'low' },
     { file: 'skills/alpha/SKILL.md', field: 'model', expected: 'opus', actual: 'sonnet' },
+    { file: 'skills/alpha/SKILL.md', field: 'effort', expected: 'max', actual: null },
     { file: 'skills/alpha/SKILL.md', field: 'model', expected: 'sonnet', actual: 'opus' },
     { file: 'skills/beta/SKILL.md', field: 'model', expected: 'opus', actual: 'haiku' },
     { file: 'skills/beta/SKILL.md', field: 'effort', expected: 'max', actual: null }
@@ -88,7 +90,7 @@ test('writing applies the table and leaves nothing to drift', () => {
   assert.equal(read(root, 'agents/reviewer-deep.md'), '---\nname: reviewer-deep\nmodel: opus\neffort: max\ntools: Read\n---\n\nBody of reviewer.\n');
   assert.equal(
     read(root, 'skills/alpha/SKILL.md'),
-    '---\nname: alpha\neffort: high\n---\n\nRun it: delegate on `opus` for a fix, then `sonnet` for the rest.\n'
+    '---\nname: alpha\neffort: high\n---\n\nRun it: delegate on `opus` at `max` effort for a fix, then `sonnet` for the rest.\n'
   );
   assert.equal(read(root, 'skills/beta/SKILL.md'), '---\nname: beta\nmodel: opus\neffort: max\n---\n\nBeta.\n');
 });
@@ -132,7 +134,7 @@ test('a dispatch line holding the model word of another provider block is found 
   const alpha = '---\nname: alpha\neffort: high\n---\n\nRun it: delegate on `gpt-5` for a fix, then `sonnet` for the rest.\n';
   const root = makeRoot({ ...FILES, 'skills/alpha/SKILL.md': alpha });
   writeKinds(root, table);
-  assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `opus` for a fix, then `sonnet` for the rest/);
+  assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `opus` at `max` effort for a fix, then `sonnet` for the rest/);
 });
 
 test('an entry description is written into its file, and a hand edit of it is drift', () => {
@@ -187,7 +189,7 @@ test('a dispatch on a model the provider lists but no tier maps is written and f
   table.kinds.hardest = { model: 'fable', effort: 'max' };
   const root = makeRoot();
   writeKinds(root, table);
-  assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `fable` for a fix/);
+  assert.match(read(root, 'skills/alpha/SKILL.md'), /delegate on `fable` at `max` effort for a fix/);
   assert.deepEqual(findKindDrift(root, table), []);
 });
 
@@ -202,4 +204,53 @@ test('node verify/model-kinds.mjs runs when the path to it passes through a syml
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }
+});
+
+test('a dispatch states its kind\'s effort after the model, and a wrong or missing one is drift the writer sets', () => {
+  const table = structuredClone(TABLE);
+  table.dispatches = [{ file: 'skills/beta/SKILL.md', match: 'send it on `opus` at `low` effort now', kind: 'review' }];
+  const beta = '---\nname: beta\nmodel: haiku\n---\n\nThen send it on `opus` at `low` effort now.\n';
+  const root = makeRoot({ ...FILES, 'skills/beta/SKILL.md': beta });
+  table.skills = {};
+  assert.deepEqual(findKindDrift(root, table).filter((record) => record.file === 'skills/beta/SKILL.md').map((record) => [record.field, record.expected, record.actual]), [['model', 'sonnet', 'opus'], ['effort', 'high', 'low']]);
+  writeKinds(root, table);
+  assert.match(read(root, 'skills/beta/SKILL.md'), /Then send it on `sonnet` at `high` effort now\./);
+  assert.deepEqual(findKindDrift(root, table), []);
+});
+
+test('an inherit dispatch reads "with `model` omitted at `<effort>` effort"', () => {
+  const table = structuredClone(TABLE);
+  table.dispatches = [{ file: 'skills/beta/SKILL.md', match: 'send it on `opus` now', kind: 'peer' }];
+  const beta = '---\nname: beta\nmodel: haiku\n---\n\nThen send it on `opus` now.\n';
+  const root = makeRoot({ ...FILES, 'skills/beta/SKILL.md': beta });
+  writeKinds(root, table);
+  assert.match(read(root, 'skills/beta/SKILL.md'), /Then send it with `model` omitted at `high` effort now\./);
+  assert.deepEqual(findInheritanceGaps(root, table).filter((gap) => gap.includes('skills/')), []);
+});
+
+test('the inheritance scan names an agent without effort, an uncovered general-purpose line, the session\'s model and a fork', () => {
+  const table = structuredClone(TABLE);
+  table.agents = { 'agents/finder.md': { kind: 'lookup' }, 'agents/worker.md': { kind: 'build' } };
+  table.dispatches = [{ file: 'skills/alpha/SKILL.md', match: 'a `general-purpose` delegate on `sonnet` at `high` effort', kind: 'build' }];
+  const alpha = [
+    '---', 'name: alpha', '---', '',
+    'Send a `general-purpose` delegate on `sonnet` at `high` effort.',
+    'Send a `general-purpose` agent.',
+    'Hand over on the session\'s model.',
+    'Dispatch a fork of this session.',
+    'Fork the dark scheme in one place.', ''
+  ].join('\n');
+  const root = makeRoot({
+    'agents/finder.md': FILES['agents/finder.md'],
+    'agents/worker.md': '---\nname: worker\nmodel: sonnet\neffort: high\n---\n\nBody.\n',
+    'agents/stray.md': '---\nname: stray\nmodel: sonnet\n---\n\nBody.\n',
+    'skills/alpha/SKILL.md': alpha
+  });
+  assert.deepEqual(findInheritanceGaps(root, table), [
+    'agents/stray.md: no effort: line, the session effort would reach the subagent',
+    'agents/finder.md: kind lookup has no effort, the session effort would reach the subagent',
+    'skills/alpha/SKILL.md:6: names general-purpose with no dispatches entry in lib/model-kinds.json',
+    'skills/alpha/SKILL.md:7: names "the session\'s model"; pin a kind with model and effort',
+    'skills/alpha/SKILL.md:8: dispatches a fork, which takes the session\'s effort'
+  ]);
 });

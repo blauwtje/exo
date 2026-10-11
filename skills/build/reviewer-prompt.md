@@ -1,6 +1,6 @@
 # Reviewer prompt
 
-Text build's No-spec step 7 hands a `general-purpose` delegate on the session's model.
+Text build's No-spec step 7 hands a `general-purpose` delegate with `model` omitted at `high` effort.
 
 ```text
 Review the pending change in <root> at <effort> effort. Request: <request>

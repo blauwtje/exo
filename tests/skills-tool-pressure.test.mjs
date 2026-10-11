@@ -420,8 +420,8 @@ test('--cells-for adds every per-call kind a budget runs the file on, deep and h
   assert.equal((await cellsFor('agents/solve-hard.md')).stdout, 'opus:high,sonnet:high,opus:xhigh,opus:medium\n');
 });
 
-test('--cells-for prints session for a kind with no effort, and a dispatches entry\'s kind for its file', async () => {
-  assert.equal((await cellsFor('agents/locate-code.md')).stdout, 'haiku:session\n');
+test('--cells-for prints a kind effort, and a dispatches entry\'s kind for its file', async () => {
+  assert.equal((await cellsFor('agents/locate-code.md')).stdout, 'haiku:low\n');
   assert.equal((await cellsFor('skills/find-cause/fixer-prompt.md')).stdout, 'sonnet:high\n');
   assert.equal((await cellsFor('skills/configure/SKILL.md')).stdout, 'sonnet:low\n');
 });

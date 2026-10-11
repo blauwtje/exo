@@ -34,13 +34,14 @@ function readTableWith(change) {
 test('every kind resolves through the claude block to a model and an effort or null', () => {
   assert.deepEqual(Object.keys(table.kinds).sort(), [
     'build', 'build-task', 'chore', 'coordinate', 'handover', 'hardest', 'hardest-high', 'hardest-low', 'investigate',
-    'lookup', 'prose', 'research', 'review', 'review-deep', 'review-deep-high'
+    'lookup', 'peer', 'prose', 'research', 'review', 'review-deep', 'review-deep-high'
   ]);
   assert.deepEqual(table.kinds.hardest, { model: 'opus', effort: 'high' });
   assert.deepEqual(table.kinds['hardest-high'], { model: 'opus', effort: 'xhigh' });
   assert.deepEqual(table.kinds['hardest-low'], { model: 'opus', effort: 'medium' });
   assert.deepEqual(table.kinds.build, { model: 'sonnet', effort: 'high' });
-  assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: null });
+  assert.deepEqual(table.kinds.lookup, { model: 'haiku', effort: 'low' });
+  assert.deepEqual(table.kinds.peer, { model: 'inherit', effort: 'high' });
   assert.deepEqual(table.kinds.handover, { model: 'inherit', effort: null });
 });
 
@@ -51,7 +52,7 @@ test('the raw table names a tier and a neutral effort per kind, and the claude b
   assert.deepEqual(raw.providers.claude.models, ['fable', 'opus', 'sonnet', 'haiku']);
   assert.deepEqual(Object.keys(raw.providers.claude.efforts), ['low', 'medium', 'high', 'xhigh', 'max']);
   assert.deepEqual(raw.kinds.hardest, { tier: 'strong', effort: 'high' });
-  assert.deepEqual(raw.kinds.lookup, { tier: 'fast', effort: null });
+  assert.deepEqual(raw.kinds.lookup, { tier: 'fast', effort: 'low' });
 });
 
 test('the reader resolves a kind through whichever provider block is active', () => {
@@ -64,7 +65,7 @@ test('the reader resolves a kind through whichever provider block is active', ()
     };
   })();
   assert.deepEqual(resolved.kinds.hardest, { model: 'big', effort: 'h' });
-  assert.deepEqual(resolved.kinds.lookup, { model: 'small', effort: null });
+  assert.deepEqual(resolved.kinds.lookup, { model: 'small', effort: 'l' });
 });
 
 test('a tier on inherit, a kind on xhigh and a listed model no tier uses all load', () => {
@@ -72,7 +73,7 @@ test('a tier on inherit, a kind on xhigh and a listed model no tier uses all loa
     copy.providers.claude.tiers.fast = 'inherit';
     copy.kinds.build.effort = 'xhigh';
   })();
-  assert.deepEqual(loaded.kinds.lookup, { model: 'inherit', effort: null });
+  assert.deepEqual(loaded.kinds.lookup, { model: 'inherit', effort: 'low' });
   assert.deepEqual(loaded.kinds.build, { model: 'sonnet', effort: 'xhigh' });
   assert.ok(!Object.values(table.providers.claude.tiers).includes('fable'));
   assert.ok(table.providers.claude.models.includes('fable'));
@@ -118,7 +119,7 @@ test('every dispatch match is one line holding one model word, the kind\'s', () 
     const lines = readRepoFile(file).split('\n').filter((line) => line.includes(match));
     assert.equal(lines.length, 1, `${file}: "${match}" matches ${lines.length} lines`);
     const words = [...lines[0].matchAll(MODEL_WORD)].map((found) => found[1]);
-    assert.deepEqual(words, [table.kinds[kind].model], `${file}: "${match}"`);
+    assert.deepEqual(words, table.kinds[kind].model === 'inherit' ? [] : [table.kinds[kind].model], `${file}: "${match}"`);
   }
 });
 
@@ -171,7 +172,12 @@ test('the codex provider shifts a strong kind up one effort step, clamped at max
   assert.equal(codex.provider, 'codex');
   assert.deepEqual(codex.kinds.build, { model: 'gpt-6.1-sol', effort: 'high' });
   assert.deepEqual(codex.kinds.research, { model: 'gpt-6.1-sol', effort: 'medium' });
-  assert.deepEqual(codex.kinds.lookup, { model: 'gpt-6-luna', effort: 'medium' });
+  assert.deepEqual(codex.kinds.lookup, { model: 'gpt-6-luna', effort: 'low' });
+  const nulled = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kinds-')), 'table.json');
+  const raw = JSON.parse(fs.readFileSync(TABLE_PATH, 'utf8'));
+  raw.kinds.lookup.effort = null;
+  fs.writeFileSync(nulled, JSON.stringify(raw));
+  assert.equal(readKindTable(nulled, { provider: 'codex' }).kinds.lookup.effort, 'medium');
   assert.deepEqual(codex.kinds['review-deep'], { model: 'gpt-6.1-sol', effort: 'xhigh' });
   assert.deepEqual(codex.kinds['review-deep-high'], { model: 'gpt-6.1-sol', effort: 'max' });
   assert.deepEqual(codex.kinds['hardest-low'], { model: 'gpt-6.1-sol', effort: 'high' });

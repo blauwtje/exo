@@ -1,6 +1,6 @@
 # Fixer prompt
 
-Text `find-cause` hands a `general-purpose` delegate on `sonnet` for phase (c), and `build` hands `exo:solve-hard` for a failed `Run:` naming no causal line: caller's opening, then shared block.
+Text `find-cause` hands a `general-purpose` delegate on `sonnet` at `high` effort for phase (c), and `build` hands `exo:solve-hard` for a failed `Run:` naming no causal line: caller's opening, then shared block.
 
 ## find-cause opening
 

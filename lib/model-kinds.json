@@ -36,11 +36,12 @@
     "investigate": { "tier": "standard", "effort": "high" },
     "coordinate": { "tier": "standard", "effort": "medium" },
     "research": { "tier": "standard", "effort": "medium" },
-    "lookup": { "tier": "fast", "effort": null },
+    "lookup": { "tier": "fast", "effort": "low" },
     "prose": { "tier": "strong", "effort": "high" },
     "chore": { "tier": "standard", "effort": "low" },
     "hardest-high": { "tier": "strong", "effort": "xhigh" },
     "hardest-low": { "tier": "strong", "effort": "medium" },
+    "peer": { "tier": "inherit", "effort": "high" },
     "handover": { "tier": "inherit", "effort": null }
   },
   "stages": {
@@ -68,7 +69,13 @@
     "skills/verify/SKILL.md": { "kind": "review", "fields": ["effort"] }
   },
   "dispatches": [
-    { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` from `fixer-prompt.md`", "kind": "build" },
-    { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` for phase (c)", "kind": "build" }
+    { "file": "skills/find-cause/SKILL.md", "match": "on `sonnet` at `high` effort from `fixer-prompt.md`", "kind": "build" },
+    { "file": "skills/find-cause/fixer-prompt.md", "match": "delegate on `sonnet` at `high` effort for phase (c)", "kind": "build" },
+    { "file": "skills/build/reviewer-prompt.md", "match": "`general-purpose` delegate with `model` omitted at `high` effort", "kind": "peer" },
+    { "file": "skills/build/references/fresh-eyes.md", "match": "`general-purpose` delegate with `model` omitted at `high` effort", "kind": "peer" },
+    { "file": "skills/build/references/design-tasks.md", "match": "`general-purpose` delegate with `model` omitted at `high` effort", "kind": "peer" },
+    { "file": "skills/design-ui/references/phase-detail.md", "match": "Phase 5 → a `general-purpose` delegate on `sonnet` at `high` effort", "kind": "review" },
+    { "file": "skills/design-ui/references/phase-detail.md", "match": "A `general-purpose` delegate on `sonnet` at `high` effort, dispatched", "kind": "review" },
+    { "file": "skills/edit-skills/references/blind-eval.md", "match": "`general-purpose` delegate on `sonnet` at `high` effort as judge", "kind": "review" }
   ]
 }

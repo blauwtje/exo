@@ -1,5 +1,5 @@
 // Every delegate dispatch names its model in the sentence that dispatches it,
-// because a dispatch that names no model runs on the session's model: a
+// because a dispatch that names no model runs on the session's model, so a kind on `inherit` says "with `model` omitted": a
 // discovery dispatch from an opus session would silently run on opus.
 
 import assert from 'node:assert/strict';
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const skillsRoot = fileURLToPath(new URL('../skills/', import.meta.url));
 const DISPATCH = '`general-purpose` delegate';
 const kindModels = new Set(Object.values(readKindTable().kinds).map((kind) => `\`${kind.model}\``));
-const MODEL_NAMES = [...kindModels, "the session's model", 'the model the skill under test runs on'];
+const MODEL_NAMES = [...kindModels, 'with `model` omitted', 'the model the skill under test runs on'];
 
 function sentencesNamingDispatch(text) {
   return text

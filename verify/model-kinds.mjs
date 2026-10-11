@@ -14,7 +14,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
+import { EFFORTS, INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
@@ -53,12 +53,15 @@ function escapeRegExp(text) {
 // A dispatch on `inherit` omits the Agent `model`, so its line reads this
 // clause where a dispatch on a model reads "on `<model>`".
 const INHERIT_CLAUSE = 'with `model` omitted';
+const EFFORT_CLAUSE = new RegExp(` at \`(?:${EFFORTS.join('|')})\` effort`);
 
 // A dispatch line may hold any model a provider block lists or a tier maps, or
 // `inherit`, so a table that switches provider or kind still finds and
 // rewrites it. The slot is the clause "on `<model>`" or INHERIT_CLAUSE when the
 // match holds one, else the bare model word, which cannot say `inherit`.
-// `render` turns the kind's model into the slot's text.
+// `render` turns the kind's model into the slot's text. A clause slot may be
+// followed by "at `<effort>` effort", which states the dispatch's effort; the
+// match may hold it or not, and the writer sets it to the kind's effort.
 function dispatchSlot(file, match, table) {
   const listed = Object.values(table.providers).flatMap((provider) => [...(provider.models ?? []), ...Object.values(provider.tiers)]);
   const alternatives = [...new Set([...listed, INHERIT])].map(escapeRegExp).join('|');
@@ -70,8 +73,15 @@ function dispatchSlot(file, match, table) {
     throw new Error(`${file}: "${match}" holds no model word`);
   }
   const before = escapeRegExp(match.slice(0, found.index));
-  const after = escapeRegExp(match.slice(found.index + found[0].length));
-  const pattern = new RegExp(`${before}(?<model>${slot.source})${after}`, 'd');
+  let rest = match.slice(found.index + found[0].length);
+  const withEffort = slot === clause;
+  if (withEffort) rest = rest.replace(EFFORT_CLAUSE, '');
+  const after = escapeRegExp(rest);
+  const effortGroup = withEffort ? `(?<effort>${EFFORT_CLAUSE.source})?` : '';
+  const pattern = new RegExp(`${before}(?<model>${slot.source})${effortGroup}${after}`, 'd');
+  function renderEffort(effort) {
+    return withEffort && effort !== null ? ` at \`${effort}\` effort` : '';
+  }
   function render(model) {
     if (slot === clause) return model === INHERIT ? INHERIT_CLAUSE : `on \`${model}\``;
     if (model === INHERIT) {
@@ -79,7 +89,7 @@ function dispatchSlot(file, match, table) {
     }
     return model;
   }
-  return { pattern, render };
+  return { pattern, render, renderEffort, withEffort };
 }
 
 function slotModel(text) {
@@ -133,22 +143,72 @@ function planKindWrites(root, table) {
 
   for (const { file, match, kind } of table.dispatches) {
     const plan = open(file);
-    const { pattern, render } = dispatchSlot(file, match, table);
+    const { pattern, render, renderEffort, withEffort } = dispatchSlot(file, match, table);
     const lines = plan.after.split('\n');
     const hits = lines.flatMap((line, index) => (pattern.test(line) ? [index] : []));
     if (hits.length !== 1) {
       throw new Error(`${file}: "${match}" matches ${hits.length} lines`);
     }
     const found = pattern.exec(lines[hits[0]]);
-    const [start, end] = found.indices.groups.model;
+    const start = found.indices.groups.model[0];
+    const end = (found.indices.groups.effort ?? found.indices.groups.model)[1];
     const expected = table.kinds[kind].model;
     const actual = slotModel(found.groups.model);
     if (actual !== expected) plan.drift.push({ file, field: 'model', expected, actual });
-    lines[hits[0]] = lines[hits[0]].slice(0, start) + render(expected) + lines[hits[0]].slice(end);
+    if (withEffort) {
+      const expectedEffort = table.kinds[kind].effort;
+      const actualEffort = found.groups.effort?.replace(/^ at `|` effort$/g, '') ?? null;
+      if (actualEffort !== expectedEffort) plan.drift.push({ file, field: 'effort', expected: expectedEffort, actual: actualEffort });
+    }
+    lines[hits[0]] = lines[hits[0]].slice(0, start) + render(expected) + renderEffort(table.kinds[kind].effort) + lines[hits[0]].slice(end);
     plan.after = lines.join('\n');
   }
 
   return plans;
+}
+
+const INHERITANCE_NOTE = 'the session effort would reach the subagent';
+
+function markdownFiles(root, folder) {
+  const base = path.join(root, folder);
+  if (!fs.existsSync(base)) return [];
+  return fs.readdirSync(base, { recursive: true })
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => path.join(folder, name).split(path.sep).join('/'));
+}
+
+// Lists every place a subagent could take the session's effort or model:
+// an agent file without an effort of its own, and a prose line that dispatches
+// `general-purpose` with no `dispatches` entry, on "the session's model", or as
+// a fork. Prose it cannot read as a dispatch (a bare "delegate") stays unseen.
+export function findInheritanceGaps(root, table) {
+  const gaps = [];
+  for (const file of markdownFiles(root, 'agents')) {
+    if (readField(fs.readFileSync(path.join(root, file), 'utf8'), 'effort') === null) {
+      gaps.push(`${file}: no effort: line, ${INHERITANCE_NOTE}`);
+    }
+  }
+  for (const [file, entry] of Object.entries(table.agents)) {
+    if (table.kinds[entry.kind].effort === null) gaps.push(`${file}: kind ${entry.kind} has no effort, ${INHERITANCE_NOTE}`);
+  }
+  const covered = new Map();
+  for (const { file, match } of table.dispatches) {
+    const { pattern } = dispatchSlot(file, match, table);
+    covered.set(file, [...(covered.get(file) ?? []), pattern]);
+  }
+  for (const file of [...markdownFiles(root, 'skills'), ...markdownFiles(root, 'agents')]) {
+    fs.readFileSync(path.join(root, file), 'utf8').split('\n').forEach((line, index) => {
+      const where = `${file}:${index + 1}`;
+      if (line.includes('general-purpose') && !(covered.get(file) ?? []).some((pattern) => pattern.test(line))) {
+        gaps.push(`${where}: names general-purpose with no dispatches entry in lib/model-kinds.json`);
+      }
+      if (line.includes("session's model")) gaps.push(`${where}: names "the session's model"; pin a kind with model and effort`);
+      if (/\bfork\b/i.test(line) && /dispatch|spawn|delegate|subagent/i.test(line)) {
+        gaps.push(`${where}: dispatches a fork, which takes the session's effort`);
+      }
+    });
+  }
+  return gaps;
 }
 
 function tableOf(root, table) {

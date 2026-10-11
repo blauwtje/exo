@@ -77,11 +77,11 @@ test('every agent pins the model and effort its kind resolves to, and no effort 
   }
 });
 
-test('an agent on the fast tier pins no effort, because the fast model takes none', () => {
+test('an agent on the fast tier pins low effort, so no session effort reaches it', () => {
   const fastModel = kindTable.providers[kindTable.provider].tiers.fast;
   for (const agent of agents) {
     if (agent.frontmatter.model !== fastModel) continue;
-    assert.equal(agent.frontmatter.effort, undefined, `${agent.fileName} pins effort on ${fastModel}`);
+    assert.equal(agent.frontmatter.effort, 'low', `${agent.fileName} effort on ${fastModel}`);
   }
 });
 

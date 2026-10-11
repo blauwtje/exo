@@ -13,6 +13,6 @@
 4. Label the two clones' `with` answers A and B, alternating which letter holds the changed answers so no pattern forms across evals; keep the mapping yourself.
 5. Copy only the labels and full answer texts into a scratch file for the judge; never write "baseline", "changed", "old" or "new" into it.
 6. Write a rubric of 3-6 concrete criteria for what the edit was meant to fix.
-7. Spawn a fresh sonnet delegate as judge with the case prompt, rubric and labeled file; it scores each label against the rubric and picks the stronger, blind to which is which.
+7. Spawn a fresh `general-purpose` delegate on `sonnet` at `high` effort as judge with the case prompt, rubric and labeled file; it scores each label against the rubric and picks the stronger, blind to which is which.
 8. Unmask labels against the pick; edit done only when the judge picked the changed answer for the reason the rubric names.
 9. Tie or baseline wins → return to loop step 3 (Choose the home); the wording did not move the behavior.
