@@ -7,6 +7,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- A test now proves the hard-limit refusal names the same hand-off file the resume step reads, in a worktree and outside git.
+- `plan-check` no longer follows symlinks when it sizes a `Files:` folder, so a link to a parent folder cannot loop forever.
+- The three context hooks share one helper that turns a context decision into hook output, and the Bash test checks again that a guard refusal prints nothing else.
+
 ## 0.124.0 - 2026-10-11
 
 ### Highlights
