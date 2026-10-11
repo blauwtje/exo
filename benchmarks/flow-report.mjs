@@ -18,7 +18,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { meanAndSd } from './statistics.mjs';
 
-const EXO_ARM = 'flow-c7';
+const EXO_ARM = ['flow-c7', 'flow-run', 'flow-run-task'];
 const BASELINE_ARM = 'flow-base';
 
 // The flow records of one out dir; a cell that has not finished has none.
@@ -100,7 +100,7 @@ export function aggregateFlow(records) {
 }
 
 function rank(id) {
-  if (id === EXO_ARM) return 0;
+  if (EXO_ARM.includes(id)) return 0;
   return id === BASELINE_ARM ? 1 : 2;
 }
 
@@ -118,7 +118,7 @@ function fixed(value, digits) {
   return value === null ? '-' : value.toFixed(digits);
 }
 
-function armLines(arm) {
+function armLines(arm, baseline) {
   const landed = arm.landedFractionMean === null
     ? 'tasks landed -'
     : `tasks landed mean ${fixed(arm.landedFractionMean * 100, 0)}%, sum ${arm.landedSum}/${arm.totalSum}`;
@@ -128,6 +128,7 @@ function armLines(arm) {
     `  hidden pass ${arm.passes}/${arm.checked}`,
     `  defects total ${arm.defectsTotal ?? '-'}, mean ${fixed(arm.defectsMean, 2)}`,
     `  weighted tokens mean ${fixed(arm.tokensMean, 0)}`,
+    ...(EXO_ARM.includes(arm.id) && baseline?.tokensMean ? [`  weighted tokens ${fixed(arm.tokensMean / baseline.tokensMean, 2)}x ${BASELINE_ARM}, hidden check ${arm.passes}/${arm.checked}`] : []),
     `  cost mean $${fixed(arm.costMean, 3)}, total $${fixed(arm.costTotal, 3)}`,
     `  cost per success ${arm.costPerSuccess === null ? 'none' : `$${fixed(arm.costPerSuccess, 3)}`}`,
     `  wall time mean ${fixed(arm.wallMeanMs === null ? null : arm.wallMeanMs / 60000, 1)} min`,
@@ -141,15 +142,14 @@ function armLines(arm) {
 export function flowReport(records) {
   const arms = aggregateFlow(records);
   if (arms.length === 0) return 'No flow records found.';
-  const lines = arms.flatMap(armLines);
-  const comparison = passDifference(arms.find((arm) => arm.id === EXO_ARM), arms.find((arm) => arm.id === BASELINE_ARM));
-  if (comparison === null) {
-    lines.push(`Pass-rate difference (${EXO_ARM} minus ${BASELINE_ARM}): not computable, an arm has no hidden-check result.`, 'not better');
+  const baseline = arms.find((arm) => arm.id === BASELINE_ARM);
+  const lines = arms.flatMap((arm) => armLines(arm, baseline));
+  const compared = arms.filter((arm) => EXO_ARM.includes(arm.id)).map((arm) => [arm.id, passDifference(arm, baseline)]).filter(([, comparison]) => comparison !== null);
+  if (compared.length === 0) {
+    lines.push(`Pass-rate difference (${EXO_ARM[0]} minus ${BASELINE_ARM}): not computable, an arm has no hidden-check result.`, 'not better');
   } else {
-    lines.push(
-      `Pass-rate difference (${EXO_ARM} minus ${BASELINE_ARM}): ${fixed(comparison.difference, 3)}, 2 SE ${fixed(comparison.twoStandardErrors, 3)}`,
-      comparison.better ? 'exo better' : 'not better'
-    );
+    for (const [id, comparison] of compared) lines.push(`Pass-rate difference (${id} minus ${BASELINE_ARM}): ${fixed(comparison.difference, 3)}, 2 SE ${fixed(comparison.twoStandardErrors, 3)}`);
+    lines.push(compared.some(([, comparison]) => comparison.better) ? 'exo better' : 'not better');
   }
   return lines.join('\n');
 }
