@@ -7,6 +7,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **By default, exo writes short plain text: short sentences, everyday words, and questions of about ten words with two or three short options.**
+
+### Changed
+
+- The default `low` compression rule, which every session receives, now caps sentences at about 15 words, lists at about 5 items, and a question at about 10 words with one short context sentence and 2-3 short options; it also tells exo to reply in the user's language.
+- The shared question shape takes the same caps, shows progress like `1/3` when more questions wait, and stays plain text, because a picker puts more words on screen.
+- The questions that `configure`, `design-ui`, `ship`, `build`, `remember` and their scripts print fit the new caps.
+- `npm run validate:static` fails an example question over the word caps.
+
+### Fixed
+
+- `docs/settings.md` no longer offers the `exo:scannable` output style, which no longer ships.
+
 ## 0.121.2 - 2026-10-10
 
 ### Highlights
