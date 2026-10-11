@@ -71,13 +71,13 @@ Settle what the run needs before building: questions worth asking, where the run
 
   ```text
   **How should we pick the new look?**
-  I will make <n> looks. You can see them first or let me choose.
+  You can see <n> looks first or let me choose.
 
-  - **(A) Show me**: sketches of the <n> looks open in your browser in about a minute.
-  - **(B) Describe them**: I explain each look here in a few words.
+  - **(A) Show me**: <n> sketches open in your browser.
+  - **(B) Describe them**: I explain each look here.
   - **(C) You choose**: I build <the recommended look in plain words>.
 
-  Recommended: (A), because seeing the looks beats reading about them, and (C) skips your say.
+  Recommended: (A), because seeing the looks beats reading about them.
   ```
 
 - Option A → one sketch round under `## The direction round` of the `sketch-tab` reference; the click names the contract the `phase-direction` reference then freezes.

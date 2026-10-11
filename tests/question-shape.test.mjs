@@ -40,13 +40,11 @@ test('the question reference is the one place that defines the shape, with A rec
 
 test('the example is one short question with three options and the recommendation last', () => {
   const example = QUESTION.match(/```text\n([\s\S]*?)```/)[1];
-  assert.ok(/^\*\*[^*\n]+\?\*\*\n/.test(example), 'a plain bold title, no number');
+  assert.ok(/^\*\*\d\/\d [^*\n]+\?\*\*\n/.test(example), 'a plain bold title with the progress prefix');
+  assertQuestionShape(example);
   assert.ok(/\n\n- \*\*\(A\) [^\n]*\n- \*\*\(B\) [^\n]*\n- \*\*\(C\) [^\n]*\n\nRecommended: \(A\), because [^\n]*\n$/.test(example));
   assert.ok(!example.includes('\n\n\n'));
   assert.ok(!example.includes('---'));
-  const words = example.replace(/\*\*\([A-D]\) [^*]*\*\*/g, '').split(/\s+/).filter(Boolean);
-  // The reference aims under about 60 words; the slack keeps the bound on "about".
-  assert.ok(words.length <= 70, `the example runs to ${words.length} words`);
 });
 
 test('the shared shape check rejects a fourth option', () => {
@@ -60,6 +58,14 @@ test('the shared shape check rejects a fourth option', () => {
   ].join('\n');
   assertQuestionShape(question(['A', 'B', 'C']));
   assert.throws(() => assertQuestionShape(question(['A', 'B', 'C', 'D'])), /4 options/);
+  const valid = question(['A', 'B']);
+  assertQuestionShape(valid.replace('Which', '2/3 Which'));
+  assert.throws(() => assertQuestionShape(valid.replace('Which route do you want', 'Which of all these many routes do you really want to take today')), /title/);
+  assert.throws(() => assertQuestionShape(valid.replace('Pick one.', 'Pick one. Or two.')), /context sentences/);
+  assert.throws(() => assertQuestionShape(valid.replace('Pick one.', 'Pick one of the routes below because the others are slower and cost more to run')), /context runs/);
+  assert.throws(() => assertQuestionShape(valid.replace('Route A', 'The big route A')), /label/);
+  assert.throws(() => assertQuestionShape(valid.replace('you get A', 'you get a very long list of many good things')), /option text/);
+  assert.throws(() => assertQuestionShape(valid.replace('it is simplest', 'it is the simplest and the cheapest of them all')), /reason/);
 });
 
 // The old shape: middle-dot option lines, bold or not, and titles, the arrow
