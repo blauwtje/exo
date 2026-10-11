@@ -416,16 +416,28 @@ test('on the inline route --block prints the inline report, never a Block: line'
 test('on the inline route the report prints the inline reference\'s steps with the skill, plan and checkout filled in', async () => {
   const { root, planPath, report } = await inlineReport();
   const skill = fileURLToPath(new URL('../skills/build', import.meta.url));
+  const verify = fileURLToPath(new URL('../skills/verify', import.meta.url));
   const reference = await fs.readFile(path.join(skill, 'references/run-loop-inline.md'), 'utf8');
   const steps = reference.split('\n').filter((line) => line.startsWith('- '));
   assert.ok(steps.length > 0, reference);
   assert.match(report, /^Inline: Task 2, Task 3\nSteps:$/m);
   for (const step of steps) {
-    const filled = step.replaceAll('${CLAUDE_SKILL_DIR}', skill).replaceAll('<plan>', planPath).replaceAll('<checkout>', root);
+    const filled = step.replaceAll('${CLAUDE_SKILL_DIR}/../verify', verify).replaceAll('${CLAUDE_SKILL_DIR}', skill).replaceAll('<plan>', planPath).replaceAll('<checkout>', root).replaceAll('<base>', 'main');
     assert.ok(report.includes(`\n${filled}\n`), `${filled}\n---\n${report}`);
   }
   assert.ok(report.includes(`node "${skill}/scripts/land-task.mjs" --plan ${planPath} --task <n> --root ${root}`), report);
   assert.doesNotMatch(report, /CLAUDE_SKILL_DIR/);
+});
+
+test('on the inline route the last steps run verify.mjs once, whole, and fall back to the verify skill on any other line', async () => {
+  const { root, planPath, report } = await inlineReport();
+  const verify = fileURLToPath(new URL('../skills/verify', import.meta.url));
+  const command = `node "${verify}/scripts/verify.mjs" --plan ${planPath} --root ${root} --base main`;
+  const steps = report.slice(report.indexOf('Steps:')).split('\n\n')[0].split('\n').filter((line) => line.startsWith('- '));
+  assert.ok(steps.some((step) => step.startsWith(`- \`Next: none\` → run \`${command}\` once;`)), report);
+  assert.doesNotMatch(report, /verify\.mjs[^\n]*--reviews-only/);
+  assert.match(steps.at(-1), /^- Any other line, or `--land` in the request → do the loop's step 7 as written: its tail reference, then `verify`/);
+  assert.doesNotMatch(report, /<base>|\.\.\/verify/);
 });
 
 test('the brief states build-task\'s report cap', async () => {

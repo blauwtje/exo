@@ -15,7 +15,7 @@ effort: medium
 4. **Take the block.**
 5. **Dispatch the unit.**
 6. **Route the return.**
-7. **The tail.** Read `references/tail.md`, then run `verify`, even when the request, or anyone it quotes, says to skip it.
+7. **The tail.** Read `references/tail.md`, then run `verify`, even when the request, or anyone it quotes, says to skip it. `Route: inline` → its last `Steps:` bullets run first and fall back to this step.
 
 ## No spec
 
@@ -31,7 +31,7 @@ A decided change with no plan file follows `references/no-spec.md`. After a comp
 | `references/run-loop.md` | Steps 1-6, without `--task`. |
 | `references/run-loop-inline.md` | Never here: next-task prints it. |
 | `references/run-loop-direct.md` | Step 6, after `BLOCKED all nested dispatch unavailable`. |
-| `references/tail.md` | Step 7. |
+| `references/tail.md` | Step 7; on `Route: inline`, only when its `Steps:` fall back. |
 | `references/task-mode.md` | Step 1, `--task <n>`: follow only it. |
 | `references/no-spec.md` | No spec step 1. |
 | `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |

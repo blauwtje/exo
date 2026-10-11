@@ -21,7 +21,7 @@ import { scratchPath } from '#scratch-path';
 import { reportCap } from '#return-caps';
 import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
-import { driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
+import { defaultBranch, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
 // The Non-goals, Context and Decisions bullets that name one of the task's paths or
 // regions; with no match, every bullet for a task of three or more files,
@@ -214,12 +214,14 @@ function inlineTaskLines(task, root) {
 // The inline reference's bullets are the steps; reading them here keeps that
 // file their one source, and filling in the paths spares the session reading it.
 const SKILL_DIRECTORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const VERIFY_DIRECTORY = path.join(path.dirname(SKILL_DIRECTORY), 'verify');
 
 function inlineSteps(planPath, root) {
   const reference = fs.readFileSync(path.join(SKILL_DIRECTORY, 'references', 'run-loop-inline.md'), 'utf8');
   return reference.split('\n')
     .filter((line) => line.startsWith('- '))
-    .map((line) => line.replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIRECTORY).replaceAll('<plan>', planPath).replaceAll('<checkout>', root));
+    .map((line) => line.replaceAll('${CLAUDE_SKILL_DIR}/../verify', VERIFY_DIRECTORY).replaceAll('${CLAUDE_SKILL_DIR}', SKILL_DIRECTORY)
+      .replaceAll('<plan>', planPath).replaceAll('<checkout>', root).replaceAll('<base>', defaultBranch(root) ?? 'main'));
 }
 
 // Reads only the plan's frame and prints its header sections; `main` reaches
