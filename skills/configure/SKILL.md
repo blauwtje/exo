@@ -40,7 +40,7 @@ Take the first step the request and answers so far leave open.
    - **(B) Local**: only you, in this repository.
    - **(C) Global**: you, in every project on this machine.
 
-   Recommended: (A), because the whole team gets the same value, and (B) and (C) reach only you.
+   Recommended: (A), because it reaches the team, not only you.
    ```
 5. **Write** with the command `## The write commands` names, then run `show` and relay it under the script's confirmation line; the block above predates the change.
    - Rejection → relay it as the script printed it, change nothing by hand.
