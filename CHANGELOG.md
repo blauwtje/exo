@@ -7,6 +7,18 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **At its context limits the lead no longer stops or asks for a new session: it hands the remaining work to fresh subagents and the run carries on.**
+
+### Changed
+
+- Past 60k the lead finishes its step and sends each larger remaining step to a fresh subagent; past 100k it may still write and dispatch, so it writes a hand-off and one fresh subagent carries the run to its end.
+- A subagent is now told to wrap up at 60k instead of 50k.
+- A fix round or retry now goes to a fresh subagent; a finished subagent is only resumed once, to write a missing report or findings file.
+- `run-unit` sends a refused task to a fresh writer, except a missing build report, which resumes the writer once.
+- design-ui sends page faults found after a dispatched build to one fresh repair builder instead of messaging the page builder.
+
 ## 0.124.1 - 2026-10-11
 
 ### Fixed
