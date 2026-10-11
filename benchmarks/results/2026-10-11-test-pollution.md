@@ -53,3 +53,11 @@ The numbers are what `node benchmarks/score.mjs <dir>` prints for each run direc
 - The baseline arm is not a fixed control across runs: it passed 1 of 5 in v1 and 0 of 5 in v2 to v7, and its tokens and cost differ between runs, which is the noise level of this measure.
 - v3 to v7 ran from `feat/find-cause-success`, which is unmerged. Their plugin commits are on that branch only.
 - Raw cells sit in `benchmarks/runs/2026-10-11-test-pollution` and `-v2` to `-v7`, which are git-ignored and live only on the machine that ran them. Five of those directories (v3 to v7) are in the worktree `.worktrees/find-cause-success`. This file is the record.
+
+## Check on value-export-mismatch
+
+- Task `value-export-mismatch`, a second value task, run from the branch `feat/find-cause-success` (tip `9197f14f`, the v7 find-cause text). Purpose: see whether the test-pollution result (exo never passed) holds on another task.
+- Result: baseline passed 5 of 5, exo passed 4 of 5. Cost per cell: exo $0.17 against baseline $0.15.
+- exo run 3 took 745s, the slow outlier.
+- n=5 per arm: 4 of 5 against 5 of 5 is one cell, not a difference.
+- Decision: the work on this branch (review point 1, and low-priority point L) is dropped. The branch `feat/find-cause-success` and its worktree are deleted after this commit lands, so the v3 to v7 plugin commits (`b2880b29` to `9197f14f`) are no longer on any branch, and the raw cells of the runs v3 to v7 kept in that worktree are gone. This section and the tables above are the only record.
