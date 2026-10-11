@@ -4,7 +4,7 @@ The routing rules: the core ones come with every session, the rest when you ask 
 
 ## When it runs
 
-The session hook injects the routing rules from `hooks/session-routing.md` at every session start, resume, `/clear` and compaction, after your current settings, a pointer to a saved session or memory for your branch, and the lines of `hooks/session-rules.md`. The rest of route-skills runs only when you call it.
+The session hook injects the routing rules from `hooks/session-routing.md` at every session start, resume, `/clear` and compaction, after a pointer to a saved session or memory for your branch and your current settings, and before the lines of `hooks/session-rules.md`. The rest of route-skills runs only when you call it.
 
 ## What you get
 
