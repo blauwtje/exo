@@ -38,7 +38,7 @@ Store the brief where `specs` in the session's `exo settings:` line says, `docs`
 
 ## Open points step
 
-Dispatch `exo:find-open-points` once on the brief file.
+Dispatch the `exo:find-open-points` agent once on the brief.
 
 - `code` point → record the answer in the brief; ask nothing.
 - `assume` point → one line under `## Assumptions`; ask nothing.

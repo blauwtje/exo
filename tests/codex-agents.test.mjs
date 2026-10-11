@@ -47,7 +47,7 @@ const TWINS = [
 test('one file per agent entry plus the seven codex twins, and no other', () => {
   const names = [...generateAgents(ROOT).keys()].map((file) => path.basename(file, '.toml')).sort();
   const expected = [...agentFiles.map((name) => `exo-${path.basename(name, '.md')}`), ...TWINS].sort();
-  assert.equal(names.length, 17);
+  assert.equal(names.length, 18);
   assert.deepEqual(names, expected);
 });
 

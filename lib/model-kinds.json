@@ -54,7 +54,7 @@
     "agents/build-ui.md": { "kind": "build" },
     "agents/critique-ui.md": { "kind": "review-deep" },
     "agents/fetch-docs.md": { "kind": "research" },
-    "agents/find-open-points.md": { "kind": "review" },
+    "agents/find-open-points.md": { "kind": "investigate" },
     "agents/fix-review.md": { "kind": "build" },
     "agents/locate-code.md": { "kind": "lookup" },
     "agents/review-branch.md": { "kind": "review" },
