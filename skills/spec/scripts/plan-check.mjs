@@ -100,10 +100,12 @@ function checkSize(task) {
   return [];
 }
 
+// A symlink is never followed, so a link to an ancestor cannot loop; it counts
+// as its own link size.
 function bytesUnder(target) {
   let stat;
   try {
-    stat = fs.statSync(target);
+    stat = fs.lstatSync(target);
   } catch {
     return 0;
   }

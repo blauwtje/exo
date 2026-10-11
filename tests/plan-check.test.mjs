@@ -493,3 +493,11 @@ test('plan-check fails a task whose text and Files: bytes pass the context estim
   assert.equal(small.ok, true, small.lines.join('; '));
   assert.equal(planCheckReport(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/big.js'], proof: 'node --test tests/app.test.mjs' })] })).ok, true);
 });
+
+test('plan-check does not follow a symlink to an ancestor folder', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-link-'));
+  fs.mkdirSync(path.join(root, 'src'));
+  fs.symlinkSync(root, path.join(root, 'src', 'up'), 'dir');
+  const report = planCheckReport(compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/'], proof: 'node --test tests/app.test.mjs' })] }), { root });
+  assert.equal(report.ok, true, report.lines.join('; '));
+});
