@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.127.1 - 2026-10-11
+
 ### Changed
 
 - `score.mjs --publish` now publishes a value-only run and a flow run, so those results no longer need writing by hand; template publish is unchanged.
