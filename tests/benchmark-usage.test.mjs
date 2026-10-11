@@ -1,6 +1,7 @@
 // A benchmark cell's usage.json sums every transcript of its session, the main
 // thread and each subagent, because the result JSON's usage block holds the
 // main thread only; backfill-usage.mjs writes it for cells from older runs.
+// exoLoaded finds the session hook's real output in a transcript.
 
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -8,9 +9,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { exoLoaded } from '../benchmarks/cell-usage.mjs';
 import { fixture } from './harness.mjs';
 
 const BACKFILL = fileURLToPath(new URL('../benchmarks/backfill-usage.mjs', import.meta.url));
+const HOOK = fileURLToPath(new URL('../hooks/session-start.mjs', import.meta.url));
 const SESSION_ID = '11111111-2222-3333-4444-555555555555';
 
 function assistant(id, model, usage) {
@@ -95,4 +98,57 @@ test('backfill records the lead peak as the largest main-thread message context'
   const written = JSON.parse(await fs.readFile(path.join(cell, 'usage.json'), 'utf8'));
   // Input plus cache read plus both cache writes of msg_main_2; the larger subagent message and every output count stay out.
   assert.equal(written.leadPeakTokens, 2500);
+});
+
+// The additionalContext the session hook prints for a session started in `cwd`.
+function sessionHookContext(configDirectory, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = execFile(process.execPath, [HOOK], { env: { ...process.env, CLAUDE_CONFIG_DIR: configDirectory }, timeout: 30_000 },
+      (error, stdout, stderr) => (error ? reject(new Error(String(stderr) || error.message)) : resolve(JSON.parse(stdout).hookSpecificOutput.additionalContext)));
+    child.stdin.end(JSON.stringify({ session_id: SESSION_ID, source: 'startup', cwd }));
+  });
+}
+
+// One hook context line as the harness records it in a transcript.
+function hookAttachment(text) {
+  return { type: 'attachment', uuid: 'h1', timestamp: '2026-09-11T09:59:59.000Z', attachment: { type: 'hook_additional_context', content: [text], hookName: 'SessionStart', toolUseID: 'SessionStart', hookEvent: 'SessionStart' } };
+}
+
+// exoLoaded on a transcript holding `entries`, found through CLAUDE_CONFIG_DIR.
+async function loadedFor(entries) {
+  const configDirectory = await fixture();
+  await writeLines(path.join(configDirectory, 'projects', '-tmp-exo-bench-loaded', `${SESSION_ID}.jsonl`), entries);
+  const previous = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = configDirectory;
+  try {
+    return exoLoaded(SESSION_ID);
+  } finally {
+    if (previous === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = previous;
+  }
+}
+
+test('exoLoaded finds exo in the session hook output', async () => {
+  const context = await sessionHookContext(await fixture(), await fixture());
+  assert.ok(context.startsWith('exo settings:'), context.slice(0, 80));
+  assert.equal(await loadedFor([hookAttachment(context), assistant('msg_main_1', 'claude-sonnet-5', usage(1, 0, 0, 0, 1))]), true);
+});
+
+test('exoLoaded finds exo when a handoff and a memory pointer come first', async () => {
+  const configDirectory = await fixture();
+  const cwd = await fixture();
+  const handoff = path.join(configDirectory, 'exo', 'handoff', `${path.basename(cwd)}.md`);
+  const memory = path.join(configDirectory, 'exo', 'memory', path.basename(cwd), 'memory.md');
+  for (const file of [handoff, memory]) {
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, 'notes\n');
+  }
+  const context = await sessionHookContext(configDirectory, cwd);
+  assert.ok(context.startsWith('A handoff for'), context.slice(0, 80));
+  assert.match(context, /A project memory for this repository/);
+  assert.equal(await loadedFor([hookAttachment(context)]), true);
+});
+
+test('exoLoaded is false when no hook context comes from exo', async () => {
+  assert.equal(await loadedFor([hookAttachment('Another plugin was loaded.'), assistant('msg_main_1', 'claude-sonnet-5', usage(1, 0, 0, 0, 1))]), false);
 });

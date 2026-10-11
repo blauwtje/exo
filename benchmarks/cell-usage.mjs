@@ -10,8 +10,9 @@ import { configDirectory } from '#config-directory';
 import { sumCounts, usageCounts } from '#token-weights';
 
 const SESSION_ID = /^[\w-]+$/;
-// The session hook's context opens with this heading while exo is loaded.
-const EXO_HEADING = '# Using exo';
+// The session hook's context holds its settings line while exo is loaded, after
+// any handoff or memory pointer; an older transcript holds the heading instead.
+const EXO_MARKERS = ['exo settings:', '# Using exo'];
 
 // The harness keeps a transcript at <config dir>/projects/<project slug>/<session id>.jsonl.
 export function findTranscript(sessionId) {
@@ -91,7 +92,7 @@ export function exoLoaded(sessionId) {
     }
     const content = entry?.attachment?.content;
     if (!Array.isArray(content)) continue;
-    if (content.some((text) => typeof text === 'string' && text.includes(EXO_HEADING))) return true;
+    if (content.some((text) => typeof text === 'string' && EXO_MARKERS.some((marker) => text.includes(marker)))) return true;
   }
   return false;
 }
