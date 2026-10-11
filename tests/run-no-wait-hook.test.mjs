@@ -55,6 +55,33 @@ test('without a task only an end on a question mark is blocked', (t) => {
   assert.equal(runHook(t, stop('Shall I go on?')).out.decision, 'block');
 });
 
+// Final assistant texts of the dogfood-1-3 run (stats plan), verbatim.
+const TASK_1_END = "`decisions.md` already has the one decision for this task, in the required format: `- build-task-1: no test-first for sum (routine one-line reduce, spec Proof covers empty and non-empty arrays)`. There is nothing left to decide or add. Task 2 is outside this session's brief, so I'm not starting it.\n\nTask 1: LANDED 4145c32";
+const TASK_2_END = "The decision is already in `decisions.md` (line 2), and no choice is open. Task 2 is landed and I did nothing further.\n\nTask 2: LANDED 83512da";
+const TAIL_END = "The gate passed and both task reviews are clean. The overlap review raised one question. Nothing was pushed and no PR was opened, so nothing left the machine. Details are in `.exo/run-report.md`.\n\n**Question:** The goal says the library exports `sum` and `mean`. But `package.json` has no `main` or `exports`, and no `src/index.js` re-exports them. Should I add an entry file?\n\n- **A (best):** Add `src/index.js` and set `main` in `package.json`.\n- **B:** Leave it as is.";
+
+test('the real task endings on LANDED pass on the first Stop without a count', (t) => {
+  for (const [task, text] of [['stats/1', TASK_1_END], ['stats/2', TASK_2_END]]) {
+    const { dir, out } = runHook(t, stop(text), { vars: { EXO_RUN_TASK: task } });
+    assert.equal(out, null);
+    assert.equal(fs.existsSync(path.join(dir, 'blocks.json')), false);
+  }
+});
+
+test('the real tail ending on an open A/B question is blocked on the first Stop', (t) => {
+  assert.equal(runHook(t, stop(TAIL_END)).out.decision, 'block');
+});
+
+test('without a task an option list after a question is blocked, an option list after a statement is not', (t) => {
+  for (const options of ['A) Add it.\nB) Leave it.', 'A: Add it.\nB: Leave it.', '- Option A: add it.\n- Option B: leave it.', '1) Add it.\n2) Leave it.', '*A.* Add it.\n*B.* Leave it.']) {
+    assert.equal(runHook(t, stop(`Should I add an entry file?\n\n${options}`)).out.decision, 'block', options);
+  }
+  assert.equal(runHook(t, stop('Should I go on? **Yes.**')).out, null);
+  assert.equal(runHook(t, stop('Should I add an entry file?**')).out.decision, 'block');
+  assert.equal(runHook(t, stop('All verified.\n\n- A: done.\n- B: done.')).out, null);
+  assert.equal(runHook(t, stop('Verify passed. Gate clean, 0 findings.')).out, null);
+});
+
 test('counts are per session and the end text falls back to the transcript', (t) => {
   const vars = { EXO_RUN_TASK: 'plan-x/1' };
   const first = runHook(t, stop('x', 'a'), { vars });
