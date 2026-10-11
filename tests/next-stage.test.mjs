@@ -1,6 +1,5 @@
 // next-stage.mjs prints the next-stage question as one lettered question, A the
-// recommended option (for spec: build fresh, or adjust while the brief lists an
-// open point), with no model line; with `--fresh` it prints the lines
+// recommended option (find-cause only; spec asks nothing); with `--fresh` it prints the lines
 // the user types after the fresh-chat route, reading a plan's `Design:` tasks
 // and `## Visual direction` to pick the model switch.
 
@@ -10,11 +9,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
-import { freshReport, nextStageReport, openPoints } from '../skills/route-skills/scripts/next-stage.mjs';
+import { freshReport, nextStageReport } from '../skills/route-skills/scripts/next-stage.mjs';
 import { compactPlanFixture, compactTask, fixture, gitRepository, planFixture, run, taskSection } from './harness.mjs';
 import { assertQuestionShape } from './question-shape.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
+
+const EFFORT_LINE = 'Build runs at the highest effort; `/effort auto` returns the session to normal effort.';
 
 // The model of the kind `lib/model-kinds.json` gives the build stage.
 function buildStageModel() {
@@ -22,64 +23,18 @@ function buildStageModel() {
   return kinds[stages.build.kind].model;
 }
 
-test('spec with no open point recommends building here: build here A, build fresh B, adjust the brief C', async () => {
+test('spec asks nothing: the question route fails, the fresh-chat route prints the build lines, model switch and effort way back', async () => {
   const plan = planFixture({ tasks: [
     taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
   ] });
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.equal(report, [
-    '**Is the brief ready to build?**',
-    `The brief at \`${planPath}\` has no open point.`,
-    '',
-    '- **(A) Build here**: I build, merge into main, no more questions',
-    '- **(B) Build fresh**: a clean chat builds it',
-    '- **(C) Adjust the brief**: change it before building',
-    '',
-    'Recommended: (A), because the brief has no open point'
-  ].join('\n') + '\n');
-  assertQuestionShape(report);
+  assert.throws(() => nextStageReport({ after: 'spec', artifact: planPath }), /asks no question/);
   assert.equal(freshReport({ after: 'spec', artifact: planPath }), [
     `Type \`/clear\`, then \`/exo:build ${planPath}\`.`,
-    `Before you type them, switch to a lighter model with \`/model ${buildStageModel()}\`.`
+    `Before you type them, switch to a lighter model with \`/model ${buildStageModel()}\`.`,
+    EFFORT_LINE
   ].join('\n') + '\n');
-});
-
-test('spec with an entry under ## Open points recommends adjusting the brief first', async () => {
-  const plan = planFixture({ tasks: [
-    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
-  ] }).replace('## Visual direction', '## Open points\n\n- Assumed: the greeting stays English only.\n- Should a blank name fall back to "friend"?\n\n## Visual direction');
-  const root = await gitRepository({ 'docs/plans/fixture.md': plan });
-  const planPath = path.join(root, 'docs/plans/fixture.md');
-  const report = nextStageReport({ after: 'spec', artifact: planPath });
-  assert.ok(report.includes(`The brief at \`${planPath}\` has 2 open points.`));
-  assert.match(report, /\n- \*\*\(A\) Adjust the brief\*\*: .*\n- \*\*\(B\) Build here\*\*: .*\n- \*\*\(C\) Build fresh\*\*: .*\n\n/);
-  assert.ok(report.endsWith('Recommended: (A), because open points should be settled first\n'));
-  assertQuestionShape(report);
-});
-
-test('an empty ## Open points section counts as no open point', async () => {
-  const plan = planFixture({ tasks: [
-    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
-  ] }).replace('## Visual direction', '## Open points\n\nNone.\n\n## Visual direction');
-  const root = await gitRepository({ 'docs/plans/fixture.md': plan });
-  const planPath = path.join(root, 'docs/plans/fixture.md');
-  assert.deepEqual(openPoints(planPath), []);
-  assert.ok(nextStageReport({ after: 'spec', artifact: planPath }).includes('- **(B) Build fresh**'));
-});
-
-test('an issue artifact reads its open points from the scratch copy spec writes', async () => {
-  const plan = planFixture({ tasks: [
-    taskSection({ number: 1, title: 'Greet', files: ['- Modify: `src/app.js` (`greet`)'], subject: 'feat(app): greet' })
-  ] }).replace('## Visual direction', '## Open points\n\n1. Should a blank name fall back to "friend"?\n\n## Visual direction');
-  const root = await gitRepository({ '.exo/specs/42.md': plan });
-  const result = await run(SCRIPT, ['--after', 'spec', '--artifact', '#42'], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.ok(result.stdout.includes('- **(A) Adjust the brief**'));
-  const missing = await run(SCRIPT, ['--after', 'spec', '--artifact', '#43'], { cwd: root });
-  assert.equal(missing.code, 0, missing.stderr);
-  assert.ok(missing.stdout.includes('- **(B) Build fresh**'));
 });
 
 test('the fresh-chat route switches model when every Design: task holds a frozen direction', async () => {
@@ -97,7 +52,7 @@ test('the fresh-chat route keeps the session model when a Design: task is still 
   ] }).replace('Quiet record.', 'Direction: pending at rung 2');
   const root = await gitRepository({ 'docs/plans/fixture.md': plan });
   const planPath = path.join(root, 'docs/plans/fixture.md');
-  assert.equal(freshReport({ after: 'spec', artifact: planPath }), `Type \`/clear\`, then \`/exo:build ${planPath}\`.\n`);
+  assert.equal(freshReport({ after: 'spec', artifact: planPath }), `Type \`/clear\`, then \`/exo:build ${planPath}\`.\n${EFFORT_LINE}\n`);
 });
 
 test('find-cause asks build or stop with no fresh-chat route, unknown stage fails', async () => {
@@ -126,7 +81,7 @@ test('CLI prints the fresh-chat lines with --fresh', async () => {
   assert.equal(result.stdout, freshReport({ after: 'spec', artifact: planPath }));
 });
 
-test('after spec both reports name the runner command only when plan-check --loop passes', async () => {
+test('after spec the fresh-chat lines name the runner command only when plan-check --loop passes', async () => {
   const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
   const redirecting = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs > out.log' })];
   const root = await gitRepository({ 'docs/plans/loop.md': compactPlanFixture({ tasks }), 'docs/plans/plain.md': compactPlanFixture({ tasks: redirecting }) });
@@ -134,9 +89,7 @@ test('after spec both reports name the runner command only when plan-check --loo
   const plainPath = path.join(root, 'docs/plans/plain.md');
   const runner = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
   const line = `Unattended, with Claude Code: node "${runner}" ${loopPath}`;
-  assert.ok(nextStageReport({ after: 'spec', artifact: loopPath }).endsWith(`\n\n${line}\n`));
   assert.ok(freshReport({ after: 'spec', artifact: loopPath }).endsWith(`\n${line}\n`));
-  assert.ok(!nextStageReport({ after: 'spec', artifact: plainPath }).includes('Unattended'));
   assert.ok(!freshReport({ after: 'spec', artifact: plainPath }).includes('Unattended'));
   assert.ok(!nextStageReport({ after: 'find-cause', artifact: loopPath }).includes('Unattended'));
 });

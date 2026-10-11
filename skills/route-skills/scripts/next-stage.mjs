@@ -19,26 +19,11 @@ import { scratchPath, ScratchPathError } from '#scratch-path';
 // the question shape: a title, a context sentence, lettered option
 // lines with the recommended one on A, and the `Recommended: (A)` line saying
 // why A beats the rest. `stage` names the fresh-chat route's model row, when
-// the stage offers that route. An option is `[label, what the user gets]`; its
-// letter comes from its place in the array. `open` replaces `context`,
-// `options` and `reason` while the artifact lists an open point.
-const ADJUST_BRIEF = ['Adjust the brief', 'change it before building'];
-const BUILD_HERE = ['Build here', 'I build, merge into main, no more questions'];
-const BUILD_FRESH = ['Build fresh', 'a clean chat builds it'];
-
+// the stage offers that route; an entry with only `stage` asks nothing and
+// offers only that route. An option is `[label, what the user gets]`; its
+// letter comes from its place in the array.
 const NEXT_STAGE = {
-  'spec': {
-    stage: 'build',
-    title: 'Is the brief ready to build?',
-    context: (artifact) => `The brief at \`${artifact}\` has no open point.`,
-    options: [BUILD_HERE, BUILD_FRESH, ADJUST_BRIEF],
-    reason: 'the brief has no open point',
-    open: {
-      context: (artifact, count) => `The brief at \`${artifact}\` has ${count} open point${count === 1 ? '' : 's'}.`,
-      options: [ADJUST_BRIEF, BUILD_HERE, BUILD_FRESH],
-      reason: 'open points should be settled first'
-    }
-  },
+  'spec': { stage: 'build' },
   'find-cause': {
     title: 'Should I build the fix?',
     context: () => 'The cause is found.',
@@ -99,33 +84,18 @@ function unattendedLine(after, artifact) {
 }
 
 /**
- * The open points of a brief: each list item under its `## Open points`
- * heading, a question or an assumption the user has still to confirm. An
- * artifact with no readable file has none.
- */
-export function openPoints(artifact) {
-  const file = briefFile(artifact);
-  if (file === null) return [];
-  const section = parsePlan(fs.readFileSync(file, 'utf8')).frame['Open points'] ?? '';
-  return section.split('\n').filter((line) => /^\s*(?:[-*+]|\d+[.)])\s+\S/.test(line)).map((line) => line.trim());
-}
-
-/**
  * The next-stage question: title, context, lettered options with the
  * recommended one on A, and the recommendation last.
  */
 export function nextStageReport({ after, artifact }) {
   const stage = NEXT_STAGE[after];
   if (stage === undefined) throw new UsageError(`no next stage known after '${after}'`);
-  const count = stage.open === undefined ? 0 : openPoints(artifact).length;
-  const next = count > 0 ? { ...stage, ...stage.open } : stage;
-  const options = next.options.map(([label, does], index) => {
+  if (stage.title === undefined) throw new UsageError(`'${after}' asks no question; use --fresh`);
+  const options = stage.options.map(([label, does], index) => {
     const text = typeof does === 'function' ? does(artifact) : does;
     return `- **(${String.fromCharCode(65 + index)}) ${label}**: ${text}`;
   });
-  const lines = [`**${next.title}**`, next.context(artifact, count), '', ...options, '', `Recommended: (A), because ${next.reason}`];
-  const unattended = unattendedLine(after, artifact);
-  if (unattended !== null) lines.push('', unattended);
+  const lines = [`**${stage.title}**`, stage.context(artifact), '', ...options, '', `Recommended: (A), because ${stage.reason}`];
   return `${lines.join('\n')}\n`;
 }
 
@@ -140,6 +110,7 @@ export function freshReport({ after, artifact }) {
   const lines = [`Type \`/clear\`, then \`/exo:${next.stage} ${artifact}\`.`];
   const modelSwitch = modelSwitchFor(next.stage, artifact);
   if (modelSwitch !== null) lines.push(modelSwitch);
+  lines.push('Build runs at the highest effort; `/effort auto` returns the session to normal effort.');
   const unattended = unattendedLine(after, artifact);
   if (unattended !== null) lines.push(unattended);
   return `${lines.join('\n')}\n`;
