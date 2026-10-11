@@ -30,7 +30,9 @@ maxTurns: 60
 
 - Never delete files, data or branches to pass a block: report 2-3 options.
 - Start no background session or delegate, ask nothing; copy a log over 40 lines beside `Report to:`.
-- Stop at green, a second test or `Run:` failure, or an open user-visible choice (BLOCKED, options).
+- Stop at green, a second test or `Run:` failure, or an open user-visible choice.
+- A point the brief does not settle, with no safe default cheap to undo → end on `Task <n>: BLOCKED NEEDS ANSWER: <one short question>`, never `BLOCKED` with options.
+- A safe default cheap to undo → use it and record it on the reversible-choice report line.
 
 ## Report
 

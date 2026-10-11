@@ -9,7 +9,7 @@
 - Add no `$( )`, `;`, `&&`, `|`, redirect, heredoc or `for` loop of your own: the run's allowlist denies anything else, and a denied command never runs.
 - Create and change files only with the Write and Edit tools; read them with the Read tool.
 - Work in `<checkout>`, the session's current checkout, with that path literally.
-- Ask nothing: a choice you cannot rule is `BLOCKED`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.
+- Ask nothing: a choice you cannot rule is `BLOCKED NEEDS ANSWER: <one short question>`; a reversible one you take on its recommended option is a `Decision: <clause>` report line, in place of `Choice:`.
 - Dispatch no agent; run no `start-run.mjs`, worktree, tail or `ship`.
 - Push nothing; never run `land-task.mjs --fix`.
 - `PLAN DRIFT:` line for task `<n>` in the prompt or `next-task.mjs` output → end on `Task <n>: BLOCKED PLAN DRIFT: <item>`.
