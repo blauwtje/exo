@@ -170,3 +170,80 @@ test('--publish keeps a cut negative when the exo arm used more than the baselin
   assert.match(document, /"cost":-0\.5/);
   assert.match(document, /"time":-0\.5/);
 });
+
+async function valueRunFixture() {
+  const runs = await fixture();
+  await fs.writeFile(path.join(runs, 'meta.json'), JSON.stringify({ model: 'm', claudeVersion: 'v', date: '2026-10-11', arms: ['exo', 'baseline'], runs: 2 }));
+  for (const [arm, run, pass, cost] of [['exo', 1, true, 1], ['exo', 2, false, 3], ['baseline', 1, false, 2], ['baseline', 2, false, 2]]) {
+    const directory = path.join(runs, 'value-a', arm, String(run));
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(path.join(directory, 'checks.json'), JSON.stringify({ tier: 'value', wallMs: 60000, loc: { added: 1 }, pass, defects: 0 }));
+    await fs.writeFile(path.join(directory, 'result.json'), JSON.stringify({ total_cost_usd: cost }));
+    await fs.writeFile(path.join(directory, 'usage.json'), JSON.stringify({ counts: { weightedInput: 1000, output: 0 } }));
+  }
+  return runs;
+}
+
+async function flowRunFixture(date = '2026-10-11') {
+  const runs = await fixture();
+  await fs.writeFile(path.join(runs, 'meta.json'), JSON.stringify({ date, claudeVersion: '2.1.296 (Claude Code)', node: 'v24', sets: ['flow'], cells: 2 }));
+  for (const [id, hiddenPass, tokens, costUsd] of [['flow-c7', true, 90000, 0.2], ['flow-base', false, 50000, 0.1]]) {
+    const directory = path.join(runs, id);
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(path.join(directory, 'record.json'), JSON.stringify({
+      id, kind: 'flow', wallMs: 40000, costUsd, tokens, landed: 4, total: 4, hiddenPass, defects: hiddenPass ? [] : ['x'],
+      verifyRan: id === 'flow-c7', reviewDispatched: false, routes: ['inline'], leadPeakTokens: 30000
+    }));
+  }
+  return runs;
+}
+
+test('--publish writes a value-only run as its table and limitations, with no cuts', async () => {
+  const runs = await valueRunFixture();
+  const out = await fixture();
+  const results = path.join(out, 'nested', 'value.md');
+  const scored = await runScore([runs, '--publish', '--results', results]);
+  assert.equal(scored.code, 0, scored.stderr);
+  const document = await fs.readFile(results, 'utf8');
+  assert.match(document, /^# Benchmark 2026-10-11\n/);
+  assert.match(document, /^value tier · model m · Claude Code v · 2026-10-11/m);
+  assert.match(document, /^\| value-a \| exo \|.* \| \$4\.00 \|$/m);
+  assert.match(document, /^\| value-a \| baseline \|.* \| none \|$/m);
+  assert.match(document, /## Limitations/);
+  assert.doesNotMatch(document, /Measured cuts/);
+  assert.match(scored.stdout, /^published .*value\.md$/m);
+});
+
+test('--publish writes a flow run from the report over its cells, across several round directories', async () => {
+  const first = await flowRunFixture();
+  const second = await flowRunFixture();
+  const out = await fixture();
+  const results = path.join(out, 'flow.md');
+  const printed = await runScore([first, second]);
+  assert.equal(printed.code, 0, printed.stderr);
+  assert.match(printed.stdout, /^flow · Claude Code 2\.1\.296 \(Claude Code\) · 2026-10-11 · 2 run directories$/m);
+  assert.match(printed.stdout, /^flow-c7: n=2$/m);
+  const scored = await runScore([first, second, '--publish', '--results', results]);
+  assert.equal(scored.code, 0, scored.stderr);
+  const document = await fs.readFile(results, 'utf8');
+  assert.match(document, /^# Benchmark 2026-10-11\n/);
+  assert.match(document, /^flow-c7: n=2$/m);
+  assert.match(document, /^flow-base: n=2$/m);
+  assert.match(document, /^  hidden pass 2\/2$/m);
+  assert.match(document, /^  hidden pass 0\/2$/m);
+  assert.match(document, /## Limitations/);
+  assert.doesNotMatch(document, /Measured cuts/);
+});
+
+test('--publish refuses a flow run with no records and a second directory on a template run', async () => {
+  const empty = await fixture();
+  await fs.writeFile(path.join(empty, 'meta.json'), JSON.stringify({ date: 'd', claudeVersion: 'v', sets: ['flow'], cells: 0 }));
+  const out = await fixture();
+  const none = await runScore([empty, '--publish', '--results', path.join(out, 'none.md')]);
+  assert.equal(none.code, 1);
+  assert.match(none.stderr, /score: --publish needs flow records/);
+  const root = await runsFixture();
+  const extra = await runScore([root, root]);
+  assert.equal(extra.code, 1);
+  assert.match(extra.stderr, /score: unknown argument/);
+});

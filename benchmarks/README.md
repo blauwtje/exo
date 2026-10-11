@@ -53,7 +53,7 @@ Raw cells land in `benchmarks/runs/<date>-<mode>/`, which is git-ignored. Each c
 - `checks.json`, the verdict of the task's checks against the diff, with `exoLoaded`, whether the session hook handed the model exo's rules (null when the transcript is gone);
 - `usage.json`, the usage summed over every transcript of the cell, subagents included, because the result's usage block covers the main thread only. `node benchmarks/backfill-usage.mjs <run>` writes it for older cells while their transcripts still exist.
 
-`score.mjs --publish` writes `benchmarks/results/<date>.md`, or the file `--results <file>` names, with the cut it measured per metric and the standard error of that cut.
+`score.mjs --publish` writes `benchmarks/results/<date>.md`, or the file `--results <file>` names. A template run gets the cut it measured per metric and the standard error of that cut; a run of value cells alone gets its value table, and a flow run (`meta.json` with `sets: ["flow"]`, one or more round directories) gets the `flow-report.mjs` report, neither with a cut.
 
 ## Safe tasks
 
@@ -86,7 +86,7 @@ node benchmarks/run.mjs --tasks value-<slug> --arms baseline,exo --model sonnet 
 node benchmarks/score.mjs benchmarks/runs/<dir>   # one row per task and arm: pass rate, defects, LOC, tokens, cost and wall time, each mean with its standard error
 ```
 
-The projection takes each cell's cost from the mean of its finished twins under `benchmarks/runs/`, else the task's `estimateUsd`, else $1.50. `score.mjs --publish` refuses a run of value tasks alone.
+The projection takes each cell's cost from the mean of its finished twins under `benchmarks/runs/`, else the task's `estimateUsd`, else $1.50.
 
 ## Model and effort sweep
 

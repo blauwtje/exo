@@ -8,13 +8,23 @@
 //
 //   node benchmarks/score.mjs benchmarks/runs/<dir>
 //   node benchmarks/score.mjs benchmarks/runs/<dir> --publish [--results <file>]
+//   node benchmarks/score.mjs benchmarks/runs/<flow dir>... [--publish [--results <file>]]
 //
 // Value-tier cells get a table of their own: per task and arm, each mean with
 // its standard error; a run of value cells alone prints only that table.
+// A flow run (meta.json `sets` holds `flow`, no `arms`) prints what
+// flow-report.mjs reports over the record.json of its cells; it may name
+// several round directories.
+//
+// --publish writes the printed text to a results file under a heading and
+// the limitations of its kind. A template run adds the measured cuts against
+// the baseline; a value-only run and a flow run have no template cut, so
+// they add none.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { flowReport, readFlowRecords } from './flow-report.mjs';
 import { meanAndSd } from './statistics.mjs';
 import { ROOT } from './tasks.mjs';
 
@@ -29,15 +39,29 @@ const LIMITATIONS = [
   'A published ratio is 1 − E/B for arm means E and B, and its spread is its standard error √(sd_E²/n_E + (E/B)²·sd_B²/n_B) / B; a negative ratio means the exo arm used more than the baseline.',
   'The line per arm counts the template cells whose session context carried the exo rules (exoLoaded in checks.json, counted over the cells that recorded it), and the cost per correct cell per model.'
 ];
+const VALUE_LIMITATIONS = [
+  'Correctness on a value task is its hidden check.mjs against the diff; a cell whose check broke (harnessError) counts under errors and in no mean.',
+  'Cells are the mean ± standard error over the scored cells; a cell without result.json or usage.json drops out of the cost or tokens mean only.',
+  'Cost per success is the spend of every scored cell, failed ones included, over the cells that pass; none when no cell passes.',
+  'Tokens = input + 0.1 × cache read + 1.25 × 5-minute cache write + 2 × 1-hour cache write + output, summed over every transcript of the cell from its usage.json; cost is Claude Code\'s client-side list-price estimate; wall time is the cell\'s wallMs.',
+  'A value run has no template cut to compute, so this file records no measured cuts.'
+];
+const FLOW_LIMITATIONS = [
+  'Hidden check is benchmarks/flow-check.mjs run against the branch the cell left; a record from before the hidden check drops out of the landed, hidden pass and defects figures only.',
+  'Tokens are weighted as token-weights.mjs weights them; cost is costUsd and wall time wallMs of the cell\'s record.json. Cost per success is the arm\'s total cost over its hidden-check passes.',
+  'The pass-rate difference carries two standard errors and `exo better` is printed only when the difference exceeds them.',
+  'A flow meta.json names no plugin commit; the exo arms load the plugin from the checkout the sweep ran in.',
+  'A flow run has no template cut to compute, so this file records no measured cuts.'
+];
 
 function parseArguments(argv) {
-  const options = { directory: null, publish: false, results: null };
+  const options = { directory: null, extraDirectories: [], publish: false, results: null };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--publish') options.publish = true;
     else if (flag === '--results') options.results = argv[++index];
     else if (options.directory === null) options.directory = path.resolve(flag);
-    else throw new Error(`unknown argument ${flag}`);
+    else options.extraDirectories.push(path.resolve(flag));
   }
   if (options.directory === null) throw new Error('usage: score.mjs <runs directory> [--publish] [--results <file>]');
   return options;
@@ -258,14 +282,65 @@ function ratiosFrom(summaries, meta, resultsFile) {
   return ratios;
 }
 
+// The results file: heading, intro, the printed lines, any trailer, limitations.
+function writeResults(resultsFile, date, intro, lines, trailer, limitations) {
+  const document = [
+    `# Benchmark ${date}`,
+    '',
+    intro,
+    '',
+    ...lines,
+    '',
+    ...trailer,
+    '## Limitations',
+    '',
+    ...limitations.map((line) => `- ${line}`),
+    ''
+  ];
+  fs.mkdirSync(path.dirname(resultsFile), { recursive: true });
+  fs.writeFileSync(resultsFile, document.join('\n'));
+}
+
+function resultsPath(options, meta) {
+  return options.results ?? path.join(ROOT, 'benchmarks', 'results', `${meta.date}.md`);
+}
+
+// A flow run holds no checks.json: its cells are flow-* folders with a record.json.
+function flowMain(options, meta) {
+  const directories = [options.directory, ...options.extraDirectories];
+  const records = directories.flatMap((directory) => readFlowRecords(directory));
+  const lines = [
+    `flow · Claude Code ${meta.claudeVersion} · ${meta.date} · ${directories.length} run ${directories.length === 1 ? 'directory' : 'directories'}`,
+    '',
+    ...flowReport(records).split('\n')
+  ];
+  process.stdout.write(`${lines.join('\n')}\n`);
+  if (!options.publish) return;
+  if (records.length === 0) throw new Error('--publish needs flow records; none found');
+  const resultsFile = resultsPath(options, meta);
+  const intro = `Flow arms on one plan (${records.length} cells in ${directories.length} run ${directories.length === 1 ? 'directory' : 'directories'}). Raw cells live under benchmarks/runs/ and are git-ignored; this file is what \`node benchmarks/score.mjs\` printed.`;
+  writeResults(resultsFile, meta.date, intro, lines, [], FLOW_LIMITATIONS);
+  process.stdout.write(`\npublished ${resultsFile}\n`);
+}
+
 function main() {
   const options = parseArguments(process.argv.slice(2));
   const meta = JSON.parse(fs.readFileSync(path.join(options.directory, 'meta.json'), 'utf8'));
+  if (Array.isArray(meta.sets) && meta.sets.includes('flow') && !meta.arms) {
+    flowMain(options, meta);
+    return;
+  }
+  if (options.extraDirectories.length > 0) throw new Error(`unknown argument ${options.extraDirectories[0]}`);
   const cells = readCells(options.directory);
   const valueCells = cells.filter((cell) => cell.checks.tier === 'value');
   if (valueCells.length > 0 && valueCells.length === cells.length) {
-    if (options.publish) throw new Error('--publish covers the template tier; this run holds value cells only');
-    process.stdout.write(`${valueLines(meta, valueCells).join('\n')}\n`);
+    const lines = valueLines(meta, valueCells);
+    process.stdout.write(`${lines.join('\n')}\n`);
+    if (!options.publish) return;
+    const resultsFile = resultsPath(options, meta);
+    const intro = `Value-tier tasks, arms ${[...new Set(cells.map((cell) => cell.arm))].join(' and ')} (${cells.length} cells). Raw cells live under benchmarks/runs/ and are git-ignored; this file is what \`node benchmarks/score.mjs\` printed.`;
+    writeResults(resultsFile, meta.date, intro, lines, [], VALUE_LIMITATIONS);
+    process.stdout.write(`\npublished ${resultsFile}\n`);
     return;
   }
   const byArm = {};
@@ -277,24 +352,10 @@ function main() {
   const lines = [...tableLines(meta, summaries), '', ...details, ...valueSection];
   process.stdout.write(`${lines.join('\n')}\n`);
   if (!options.publish) return;
-  const resultsFile = options.results ?? path.join(ROOT, 'benchmarks', 'results', `${meta.date}.md`);
+  const resultsFile = resultsPath(options, meta);
   const ratios = ratiosFrom(summaries, meta, resultsFile);
-  const document = [
-    `# Benchmark ${meta.date}`,
-    '',
-    `Arms against a no-skill baseline on ${meta.tasks.length} tasks (${meta.cells} cells, ${meta.mode} configuration). Raw cells live under benchmarks/runs/ and are git-ignored; this file is what \`node benchmarks/score.mjs\` printed.`,
-    '',
-    ...lines,
-    '',
-    `Measured cuts against the baseline: ${JSON.stringify(ratios)}`,
-    '',
-    '## Limitations',
-    '',
-    ...LIMITATIONS.map((line) => `- ${line}`),
-    ''
-  ];
-  fs.mkdirSync(path.dirname(resultsFile), { recursive: true });
-  fs.writeFileSync(resultsFile, document.join('\n'));
+  const intro = `Arms against a no-skill baseline on ${meta.tasks.length} tasks (${meta.cells} cells, ${meta.mode} configuration). Raw cells live under benchmarks/runs/ and are git-ignored; this file is what \`node benchmarks/score.mjs\` printed.`;
+  writeResults(resultsFile, meta.date, intro, lines, [`Measured cuts against the baseline: ${JSON.stringify(ratios)}`, ''], LIMITATIONS);
   process.stdout.write(`\npublished ${resultsFile}\n${JSON.stringify(ratios)}\n`);
 }
 
