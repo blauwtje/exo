@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.124.4 - 2026-10-11
+
 ### Changed
 
 - Every session start, resume, clear and compaction now injects exo's routing rules after the settings line, so a clear bug report reaches `find-cause` and the `route-skills` description holds again.
