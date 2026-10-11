@@ -187,3 +187,20 @@ test('--codex prints none in a run and records the decision', async () => {
   assert.equal(result.stdout, 'none\n');
   assert.match(await fs.readFile(path.join(runDir, 'decisions.md'), 'utf8'), /^- codex: none \(/);
 });
+
+test('--codex in a run without codex on PATH prints none and records nothing; outside a run it prints offer', async () => {
+  const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
+  const empty = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-absent-'));
+  const runDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-absent-dir-'));
+  const bare = `${empty}${path.delimiter}${path.dirname(process.execPath)}`;
+  const inside = await run(SCRIPT, ['--codex'], { cwd: root, env: { ...process.env, PATH: bare, EXO_RUN: '1', EXO_RUN_DIR: runDir } });
+  assert.equal(inside.stdout, 'none\n');
+  await assert.rejects(fs.readFile(path.join(runDir, 'decisions.md'), 'utf8'), { code: 'ENOENT' });
+  const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-present-'));
+  await fs.writeFile(path.join(bin, process.platform === 'win32' ? 'codex.EXE' : 'codex'), '');
+  const env = { ...process.env, PATH: `${bin}${path.delimiter}${path.dirname(process.execPath)}` };
+  delete env.EXO_RUN;
+  delete env.EXO_RUN_DIR;
+  const outside = await run(SCRIPT, ['--codex'], { cwd: root, env });
+  assert.equal(outside.stdout, 'offer\n');
+});

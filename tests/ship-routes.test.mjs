@@ -283,3 +283,14 @@ test('--routes: in a run, the menu is answered with the local route and one deci
   assert.equal(decisions.length, 1);
   assert.match(decisions[0], /^- ship: local \(/);
 });
+
+test('--routes: in a run, a set route that cannot run keeps its menu and records nothing', async () => {
+  const { workDir } = await shipRepository();
+  await setShipSetting(workDir, 'pr-merge');
+  const runDir = await fixture();
+  const bin = await ghBin(true);
+  const outcome = await run(SHIP, ['--routes'], { cwd: workDir, env: { PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_RUN: '1', EXO_RUN_DIR: runDir } });
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, `ship=pr-merge cannot run: on the default branch\n${MENU_PUSH_ONLY}Unasked: none\n`);
+  await assert.rejects(fs.readFile(path.join(runDir, 'decisions.md'), 'utf8'), { code: 'ENOENT' });
+});

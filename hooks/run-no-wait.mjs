@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { readHookText } from '#hook-input';
+import { inRun } from '../lib/run-decision.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
 export const BLOCK_LIMIT = 2;
@@ -51,8 +52,8 @@ function missingStatus(line, task) {
 }
 
 // The hook output, or null to let the call or the end go.
-export function runNoWait(input, { dir = process.env.EXO_RUN_DIR, task = process.env.EXO_RUN_TASK } = {}) {
-  if (!dir || !input) return null;
+export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, task = env.EXO_RUN_TASK?.split('/').pop() } = {}) {
+  if (!inRun(env) || !dir || !input) return null;
   const asking = input.tool_name === 'AskUserQuestion' && input.hook_event_name !== 'Stop';
   let line = '';
   if (asking) {

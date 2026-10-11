@@ -39,3 +39,10 @@ test('script exits 0 in a run and 1 outside', () => {
   const outside = spawnSync('node', [script, 's', 'c', 'r'], { env: base });
   assert.equal(outside.status, 1);
 });
+
+test('readDecisions returns [] only for a missing file and throws on another read error', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-decisions-'));
+  fs.mkdirSync(path.join(dir, 'decisions.md'));
+  assert.throws(() => readDecisions(dir), { code: 'EISDIR' });
+  fs.rmSync(dir, { recursive: true, force: true });
+});

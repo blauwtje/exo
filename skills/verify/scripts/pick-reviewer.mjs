@@ -160,9 +160,9 @@ function main(argv) {
     return;
   }
   if (flags.codex) {
-    const offer = codexOffer() && !inRun();
-    if (inRun()) recordDecision('codex', 'none', 'a run never offers the second review');
-    process.stdout.write(`${offer ? 'offer' : 'none'}\n`);
+    const offerable = codexOffer();
+    if (offerable && inRun()) recordDecision('codex', 'none', 'a run never offers the second review');
+    process.stdout.write(`${offerable && !inRun() ? 'offer' : 'none'}\n`);
     return;
   }
   // The reviewer pick lives in verify.mjs, which reads the plan's `Risk:` fields

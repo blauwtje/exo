@@ -203,7 +203,7 @@ function printRouteMenu() {
       return;
     }
     if (setting !== 'ask') console.log(`ship=${setting} cannot run: default branch unknown`);
-    printMenu(MENU_PUSH_ONLY);
+    printMenu(MENU_PUSH_ONLY, setting === 'ask');
     return;
   }
   const onDefault = currentBranch() === base && !inWorktree();
@@ -216,12 +216,12 @@ function printRouteMenu() {
     }
     console.log(`ship=${setting} cannot run: ${blocked}`);
   }
-  printMenu(!onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY);
+  printMenu(!onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY, setting === 'ask');
 }
 
-/** Prints `menu`; in a run, answers the `local` route and records that instead, as a run never asks. */
-function printMenu(menu) {
-  if (inRun()) {
+/** Prints `menu`; in a run with ship `ask` (`asked`), answers the `local` route and records that instead, as a run never asks. */
+function printMenu(menu, asked) {
+  if (asked && inRun()) {
     recordDecision('ship', 'local', 'a run never asks which route ships');
     console.log('route: local (run)');
     return;
