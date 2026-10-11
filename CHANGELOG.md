@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.126.0 - 2026-10-11
+
 ### Added
 
 - `benchmarks/split.mjs` splits flow cells by token type, call count and context size, so a change to the build flow can be measured against earlier runs.
