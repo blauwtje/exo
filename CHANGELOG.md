@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `benchmarks/results/2026-10-11-test-pollution.md` now records the `value-export-mismatch` check (baseline 5 of 5, exo 4 of 5) and the dropped `find-cause-success` branch.
+
 ## 0.127.1 - 2026-10-11
 
 ### Changed
