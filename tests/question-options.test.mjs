@@ -8,7 +8,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createRepository } from '../verify/repository.mjs';
-import { questionOptionFindings } from '../verify/checks/question-options.mjs';
+import { questionCapFindings, questionOptionFindings } from '../verify/checks/question-options.mjs';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 const REFERENCE = 'skills/route-skills/references/question.md';
@@ -47,4 +47,22 @@ test('a recommendation on A and the word assuming inside prose are no finding', 
 
 test('a (Recommended) tag is a finding', (t) => {
   assert.equal(findings(fixture(t, ['- **(A) Branch (Recommended)**: a new branch'])).length, 1);
+});
+
+const FENCE = '```';
+const capFindings = (root) => questionCapFindings(createRepository(root));
+
+test('this repository has no example question over a cap', () => {
+  assert.deepEqual(questionCapFindings(createRepository(REPOSITORY_ROOT)), []);
+});
+
+test('an example question over the label cap is a finding at its line', (t) => {
+  const root = fixture(t, [FENCE + 'text', '**Which way?**', '', '- **(A) One two three four**: fine', '', 'Recommended: (A), because fine.', FENCE]);
+  const total = fs.readFileSync(path.join(root, REFERENCE), 'utf8').split('\n').length - 1;
+  assert.deepEqual(capFindings(root), [{ path: REFERENCE, line: total - 3 }]);
+});
+
+test('an example question with a long title, two context sentences and a long reason is three findings', (t) => {
+  const root = fixture(t, [FENCE, '**One two three four five six seven eight nine ten eleven?**', 'First. Second.', '', '- **(A) Go**: fine', '', 'Recommended: (A), because one two three four five six seven eight nine.', FENCE]);
+  assert.equal(capFindings(root).length, 3);
 });
