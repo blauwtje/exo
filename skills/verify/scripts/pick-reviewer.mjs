@@ -10,6 +10,7 @@ import { basename, extname } from 'node:path';
 import { onPath } from '#on-path';
 import { readKindTable } from '#model-kinds';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
+import { inRun, recordDecision } from '#run-decision';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { changedPaths, measureSizeFacts, parseNumstat } from '#size-facts';
@@ -159,7 +160,9 @@ function main(argv) {
     return;
   }
   if (flags.codex) {
-    process.stdout.write(`${codexOffer() ? 'offer' : 'none'}\n`);
+    const offer = codexOffer() && !inRun();
+    if (inRun()) recordDecision('codex', 'none', 'a run never offers the second review');
+    process.stdout.write(`${offer ? 'offer' : 'none'}\n`);
     return;
   }
   // The reviewer pick lives in verify.mjs, which reads the plan's `Risk:` fields

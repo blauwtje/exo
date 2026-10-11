@@ -216,3 +216,11 @@ test('stop, not a crash: --plan-repository names a folder that does not exist ye
   const result = decide({ dir: missing, planRepository: true });
   assert.deepEqual(result, { kind: 'stop', reason: `${missing} does not exist` });
 });
+
+test('in a run, the ask case picks the branch and records it', async () => {
+  const root = await gitRepository({ 'README.md': 'root\n' });
+  const runDir = await fixture();
+  const result = await runWorkspace(['--repository', root, '--name', 'feat/in-run'], { env: { ...process.env, EXO_RUN: '1', EXO_RUN_DIR: runDir } });
+  assert.equal(result.stdout.trim(), 'commit-here feat/in-run');
+  assert.match(fs.readFileSync(path.join(runDir, 'decisions.md'), 'utf8'), /^- workspace: branch \(/);
+});

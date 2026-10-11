@@ -177,3 +177,13 @@ test('taskReviewer sends a test-covered output-only script diff to no model revi
   assert.equal(taskReviewer(task, ['hooks/h.mjs'], 'block', skillDiff), REVIEWER_AGENTS.light);
   assert.equal(taskReviewer(task, paths, 'block', diff('+/**\n+ */\n+/* x */\n+/**/\n+/*\n+// y')), none);
 });
+
+test('--codex prints none in a run and records the decision', async () => {
+  const root = await gitRepository({ 'app.js': 'export function greet() {}\n' });
+  const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-run-'));
+  await fs.writeFile(path.join(bin, process.platform === 'win32' ? 'codex.EXE' : 'codex'), '');
+  const runDir = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-run-dir-'));
+  const result = await run(SCRIPT, ['--codex'], { cwd: root, env: { ...process.env, PATH: `${bin}${path.delimiter}${path.dirname(process.execPath)}`, EXO_RUN: '1', EXO_RUN_DIR: runDir } });
+  assert.equal(result.stdout, 'none\n');
+  assert.match(await fs.readFile(path.join(runDir, 'decisions.md'), 'utf8'), /^- codex: none \(/);
+});
