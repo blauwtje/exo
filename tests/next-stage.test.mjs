@@ -15,7 +15,10 @@ import { assertQuestionShape } from './question-shape.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/route-skills/scripts/next-stage.mjs', import.meta.url));
 
-const EFFORT_LINE = 'Build runs at the highest effort; `/effort auto` returns the session to normal effort.';
+// The effort line names the effort the build skill's frontmatter pins, so the
+// line stays true to the skill that runs.
+const BUILD_EFFORT = (await fs.readFile(new URL('../skills/build/SKILL.md', import.meta.url), 'utf8')).match(/^effort: (\S+)$/m)[1];
+const EFFORT_LINE = `Build runs at \`${BUILD_EFFORT}\` effort, which the build skill sets; \`/effort auto\` returns the session to normal effort.`;
 
 // The model of the kind `lib/model-kinds.json` gives the build stage.
 function buildStageModel() {
@@ -102,4 +105,16 @@ test('after spec the fresh-chat lines name the runner command only when plan-che
   assert.ok(freshReport({ after: 'spec', artifact: loopPath }).endsWith(`\n${line}\n`));
   assert.ok(!freshReport({ after: 'spec', artifact: plainPath }).includes('Unattended'));
   assert.ok(!nextStageReport({ after: 'find-cause', artifact: loopPath }).includes('Unattended'));
+});
+
+test('after spec a brief with open points gets no build route, only each entry to answer first', async () => {
+  const tasks = [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node --test tests/app.test.mjs' })];
+  const open = compactPlanFixture({ tasks }).replace('## Tasks', '## Open points\n\n- Which tone?\n- Which owner?\n\n## Tasks');
+  const root = await gitRepository({ 'docs/plans/open.md': open });
+  const openPath = path.join(root, 'docs/plans/open.md');
+  const report = freshReport({ after: 'spec', artifact: openPath });
+  assert.ok(report.startsWith(`The brief at \`${openPath}\` has 2 open points, which build refuses.`));
+  assert.ok(report.endsWith('\n- Which tone?\n- Which owner?\n'));
+  assert.ok(!report.includes('/exo:build'));
+  assert.ok(!report.includes('Unattended'));
 });

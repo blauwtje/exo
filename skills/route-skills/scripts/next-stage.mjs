@@ -12,7 +12,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { readKindTable } from '#model-kinds';
-import { frameOf, parsePlan } from '#plan-tasks';
+import { frameOf, openPoints, parsePlan } from '#plan-tasks';
 import { scratchPath, ScratchPathError } from '#scratch-path';
 
 // The stage a session just finished names the question that ends it, per
@@ -103,18 +103,41 @@ export function nextStageReport({ after, artifact }) {
   return `${lines.join('\n')}\n`;
 }
 
+// The effort the build skill pins while it runs: the effort of the kind
+// `stages` in `lib/model-kinds.json` gives build, which the build skill's
+// frontmatter `effort:` matches.
+function effortLine(stage) {
+  const { kinds, stages } = readKindTable();
+  return `Build runs at \`${kinds[stages[stage].kind].effort}\` effort, which the build skill sets; \`/effort auto\` returns the session to normal effort.`;
+}
+
+// The unanswered entries under the brief's `## Open points`, which
+// start-run refuses; none when the artifact has no brief file.
+function openEntries(artifact) {
+  const file = briefFile(artifact);
+  return file === null ? [] : openPoints(fs.readFileSync(file, 'utf8'));
+}
+
 /**
  * The reply to a picked fresh-chat route: the two lines to type, then the
- * model switch when the stage's row names one.
+ * model switch when the stage's row names one. A brief with open points gets
+ * no build route: the report names each entry to answer first.
  */
 export function freshReport({ after, artifact }) {
   const next = NEXT_STAGE[after];
   if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
   if (next.stage === undefined) throw new UsageError(`no fresh-chat route after '${after}'`);
+  const open = after === 'spec' ? openEntries(artifact) : [];
+  if (open.length > 0) {
+    return [
+      `The brief at \`${artifact}\` has ${open.length} open point${open.length === 1 ? '' : 's'}, which build refuses. Answer each, record it under \`## Decisions\`, drop it from \`## Open points\`, then hand off again:`,
+      ...open.map((entry) => `- ${entry}`)
+    ].join('\n') + '\n';
+  }
   const lines = [`Type \`/clear\`, then \`/exo:${next.stage} ${artifact}\`.`];
   const modelSwitch = modelSwitchFor(next.stage, artifact);
   if (modelSwitch !== null) lines.push(modelSwitch);
-  lines.push('Build runs at the highest effort; `/effort auto` returns the session to normal effort.');
+  lines.push(effortLine(next.stage));
   const unattended = unattendedLine(after, artifact);
   if (unattended !== null) lines.push(unattended);
   return `${lines.join('\n')}\n`;
