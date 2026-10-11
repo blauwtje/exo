@@ -214,6 +214,7 @@ function flowCells() {
       ...shared,
       id: 'flow-base',
       plugin: false,
+      budgetUsd: '1',
       prompt: `Implement every task in ${FLOW_PLAN}. Commit on a new branch ${FLOW_BRANCH}; push nothing and open no pull request.\n${NO_ANSWER}`
     },
     { ...shared, id: 'flow-run', runSession: 'plan', budgetUsd: '1', prompt: null },
@@ -240,10 +241,13 @@ export function pluginVariants(cells) {
 }
 
 // The `node` arguments of a run arm: exo run builds the fixed plan with one
-// session per plan or per task, each through the confining wrapper.
+// session per plan or per task, each through the confining wrapper, on the
+// cell's own provider, model and effort so run.json and the catalog default
+// do not confound the ratio against flow-base.
 export function runArguments(cell, pluginDir = ROOT) {
   return [
     path.join(pluginDir, 'skills', 'build', 'scripts', 'exo-cli.mjs'), 'run', FLOW_PLAN,
+    '--provider', 'claude', '--model', cell.model, '--effort', cell.effort,
     '--session', cell.runSession,
     '--max-run-usd', cell.budgetUsd,
     '--plugin-dir', pluginDir,

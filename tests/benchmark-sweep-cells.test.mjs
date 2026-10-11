@@ -52,7 +52,8 @@ test('the flow baseline runs the plan with no plugin and the exo flow cell keeps
   assert.equal(flagValue(claudeArguments(exo), '--plugin-dir'), ROOT);
   assert.equal(claudeArguments(baseline).includes('--plugin-dir'), false);
   assert.equal(claudeArguments(baseline).includes(ROOT), false);
-  for (const key of ['model', 'effort', 'budgetUsd', 'timeoutMs']) assert.equal(baseline[key], exo[key], key);
+  for (const key of ['model', 'effort', 'timeoutMs']) assert.equal(baseline[key], exo[key], key);
+  assert.equal(baseline.budgetUsd, '1', 'every swept flow arm, the baseline included, stops at $1');
   assert.ok(baseline.prompt.startsWith(`Implement every task in ${FLOW_PLAN}.`));
   assert.ok(!baseline.prompt.includes('exo:'));
   assert.ok(cells.filter((cell) => cell.id !== 'flow-base' && !cell.runSession).every((cell) => cell.plugin !== false));

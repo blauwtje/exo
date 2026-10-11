@@ -301,14 +301,15 @@ function snapshot(root) {
 
 const planTaskLines = (root, sha) => (gitOut(root, ['log', '-1', '--format=%B', sha]) ?? '').split('\n').filter((line) => /^Plan-task: /.test(line));
 
-/** The breach a process left, or null: a task allows one commit carrying only its own trailer, the tail any commits with none. */
-function breachOf(root, before, { trailer = null } = {}) {
+/** The breach a process left, or null: a task allows one commit carrying only its own trailer, a tail session none (the script lands its fix), else any commit with no trailer. */
+function breachOf(root, before, { trailer = null, tail = false } = {}) {
   const after = snapshot(root);
   if (after.remotes !== before.remotes) return 'remote ref moved';
   if (after.branch !== before.branch) return 'branch moved';
   if (after.head === before.head) return null;
   if (spawnSync('git', ['-C', root, 'merge-base', '--is-ancestor', before.head, after.head]).status !== 0) return 'branch moved';
   const commits = (gitOut(root, ['rev-list', `${before.head}..${after.head}`]) ?? '').split('\n').filter(Boolean);
+  if (tail) return 'extra commit';
   if (trailer === null) return commits.some((sha) => planTaskLines(root, sha).length > 0) ? 'extra commit' : null;
   if (commits.length !== 1) return 'extra commit';
   const parent = gitOut(root, ['rev-parse', `${commits[0]}^`]);
@@ -501,6 +502,7 @@ export function planPrompt({ plan, planPath, numbers, root }) {
   });
   const fields = {
     tasks: `${numbers.length === 1 ? 'Task' : 'Tasks'} ${numbers.join(', ')}`,
+    first: String(numbers[0]),
     plan: planPath,
     report: `${path.join(root, SCRATCH_FOLDER, 'implementer-<n>.md')}, one per task`,
     brief: ['Land nothing: the script lands each task after this session.', ...briefs].join('\n\n')
@@ -912,10 +914,10 @@ async function main(argv) {
       const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel });
       const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
       run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [] });
-      const breach = planBreach() ?? breachOf(root, before);
+      const breach = planBreach() ?? breachOf(root, before, { tail: true });
       const parked = breach === null ? takeParked('tail') : null;
       const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
-      if (breach !== null) return { stop: { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
+      if (breach !== null) return { stop: { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review or fix session breached a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
       if (parked !== null) return { stop: { ...parkedStop(parked, log), gate: 'FAIL' } };
       if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
       return { resultText: outcome.timedOut ? '' : parsed.resultText };

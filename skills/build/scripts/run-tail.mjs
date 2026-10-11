@@ -31,8 +31,11 @@ const node = (script, args, root) => spawnSync(process.execPath, [script, ...arg
 });
 const out = (answer) => `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
 
-/** The agent file's text without its frontmatter. */
-const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+/** The agent file's text without its frontmatter; its `${CLAUDE_PLUGIN_ROOT}` is filled, as no headless prompt fills it. */
+const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN_ROOT).trim();
+
+/** The `model:` of the agent's frontmatter, the model of a review session the verify line gives none. */
+const agentModel = () => fs.readFileSync(REVIEW_AGENT, 'utf8').match(/^---\n[\s\S]*?^model:\s*(\S+)\s*$[\s\S]*?\n---\n/m)?.[1] ?? null;
 
 /** The fixer prompt: the fenced block of review-fixer-prompt.md with its `<...>` inputs filled. */
 function fixerPrompt({ planPath, root, base, findings }) {
@@ -90,6 +93,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
   const baseText = base ?? 'HEAD';
   const { reviews, overlaps, reviewed } = parseReviewLines(out(node(SCRIPT.verify, [...gateArgs, '--reviews-only'], root)));
   const reports = [...reviewed];
+  const reviewModel = agentModel();
   const dispatches = [
     ...reviews.map((review) => {
       const task = plan.tasks.find((entry) => entry.number === review.number);
@@ -100,9 +104,9 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
         ...(task.risk === null ? [] : [`Does it hold its Risk: "${task.risk}"?`]),
         'Does it follow the code standard, and does each test observe changed behavior?'
       ];
-      return { task: review.number, model: review.model, findings, scope: `task ${review.shas.replaceAll(',', ' ')}`, questions };
+      return { task: review.number, model: review.model ?? reviewModel, findings, scope: `task ${review.shas.replaceAll(',', ' ')}`, questions };
     }),
-    ...(overlaps.length === 0 ? [] : [{ task: null, model: null, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
+    ...(overlaps.length === 0 ? [] : [{ task: null, model: reviewModel, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
   for (const dispatch of dispatches) {
     say(`review start: ${dispatch.task === null ? 'overlap' : `task ${dispatch.task}`}`);
@@ -113,7 +117,6 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     say(`review done: ${verdictOf(session.resultText) ?? 'no verdict line'}`);
   }
 
-  let fixed = false;
   if (reports.length > 0) {
     const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
     const verdict = verdictOf(merged);
@@ -132,7 +135,7 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       const fixReview = path.join(exo, 'fix-review.md');
       fs.rmSync(fixReview, { force: true });
       say('fix review start');
-      const second = await runSession({ kind: 'review', task: null, model: null, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
+      const second = await runSession({ kind: 'review', task: null, model: reviewModel, prompt: reviewPrompt({ planPath, root, base: baseText, branch, scope: 'fix diff', findings: fixReview }) });
       if (second.stop !== undefined) return { stop: second.stop };
       const text = fs.existsSync(fixReview) ? fs.readFileSync(fixReview, 'utf8') : '';
       const secondVerdict = text.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? 'BLOCKED';
@@ -144,9 +147,8 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
       if (landed.status !== 0) return { stop: stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again') };
       say('fix landed');
-      fixed = true;
     }
   }
   const gate = node(SCRIPT.verify, gateArgs, root);
-  return { gate, fixed };
+  return { gate };
 }

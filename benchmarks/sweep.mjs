@@ -248,8 +248,8 @@ async function runCell(cell, runDirectory, copies) {
       timedOut: outcome.timedOut,
       wallMs: outcome.wallMs,
       costUsd: cell.runSession ? usage?.costUsd ?? null : typeof result?.total_cost_usd === 'number' ? result.total_cost_usd : null,
-      tokens: usage === null ? null : Math.round(usage.counts.weightedInput + usage.counts.output),
-      outputTokens: usage === null ? null : usage.counts.output,
+      tokens: usage?.counts == null ? null : Math.round(usage.counts.weightedInput + usage.counts.output),
+      outputTokens: usage?.counts == null ? null : usage.counts.output,
       ...measured
     };
     // Staged first, so a file the cell created lands in the patch too.

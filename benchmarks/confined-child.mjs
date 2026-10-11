@@ -12,6 +12,22 @@ import path from 'node:path';
 import process from 'node:process';
 import { confinedClaude } from '#confine-claude';
 
+// run-plan starts each session in `--permission-mode dontAsk` with Claude Code's
+// sandbox in `--settings`. confinedClaude picks its own permission mode and runs
+// the session inside sandbox-exec, where that sandbox cannot start, so both
+// pairs are dropped; `--allowedTools` and the deny list stay, and the OS
+// profile is the only boundary.
+const DROPPED = new Set(['--permission-mode', '--settings']);
+
+function withoutDropped(args) {
+  const kept = [];
+  for (let index = 0; index < args.length; index += 1) {
+    if (DROPPED.has(args[index])) index += 1;
+    else kept.push(args[index]);
+  }
+  return kept;
+}
+
 function main() {
   const root = process.env.EXO_SWEEP_CELL_ROOT;
   if (!root) throw new Error('EXO_SWEEP_CELL_ROOT names no cell root; refusing to start claude unconfined');
@@ -20,7 +36,7 @@ function main() {
   if (cwd !== cellRoot && !cwd.startsWith(cellRoot + path.sep)) throw new Error(`${cwd} is outside the cell root ${cellRoot}`);
   const tmp = path.join(cellRoot, 'tmp');
   fs.mkdirSync(tmp, { recursive: true });
-  const run = confinedClaude({ args: process.argv.slice(2), roots: [cellRoot], cwd, tmp });
+  const run = confinedClaude({ args: withoutDropped(process.argv.slice(2)), roots: [cellRoot], cwd, tmp });
   const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: 'inherit' });
   child.on('close', (code, signal) => process.exit(code ?? (signal === null ? 1 : 128)));
 }

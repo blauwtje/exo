@@ -183,7 +183,7 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   assert.match(prompt, /^- `Task 1: BLOCKED <reason>`/m);
   assert.match(prompt, /^- `Task 1: PLAN DRIFT <reason>`/m);
   for (const file of ['skills/build/references/task-mode.md', 'agents/build-task.md', 'skills/route-skills/references/lean.md']) {
-    const lines = (await fs.readFile(path.join(PLUGIN_ROOT, file), 'utf8')).split('\n').filter((line) => line.startsWith('- ') && !line.includes('smallest change'));
+    const lines = (await fs.readFile(path.join(PLUGIN_ROOT, file), 'utf8')).split('\n').filter((line) => line.startsWith('- '));
     assert.ok(lines.every((line) => !prompt.includes(line)), `${file} text is not pasted`);
   }
   assert.ok(prompt.includes(`node "${path.join(SCRIPTS, 'land-task.mjs')}" --plan ${context.plan} --task 1 --root ${context.root}`), 'the land command');

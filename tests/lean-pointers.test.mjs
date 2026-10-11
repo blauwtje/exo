@@ -15,7 +15,6 @@ const DELEGATES = [
   'agents/build-task.md',
   'agents/build-ui.md',
   'skills/build/bug-fixer-prompt.md',
-  'skills/build/run-task-prompt.md',
   'skills/build/review-fixer-prompt.md',
   'skills/find-cause/fixer-prompt.md',
 ];
