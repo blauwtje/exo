@@ -22,7 +22,7 @@ function transcript(name, lines) {
 
 test('constants', () => {
   assert.deepEqual([HARD_LIMIT, LEAD_SOFT_LIMIT, AGENT_SOFT_LIMIT, TASK_SPLIT_TOKENS, BYTES_PER_TOKEN],
-    [100000, 60000, 50000, 25000, 4]);
+    [100000, 60000, 60000, 25000, 4]);
 });
 
 test('contextTokens sums the last assistant usage and tolerates junk', () => {
@@ -44,10 +44,19 @@ test('contextTokens reads only the tail of a large file', () => {
 test('lead decisions', () => {
   const at = (n, extra = {}) => contextDecision({ transcript_path: transcript(`l${n}.jsonl`, [entry(n)]), cwd: dir, ...extra });
   assert.equal(at(59000), null);
-  assert.match(at(60000).additionalContext, /exo:save-session/);
+  const soft = at(60000).additionalContext;
+  assert.match(soft, /fresh subagent/);
   const denied = at(100000, { tool_name: 'Read' });
-  assert.match(denied.deny, /handoff/);
+  assert.match(denied.deny, /hand-off/);
+  assert.match(denied.deny, /general-purpose/);
+  assert.match(denied.deny, /skills\/save-session\/SKILL\.md/);
+  assert.match(denied.deny, /final report/);
+  for (const text of [soft, denied.deny]) assert.doesNotMatch(text, /stop|new session|\/clear|exo:save-session|tell the user/i);
   assert.equal(at(100000, { tool_name: 'Write' }), null);
+  assert.equal(at(100000, { tool_name: 'Agent' }), null);
+  assert.equal(at(100000, { tool_name: 'Write', agent_id: 'x', agent_transcript_path: transcript('ag.jsonl', [entry(100000)]) }), null);
+  const agentDenied = at(100000, { tool_name: 'Agent', agent_id: 'x', agent_transcript_path: transcript('ag2.jsonl', [entry(100000)]) });
+  assert.match(agentDenied.deny, /hard limit/);
 });
 
 test('hard-limit deny names the path handoff.mjs prints', () => {
@@ -87,7 +96,7 @@ test('hard-limit deny names the path handoff.mjs prints', () => {
 
 test('subagent reads its own transcript', () => {
   const main = transcript('s.jsonl', [entry(10000)]);
-  transcript('s/subagents/agent-7.jsonl', [entry(55000)]);
+  transcript('s/subagents/agent-7.jsonl', [entry(65000)]);
   const input = { transcript_path: main, agent_id: '7', tool_name: 'Read' };
   assert.match(contextDecision(input).additionalContext, /report/);
   const own = transcript('own.jsonl', [entry(120000)]);

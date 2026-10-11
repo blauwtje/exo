@@ -166,7 +166,7 @@ test('a main-session Bash call at 120k tokens is denied with the hand-off instru
 test('a main-session Bash call between the soft and hard limit is allowed with the hand-off text', async () => {
   const decision = await mainSessionCall('git status', 65000);
   assert.equal(decision.permissionDecision, undefined);
-  assert.match(decision.additionalContext, /Finish your current step|exo:save-session/);
+  assert.match(decision.additionalContext, /fresh subagent/);
 });
 
 test('a guard deny wins over the context deny at 120k tokens', async () => {

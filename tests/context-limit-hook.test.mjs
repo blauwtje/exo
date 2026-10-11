@@ -24,7 +24,7 @@ test('under the soft limit the hook prints nothing', () => {
 test('over the soft limit it warns through additionalContext', () => {
   const output = JSON.parse(run([entry(65000)]).stdout).hookSpecificOutput;
   assert.equal(output.hookEventName, 'PreToolUse');
-  assert.match(output.additionalContext, /exo:save-session/);
+  assert.match(output.additionalContext, /fresh subagent/);
 });
 
 test('over the hard limit it denies, except Write', () => {
@@ -32,6 +32,7 @@ test('over the hard limit it denies, except Write', () => {
   assert.equal(output.permissionDecision, 'deny');
   assert.match(output.permissionDecisionReason, /hard limit/);
   assert.equal(run([entry(120000)], { tool_name: 'Write' }).stdout, '');
+  assert.equal(run([entry(120000)], { tool_name: 'Agent' }).stdout, '');
 });
 
 test('a 5 MB transcript is read in under 250 ms (median of 10 runs)', () => {
