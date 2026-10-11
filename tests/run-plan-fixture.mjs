@@ -29,9 +29,13 @@ for (let hook = 0; hook < (step.hooks ?? 0); hook += 1) emit({ type: 'system', s
 const git = (...args) => execFileSync('git', ['-c', 'user.name=stub', '-c', 'user.email=stub@example.com', '-c', 'commit.gpgsign=false', ...args], { encoding: 'utf8' });
 for (const commit of step.commits ?? []) {
   fs.writeFileSync(commit.file, String(index) + '\\n');
-  git('add', commit.file);
+  for (const extra of commit.also ?? []) fs.writeFileSync(extra, 'test\\n');
+  git('add', commit.file, ...(commit.also ?? []));
   git('commit', '-q', '-m', 'feat: stub', ...commit.trailers.flatMap((trailer) => ['-m', trailer]));
 }
+for (const edit of step.edits ?? []) fs.appendFileSync(edit, 'edited\\n');
+const findings = step.findings === undefined ? null : stdin.match(/^- Findings path: (.+)$/m)?.[1];
+if (findings) { fs.mkdirSync(path.dirname(findings), { recursive: true }); fs.writeFileSync(findings, step.findings); }
 if (step.push) git('push', '-q', 'origin', 'HEAD');
 if (step.editPlan) fs.appendFileSync(scenario.planPath, '- Proof: node -e 1\\n');
 if (step.hang) setInterval(() => {}, 1000);
@@ -44,7 +48,7 @@ else {
 }
 `;
 
-export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', land = 'Land: local', open = null } = {}) => [
+export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', land = 'Land: local', open = null, risk = null } = {}) => [
   '# Plan: runner fixture',
   '',
   '## Goal',
@@ -75,7 +79,7 @@ export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gat
   '',
   '## Tasks',
   '### Task 1: feat(a): add a',
-  'Depends on: none | Files: `a.txt` | Data: a line | Proof: node --version',
+  `Depends on: none | Files: \`a.txt\`${risk === null ? '' : ', `a.test.mjs`'} | Data: a line${risk === null ? '' : ` | Risk: ${risk}`} | Proof: node --version`,
   '### Task 2: feat(b): add b',
   'Depends on: 1 | Files: `b.txt` | Data: a line | Proof: node --version',
   ''

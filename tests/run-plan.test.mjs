@@ -131,12 +131,16 @@ test('EXO_RUN_DIR: a stale parked marker is removed at start and a fresh one nam
   await assert.rejects(fs.access(marker));
 });
 
-test('EXO_RUN_DIR: a parked marker naming the tail stops the run after the verify session', async () => {
-  const { context, dir } = await runDirContext();
+test('EXO_RUN_DIR: a parked marker naming the tail stops the run after a review session', async () => {
+  const context = await setup({ risk: 'security boundary' });
+  const dir = path.join(await fs.realpath(await fixture()), '.exo', 'run', 'id');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify({ id: 'id', phase: 'starting' }));
+  context.env = { EXO_RUN_DIR: dir };
   const wrapper = path.join(context.tools, 'wrapper.mjs');
-  await fs.writeFile(wrapper, `import fs from 'node:fs';\nif (process.argv.join(' ').includes('/exo:verify') || fs.readFileSync(0, 'utf8').includes('/exo:verify')) fs.writeFileSync(process.env.EXO_RUN_DIR + '/parked', 'Task tail: PARKED git push origin main\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nif (fs.readFileSync(0, 'utf8').includes('## Inputs')) fs.writeFileSync(process.env.EXO_RUN_DIR + '/parked', 'Task tail: PARKED git push origin main\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
   context.stub = wrapper;
-  const result = await runPlan(context, [land(1), land(2), { result: 'Verify done.' }]);
+  const result = await runPlan(context, [land(1), land(2), { result: 'verdict=CLEAN defect=0 hazard=0 question=0 fix=0 report=x' }]);
   assert.equal(result.stop, 'run-plan: stop: parked: git push origin main');
   assert.equal(result.code, 3);
   await assert.rejects(fs.access(path.join(dir, 'parked')));
@@ -168,10 +172,9 @@ test('done: two task processes and the tail land the plan, the gate passes and t
   const result = await runPlan(context, [land(1), { ...land(2), background: true }, { result: 'Verify done.' }]);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
   assert.equal(result.code, 0);
-  assert.equal(result.calls.length, 3);
-  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
+  assert.equal(result.calls.length, 2, 'a plan with no Risk: and no overlap needs no review session');
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2']);
   assert.match(result.calls[0].stdin, /^Land Task 1 of .*plan\.md in this session\./);
-  assert.match(result.calls[2].stdin, /^\/exo:verify .*plan\.md Push nothing and open no pull request\./);
   const prompt = result.calls[0].stdin;
   const learnings = path.join(context.root, '.exo', 'run-plan', 'plan', 'learnings.md');
   assert.ok(prompt.includes('### Task 1: feat(a): add a\nDepends on: none | Files: `a.txt`'), 'the task section');
@@ -296,7 +299,7 @@ test('denied: a denial in a run that lands its task is logged and the loop goes 
   const context = await setup();
   const result = await runPlan(context, [{ ...land(1), denials: [denial] }, land(2), { result: 'Verify done.' }]);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
-  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2', null]);
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/2']);
   const summary = await fs.readFile(result.stdout.match(/^Details: (.+)$/m)[1], 'utf8');
   assert.match(summary, deniedLine);
 });
@@ -451,7 +454,6 @@ test('sandbox: run.json sandbox.enabled false keeps the plan allowlist, passes n
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout + result.stderr);
   for (const call of result.calls) assert.equal(settingsOf(call), null);
   assertPlanAllowlist(result.calls[0]);
-  assertPlanAllowlist(result.calls[2]);
   assert.ok(!allowOf(result.calls[0]).some((rule) => rule.includes('next-task.mjs') || rule.includes('mcp-tool-call.mjs')));
   assert.doesNotMatch(result.calls[0].stdin, SANDBOX_RULE);
 });
@@ -661,7 +663,7 @@ test('--session plan: one session builds both tasks, then the script lands each 
   context.stub = wrapper;
   const result = await runPlan(context, [{ result: 'Task 1: GREEN' }, { result: 'Verify done.' }], ['--session', 'plan']);
   assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout);
-  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', null]);
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1']);
   assert.match(result.calls[0].stdin, /^Build Tasks 1, 2 of .*plan\.md in this session\./);
   assert.match(result.calls[0].stdin, /Land nothing/);
   assert.equal(result.calls[0].stdin.match(/### Task \d:/g).length, 2);

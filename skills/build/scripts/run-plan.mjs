@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Runs a plan unattended: each unlanded task in a fresh headless `claude -p`
 // process, the script picking the task and checking git after each process,
-// then one verify process and verify.mjs itself, ending on one stop line.
+// then the review tail (run-tail.mjs: review and fix sessions, verify.mjs), ending on one stop line.
 //
 //   node run-plan.mjs <plan.md> [--root <dir>] [--max-iterations <n>] [--timeout <minutes>]
 //     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--max-run-usd <x>] [--session auto|task|plan] [--claude <path>] [--plugin-dir <path>] [--dry-run]
@@ -43,6 +43,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { readDecisions } from '#run-decision';
 import { taskBrief } from './next-task.mjs';
 import { updateRun } from './run-state.mjs';
+import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 
 const KILL_GRACE_MS = 5000;
@@ -231,8 +232,8 @@ export function allowRules({ root, planPath, plan, tail = false, pluginRoot = PL
   ])];
 }
 
-/** Tools per session kind; the tail session runs the verify skill, so it keeps the default tools and slash commands. */
-const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', review: 'Read,Write,Glob,Grep,Bash' };
+/** Tools per session kind: a review session writes only its findings file, a fix session edits like a build one. */
+const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', fix: 'Read,Edit,Write,Bash,Grep,Glob', review: 'Read,Write,Glob,Grep,Bash' };
 
 function claudeArgs({ model, effort, budget, allow, settings = null, kind = 'build', pluginDir = null }) {
   return [
@@ -242,7 +243,7 @@ function claudeArgs({ model, effort, budget, allow, settings = null, kind = 'bui
     ...(settings === null ? [] : ['--settings', typeof settings === 'string' ? settings : JSON.stringify(settings)]),
     // No MCP servers: a run session uses none, and each configured server adds its tool schemas to every turn.
     '--strict-mcp-config',
-    ...(kind === 'tail' ? [] : ['--tools', SESSION_TOOLS[kind], '--disable-slash-commands']),
+    '--tools', SESSION_TOOLS[kind], '--disable-slash-commands',
     '--include-hook-events',
     ...(pluginDir === null ? [] : ['--plugin-dir', pluginDir]),
     '--allowedTools', ...allow,
@@ -690,7 +691,7 @@ async function main(argv) {
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
       'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
-      `First prompt: ${first === undefined ? `/exo:verify ${planPath} Push nothing and open no pull request.` : chosen.mode === 'plan' ? planPrompt({ plan, planPath, numbers: order, root }) : buildPrompt(first)}`,
+      `First prompt: ${first === undefined ? 'none: every task has landed, the script runs the review tail' : chosen.mode === 'plan' ? planPrompt({ plan, planPath, numbers: order, root }) : buildPrompt(first)}`,
       ''
     ].join('\n'));
     return 0;
@@ -740,15 +741,15 @@ async function main(argv) {
   const budgetStop = () => (runCap !== undefined && spent >= runCap
     ? { line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd, then run exo run again' }
     : null);
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'build', task = null }) => {
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'build', task = null, sessionModel = model }) => {
     const before = snapshot(root);
     const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
-    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind, pluginDir }), {
+    const outcome = await spawnClaude(claude, claudeArgs({ model: sessionModel, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind, pluginDir }), {
       cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
     const parsed = parseStream(outcome.text);
     spent += parsed.cost;
-    fs.appendFileSync(ledgerFile, `${JSON.stringify({ kind: kind === 'tail' ? 'review' : 'task', task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
+    fs.appendFileSync(ledgerFile, `${JSON.stringify({ kind: kind === 'build' ? 'task' : kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
     return { before, outcome, parsed };
   };
 
@@ -892,22 +893,32 @@ async function main(argv) {
   if (stop === undefined) stop = budgetStop() ?? undefined;
   if (stop === undefined) {
     setPhase('verify');
-    iteration += 1;
+    const base = defaultBranch(root);
+    let sessions = 0;
+    // One review or fix session of the tail: the breach, parked and plugin checks a task session gets, no pin.
+    const runSession = async ({ kind, task = null, model: asked = null, prompt }) => {
+      const budget = budgetStop();
+      if (budget !== null) return { stop: { ...budget, gate: 'FAIL' } };
+      sessions += 1;
+      iteration += 1;
+      const log = path.join(logDir, `tail-${sessions}-${kind}.log`);
+      const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
+      const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel });
+      const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
+      run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [] });
+      const breach = planBreach() ?? breachOf(root, before);
+      const parked = breach === null ? takeParked('tail') : null;
+      const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
+      if (breach !== null) return { stop: { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
+      if (parked !== null) return { stop: { ...parkedStop(parked, log), gate: 'FAIL' } };
+      if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
+      return { resultText: outcome.timedOut ? '' : parsed.resultText };
+    };
     say('all tasks landed, final review start');
-    const log = path.join(logDir, 'tail.log');
-    const { before, outcome, parsed } = await spawnOne({ prompt: `/exo:verify ${planPath} Push nothing and open no pull request.`, allow: tailAllow, settings: tailSettings, pin: null, log, kind: 'tail' });
-    run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last: outcome.timedOut ? 'timed out' : lastLine(parsed.resultText), denied: [] });
-    const breach = planBreach() ?? breachOf(root, before);
-    const parked = breach === null ? takeParked('tail') : null;
-    const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
-    if (breach !== null) stop = { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review broke a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' };
-    else if (parked !== null) stop = { ...parkedStop(parked, log), gate: 'FAIL' };
-    else if (notLoaded !== null) stop = { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' };
+    const tail = await runTail({ planPath, plan, root, base, branch, runSession, say });
+    if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
-      const base = defaultBranch(root);
-      const gate = spawnSync(process.execPath, [SCRIPT.verify, '--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])], {
-        cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024
-      });
+      const gate = tail.gate;
       run.verifyLines = `${gate.stdout ?? ''}`.split('\n').filter((line) => /^(FAIL|STRAY|WARN)\b/.test(line));
       const pass = gate.status === 0;
       const manual = (plan.frame['Manual checks'] ?? '').split('\n').filter((line) => line.startsWith('- ')).length;
