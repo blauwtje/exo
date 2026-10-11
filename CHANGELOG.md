@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.124.1 - 2026-10-11
+
 ### Fixed
 
 - A test now proves the hard-limit refusal names the same hand-off file the resume step reads, in a worktree and outside git.
