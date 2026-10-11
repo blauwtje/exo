@@ -7,7 +7,7 @@
 import process from 'node:process';
 import { readHookText } from '#hook-input';
 import { settingValue } from '#settings-store';
-import { contextDecision } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
@@ -52,11 +52,8 @@ export const GUARDS = [['git-guard', gitDenial], ['secret-guard', secretDenial],
 export const CONTEXT_STEP = {
   name: 'context-limit',
   run(hookInput) {
-    const decision = contextDecision(hookInput);
-    if (!decision) return null;
-    return { hookSpecificOutput: decision.deny
-      ? { permissionDecision: 'deny', permissionDecisionReason: decision.deny }
-      : { additionalContext: decision.additionalContext } };
+    const fields = contextFields(contextDecision(hookInput));
+    return fields && { hookSpecificOutput: fields };
   }
 };
 

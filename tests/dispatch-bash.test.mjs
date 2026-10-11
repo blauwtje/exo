@@ -173,6 +173,7 @@ test('a guard deny wins over the context deny at 120k tokens', async () => {
   const decision = await mainSessionCall('git reset --hard');
   assert.equal(decision.permissionDecision, 'deny');
   assert.match(decision.permissionDecisionReason, /git-guard/);
+  assert.equal(decision.additionalContext, undefined);
 });
 
 test('a Codex-shaped input without a transcript gets no context output', async () => {

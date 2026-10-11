@@ -6,7 +6,7 @@
 
 import process from 'node:process';
 import { readHookText } from '#hook-input';
-import { contextDecision } from '../lib/context-limits.mjs';
+import { contextDecision, contextFields } from '../lib/context-limits.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 
 export function agentEffort({ tool_name: tool, tool_input: input, effort } = {}) {
@@ -19,11 +19,11 @@ export function agentEffort({ tool_name: tool, tool_input: input, effort } = {})
 // allow, else the context text rides along.
 export function agentHook(hookInput) {
   const output = agentEffort(hookInput);
-  const decision = contextDecision(hookInput);
-  if (!decision) return output;
-  if (decision.deny) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: decision.deny } };
+  const fields = contextFields(contextDecision(hookInput));
+  if (!fields) return output;
+  if (fields.permissionDecision) return { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } };
   const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
-  return { hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: decision.additionalContext } };
+  return { hookSpecificOutput: { ...base.hookSpecificOutput, ...fields } };
 }
 
 if (isMain(import.meta.url)) {
