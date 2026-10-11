@@ -51,12 +51,15 @@ function transcript(tokens) {
   return file;
 }
 
-test('the context check joins the raise, and a context deny beats the allow', () => {
+test('the context check joins the raise, the lead dispatches at the hard limit, and a subagent context deny beats the allow', () => {
   const warned = agentHook(input('max', { transcript_path: transcript(65000) })).hookSpecificOutput;
   assert.equal(warned.permissionDecision, 'allow');
   assert.equal(warned.updatedInput.effort, 'max');
-  assert.match(warned.additionalContext, /exo:save-session/);
-  const denied = agentHook(input('max', { transcript_path: transcript(120000) })).hookSpecificOutput;
+  assert.match(warned.additionalContext, /fresh subagent/);
+  const lead = agentHook(input('max', { transcript_path: transcript(120000) })).hookSpecificOutput;
+  assert.equal(lead.permissionDecision, 'allow');
+  assert.equal(lead.updatedInput.effort, 'max');
+  const denied = agentHook(input('max', { agent_id: 'a1', agent_transcript_path: transcript(120000) })).hookSpecificOutput;
   assert.equal(denied.permissionDecision, 'deny');
   assert.equal(denied.updatedInput, undefined);
   const alone = agentHook(input('high', { transcript_path: transcript(65000) })).hookSpecificOutput;

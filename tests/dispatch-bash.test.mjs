@@ -4,6 +4,7 @@
 // guards setting is off.
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -12,6 +13,7 @@ import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { fixture, run } from './harness.mjs';
 
 const DISPATCHER = fileURLToPath(new URL('../hooks/dispatch-bash.mjs', import.meta.url));
+const HANDOFF_SCRIPT = fileURLToPath(new URL('../skills/save-session/scripts/handoff.mjs', import.meta.url));
 const MEMORY_SCRIPT = fileURLToPath(new URL('../skills/remember/scripts/memory.mjs', import.meta.url));
 
 async function dispatch(hookInput, { env = {}, input = JSON.stringify(hookInput) } = {}) {
@@ -141,7 +143,9 @@ test('on Codex every guard is kept', async () => {
   assert.match(decision.permissionDecisionReason, /git-guard/);
 });
 
-// A main-session transcript at 120k prompt tokens.
+// A main-session transcript at 120k prompt tokens; `lastHandoff` holds the
+// hand-off path handoff.mjs prints for that call's directory.
+let lastHandoff = '';
 async function mainSessionCall(command, cacheRead = 115000) {
   const directory = await fs.realpath(await fixture());
   const transcript = path.join(directory, 'session.jsonl');
@@ -154,13 +158,19 @@ async function mainSessionCall(command, cacheRead = 115000) {
     env: { CLAUDE_CONFIG_DIR: directory, CLAUDE_PROJECT_DIR: directory, TMPDIR: directory }
   });
   assert.equal(outcome.code, 0, outcome.stderr);
+  lastHandoff = execFileSync(process.execPath, [HANDOFF_SCRIPT, 'path', '--cwd', directory], {
+    env: { ...process.env, CLAUDE_CONFIG_DIR: directory }, encoding: 'utf8'
+  }).trim();
   return outcome.stdout === '' ? null : JSON.parse(outcome.stdout).hookSpecificOutput;
 }
 
-test('a main-session Bash call at 120k tokens is denied with the hand-off instruction', async () => {
+test('a main-session Bash call at 120k tokens is denied with the hand-off path and one fresh subagent', async () => {
   const decision = await mainSessionCall('git status');
   assert.equal(decision.permissionDecision, 'deny');
   assert.match(decision.permissionDecisionReason, /hand-off/);
+  assert.ok(lastHandoff.endsWith('.md'), lastHandoff);
+  assert.ok(decision.permissionDecisionReason.includes(lastHandoff), decision.permissionDecisionReason);
+  assert.match(decision.permissionDecisionReason, /one fresh general-purpose subagent/);
 });
 
 test('a main-session Bash call between the soft and hard limit is allowed with the hand-off text', async () => {
