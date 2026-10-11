@@ -18,7 +18,7 @@ fs.appendFileSync(process.env.STUB_RECORD, JSON.stringify([process.cwd(), ...pro
 
 const planText = (root, branch) => [
   '# Plan: cli fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, `Branch: ${branch}`, 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
+  '## Plan basis', `Repository: ${root}`, `Branch: ${branch}`, 'Land: local', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
   '## Success criterion', '`node --version`', '',
   '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
   '## Manual checks', '- Open the file.', '',
