@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 0.123.0 - 2026-10-11
+
 ### Highlights
 
 - **Spec now asks you only the few points a wrong guess would make costly; everything else becomes a written assumption.**
