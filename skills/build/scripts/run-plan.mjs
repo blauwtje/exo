@@ -4,7 +4,7 @@
 // then one verify process and verify.mjs itself, ending on one stop line.
 //
 //   node run-plan.mjs <plan.md> [--root <dir>] [--max-iterations <n>] [--timeout <minutes>]
-//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--claude <path>] [--plugin-dir <path>] [--dry-run]
+//     [--provider <name>] [--model <m>] [--effort <e>] [--max-budget-usd <x>] [--max-run-usd <x>] [--claude <path>] [--plugin-dir <path>] [--dry-run]
 //
 // Held to one task by code: the script names task n on stdin and in
 // EXO_RUN_TASK, which land-task's pin enforces; every spawn runs under
@@ -147,6 +147,8 @@ export function parseStream(text) {
     turns: results.reduce((sum, result) => sum + (Number(result.num_turns) || 0), 0),
     cost: costs.at(-1) ?? 0,
     peakContext,
+    sessionId: init?.session_id ?? final?.session_id ?? null,
+    hooks: events.filter((event) => event.type === 'system' && event.subtype === 'hook_started').length,
     denials: [...denials.values()]
   };
 }
@@ -598,11 +600,12 @@ async function main(argv) {
   if (planArgument === undefined || planArgument.startsWith('--')) throw new UsageError('the first argument names the plan file');
   const flags = parseFlags(rest, {
     root: 'value', provider: 'value', 'max-iterations': 'value', timeout: 'value', model: 'value', effort: 'value',
-    'max-budget-usd': 'value', claude: 'value', 'plugin-dir': 'value', 'dry-run': 'boolean'
+    'max-budget-usd': 'value', 'max-run-usd': 'value', claude: 'value', 'plugin-dir': 'value', 'dry-run': 'boolean'
   });
   const maxIterations = numberFlag(flags['max-iterations'], 'max-iterations', { integer: true });
   const timeoutMs = (numberFlag(flags.timeout, 'timeout') ?? DEFAULT_TIMEOUT_MINUTES) * 60_000;
-  if (flags['max-budget-usd'] !== undefined) numberFlag(flags['max-budget-usd'], 'max-budget-usd');
+  const sessionCap = numberFlag(flags['max-budget-usd'], 'max-budget-usd');
+  const runCap = numberFlag(flags['max-run-usd'], 'max-run-usd');
 
   let context;
   try {
@@ -647,7 +650,7 @@ async function main(argv) {
       sandbox.enabled
         ? `Sandbox: on, writes in ${root}, network: ${sandbox.allowedDomains.length === 0 ? 'none' : sandbox.allowedDomains.join(', ')}`
         : `Sandbox: off (${sandbox.reason})`,
-      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null, pluginDir }).join(' ')}`,
+      `Spawn: ${[claude.command, ...claude.prefix].join(' ')} ${claudeArgs({ model, effort, budget: sessionCap === undefined ? undefined : String(sessionCap), allow: ['<allow>'], settings: sandbox.enabled ? '<sandbox settings>' : null, pluginDir }).join(' ')}`,
       'Allow:', ...taskAllow.map((rule) => `  ${rule}`),
       'Allow in the tail:', ...tailAllow.filter((rule) => !taskAllow.includes(rule)).map((rule) => `  ${rule}`),
       'Deny:', ...DENY_RULES.map((rule) => `  ${rule}`),
@@ -695,12 +698,22 @@ async function main(argv) {
   const planAtStart = planHash();
   const planBreach = () => (planHash() === planAtStart ? null : 'plan changed');
 
-  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'build' }) => {
+  // One line per session in sessions.jsonl; the sum of costUsd is what --max-run-usd caps.
+  const ledgerFile = path.join(logDir, 'sessions.jsonl');
+  let spent = 0;
+  const budgetStop = () => (runCap !== undefined && spent >= runCap
+    ? { line: `budget: ${money(spent)} of ${money(runCap)}`, why: `The run spent its budget of ${money(runCap)}`, next: 'raise --max-run-usd, then run exo run again' }
+    : null);
+  const spawnOne = async ({ prompt, allow, settings, pin, log, kind = 'build', task = null }) => {
     const before = snapshot(root);
-    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: flags['max-budget-usd'], allow, settings, kind, pluginDir }), {
+    const budget = [sessionCap, runCap === undefined ? undefined : Number((runCap - spent).toFixed(6))].filter((value) => value !== undefined).reduce((low, value) => Math.min(low, value), Infinity);
+    const outcome = await spawnClaude(claude, claudeArgs({ model, effort, budget: Number.isFinite(budget) ? String(budget) : undefined, allow, settings, kind, pluginDir }), {
       cwd: root, env: childEnv(pin, provider), prompt, log, timeoutMs, refuseInit: (init) => exoError(init, PLUGIN_ROOT)
     });
-    return { before, outcome, parsed: parseStream(outcome.text) };
+    const parsed = parseStream(outcome.text);
+    spent += parsed.cost;
+    fs.appendFileSync(ledgerFile, `${JSON.stringify({ kind: kind === 'tail' ? 'review' : 'task', task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
+    return { before, outcome, parsed };
   };
 
   let stall = 0;
@@ -731,13 +744,15 @@ async function main(argv) {
       stop = { line: `iteration cap ${cap} reached, ${landed.length}/${plan.tasks.length} landed`, why: `The run hit its limit of ${cap} sessions`, next: 'run exo run again to continue, or raise --max-iterations' };
       break;
     }
+    stop = budgetStop() ?? undefined;
+    if (stop !== undefined) break;
     iteration += 1;
     const n = task.number;
     const startedTask = Date.now();
     say(`task ${n} start${retryNote === '' ? '' : ` (try ${stall + 1})`}`);
     const log = path.join(logDir, `iter-${iteration}-task-${n}.log`);
     const trailer = planTaskTrailer(planId, n);
-    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log });
+    const { before, outcome, parsed } = await spawnOne({ prompt: buildPrompt(n, retryNote), allow: taskAllow, settings: taskSettings, pin: `${planId}/${n}`, log, task: n });
     const last = outcome.timedOut ? `timed out after ${timeoutMs / 60_000} minutes` : lastLine(parsed.resultText) || `no result event (exit ${outcome.code ?? outcome.signal})`;
     // A denial is only logged: the task is judged by whether it landed, and a run that landed nothing counts toward the stall limit.
     const denied = parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`);
@@ -798,6 +813,7 @@ async function main(argv) {
   }
 
   let exitCode = 1;
+  if (stop === undefined) stop = budgetStop() ?? undefined;
   if (stop === undefined) {
     setPhase('verify');
     iteration += 1;

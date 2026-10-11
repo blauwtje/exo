@@ -636,3 +636,19 @@ test('the run-plan skill is user-only, takes a plan path and runs run-plan.mjs o
   const { EXPECTED_SKILLS } = await import('../verify/budgets.mjs');
   assert.ok(EXPECTED_SKILLS.includes('run-plan'));
 });
+
+test('--max-run-usd: the ledger holds one line per session and the run stops before a session once the cap is spent', async () => {
+  const context = await setup();
+  const result = await runPlan(context, [{ ...land(1), hooks: 2 }, land(2)], ['--max-run-usd', '0.03']);
+  assert.equal(result.calls.length, 2);
+  assert.equal(result.calls[0].argv[result.calls[0].argv.indexOf('--max-budget-usd') + 1], '0.03');
+  assert.equal(result.calls[1].argv[result.calls[1].argv.indexOf('--max-budget-usd') + 1], '0.01');
+  const capped = await setup();
+  const stopped = await runPlan(capped, [{ ...land(1), hooks: 2 }, land(2)], ['--max-run-usd', '0.02', '--max-budget-usd', '5']);
+  assert.equal(stopped.calls.length, 1);
+  assert.equal(stopped.calls[0].argv[stopped.calls[0].argv.indexOf('--max-budget-usd') + 1], '0.02');
+  assert.equal(stopped.stop, 'run-plan: stop: budget: $0.02 of $0.02');
+  const logDir = path.dirname(stopped.stdout.match(/^Details: (.+)$/m)[1]);
+  const lines = (await fs.readFile(path.join(logDir, 'sessions.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+  assert.deepEqual(lines, [{ kind: 'task', task: 1, sessionId: 'session-1', costUsd: 0.02, hooks: 2 }]);
+});

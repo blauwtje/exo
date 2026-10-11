@@ -25,6 +25,7 @@ const init = { type: 'system', subtype: 'init', cwd: process.cwd(), session_id: 
   plugins: [{ name: 'exo', path: scenario.pluginPath, source: 'exo@local', version: '0.0.0' }] };
 if (step.pluginError) init.plugin_errors = [{ plugin: 'exo', type: 'generic-error', message: step.pluginError }];
 emit(init);
+for (let hook = 0; hook < (step.hooks ?? 0); hook += 1) emit({ type: 'system', subtype: 'hook_started', hook_event: 'SessionStart' });
 const git = (...args) => execFileSync('git', ['-c', 'user.name=stub', '-c', 'user.email=stub@example.com', '-c', 'commit.gpgsign=false', ...args], { encoding: 'utf8' });
 for (const commit of step.commits ?? []) {
   fs.writeFileSync(commit.file, String(index) + '\\n');
