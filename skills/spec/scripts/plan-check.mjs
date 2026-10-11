@@ -297,7 +297,8 @@ function checkLandGate(frame, root) {
 
 // A package that names a `bin` or `scripts.start` is a product, and its Success
 // criterion has to run it, or the plan states why not under that command:
-// 'Product run: none (<reason>)'. An mcp: criterion drives the product itself.
+// 'Product run: none (<reason>)'. Only the first backticked command counts,
+// since it is the one verify runs. An mcp: criterion drives the product itself.
 function checkProductRun(frame, root) {
   if (root === undefined || root === null) return [];
   const terms = packageRunTerms(root);
@@ -307,11 +308,10 @@ function checkProductRun(frame, root) {
   if (escape !== null && (escape[1] ?? '').trim() !== '') return [];
   const entries = packageEntryPoints(root).join(', ');
   if (escape !== null) return [`the plan's 'Product run: none' states no reason: write 'Product run: none (<reason>)'`];
-  const runs = [...criterion.matchAll(/`([^`]+)`/g)].some((match) => {
-    const command = match[1].trim();
-    if (mcpToolCall(command) !== null) return true;
-    return terms.some((term) => new RegExp(`(?<![\\w/-])(?:\\./)?${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w/-]|\\.\\w)`).test(command));
-  });
+  const first = criterion.match(/`([^`]+)`/);
+  const command = first === null ? '' : first[1].trim();
+  const runs = mcpToolCall(command) !== null
+    || terms.some((term) => new RegExp(`(?<![\\w/-])(?:\\./)?${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w/-]|\\.\\w)`).test(command));
   if (runs) return [];
   return [`the plan's '## Success criterion' runs no product, though package.json names ${entries}: run one in the command, or add 'Product run: none (<reason>)' under it`];
 }

@@ -534,6 +534,15 @@ test('plan-check does not take a longer word or path for a bin name', async () =
   assert.equal(report.ok, false);
 });
 
+test('plan-check counts only the first backticked command of the Success criterion as the product run', async () => {
+  const manifest = { bin: { mybin: 'bin/mybin.js' } };
+  const later = planCheckReport(await productPlan(manifest, '`npm run check` passes. Uses `mybin` too.'));
+  assert.equal(later.ok, false);
+  assert.match(later.lines[0], /runs no product.*mybin/);
+  const first = planCheckReport(await productPlan(manifest, '`mybin --help` passes. Then `npm run check` passes.'));
+  assert.equal(first.ok, true, first.lines.join('; '));
+});
+
 test('plan-check accepts Product run: none with a reason and flags one without', async () => {
   const manifest = { bin: { tool: 'bin/tool.js' } };
   const withReason = planCheckReport(await productPlan(manifest, '`npm test` passes.\nProduct run: none (docs only)'));
