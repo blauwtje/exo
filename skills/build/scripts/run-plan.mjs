@@ -814,10 +814,15 @@ async function main(argv) {
       const record = { iteration, task: first, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: parsed.denials.map((denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`) };
       run.records.push(record);
       if (process.env.EXO_RUN_DIR) fs.rmSync(path.join(process.env.EXO_RUN_DIR, 'blocked'), { force: true });
-      stop = unsafeStop(first, before, null, parsed, log) ?? undefined;
+      // The session is pinned to its first task, so one commit carrying only that task's trailer is tolerated and counts as landed.
+      stop = unsafeStop(first, before, planTaskTrailer(planId, first), parsed, log) ?? undefined;
       const status = outcome.timedOut ? null : last.match(/^Task \d+: (?:BLOCKED|PLAN DRIFT)\b\s*(.*)$/);
       if (stop === undefined && status !== null) stop = blockedStop(first, status[1] || last);
       for (const n of stop === undefined ? order : []) {
+        if (landedTasks(plan.tasks, root, planId).includes(n)) {
+          markLanded(n, record, startedPlan);
+          continue;
+        }
         const landLog = path.join(logDir, `land-task-${n}.log`);
         const answer = spawnSync(process.execPath, [SCRIPT.landTask, '--plan', planPath, '--task', String(n), '--root', root], {
           cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs

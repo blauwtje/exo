@@ -72,7 +72,8 @@ const isAlive = (pid) => {
 
 test('a detached run with a fake claude outlives its parent and ends landed', async () => {
   // run-plan's fixture repository and session stub, each session held for 1 s:
-  // two task sessions land the plan, the third plays the verify tail.
+  // the plan session lands its pinned task 1, a task session lands task 2, and
+  // the tail of this inline-route plan is gate-only, with no session.
   const context = await planSetup();
   const root = await fs.realpath(context.root);
   const SESSION_MS = 1000;
@@ -80,7 +81,7 @@ test('a detached run with a fake claude outlives its parent and ends landed', as
   await fs.writeFile(context.stub, `await new Promise((resolve) => setTimeout(resolve, ${SESSION_MS}));\nconst fs = await import('node:fs');\nfs.mkdirSync('.exo', { recursive: true });\nfs.writeFileSync('.exo/branch-review.md', 'CLEAN\\n\\nCount: fix=0\\n');\nawait import('./session.mjs');\n`);
   const land = (file, number) => ({ commits: [{ file, trailers: [`Plan-task: plan/${number}`] }] });
   const scenario = path.join(context.tools, 'scenario.json');
-  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps: [land('a.txt', 1), land('b.txt', 2), { result: 'Verify done.' }] }));
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps: [land('a.txt', 1), land('b.txt', 2)] }));
   const env = { HOME: context.home, STUB_SCENARIO: scenario, STUB_RECORD: path.join(context.tools, 'calls.jsonl') };
 
   const started = Date.now();
@@ -102,7 +103,7 @@ test('a detached run with a fake claude outlives its parent and ends landed', as
   const state = await finalState(root, id, 600);
   assert.equal(state.phase, 'landed', await fs.readFile(state.log, 'utf8'));
   assert.equal(state.exitCode, 0);
-  assert.equal((await fs.readFile(env.STUB_RECORD, 'utf8')).trim().split('\n').length, 3, 'two task sessions and the verify tail ran');
+  assert.equal((await fs.readFile(env.STUB_RECORD, 'utf8')).trim().split('\n').length, 2, 'the plan session and one task session ran, no tail session');
   await assert.rejects(fs.access(path.join(root, '.exo', 'run', 'lock')));
   // The child writes the final phase just before it exits; give the exit a bounded moment.
   for (let round = 0; round < 50 && isAlive(pid); round++) await new Promise((resolve) => setTimeout(resolve, 100));
