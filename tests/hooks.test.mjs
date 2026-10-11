@@ -189,15 +189,19 @@ test('each kept guard denies a sample that passes when that guard alone is remov
   }
 });
 
+// The plan's low rule, written out so editing schema.json alone fails this test.
+const PLAIN_TEXT_LOW_RULE = 'Compression is low: everything the user reads is short and plain. Sentences run about 15 words at most, in everyday words. Explain a needed term in a few words, or leave it out. No preamble, recap, filler, hedging or wall of text. A list holds at most about 5 items unless the user asks for more. No table or nested list unless the user asks for detail. Code, commands, paths, identifiers, error text, numbers, warnings and every not, no, only and except stay whole. A security warning and a confirmation before an irreversible action are written in full sentences. A lone `?` from the user asks for your previous reply restated in full sentences, with every step, reason and term written out. Every report to the user opens with at most three short plain lines: what happened, whether it worked, and what the user must do now, or that nothing is needed. Hashes, counts, paths, deviations and review notes go to the run report (`.exo/run-report.md`, or its `.exo/kept/<run>/` copy after cleanup), else to the file the work already wrote, behind one pointer line, and are not repeated. With neither file they wait until asked. A question to the user is one per message, in about 10 words, with at most one short context sentence. It offers 2-3 options of a few words, the best first and marked, and the user answers with one letter or ok. It names no file, internal term or model unless the user picks between them. With more questions queued, its title shows progress like 1/3. Reply in the language the user writes in.';
+
 test('the session hook with no exo settings injects the plain-text low compression rule', () => {
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-plain-'));
   const hook = path.join(REPOSITORY, 'hooks', 'session-start.mjs');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: configHome };
-  const schema = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'skills', 'configure', 'schema.json'), 'utf8'));
+  for (const name of Object.keys(env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete env[name];
+  for (const name of ['CODEX_HOME', 'EXO_HOST']) delete env[name];
   try {
     const output = JSON.parse(execFileSync(process.execPath, [hook], { env, input: JSON.stringify({ session_id: 's1', source: 'startup' }) }).toString());
     const context = output.hookSpecificOutput.additionalContext;
-    assert.ok(context.includes(schema.compression.rules.low));
+    assert.ok(context.includes(PLAIN_TEXT_LOW_RULE));
     assert.ok(context.includes('A question to the user is one per message, in about 10 words'));
   } finally {
     fs.rmSync(configHome, { recursive: true, force: true });
