@@ -7,6 +7,16 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Every session and agent now sees its context use: past 60k (lead) or 50k (subagent) it is told to wrap up, and past 100k its tools are refused.**
+
+### Added
+
+- A hook reads the agent's own transcript on each matched tool call and warns past the soft limit or refuses the call past 100k tokens, naming the hand-off file.
+- `plan-check` fails a plan task whose text and files come to more than 25,000 estimated tokens.
+- Verify's run report gets a `## Context` section with the peak context of each session and subagent.
+
 ## 0.123.0 - 2026-10-11
 
 ### Highlights
