@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // PreToolUse AskUserQuestion and Stop hook of an exo run (EXO_RUN_DIR set): the
 // session never waits on the human. A question is denied and a session end
-// without a status line is blocked, both telling the session to decide from the
+// without a status line is blocked (a session with no task: an end on a question,
+// also one followed by answer options), both telling the session to decide from the
 // spec and settings. Blocks are counted per session in <EXO_RUN_DIR>/blocks.json;
 // at the limit the end passes and <EXO_RUN_DIR>/blocked holds `Task <n>: BLOCKED <line>`.
 
@@ -47,8 +48,19 @@ function endText(input) {
     ? input.last_assistant_message : transcriptEnd(input.transcript_path);
 }
 
-function missingStatus(line, task) {
-  return task ? !new RegExp(`^Task ${task.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: (GREEN|BLOCKED|PLAN DRIFT|FAIL)\\b`).test(line) : line.endsWith('?');
+// An answer-option line: `- **A (best):** ...`, `A)`, `B.`, `Option B`, `1)`.
+const OPTION = /^(?:[-*+]\s+)?[*_`]*(?:Option\s+(?:[A-Za-z]|\d{1,2})\b|(?:[A-Za-z]|\d{1,2})(?:\s*\([^)]*\))?[*_`]*\s*[):.])/;
+const asks = (line) => line.replace(/[*_`\s]+$/, '').endsWith('?');
+
+// Whether the end leaves the human a question: its last line, or the line above its trailing option lines, ends on `?`.
+function openQuestion(text) {
+  const lines = String(text ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
+  while (lines.length > 1 && OPTION.test(lines.at(-1))) lines.pop();
+  return asks(lines.at(-1) ?? '');
+}
+
+function missingStatus(line, task, text) {
+  return task ? !new RegExp(`^Task ${task.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: (GREEN|LANDED|BLOCKED|PLAN DRIFT|FAIL)\\b`).test(line) : openQuestion(text);
 }
 
 // The hook output, or null to let the call or the end go.
@@ -60,8 +72,9 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
     const question = input.tool_input?.questions?.[0]?.question ?? input.tool_input?.question;
     line = lastLine(question);
   } else {
-    line = lastLine(endText(input));
-    if (!missingStatus(line, task)) return null;
+    const text = endText(input);
+    line = lastLine(text);
+    if (!missingStatus(line, task, text)) return null;
   }
   const file = path.join(dir, 'blocks.json');
   let counts = {};
