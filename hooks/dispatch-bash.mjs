@@ -12,6 +12,7 @@ import { isMain } from '../lib/script-flags.mjs';
 import { denialFor as destructiveDenial } from './guards/destructive-guard.mjs';
 import { denialFor as gitDenial } from './guards/git-guard.mjs';
 import { innerCommands } from './guards/inner-commands.mjs';
+import { approvedPass, parkOutput, runGateReason } from './guards/run-gate.mjs';
 import { denialFor as secretDenial } from './guards/secret-guard.mjs';
 
 // How many `bash -c` or `eval` strings deep a guard looks; deeper passes.
@@ -45,8 +46,26 @@ export function guardDecision(hookInput, denialFor) {
 }
 
 // In this order, so the first deny wins.
-export const GUARDS = [['git-guard', gitDenial], ['secret-guard', secretDenial], ['destructive-guard', destructiveDenial]]
-  .map(([name, denialFor]) => ({ name, run: (hookInput) => guardDecision(hookInput, denialFor) }));
+// In a run a git-guard or destructive-guard deny parks the run; secret-guard's stays plain.
+export const GUARDS = [['git-guard', gitDenial, true], ['secret-guard', secretDenial, false], ['destructive-guard', destructiveDenial, true]]
+  .map(([name, denialFor, parks]) => ({
+    name,
+    guard: true,
+    run: (hookInput) => {
+      const output = guardDecision(hookInput, denialFor);
+      return parks ? parkOutput(hookInput, output) : output;
+    }
+  }));
+
+// First, in a run only: an approved gate's command passes once and the guards stand down;
+// a publish, release, tag push or deploy parks.
+export const RUN_GATE_STEP = {
+  name: 'run-gate',
+  run(hookInput) {
+    const output = approvedPass(hookInput) ?? parkOutput(hookInput, guardDecision(hookInput, runGateReason));
+    return output && { ...output, skipGuards: true };
+  }
+};
 
 // Last, so a guard's deny wins; a context deny still beats any allow.
 export const CONTEXT_STEP = {
@@ -58,12 +77,15 @@ export const CONTEXT_STEP = {
 };
 
 // The one output, or null: the first deny, else the first other decision, plus every step's context.
-export async function dispatchBash(hookInput, steps = [...GUARDS, CONTEXT_STEP]) {
+export async function dispatchBash(hookInput, steps = [RUN_GATE_STEP, ...GUARDS, CONTEXT_STEP]) {
   const outputs = [];
+  let skipGuards = false;
   for (const step of steps) {
+    if (skipGuards && step.guard) continue;
     try {
       const output = await step.run(hookInput);
       if (output) outputs.push(output.hookSpecificOutput ?? {});
+      if (output?.skipGuards) skipGuards = true;
     } catch (error) {
       console.error(`${step.name}: ${error.message}`);
     }
