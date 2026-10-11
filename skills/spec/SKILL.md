@@ -33,7 +33,7 @@ argument-hint: <outcome to shape>
 7. **Check it.** Run `node "${CLAUDE_SKILL_DIR}/scripts/plan-check.mjs" --plan <brief file> --loop`; fix flagged lines and any missing heading, `Data:`, Success criterion or `## Manual checks`.
    - Learn plan-check's rules from its output, never its source.
 8. **Find open points** per `references/brief.md` `## Open points step`; rerun step 7, leaving flagged `## Open points` entries unfixed.
-9. **Hand off** per `references/hand-off.md`: end on `node "${CLAUDE_SKILL_DIR}/../route-skills/scripts/next-stage.mjs" --after spec --artifact <brief path or #<n>> --fresh`'s output.
+9. **Hand off** per `references/hand-off.md`: start the detached run, or print the `--fresh` output.
 
 ## References
 
