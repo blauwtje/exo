@@ -20,6 +20,8 @@
 // Under `EXO_RUN_TASK=<plan-id>/<n>`, which run-plan.mjs sets for each task process, this
 // serves that one task of that plan: another plan or task, `--fix`, a task whose Proof is an
 // MCP call and a malformed value are refused with exit 1 before anything stages or commits.
+// It then prints at most QUIET_LINES lines in all, stdout and stderr together: the result line,
+// the Proof tail and the path of the proof file, which keeps the full output.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -300,6 +302,22 @@ function proofCommandOf(task, reportText, reportPath) {
 // stderr merged into stdout so the tail keeps their order. A nonzero exit, a
 // signal or the timeout refuses the landing with the output's last lines; a
 // pass returns its exit status and those lines for the printout.
+// Under a pin: the proof file the output is kept in, and every proof's whole output.
+const QUIET_LINES = 20;
+const quiet = { file: null, proofOutput: '' };
+
+// The text cut to QUIET_LINES lines with the proof file's path last; that file also gets the
+// whole text and every proof's whole output. Success drops the Landed/Route/Next/Wave lines,
+// which the run script does not read.
+function quietText(text, ok) {
+  const all = text.split('\n').filter((line) => line.trim() !== '');
+  const lines = ok ? all.filter((line) => !/^(?:Landed|Route|Next|Wave): /.test(line)) : all;
+  const kept = lines.length < QUIET_LINES ? lines : [lines[0], ...lines.slice(-(QUIET_LINES - 2))];
+  fs.mkdirSync(path.dirname(quiet.file), { recursive: true });
+  fs.appendFileSync(quiet.file, `${ok ? '' : text.trimEnd()}\n--- full output ---\n${text}${quiet.proofOutput}`);
+  return `${[...kept, `Full output: ${quiet.file}`].join('\n')}\n`;
+}
+
 function runProof(task, command, root, field) {
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
   const before = workingTreeKey(root);
@@ -307,6 +325,7 @@ function runProof(task, command, root, field) {
   // EXO_PROOF_TIMEOUT_MS overrides the deadline for a test.
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs });
+  if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
   const tail = proofRun.output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-PROOF_TAIL_LINES).map((line) => `  ${line}`);
   if (proofRun.status === 0 && !proofRun.timedOut) {
     recordPass(root, command, Date.now() - started, before);
@@ -630,6 +649,7 @@ function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', check: 'boolean' });
   const root = flags.root ?? process.cwd();
   const pin = parsePin(process.env.EXO_RUN_TASK);
+  if (pin !== null) quiet.file = proofRecordPath(root, pin.planId, pin.number);
   if (flags.fix !== undefined) {
     process.stdout.write(fixLand({ root, subject: flags.fix, plan: flags.plan ?? null, pin }));
     return;
@@ -643,21 +663,23 @@ function main(argv) {
   const reportPath = flags.report ?? path.join(root, '.exo', `implementer-${flags.task}.md`);
   const reportText = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
   const run = flags.check === true ? checkTask : landTask;
-  process.stdout.write(run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin }));
+  const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: flags.plan, pin });
+  process.stdout.write(pin === null ? output : quietText(output, true));
 }
 
 if (isMain(import.meta.url)) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
+    const report = (message) => process.stderr.write(quiet.file === null ? message : quietText(message, false));
     if (error instanceof UsageError) {
       process.stderr.write(`land-task: ${error.message}\n`);
       process.exitCode = 2;
     } else if (error instanceof PlanDriftError) {
-      process.stderr.write(`${error.message}\n`);
+      report(`${error.message}\n`);
       process.exitCode = 1;
     } else if (error instanceof LandingError || error instanceof PlanError) {
-      process.stderr.write(`land-task: ${error.message}\n`);
+      report(`land-task: ${error.message}\n`);
       process.exitCode = 1;
     } else {
       throw error;
