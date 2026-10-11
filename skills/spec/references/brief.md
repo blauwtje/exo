@@ -1,16 +1,16 @@
 # The brief
 
-Brief = the decided outcome, in fixed sections a later session resumes from. Sections hold decisions, not their reasoning, which the next stage would argue again.
+Brief = decided outcome, in fixed sections a later session resumes from. Sections hold decisions, not their reasoning, which the next stage would argue again.
 
 ## Sections
 
 In this order:
 
-- **Goal:** one sentence describing the observable result.
+- **Goal:** the observable result, in one sentence.
 - **Decisions:** every bin-1 decision with its answer and who closed it: you, the code with its settling path, or exo for a second "I don't know".
 - **Open points:** only an unanswered question for the user; one list item each. Entry listed → plan-check flags it and build refuses the brief.
 - **Assumptions:** each `assume` point, one list item.
-- **Acceptance:** the observable checks and the highest seam that runs them, the one closest to what the user does.
+- **Acceptance:** the observable checks and the highest seam running them, the one closest to what the user does.
 - **Manual checks:** only when a check needs the user's own eyes, hands or account; one line per check; the run report holds them, not the final message.
 - **Visual direction:** new visual surface only: whether the existing identity stays or may be replaced, the ambition, who chooses between rendered directions.
   - Frontend-design skill returns → add the path of its `contract-selected.json` with the contract's `title` and `description`.
