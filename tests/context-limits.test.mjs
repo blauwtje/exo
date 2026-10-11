@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import {
   AGENT_SOFT_LIMIT, BYTES_PER_TOKEN, contextDecision, contextTokens, HARD_LIMIT, LEAD_SOFT_LIMIT, TASK_SPLIT_TOKENS
@@ -47,6 +48,41 @@ test('lead decisions', () => {
   const denied = at(100000, { tool_name: 'Read' });
   assert.match(denied.deny, /handoff/);
   assert.equal(at(100000, { tool_name: 'Write' }), null);
+});
+
+test('hard-limit deny names the path handoff.mjs prints', () => {
+  const run = (command, args, cwd) => {
+    const result = spawnSync(command, args, { cwd, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  const printed = (cwd) => run(process.execPath, ['skills/save-session/scripts/handoff.mjs', 'path', '--cwd', cwd]);
+  const denyAt = (cwd, name) => contextDecision({
+    transcript_path: transcript(name, [entry(100000)]), cwd, tool_name: 'Read'
+  }).deny;
+  const config = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-config-'));
+  const saved = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = config;
+  try {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-repo-'));
+    const git = (...args) => run('git', args, repo);
+    git('init', '-q', '-b', 'main');
+    git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'init');
+    const linked = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-wt-')), 'linked');
+    git('worktree', 'add', '-q', '-b', 'feature', linked);
+    const inWorktree = printed(linked);
+    assert.match(inWorktree, /worktrees[\\/]linked[\\/]exo[\\/]handoff[\\/]feature\.md$/);
+    assert.ok(denyAt(linked, 'wt.jsonl').includes(inWorktree));
+
+    const outside = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ctx-out-')), 'plain');
+    fs.mkdirSync(outside);
+    const outsidePath = printed(outside);
+    assert.equal(outsidePath, path.join(config, 'exo', 'handoff', 'plain.md'));
+    assert.ok(denyAt(outside, 'out.jsonl').includes(outsidePath));
+  } finally {
+    if (saved === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = saved;
+  }
 });
 
 test('subagent reads its own transcript', () => {
