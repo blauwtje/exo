@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **Spec now asks you only the few points a wrong guess would make costly; everything else becomes a written assumption.**
+- **After spec, build always starts in a fresh session, and it refuses a brief that still holds an open question.**
+
+### Added
+
+- New read-only agent `exo:find-open-points` sorts a draft brief's open points into code, assumption and user questions, each with a recommended answer.
+- A hook raises the `exo:find-open-points` dispatch to the session's effort when that is `xhigh` or `max`, and never lowers an effort the dispatch already set.
+- `memory.mjs write --decision` stores spec decisions apart from `memory.md`, and `decisions` marks each one `settled` or `changed`.
+- A builder that hits a point its brief leaves open returns `BLOCKED NEEDS ANSWER`; build asks those questions after the wave and dispatches the task again with the answer.
+
+### Changed
+
+- A brief keeps open user questions under `## Open points` and recorded guesses under a new `## Assumptions` heading; `plan-check` and build refuse a brief with open points.
+- The spec hand-off asks nothing and prints the fresh-session lines for build, including how to return to normal effort; with open points left it gives no build command.
+
 ## 0.122.0 - 2026-10-11
 
 ### Highlights
