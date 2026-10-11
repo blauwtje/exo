@@ -3,6 +3,7 @@
 //
 //   node exo-cli.mjs run [plan] [run-plan flags]
 //   node exo-cli.mjs run <plan> --detach | run --resume <id>
+//   node exo-cli.mjs approve <id>
 //   node exo-cli.mjs status [<id>]
 //   node exo-cli.mjs run config [<key> <value>]
 //   node exo-cli.mjs setup
@@ -20,7 +21,12 @@
 // checkout stays on the default branch and the Branch: is built in a worktree
 // under .worktrees/, so its sessions load that checkout's exo), deletes local branches merged into the default branch whose
 // upstream is gone, then runs run-plan.mjs with inherited stdio and exits with
-// its code. --dry-run and --help skip the fetch, fast-forward and deletion.
+// its code. When the plan has a Land: line and run-plan passes, land-run.mjs
+// lands the run (phase landing, then landed, or parked on an open gate in
+// gates.md; exit 3 for parked); `approve <id>` approves a parked run's open
+// gates and continues it like --resume, by stage (build reruns run-plan,
+// landing runs land-run only). Every final phase writes report.md and sends a
+// desktop notification. --dry-run and --help skip the fetch, fast-forward and deletion.
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -29,9 +35,11 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch, frameOf, parsePlan } from '#plan-tasks';
+import { readDecisions } from '#run-decision';
 import { isMain } from '#script-flags';
 import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
-import { FINAL_PHASES, acquireLock, createRun, isAlive, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
+import { landRun } from './land-run.mjs';
+import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
 const CLI = fileURLToPath(import.meta.url);
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
@@ -255,7 +263,7 @@ function runOptions(argv) {
   return { ...options, rest };
 }
 
-/** Preflight and chores, then run-plan with inherited stdio; its exit code. */
+/** Preflight and chores, then run-plan with inherited stdio; its exit code with where the landing step goes (`land` null: no landing). */
 function buildRun(root, plan, flags, id) {
   const files = dirtyFiles(root);
   if (files.length > 0) {
@@ -263,12 +271,7 @@ function buildRun(root, plan, flags, id) {
     throw new Refusal(`refused: uncommitted edits in ${list}; commit them, or discard with git restore --staged --worktree -- ${list}`);
   }
 
-  let branch;
-  try {
-    branch = frameOf(parsePlan(fs.readFileSync(plan, 'utf8')).frame).branch;
-  } catch (error) {
-    throw new Refusal(`cannot read ${plan}: ${error.message}`);
-  }
+  const { branch, land } = planFrame(plan);
   const base = defaultBranch(root);
   const chores = base !== null && !flags.some((flag) => flag === '--dry-run' || flag === '--help');
   const missing = branch !== null && gitOut(root, ['rev-parse', '-q', '--verify', `refs/heads/${branch}`]) === null;
@@ -282,10 +285,62 @@ function buildRun(root, plan, flags, id) {
   const rootFlags = inTree ? ['--root', runRoot] : [];
   const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
   const done = spawnSync(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
-  return done.status ?? null;
+  const preview = flags.some((flag) => flag === '--dry-run' || flag === '--help');
+  return { code: done.status ?? null, runRoot, branch, land: preview ? null : land };
 }
 
-function runCommand(argv) {
+function planFrame(plan) {
+  try {
+    return frameOf(parsePlan(fs.readFileSync(plan, 'utf8')).frame);
+  } catch (error) {
+    throw new Refusal(`cannot read ${plan}: ${error.message}`);
+  }
+}
+
+/** land-run for the run's stored build checkout and branch. */
+function landStage(root, id, plan) {
+  const state = readState(root, id);
+  const frame = planFrame(plan);
+  const result = landRun({
+    root, runRoot: state.runRoot ?? root, branch: state.branch ?? frame.branch, mode: frame.land, runDir: runDir(root, id),
+    success: frame.successCriterion ?? '', startedAt: state.startedAt
+  });
+  process.stdout.write(`exo: ${result.phase === 'landed' ? `landed ${result.range ?? ''} ${result.prUrl ?? ''}`.trim() : `parked: ${result.gate}; exo approve ${id}`}\n`);
+  return result;
+}
+
+/** report.md in the run dir, at most 15 lines. */
+function writeReport(root, id, phase, result) {
+  const state = readState(root, id);
+  let land = null;
+  try {
+    land = planFrame(state.plan).land;
+  } catch {
+    // an unreadable plan leaves the line at none
+  }
+  const dir = runDir(root, id);
+  const open = readGates(dir).filter((gate) => gate.status === 'open');
+  const lines = [
+    `# exo run ${id}`,
+    `Phase: ${phase}`,
+    `Land: ${land ?? 'none'}`,
+    `Branch: ${state.branch ?? 'none'}`,
+    `Landed: ${result?.range ?? 'none'}`,
+    `Pushed: ${result?.prUrl ?? result?.pushed ?? 'none'}`,
+    `Open gates: ${open.length}`,
+    ...open.slice(0, 4).map((gate) => `- ${gate.source}: ${gate.action} (${gate.reason})`),
+    `Decisions: ${readDecisions(dir).length}`,
+    `Cleanup: ${result?.cleanup ?? 'none'}`
+  ];
+  fs.writeFileSync(path.join(dir, 'report.md'), `${lines.slice(0, 15).join('\n')}\n`);
+}
+
+/** A desktop notification; no osascript is ignored. */
+function notify(id, phase) {
+  spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
+}
+
+function runCommand(argv, { approving = false } = {}) {
   const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const options = runOptions(argv);
@@ -298,6 +353,8 @@ function runCommand(argv) {
     old = readState(root, id);
     if (old === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
     if (old.phase === 'passed') throw new Refusal(`refused: run ${id} already passed`);
+    if (old.phase === 'landed') throw new Refusal(`refused: run ${id} already landed`);
+    if (old.phase === 'parked' && !approving) throw new Refusal(`refused: run ${id} is parked; use exo approve ${id}`);
     if (isAlive(old.pid) && !FINAL_PHASES.includes(old.phase)) throw new Refusal(`refused: run ${id} is still running (pid ${old.pid})`);
     ({ plan, flags, detach } = old);
   } else {
@@ -324,6 +381,11 @@ function runCommand(argv) {
     if (lock.stale) process.stdout.write(`exo: took over the lock of run ${lock.stale}, whose process is gone\n`);
   }
 
+  if (approving && !child) {
+    const approved = approveGates(runDir(root, id));
+    if (!detach) process.stdout.write(`exo: approved ${approved} gate(s) of run ${id}; continuing\n`);
+  }
+
   if (detach && !child) {
     const log = path.join(runDir(root, id), 'run.log');
     const fd = fs.openSync(log, 'a');
@@ -337,9 +399,22 @@ function runCommand(argv) {
 
   let code = 1;
   let phase = 'crashed';
+  let result = null;
   try {
-    code = buildRun(root, plan, flags, id) ?? 1;
-    phase = code === 0 ? 'passed' : code === 2 ? 'refused' : 'stopped';
+    if (readState(root, id).stage === 'landing') result = landStage(root, id, plan);
+    else {
+      const built = buildRun(root, plan, flags, id);
+      code = built.code ?? 1;
+      phase = code === 0 ? 'passed' : code === 2 ? 'refused' : code === 3 ? 'parked' : 'stopped';
+      if (code === 0 && built.land !== null) {
+        updateRun(root, id, { phase: 'landing', stage: 'landing', runRoot: built.runRoot, branch: built.branch });
+        result = landStage(root, id, plan);
+      }
+    }
+    if (result !== null) {
+      phase = result.phase;
+      code = phase === 'landed' ? 0 : 3;
+    }
   } catch (error) {
     if (error instanceof Refusal) {
       phase = 'refused';
@@ -349,8 +424,25 @@ function runCommand(argv) {
   } finally {
     updateRun(root, id, { phase, exitCode: code });
     releaseLock(root, id);
+    try {
+      writeReport(root, id, phase, result);
+    } catch {
+      // the report is a convenience; the state already holds the outcome
+    }
+    notify(id, phase);
   }
   return code;
+}
+
+function approveCommand(args) {
+  const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
+  if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
+  const id = args[0];
+  if (id === undefined || args.length !== 1) throw new Refusal('usage: exo approve <id>');
+  const state = readState(root, id);
+  if (state === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
+  if (state.phase !== 'parked') throw new Refusal(`refused: run ${id} is ${state.phase}, not parked`);
+  return runCommand(['--resume', id], { approving: true });
 }
 
 function statusCommand(args) {
@@ -360,8 +452,11 @@ function statusCommand(args) {
   if (runs.length === 0) throw new Refusal(args[0] === undefined ? 'no runs in this checkout' : `no run ${args[0]} in this checkout`);
   for (const run of runs) {
     const gone = !FINAL_PHASES.includes(run.phase) && !isAlive(run.pid);
-    const note = gone ? `; process gone, continue with: exo run --resume ${run.id}` : '';
+    const note = run.phase === 'parked' ? `; exo approve ${run.id}` : gone ? `; process gone, continue with: exo run --resume ${run.id}` : '';
     process.stdout.write(`${run.id}  ${run.phase}  ${path.basename(run.plan)}  pid ${run.pid}${run.log ? `  log ${run.log}` : ''}${note}\n`);
+    for (const gate of readGates(runDir(root, run.id)).filter((g) => g.status === 'open')) {
+      process.stdout.write(`  open gate: ${gate.source}: ${gate.action} (${gate.reason})\n`);
+    }
   }
 }
 
@@ -370,9 +465,10 @@ if (isMain(import.meta.url)) {
   try {
     if (command === 'setup') setupCommand();
     else if (command === 'run' && rest[0] === 'config') configCommand(rest.slice(1));
+    else if (command === 'approve') process.exitCode = approveCommand(rest);
     else if (command === 'status') statusCommand(rest);
     else if (command === 'run') process.exitCode = runCommand(rest);
-    else throw new Refusal('usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup');
+    else throw new Refusal('usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup');
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;
     process.stderr.write(`exo: ${error.message}\n`);

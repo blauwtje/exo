@@ -15,7 +15,7 @@ const PLUGIN_ROOT = await fs.realpath(fileURLToPath(new URL('..', import.meta.ur
 
 const planText = (root) => [
   '# Plan: detach fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, 'Branch: feat/detach', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
+  '## Plan basis', `Repository: ${root}`, 'Branch: feat/detach', 'Land: local', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
   '## Success criterion', '`node --version`', '',
   '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
   '## Manual checks', '- Open the file.', '',
@@ -39,7 +39,7 @@ const exo = (context, args) => run(CLI, args, { cwd: context.root, env: { HOME: 
 async function finalState(root, id, rounds = 100) {
   for (let round = 0; round < rounds; round++) {
     const state = readState(root, id);
-    if (state && ['passed', 'stopped', 'refused', 'crashed'].includes(state.phase)) return state;
+    if (state && ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'].includes(state.phase)) return state;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error(`run ${id} did not finish`);
@@ -70,14 +70,14 @@ const isAlive = (pid) => {
   }
 };
 
-test('a detached run with a fake claude outlives its parent and ends passed', async () => {
+test('a detached run with a fake claude outlives its parent and ends landed', async () => {
   // run-plan's fixture repository and session stub, each session held for 1 s:
   // two task sessions land the plan, the third plays the verify tail.
   const context = await planSetup();
   const root = await fs.realpath(context.root);
   const SESSION_MS = 1000;
   await fs.writeFile(path.join(context.tools, 'session.mjs'), STUB);
-  await fs.writeFile(context.stub, `await new Promise((resolve) => setTimeout(resolve, ${SESSION_MS}));\nawait import('./session.mjs');\n`);
+  await fs.writeFile(context.stub, `await new Promise((resolve) => setTimeout(resolve, ${SESSION_MS}));\nconst fs = await import('node:fs');\nfs.mkdirSync('.exo', { recursive: true });\nfs.writeFileSync('.exo/branch-review.md', 'CLEAN\\n\\nCount: fix=0\\n');\nawait import('./session.mjs');\n`);
   const land = (file, number) => ({ commits: [{ file, trailers: [`Plan-task: plan/${number}`] }] });
   const scenario = path.join(context.tools, 'scenario.json');
   await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps: [land('a.txt', 1), land('b.txt', 2), { result: 'Verify done.' }] }));
@@ -97,10 +97,10 @@ test('a detached run with a fake claude outlives its parent and ends passed', as
   const early = readState(root, id);
   assert.equal(early.pid, pid);
   assert.ok(isAlive(pid), 'the child outlives its parent');
-  assert.ok(!['passed', 'stopped', 'refused', 'crashed'].includes(early.phase), early.phase);
+  assert.ok(!['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'].includes(early.phase), early.phase);
 
   const state = await finalState(root, id, 600);
-  assert.equal(state.phase, 'passed', await fs.readFile(state.log, 'utf8'));
+  assert.equal(state.phase, 'landed', await fs.readFile(state.log, 'utf8'));
   assert.equal(state.exitCode, 0);
   assert.equal((await fs.readFile(env.STUB_RECORD, 'utf8')).trim().split('\n').length, 3, 'two task sessions and the verify tail ran');
   await assert.rejects(fs.access(path.join(root, '.exo', 'run', 'lock')));
