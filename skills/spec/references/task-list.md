@@ -3,14 +3,15 @@
 ## Sections, in order
 
 1. `## Goal`: one sentence naming result.
-2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; no repo yet → `Branch: main` and the executor runs `git init -b main` there before the first task, never an init step for the owner.
+2. `## Plan basis`: `Repository: <absolute root>` and `Branch: <branch>`; no repo yet → `Branch: main`, executor runs `git init -b main` first, never an init step.
    - Two tasks share no `Depends on:` chain → `Worktree setup: <command>` or `Worktree setup: none`; without the line the run builds one task at a time.
-   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass; breaker fixes it. Per task only for full check under 60 s, else verify runs it once.
+   - `Land gate:` → `npm run <script>`, first of `check`, `test`, `typecheck` in root package.json, else `none`; lands only on pass. Per task only for full check under 60 s, else verify runs it once.
+   - `Land:` → `ship` setting: `local`; `push` → `push-main`; `open-pr`, `pr-merge` → `pr`; `ask` → ask, recommend `local`.
    - Root package.json `lint` script → `Lint: <linter binary>`, else `none`; `npm run lint` skips `Files:`.
    - `Allow:` → each backticked task command no other field names, else `none`.
 3. `## Success criterion`: one backticked command proving every task landed; no interpreted or user-only check.
-   - Package.json `bin` or `scripts.start` → command runs it; else `Product run: none (<reason>)` under it.
-4. `## Checkpoint`: `Blocks first:`, `Shared state:`, `Smallest safe split:`, each naming tasks, shared target or `none`; `Parallel:` → `Tasks 1, 2 and 3` or `every task` sharing no `Depends on:` chain or `Files:` path, else `none`; no range or clause.
+   - `bin` or `scripts.start` → command runs it; else `Product run: none (<reason>)`.
+4. `## Checkpoint`: `Blocks first:`, `Shared state:`, `Smallest safe split:`, each naming tasks or `none`; `Parallel:` → `Tasks 1, 2 and 3` or `every task` sharing no `Depends on:` chain or `Files:` path, else `none`; no range.
 5. `## Tasks`, dependency-ordered.
 
 ## Template
@@ -25,17 +26,16 @@ Depends on: none | <n>[, <n>] | Files: `<path>`[, `<path>`] | Data: <structure, 
 - `Proof:` → shows this task landed, not suite.
 - Runnable result → prove on real input via its own command, else builder script using only its tools, never test alone.
 - MCP `Proof:` or Success criterion → `mcp:<tool> <args>`, `<tool>` after `mcp__<server>__`; session calls it, not shell.
-- `Data:` → structure holding result, not fields or logic; ask before one changing public signature or persisted format.
+- `Data:` → structure holding result, not fields or logic; ask before changing public signature or persisted format.
 - `Risk:` → one of `security boundary`, `persisted format`, `public signature` or `dependency`.
-- Heading: `land-task`'s conventional-commit subject.
-- The task stages `Files:`; no `Commit:` block.
+- Heading: `land-task`'s conventional-commit subject; the task stages `Files:`, no `Commit:` block.
 - `Design:` → skill loaded first, only for page's look.
 
 ## Rules
 
-1. **Verified names only.** List path or symbol only after reading its range.
+1. **Verified names only.** List path or symbol only after reading it.
 2. **One field line, one task.** Second field line, `Run:`, `Expected:` or code block → long-format, needing `Commit:`, `Run:`, `Expected:`.
-3. **Small tasks.** One heading, one concern; split only when `Files:` spans shared write target and independent one.
+3. **Small tasks.** One concern; split only when `Files:` spans shared write target and independent one.
    - Size → (task + `Files:` bytes) / 4 over 25,000 fails.
    - `Files:` → also each registry, index or test list naming added file.
 4. **Shared write target.** File, key or branch two tasks touch → split, unless shared invariant earns `Depends on:` edge.

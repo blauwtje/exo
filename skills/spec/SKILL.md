@@ -22,6 +22,7 @@ argument-hint: <outcome to shape>
 3. **Ask one at a time.**
    - Ask per `../route-skills/references/question.md`: decide nothing silently.
    - Recommend a loaded skill's prescribed pattern over an option it rules out.
+   - `Land:` → ask only when `ship` is `ask`; the yes approves it.
    - Close with up to three lines on what was agreed; brief after the user's yes.
    - After a compaction → list decisions first.
 4. **Map, then locate.**

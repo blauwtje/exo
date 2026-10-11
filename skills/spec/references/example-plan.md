@@ -13,6 +13,7 @@ Repository: /repo
 Branch: due-date-badge
 Worktree setup: none
 Land gate: npm run typecheck
+Land: local
 Lint: npx eslint
 Allow: none
 

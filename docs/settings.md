@@ -13,7 +13,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 |---|---|---|
 | `compression` | `low`, `off` | How compact chat replies are. `low` writes short plain text: no preamble, recap or filler, short questions, and every report opens with at most three plain lines with the details in a file. `off` is full prose. A stored `high` still reads as `low`, and a stored `replies` value still reads: `tight` and `terse` as `low`, `standard` as `off`. |
 | `specs` | `docs`, `issues`, `both` | Where `spec` stores a brief: `docs/specs/`, a GitHub issue, or both. |
-| `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. |
+| `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. A plan's `Land:` line comes from it: `local` lands `local`, `push` lands `push-main`, `open-pr` and `pr-merge` land `pr`; `ask` makes the spec grill ask, recommending `local`. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |
 | `guards` | `on`, `off` | Whether the guards refuse anything. There is no switch per guard. |
 | `budget` | `medium`, `high`, `low` | Which model each helper runs on. |
