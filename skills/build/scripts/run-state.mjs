@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-export const PHASES = ['starting', 'build', 'verify', 'passed', 'stopped', 'refused', 'crashed'];
-export const FINAL_PHASES = ['passed', 'stopped', 'refused', 'crashed'];
+export const PHASES = ['starting', 'build', 'verify', 'landing', 'passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
+export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 
 const runsDir = (root) => path.join(root, '.exo', 'run');
 const lockFile = (root) => path.join(runsDir(root), 'lock');
@@ -48,7 +48,7 @@ function writeAtomic(file, text) {
 
 export function createRun(root, { id = newRunId(), plan, flags = [], detach = false, pid = process.pid, log = null }) {
   const now = new Date().toISOString();
-  const state = { id, plan, root, flags, detach, pid, phase: 'starting', log, startedAt: now, updatedAt: now, exitCode: null };
+  const state = { id, plan, root, flags, detach, pid, phase: 'starting', stage: 'build', log, startedAt: now, updatedAt: now, exitCode: null };
   writeAtomic(path.join(runDir(root, id), 'state.json'), `${JSON.stringify(state, null, 2)}\n`);
   return state;
 }
@@ -60,6 +60,55 @@ export function updateRun(root, id, patch) {
   const next = { ...state, ...patch, id, updatedAt: new Date().toISOString() };
   writeAtomic(path.join(runDir(root, id), 'state.json'), `${JSON.stringify(next, null, 2)}\n`);
   return next;
+}
+
+// gates.md in a run dir: one line per gate, `- <status>: <source>: <action> (<reason>)`, status
+// open, approved or used. A parked run waits on its open gates; `exo approve` approves them.
+const gatesFile = (dir) => path.join(dir, 'gates.md');
+const GATE_LINE = /^- (open|approved|used): ([^:]+): (.*) \(([^()]*)\)$/;
+
+export function readGates(dir) {
+  let text;
+  try {
+    text = fs.readFileSync(gatesFile(dir), 'utf8');
+  } catch {
+    return [];
+  }
+  return text.split('\n').map((l) => GATE_LINE.exec(l)).filter(Boolean)
+    .map((m) => ({ status: m[1], source: m[2], action: m[3], reason: m[4] }));
+}
+
+function writeGates(dir, gates) {
+  const text = gates.map((g) => `- ${g.status}: ${g.source}: ${g.action} (${g.reason})\n`).join('');
+  writeAtomic(gatesFile(dir), text);
+}
+
+// Adds an open gate unless one with the same source and action is already open.
+export function openGate(dir, { source, action, reason }) {
+  const gates = readGates(dir);
+  const act = action.trim();
+  if (gates.some((g) => g.status === 'open' && g.source === source && g.action === act)) return;
+  gates.push({ status: 'open', source, action: act, reason: reason.replace(/[()\n]/g, ' ').trim() });
+  writeGates(dir, gates);
+}
+
+// Returns the number of gates approved.
+export function approveGates(dir) {
+  const gates = readGates(dir);
+  let n = 0;
+  for (const g of gates) if (g.status === 'open') { g.status = 'approved'; n++; }
+  if (n) writeGates(dir, gates);
+  return n;
+}
+
+// Marks the first approved gate whose action equals `action` used; true when there was one.
+export function takeApproved(dir, action) {
+  const gates = readGates(dir);
+  const g = gates.find((x) => x.status === 'approved' && x.action === action.trim());
+  if (!g) return false;
+  g.status = 'used';
+  writeGates(dir, gates);
+  return true;
 }
 
 // Oldest first.

@@ -7,6 +7,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import {
   createRun, updateRun, readState, listRuns, acquireLock, releaseLock, newRunId, isAlive, runDir,
+  PHASES, FINAL_PHASES, openGate, readGates, approveGates, takeApproved,
 } from '../skills/build/scripts/run-state.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'run-state-'));
@@ -20,7 +21,7 @@ test('createRun writes state.json with the documented fields', () => {
   const root = tmp();
   const s = createRun(root, { id: 'a', plan: 'p.md', flags: ['--x'], detach: true, log: 'l' });
   assert.deepEqual(Object.keys(s).sort(),
-    ['detach', 'exitCode', 'flags', 'id', 'log', 'phase', 'pid', 'plan', 'root', 'startedAt', 'updatedAt']);
+    ['detach', 'exitCode', 'flags', 'id', 'log', 'phase', 'pid', 'plan', 'root', 'stage', 'startedAt', 'updatedAt']);
   assert.equal(s.phase, 'starting');
   assert.equal(s.exitCode, null);
   assert.deepEqual(readState(root, 'a'), s);
@@ -185,4 +186,34 @@ test('resume replaces a lock naming its own run; a refused acquire leaves no cla
   createRun(root, { id: 'b', plan: 'p' });
   assert.deepEqual(acquireLock(root, 'b'), { ok: false, holder: 'a' });
   assert.deepEqual(fs.readdirSync(path.join(root, '.exo', 'run')).sort(), ['a', 'b', 'lock']);
+});
+
+test('phases landing, landed and parked exist; landed and parked are final; stage starts at build', () => {
+  for (const p of ['landing', 'landed', 'parked']) assert.ok(PHASES.includes(p));
+  assert.ok(FINAL_PHASES.includes('landed') && FINAL_PHASES.includes('parked'));
+  assert.ok(!FINAL_PHASES.includes('landing'));
+  const root = tmp();
+  createRun(root, { id: 'a', plan: 'p' });
+  assert.equal(readState(root, 'a').stage, 'build');
+  assert.equal(updateRun(root, 'a', { phase: 'parked', stage: 'landing' }).stage, 'landing');
+});
+
+test('gates: open once, approve, take once by exact trimmed action', () => {
+  const dir = tmp();
+  assert.deepEqual(readGates(dir), []);
+  openGate(dir, { source: 'land', action: 'git push --force-with-lease origin b', reason: 'rejected' });
+  openGate(dir, { source: 'land', action: ' git push --force-with-lease origin b ', reason: 'again' });
+  openGate(dir, { source: 'task 2', action: 'npm publish', reason: 'irreversible' });
+  assert.equal(fs.readFileSync(path.join(dir, 'gates.md'), 'utf8').split('\n')[0],
+    '- open: land: git push --force-with-lease origin b (rejected)');
+  assert.equal(readGates(dir).length, 2);
+  assert.equal(takeApproved(dir, 'npm publish'), false);
+  assert.equal(approveGates(dir), 2);
+  assert.equal(approveGates(dir), 0);
+  assert.equal(takeApproved(dir, 'npm publish --tag x'), false);
+  assert.equal(takeApproved(dir, ' npm publish '), true);
+  assert.equal(takeApproved(dir, 'npm publish'), false);
+  assert.deepEqual(readGates(dir).map((g) => g.status), ['approved', 'used']);
+  openGate(dir, { source: 'task 2', action: 'npm publish', reason: 'again' });
+  assert.equal(readGates(dir).at(-1).status, 'open');
 });
