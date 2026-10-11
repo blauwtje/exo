@@ -20,7 +20,7 @@
     "compression": {
       "type": "string",
       "title": "How compact replies are",
-      "description": "low: no preamble, recap or filler; code, paths, errors and warnings stay whole. off: full prose. A project overrides this in .claude/exo.json.",
+      "description": "low: short plain text, no preamble, recap or filler; code, paths, errors and warnings stay whole. off: full prose. A project overrides this in .claude/exo.json.",
       "options": ["off", "low"],
       "default": "low"
     },

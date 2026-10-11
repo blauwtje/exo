@@ -11,7 +11,7 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 
 | Key | Values (default first) | Sets |
 |---|---|---|
-| `compression` | `low`, `off` | How compact chat replies are. `low` drops preamble, recap and filler. Every report opens with at most three plain lines and keeps the details in a file. `off` is full prose. A stored `high` still reads as `low`, and a stored `replies` value still reads: `tight` and `terse` as `low`, `standard` as `off`. |
+| `compression` | `low`, `off` | How compact chat replies are. `low` writes short plain text: no preamble, recap or filler, short questions, and every report opens with at most three plain lines with the details in a file. `off` is full prose. A stored `high` still reads as `low`, and a stored `replies` value still reads: `tight` and `terse` as `low`, `standard` as `off`. |
 | `specs` | `docs`, `issues`, `both` | Where `spec` stores a brief: `docs/specs/`, a GitHub issue, or both. |
 | `ship` | `ask`, `pr-merge`, `open-pr`, `push`, `local` | The finish route `ship` takes without asking. |
 | `workspace` | `ask`, `branch`, `worktree`, `current` | Where a code-changing run commits. |
@@ -19,8 +19,6 @@ Run `/exo:configure` to see every setting with its value and layer, or to change
 | `budget` | `medium`, `high`, `low` | Which model each helper runs on. |
 
 Every reply level keeps code, commands, paths, error text, numbers and every not, no, only and except whole. Only chat prose is shortened.
-
-The opt-in `exo:scannable` output style sets the layout instead: the answer first, at most three labelled blocks, one closing next action. Pick it in `/output-style`.
 
 ## Always on
 
