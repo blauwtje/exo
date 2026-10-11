@@ -65,6 +65,8 @@ import { killTree } from '#process-tree';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
 import { proofsReport } from '#proofs-report';
+import { transcriptFolder } from '#confine-claude';
+import { contextPeaks, HARD_LIMIT } from '../../../lib/context-limits.mjs';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
 import { TEST_FILE, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
@@ -626,9 +628,22 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   return { lines, failed };
 }
 
+/** The `## Context` lines: peak context of each session and agent since the plan's first commit. */
+function contextSection(planPath, root) {
+  const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+  try {
+    const since = Number(git('log', '--reverse', '--format=%ct', '--', planPath).split('\n')[0]) * 1000;
+    const main = path.dirname(path.resolve(root, git('rev-parse', '--git-common-dir')));
+    const rows = contextPeaks({ folder: transcriptFolder(fs.realpathSync(main)), since });
+    return rows.map(({ label, peak }) => `- ${label}: ${Math.round(peak / 1000)}k${peak >= HARD_LIMIT ? ' (over 100k)' : ''}`);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Overwrites `<root>/.exo/run-report.md` with the run's `## Proofs`, `## Checks` (the printed
- * lines but MANUAL) and `## Manual checks`, and returns its path.
+ * lines but MANUAL), `## Context` (peak context per session and agent) and `## Manual checks`, and returns its path.
  */
 function writeRunReport(lines, { planPath, planText, root }) {
   const manual = lines.filter((line) => line.startsWith('MANUAL '));
@@ -637,6 +652,7 @@ function writeRunReport(lines, { planPath, planText, root }) {
   const text = [
     '## Proofs', proofsReport({ planPath, planText, root }).trimEnd(), '',
     '## Checks', ...checks, '',
+    '## Context', ...contextSection(planPath, root), '',
     '## Manual checks', ...manual.map((line) => `- ${line.slice('MANUAL '.length)}`), ''
   ].join('\n');
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
