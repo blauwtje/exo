@@ -438,3 +438,25 @@ test('reject of a name that is not a candidate is refused and writes nothing', a
   assert.match(result.stderr, /refused: no candidate is booked as review:never booked/);
   assert.equal(fs.existsSync(path.join(root, '.git', 'exo', 'memory.json')), false);
 });
+
+test('a stored spec decision lists as settled, stays out of memory.md, and lists as changed after a large change to its ref', async () => {
+  const root = await repository();
+  const git = (...args) => {
+    const result = spawnSync('git', ['-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  fs.writeFileSync(path.join(root, 'a.txt'), 'one\ntwo\nthree\nfour\n');
+  git('add', 'a.txt');
+  git('commit', '-m', 'first');
+  const written = await memory(root, 'write', '--decision', '--claim', 'Use two lanes', '--refs', 'a.txt');
+  assert.equal(written.code, 0, written.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(root, '.git', 'exo', 'memory.json'), 'utf8'));
+  assert.match(state.lines[0].commit, /^[0-9a-f]{40}$/);
+  const rendered = await memory(root, 'render');
+  assert.ok(!rendered.stdout.includes('Use two lanes'), rendered.stdout);
+  const settled = await memory(root, 'decisions');
+  assert.equal(settled.stdout.trim(), 'settled: Use two lanes');
+  fs.writeFileSync(path.join(root, 'a.txt'), 'x1\nx2\nx3\nx4\nx5\nx6\n');
+  const changed = await memory(root, 'decisions');
+  assert.equal(changed.stdout.trim(), 'changed: Use two lanes');
+});

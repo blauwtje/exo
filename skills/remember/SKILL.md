@@ -43,7 +43,9 @@ Claims two separate sessions had booked when this skill loaded, before this sess
    - Line the refusal names → retire with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" retire --claim "<the claim>"` before trying again.
    - Edit neither file by hand; memory.md is rendered from memory.json.
 7. **Prune** with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" verify` whenever the user asks what is still true; report every dropped line the script named.
-8. **Report** rendered path and its byte count against the budget, one line.
+8. **Store a spec decision** the user answered with `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" write --decision --claim "<the decision>" --refs "<path,path>"`; it needs no second session and stays out of memory.md.
+   - `node "${CLAUDE_SKILL_DIR}/scripts/memory.mjs" decisions` lists each as `settled` or `changed`.
+9. **Report** rendered path and its byte count against the budget, one line.
 
 ## References
 

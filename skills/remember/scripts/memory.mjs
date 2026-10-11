@@ -9,11 +9,14 @@
 //   node memory.mjs book --source review --key <key> --claim "<defect>" --session <id> [--quote "<text>"]
 //   node memory.mjs propose [--count]
 //   node memory.mjs reject --session <id> (--key <key> | --claim "<the claim>")
+//   node memory.mjs write --decision --claim "<the decision>" --refs <paths>
+//   node memory.mjs decisions
 //
 // Every command takes --cwd naming the repository, defaulting to the process
 // working directory.
 
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
@@ -50,6 +53,12 @@ function readState(cwd) {
 
 const HEADER = '# Project memory\n\nexo writes this file. Do not edit it by hand: run `/exo:remember` instead.';
 
+// A spec decision is a line the user answered, kept in the state beside the
+// lessons but never rendered or counted against the budget.
+function isMemory(line) {
+  return isLive(line) && line.decision !== true;
+}
+
 // Live means still the answer: never superseded, dropped by verify, or retired
 // by hand. Every filter that decides what a session reads or what counts
 // against the budget shares this one rule.
@@ -62,7 +71,7 @@ function isLive(line) {
 // keeps every claim it ever held, dated; rendering that history here would
 // charge the budget for an answer no session reads anymore.
 function render(state) {
-  const live = state.lines.filter(isLive);
+  const live = state.lines.filter(isMemory);
   const understanding = live.length === 0
     ? `Nothing is attested in ${ATTESTATIONS_REQUIRED} sessions yet.`
     : live.map((line) => `- ${line.claim} (refs: ${line.refs.join(', ')})`).join('\n');
@@ -151,7 +160,7 @@ function parseRefs(cwd, refs) {
 // The refusal names what has to go, oldest live line first, because a writer
 // told only that it is over budget has to open the file to act on it.
 function budgetRefusal(state, bytes) {
-  const live = state.lines.filter(isLive);
+  const live = state.lines.filter(isMemory);
   const oldest = [...live].sort((left, right) => (left.written < right.written ? -1 : 1));
   const named = oldest.slice(0, 3).map((line) => `${line.written} ${line.claim}`);
   return `refused: memory.md would be ${bytes} bytes, over the ${MEMORY_BUDGET.bytes} byte budget. Retire one of these lines, oldest first, or archive the decision history: ${named.join('; ')}`;
@@ -194,6 +203,50 @@ function writeClaim(cwd, state, claim, refs, replaces, name = claim) {
   return bytes;
 }
 
+function git(cwd, ...args) {
+  return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
+}
+
+// The commit a decision was made against: where HEAD left the default branch.
+// No default branch or no commit yet stores none, and a decision without a
+// commit is settled.
+function decisionCommit(cwd) {
+  const head = git(cwd, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
+  const candidates = [head.status === 0 ? head.stdout.trim() : null, 'main', 'master'].filter(Boolean);
+  for (const branch of candidates) {
+    const base = git(cwd, 'merge-base', 'HEAD', branch);
+    if (base.status === 0) return base.stdout.trim();
+  }
+  return null;
+}
+
+function writeDecision(cwd, state, claim, refs) {
+  if (state.lines.some((line) => line.decision === true && line.claim === claim && isLive(line))) {
+    throw new Error(`refused: decision "${claim}" is already stored`);
+  }
+  const lines = [...state.lines, {
+    claim, refs, written: today(), commit: decisionCommit(cwd), decision: true,
+    quotes: [], superseded: null, dropped: null, retired: null
+  }];
+  writeState(cwd, { candidates: state.candidates, lines, rejected: state.rejected });
+}
+
+// changed: the commit is gone from HEAD's history, or the refs gained more lines
+// than half of what they hold now.
+function decisionStatus(cwd, line) {
+  if (!line.commit) return 'settled';
+  if (git(cwd, 'merge-base', '--is-ancestor', line.commit, 'HEAD').status !== 0) return 'changed';
+  const files = line.refs.map((ref) => resolveRef(cwd, ref).relative);
+  const numstat = git(cwd, 'diff', '--numstat', line.commit, '--', ...files);
+  const added = numstat.stdout.split('\n').filter(Boolean)
+    .reduce((sum, row) => sum + (Number(row.split('\t')[0]) || 0), 0);
+  const total = files.reduce((sum, file) => {
+    const target = path.join(cwd, file);
+    return sum + (fs.existsSync(target) ? fs.readFileSync(target, 'utf8').split('\n').length - 1 : 0);
+  }, 0);
+  return added > total / 2 ? 'changed' : 'settled';
+}
+
 // A live line stays live only while every path and symbol it names is still
 // there. A line that fails is marked dropped and keeps its place in the history,
 // never removed: the claim and the refs that killed it are the only record that
@@ -228,7 +281,8 @@ const { values, positionals } = parseArgs({
     replaces: { type: 'string' },
     key: { type: 'string' },
     source: { type: 'string' },
-    count: { type: 'boolean' }
+    count: { type: 'boolean' },
+    decision: { type: 'boolean' }
   }
 });
 
@@ -295,9 +349,22 @@ if (command === 'paths') {
   if (values.claim === undefined) fail('write needs --claim');
   try {
     const refs = parseRefs(cwd, values.refs);
+    if (values.decision) {
+      writeDecision(cwd, readState(cwd), values.claim, refs);
+      console.log(`stored decision "${values.claim}"`);
+      process.exit(0);
+    }
     const name = values.key === undefined ? values.claim : `review:${normalizeKey(values.key)}`;
     const bytes = writeClaim(cwd, readState(cwd), values.claim, refs, values.replaces, name);
     console.log(`wrote "${values.claim}"; ${memoryFile(cwd)} is now ${bytes} of ${MEMORY_BUDGET.bytes} bytes`);
+  } catch (error) {
+    fail(error.message);
+  }
+} else if (command === 'decisions') {
+  try {
+    for (const line of readState(cwd).lines.filter((entry) => entry.decision === true && isLive(entry))) {
+      console.log(`${decisionStatus(cwd, line)}: ${line.claim}`);
+    }
   } catch (error) {
     fail(error.message);
   }
@@ -345,5 +412,5 @@ if (command === 'paths') {
     fail(error.message);
   }
 } else {
-  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write, verify, retire or reject`);
+  fail(`unknown command ${command ?? '(none)'}; expected paths, render, book, propose, write, decisions, verify, retire or reject`);
 }
