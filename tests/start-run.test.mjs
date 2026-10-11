@@ -74,6 +74,23 @@ test('prefers the plan whose Branch matches the current branch', async () => {
   assert.ok(result.stdout.includes(`plan ${path.join(root, 'docs/plans/this-branch.md')},`), result.stdout);
 });
 
+test('refuses a plan whose Open points section has entries, naming each, and starts once it is empty', async () => {
+  const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
+  const file = path.join(root, 'docs/plans/one.md');
+  const open = (body) => plan(root, 'main').replace('## Tasks', `## Open points\n${body}\n\n## Tasks`);
+  await fs.writeFile(file, open('- Which tone?\n- Which owner?'));
+  const home = await noHomePlans();
+
+  const refused = await run(SCRIPT, ['--root', root], { cwd: root, env: { HOME: home } });
+  assert.equal(refused.code, 1);
+  assert.equal(refused.stdout, '');
+  assert.match(refused.stderr, /2 unanswered '## Open points': Which tone\?; Which owner\?/);
+
+  await fs.writeFile(file, open(''));
+  const started = await run(SCRIPT, ['--root', root], { cwd: root, env: { HOME: home } });
+  assert.equal(started.code, 0, started.stderr);
+});
+
 test('exits 1 with one line when no plan matches the repository', async () => {
   const root = await gitRepository({ 'docs/plans/one.md': 'placeholder' });
   await fs.writeFile(path.join(root, 'docs/plans/one.md'), plan('/tmp/some-other-repo', 'main'));

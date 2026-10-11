@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { scratchPath } from '#scratch-path';
 import { runRules } from './next-task.mjs';
-import { frameOf, parsePlan, PlanError } from '#plan-tasks';
+import { frameOf, openPoints, parsePlan, PlanError } from '#plan-tasks';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
@@ -97,6 +97,10 @@ function main(argv) {
     const frame = planFrame(planPath);
     process.stdout.write(`${planPath}\nRepository: ${frame?.repository ?? 'none'}\nBranch: ${frame?.branch ?? 'none'}\n`);
     return;
+  }
+  const open = planFrame(planPath) === null ? [] : openPoints(fs.readFileSync(planPath, 'utf8'));
+  if (open.length > 0) {
+    throw new RefusalError(`${planPath} has ${open.length} unanswered '## Open points': ${open.join('; ')}. Next: ask the user each one, record the answers in the brief, then rerun.`);
   }
   const checkout = flags.checkout ?? root;
   const branch = checkoutBranch(checkout);

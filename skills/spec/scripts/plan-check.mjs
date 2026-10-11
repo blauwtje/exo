@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
-import { codeBlocks, defaultBranch, frameOf, loopCommands, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
+import { codeBlocks, defaultBranch, frameOf, loopCommands, openPoints, parallelValueValid, parsePlan, PlanError, taskSize } from '#plan-tasks';
 import { derivedNames } from '#derivation';
 import { mcpToolCall } from '#mcp-tool-call';
 import { wholeSuiteKeys } from '#suite-command';
@@ -401,6 +401,7 @@ export function planCheckReport(planText, { root, loop = false, planPath } = {})
       ? [
           ...checkFrame(plan.frame),
           ...checkPlanBasis(plan.frame),
+          ...openPoints(planText).map((entry) => `the plan's '## Open points' still holds an unanswered question: ${entry}`),
           ...checkLandGate(plan.frame, resolvedRoot),
           ...checkAcceptanceCitations(plan.frame),
           ...plan.tasks.flatMap((task) => checkCompactFields(task))

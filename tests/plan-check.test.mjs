@@ -142,6 +142,17 @@ test('plan-check prints ok for a 61-line brief with tasks, past the old 30-line 
   assert.match(report.lines[0], /^plan-check: ok/);
 });
 
+test('plan-check fails a brief with an entry under Open points and passes an empty or absent section', () => {
+  const brief = briefFixture({ tasks: compactTasks(1) }).replace(ACCEPTANCE_BULLET, ACCEPTANCE_BULLET_WITH_CITATION);
+  const withOpen = (body) => brief.replace('## Plan basis', `## Open points\n${body}\n\n## Plan basis`);
+  assert.equal(planCheckReport(brief).ok, true);
+  assert.equal(planCheckReport(withOpen('')).ok, true);
+  const report = planCheckReport(withOpen('- Which tone?\n- Which owner?'));
+  assert.equal(report.ok, false);
+  assert.equal(report.lines.filter((line) => line.includes('Open points')).length, 2);
+  assert.match(report.lines.join('\n'), /Which owner\?/);
+});
+
 test('plan-check fails a compact task whose field line lacks Files:', () => {
   const plan = compactPlanFixture({ tasks: ['### Task 1: feat(app): greet', 'Depends on: none | Data: a plain object'] });
   const report = planCheckReport(plan);

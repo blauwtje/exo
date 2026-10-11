@@ -54,7 +54,7 @@ else {
 }
 `;
 
-const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none' } = {}) => [
+const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', open = null } = {}) => [
   '# Plan: runner fixture',
   '',
   '## Goal',
@@ -79,6 +79,8 @@ const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'no
   '',
   '## Manual checks',
   '- Open both files.',
+  '',
+  open,
   '',
   '## Tasks',
   '### Task 1: feat(a): add a',
@@ -371,9 +373,10 @@ test('refused: the default branch, a tracked change, a failing plan-check and a 
   const changed = await setup();
   await fs.writeFile(path.join(changed.root, 'README.md'), 'edited\n');
   const badGate = await setup({ gate: 'node --version > out.txt' });
+  const openPoint = await setup({ open: '## Open points\n- Which tone?' });
   const noClaude = await setup();
   noClaude.stub = path.join(noClaude.tools, 'missing.mjs');
-  for (const [context, why] of [[onMain, /branch/], [onDefault, /is the default branch/], [changed, /tracked change in the checkout: README\.md;/], [badGate, /plan-check/], [noClaude, /claude/]]) {
+  for (const [context, why] of [[onMain, /branch/], [onDefault, /is the default branch/], [changed, /tracked change in the checkout: README\.md;/], [badGate, /plan-check/], [openPoint, /plan-check/], [noClaude, /claude/]]) {
     const result = await runPlan(context, [land(1)]);
     assert.match(result.stop, /^run-plan: refused: /);
     assert.match(result.stop, why);
