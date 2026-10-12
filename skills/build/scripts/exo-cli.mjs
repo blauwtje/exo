@@ -301,7 +301,9 @@ function writeReport(root, id, phase, result) {
     `Decisions: ${readDecisions(dir).length}`,
     `Cleanup: ${result?.cleanup ?? 'none'}`
   ];
-  fs.writeFileSync(path.join(dir, 'report.md'), `${lines.slice(0, 15).join('\n')}\n`);
+  const denied = path.join(dir, 'denied.txt');
+  const refused = fs.existsSync(denied) ? fs.readFileSync(denied, 'utf8') : '';
+  fs.writeFileSync(path.join(dir, 'report.md'), `${lines.slice(0, 15).join('\n')}\n${refused}`);
 }
 
 function notify(id, phase) {

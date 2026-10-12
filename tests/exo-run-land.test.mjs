@@ -78,6 +78,18 @@ test('a passing run with Land: local lands itself, reports and notifies once', a
   assert.match(again.stderr, /already landed/);
 });
 
+test('report.md lists the refused commands', async () => {
+  const c = await context();
+  const scenario = JSON.parse(await fs.readFile(path.join(c.tools, 'scenario.json'), 'utf8'));
+  scenario.steps[0].denials = [{ tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'npm install left-pad' } }];
+  await fs.writeFile(path.join(c.tools, 'scenario.json'), JSON.stringify(scenario));
+  const result = await c.exo(['run', c.plan, '--claude', c.stub]);
+  assert.equal(result.code, 0, result.stdout + result.stderr);
+  const { dir } = await runDirOf(c.root);
+  const report = await fs.readFile(path.join(dir, 'report.md'), 'utf8');
+  assert.match(report, /^  iteration 1, task 1: npm install left-pad$/m, report);
+});
+
 test('a passing run of an old plan with no Land: line ends at passed with the push-or-PR advice and lands nothing', async () => {
   const c = await context({ land: null });
   assert.doesNotMatch(await fs.readFile(c.plan, 'utf8'), /^Land:/m);
