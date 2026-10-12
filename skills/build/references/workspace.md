@@ -6,7 +6,7 @@
 - Run another stage started → holds its caller's answer: skip the script below.
 - Otherwise run `node "${CLAUDE_SKILL_DIR}/../../lib/workspace.mjs"` and follow its one line.
 - Plan's own `Repository:` folder → add `--repository <dir> --plan-repository`.
-- Root `CLAUDE.md` or `AGENTS.md` already says work commits on the default branch → add `--current-recommended`.
+- Root `CLAUDE.md` or `AGENTS.md` already says work commits on the default branch → add `--current-recommended`; the menu keeps Branch, Worktree, Current branch as A, B, C and marks (C).
 - `stop <reason>` → edit nothing before the answer.
   - Reason ends "an init would capture files the plan never named" → put a two-option menu as the question: `git init -b main` in that folder committing its current files, or another folder.
   - Wait for the letter; on `A` run that init and commit there.
@@ -14,7 +14,7 @@
 - `init` runs `git init -b main` and commits there.
 - `commit-here <where>` commits at `<where>` with no question.
 - `--land` → the `ask` menu takes its (A) through `--pick` with no question.
-- `ask` puts its menu as the question and waits for the digit.
+- `ask` puts its menu as the question and waits for the letter.
   - Then before any edit rerun the script with `--pick branch|worktree|current --name <branch-name>` for that answer.
 - Failed `git switch` or `git worktree add` the script reports → stop the run before any edit.
 - `<branch-name>` = the plan's `Branch:` line when it names a non-default branch, else `<type>/<slug>` from the goal.

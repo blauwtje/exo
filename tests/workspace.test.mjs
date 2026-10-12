@@ -15,7 +15,7 @@ import { decide } from '../lib/workspace.mjs';
 const SCRIPT = fileURLToPath(new URL('../lib/workspace.mjs', import.meta.url));
 
 function runWorkspace(args, options = {}) {
-  return run(SCRIPT, args, options);
+  return run(SCRIPT, args, { ...options, env: { EXO_RUN: '', EXO_RUN_DIR: '', ...options.env } });
 }
 
 test('stop: outside git with no --plan-repository', async () => {
@@ -125,14 +125,14 @@ test('ask: workspace setting "ask" on the default branch prints the menu, branch
   assert.equal(result.stdout.includes('(Recommended)'), false);
 });
 
-test('ask: --current-recommended reorders the menu, current branch first', async () => {
+test('ask: --current-recommended keeps the order and recommends (C)', async () => {
   const root = await gitRepository({ 'README.md': 'root\n' });
   const result = await runWorkspace(['--repository', root, '--current-recommended']);
   const lines = result.stdout.trimEnd().split('\n');
-  assert.match(lines[4], /^- \*\*\(A\) Current branch\*\*/);
-  assert.match(lines[5], /^- \*\*\(B\) Branch\*\*/);
-  assert.match(lines[6], /^- \*\*\(C\) Worktree\*\*/);
-  assert.match(lines[8], /^Recommended: \(A\), because /);
+  assert.match(lines[4], /^- \*\*\(A\) Branch\*\*/);
+  assert.match(lines[5], /^- \*\*\(B\) Worktree\*\*/);
+  assert.match(lines[6], /^- \*\*\(C\) Current branch\*\*/);
+  assert.match(lines[8], /^Recommended: \(C\), because this work belongs there\./);
   assertQuestionShape(lines.slice(1).join('\n'));
 });
 
