@@ -1,23 +1,17 @@
 #!/usr/bin/env node
-// Renames a skill everywhere it lives: moves `skills/<from>/`,
-// `docs/skills/<from>.md` and, when it exists, `benchmarks/pressure/<from>/`
-// to `<to>`, then rewrites every word-bounded mention of `<from>` to `<to>`
-// across the repository. `CHANGELOG.md`, `benchmarks/results/`, `.git/` and
-// `.worktrees/` are skipped, because the changelog's own history and a past
-// run's saved output name the skill as it was, not as it is renamed to.
-//
-//   node rename-skill.mjs --from <old-name> --to <new-name> [--root <dir>]
-//
-// Prints one line per rewritten file as `<path> <count>`.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
-/** The skill folder, its docs page or its pressure folder is missing or already taken. */
 export class RenameError extends Error {}
 
-const NAME_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const USAGE = `Usage: node rename-skill.mjs --from <old-name> --to <new-name> [--root <dir>]
+Moves skills/<from>/, docs/skills/<from>.md and benchmarks/pressure/<from>/ to <to>,
+then rewrites every word-bounded mention of <from> to <to>. Skips CHANGELOG.md,
+benchmarks/results/, .git/ and .worktrees/, which name the skill as it was.
+Prints one line per rewritten file as <path> <count>.`;
+const NAME_PATTERN =/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const SKIPPED_DIR_NAMES = new Set(['.git', '.worktrees']);
 const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md', 'CHANGELOG-archive.md']);
 const SKIPPED_RELATIVE_PREFIXES = ['benchmarks/results/'];
@@ -31,7 +25,6 @@ function isSkipped(relativePath) {
   return SKIPPED_RELATIVE_PREFIXES.some((prefix) => relativePath.startsWith(prefix));
 }
 
-/** Every file under `root`, relative-pathed with forward slashes, skipping the paths above. */
 function listFiles(root) {
   const files = [];
   const walk = (dir) => {
@@ -51,7 +44,6 @@ function listFiles(root) {
   return files.sort();
 }
 
-/** Moves `fromRelative` to `toRelative` under `root` when the source exists; reports whether it moved. */
 function moveIfPresent(root, fromRelative, toRelative) {
   const from = path.join(root, fromRelative);
   if (!fs.existsSync(from)) return false;
@@ -60,9 +52,6 @@ function moveIfPresent(root, fromRelative, toRelative) {
   return true;
 }
 
-/** Moves the skill's folder, docs page and pressure folder, then rewrites every
- * word-bounded mention of `from` to `to` in what is left. Returns the
- * `{ path, count }` rows for every file it rewrote, sorted by path. */
 export function renameSkill({ root, from, to }) {
   const skillFolder = path.join('skills', from);
   if (!fs.existsSync(path.join(root, skillFolder))) {
@@ -90,7 +79,7 @@ export function renameSkill({ root, from, to }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { from: 'value', to: 'value', root: 'value' });
+  const flags = parseFlags(argv, { from: 'value', to: 'value', root: 'value' }, { usage: USAGE });
   if (flags.from === undefined) throw new UsageError("flag '--from' names the skill to rename");
   if (flags.to === undefined) throw new UsageError("flag '--to' names the new skill name");
   assertSkillName(flags.from, '--from');

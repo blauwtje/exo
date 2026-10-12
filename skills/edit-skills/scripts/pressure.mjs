@@ -1,68 +1,4 @@
 #!/usr/bin/env node
-// Runs one pressure-scenario prompt on every model:effort cell, both without
-// the skill and with it, --runs times per arm (default 1), so edit-skills's
-// step 2 and step 4 stop reading N manual `claude -p` transcripts by hand.
-// The with arm loads the clone through --plugin-dir; the without arm gets no
-// --plugin-dir and disables the installed copy of the clone's plugin
-// (`<plugin>@<marketplace>`, read from the clone's manifests) through
-// --settings, since an installed and enabled plugin otherwise loads anyway.
-// --main-dir replaces the without arm with a `main` arm that loads that
-// second copy through --plugin-dir. Both directories resolve against the
-// caller's cwd, since `claude` runs in a scratch directory and falls back
-// silently to the installed copy when --plugin-dir holds no plugin.
-// --setting-sources passes through to every run of both arms, so a case can
-// leave out the user's settings and memory, which could decide it for reasons
-// outside the plugin.
-// --output-style <name> sets `outputStyle` in the settings of every run of
-// both arms, so a style case compares replies under that style.
-// A run whose answer names a `references/*.md` or `*-prompt.md` path that no
-// `Read` call of that run opened gets `[unopened citation: <path>]` on its arm
-// line and ends the runner with exit 1, since the citation is faked. Only a
-// path with a `:<line>` suffix, or on a line that quotes text between double
-// quotes or after a leading `>`, counts as a citation; a bare mention does not.
-// `--cells-for <file>` prints, and runs nothing else, every `model:effort`
-// cell the file runs on as one `--cells` value: its kind's cell, a cell for
-// each budget replacement of the kind's tier, and the cell of every
-// `dispatches` entry for the file, all from `lib/model-kinds.json`, plus the
-// cell of each Codex twin built from the file, since a budget dispatches the
-// file with that twin's kind as the call's model and effort; a kind with
-// no effort prints `session`.
-// Every run of both arms of a cell runs in parallel, each in its own scratch
-// directory outside the repository, matching pressure-scenarios.md, and
-// confined by #confine-claude so it can write only in that run folder's
-// scratch/ and tmp/ and, under ~/.claude, only the transcript folder of its
-// scratch/; on Windows the runner refuses; cells
-// run one after another. --setup <script> (resolved against the caller's cwd)
-// runs `bash <script>` right before every single run instead, and the runs go
-// one after another, alternating arms (comparison 1, with 1, comparison 2,
-// ...), so each run starts from a fixture the script just rebuilt and no other
-// run touches. Such a run can also write in its case folder,
-// /tmp/exo-pressure/<the name of the script's folder>, since the case prompts
-// name their fixture files there; without --setup the runs share the fixture
-// in parallel, so it stays read-only. A setup that exits non-zero skips its run: the answer file
-// holds a note with the setup's stderr, the arm line reads
-// `[setup failed: exit <code>]` and the runner ends with exit 1.
-//
-// Each run's full final answer, untruncated, goes to its own file
-// `<model>-<effort>-<arm>-<run>.md` in the --out directory (default a fresh
-// temporary directory outside any repository); a timeout or a run with no
-// result gets a note holding the full stderr instead. stdout opens with
-// `answers: <dir>`, then per cell its label and one line per arm and run:
-//
-//   without 1: <file> [first edit/write: Edit /x.js] [skills: exo:find-cause] [cost: $0.1234] [tokens: in=5000 out=300]
-//
-// `[cost: $<total_cost_usd>]` and `[tokens: in=<n> out=<n>]` come from the
-// run's result event and its `usage` block; each is left off a run whose
-// result carries none. Each cell ends on one line per arm,
-// `  total <arm>: $<sum> [tokens: in=<sum> out=<sum>]`, summing what its runs
-// report; an arm with neither prints no total.
-//
-// A skill loaded from outside its arm's plugin directory adds a line
-// `  WRONG COPY <arm> <run>: <skill dir> is not under <plugin dir>` and
-// ends the runner with exit 1, so that run never counts as a pass.
-//
-//   node pressure.mjs --cells-for <file>
-//   node pressure.mjs --prompt <file> --cells opus:high,sonnet:high --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources project,local] [--output-style <name>] [--setup <script>] [--runs 3] [--out <dir>]
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -81,10 +17,16 @@ const CELL_PATTERN = /^([^:]+):([^:]+)$/;
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const ACTIONS = new Set(['Edit', 'Write']);
 const CITATION = /([\w./~-]*(?:references\/[\w.-]+\.md|[\w.-]+-prompt\.md))(:\d+)?/g;
-const USAGE ='usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>]';
+const USAGE = `usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--runs <n>] [--out <dir>]
+Runs one pressure-scenario prompt on every model:effort cell, without and with the skill, --runs times per arm.
+--main-dir replaces the without arm with a main arm loading that second copy.
+--cells-for <file> prints every model:effort cell the file runs on as one --cells value.
+--setup <script> runs bash <script> before every single run; the runs then go one after another.
+Each answer goes to <model>-<effort>-<arm>-<run>.md in --out; stdout opens with answers: <dir>.
+Exits 1 on an unopened citation, a failed setup or a skill loaded from outside its arm's plugin directory.`;
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' });
+  const flags = parseFlags(argv, { prompt: 'value', cells: 'value', 'plugin-dir': 'value', 'main-dir': 'value', 'setting-sources': 'value', 'output-style': 'value', setup: 'value', runs: 'value', out: 'value', 'cells-for': 'value' }, { usage: USAGE });
   if (flags['cells-for'] !== undefined) return { cellsFor: flags['cells-for'] };
   if (!flags.prompt) throw new UsageError('--prompt needs a file');
   if (!flags.cells) throw new UsageError('--cells needs at least one model:effort pair');
@@ -116,7 +58,6 @@ function readFlags(argv) {
   };
 }
 
-// The `--cells` value for one file of the kind table.
 function cellsFor(file) {
   const table = readKindTable();
   const tiers = table.providers[table.provider].tiers;
@@ -141,8 +82,6 @@ function cellsFor(file) {
   return [...cells].join(',');
 }
 
-// The cited paths of `text` that no path in `reads` ends with. A path counts
-// as cited with a `:<line>` suffix or on a line that quotes text.
 function unopenedCitations(text, reads) {
   const cited = new Set();
   for (const line of text.split('\n')) {
@@ -157,7 +96,6 @@ function unopenedCitations(text, reads) {
   });
 }
 
-// The base arguments of one run; #confine-claude adds the permission mode.
 function claudeArguments({ model, effort, promptText, settingSources, pluginFlags }) {
   const args = [
     '-p', promptText,
@@ -165,7 +103,6 @@ function claudeArguments({ model, effort, promptText, settingSources, pluginFlag
     '--effort', effort,
     '--output-format', 'stream-json',
     '--verbose',
-    // Pressure runs exclude the host's MCP servers so a user's tools cannot steer a case.
     '--strict-mcp-config'
   ];
   if (settingSources !== undefined) args.push('--setting-sources', settingSources);
@@ -173,12 +110,6 @@ function claudeArguments({ model, effort, promptText, settingSources, pluginFlag
   return args;
 }
 
-// The result of one run: the final assistant text (undefined when the run
-// never produced one, such as a timeout or a refusal), the first Edit or
-// Write tool call across the whole stream, the `skill` input of every Skill
-// tool call, in order, the base directory of every skill loaded, and the
-// paths the answer cites without a Read of them, and the cost and tokens the
-// result event reports.
 function parseStream(rawStdout) {
   let finalText;
   let firstAction = null;
@@ -215,8 +146,6 @@ function parseStream(rawStdout) {
   return { cost, tokens, finalText, firstAction, skills, skillDirs, unopened: unopenedCitations(finalText ?? '', reads) };
 }
 
-// Input counts cache writes and cache reads with the uncached input, so `in`
-// is every prompt token the run sent; a missing count adds 0.
 function usageTokens(usage) {
   const count = (key) => (typeof usage[key] === 'number' ? usage[key] : 0);
   return {
@@ -225,7 +154,6 @@ function usageTokens(usage) {
   };
 }
 
-// Runs one confined claude: `run` comes from confinedClaude.
 function runArm(run) {
   return new Promise((resolve) => {
     const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -245,23 +173,16 @@ function runArm(run) {
   });
 }
 
-// The case folder a setup script rebuilds: `/tmp/exo-pressure/<the name of
-// the script's folder>`, the layout benchmarks/pressure/README.md fixes, since
-// every case prompt names its files by that absolute path.
 function caseFolder(setupScript) {
   return path.join(CASE_ROOT, path.basename(path.dirname(setupScript)));
 }
 
-// Rebuilds the fixture for the next run; its stdout is dropped so it never
-// mixes into the runner's own lines.
 function runSetup(setupScript) {
   const setup = spawnSync('bash', [setupScript], { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
   if (setup.error) throw setup.error;
   return { exit: setup.status ?? setup.signal, stderr: setup.stderr };
 }
 
-// The answer file's content: the full final answer, or a note holding the
-// full stderr when the setup failed, the run timed out or produced no result.
 function answerText(outcome) {
   const stderr = outcome.stderr.trim() || 'empty';
   if (outcome.setupExit !== undefined) return `(setup failed: exit ${outcome.setupExit})\n\nstderr:\n${stderr}\n`;
@@ -270,14 +191,10 @@ function answerText(outcome) {
   return outcome.finalText;
 }
 
-// A file-name-safe form of one cell value, since a model id may hold
-// characters such as `[` or `/`.
 function fileSafe(value) {
   return value.replace(/[^A-Za-z0-9._-]/g, '_');
 }
 
-// Runs the planned runs one after another, alternating arms, and returns
-// their outcomes in planned order.
 async function runInSequence(planned, startRun) {
   const order = planned.map((_, index) => index)
     .sort((left, right) => planned[left].runNumber - planned[right].runNumber || left - right);
@@ -286,8 +203,6 @@ async function runInSequence(planned, startRun) {
   return outcomes;
 }
 
-// Runs one cell and prints its lines; true when some setup failed or some
-// run loaded a wrong copy.
 async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mainDir, settingSources, outputStyle, setupScript, runs, outDir }) {
   const arms = [
     comparisonArm({ pluginId, mainDir }),
@@ -299,15 +214,11 @@ async function runCell({ model, effort }, promptText, { pluginDir, pluginId, mai
       const setup = runSetup(setupScript);
       if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
     }
-    // The run folder holds scratch/, the cwd, and tmp/, its temporary directory;
-    // the run can write nowhere else, save the case folder of a --setup run.
     const runFolder = fs.mkdtempSync(path.join(os.tmpdir(), `pressure-${arm.name}-`));
     const [scratch, tmp] = ['scratch', 'tmp'].map((name) => path.join(runFolder, name));
     for (const dir of [scratch, tmp]) fs.mkdirSync(dir);
     const roots = [scratch, tmp];
     if (setupScript !== undefined) {
-      // The sandbox resolves every root, and a setup need not create the case
-      // folder, so it must exist before the sandbox is built.
       const runCase = caseFolder(setupScript);
       fs.mkdirSync(runCase, { recursive: true });
       roots.push(runCase);

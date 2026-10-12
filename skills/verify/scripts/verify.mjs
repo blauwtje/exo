@@ -1,62 +1,4 @@
 #!/usr/bin/env node
-// Runs a lean-workflow plan's gate: each landed task's own Proof command
-// (except one equal to the gate command, a repeat of an earlier Proof, or running
-// the test suite or only test files its globs cover when the gate is the default
-// `npm run check` or its `npm test` stand-in, each of which runs that suite), the first
-// backticked command of the plan's Success criterion (else `none` for `Land gate:
-// none`, else `npm run check`, or `npm test` when `package.json` has a `test` script
-// and no `check` script, whose PASS line is followed by a ready `Proof:` line quoting
-// this command when `package.json` names no `bin` and no `scripts.start`; any other Land gate is the per-task gate, never
-// the final check), and a
-// stray-path check that the diff touched nothing outside a task's declared
-// Files, save the plan file itself. Ends on one `REVIEW Task <n> <shas>: <reviewer>` line per landed
-// task (deep reviewer for `Risk: security boundary`, light for another Risk, a script file or a non-script path under a `skills`, `agents`, `rules` or `hooks` folder or named `CLAUDE.md` or `AGENTS.md`,
-// else `none (text only)`; `none (inline route)` for an inline-route task without Risk), then the
-// `OVERLAP` lines of review-overlap.mjs, so a caller knows who reviews what. Reads the plan through #plan-tasks, the same
-// module land-task.mjs uses, so both agree on which task actually landed.
-//
-//   node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
-//
-// `--reviews-only` prints only the REVIEW, REVIEWED and OVERLAP lines: it runs no proof and no gate, records no pass and writes no report.
-// Without it the gate command starts beside the Proofs and both are awaited together.
-//
-// Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check, then one REVIEW (or REVIEWED, when `.exo/review-<sha7>.md` holds a verdict) line per landed task and the OVERLAP lines,
-// then one DONE or OPEN line per task and one MANUAL line per `## Manual
-// checks` bullet, so the run ends on every task and the checks only the user can make,
-// and a last `REPORT <path>` line naming `<root>/.exo/run-report.md`, overwritten each run with
-// the `## Proofs`, `## Checks` and `## Manual checks` of that run.
-// A FAIL line for a Proof or the Success criterion names why in brackets, the
-// signal that killed the command, its exit code, or the unclean SUMMARY line of
-// a Success criterion that exited 0, and is followed by the last
-// lines of that command's output, each indented two spaces, so every check line
-// still starts at the left margin.
-// A gate or Proof command already passed on this working tree, per `<git common dir>/exo/check-cache.json` (#check-cache), prints a SKIP line, not a rerun; each pass here is recorded there.
-// The Success criterion passes on exit code 0, and when its output holds a
-// `SUMMARY ` line, as exo's own `npm run check` prints, that line must also read
-// FAIL=0 WARN=0 UNRUN=0.
-// A Proof or Success criterion command written `mcp:<tool> <args>`, or starting
-// with a known MCP tool's short name, names an MCP tool, which only the session
-// can call: it is never spawned and prints a SESSION line naming the call in its
-// `mcp:` form, which is neither PASS nor FAIL, so the gate is not passed until
-// the session runs that tool call.
-// Any other Proof whose first word is a snake_case name the shell cannot find
-// names that likely MCP tool and the `mcp:<tool>` form on its FAIL line.
-// A failed Success criterion whose output blames only unlanded tasks' declared Files,
-// as on a run scoped to some of the plan's tasks, prints a SKIP line naming them, not FAIL.
-// A claims-diff check compares each landed task's claims with its commits' diff: a FAIL line
-// for a `Files:` path no commit of the task changed, and for a test-first task (`Risk:`, or a
-// `fix` with a test file in `Files:`) whose commits change no test file; a WARN line, which
-// does not fail, for each assertion a test file loses, each `.skip` or `.only` it gains and
-// each lint, type or coverage suppression comment any non-prose file gains.
-// A changed path outside every task's Files that only trailer-less `fix(...)` commits in
-// base..HEAD touched prints `FIX-ONLY <path> (<short shas>)`, newest first, after the PASS or
-// STRAY lines: a report line, not drift, so it does not fail. A path any task-trailer or non-fix
-// commit touched, or one with no commit in the range, stays a STRAY line.
-// With `--base`, #code-rules checks the lines each landed task added: a failed rule goes to
-// `<root>/.exo/code-rules.md` as fix findings for merge-reviews.mjs, printed as a `CODE-RULES <path>`
-// line and never a FAIL line; a warned rule prints `WARN code-rules`.
-// Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
-// command prints UNRUN, not PASS, and does not fail.
 
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -76,64 +18,45 @@ import { packageHasEntryPoint } from '#package-entry-point';
 import { TEST_FILE, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
-// The count line exo's `npm run check` ends on, e.g. `SUMMARY PASS=3 FAIL=0 WARN=0 UNRUN=0`.
+const USAGE = `Usage: node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
+Runs a plan's gate: each landed task's Proof, the Success criterion command and a stray-path check.
+Prints one PASS, FAIL, WARN, SKIP, SESSION, UNRUN, STRAY or FIX-ONLY line per check,
+then REVIEW (or REVIEWED) and OVERLAP lines, one DONE or OPEN line per task,
+one MANUAL line per manual check and a last REPORT <root>/.exo/run-report.md line.
+--reviews-only prints only the REVIEW, REVIEWED and OVERLAP lines and runs no proof or gate.
+--base also checks the lines each task added against the code rules, into <root>/.exo/code-rules.md.
+Exits 1 on any FAIL or STRAY line.`;
 const SUMMARY_LINE = /^SUMMARY [^\r\n]*/gm;
 const CLEAN_SUMMARY = / FAIL=0 WARN=0 UNRUN=0\b/;
 const DEFAULT_LAND_GATE = 'npm run check';
-// The default gate of a package with a `test` script and no `check` script.
 const TEST_SCRIPT_GATE = 'npm test';
 const TEST_SCRIPT_PASS = 'PASS success-criterion (npm test; no check script)';
-// An argument a shell reads as one word unquoted.
 const PLAIN_SHELL_WORD = /^[\w@%+=:,./-]+$/;
-// A Proof that starts the whole test suite: `npm test`.
 const TEST_SUITE_PROOF = /^npm test( |$)/;
-// A Proof naming only test files: `node --test <file>...`, each a plain path.
 const TEST_FILES_PROOF = /^node --test( [\w./-]+)+$/;
-// Per-task Proofs spawned at once; a few overlap without starving the machine.
 const PROOF_CONCURRENCY = 3;
-// Deadlines: a Proof or the gate past its own is killed and fails closed.
-// EXO_PROOF_TIMEOUT_MS and EXO_GATE_TIMEOUT_MS override them for a test.
 const PROOF_TIMEOUT_MS = 540_000;
 const GATE_TIMEOUT_MS = 1_800_000;
-// Output lines kept under a failed check's FAIL line: enough for a stack trace or
-// a test summary, few enough that the report stays readable.
 const FAIL_TAIL_LINES = 20;
-// A longer output line is cut, so one minified or base64 line cannot flood the report.
 const FAIL_TAIL_LINE_LENGTH = 300;
-// An output line reporting a pass, or opening a TAP subtest, names a path without blaming it.
 const PASS_REPORT_LINE = /^\s*(?:#\s*Subtest:|ok\b|pass\b|✔|✓)/i;
-// An output line reporting one failed check.
 const FAIL_REPORT_LINE = /^\s*(?:fail\b|not ok\b|✖|✗|×)/i;
-// A Proof: value that carries a backtick reads as prose describing the
-// check (for example "npm run validate, whose output holds no `[FAIL]`
-// line"), not a command; running it through a shell would hand the shell
-// that backtick pair as its own command substitution.
 const PROSE_PROOF = /`/;
-// A bare snake_case first word, the shape of an MCP tool's short name.
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
-// The exit code a POSIX shell returns for a command it cannot find.
 const COMMAND_NOT_FOUND = 127;
-// A line a test file loses that asserts, and a line it gains that skips or isolates a test.
 const REMOVED_ASSERTION = /expect\(|assert/;
 const ADDED_SKIP = /\.(?:skip|only)\b/;
-// A line that switches a check off in place: a lint, type or coverage suppression comment.
 const SILENCER = /eslint-disable|@ts-(?:ignore|nocheck|expect-error)|#\s*(?:noqa|type:\s*ignore|pylint:\s*disable)|\/\/\s*nolint|biome-ignore|(?:istanbul|c8) ignore/;
 const PROSE_FILE = /\.(?:md|mdx|txt|rst)$/;
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const FILE_HEADER = /^(?:---|\+\+\+) (?:[ab]\/)?(.*)$/;
-// A WARN line quotes at most this much of the changed line.
 const WARN_TEXT_LENGTH = 100;
 
-/** A task's Proof: as a command to run, or null when a backtick marks it as prose instead. */
 export function runnableProof(proof) {
   if (proof === null || PROSE_PROOF.test(proof)) return null;
   return proof;
 }
 
-/**
- * The first word of an unmarked Proof the shell could not find, when that word is
- * snake_case and so likely an MCP tool's short name, else null.
- */
 export function unmarkedMcpTool(command, { code, output }) {
   if (code !== COMMAND_NOT_FOUND) return null;
   const word = command.split(/\s/, 1)[0];
@@ -141,7 +64,6 @@ export function unmarkedMcpTool(command, { code, output }) {
   return new RegExp(`\\b${word}: (?:command )?not found`).test(output) ? word : null;
 }
 
-/** The `scripts` of the root's `package.json`, or {} when it has none or there is no `package.json`; a malformed one throws. */
 function packageScripts(root) {
   let manifest;
   try {
@@ -153,7 +75,6 @@ function packageScripts(root) {
   return JSON.parse(manifest).scripts ?? {};
 }
 
-/** The globs `scripts.test` hands `node --test`, or [] when it runs no such command. */
 function suiteGlobs(scripts) {
   const script = scripts.test ?? '';
   if (!script.startsWith('node --test ')) return [];
@@ -161,63 +82,41 @@ function suiteGlobs(scripts) {
   return words.filter((word) => !word.startsWith('-')).map((word) => word.replace(/^["']|["']$/g, ''));
 }
 
-// `*` stays inside one folder, `**` crosses folders; no other glob syntax is read, so an
-// exotic glob matches nothing and its Proof runs once more.
 function globMatches(glob, file) {
   const pattern = glob.replace(/[.+^${}()|[\]\\?]/g, '\\$&').replace(/\*\*\/?/g, '\0').replace(/\*/g, '[^/]*').replace(/\0/g, '(.*/)?');
   return new RegExp(`^${pattern}$`).test(file);
 }
 
-/** True when the Proof is `node --test <files>` and every file matches one of `globs`. */
 export function filesUnderGlobs(command, globs) {
   if (!TEST_FILES_PROOF.test(command)) return false;
   const files = command.split(' ').slice(2).map((file) => file.replace(/^\.\//, ''));
   return files.every((file) => globs.some((glob) => globMatches(glob, file)));
 }
 
-/**
- * The command that ran this script, rebuilt from `argv` in the form SKILL.md gives:
- * `node "<script>"`, then each argument bare, or double-quoted when a shell would split
- * or expand it. A shell expansion the caller typed, such as `"$(pwd)"`, shows expanded.
- */
 export function commandLine(argv) {
   const quoted = (word) => `"${word.replace(/["\\$`]/g, '\\$&')}"`;
   const args = argv.slice(2).map((word) => (PLAIN_SHELL_WORD.test(word) ? word : quoted(word)));
   return ['node', quoted(argv[1]), ...args].join(' ');
 }
 
-/**
- * The plan file's path from the repository root of `root`, with `/` separators as git prints
- * paths, so the stray check can tell the run's own input from an edit; a plan outside the
- * repository yields a `../` path that matches no changed path.
- */
 function repoPathOf(planPath, root) {
   const top = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
   return path.relative(top, fs.realpathSync(planPath)).split(path.sep).join('/');
 }
 
-/** A changed path outside every task's declared Files is a stray edit; a Files entry ending in `/` covers every path under it, as in land-task.mjs. */
 export function findStrayPaths(tasks, paths) {
   const declared = tasks.flatMap((task) => task.files.map((file) => file.path));
   return paths.filter((path) => !declared.some((entry) => entry === path || (entry.endsWith('/') && path.startsWith(entry))));
 }
 
-/** The fix commit shape: a `fix` subject and no `Plan-task: ` trailer line. */
 function isTrailerlessFix({ subject, body }) {
   return /^fix(\([^)]*\))?!?:/.test(subject) && !/^Plan-task: /m.test(body);
 }
 
-/** The lead's CHANGELOG commit shape: a `docs(changelog)` subject and no `Plan-task: ` trailer line. */
 function isLeadChangelog({ subject, body }) {
   return /^docs\(changelog\):/.test(subject) && !/^Plan-task: /m.test(body);
 }
 
-/**
- * Splits stray `paths` by their commits. `commitsByPath` maps a path to the `{ sha, subject, body }`
- * commits in the range that touch it, newest first. A path with commits, every one a trailer-less
- * `fix`, is fix-only, with the short shas of those commits; `CHANGELOG.md` with only trailer-less
- * `docs(changelog)` commits is the lead's, same shape; any other stray path stays a stray.
- */
 export function splitFixOnlyPaths(paths, commitsByPath) {
   const strays = [];
   const fixOnly = [];
@@ -232,7 +131,6 @@ export function splitFixOnlyPaths(paths, commitsByPath) {
   return { strays, fixOnly, lead };
 }
 
-/** The commits in `base..HEAD` that touch each of `paths`, newest first, as `splitFixOnlyPaths` reads them. */
 function commitsTouching(paths, root, base) {
   const commitsByPath = new Map();
   if (base === undefined) return commitsByPath;
@@ -246,7 +144,6 @@ function commitsTouching(paths, root, base) {
   return commitsByPath;
 }
 
-/** The paths of `files` that no path in `changed` covers; a `*` path reads as a glob, a path ending `/` as a folder. */
 export function unchangedFiles(files, changed) {
   return files.map((file) => file.path.replace(/^\.\//, '')).filter((wanted) => {
     if (wanted.includes('*')) return !changed.some((path) => globMatches(wanted, path));
@@ -255,16 +152,10 @@ export function unchangedFiles(files, changed) {
   });
 }
 
-/** Whether the plan marks a task test-first: a `Risk:` field, or a `fix` that lists a test file in `Files:`. */
 export function isTestFirst(task) {
   return task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => TEST_FILE.test(file.path)));
 }
 
-/**
- * What a patch (`git show -U0`) does to the tests it touches: `path:line removed ...` for each
- * assertion line a test file loses (unless the same line is added back, as a moved test does),
- * `path:line added ...` for each `.skip` or `.only` line it gains.
- */
 export function weakenedTests(patch) {
   const added = new Set();
   const removed = [];
@@ -300,7 +191,6 @@ export function weakenedTests(patch) {
   ];
 }
 
-/** `path:line silenced ...` for each line a patch (`git show -U0`) adds that carries a suppression comment, outside prose files. */
 export function silencedChecks(patch) {
   const findings = [];
   let file = null;
@@ -326,11 +216,6 @@ export function silencedChecks(patch) {
   return findings;
 }
 
-/**
- * The claims-diff lines for one landed task: a FAIL line for a test-first task whose commits
- * change no test file, a WARN line for `Files:` paths its commits left unchanged, each
- * test weakened and each check silenced in them. Empty when its claims hold.
- */
 function claimLines(task, root, planId) {
   const git = (...args) => execFileSync('git', ['-C', root, '-c', 'core.quotepath=off', 'show', '--format=', '--no-renames', ...args], { encoding: 'utf8', maxBuffer: Infinity });
   const shas = taskCommits(task, root, planId);
@@ -348,7 +233,6 @@ function claimLines(task, root, planId) {
   return lines;
 }
 
-/** The `.exo/code-rules.md` text for code-rule `fails`, each a `path:line` finding with a Probe line that passes once its source line is gone. */
 export function codeRulesReport(fails, root) {
   const entries = fails.flatMap((finding) => {
     const at = /^(.+?):(\d+) /.exec(finding);
@@ -360,10 +244,6 @@ export function codeRulesReport(fails, root) {
   return ['FINDINGS', '', ...entries, ''].join('\n');
 }
 
-/**
- * The `WARN code-rules` lines and, when added code breaks a rule, the `CODE-RULES <path>` line
- * for the report written to `<root>/.exo/code-rules.md`; a stale report is removed. Empty with no base.
- */
 function codeRuleLines(plan, landed, { root, planId, base }) {
   if (base === undefined) return [];
   const reportPath = path.join(path.resolve(root), '.exo', 'code-rules.md');
@@ -381,33 +261,20 @@ function codeRuleLines(plan, landed, { root, planId, base }) {
   return [...lines, `CODE-RULES ${reportPath}`];
 }
 
-/** The last `SUMMARY ` line of `output`, or null when it prints none. */
 export function summaryLine(output) {
   return output.match(SUMMARY_LINE)?.at(-1) ?? null;
 }
 
-/**
- * Whether a Success criterion run `{ ok, output }` passed. Without a SUMMARY line
- * its exit code alone decides, since another project's check never prints one. With
- * one, that line must also be clean, since exo's own `npm run check` exits 0 on a WARN or UNRUN.
- */
 export function successCriterionPasses({ ok, output }) {
   const summary = summaryLine(output);
   return ok && (summary === null || CLEAN_SUMMARY.test(summary));
 }
 
-/** Whether `line` names `file` as a whole path, so `src/case.js` never matches `src/title-case.js`. */
 function namesPath(line, file) {
   const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(?<![\\w.-])${escaped}(?![\\w-]|\\.\\w)`).test(line);
 }
 
-/**
- * The unlanded task numbers a failed Success criterion's `output` blames, or [] when the failure
- * may lie in landed work. A line blames a task when it names one of the task's declared Files and
- * reports no pass. It is [] when a line blames a landed task, or a line reporting a failure
- * (`fail`, `not ok`, `✖`) names no unlanded task's file, since such a failure may be landed work's.
- */
 export function unlandedBlame(tasks, landed, output) {
   const blaming = output.split(/\r?\n/).filter((line) => !PASS_REPORT_LINE.test(line));
   const names = (line, task) => task.files.some((file) => namesPath(line, file.path));
@@ -417,21 +284,15 @@ export function unlandedBlame(tasks, landed, output) {
   return open.filter((task) => blaming.some((line) => names(line, task))).map((task) => task.number);
 }
 
-/** Every task of the plan as `{ task, done }`, done when its landed commit exists. */
 export function taskStates(tasks, landed) {
   return tasks.map((task) => ({ task: task.number, title: task.title, done: landed.has(task.number) }));
 }
 
-/** The bullets of the plan's `## Manual checks` section, one string each. */
 export function manualChecks(frame) {
   const section = frame['Manual checks'] ?? '';
   return section.split('\n').filter((line) => line.trim().startsWith('- ')).map((line) => line.trim().slice(2));
 }
 
-/**
- * Runs `command` through a shell to `{ ok, code, signal, output }`, `output` its stdout
- * and stderr together; past `timeoutMs` it is killed and `timedOutMs` is set. When the shell cannot start, `code` holds the spawn error's code instead of an exit code.
- */
 function runCommand(command, timeoutMs) {
   return new Promise((resolve) => {
     const started = Date.now();
@@ -455,24 +316,20 @@ function runCommand(command, timeoutMs) {
   });
 }
 
-/** Why a command failed: the signal that killed it, else its exit code, else its spawn error. */
 function failReason({ code, signal, timedOutMs }) {
   if (timedOutMs !== undefined) return `timed out after ${timedOutMs / 1000}s`;
   if (signal !== null) return `signal ${signal}`;
   return typeof code === 'number' ? `exit ${code}` : `spawn error ${code}`;
 }
 
-/** The last FAIL_TAIL_LINES non-empty lines of `output`, each cut to FAIL_TAIL_LINE_LENGTH characters and indented two spaces. */
 export function outputTail(output) {
   return output.split(/\r?\n/).filter((line) => line.trim() !== '').slice(-FAIL_TAIL_LINES).map((line) => `  ${line.slice(0, FAIL_TAIL_LINE_LENGTH)}`);
 }
 
-/** A failed check's FAIL line, naming `reason`, then the tail of its output. */
 function failLines(check, reason, output) {
   return [`FAIL ${check} (${reason})`, ...outputTail(output)];
 }
 
-/** `items` mapped through the async `work`, at most `limit` running at once, results in item order. */
 async function mapLimited(items, limit, work) {
   const results = new Array(items.length);
   let next = 0;
@@ -487,10 +344,6 @@ async function mapLimited(items, limit, work) {
   return results;
 }
 
-/**
- * One REVIEW line per landed task, REVIEWED when its last commit's review record holds a verdict,
- * then the OVERLAP lines; with no base there is no range of commits to read.
- */
 function reviewLines(plan, landed, { root, planId, base }) {
   const lines = [];
   const route = planRoute(plan.tasks).route;
@@ -518,12 +371,6 @@ function reviewLines(plan, landed, { root, planId, base }) {
   return lines;
 }
 
-/**
- * The plan's checks, one PASS/FAIL/SKIP/SESSION/UNRUN/STRAY/FIX-ONLY line each, then the REVIEWER
- * line. `planPath` names the plan whose id its landed trailers carry; `root`
- * names the checkout the gate reads landed commits and runs
- * commands in; `base` the revision the diff and stray check compare against.
- */
 export async function runGate(planText, { planPath, checkCommand, root = process.cwd(), base, invocation = commandLine(process.argv), reviewsOnly = false } = {}) {
   const plan = parsePlan(planText);
   const frame = frameOf(plan.frame);
@@ -535,7 +382,6 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   const landGateNone = frame.landGate === 'none' ? 'none' : null;
   const scripts = packageScripts(root);
   const namedGate = checkCommand ?? criterionCommand(frame.successCriterion) ?? landGateNone;
-  // With no gate named and no `check` script, the package's own `npm test` is the default gate.
   const testScriptGate = namedGate === null && scripts.check === undefined && scripts.test !== undefined;
   const gateCommand = namedGate ?? (testScriptGate ? TEST_SCRIPT_GATE : DEFAULT_LAND_GATE);
   const gateSkipped = gateCommand === 'none';
@@ -551,13 +397,8 @@ export async function runGate(planText, { planPath, checkCommand, root = process
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: not a single \`command\`)` });
       continue;
     }
-    // An MCP tool call compares in its `mcp:` form, so a prefixed and an unprefixed
-    // spelling of one call count as the same check.
     const mcpCall = mcpToolCall(command);
     const check = mcpCall ?? command;
-    // A Proof that is the gate command, or runs the test suite or files its globs
-    // cover under the default gate or its `npm test` stand-in (each runs that suite), repeats what the gate runs once below. A
-    // custom gate may run no tests, so a suite Proof still runs under it.
     const suiteUnderDefault = (gateCommand === DEFAULT_LAND_GATE || testScriptGate) && (TEST_SUITE_PROOF.test(command) || filesUnderGlobs(command, globs));
     if (!gateSkipped && (check === (gateMcpCall ?? gateCommand) || suiteUnderDefault)) {
       proofRuns.push({ line: `SKIP Task ${task.number} (Proof: is the gate command or a test-suite run the default gate covers, which the gate runs once below)` });
@@ -579,7 +420,6 @@ export async function runGate(planText, { planPath, checkCommand, root = process
     proofRuns.push({ number: task.number, command });
   }
 
-  // The gate starts at once, beside the Proofs, which run up to PROOF_CONCURRENCY at a time; their lines keep task order.
   const gateRuns = !gateSkipped && gateMcpCall === null && cachedPass(root, gateCommand) === null;
   const [proofResults, gateRun] = await Promise.all([
     mapLimited(proofRuns, PROOF_CONCURRENCY, (run) => (run.line ? null : runCommand(run.command, environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS)))),
@@ -609,22 +449,14 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   } else if (!gateRuns) {
     lines.push('SKIP success-criterion (passed on this same tree)');
   } else {
-    // The SUMMARY rule binds any gate whose output prints a SUMMARY line, whatever
-    // the command; a gate that prints none, as another project's `npm run check`
-    // does, is judged on its exit code alone. A run that exits 0 yet fails names its
-    // SUMMARY line as the reason.
     if (successCriterionPasses(gateRun)) recordPass(root, gateCommand, gateRun.ms);
     if (successCriterionPasses(gateRun) && testScriptGate) {
-      // A ready Proof line for build's report, quoting this command and a line it printed,
-      // only for a library, so a suite never stands in for the product.
       lines.push(TEST_SCRIPT_PASS);
       if (!packageHasEntryPoint(root)) lines.push(`Proof: \`${invocation}\` -> ${TEST_SCRIPT_PASS}`);
     } else if (successCriterionPasses(gateRun)) {
       lines.push('PASS success-criterion');
     } else {
       const reason = gateRun.ok ? summaryLine(gateRun.output) : failReason(gateRun);
-      // A run scoped to some tasks fails a criterion that covers the rest; with only
-      // unlanded tasks blamed, the landed ones still go on to the branch review.
       const blamed = unlandedBlame(plan.tasks, landed, gateRun.output);
       if (blamed.length > 0) {
         lines.push(`SKIP success-criterion (out of scope: ${reason} names only files of unlanded Task ${blamed.join(', ')})`, ...outputTail(gateRun.output));
@@ -636,7 +468,6 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   }
 
   const changed = changedPaths({ base });
-  // The plan file committed on the branch is the run's input, not drift.
   const planFile = repoPathOf(planPath, root);
   const undeclared = findStrayPaths(plan.tasks, changed.filter((changedPath) => changedPath !== planFile));
   const { strays, fixOnly, lead } = splitFixOnlyPaths(undeclared, commitsTouching(undeclared, root, base));
@@ -660,18 +491,13 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   return { lines, failed };
 }
 
-/**
- * The `## Context` lines: peak context of each session and agent since the plan's first commit
- * (the plan file's mtime when it has none), read from the main checkout's transcript folder and
- * from the `--root` worktree's when it differs.
- */
 function contextSection(planPath, root) {
   const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   try {
     let since;
     try {
       since = Number(git('log', '--diff-filter=A', '--format=%ct', '--', planPath).split('\n').filter(Boolean).pop()) * 1000;
-    } catch { /* plan outside the repository: no commit */ }
+    } catch { }
     if (!Number.isFinite(since) || since <= 0) since = fs.statSync(planPath).mtimeMs;
     const main = path.dirname(path.resolve(root, git('rev-parse', '--git-common-dir')));
     const folders = new Set([fs.realpathSync(main), fs.realpathSync(root)]);
@@ -683,10 +509,6 @@ function contextSection(planPath, root) {
   }
 }
 
-/**
- * Overwrites `<root>/.exo/run-report.md` with the run's `## Proofs`, `## Checks` (the printed
- * lines but MANUAL), `## Context` (peak context per session and agent) and `## Manual checks`, and returns its path.
- */
 function writeRunReport(lines, { planPath, planText, root }) {
   const manual = lines.filter((line) => line.startsWith('MANUAL '));
   const checks = lines.filter((line) => !line.startsWith('MANUAL '));
@@ -703,9 +525,8 @@ function writeRunReport(lines, { planPath, planText, root }) {
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value', 'reviews-only': 'boolean' });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', base: 'value', 'check-command': 'value', 'reviews-only': 'boolean' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' needs a path");
-  // Resolved before the chdir below, so a relative --plan keeps naming the caller's file.
   const planPath = path.resolve(flags.plan);
   const planText = fs.readFileSync(planPath, 'utf8');
   const root = flags.root === undefined ? undefined : path.resolve(flags.root);

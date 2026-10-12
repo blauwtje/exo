@@ -1,7 +1,3 @@
-// Combines the per-task review reports and the overlap report into the one
-// findings file the fixer reads, `<checkout>/.exo/branch-review.md`, and prints
-// the return line `exo:review-branch` gives, so the fixer step stays unchanged.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -12,7 +8,9 @@ const PROBE_LINE = /^\s*Probe:\s*\S/;
 const UNREAD = /\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
 const FINDING = /^\s*(?:[-*]\s*)?\S+:\d+(?:-\d+)?\b.*?\b(defect|hazard|question)\b.*\b(fix|report)\W*$/;
 
-/** The verdict word of a report: its first line naming one. */
+const USAGE = `Usage: node merge-reviews.mjs --root <checkout> --report <file> [--report <file> ...]
+Merges review reports into <checkout>/.exo/branch-review.md and prints the verdict line.`;
+
 function verdictOf(text) {
   for (const line of text.split('\n')) {
     const match = line.match(/\b(CLEAN|FINDINGS|BLOCKED)\b/);
@@ -21,10 +19,6 @@ function verdictOf(text) {
   return 'BLOCKED';
 }
 
-/** Merges report texts, each `{ name, text }`, into the combined file text and
- *  the counts its return line prints. A report with no readable verdict counts
- *  as BLOCKED, so an unreadable review never passes as clean. A `fix` finding
- *  with no `  Probe:` line directly under it is demoted to `report`. */
 export function mergeReviews(reports) {
   const counts = { defect: 0, hazard: 0, question: 0, fix: 0 };
   let demoted = 0;
@@ -64,7 +58,7 @@ export function mergeReviews(reports) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', report: 'list' });
+  const flags = parseFlags(argv, { root: 'value', report: 'list' }, { usage: USAGE });
   if (!flags.root) throw new UsageError('--root is required');
   if (!flags.report?.length) throw new UsageError('--report is required');
   const reports = flags.report.map((file) => ({

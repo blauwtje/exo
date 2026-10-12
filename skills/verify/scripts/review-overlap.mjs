@@ -1,18 +1,13 @@
-// Lists what more than one landed task changed, with no model: files touched
-// by commits of two or more tasks, and exported functions whose signature one
-// task's commit changed and another task's changed lines mention as a word.
-// verify.mjs runs a model review with scope `overlap` only on a non-empty list.
-//
-//   node review-overlap.mjs --base <ref> [--root <dir>]
-//
-// Prints `OVERLAP <path> (Tasks a, b)`, `OVERLAP <file>:<name> (Tasks a, b)`
-// or `OVERLAP none`. Only commits with a `Plan-task:` trailer count.
-
 import { execFileSync } from 'node:child_process';
 import { extname } from 'node:path';
 import { exportSignatures } from '#export-signatures';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+
+const USAGE = `Usage: node review-overlap.mjs --base <ref> [--root <dir>]
+Lists files and exported signatures that more than one landed task changed.
+Prints OVERLAP <path> (Tasks a, b), OVERLAP <file>:<name> (Tasks a, b) or OVERLAP none.
+Only commits with a Plan-task: trailer count.`;
 
 function signatureTexts(source) {
   return new Map([...exportSignatures(source)].map(([name, shape]) => [name, shape.text]));
@@ -27,11 +22,6 @@ function changedNames({ path, before, after }) {
 
 const taskList = (tasks) => [...tasks].sort((a, b) => a - b);
 
-/**
- * `changes` holds one entry per file per task commit: `{ task, path, before,
- * after, added }`, the file's text before and after the commit and its added
- * lines. Returns `[{ target, tasks }]`: a path, or `<path>:<name>`.
- */
 export function findOverlaps(changes) {
   const byPath = new Map();
   for (const change of changes) {
@@ -61,8 +51,7 @@ export function formatOverlaps(overlaps) {
   return overlaps.map(({ target, tasks }) => `OVERLAP ${target} (Tasks ${tasks.join(', ')})`).join('\n');
 }
 
-// A path missing at a commit's parent, such as a file the commit added, reads as empty.
-function git(root, args) {
+function gitOrEmpty(root, args) {
   try {
     return execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1 << 28 });
   } catch {
@@ -74,7 +63,6 @@ function gitOrThrow(root, args) {
   return execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', ...args], { encoding: 'utf8', maxBuffer: 1 << 28 });
 }
 
-/** The changes of every non-merge commit between `base` and HEAD that carries a `Plan-task: <plan>/<n>` trailer. */
 export function readChanges(base, root = process.cwd()) {
   const format = '%x1e%H%x1f%(trailers:key=Plan-task,valueonly)';
   const log = gitOrThrow(root, ['log', '--no-merges', `--format=${format}`, `${base}..HEAD`]);
@@ -83,11 +71,11 @@ export function readChanges(base, root = process.cwd()) {
     const [hash, trailer] = entry.split('\x1f');
     const task = Number(trailer.trim().split('/').pop());
     if (!Number.isInteger(task) || trailer.trim() === '') continue;
-    const names = git(root, ['show', '--format=', '--name-only', hash]).split('\n').filter((name) => name !== '');
+    const names = gitOrEmpty(root, ['show', '--format=', '--name-only', hash]).split('\n').filter((name) => name !== '');
     for (const path of names) {
-      const patch = git(root, ['show', '--format=', '-U0', hash, '--', path]);
+      const patch = gitOrEmpty(root, ['show', '--format=', '-U0', hash, '--', path]);
       const added = patch.split('\n').filter((line) => line.startsWith('+') && !line.startsWith('+++')).join('\n');
-      changes.push({ task, path, before: git(root, ['show', `${hash}^:${path}`]), after: git(root, ['show', `${hash}:${path}`]), added });
+      changes.push({ task, path, before: gitOrEmpty(root, ['show', `${hash}^:${path}`]), after: gitOrEmpty(root, ['show', `${hash}:${path}`]), added });
     }
   }
   return changes;
@@ -95,7 +83,7 @@ export function readChanges(base, root = process.cwd()) {
 
 if (isMain(import.meta.url)) {
   try {
-    const flags = parseFlags(process.argv.slice(2), { base: 'string', root: 'string' });
+    const flags = parseFlags(process.argv.slice(2), { base: 'string', root: 'string' }, { usage: USAGE });
     if (!flags.base) throw new UsageError('--base <ref> is required');
     process.stdout.write(`${formatOverlaps(findOverlaps(readChanges(flags.base, flags.root)))}\n`);
   } catch (error) {

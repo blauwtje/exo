@@ -1,9 +1,3 @@
-// Reruns the probes of the fix findings the fix-review agent marked `fixed`.
-// A probe is the command on the `Probe:` line under a finding in the branch
-// review's report; it failed before the fix and must exit 0 after it. Prints
-// one PASS or FAIL line per fixed finding and exits 1 on any FAIL, so
-// verify ends the turn with the fixes uncommitted, as it does for a gate FAIL.
-
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
@@ -13,8 +7,9 @@ const PROBE_LINE = /^\s*Probe:\s*(.*)$/;
 const FIXED_FINDING = /\bfixed\s*$/;
 const PROBE_TIMEOUT_MS = 60_000;
 const TAIL_LINES = 10;
+const USAGE = `Usage: node run-probes.mjs --report <file> --root <dir>
+Reruns the Probe: command under each finding marked fixed; prints PASS or FAIL per finding, exits 1 on any FAIL.`;
 
-/** Each finding line of `report` ending `fixed`, with the command of the `Probe:` line under it, or null. */
 export function fixedProbes(report) {
   const lines = report.split('\n');
   const probes = [];
@@ -32,7 +27,6 @@ function runProbe(command, root) {
   return { passed: result.status === 0, output: result.error ? `${result.error.message}\n${output}` : output };
 }
 
-/** The report lines for every fixed finding's probe, and whether all passed. */
 export function runProbes(report, root) {
   const lines = [];
   let allPassed = true;
@@ -53,7 +47,7 @@ export function runProbes(report, root) {
 }
 
 function main(argv) {
-  const { report, root } = parseFlags(argv, { report: 'string', root: 'string' });
+  const { report, root } = parseFlags(argv, { report: 'string', root: 'string' }, { usage: USAGE });
   if (!report || !root) throw new UsageError('--report and --root are required');
   const { lines, allPassed } = runProbes(fs.readFileSync(report, 'utf8'), root);
   if (lines.length > 0) process.stdout.write(`${lines.join('\n')}\n`);
