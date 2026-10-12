@@ -26,6 +26,7 @@
     "#process-tree": "./lib/process-tree.mjs",
     "#confine-claude": "./lib/confine-claude.mjs",
     "#plugin-copy": "./lib/plugin-copy.mjs",
+    "#red-green": "./lib/red-green.mjs",
     "#proofs-report": "./lib/proofs-report.mjs",
     "#prose-density": "./lib/prose-density.mjs",
     "#return-caps": "./verify/checks/return-caps.mjs",
