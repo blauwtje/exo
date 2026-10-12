@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { landTask, LandingError } from '../skills/build/scripts/land-task.mjs';
-import { compactPlanFixture, compactTask, git, gitRepository } from './harness.mjs';
+import { compactPlanFixture, compactTask, git, gitRepository, planFixture, taskSection } from './harness.mjs';
 
 // A plain script, since a nested `node --test` inherits this runner's context and exits 0 whatever it ran.
 const APP_PROOF = "import { greet } from '../src/app.js';\nif (greet() !== 'hello') process.exit(1);\nconsole.log('# pass 1');\n";
@@ -57,3 +57,21 @@ test('Red: none (refactor) lands a Proof that passes on the base and the record 
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(await record(root), /^Red: skipped: none \(refactor\)$/m);
 });
+
+// A long-format task whose steps hold no passing Bash `Run:` has no proof to run on the base, so the
+// red-green check skips instead of refusing.
+for (const [name, edit] of [
+  ['no Run: line', (section) => section.replace(/Run: .*\nExpected: .*\n/, '')],
+  ['only an expected-fail Run:', (section) => section.replace('Expected: `pass`', 'Expected: `fail`')]
+]) {
+  test(`a long-format task with ${name} lands without a red-green check`, async () => {
+    const plan = planFixture({ tasks: [edit(taskSection({ number: 1, title: 'docs(app): note', files: ['- Modify: `src/app.js`'], subject: 'docs(app): note' }))] });
+    const root = await gitRepository({ 'src/app.js': 'export const a = 1;\n', 'docs/plans/p.md': plan });
+    git(root, 'config', 'user.name', 'exo-test');
+    git(root, 'config', 'user.email', 'exo-test@example.com');
+    git(root, 'config', 'commit.gpgsign', 'false');
+    await fs.writeFile(path.join(root, 'src/app.js'), 'export const a = 2;\n');
+    const output = landTask({ planPath: path.join(root, 'docs/plans/p.md'), planText: plan, number: 1, root });
+    assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
+  });
+}

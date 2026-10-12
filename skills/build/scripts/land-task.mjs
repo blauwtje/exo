@@ -573,10 +573,12 @@ function taskChangedPaths(root) {
 // A Proof that passes on HEAD with only the task's test changes laid over it proves nothing
 // about the task's production change, unless the task names `Red: none (<reason>)`. A Proof of
 // several commands is red when one fails there. Fails closed: a base run that errors refuses.
+// A task with no passing Bash proof command has nothing to run on the base, so the check skips.
 // Returns the proof record's line.
 function redGreenLine(task, proofCommands, root, pending) {
   if (task.red !== null) return `Red: skipped: none (${task.red.reason})`;
   if (pending !== null) return 'Red: skipped: deferred MCP proof';
+  if (proofCommands.length === 0) return 'Red: skipped: no passing Bash proof command';
   const overlay = testPaths(taskChangedPaths(root));
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
