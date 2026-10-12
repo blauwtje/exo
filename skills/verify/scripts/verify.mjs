@@ -60,7 +60,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs, parseFlags, UsageError, isMain } from '#script-flags';
-import { frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
+import { criterionCommand, frameOf, landedTasks, parsePlan, planIdOf, planRoute, taskCommits } from '#plan-tasks';
 import { killTree } from '#process-tree';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
@@ -96,7 +96,6 @@ const GATE_TIMEOUT_MS = 1_800_000;
 const FAIL_TAIL_LINES = 20;
 // A longer output line is cut, so one minified or base64 line cannot flood the report.
 const FAIL_TAIL_LINE_LENGTH = 300;
-const BACKTICKED_COMMAND = /`([^`]+)`/;
 // An output line reporting a pass, or opening a TAP subtest, names a path without blaming it.
 const PASS_REPORT_LINE = /^\s*(?:#\s*Subtest:|ok\b|pass\b|✔|✓)/i;
 // An output line reporting one failed check.
@@ -358,11 +357,6 @@ export function summaryLine(output) {
 export function successCriterionPasses({ ok, output }) {
   const summary = summaryLine(output);
   return ok && (summary === null || CLEAN_SUMMARY.test(summary));
-}
-
-/** The first backticked command in the plan's Success criterion text, or null when it has none. */
-export function criterionCommand(successCriterion) {
-  return successCriterion?.match(BACKTICKED_COMMAND)?.[1] ?? null;
 }
 
 /** Whether `line` names `file` as a whole path, so `src/case.js` never matches `src/title-case.js`. */

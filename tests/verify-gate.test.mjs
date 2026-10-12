@@ -13,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { REVIEWER_AGENTS } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { memoryDirectory } from '#memory-store';
-import { parsePlan } from '#plan-tasks';
-import { commandLine, criterionCommand, filesUnderGlobs, findStrayPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
+import { criterionCommand, parsePlan } from '#plan-tasks';
+import { commandLine, filesUnderGlobs, findStrayPaths, splitFixOnlyPaths, isTestFirst, manualChecks, outputTail, runnableProof, successCriterionPasses, summaryLine, taskStates, unchangedFiles, unlandedBlame, silencedChecks, unmarkedMcpTool, weakenedTests } from '../skills/verify/scripts/verify.mjs';
 import { git, gitRepository as seedRepository, run } from './harness.mjs';
 
 // A fixture repository ignores `.exo/`, as a real checkout does, so the check cache verify writes is no path in the diff.
