@@ -257,6 +257,7 @@ function snapshot(root) {
 const untrackedPaths = (root) => (gitOut(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }) ?? '').split('\0').filter(Boolean);
 
 function shelveLeftover(root, patchFile, knownUntracked) {
+  // why: git lists a nested repository as `dir/`, which would enter the patch as a bare commit id.
   const fresh = untrackedPaths(root).filter((file) => !knownUntracked.has(file) && !file.startsWith(`${SCRATCH_FOLDER}/`) && !file.endsWith('/'));
   const spec = ['--', '.', `:(exclude)${SCRATCH_FOLDER}`];
   const git = (args, options = {}) => spawnSync('git', ['-C', root, ...args], { maxBuffer: 1024 * 1024 * 1024, ...options });
@@ -314,6 +315,7 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseIni
     let partial = '';
     let settled = false;
     let graceTimer = null;
+    // why: on POSIX a detached child leads its own process group, which the timeout can end whole.
     const child = spawn(claude.command, [...claude.prefix, ...args], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     const endTree = (signal) => {
       try {
@@ -377,6 +379,7 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseIni
       endTree('SIGKILL');
       settle(code, signal);
     });
+    // why: after a kill a grandchild may still hold the pipes, so 'close' can lag behind 'exit'.
     child.on('close', settle);
     const timer = setTimeout(() => {
       timedOut = true;

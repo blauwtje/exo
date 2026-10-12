@@ -248,6 +248,7 @@ async function buildRun(root, plan, flags, id) {
   const rootFlags = inTree ? ['--root', runRoot] : [];
   const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
   const child = spawn(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
+  // why: a signal to this process does not reach run-plan unless it is forwarded, so run-plan can end its claude group.
   const forward = (signal) => child.kill(signal);
   const signals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
   for (const signal of signals) process.on(signal, forward);
@@ -304,6 +305,7 @@ function writeReport(root, id, phase, result) {
 }
 
 function notify(id, phase) {
+  // why: a host without osascript makes spawnSync return an error, which is ignored.
   spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
 }
 
