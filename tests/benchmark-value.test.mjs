@@ -334,7 +334,11 @@ test('the exo-run plan is copied with the repo as Repository:, passes plan-check
     prepareValueRepo(task, repo);
     writeRunPlan(task, repo);
     const plan = path.join(repo, 'docs', 'specs', 'value-test-pollution.md');
-    assert.match(await fs.readFile(plan, 'utf8'), new RegExp(`^Repository: ${await fs.realpath(repo)}$`, 'm'));
+    const text = await fs.readFile(plan, 'utf8');
+    assert.match(text, new RegExp(`^Repository: ${await fs.realpath(repo)}$`, 'm'));
+    const success = /## Success criterion\n\n`([^`]+)`/.exec(text)?.[1];
+    assert.match(success, /^node --test --test-isolation=none tests\/tax\.test\.mjs .* && node --test --test-isolation=none tests\/options\.test\.mjs tests\/pricing\.test\.mjs /);
+    assert.equal(/^Depends on: .*\| Proof: (.+)$/m.exec(text)?.[1], success);
     assert.equal(git(repo, ['status', '--porcelain']).trim(), '');
     const report = execFileSync(process.execPath, [path.join(ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'), '--plan', plan, '--loop', '--run'], { encoding: 'utf8' });
     assert.match(report, /plan-check: ok/);
