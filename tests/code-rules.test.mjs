@@ -71,6 +71,24 @@ test('a breach on a line the change did not add is not reported', () => {
   rmSync(root, { recursive: true });
 });
 
+test('a line that only gained or lost a comment keeps its comment finding but gets no structure finding', () => {
+  const root = fixture({ 'a.js': DEEP });
+  writeFileSync(join(root, 'a.js'), DEEP.replace('      if (item) {', '      if (item) { // check'));
+  const { fails } = findings(root, ['a.js']);
+  assert.equal(fails.length, 1);
+  assert.match(fails[0], /^a\.js:4 comment .*\/\/ check$/);
+  rmSync(root, { recursive: true });
+});
+
+test('a line whose code changed is still judged for structure', () => {
+  const root = fixture({ 'a.js': DEEP });
+  writeFileSync(join(root, 'a.js'), DEEP.replace('      if (item) {', '      if (item && items) {'));
+  const { fails } = findings(root, ['a.js']);
+  assert.equal(fails.length, 1);
+  assert.match(fails[0], /^a\.js:4 max-depth /);
+  rmSync(root, { recursive: true });
+});
+
 test('the simple check counts parameters and ignores a destructured object as one', () => {
   const root = fixture({});
   writeFileSync(join(root, 'a.js'), 'const one = ({ a, b, c, d }) => a;\nconst two = (a, b, c) => a;\nconst three = (a, b, c, d) => a;\n');
