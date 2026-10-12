@@ -844,8 +844,8 @@ const SIGNATURE_PLAN = planFixture({ tasks: [
 
 async function signatureCheckout() {
   const root = await gitRepository({
-    'src/ledger/create-entry.js': 'export function createEntry(id, description, amount) {\n  return { id, description, amount };\n}\n',
-    'src/import/import-rows.js': "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount));\n",
+    'src/ledger/create-entry.js': 'export function createEntry(id, amount) {\n  return { id, amount };\n}\n',
+    'src/import/import-rows.js': "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.amount));\n",
     'docs/plans/fixture.md': SIGNATURE_PLAN
   });
   git(root, 'config', 'user.name', 'exo-test');
@@ -855,13 +855,13 @@ async function signatureCheckout() {
 }
 
 async function requireBookedOn(root) {
-  await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id, description, amount, bookedOn) {\n  return { id, description, amount, bookedOn };\n}\n');
+  await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id, amount, bookedOn) {\n  return { id, amount, bookedOn };\n}\n');
 }
 
 test('a changed export signature with a caller outside Files: is refused as PLAN DRIFT', async () => {
   const { root, planPath } = await signatureCheckout();
   await requireBookedOn(root);
-  const drift = 'PLAN DRIFT: Task 1: src/ledger/create-entry.js:createEntry(id, description, amount) -> (id, description, amount, bookedOn); callers outside Files: src/import/import-rows.js';
+  const drift = 'PLAN DRIFT: Task 1: src/ledger/create-entry.js:createEntry(id, amount) -> (id, amount, bookedOn); callers outside Files: src/import/import-rows.js';
   assert.throws(() => landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root }), (error) => error instanceof LandingError && error.message === drift);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
@@ -873,20 +873,20 @@ test('a changed export signature with a caller outside Files: is refused as PLAN
 test('a changed export signature with every caller inside Files: lands', async () => {
   const { root, planPath } = await signatureCheckout();
   await requireBookedOn(root);
-  await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.text, row.amount, row.date));\n");
+  await fs.writeFile(path.join(root, 'src/import/import-rows.js'), "import { createEntry } from '../ledger/create-entry.js';\nexport const importRows = (rows) => rows.map((row) => createEntry(row.id, row.amount, row.date));\n");
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 2, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 2\nProof: ! pwd \| grep -q red-green-: pass \(exit 0\)\nLanded: 2\nRoute: unit \(.+\)\nNext: Task 1\n$/);
   const message = git(root, 'log', '-1', '--format=%B');
-  assert.match(message, /^Plan-task: fixture\/2\nSignature: src\/ledger\/create-entry\.js:createEntry\(id, description, amount\) -> \(id, description, amount, bookedOn\)$/m);
+  assert.match(message, /^Plan-task: fixture\/2\nSignature: src\/ledger\/create-entry\.js:createEntry\(id, amount\) -> \(id, amount, bookedOn\)$/m);
 });
 
 // Only a change a caller can feel refuses: more required parameters, fewer
 // parameters in total, or a rest parameter taken away.
 const CALLER_SAFE_SIGNATURES = {
-  'a renamed parameter': '(entryId, description, amount)',
-  'an added default parameter': "(id, description, amount, bookedOn = '')",
-  'an added optional typed parameter': '(id, description, amount, bookedOn?)',
-  'an added rest parameter': '(id, description, amount, ...notes)'
+  'a renamed parameter': '(entryId, amount)',
+  'an added default parameter': "(id, amount, bookedOn = '')",
+  'an added optional typed parameter': '(id, amount, bookedOn?)',
+  'an added rest parameter': '(id, amount, ...notes)'
 };
 
 for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
@@ -899,8 +899,8 @@ for (const [change, parameters] of Object.entries(CALLER_SAFE_SIGNATURES)) {
 }
 
 const CALLER_BREAKING_SIGNATURES = {
-  'a dropped parameter': ['(id, description, amount)', '(id, description)'],
-  'a default turned required': ["(id, description, amount = 0)", '(id, description, amount)'],
+  'a dropped parameter': ['(id, amount)', '(id)'],
+  'a default turned required': ["(id, amount = 0)", '(id, amount)'],
   'a rest parameter taken away': ['(id, ...parts)', '(id, parts)']
 };
 
@@ -917,7 +917,7 @@ for (const [change, [before, after]] of Object.entries(CALLER_BREAKING_SIGNATURE
 
 test('a body-only change to an export with an outside caller lands and prints nothing extra', async () => {
   const { root, planPath } = await signatureCheckout();
-  await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,  description,\n  amount) {\n  return { id, description, amount: Number(amount) };\n}\n');
+  await fs.writeFile(path.join(root, 'src/ledger/create-entry.js'), 'export function createEntry(id,\n  amount) {\n  return { id, amount: Number(amount) };\n}\n');
   const output = landTask({ planPath, planText: SIGNATURE_PLAN, number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1\nProof: ! pwd \| grep -q red-green-: pass \(exit 0\)\nLanded: 1\nRoute: unit \(.+\)\nNext: Task 2\n$/);
 });
@@ -1046,7 +1046,7 @@ test('--check runs the Land gate and Lint, refusing a failure and returning a sk
   assert.match(landTask({ ...ok, number: 1, reportText: PASS_REPORT }), /^Land gate "true" skipped: it already passed on this tree\.$/m);
   const changed = await check(withBasis('Land gate: true'));
   checkTask({ ...changed, number: 1, reportText: PASS_REPORT });
-  await fs.appendFile(path.join(changed.root, 'src/app.js'), '// edited after the check\n');
+  await fs.appendFile(path.join(changed.root, 'src/app.js'), 'export const edited = true;\n');
   assert.doesNotMatch(landTask({ ...changed, number: 1, reportText: PASS_REPORT }), /skipped/);
 });
 
