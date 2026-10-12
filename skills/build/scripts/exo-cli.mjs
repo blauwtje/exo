@@ -1,32 +1,4 @@
 #!/usr/bin/env node
-// The terminal front of run-plan.mjs.
-//
-//   node exo-cli.mjs run [plan] [run-plan flags]
-//   node exo-cli.mjs run <plan> --detach | run --resume <id>
-//   node exo-cli.mjs approve <id>
-//   node exo-cli.mjs status [<id>]
-//   node exo-cli.mjs run config [<key> <value>]
-//   node exo-cli.mjs setup
-//
-// `setup` writes the ~/.local/bin/exo launcher; `run config` shows or sets the
-// personal run.json.
-//
-// Works from the git root of the cwd. With no plan it takes the newest
-// docs/specs/*.md or docs/plans/*.md that is not a *-decisions.md file. It
-// refuses a checkout with uncommitted edits (exit 2), fetches and fast-forwards
-// the default branch (a remote-less checkout skips this; a diverged default
-// branch refuses only when the plan branch must be created from it), puts the
-// checkout on the plan's Branch: (created from the default branch when
-// missing; when the checkout is the one the plugin-root pointer names, the
-// checkout stays on the default branch and the Branch: is built in a worktree
-// under .worktrees/, so its sessions load that checkout's exo), deletes local branches merged into the default branch whose
-// upstream is gone, then runs run-plan.mjs with inherited stdio and exits with
-// its code. When the plan has a Land: line and run-plan passes, land-run.mjs
-// lands the run (phase landing, then landed, or parked on an open gate in
-// gates.md; exit 3 for parked); `approve <id>` approves a parked run's open
-// gates and continues it like --resume, by stage (build reruns run-plan,
-// landing runs land-run only). Every final phase writes report.md and sends a
-// desktop notification. --dry-run and --help skip the fetch, fast-forward and deletion.
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -41,6 +13,7 @@ import { configDir, loadRunConfig, readKeys } from './run-config.mjs';
 import { landRun } from './land-run.mjs';
 import { FINAL_PHASES, acquireLock, approveGates, readGates, createRun, isAlive, listRuns, newRunId, readState, releaseLock, removeRun, runDir, updateRun } from './run-state.mjs';
 
+const USAGE = 'usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup';
 const CLI = fileURLToPath(import.meta.url);
 const RUN_PLAN = fileURLToPath(new URL('./run-plan.mjs', import.meta.url));
 
@@ -51,7 +24,6 @@ function gitOut(root, args) {
   return answer.status === 0 ? answer.stdout.trim() : null;
 }
 
-/** The docs/specs or docs/plans *.md with the newest mtime that does not end in -decisions.md; null with none. */
 function newestPlan(root) {
   const plans = ['specs', 'plans'].flatMap((folder) => {
     let names = [];
@@ -85,7 +57,6 @@ function putOnBranch(root, wanted) {
   if (done.status !== 0) throw new Refusal(`git ${args.join(' ')} failed: ${done.stderr.trim()}`);
 }
 
-/** The path of a worktree for `wanted` under `<root>/.worktrees/`, reused when one holds the branch, else added (the branch created from the default branch when missing). */
 function worktreeFor(root, wanted) {
   const held = worktrees(root).find((tree) => tree.branch === wanted);
   if (held?.main) throw new Refusal(`branch ${wanted} is checked out in the main checkout ${held.path}, which the loaded exo runs from; run git switch ${defaultBranch(root) ?? '<default branch>'} there first`);
@@ -100,7 +71,6 @@ function worktreeFor(root, wanted) {
   return where;
 }
 
-/** True when `root` is the checkout the plugin-root pointer names; false with no readable pointer. */
 function isPluginCheckout(root) {
   try {
     const pointer = fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'exo', 'plugin-root'), 'utf8').split('\n')[0];
@@ -115,7 +85,6 @@ function git(root, args) {
   return { ok: answer.status === 0, text: answer.stdout.trim(), error: answer.stderr.trim().split('\n')[0] };
 }
 
-/** Linked-or-main worktrees as { path, branch, main }; branch is null when detached. */
 function worktrees(root) {
   const list = git(root, ['worktree', 'list', '--porcelain']).text.split('\n\n').filter(Boolean);
   return list.map((block, index) => ({
@@ -125,7 +94,6 @@ function worktrees(root) {
   }));
 }
 
-/** Fetches, then fast-forwards the local default branch to its upstream; no remote skips, a diverged branch refuses when `needed` (the plan branch is created from it), else warns. */
 function updateDefault(root, base, needed) {
   if (git(root, ['remote']).text === '') return;
   if (!git(root, ['fetch', '--prune']).ok) {
@@ -151,7 +119,6 @@ function updateDefault(root, base, needed) {
   process.stdout.write(`exo: fast-forwarded ${base} to origin/${base}\n`);
 }
 
-/** Deletes local branches merged into `base` whose upstream is gone (git branch -d); skips `keep` and any branch checked out in a worktree. */
 function cleanUp(root, base, keep) {
   git(root, ['worktree', 'prune']);
   const merged = git(root, ['branch', '--merged', base, '--format=%(refname:short)']).text.split('\n').filter(Boolean);
@@ -194,7 +161,6 @@ function setupCommand() {
   }
 }
 
-/** Leaf settings as [dotted path, value] pairs; arrays are leaves. */
 function leaves(value, prefix = '') {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return [[prefix, value]];
   return Object.entries(value).flatMap(([key, inner]) => leaves(inner, prefix ? `${prefix}.${key}` : key));
@@ -239,7 +205,6 @@ function configCommand(args) {
   try {
     value = JSON.parse(raw);
   } catch {
-    // not JSON: keep the text
   }
   const user = readUserConfig(file);
   user[key] = value;
@@ -248,7 +213,6 @@ function configCommand(args) {
   process.stdout.write(`exo: ${key} = ${JSON.stringify(value)} written to ${file}\n`);
 }
 
-/** Takes `--detach`, `--resume <id>` and the internal `--run-id <id>` out of `argv`. */
 function runOptions(argv) {
   const rest = [];
   const options = { detach: false, resume: null, runId: null };
@@ -263,7 +227,6 @@ function runOptions(argv) {
   return { ...options, rest };
 }
 
-/** Preflight and chores, then run-plan with inherited stdio; its exit code with where the landing step goes (`land` null: no landing). */
 async function buildRun(root, plan, flags, id) {
   const files = dirtyFiles(root);
   if (files.length > 0) {
@@ -284,7 +247,6 @@ async function buildRun(root, plan, flags, id) {
 
   const rootFlags = inTree ? ['--root', runRoot] : [];
   const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
-  // Async so a signal to this process reaches run-plan, which ends its claude group; exit only after it has.
   const child = spawn(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
   const forward = (signal) => child.kill(signal);
   const signals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
@@ -306,7 +268,6 @@ function planFrame(plan) {
   }
 }
 
-/** land-run for the run's stored build checkout and branch. */
 function landStage(root, id, plan) {
   const state = readState(root, id);
   const frame = planFrame(plan);
@@ -318,14 +279,12 @@ function landStage(root, id, plan) {
   return result;
 }
 
-/** report.md in the run dir, at most 15 lines. */
 function writeReport(root, id, phase, result) {
   const state = readState(root, id);
   let land = null;
   try {
     land = planFrame(state.plan).land;
   } catch {
-    // an unreadable plan leaves the line at none
   }
   const dir = runDir(root, id);
   const open = readGates(dir).filter((gate) => gate.status === 'open');
@@ -344,7 +303,6 @@ function writeReport(root, id, phase, result) {
   fs.writeFileSync(path.join(dir, 'report.md'), `${lines.slice(0, 15).join('\n')}\n`);
 }
 
-/** A desktop notification; no osascript is ignored. */
 function notify(id, phase) {
   spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
 }
@@ -377,7 +335,6 @@ async function runCommand(argv, { approving = false } = {}) {
 
   const child = options.runId !== null;
   if (!child) {
-    // State with this pid first, then the lock, so a contender never reads the lock as stale.
     const log = detach ? path.join(runDir(root, id), 'run.log') : null;
     if (old !== null) updateRun(root, id, { phase: 'starting', exitCode: null, pid: process.pid, log });
     else createRun(root, { id, plan, flags, detach, log });
@@ -436,7 +393,6 @@ async function runCommand(argv, { approving = false } = {}) {
     try {
       writeReport(root, id, phase, result);
     } catch (error) {
-      // the state already holds the outcome; say the report is missing
       process.stderr.write(`exo: report.md not written: ${error.message}\n`);
     }
     notify(id, phase);
@@ -470,15 +426,26 @@ function statusCommand(args) {
   }
 }
 
+async function dispatch(command, rest) {
+  if (command === 'setup') return setupCommand();
+  if (command === 'run' && rest[0] === 'config') return configCommand(rest.slice(1));
+  if (command === 'approve') {
+    process.exitCode = await approveCommand(rest);
+    return;
+  }
+  if (command === 'status') return statusCommand(rest);
+  if (command === 'run') {
+    process.exitCode = await runCommand(rest);
+    return;
+  }
+  if (command === '--help') return process.stdout.write(`${USAGE}\n`);
+  throw new Refusal(USAGE);
+}
+
 if (isMain(import.meta.url)) {
   const [command, ...rest] = process.argv.slice(2);
   try {
-    if (command === 'setup') setupCommand();
-    else if (command === 'run' && rest[0] === 'config') configCommand(rest.slice(1));
-    else if (command === 'approve') process.exitCode = await approveCommand(rest);
-    else if (command === 'status') statusCommand(rest);
-    else if (command === 'run') process.exitCode = await runCommand(rest);
-    else throw new Refusal('usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup');
+    await dispatch(command, rest);
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;
     process.stderr.write(`exo: ${error.message}\n`);
