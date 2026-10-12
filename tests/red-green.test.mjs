@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { redGreen, runOnBase, testPaths } from '#red-green';
+import { isTestPath, redGreen, runOnBase, testPaths } from '#red-green';
 
 function repo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'red-green-test-'));
@@ -26,9 +26,16 @@ const write = (root, p, text) => {
 
 test('testPaths keeps test directories and test file names', () => {
   assert.deepEqual(
-    testPaths(['lib/a.mjs', 'tests/a.mjs', 'x/__tests__/b.js', 'a.test.js', 'b_test.go', 'test_c.py', 'spec/d.rb', 'src/e.spec.ts', 'testing/f.js']),
-    ['tests/a.mjs', 'x/__tests__/b.js', 'a.test.js', 'b_test.go', 'test_c.py', 'spec/d.rb', 'src/e.spec.ts'],
+    testPaths(['lib/a.mjs', 'tests/a.mjs', 'x/__tests__/b.js', 'a.test.js', 'b_test.go', 'test_c.py', 'spec/d_spec.rb', 'src/e.spec.ts', 'testing/f.js', 'skills/spec/scripts/plan-check.mjs', 'docs/specs/a.md']),
+    ['tests/a.mjs', 'x/__tests__/b.js', 'a.test.js', 'b_test.go', 'test_c.py', 'spec/d_spec.rb', 'src/e.spec.ts'],
   );
+});
+
+test('isTestPath tells test files by name', () => {
+  assert.equal(isTestPath('skills/spec/scripts/plan-check.mjs'), false);
+  assert.equal(isTestPath('docs/specs/a.md'), false);
+  assert.equal(isTestPath('tests/a.mjs'), true);
+  assert.equal(isTestPath('spec/d_spec.rb'), true);
 });
 
 test('a test added with its change is proved', () => {
