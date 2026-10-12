@@ -27,14 +27,22 @@ test('this repository has no recommendation off A and no Assuming: line', () => 
   assert.deepEqual(questionOptionFindings(createRepository(REPOSITORY_ROOT)), []);
 });
 
-test('a recommendation on B is a finding at its line', (t) => {
-  const root = fixture(t, ['Recommended: (A), because fine', 'Recommended: (B), because wrong']);
+test('a recommendation on B is no finding', (t) => {
+  assert.deepEqual(findings(fixture(t, ['Recommended: (A), because fine', 'Recommended: (B), because fine'])), []);
+});
+
+test('options in order A, B, C are no finding', (t) => {
+  assert.deepEqual(findings(fixture(t, ['- **(A) One**: x', '- **(B) Two**: y', '- **(C) Three**: z'])), []);
+});
+
+test('an option out of order is a finding at its line', (t) => {
+  const root = fixture(t, ['- **(A) One**: x', '- **(C) Three**: z']);
   const total = fs.readFileSync(path.join(root, REFERENCE), 'utf8').split('\n').length - 1;
   assert.deepEqual(findings(root), [{ path: REFERENCE, line: total }]);
 });
 
-test('an indented recommendation off A is a finding', (t) => {
-  assert.equal(findings(fixture(t, ['  Recommended: (C), because wrong'])).length, 1);
+test('a list opening on B is a finding, and any other line resets the order', (t) => {
+  assert.equal(findings(fixture(t, ['- **(B) Two**: y', '', '- **(A) One**: x', 'text', '- **(B) Two**: y'])).length, 2);
 });
 
 test('an Assuming: line is a finding, plain or bulleted', (t) => {
