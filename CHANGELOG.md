@@ -31,6 +31,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Each release keeps the newest 10 versions in `CHANGELOG.md` and moves the rest to `CHANGELOG-archive.md`.
 - `plan-check` refuses a task whose Proof or the `Allow:` list starts a nested claude, because `exo run`'s sandbox cannot; the measurement moves to the Success line.
 - A run that ends `landed`, `passed` or `refused` moves itself to `.exo/kept/<id>/`, so `.exo/run/` holds only live runs.
+- After `spec` starts a detached `exo run`, the session watches it and reports its end unprompted: phase, landed range, push target and the next step.
 
 ### Changed
 
