@@ -352,6 +352,25 @@ function checkLoop(plan, root, planPath) {
   return [...problems, ...checkLoopLandGate(basis, root)];
 }
 
+const NESTED_CLAUDE = "exo run's sandbox cannot start a nested claude; move the measurement to the Success line, which verify runs outside the sandbox, with a cost cap in that line";
+const CLAUDE_COMMAND = /^(?:npx\s+)?claude(?:\s|$)/;
+const CLAUDE_IN_SCRIPT = /confinedClaude\(|\(\s*['"`]claude['"`]/;
+
+function startsClaude(part, root) {
+  if (CLAUDE_COMMAND.test(part)) return true;
+  const script = part.match(/^node\s+(?:--\S+\s+)*(\S+\.mjs)(?:\s|$)/)?.[1];
+  if (script === undefined || root === undefined) return false;
+  const file = path.resolve(root, script);
+  return fs.existsSync(file) && CLAUDE_IN_SCRIPT.test(fs.readFileSync(file, 'utf8'));
+}
+
+function checkNestedClaude(plan, root) {
+  return loopCommands(plan)
+    .filter((entry) => entry.field === 'Proof' || entry.field === 'Allow')
+    .flatMap((entry) => entry.parts.filter((part) => startsClaude(part, root)).map((part) => ({ entry, part })))
+    .map(({ entry, part }) => `${entry.field}${entry.task === null ? '' : ` of Task ${entry.task}`}: '${part}' starts a nested claude: ${NESTED_CLAUDE}`);
+}
+
 function checkDerivedNames(planText, resolvedRoot) {
   if (resolvedRoot === undefined || !fs.existsSync(path.join(resolvedRoot, 'verify/checks/derivation.mjs'))) return [];
   const names = derivedNames();
@@ -395,6 +414,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
     ...checkParallelForm(plan.frame),
     ...checkParallelDisjoint(plan.tasks, plan.frame),
     ...checkWorktreeSetup(plan.tasks, plan.frame),
+    ...checkNestedClaude(plan, resolvedRoot),
     ...(loop ? checkLoop(plan, resolvedRoot, planPath) : [])
   ];
   if (problems.length > 0) return { ok: false, lines: problems };

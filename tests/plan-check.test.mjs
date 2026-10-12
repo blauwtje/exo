@@ -435,6 +435,25 @@ test('plan-check --loop refuses a passing MCP Run: and accepts a Bash one', () =
   assert.ok(!loopProblems(planWith('node --test')).some((line) => line.includes('MCP')));
 });
 
+test('plan-check refuses a Proof: or Allow: that starts a nested claude, never the Success line', async () => {
+  const root = await gitRepository({
+    'scripts/measure.mjs': 'import { confinedClaude } from "./confined.mjs";\nconfinedClaude(["-p"]);\n',
+    'scripts/spawn.mjs': 'spawn("claude", ["-p"]);\n',
+    'scripts/plain.mjs': 'console.log("hi");\n'
+  });
+  const withProof = (proof) => compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof })] });
+  const flagged = (plan) => planCheckReport(plan, { root }).lines.filter((line) => line.includes('nested claude'));
+  assert.equal(flagged(withProof('claude -p hi')).length, 1);
+  assert.match(flagged(withProof('node --test && node scripts/measure.mjs'))[0], /Proof of Task 1: 'node scripts\/measure.mjs' starts a nested claude/);
+  assert.equal(flagged(withProof('node scripts/spawn.mjs')).length, 1);
+  assert.equal(flagged(withProof('node scripts/plain.mjs')).length, 0);
+  assert.equal(flagged(withProof('node scripts/missing.mjs')).length, 0);
+  const allowed = withProof('node --test').replace('Branch: feat/fixture', 'Branch: feat/fixture\nAllow: `npx claude -p hi`');
+  assert.match(flagged(allowed)[0], /Allow: 'npx claude -p hi' starts a nested claude/);
+  const success = withProof('node --test').replace('`node --test` passes.', '`node scripts/measure.mjs` passes.');
+  assert.equal(flagged(success).length, 0);
+});
+
 test('plan-check --loop refuses a command part that redirects output to a file, but not 2>&1 or /dev/null', () => {
   const planWith = (proof) => loopPlan([compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof })]);
   for (const proof of ['node --test > out.log', 'node a.mjs && node b.mjs >> out.log', 'node --test 2> err.txt']) {
