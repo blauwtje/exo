@@ -26,12 +26,15 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `lib/code-comments.mjs` finds comment and suppression lines in added code across common languages, and `lib/code-rules.mjs` adds ESLint checks for nesting depth 2, 3 parameters, nested ternaries and `else` after `return`, with function length over 20 lines as a warning.
 - A PreToolUse `Edit|Write|MultiEdit` hook denies an edit that adds a comment line; `guards` off turns it off.
 - The flow benchmark counts comment lines added, hook denials and the hidden check per cell (`benchmarks/results/2026-10-12-no-comments.md`).
+- `strip-comments.mjs` lists and removes disallowed code comments and prints the comment percentage; a script's usage header becomes its `--help` text.
+- `npm run check` fails on any disallowed comment in `skills/`, `lib/` and `hooks/`.
 
 ### Changed
 
 - The code standard is rewritten to four principles and bans comments except the allowed list.
 - `land-task` refuses a task whose added code breaks the code rules, and verify sends each such line to the review fixer as a `fix` finding.
 - Versions before 0.124.4 moved to `CHANGELOG-archive.md`.
+- Comments in `skills/`, `lib/` and `hooks/` are removed, from 14.6% of lines to 0.0% disallowed; a comment on behavior forced by a library, browser, platform or protocol returns as a `// why:` line.
 
 ### Fixed
 
@@ -39,6 +42,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The red-green gate kills the whole proof tree on timeout, accepts a top-level overlay path, reports a worktree it left behind, skips when no passing Bash proof or run start commit exists, and records the Red outcome of an MCP-deferred task; the benchmark spend cap rejects a bad value and counts an unpriced cell, and `exo-run` usage survives a truncated last session line.
 - `exo run` no longer stops with `Landing the review fix failed: no changed path to commit` when the review fixer changes nothing; it goes on to the final gate.
 - The Success gate of `exo run` drops an unreachable stall stop.
+- The code rules judge code structure only on lines whose code changed.
 
 ## 0.131.1 - 2026-10-11
 
