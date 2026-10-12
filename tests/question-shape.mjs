@@ -30,10 +30,10 @@ export function assertQuestionShape(text) {
     options.push(letter);
   }
   assert.ok(options.length >= 2 && options.length <= MAX_OPTIONS, `${options.length} options`);
-  assert.deepEqual(options, ['A', 'B', 'C'].slice(0, options.length), 'options lettered in order from A');
+  assert.deepEqual(options, ['A', 'B', 'C'].slice(0, options.length), 'option letters A, B, C in sequence');
   assert.equal(lines[index], '', 'a blank line after the options');
   assert.equal(index + 2, lines.length, 'the recommendation is the last line');
   const reason = lines.at(-1).match(QUESTION_REASON);
-  assert.ok(reason?.[1] === 'A', `the recommendation line: ${lines.at(-1)}`);
+  assert.ok(reason && options.includes(reason[1]), `the recommendation line names a shown letter: ${lines.at(-1)}`);
   assert.ok(words(reason[2]) <= QUESTION_CAPS.reason, `the reason runs past 8 words: ${reason[2]}`);
 }

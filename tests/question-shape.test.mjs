@@ -20,8 +20,8 @@ const QUESTION = read('skills/route-skills/references/question.md');
 test('the question reference is the one place that defines the shape, with A recommended', () => {
   assert.ok(QUESTION.includes('`**<title>**`'));
   assert.ok(QUESTION.includes('`- **(A) Label**: what the user gets`'));
-  assert.ok(QUESTION.includes('`Recommended: (A), because <why A beats the others>`'));
-  assert.ok(QUESTION.includes('A is always the recommended option'));
+  assert.ok(QUESTION.includes('`Recommended: (<letter>), because <why that option beats the others>`'));
+  assert.ok(QUESTION.includes('Options keep their order and letters, whoever recommends'));
   assert.ok(QUESTION.includes('## One question'));
   assert.ok(QUESTION.includes('A message asks exactly one question'));
   assert.ok(QUESTION.includes('the next comes only after the answer'));
@@ -48,15 +48,18 @@ test('the example is one short question with three options and the recommendatio
 });
 
 test('the shared shape check rejects a fourth option', () => {
-  const question = (letters) => [
+  const question = (letters, recommended = 'A') => [
     '**Which route do you want?**',
     'Pick one.',
     '',
     ...letters.map((letter) => `- **(${letter}) Route ${letter}**: you get ${letter}`),
     '',
-    'Recommended: (A), because it is simplest',
+    `Recommended: (${recommended}), because it is simplest`,
   ].join('\n');
   assertQuestionShape(question(['A', 'B', 'C']));
+  assertQuestionShape(question(['A', 'B', 'C'], 'B'));
+  assert.throws(() => assertQuestionShape(question(['B', 'A', 'C'], 'B')), /in sequence/);
+  assert.throws(() => assertQuestionShape(question(['A', 'B'], 'C')), /recommendation line/);
   assert.throws(() => assertQuestionShape(question(['A', 'B', 'C', 'D'])), /4 options/);
   const valid = question(['A', 'B']);
   assertQuestionShape(valid.replace('Which', '2/3 Which'));
