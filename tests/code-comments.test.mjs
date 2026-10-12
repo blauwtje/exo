@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CODE_EXTENSIONS, commentFindings } from '#code-comments';
+import { CODE_EXTENSIONS, commentFindings, commentSpans } from '#code-comments';
 
 const all = (text) => text.split('\n').map((_, index) => index + 1);
 const find = (file, text) => commentFindings(file, all(text), text);
@@ -131,6 +131,21 @@ test('a suppression naming only style rules passes', () => {
   assert.deepEqual(find('a.js', '// eslint-disable-next-line @stylistic/js/indent -- long url\n'), []);
   assert.deepEqual(find('a.py', 'x = 1  # noqa: E501\n'), []);
   assert.deepEqual(find('a.js', '// prettier-ignore\n'), []);
+});
+
+test('commentSpans lists every comment with its allowed and doc flags', () => {
+  const text = '#!/usr/bin/env node\n/** Adds. */\nexport function add() {}\nconst a = 1; // note\nconst b = 2; // why: forced\n';
+  const spans = commentSpans('a.mjs', text);
+  assert.deepEqual(
+    spans.map(({ start, end, allowed, doc }) => ({ start, end, allowed, doc })),
+    [
+      { start: 2, end: 2, allowed: true, doc: true },
+      { start: 4, end: 4, allowed: false, doc: false },
+      { start: 5, end: 5, allowed: true, doc: false },
+    ],
+  );
+  assert.equal(text.slice(spans[1].from, spans[1].to), '// note');
+  assert.deepEqual(commentSpans('notes.md', '// x\n'), []);
 });
 
 test('a suppression naming a style rule and another rule fails', () => {
