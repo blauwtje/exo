@@ -48,7 +48,7 @@ else {
 }
 `;
 
-export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', land = 'Land: local', open = null, risk = null } = {}) => [
+export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gate = 'none', land = 'Land: local', open = null, risk = null, success = '`node --version`', successRed = 'Red: none (fixture)' } = {}) => [
   '# Plan: runner fixture',
   '',
   '## Goal',
@@ -64,7 +64,8 @@ export const planText = (root, { allow = 'Allow: none', branch = 'feat/run', gat
   allow,
   '',
   '## Success criterion',
-  '`node --version`',
+  success,
+  successRed,
   '',
   '## Checkpoint',
   '- Blocks first: Task 1.',

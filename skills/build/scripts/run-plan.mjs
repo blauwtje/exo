@@ -37,7 +37,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defaultBranch, driftOf, frameOf, INLINE_TASK_LIMIT, landedTasks, loopCommands, parsePlan, planIdOf, planTaskTrailer, readyTasks, taskCommits } from '#plan-tasks';
-import { isMain, parseFlags, UsageError } from '#script-flags';
+import { redGreen, testPaths } from '#red-green';
+import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
+import { criterionCommand } from '../../verify/scripts/verify.mjs';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { readDecisions } from '#run-decision';
@@ -666,6 +668,7 @@ function detailLines(run, stop) {
     lines.push(`Denied: ${denied.length} command${denied.length === 1 ? '' : 's'} (first 120 characters each; add one to Allow: if its task needs it; full text in the iteration logs)`);
     for (const { record, command } of denied) lines.push(`  iteration ${record.iteration}, task ${record.task}: ${clip(command, 120)}`);
   }
+  if (run.redGreenLine) lines.push(run.redGreenLine);
   lines.push(...run.verifyLines);
   for (const [number, landing] of landings) if (!landing.before) lines.push(...reportLines(root, number));
   if (run.uncommitted.size > 0) lines.push(`Uncommitted after a landing: ${[...run.uncommitted].join(', ')}`);
@@ -774,6 +777,10 @@ async function main(argv) {
   const logDir = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, utcStamp());
   fs.mkdirSync(logDir, { recursive: true });
   if (!isFileOnDisk(learnings)) fs.writeFileSync(learnings, '# Learnings\n');
+  // The run's start commit, written once: a resume keeps the first one.
+  const startFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'start-commit');
+  if (!isFileOnDisk(startFile)) fs.writeFileSync(startFile, `${gitOut(root, ['rev-parse', 'HEAD'])}\n`);
+  const startCommit = fs.readFileSync(startFile, 'utf8').trim();
   const startedAt = Date.now();
   const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [], elapsed: () => Date.now() - startedAt };
   for (const number of landedAtStart) {
@@ -997,8 +1004,42 @@ async function main(argv) {
       if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
       return { resultText: outcome.timedOut ? '' : parsed.resultText };
     };
-    say('all tasks landed, final review start');
-    const tail = await runTail({ planPath, plan, root, base, branch, runSession, say });
+    // Success must fail on the run's start commit (tests of base..HEAD laid over it) and pass on the head.
+    const successGate = async () => {
+      const criterion = plan.frame['Success criterion'] ?? '';
+      const command = criterionCommand(criterion);
+      const skip = plan.successRed !== null ? `Red: none (${plan.successRed.reason})`
+        : /^Product run: none\b/m.test(criterion) ? 'Product run: none'
+          : command === null || command.startsWith('mcp:') ? 'no shell Success command' : null;
+      if (skip !== null) {
+        run.redGreenLine = `Red-green: skipped (${skip})`;
+        appendLog(progressFile, `- ${run.redGreenLine}\n`);
+        return null;
+      }
+      const evaluate = () => redGreen({
+        root, base: startCommit, command, repeat: Number.isInteger(plan.successRepeat?.count) ? plan.successRepeat.count : 1,
+        overlay: testPaths(gitOut(root, ['diff', '--name-only', '-z', `${startCommit}..HEAD`], { trim: false }).split('\0').filter(Boolean)),
+        timeoutMs: environmentMs('EXO_GATE_TIMEOUT_MS', 1_800_000)
+      });
+      let result = evaluate();
+      if (result.outcome !== 'proved') {
+        say(`red-green: ${result.outcome}, repair session`);
+        if (stall >= STALL_LIMIT) {
+          run.redGreenLine = `Red-green: ${result.outcome}: ${result.lines[0]}`;
+          return { line: `red-green: ${result.outcome}: ${result.lines[0]}`, why: `The Success criterion is not proved red-green (${clip(result.lines[0], 80)})`, next: 'fix the Success criterion or add Red: none (<reason>), then run exo run again', gate: 'FAIL' };
+        }
+        stall += 1;
+        const session = await runSession({ kind: 'fix', prompt: `The Success criterion \`${command}\` must fail on the run's start commit ${startCommit.slice(0, 12)} (with the tests of this run laid over it) and pass on the head. The check found:\n${result.lines.join('\n')}\n\nChange the tests or the product so the command proves the work, commit it, and end on one line.` });
+        if (session.stop !== undefined) return session.stop;
+        result = evaluate();
+      }
+      run.redGreenLine = result.outcome === 'proved' ? 'Red-green: proved' : `Red-green: ${result.outcome}: ${result.lines[0]}`;
+      appendLog(progressFile, `- ${run.redGreenLine}\n`);
+      return result.outcome === 'proved' ? null : { line: `red-green: ${result.outcome}: ${result.lines[0]}`, why: `The Success criterion is not proved red-green (${clip(result.lines[0], 80)})`, next: 'fix the Success criterion or add Red: none (<reason>), then run exo run again', gate: 'FAIL' };
+    };
+    const gateStop = await successGate();
+    if (gateStop === null) say('all tasks landed, final review start');
+    const tail = gateStop === null ? await runTail({ planPath, plan, root, base, branch, runSession, say }) : { stop: gateStop };
     if (tail.stop !== undefined) stop = { gate: 'FAIL', ...tail.stop };
     else {
       const gate = tail.gate;
