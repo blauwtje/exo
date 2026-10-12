@@ -28,16 +28,20 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The flow benchmark counts comment lines added, hook denials and the hidden check per cell (`benchmarks/results/2026-10-12-no-comments.md`).
 - `strip-comments.mjs` lists and removes disallowed code comments and prints the comment percentage; a script's usage header becomes its `--help` text.
 - `npm run check` fails on any disallowed comment in `skills/`, `lib/` and `hooks/`.
+- `plan-check` refuses a task whose Proof or the `Allow:` list starts a nested claude, because `exo run`'s sandbox cannot; the measurement moves to the Success line.
 
 ### Changed
 
 - The code standard is rewritten to four principles and bans comments except the allowed list.
 - `land-task` refuses a task whose added code breaks the code rules, and verify sends each such line to the review fixer as a `fix` finding.
 - Versions before 0.124.4 moved to `CHANGELOG-archive.md`.
+- This repo builds plans through `exo run --detach`, and each plan ends with a task that writes its `## Unreleased` line.
+- The `verify` skill body moves situational loop text into its references, so it fits its 2700-byte budget again.
 - Comments in `skills/`, `lib/` and `hooks/` are removed, from 14.6% of lines to 0.0% disallowed; a comment on behavior forced by a library, browser, platform or protocol returns as a `// why:` line.
 
 ### Fixed
 
+- `exo run` now matches an unsandboxed exo script with its arguments, so `land-task` and `verify.mjs` run outside the sandbox with any flags.
 - A test run inside `exo run` no longer parks its guard refusals as open gates in the live run, nor fails tests that branch on the run: `npm test` and `npm run check` strip `EXO_RUN`, `EXO_RUN_DIR`, `EXO_RUN_TASK` and `EXO_DROPS` first.
 - A timeout or kill of `exo run` now also stops its claude session, which runs in its own process group, and a run whose log folder was removed no longer crashes; a benchmark cell time-out likewise ends the cell's whole process tree before its folder goes.
 - The red-green gate kills the whole proof tree on timeout, accepts a top-level overlay path, reports a worktree it left behind, skips when no passing Bash proof or run start commit exists, and records the Red outcome of an MCP-deferred task; the benchmark spend cap rejects a bad value and counts an unpriced cell, and `exo-run` usage survives a truncated last session line.
