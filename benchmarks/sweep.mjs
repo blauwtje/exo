@@ -41,6 +41,9 @@ const KILL_GRACE_MS = 10 * 1000;
 const CELL_TIMEOUT_MS = Number(process.env.EXO_SWEEP_CELL_TIMEOUT_MS) || null;
 // Cells running now, each with the scratch folder that goes once it has closed.
 const live = new Map();
+// Set by the sweep's own SIGINT or SIGTERM: no further cell starts, and a cell
+// it ended records nothing, so a rerun on the same --out runs that cell again.
+let stopping = false;
 
 // SIGTERM to the cell's process group, SIGKILL to it once the grace has passed or
 // the leader has closed, so no grandchild outlives the cell or its folder.
@@ -51,20 +54,31 @@ function endGroup(child) {
   child.once('close', () => clearTimeout(grace));
 }
 
+// Once the leader has closed its pid may be reused, so only its group is
+// signalled: a group id stays taken while any member runs. Windows has no
+// groups, and the bare pid is no longer the cell's, so nothing is sent there.
+function killLeftovers(child) {
+  if (process.platform === 'win32') return;
+  try { process.kill(-child.pid, 'SIGKILL'); } catch { /* group already gone */ }
+}
+
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
+    if (stopping) return;
+    stopping = true;
     const roots = [...live.values()];
+    const leave = () => {
+      for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
+      process.exit(130);
+    };
+    if (live.size === 0) leave();
     for (const child of live.keys()) {
       endGroup(child);
       child.once('close', () => {
         live.delete(child);
-        if (live.size === 0) {
-          for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
-          process.exit(130);
-        }
+        if (live.size === 0) leave();
       });
     }
-    if (live.size === 0) process.exit(130);
   });
 }
 
@@ -120,7 +134,7 @@ function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
       clearTimeout(timer);
       live.delete(child);
       // The leader may have left a descendant behind, so the group goes whatever ended it.
-      killTree(child.pid);
+      killLeftovers(child);
       fs.closeSync(stdout);
       fs.closeSync(stderr);
       resolve({ exitCode, timedOut, wallMs: Date.now() - startedAt });
@@ -268,6 +282,7 @@ async function runCell(cell, runDirectory, copies) {
   try {
     prepareRepository(cell, repository, path.join(cellRoot, 'origin.git'));
     const outcome = await runClaude(cell, repository, cellRoot, cellDirectory, copies);
+    if (stopping) return null;
     const result = readResult(cellDirectory);
     const usage = cell.runSession
       ? writeRunUsage(cellDirectory, runLedger(repository))
@@ -302,7 +317,7 @@ async function runCell(cell, runDirectory, copies) {
 async function runPool(cells, limit, worker) {
   let next = 0;
   const lanes = Array.from({ length: Math.min(limit, cells.length) }, async () => {
-    while (next < cells.length) {
+    while (!stopping && next < cells.length) {
       const index = next;
       next += 1;
       await worker(cells[index], index);
@@ -379,6 +394,8 @@ async function main() {
         running.add(cell.id);
         records[index] = await runCell(cell, runDirectory, copies);
         running.delete(cell.id);
+        // Null once the sweep's own signal ended the cell; the sweep exits when its last cell closes.
+        if (records[index] === null) return;
       }
       done += 1;
       const record = records[index];
