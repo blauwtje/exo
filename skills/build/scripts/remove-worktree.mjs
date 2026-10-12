@@ -25,6 +25,7 @@ function exoFiles(root) {
 }
 
 function untrackedFiles(worktree, folder) {
+  // why: -z keeps a name with a space or quote raw, and --ignored=traditional with --untracked-files=all lists each file inside an ignored directory.
   const args = ['-C', worktree, 'status', '--porcelain', '-z', '--ignored=traditional', '--untracked-files=all', '--', folder];
   return execFileSync('git', args, { encoding: 'utf8' })
     .split('\0')

@@ -143,6 +143,7 @@ async function readPlatformFonts(page, records) {
   if (records.length === 0) return unanswered;
   let cdp;
   try {
+    // why: only Chromium offers a CDP session; another engine throws and the records stay unanswered.
     cdp = await page.context().newCDPSession(page);
     await cdp.send('DOM.enable');
     await cdp.send('CSS.enable');
