@@ -49,7 +49,7 @@ test('no hook runs a delegate budget, and only Bash, Agent, the context tools an
   assert.deepEqual(hookEntries().filter((entry) => entry.hook.command.includes('delegate-budget')), []);
   const bashDispatcher = fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-bash.mjs'), 'utf8');
   assert.doesNotMatch(bashDispatcher, /delegate-budget/);
-  assert.deepEqual(hookEntries().filter((entry) => entry.event === 'PreToolUse').map((entry) => entry.matcher), ['Bash', 'Agent', 'Read|Edit|Write|Glob|Grep|WebFetch|WebSearch|Skill|NotebookEdit|ToolSearch|mcp__.*', 'AskUserQuestion']);
+  assert.deepEqual(hookEntries().filter((entry) => entry.event === 'PreToolUse').map((entry) => entry.matcher), ['Bash', 'Agent', 'Edit|Write|MultiEdit', 'Read|Glob|Grep|WebFetch|WebSearch|Skill|NotebookEdit|ToolSearch|mcp__.*', 'AskUserQuestion']);
 });
 
 test('the one Stop hook and the AskUserQuestion hook run the run-no-wait script', () => {
@@ -93,7 +93,7 @@ test('the session hook prints no book command', () => {
 
 test('no tool name matches more than one PreToolUse entry', () => {
   const entries = hookEntries().filter((entry) => entry.event === 'PreToolUse');
-  const toolNames = ['Bash', 'Read', 'Edit', 'Write', 'WebFetch', 'WebSearch', 'Task', 'Agent', 'Skill', 'Grep', 'Glob', 'NotebookEdit', 'ToolSearch', 'AskUserQuestion', 'mcp__x__y'];
+  const toolNames = ['Bash', 'Read', 'Edit', 'Write', 'MultiEdit', 'WebFetch', 'WebSearch', 'Task', 'Agent', 'Skill', 'Grep', 'Glob', 'NotebookEdit', 'ToolSearch', 'AskUserQuestion', 'mcp__x__y'];
   for (const toolName of toolNames) {
     const matching = entries.filter((entry) => new RegExp(`^(?:${entry.matcher ?? '.*'})$`).test(toolName));
     assert.ok(matching.length <= 1, `${toolName}: ${JSON.stringify(matching.map((entry) => entry.hook.command))}`);
@@ -118,9 +118,9 @@ test('the session hook runs the Node file under bash', () => {
   assert.equal(entry.hook.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs"');
 });
 
-test('the plugin registers six hook commands, each under bash', () => {
+test('the plugin registers seven hook commands, each under bash', () => {
   const entries = hookEntries();
-  assert.equal(entries.length, 6, JSON.stringify(entries.map((entry) => entry.hook.command)));
+  assert.equal(entries.length, 7, JSON.stringify(entries.map((entry) => entry.hook.command)));
   for (const { event, hook } of entries) assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
 });
 
