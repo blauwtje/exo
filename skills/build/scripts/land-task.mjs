@@ -34,6 +34,7 @@ function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
   }
+  // why: git add refuses a path that matches neither the index nor the tree, so a path already staged as deleted stays out of it.
   const removed = new Set(execFileSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--diff-filter=D'], { encoding: 'utf8' }).split('\n'));
   const addArgs = task.files.filter((file) => !removed.has(file.path)).map((file) => shellQuote(file.path)).join(' ');
   const addLine = addArgs === '' ? '' : `git add ${addArgs}\n`;
@@ -300,6 +301,7 @@ function sourceAtHead(root, file) {
 function outsideCallers(root, name, inFiles) {
   const pathspecs = [...SCRIPT_EXTENSIONS].map((extension) => `*${extension}`);
   const found = spawnSync('git', ['-C', root, 'grep', '-l', '-w', '-F', '-e', name, '--', ...pathspecs], { encoding: 'utf8' });
+  // why: git grep exits 1 when nothing matches, so only a higher status is a failure.
   if (found.error !== undefined || found.status > 1) {
     throw new LandingError(`git grep for callers of ${name} failed: ${found.error?.message ?? found.stderr.trim()}`);
   }

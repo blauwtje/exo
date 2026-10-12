@@ -57,6 +57,7 @@ export function pickPlans(candidates, branch) {
 
 export function resolvePlan(root) {
   const repository = gitLine(root, ['rev-parse', '--show-toplevel']);
+  // why: git branch --show-current prints an empty line on a detached HEAD.
   const branch = gitLine(root, ['branch', '--show-current']);
   const candidates = candidatePlans(root, repository);
   if (candidates.length === 0) {

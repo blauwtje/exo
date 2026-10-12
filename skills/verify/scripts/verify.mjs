@@ -41,8 +41,10 @@ const FAIL_TAIL_LINES = 20;
 const FAIL_TAIL_LINE_LENGTH = 300;
 const PASS_REPORT_LINE = /^\s*(?:#\s*Subtest:|ok\b|pass\b|✔|✓)/i;
 const FAIL_REPORT_LINE = /^\s*(?:fail\b|not ok\b|✖|✗|×)/i;
+// why: a shell reads a backtick pair as command substitution, so a Proof with one is prose, not a command.
 const PROSE_PROOF = /`/;
 const SNAKE_CASE_WORD = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/;
+// why: a POSIX shell returns 127 for a command it cannot find.
 const COMMAND_NOT_FOUND = 127;
 const REMOVED_ASSERTION = /expect\(|assert/;
 const ADDED_SKIP = /\.(?:skip|only)\b/;
@@ -101,6 +103,7 @@ export function commandLine(argv) {
 
 function repoPathOf(planPath, root) {
   const top = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  // why: git prints repository paths with / separators on every platform.
   return path.relative(top, fs.realpathSync(planPath)).split(path.sep).join('/');
 }
 
@@ -296,6 +299,7 @@ export function manualChecks(frame) {
 function runCommand(command, timeoutMs) {
   return new Promise((resolve) => {
     const started = Date.now();
+    // why: a detached child leads its own process group, which Windows does not support.
     const child = spawn(command, { shell: true, detached: process.platform !== 'win32' });
     let output = '';
     let done = false;
