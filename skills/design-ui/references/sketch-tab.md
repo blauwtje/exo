@@ -37,7 +37,7 @@ Sketch = `$RUN/sketches/<nnn>-<topic>.html`, numbered in asking order. A revisio
 - Opens with `<title>`: the question in the user's language and plain words; the tab shows it above the sketch.
 - Two to four options, each one element carrying `data-choice="<id>"` and a visible name.
 - Id: letters, digits, hyphens.
-- Recommended option first; its name says so.
+- Keep dealt order; the recommended one is named so.
 - Each option carries `aria-label` with its short name.
 - Options side by side, fit one screen at 1280 pixels wide without scrolling, stack below 700.
 
@@ -45,7 +45,7 @@ Sketch = `$RUN/sketches/<nnn>-<topic>.html`, numbered in asking order. A revisio
 
 The direction choice is one file, `$RUN/sketches/<nnn>-directions.html`, because the tab keeps one answer per file.
 
-- One `data-choice` panel per dealt contract, 2-3, recommended first and named so; the one-axis rule does not apply.
+- One `data-choice` panel per dealt contract, 2-3, keep dealt order; the recommended one is named so; the one-axis rule does not apply.
 - Panel → that direction's first screen, real copy from the Phase 1 inventory, own `<style>` from the contract's palette, type pair and layout idea, at most 50 lines.
 - One https font stylesheet serves every pair.
 - Panels side by side at 1280 pixels wide, stacked below 700.

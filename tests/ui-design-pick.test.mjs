@@ -276,12 +276,13 @@ describe('pick.mjs', () => {
     assert.match(html, /Koel en technisch/, 'the title the skill wrote is the heading');
     assert.match(html, /Diepe blauwen, veel contrast, nadruk op cijfers\./, 'its description sits under it');
     assert.ok(
-      html.indexOf('data-index="1"') < html.indexOf('data-index="0"'),
-      'the recommended variant takes the first seat'
+      html.indexOf('data-index="0"') < html.indexOf('data-index="1"'),
+      'the recommended variant keeps its dealt seat'
     );
+    assert.match(html, /id="tab-1"[^>]*class="tab recommended"|class="tab recommended"[^>]*id="tab-1"/, 'the badge sits on variant 1');
     assert.doesNotMatch(html, /Claude raadt/, 'the seat and the badge state it, not a sentence of chrome');
     assert.equal((html.match(/class="badge"/g) ?? []).length, 1, 'exactly one variant is badged');
-    assert.match(html, /Option B/, 'an unnamed variant is marked by its seat, not by its directory');
+    assert.match(html, /Option A/, 'an unnamed variant is marked by its seat, not by its directory');
     assert.match(html, /<span class="ordinal">A<\/span>/, 'seats are lettered, so a chooser names one rather than counting');
     assert.doesNotMatch(html, /tide-band-strata/, 'no dealt axis id reaches the chooser');
 

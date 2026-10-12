@@ -342,9 +342,7 @@ export async function readLabels(labelsFile, defaults = DEFAULT_LABELS) {
 }
 
 function page(variants, key, { words, recommended, recommendedNote }) {
-  const seated = recommended === null
-    ? variants
-    : [variants[recommended], ...variants.filter((variant) => variant.index !== recommended)];
+  const seated = variants;
 
   const signature = (written) => {
     if (!written) return '';
@@ -551,9 +549,6 @@ ${seated.map(panel).join('\n')}
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   const chooseButton = document.getElementById('choose');
   const description = document.getElementById('description');
-  // A tab's seat is where it sits in the strip; its index is the variant it
-  // serves. The two stop matching once the recommendation takes the first seat,
-  // so the Choose button always carries the index, never the seat.
   let activeSeat = 0;
 
   function activate(seat, focus) {

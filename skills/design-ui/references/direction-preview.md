@@ -82,7 +82,7 @@ Both take `--url <template> --source <template>` for stack comps.
 - `--check` exits 2 naming a missing `index.html` or a dev server that does not answer, and prints one JSON line per variant: its captures, whether they are full page, its finding count, and its `check-ui.json` path.
 - The picker waits until every seat's file exists or its URL answers, and each has a fresh capture at both widths, then prints the URL on stderr and opens the tab.
 - The arrow keys or a seat's letter switch tabs, and the one Choose button answers for the open tab.
-- `--recommend <n>` seats that variant first and badges it, and `--recommend-note` puts the reason above the tabs in one short everyday sentence.
+- `--recommend <n>` badges that variant in its dealt seat and seats none first, and `--recommend-note` puts the reason above the tabs in one short everyday sentence.
 - Always name this skill's own pick: a row of three with no opinion hands the work back.
 - `--frame <width>x<height>` caps that width and centres the comp, ignoring the height, so `--frame 390x844` shows a phone-first surface at phone width.
 - `--intrinsic` belongs to a size comparison alone, where each comp's own `meta.json` width sets its frame, because the width is the thing being compared.
@@ -110,6 +110,6 @@ A contract may carry a chooser-only `signature`, so the tab shows its material r
 
 ## Judgment
 
-- A human selection of a rendered variant outranks the recommendation this skill seated first.
+- A human selection of a rendered variant outranks the recommendation this skill badged.
 - The chooser's own language outranks the script's English last resort, and plain words outrank exact ones.
 - A comp the check shows clean at both widths outranks a more ambitious comp it shows broken: repair once, re-check, report what is left.
