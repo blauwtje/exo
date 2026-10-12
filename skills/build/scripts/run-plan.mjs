@@ -160,7 +160,7 @@ export function sandboxMode(config, { platform = process.platform } = {}) {
 
 export function sandboxSettings(mode, { tail = false } = {}) {
   if (!mode.enabled) return null;
-  const excludedCommands = [...new Set(unsandboxedScripts(tail).flatMap((file) => spellings(file).flatMap((spelling) => [`node "${spelling}"`, `node ${spelling}`])))];
+  const excludedCommands = [...new Set(unsandboxedScripts(tail).flatMap((file) => spellings(file).flatMap((spelling) => [`node "${spelling}"`, `node ${spelling}`, `node "${spelling}":*`, `node ${spelling}:*`])))];
   return {
     sandbox: {
       enabled: true,
