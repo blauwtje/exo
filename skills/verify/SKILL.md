@@ -22,7 +22,7 @@ effort: high
    - Each dispatch follows `references/review-rules.md` `## Dispatch`.
    - After resume, `BLOCKED` → end the turn with its report.
    - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, `REVIEWED` records and any `CODE-RULES` path included; its line is step 3's verdict.
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask the user once for a `codex exec` second review of the same plan and diff; append its findings to the findings path before step 3; `none` or a decline → say nothing.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask user once for a `codex exec` second review of same plan and diff; append its findings to findings path before step 3; `none` or decline → say nothing.
    - `--land` → skip that offer.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.
    - `fix=0` → step 4, no `exo:fix-review` dispatch, rerun or fix commit.
