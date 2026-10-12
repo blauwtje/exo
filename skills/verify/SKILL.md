@@ -13,29 +13,26 @@ effort: high
    - Then in one message: the full run in the background, step 2's dispatch.
    - No plan file → end the turn: ask for its path, name `build`'s no-plan route; never hand-run checks or `ship`.
    - `SKIP`, `WARN`, `FIX-ONLY` or `SESSION` line → read `references/gate-lines.md`.
-   - The gate runs once: the `Success criterion`'s first backticked command, else its `Land gate:`, else `npm run check`, else `npm test`.
    - `FAIL` or `STRAY` line → end the turn with the script's own report; rerun no check.
    - Step 3 starts after the full run prints no `FAIL` or `STRAY`.
 2. **Review each task.** Skip a `REVIEWED` line and a `REVIEW` line whose reviewer reads `none`.
    - Dispatch one `exo:review-branch` agent per other `REVIEW` line, all in one message, setting `model` and `effort` to the line's `model=` and `effort=` when named, unless the budget rule sets others.
    - Add one dispatch with scope `overlap` when `OVERLAP` lists more than `none`.
-   - Each dispatch follows `references/review-rules.md` `## Dispatch`.
-   - After resume, `BLOCKED` → end the turn with its report.
    - Then run `node "${CLAUDE_SKILL_DIR}/scripts/merge-reviews.mjs" --root <checkout> --report <each report path>`, `REVIEWED` records and any `CODE-RULES` path included; its line is step 3's verdict.
-   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask user once for a `codex exec` second review of same plan and diff; append its findings to findings path before step 3; `none` or decline → say nothing.
+   - Run `node "${CLAUDE_SKILL_DIR}/scripts/pick-reviewer.mjs" --codex`: `offer` → ask once for a `codex exec` second review of the same plan and diff, append its findings to the findings path before step 3; else say nothing.
    - `--land` → skip that offer.
 3. **Repair the findings.** `FINDINGS` with `fix=1` or more goes to the `exo:fix-review` agent, with no model override, the filled dispatch line, `../build/review-fixer-prompt.md` by path.
    - `fix=0` → step 4, no `exo:fix-review` dispatch, rerun or fix commit.
-   - After the dispatch → follow `references/repair.md`.
+   - Else after the dispatch → `references/repair.md`.
 4. **Offer the finish.** End on `ship`, unless a request or plan rules out a push; then say nothing left the machine.
-   - `defect` lines in the findings → first book each per `references/lessons.md`; a refused or denied booking blocks nothing.
+   - `defect` lines in the findings → first book each per `references/lessons.md`.
    - `--land` → pass `--land` to `ship`.
 
 ## References
 
 | File | Read it when |
 |---|---|
-| `references/review-rules.md` | Step 2, each dispatch. |
+| `references/review-rules.md` | Step 2, each dispatch and each `BLOCKED`: its `## Dispatch` rules. |
 | `references/repair.md` | Step 3, after the fixer returns. |
 | `references/lessons.md` | Step 4, when the findings hold a `defect`. |
 | `references/gate-lines.md` | Step 1, a line its pointer names. |
