@@ -311,28 +311,42 @@ function snapshot(root) {
 
 const untrackedPaths = (root) => (gitOut(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }) ?? '').split('\0').filter(Boolean);
 
-/** Saves every non-.exo change against HEAD as a binary patch (untracked included, the index untouched), then restores tracked files and removes the untracked paths absent from `knownUntracked`. Returns the patch path, or null when the tree was clean. */
+/**
+ * Saves the plan session's leftover as a binary patch, built in a copy of the index: every tracked change against HEAD plus the untracked files absent from `knownUntracked`, never .exo/ or an ignored file.
+ * Then restores the index and tracked files to HEAD and removes exactly those untracked files.
+ * Returns `{ patch }` (null for a clean tree), or `{ patch, failed }` naming the git step or write that failed; a failure before the restore leaves the tree as it was.
+ */
 function shelveLeftover(root, patchFile, knownUntracked) {
+  // A nested repository (listed as `dir/`) would enter the patch as a bare commit id, so it stays in place.
+  const fresh = untrackedPaths(root).filter((file) => !knownUntracked.has(file) && !file.startsWith(`${SCRATCH_FOLDER}/`) && !file.endsWith('/'));
+  const spec = ['--', '.', `:(exclude)${SCRATCH_FOLDER}`];
+  const git = (args, options = {}) => spawnSync('git', ['-C', root, ...args], { maxBuffer: 1024 * 1024 * 1024, ...options });
+  const failure = (step, answer) => ({ patch: null, failed: `${step} failed: ${String(answer.error?.message ?? answer.stderr ?? '').trim().split('\n')[0] || `exit ${answer.status}`}` });
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-leftover-'));
   try {
     const indexFile = path.resolve(root, gitOut(root, ['rev-parse', '--git-path', 'index']) ?? '.git/index');
     const copy = path.join(scratch, 'index');
     if (fs.existsSync(indexFile)) fs.copyFileSync(indexFile, copy);
     const env = { ...process.env, GIT_INDEX_FILE: copy };
-    const spec = ['--', '.', `:(exclude)${SCRATCH_FOLDER}`];
-    spawnSync('git', ['-C', root, 'add', '-A', ...spec], { env });
-    const diff = spawnSync('git', ['-C', root, 'diff', '--cached', '--binary', 'HEAD', ...spec], { env, maxBuffer: 1024 * 1024 * 1024 });
-    if (diff.status !== 0) return null;
-    if (diff.stdout.length === 0) return null;
-    fs.writeFileSync(patchFile, diff.stdout);
+    const tracked = git(['add', '-u', ...spec], { env });
+    if (tracked.status !== 0) return failure('git add -u', tracked);
+    const added = fresh.length === 0 ? tracked : git(['--literal-pathspecs', 'add', '--pathspec-from-file=-', '--pathspec-file-nul'], { env, input: fresh.join('\0') });
+    if (added.status !== 0) return failure('git add of the untracked files', added);
+    const diff = git(['diff', '--cached', '--binary', 'HEAD', ...spec], { env });
+    if (diff.status !== 0) return failure('git diff', diff);
+    if (diff.stdout.length === 0) return { patch: null };
+    try {
+      fs.writeFileSync(patchFile, diff.stdout);
+    } catch (error) {
+      return { patch: null, failed: `writing ${path.basename(patchFile)} failed: ${error.code ?? error.message}` };
+    }
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
-  spawnSync('git', ['-C', root, 'restore', '--worktree', '--source=HEAD', '--', '.', `:(exclude)${SCRATCH_FOLDER}`]);
-  for (const file of untrackedPaths(root)) {
-    if (!knownUntracked.has(file) && !file.startsWith(`${SCRATCH_FOLDER}/`)) fs.rmSync(path.join(root, file), { force: true, recursive: true });
-  }
-  return patchFile;
+  const restored = git(['restore', '--staged', '--worktree', '--source=HEAD', ...spec]);
+  if (restored.status !== 0) return { ...failure('git restore', restored), patch: patchFile };
+  for (const file of fresh) fs.rmSync(path.join(root, file), { force: true });
+  return { patch: patchFile };
 }
 
 const planTaskLines = (root, sha) => (gitOut(root, ['log', '-1', '--format=%B', sha]) ?? '').split('\n').filter((line) => /^Plan-task: /.test(line));
@@ -893,8 +907,13 @@ async function main(argv) {
       }
       // The per-task fallback starts from HEAD: the session's leftover goes to a patch first.
       if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
-        const patch = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
+        const { patch, failed } = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
         if (patch !== null) say(`plan session leftover saved to ${patch}`);
+        // A fallback session on a dirty tree would build on the leftover, so a failed clean-up stops the run.
+        if (failed !== undefined) {
+          say(`plan session leftover not cleared: ${clip(failed, 80)}`);
+          stop = { line: `plan session leftover not cleared: ${failed}`, why: 'The plan session left changes the script could not clear', next: `${patch === null ? 'commit or remove the leftover (git status)' : `the leftover is in ${patch}; restore the tree to HEAD`}, then run exo run again` };
+        }
       }
     }
   }
