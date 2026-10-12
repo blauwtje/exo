@@ -52,6 +52,9 @@
 // base..HEAD touched prints `FIX-ONLY <path> (<short shas>)`, newest first, after the PASS or
 // STRAY lines: a report line, not drift, so it does not fail. A path any task-trailer or non-fix
 // commit touched, or one with no commit in the range, stays a STRAY line.
+// With `--base`, #code-rules checks the lines each landed task added: a failed rule goes to
+// `<root>/.exo/code-rules.md` as fix findings for merge-reviews.mjs, printed as a `CODE-RULES <path>`
+// line and never a FAIL line; a warned rule prints `WARN code-rules`.
 // Exits 1 on any FAIL or STRAY line; `Land gate: none` with no Success criterion
 // command prints UNRUN, not PASS, and does not fail.
 
@@ -64,6 +67,7 @@ import { criterionCommand, frameOf, landedTasks, parsePlan, planIdOf, planRoute,
 import { killTree } from '#process-tree';
 import { cachedPass, recordPass } from '#check-cache';
 import { changedPaths } from '#size-facts';
+import { codeRuleFindings } from '#code-rules';
 import { proofsReport } from '#proofs-report';
 import { transcriptFolder } from '#confine-claude';
 import { contextPeaks, HARD_LIMIT } from '#context-limits';
@@ -344,6 +348,39 @@ function claimLines(task, root, planId) {
   return lines;
 }
 
+/** The `.exo/code-rules.md` text for code-rule `fails`, each a `path:line` finding with a Probe line that passes once its source line is gone. */
+export function codeRulesReport(fails, root) {
+  const entries = fails.flatMap((finding) => {
+    const at = /^(.+?):(\d+) /.exec(finding);
+    if (at === null) return [];
+    const source = fs.readFileSync(path.join(root, at[1]), 'utf8').split('\n')[Number(at[2]) - 1]?.trim() ?? '';
+    if (source === '') return [];
+    return [`${finding} defect fix`, `  Probe: ! grep -nF -- '${source.replace(/'/g, "'\\''")}' ${at[1]}`];
+  });
+  return ['FINDINGS', '', ...entries, ''].join('\n');
+}
+
+/**
+ * The `WARN code-rules` lines and, when added code breaks a rule, the `CODE-RULES <path>` line
+ * for the report written to `<root>/.exo/code-rules.md`; a stale report is removed. Empty with no base.
+ */
+function codeRuleLines(plan, landed, { root, planId, base }) {
+  if (base === undefined) return [];
+  const reportPath = path.join(path.resolve(root), '.exo', 'code-rules.md');
+  fs.rmSync(reportPath, { force: true });
+  const fails = new Set();
+  const lines = [];
+  for (const task of plan.tasks.filter((entry) => landed.has(entry.number))) {
+    const found = codeRuleFindings({ root, base, paths: taskPaths(task, root, planId) });
+    found.fails.forEach((finding) => fails.add(finding));
+    lines.push(...found.warns.map((warn) => `WARN code-rules Task ${task.number} (${warn})`));
+  }
+  if (fails.size === 0) return lines;
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, codeRulesReport([...fails], root));
+  return [...lines, `CODE-RULES ${reportPath}`];
+}
+
 /** The last `SUMMARY ` line of `output`, or null when it prints none. */
 export function summaryLine(output) {
   return output.match(SUMMARY_LINE)?.at(-1) ?? null;
@@ -616,6 +653,7 @@ export async function runGate(planText, { planPath, checkCommand, root = process
   lines.push(...(claims.length === 0 ? ['PASS claims-diff'] : claims));
   if (claims.some((line) => line.startsWith('FAIL '))) failed = true;
 
+  lines.push(...codeRuleLines(plan, landed, { root, planId, base }));
   lines.push(...reviewLines(plan, landed, { root, planId, base }));
   for (const { task, title, done } of taskStates(plan.tasks, landed)) lines.push(`${done ? 'DONE' : 'OPEN'} Task ${task}: ${title}`);
   for (const check of manualChecks(plan.frame)) lines.push(`MANUAL ${check}`);
