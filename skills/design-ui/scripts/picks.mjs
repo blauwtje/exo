@@ -1,21 +1,3 @@
-// The machine-wide log of each project's font and accent picks, so a repeat
-// across projects can be warned about. One JSON file at
-// `<configDirectory()>/exo/design-picks.json`:
-// {"version":1,"projects":{<absolute project root>:{"display":<family>,
-// "body":<family>,"accent":<color>}}}. A project holds one entry; recording it
-// again replaces it, so a rerun never counts against itself. Values are stored
-// lowercase, single-spaced, unquoted. The counts below cover other projects only.
-//
-//   node scripts/picks.mjs --project <root> --display <family> --body <family> --accent <color>
-//
-// Records the project's picks, then prints the one line the caller sends the user:
-// "Accent <color>, display <family>, body <family>", each pick another project
-// used followed by "(also used in <n> earlier project(s))", n being how many other
-// projects used that family (in either role) or a near accent. An accent is near
-// when close in OKLCH under NEAR_ACCENT; an unparseable accent matches only the
-// same string. The caller translates the line into the reply's language.
-// Exit 2 is a usage error; exit 1 means the log is unreadable and is left untouched.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -24,9 +6,6 @@ import { isMain, parseFlags, UsageError } from '#script-flags';
 import { oklchOf } from './check-ui.mjs';
 import { normalizeFamily } from './overused-fonts.mjs';
 
-// How close another project's accent sits in OKLCH to count as a repeat: the hue gap in degrees when both are
-// chromatic, and the lightness gap on a 0-1 scale. Below `chroma` an accent is a near-grey, whose hue means
-// nothing, so two near-greys match on lightness alone.
 const NEAR_ACCENT = Object.freeze({ hue: 20, lightness: 0.12, chroma: 0.05 });
 
 export function picksFile() {
@@ -48,7 +27,6 @@ function readLog(file) {
   return log;
 }
 
-/** Whether two stored accents read as the same pick: near in OKLCH, or the same string when either is unparseable. */
 function nearAccent(first, second) {
   const a = oklchOf(first);
   const b = oklchOf(second);
@@ -68,7 +46,6 @@ function writeLog(file, log) {
   fs.renameSync(temporary, file);
 }
 
-/** Record `picks` for `project` and return how many other projects made each pick. */
 export function recordPicks(project, picks) {
   const file = picksFile();
   const log = readLog(file);
@@ -90,7 +67,6 @@ export function recordPicks(project, picks) {
   return counts;
 }
 
-/** The line the caller shows the user: each pick as given, a repeated one followed by its count of other projects. */
 export function picksLine(picks, counts) {
   const shown = (value) => String(value).trim().replace(/^(["'])(.*)\1$/, '$2');
   const repeat = (count) => {
@@ -104,8 +80,12 @@ export function picksLine(picks, counts) {
   ].join(', ');
 }
 
+const USAGE = `Usage:
+  node scripts/picks.mjs --project <root> --display <family> --body <family> --accent <color>
+`;
+
 function main(argv) {
-  const flags = parseFlags(argv, { project: 'string', display: 'string', body: 'string', accent: 'string' });
+  const flags = parseFlags(argv, { project: 'string', display: 'string', body: 'string', accent: 'string' }, { usage: USAGE });
   for (const name of ['project', 'display', 'body', 'accent']) {
     if (!flags[name]?.trim()) throw new UsageError(`--${name} is required`);
   }

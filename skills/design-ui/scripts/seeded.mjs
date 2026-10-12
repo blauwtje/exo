@@ -1,6 +1,3 @@
-// The seeded draw direction.mjs deals from. It must repeat the same order for the
-// same seed token, so the generator and the shuffle live here once. Nothing is written.
-
 import { createHash } from 'node:crypto';
 
 export function createPrng(seedText) {
@@ -18,8 +15,6 @@ export function createPrng(seedText) {
   return { next, below: (bound) => next() % bound };
 }
 
-// Fisher-Yates, descending, drawing one value per swap: the callers below differ
-// only in what they hand it, so the swap order stays identical across both.
 function shuffleInPlace(order, prng) {
   for (let index = order.length - 1; index > 0; index -= 1) {
     const swap = prng.below(index + 1);

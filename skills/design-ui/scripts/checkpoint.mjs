@@ -1,10 +1,3 @@
-// One design-ui loop checkpoint: capture, audit and inspect a stage in one
-// call, so a caller never assembles the four scripts' flags by hand and never
-// sees their JSON on its own stdout.
-//
-//   node scripts/checkpoint.mjs --run <dir> --stage baseline|post-build|final
-//                                --url <file:// or http:// url> [--source <dir>]
-
 import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -37,7 +30,6 @@ async function readJson(file) {
   }
 }
 
-/** Runs `node <script> <args>`; a failing child is reported by its exit code, never thrown. */
 function runStep(name, args) {
   return new Promise((resolve) => {
     execFile(
@@ -53,7 +45,6 @@ function runStep(name, args) {
   });
 }
 
-/** Every finding the check-ui report carries, in the order check-ui itself flattens them. */
 function allFindings(checkUi) {
   const findings = [...(checkUi?.static?.findings ?? []), ...(checkUi?.rendered?.fixed?.findings ?? [])];
   for (const entry of Object.values(checkUi?.rendered?.viewports ?? {})) findings.push(...(entry?.findings ?? []));
@@ -71,12 +62,6 @@ function blockingFindings(checkUi) {
   return comparison ? comparison.blocking : findings.filter((entry) => entry.confidence === 'definite');
 }
 
-/**
- * The design critic's input contract for one stage: renders, the check-ui
- * comparison, clipped/overlap findings and the render-delta and style
- * inspections, with nothing else from the run directory. Pure: every value
- * comes from its arguments, none from the filesystem.
- */
 export function criticEvidence({ stage, contract, checkUi, renders, baselineRenders, renderDelta, styles, failed }) {
   const findings = allFindings(checkUi);
   return {
@@ -100,7 +85,6 @@ function deltaLabel(delta) {
   return DELTA_FIELDS.map((field) => delta[field] ?? '').join(',');
 }
 
-/** At most 3 summary lines then at most 5 BLOCK lines, in place of any step's JSON. */
 export function summaryLines({ stage, renders, checkUi, renderDelta, files, failed }) {
   const blocking = blockingFindings(checkUi);
   const label = (entry) => findingLabel(checkUi, entry);
@@ -217,8 +201,13 @@ async function checkpoint({ run, stage, url, source }) {
   return { stage, renders, checkUi, renderDelta, files, failed };
 }
 
+const USAGE = `Usage:
+  node scripts/checkpoint.mjs --run <dir> --stage baseline|post-build|final
+                              --url <file:// or http:// url> [--source <dir>]
+`;
+
 async function main(argv) {
-  const flags = parseFlags(argv, { run: 'value', stage: 'value', url: 'value', source: 'value' });
+  const flags = parseFlags(argv, { run: 'value', stage: 'value', url: 'value', source: 'value' }, { usage: USAGE });
   if (!flags.run) throw new UsageError('--run is required');
   const stage = parseStage(flags.stage);
   const url = requireUrl(flags.url);

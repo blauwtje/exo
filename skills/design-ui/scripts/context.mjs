@@ -1,11 +1,3 @@
-// Read a project's durable design context and report whether it still matches
-// the code it was approved against. This script never writes any file, under
-// any flag; --init prints a skeleton to stdout for a human to place.
-//
-//   node scripts/context.mjs --surface <name> --needs color,typography,controls,motion [--root <dir>]
-//   node scripts/context.mjs --status [--root <dir>]
-//   node scripts/context.mjs --init
-
 import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -96,7 +88,6 @@ export function parseFrontmatter(text) {
   return { values, body: text.slice(match[0].length) };
 }
 
-// A flow-style list (`[a, "b"]`) becomes an array; any other value stays a string.
 function parseScalarOrFlowList(value) {
   const flow = /^\[(.*)\]$/.exec(value);
   if (!flow) return value;
@@ -141,8 +132,6 @@ async function anchorDrift(root, anchor, commit) {
   const drift = { anchor, committed: false, staged: false, unstaged: false };
   for (const [name, args] of Object.entries(checks)) {
     const result = await runGit(root, args);
-    // Exit codes are read strictly: 0 no drift, 1 drift, anything above 1 is a
-    // tool error and must never be reported as drift.
     if (result.code > 1) return { error: `git ${name} check failed: ${result.stderr.trim()}` };
     drift[name] = result.code === 1;
   }
@@ -220,6 +209,12 @@ export async function readContext({ root, surface, needs }) {
   return report;
 }
 
+const USAGE = `Usage:
+  node scripts/context.mjs --surface <name> --needs color,typography,controls,motion [--root <dir>]
+  node scripts/context.mjs --status [--root <dir>]
+  node scripts/context.mjs --init
+`;
+
 async function main(argv) {
   const flags = parseFlags(argv, {
     surface: 'value',
@@ -227,7 +222,7 @@ async function main(argv) {
     root: 'value',
     status: 'boolean',
     init: 'boolean'
-  });
+  }, { usage: USAGE });
   if (flags.init) {
     process.stdout.write(SKELETON);
     return;

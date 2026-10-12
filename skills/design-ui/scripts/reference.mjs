@@ -1,13 +1,3 @@
-// The product or style a project's look resembles, kept as the `reference`
-// field in its docs/design/DESIGN.md front matter, so each project keeps its
-// own look and the design-ui form asks only once per project. The chosen
-// `display-font`, `body-font` and `accent` sit beside it.
-//
-//   node scripts/reference.mjs [--root <dir>]               prints the saved reference, or nothing
-//   node scripts/reference.mjs --set <name> [--root <dir>]  saves <name> as the project's reference
-//   node scripts/reference.mjs [--display-font <font>] [--body-font <font>] [--accent <color>] [--root <dir>]
-//                                                           saves the given picks; any mix with --set
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -35,8 +25,6 @@ export function savedReference(file = designFile()) {
   return typeof reference === 'string' ? reference : '';
 }
 
-// A project without DESIGN.md gets a draft one holding only the saved fields, so the
-// routing never mistakes it for an approved identity.
 export function saveFields(fields, file = designFile()) {
   const entries = Object.entries(fields).filter(([, value]) => value !== undefined);
   const saved = {};
@@ -66,8 +54,18 @@ export function saveFields(fields, file = designFile()) {
   return lines.join(', ');
 }
 
+const USAGE = `Usage:
+  node scripts/reference.mjs [--root <dir>]
+  node scripts/reference.mjs --set <name> [--root <dir>]
+  node scripts/reference.mjs [--display-font <font>] [--body-font <font>] [--accent <color>] [--root <dir>]
+`;
+
 if (isMain(import.meta.url)) {
   const args = process.argv.slice(2);
+  if (args.includes('--help')) {
+    process.stdout.write(USAGE);
+    process.exit(0);
+  }
   try {
     let root = '.';
     const fields = {};

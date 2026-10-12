@@ -1,17 +1,9 @@
-// Report what a rendered page actually emitted, as evidence for a visual critique.
-// The numbers are diagnostics, never scores: more gradients, radii or images is
-// not intrinsically better. Emits no rankings and no judgements.
-//
-//   node scripts/inspect-styles.mjs --url <url> [--viewport <width>x<height>]
-
 import process from 'node:process';
 import {
   BROWSER_CAPABILITIES, DEFAULT_VIEWPORTS, openDrivenPage, parseFlags, parseViewport, requireUrl, settleAnimations, UsageError
 } from './capture.mjs';
 import { isMain } from '#script-flags';
 
-// SURVEY runs inside page.evaluate, where no CDP exists. It therefore reports
-// only the DOM-side font channels; inspect() grades them in Node afterwards.
 const SURVEY = () => {
   const GENERIC_FAMILIES = new Set([
     'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'math', 'emoji', 'fangsong',
@@ -26,8 +18,6 @@ const SURVEY = () => {
     }
     return null;
   };
-  // A path of :nth-child steps from the root: unique, and resolvable by both
-  // document.querySelector and CDP's DOM.querySelector.
   const uniqueSelector = (element) => {
     const steps = [];
     for (let node = element; node && node !== document.documentElement; node = node.parentElement) {
@@ -148,12 +138,6 @@ const SURVEY = () => {
 
 const normalizeFamily = (value) => value.trim().replace(/^["']|["']$/g, '').toLowerCase();
 
-/**
- * The platform families Chromium actually painted each sampled node with, or
- * `null` per record where CDP could not answer. A non-Chromium engine and a
- * failed CDP call are reported the same way — as absent evidence, never as a
- * silent negative — because both leave the question genuinely unanswered.
- */
 async function readPlatformFonts(page, records) {
   const unanswered = records.map(() => null);
   if (records.length === 0) return unanswered;
@@ -189,11 +173,6 @@ async function readPlatformFonts(page, records) {
   }
 }
 
-/**
- * `definite` requires the platform to name the family it painted with; the full
- * DOM-side combination is only ever `potential`, because every one of those
- * channels answers "this face could be used", not "this face was used".
- */
 export function fontConfidence(record, platformFonts) {
   if (platformFonts?.some((name) => normalizeFamily(name) === normalizeFamily(record.family))) return 'definite';
   if (record.loadedFace || record.fontsCheck || record.metricDistinct) return 'potential';
@@ -230,8 +209,12 @@ export async function inspect({ url, viewport, cwd }) {
   }
 }
 
+const USAGE = `Usage:
+  node scripts/inspect-styles.mjs --url <url> [--viewport <width>x<height>]
+`;
+
 async function main(argv) {
-  const flags = parseFlags(argv, { url: 'value', viewport: 'value' });
+  const flags = parseFlags(argv, { url: 'value', viewport: 'value' }, { usage: USAGE });
   const url = requireUrl(flags.url);
   const viewport = flags.viewport ? parseViewport(flags.viewport) : parseViewport(DEFAULT_VIEWPORTS.at(-1));
   const report = await inspect({ url, viewport, cwd: process.cwd() });
