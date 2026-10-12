@@ -1,20 +1,3 @@
-// Deterministic UI checks: source tells that need no browser, and rendered
-// accessibility checks that follow WCAG 2.2 AA. The output is a diagnostic set,
-// never a beauty score, and the script emits no aggregate quality number.
-//
-//   node scripts/check-ui.mjs [--url <url>] [--source <dir>] [--viewport <width>x<height>]
-//                             [--baseline <earlier check-ui JSON>] [--out <file>] [--json] [--all]
-//
-// stdout is one summary line of counts; the full JSON report, every finding included, goes to
-// --out, or to a fresh temp file the summary names, with the definite and blocking counts by
-// type under `typeSummary`.
-// --json prints the report on stdout instead. --all keeps the advisory types the summary, the
-// --json stdout and the --baseline comparison otherwise leave out.
-//
-// A --baseline run also reads confirmed false positives from docs/design/check-ui-ignore.json
-// under the working directory: a JSON array of { "type", "file", "reason" } strings, where
-// file is the path in the finding's selector, without its :line.
-
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -40,9 +23,6 @@ const BLOCK_COMMENT = String.raw`\/\*[\s\S]*?(?:\*\/|(?![\s\S]))`;
 const MARKUP_COMMENT = String.raw`<!--[\s\S]*?(?:-->|(?![\s\S]))`;
 const LINE_COMMENT = String.raw`(?<=^|[ \t])\/\/[^\n]*`;
 
-// Blanks comments to spaces and keeps newlines, so every line number still matches the file.
-// Strings are not tracked, because an apostrophe in markup text would open a false string:
-// a string holding ` //` or `/*` loses the text after it.
 function stripComments(text, extension) {
   const kinds = [BLOCK_COMMENT];
   if (MARKUP_EXTENSIONS.has(extension)) kinds.push(MARKUP_COMMENT);
@@ -115,7 +95,6 @@ const LINE_TELLS = [
     type: 'invented-content',
     confidence: 'potential',
     skipsStylesheets: true,
-    // One leading digit followed only by zeros or nines, such as $10, $49, $100 or $19.99.
     pattern: /[$€£](?:[1-9]0+|[1-9]?9+)(?:\.(?:00|99))?(?![\d,.]?\d)/,
     threshold: 'a price the brief or the repository states',
     note: 'round placeholder price with no source'
@@ -124,7 +103,6 @@ const LINE_TELLS = [
     type: 'invented-content',
     confidence: 'potential',
     skipsStylesheets: true,
-    // A user count with three or more digits, a thousands group, a k or m suffix or a plus; a decimal rating out of five; four stars or more.
     pattern: /(?:\b\d{1,3}(?:,\d{3})+|\b\d+(?:\.\d+)?\s?[km]\b|\b\d{3,}|\b\d+\+)\+?\s+(?:happy |active |satisfied )?(?:users|customers|teams|companies|businesses|developers|clients|members)\b|\b[3-5]\.\d\s*(?:\/\s*5\b|out of 5\b|stars?\b)|[★⭐]{4,}/i,
     threshold: 'a figure the brief or the repository sources',
     note: 'user count or rating with no source'
@@ -153,7 +131,6 @@ const LINE_TELLS = [
     note: 'gradient-filled text, the template hero signature'
   },
   {
-    // First stop is a color with alpha; position is absent, `circle`, `at center` or `at 50%`.
     type: 'radial-halo',
     confidence: 'potential',
     pattern: /background(?:-image)?\s*:[^;{}]*?radial-gradient\(\s*(?:(?:circle|ellipse)?\s*(?:at\s+(?:center(?:\s+center)?|50%(?:\s+50%)?))?\s*,\s*)?(?:rgba\(|hsla\(|rgba?\([^)]*\/|hsla?\([^)]*\/|#[0-9a-f]{4}\b|#[0-9a-f]{8}\b)/i,
@@ -172,7 +149,6 @@ const LINE_TELLS = [
     type: 'purple-palette',
     confidence: 'potential',
     oncePerFile: true,
-    // paletteFindings reports a stylesheet, where a utility and a color literal compete for the first purple.
     skipsStylesheets: true,
     pattern: PURPLE_UTILITY,
     threshold: 'an accent hue the subject justifies',
@@ -182,7 +158,6 @@ const LINE_TELLS = [
     type: 'hard-offset-shadow',
     confidence: 'potential',
     skipsStylesheets: true,
-    // An arbitrary Tailwind shadow with a nonzero offset and a zero blur, such as shadow-[4px_4px_0_#000].
     pattern: /\bshadow-\[(?!-?0(?:px)?_-?0(?:px)?_)-?\d*\.?\d+(?:px|rem)?_-?\d*\.?\d+(?:px|rem)?_0(?:px)?[_\]]/,
     threshold: 'depth from soft light or a tonal step',
     note: 'hard offset shadow: a solid block behind the element'
@@ -190,19 +165,12 @@ const LINE_TELLS = [
   {
     type: 'monospace-label',
     confidence: 'potential',
-    // The lookbehind skips a class on a code, pre, kbd or samp tag opened on the same line.
     pattern: /(?<!<(?:code|pre|kbd|samp)\b[^<>]*)\bclass(?:Name)?\s*=\s*["'](?=[^"']*\bfont-mono\b)(?=[^"']*(?:\buppercase\b|\btext-xs\b|\btracking-))[^"']*["']/,
     threshold: 'monospace for code and tabular figures only',
     note: 'font-mono utility on a small, uppercase or tracked label'
   }
 ];
 
-// Markup tells read over the whole file rather than one line, because the attribute
-// that is missing is often several lines below the tag that should carry it.
-// The tag ends at the first `>` outside a quoted value and outside a `{...}` expression, so an
-// arrow function in a JSX attribute does not cut it short; `(?![\w-])` keeps `<svg-icon>` from
-// matching `svg`. A quote inside braces is skipped as a string, so a `}` in one does not close the
-// expression; lift that limit with a real JSX parser. An unterminated tag yields no match.
 function openTags(text, name) {
   const tags = [];
   const starts = new RegExp(`<${name}(?![\\w-])`, 'gi');
@@ -228,13 +196,10 @@ function openTags(text, name) {
   return tags;
 }
 
-/** The tag name of an open tag's text. */
 function tagName(openTag) {
   return /^<([\w.-]+)/.exec(openTag)[1];
 }
 
-/** Offset just after the close tag matching the element opened at openIndex, counting same-name open and close
- *  tags; a self-closing `/>` closes itself, and -1 means the element never closes. */
 function elementEnd(text, openIndex, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const tags = new RegExp(`<(/?)${escaped}(?![\\w-])(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi');
@@ -248,7 +213,6 @@ function elementEnd(text, openIndex, name) {
   return -1;
 }
 
-/** The whitespace-separated tokens of a quoted class or className value in an open tag; none for any other form. */
 function classValue(openTag) {
   const match = /\bclass(?:Name)?\s*=\s*(["'])([\s\S]*?)\1/.exec(openTag);
   return match ? match[2].trim().replace(/\s+/g, ' ') : '';
@@ -258,15 +222,11 @@ function classTokens(openTag) {
   return classValue(openTag).split(' ').filter(Boolean);
 }
 
-/** A card or tile: a class token card or tile, or ending in -card, -tile, Card or Tile; or a tag named Card or ending in Card. A token naming an icon tile
- *  (holding both icon and tile, such as icon-tile) is no card. */
 function isCardTag(openTag) {
   const name = tagName(openTag);
   return /Card$/.test(name) || classTokens(openTag).some((token) => /^(?:card|tile)$|(?:-card|-tile|Card|Tile)$/.test(token) && !/icon.*tile|tile.*icon/i.test(token));
 }
 
-/** Runs of markup text between `>` and the next `<` that look like copy: no `{`, `}`, `=` or `;` beyond an entity such as `&mdash;`. The bodies of
- *  script, style, code and pre, and an .astro frontmatter block, are blanked first with newlines kept. */
 function copySegments(text, extension) {
   const blank = (code) => code.replace(/[^\r\n]/g, ' ');
   let copy = text.replace(/(<(script|style|code|pre)\b[^>]*>)([\s\S]*?)(<\/\2\s*>)/gi, (all, open, name, body, close) => open + blank(body) + close);
@@ -372,8 +332,6 @@ function rawValueFindings(line, location, insideTokenBlock) {
       note: 'raw hex inside a component rule'
     }));
   }
-  // A media or container query condition cannot read a custom property, so its px gets its own
-  // advisory type; the text after the condition's `{` is an ordinary rule.
   const queryEnd = QUERY_PRELUDE.test(line) ? (line.indexOf('{') + 1 || line.length) : 0;
   const queryPixels = pixelValues(line.slice(0, queryEnd));
   if (queryPixels.length > 0) {
@@ -400,11 +358,7 @@ function rawValueFindings(line, location, insideTokenBlock) {
   return findings;
 }
 
-// --- slop tells: font names, markup structure, and rule-level stylesheet reads ---
-
 const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
-// The tempered `(?:(?!<\/\1>)[\s\S])*?` stops the content at the kicker's own close tag, so
-// only a heading directly after that tag matches, never one further down the section.
 const KICKER_BEFORE_HEADING =
   /<(\w+)[^>]*\bclass(?:Name)?\s*=\s*["'][^"']*(?:eyebrow|kicker|overline)[^"']*["'][^>]*>(?:(?!<\/\1>)[\s\S])*?<\/\1>\s*<h[12]\b/gi;
 const GROUND_SUBJECT = /^(?:body|html|main)(?![\w-])|hero/i;
@@ -438,7 +392,6 @@ function emojiFindings(line, location) {
   })];
 }
 
-/** Offsets where each line begins: entry 0 is line 1's start, and so on. */
 function lineStarts(text) {
   const starts = [0];
   for (let index = text.indexOf('\n'); index !== -1; index = text.indexOf('\n', index + 1)) {
@@ -447,7 +400,6 @@ function lineStarts(text) {
   return starts;
 }
 
-/** The 1-based line for a character offset, found by binary search over precomputed line starts. */
 function lineNumber(starts, offset) {
   let low = 0;
   let high = starts.length - 1;
@@ -470,7 +422,6 @@ function kickerFindings(text, relative, starts) {
   }));
 }
 
-/** Flat `selector { body }` pairs; a nested rule yields its innermost selector, at-rules are skipped. */
 function cssRules(text, relative, starts) {
   const rules = [];
   for (const match of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
@@ -482,7 +433,6 @@ function cssRules(text, relative, starts) {
   return rules;
 }
 
-/** The rightmost compound of each selector in a list: the element the rule styles. */
 function selectorSubjects(selector) {
   return selector.split(',').map((part) => {
     const compounds = part.trim().split(/\s*[\s>+~]\s*/);
@@ -490,7 +440,6 @@ function selectorSubjects(selector) {
   });
 }
 
-/** A rule that styles the page ground itself: body, html, main or a hero, not an element inside one. */
 function isGroundSelector(selector) {
   return selectorSubjects(selector).some((subject) => GROUND_SUBJECT.test(subject));
 }
@@ -500,33 +449,28 @@ function declaration(body, property) {
   return match ? match[1].trim() : null;
 }
 
-/** A length in CSS px; rem and em scale by 16, anything else is unknown. */
 function lengthPx(token) {
   const match = /^(-?\d*\.?\d+)(px|rem|em)?$/.exec(token ?? '');
   if (!match) return null;
   return Number(match[1]) * (match[2] && match[2] !== 'px' ? 16 : 1);
 }
 
-/** The first length of a space-separated value in px, such as a border shorthand's width or a radius's first corner. */
 function firstLengthPx(value) {
   const [first] = (value ?? '').trim().split(/\s+/);
   return lengthPx(first);
 }
 
-/** The largest corner of a border-radius value in px, or null when no corner is a known length. */
 function largestRadiusPx(value) {
   const corners = (value ?? '').trim().split(/[\s/]+/).map(lengthPx).filter((corner) => corner !== null);
   return corners.length > 0 ? Math.max(...corners) : null;
 }
 
-/** [x, y, blur, spread?] of a single-layer shadow, or null for layered or unparsable values. */
 function shadowLengths(value) {
   if (/,(?![^(]*\))/.test(value)) return null;
   const lengths = value.replace(/[a-z-]+\([^)]*\)|#[0-9a-f]+|\b[a-z]+\b/gi, ' ').trim().split(/\s+/).map(lengthPx);
   return lengths.length >= 3 && lengths.every((length) => length !== null) ? lengths : null;
 }
 
-/** A single-layer shadow in plain black at low alpha: the default every template ships. */
 function untintedShadow(value, lengths) {
   const alpha = NEUTRAL_ALPHA.exec(value);
   if (!alpha || !lengths) return false;
@@ -534,7 +478,6 @@ function untintedShadow(value, lengths) {
   return opacity <= 0.2;
 }
 
-/** Eight hex digits with alpha, or null for a token that is no 3, 4, 6 or 8 digit hex color. */
 function hexDigits(token) {
   const hex = /^#([0-9a-f]{3,8})$/i.exec(token);
   if (!hex) return null;
@@ -543,19 +486,16 @@ function hexDigits(token) {
   return digits.length === 8 ? digits : null;
 }
 
-/** The arguments of a functional color, comma or space separated, with the alpha after a slash as the fourth. */
 function colorArguments(token) {
   const inner = /^[a-z]+\(([^)]*)\)$/i.exec(token);
   return inner ? inner[1].trim().split(/[\s,/]+/) : [];
 }
 
-/** A number, or a percentage scaled so that 100% is `full`. */
 function colorNumber(argument, full) {
   const value = Number.parseFloat(argument);
   return argument.endsWith('%') ? (value / 100) * full : value;
 }
 
-/** sRGB channels from hsl(), after css-color-4's hslToRgb. */
 function hslChannels(hue, saturation, lightness) {
   const amount = saturation * Math.min(lightness, 1 - lightness);
   return [0, 8, 4].map((offset) => {
@@ -564,7 +504,6 @@ function hslChannels(hue, saturation, lightness) {
   });
 }
 
-/** sRGB channels 0-255 of a hex, rgb() or hsl() token; oklch() and var() are not converted. */
 function parseColor(token) {
   const digits = hexDigits(token);
   if (digits) return [0, 2, 4].map((start) => Number.parseInt(digits.slice(start, start + 2), 16));
@@ -581,7 +520,6 @@ function parseColor(token) {
   return channels?.every(Number.isFinite) ? channels : null;
 }
 
-/** Opacity from 0 to 1; a token without alpha is opaque. */
 function alphaOf(token) {
   const digits = hexDigits(token);
   if (digits) return Number.parseInt(digits.slice(6), 16) / 255;
@@ -589,7 +527,6 @@ function alphaOf(token) {
   return alpha === undefined ? 1 : colorNumber(alpha, 1);
 }
 
-/** Hue in degrees, or null for a near-grey color whose hue means nothing. */
 function hueOf([r, g, b]) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -599,7 +536,6 @@ function hueOf([r, g, b]) {
   return (sector * 60 + 360) % 360;
 }
 
-/** Linear-light sRGB channel from a gamma-encoded 0-255 channel (css-color-4's sRGB-to-linear step). */
 function linearChannel(channel) {
   const normalized = channel / 255;
   return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
@@ -609,8 +545,6 @@ function degrees(angle) {
   return ((angle % 360) + 360) % 360;
 }
 
-/** OKLCH lightness (0 to 1), chroma and hue of an oklch() token or of any token parseColor reads,
- *  via the Ottosson OKLab conversion; null otherwise. An oklch chroma of 100% is 0.4. */
 export function oklchOf(token) {
   if (/^oklch\(/i.test(token)) {
     const args = colorArguments(token);
@@ -631,11 +565,8 @@ export function oklchOf(token) {
   return { lightness, chroma: Math.hypot(greenRed, blueYellow), hue };
 }
 
-// OKLCH chroma from which a color reads as clearly saturated rather than an ink-derived tint, in any notation.
 const SATURATED_CHROMA = 0.08;
 
-/** Hue in degrees and the model it was written in, for comparing two gradient stops, and whether the color is
- *  clearly saturated; null for a near-grey stop. */
 function stopHue(token) {
   const color = oklchOf(token);
   if (!color) return null;
@@ -649,7 +580,6 @@ function stopHue(token) {
   return hue === null ? null : { model: 'srgb', hue, saturated };
 }
 
-/** Circular hue distance between the first two stops, or null when they use different models. */
 function gradientHueGap(value) {
   const stops = [...value.matchAll(COLOR_TOKEN)]
     .map((match) => stopHue(match[0]))
@@ -660,14 +590,9 @@ function gradientHueGap(value) {
 }
 
 const COLOR_TOKEN = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\)/gi;
-// Indigo through purple as an oklch hue, whichever notation the token is written in.
 const PURPLE_HUES = [275, 310];
-// Red through amber and gold reads as a signal color, not neon, however bright it is.
 const WARM_HUES = [20, 100];
 const GROUND_DECLARATION = /(?:^|[;\s])(background(?:-color)?|--[\w-]+)\s*:\s*([^;]+)/gi;
-// A ground custom property is named from these words only, such as --bg, --page-bg or --color-background;
-// --card-bg, --bg-overlay and --foreground name something else. A design-system prefix such as --bs- is not
-// read; add it to GROUND_SCOPES to read it.
 const GROUND_NOUNS = new Set(['bg', 'background', 'ground', 'canvas', 'page', 'paper']);
 const GROUND_SCOPES = new Set(['color', 'colour', 'body', 'app', 'site', 'main', 'root', 'base', 'default', 'global']);
 
@@ -684,20 +609,17 @@ export function isPurple(token) {
   return color.hue >= PURPLE_HUES[0] && color.hue <= PURPLE_HUES[1];
 }
 
-/** A bright, strongly saturated color outside the warm band: fluorescent green, cyan, magenta or yellow. */
 export function isNeon(token) {
   const color = oklchOf(token);
   if (!color || color.lightness < 0.7 || color.chroma < 0.13) return false;
   return color.hue < WARM_HUES[0] || color.hue > WARM_HUES[1];
 }
 
-/** A near-black color opaque enough to be the ground; a translucent overlay sets no ground. */
 export function isNearBlack(token) {
   const rgb = parseColor(token);
   return rgb !== null && Math.max(...rgb) <= 48 && alphaOf(token) >= 0.9;
 }
 
-/** A warm off-white: light, low in chroma, hue between orange and yellow. */
 export function isCream(token) {
   const rgb = parseColor(token);
   if (!rgb || Math.min(...rgb) < 200 || Math.max(...rgb) < 235) return false;
@@ -705,7 +627,6 @@ export function isCream(token) {
   return hue !== null && hue >= 25 && hue <= 65;
 }
 
-/** Color literals a page-level ground declares, directly or through a ground-named custom property; var() is not resolved. */
 function groundColors(rules) {
   const colors = [];
   for (const { selector, body, location } of rules) {
@@ -719,7 +640,6 @@ function groundColors(rules) {
   return colors;
 }
 
-/** File-level palette reads: a cream ground, a purple accent, and neon over a near-black ground. */
 function paletteFindings(text, relative, starts, rules) {
   const findings = [];
   const grounds = groundColors(rules);
@@ -759,14 +679,11 @@ function paletteFindings(text, relative, starts, rules) {
 }
 
 const BORDER_SIDES = ['left', 'right', 'top', 'bottom', 'inline-start', 'inline-end', 'block-start', 'block-end'];
-// A btn-, button- or cta- class names a button unless the rest of it names the container around buttons.
 const BUTTON_SUBJECT =
   /(?:^|\.)(?:button|btn|cta)(?:-(?!(?:group|section|bar|toolbar|row|list|wrapper|container|area|block|box|banner|panel|grid|stack)(?![\w-]))[\w-]+)?(?![\w-])/i;
-// A JSX expression in the open tag may hold `=>`; the tempered content stops at the control's own close tag.
 const PILL_CONTROL =
   /<(button|a)\b(?:[^>{]|\{[^}]*\})*?\bclass(?:Name)?\s*=\s*["'][^"']*\brounded-full\b(?:[^>{]|\{[^}]*\})*>((?:(?!<\/\1>)[\s\S])*)<\/\1>/gi;
 
-/** The one visible border side at least 3px wide, or null when no side or several sides are. */
 function accentEdge(body) {
   const wide = [];
   for (const side of BORDER_SIDES) {
@@ -778,11 +695,8 @@ function accentEdge(body) {
   return wide.length === 1 ? wide[0] : null;
 }
 
-// Below this blur a zero-offset shadow is a hairline edge, not a halo.
 const HALO_MIN_BLUR = 4;
 
-/** A hued shadow centered on its element and blurred 4px or more, at any saturation, or offset, blurred 12px or more
- *  and clearly saturated; a var() color is not resolved and a layered shadow is not read. */
 function tintedGlowFindings(body, where) {
   const findings = [];
   for (const property of ['box-shadow', 'text-shadow']) {
@@ -805,8 +719,6 @@ function tintedGlowFindings(body, where) {
   return findings;
 }
 
-/** A non-inset box-shadow layer offset 2px or more with no blur in an opaque color: the solid block of the
- *  neo-brutalist kit; a var() color is not resolved and a layer without a color counts as opaque currentColor. */
 function hardOffsetShadowFindings(body, where) {
   const value = declaration(body, 'box-shadow');
   if (!value) return [];
@@ -826,7 +738,6 @@ function hardOffsetShadowFindings(body, where) {
   return [];
 }
 
-/** A button rule whose radius makes a pill: 100px or more, or Tailwind v4's infinite radius. */
 function pillButtonFindings(selector, body, where) {
   const radius = declaration(body, 'border-radius');
   const isButton = selectorSubjects(selector).some((subject) => BUTTON_SUBJECT.test(subject));
@@ -841,9 +752,6 @@ function pillButtonFindings(selector, body, where) {
   })];
 }
 
-/** Three or more labelled buttons or links in one markup file carrying Tailwind's rounded-full; an icon-only
- *  control, with no text between its tags, is a round icon button rather than a pill. A label passed only as a
- *  JSX expression, such as {label}, reads as no text and is missed. */
 function pillMarkupFindings(text, relative, starts) {
   const labelled = (match) => match[2].replace(/<[^>]*>|\{[^}]*\}/g, '').trim() !== '';
   const pills = [...text.matchAll(PILL_CONTROL)].filter(labelled);
@@ -854,8 +762,6 @@ function pillMarkupFindings(text, relative, starts) {
     note: 'fully rounded pill on every button'
   })];
 }
-
-// --- named anti-patterns read from markup source ---
 
 const ROUNDED = /^rounded(?:-(?:sm|md|lg|xl|2xl|3xl|full)|-\[[^\]]*\])?$/;
 const UPPERCASE_KICKER =
@@ -1002,7 +908,6 @@ function namedPatternFindings(text, relative, starts, extension) {
   return findings;
 }
 
-/** A stylesheet rule for a small round dot with an infinite animation. */
 function pulsingDotRuleFindings(body, where) {
   const animation = `${declaration(body, 'animation') ?? ''} ${declaration(body, 'animation-iteration-count') ?? ''}`;
   const radius = declaration(body, 'border-radius') ?? '';
@@ -1020,12 +925,10 @@ function pulsingDotRuleFindings(body, where) {
 const CUBIC_BEZIER = /cubic-bezier\(\s*[\d.]+\s*,\s*(-?[\d.]+)\s*,\s*[\d.]+\s*,\s*(-?[\d.]+)\s*\)/gi;
 const BOUNCE_NAME =
   /\banimate-bounce\b|@keyframes\s+[\w-]*bounce|animation(?:-name)?\s*:[^;]*\bbounce|\bbounce\s*:\s*(?:0?\.\d*[1-9]|1\b)/i;
-// card or tile as a word of a class name, so .feature-card and .productCard match and .scorecard does not.
 const CARD_SELECTOR = /(?:^|[^a-zA-Z])(?:[cC]ard|[tT]ile)s?(?![a-z])|[a-z](?:Card|Tile)s?(?![a-z])/;
 const MONOSPACE = /\bmono(?:space)?\b|courier|menlo|consolas|monaco|fira code/i;
 const CODE_SELECTOR = /(?:^|[\s,>+~.])(?:code|pre|kbd|samp)(?![\w])/i;
 
-/** Easing that overshoots its end: a cubic-bezier y outside 0 to 1, a bounce animation, or a spring bounce above 0. */
 function bounceFindings(line, location) {
   const curves = [...line.matchAll(CUBIC_BEZIER)];
   const overshoots = curves.some((curve) => [curve[1], curve[2]].some((y) => Number(y) < 0 || Number(y) > 1));
@@ -1037,8 +940,6 @@ function bounceFindings(line, location) {
   })];
 }
 
-/** A one-shot animation on a card or tile rule: the same entrance stamped on every card. A looping
- *  animation is a loading or status state, not an entrance. */
 function cardEntranceFindings(selector, body, where) {
   const animation = declaration(body, 'animation(?:-name)?');
   if (!animation || /^none\b/i.test(animation) || !CARD_SELECTOR.test(selector)) return [];
@@ -1051,7 +952,6 @@ function cardEntranceFindings(selector, body, where) {
   })];
 }
 
-/** A monospace family on a non-code rule that also sets it small, uppercase or tracked. */
 function monospaceLabelFindings(selector, body, where) {
   const family = declaration(body, 'font-family');
   if (!family || !MONOSPACE.test(family) || CODE_SELECTOR.test(selector)) return [];
@@ -1143,13 +1043,8 @@ export async function staticAudit(directory) {
     const isMarkup = MARKUP_EXTENSIONS.has(extension);
     const source = await fs.readFile(file, 'utf8');
     const text = stripComments(source, extension);
-    // Only the whole-file reads below need offsets turned into line numbers.
     const starts = isStylesheet || isMarkup ? lineStarts(text) : [];
     const lines = text.split(/\r?\n/);
-    // The depth at whose contents raw values are exempt (a :root/@theme block, or a
-    // rule that declares a custom property), or null outside any such block. Set from
-    // brace counts rather than "line starts with }" so a one-line block such as
-    // `:root { --gap: 8px; }` closes before the next rule's declarations are read.
     let braceDepth = 0;
     let tokenBlockDepth = null;
     const reportedOnce = new Set();
@@ -1202,14 +1097,6 @@ export async function staticAudit(directory) {
   return findings;
 }
 
-/**
- * Channels (0 to 255) and alpha (0 to 1) of a computed colour string, read from the
- * string itself because a canvas round-trip is not exact in every engine: obscura's
- * canvas returns 0.2 alpha as 10/255. Reads rgb()/rgba() in comma or space form and
- * color(srgb), each with number or percentage channels and alpha. Another colour
- * space keeps its alpha with null channels; a value with no colour function is null.
- * The page audit receives this function's source, so it must not reach module scope.
- */
 export function parseComputedColor(value) {
   const text = String(value).trim().toLowerCase();
   if (text === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
@@ -1236,16 +1123,9 @@ export function parseComputedColor(value) {
   return { r, g, b, a };
 }
 
-// Passed into both in-page functions rather than written twice: `focusIndicatorFindings`
-// compares the two joined strings, so a one-sided edit would silently stop reporting
-// missing focus indicators instead of failing.
 const FOCUS_SIGNATURE_PROPERTIES = ['outlineStyle', 'outlineWidth', 'outlineColor',
   'boxShadow', 'borderColor', 'backgroundColor', 'color'];
 
-/**
- * The selector a rendered finding names: tag, id and the first two classes. The page
- * audits receive this function's source, so it must not reach module scope.
- */
 function describeElement(element) {
   const id = element.id ? `#${element.id}` : '';
   const classes = typeof element.className === 'string' && element.className
@@ -1259,8 +1139,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
   canvas.width = 1;
   canvas.height = 1;
   const paint = canvas.getContext('2d', { willReadFrequently: true });
-  // The canvas only converts channels of a colour space parseColor cannot, painted
-  // opaque, so its alpha, which some engines round-trip wrongly, is never read.
   const toRgba = (value) => {
     const parsed = parseColor(value) ?? { r: null, g: null, b: null, a: 1 };
     if (parsed.r !== null) return parsed;
@@ -1271,10 +1149,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     const [r, g, b] = paint.getImageData(0, 0, 1, 1).data;
     return { r, g, b, a: parsed.a };
   };
-  // WCAG 2.x relative luminance, which pins the knee at 0.03928; inspect-render.mjs
-  // linearizes against the sRGB spec's 0.04045 instead. Both read 8-bit channels, and
-  // no 0..255 value scales into the gap between the two knees (10/255 = 0.039216,
-  // 11/255 = 0.043137), so they agree exactly while each cites its own spec.
   const channel = (value) => {
     const scaled = value / 255;
     return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
@@ -1284,10 +1158,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     const [light, dark] = [luminance(first), luminance(second)].sort((a, b) => b - a);
     return Number(((light + 0.05) / (dark + 0.05)).toFixed(2));
   };
-  // ratio()/luminance() read only r/g/b; a translucent color has to be composited
-  // (source-over) against its effective background first, or it measures as its
-  // unblended channel values, e.g. a black border at 50% opacity would read as
-  // opaque black regardless of what shows through it.
   const blend = (foreground, background) => {
     if (foreground.a >= 1) return foreground;
     const mix = (channel) => foreground.a * foreground[channel] + (1 - foreground.a) * background[channel];
@@ -1304,8 +1174,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     let uncertain = false;
     while (node) {
       const style = getComputedStyle(node);
-      // An engine that does not implement a property serialises it as '', as
-      // backdropFilter already allows; obscura does so for these two.
       if (style.backgroundImage && style.backgroundImage !== 'none') uncertain = true;
       if (parseFloat(style.opacity) < 1) uncertain = true;
       if (style.mixBlendMode && style.mixBlendMode !== 'normal') uncertain = true;
@@ -1406,9 +1274,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     const style = getComputedStyle(element);
     const borderWidth = parseFloat(style.borderTopWidth);
     const borderColor = toRgba(style.borderTopColor);
-    // A fully transparent border (e.g. `border-transparent` used for layout) composites
-    // to the background itself and draws no visible boundary, so it identifies nothing
-    // to hold to the non-text contrast minimum.
     if (borderWidth > 0 && style.borderTopStyle !== 'none' && borderColor.a > 0) {
       const background = effectiveBackground(element.parentElement ?? element);
       const measured = ratio(blend(borderColor, background.color), background.color);
@@ -1450,17 +1315,10 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     });
   }
 
-  // Layout integrity: the three defects a reader calls "buggy" and a render can
-  // prove without taste. Rects are measured once and every pass is bounded,
-  // because the overlap and gap passes are quadratic.
   const LAYOUT_ELEMENT_LIMIT = 400;
   const related = (first, second) => first.contains(second) || second.contains(first);
   const ownsText = new Set(textOwners);
 
-  // Any overflow other than `visible` clips at the padding box, so a text box
-  // is compared on what actually shows. Without this a paragraph cut off by its
-  // container still reports its full, unclipped height and reads as overlapping
-  // whatever sits below the container.
   const clips = (style) => style.overflowY !== 'visible' || style.overflowX !== 'visible';
   const visibleRect = (element) => {
     const rect = element.getBoundingClientRect();
@@ -1476,13 +1334,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     return { top, bottom, left, right, width: right - left, height: bottom - top };
   };
 
-  // Clipping counts only where the box cuts off *text*. A box that hides a
-  // decorative child - an oversized image, a rotated blob, a bleed glow - is
-  // doing what overflow:hidden is for, so the descendant text boxes, not
-  // scrollHeight alone, decide. Whether the reader can scroll the rest into
-  // view is what separates a definite defect from a region worth a look, and
-  // some engines report a stylesheet's `hidden` as `auto`, so the keyword only
-  // raises confidence and never gates the finding.
   const clippedBoxes = Array.from(document.querySelectorAll('body *'))
     .filter(isVisible)
     .slice(0, LAYOUT_ELEMENT_LIMIT);
@@ -1520,9 +1371,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     });
   }
 
-  // Only block-level text boxes are compared. An inline element that wraps
-  // reports one union rect spanning every line it occupies, so two ordinary
-  // links in one paragraph would read as overlapping when nothing overlaps.
   const inFlowText = textOwners
     .filter((element) => {
       const style = getComputedStyle(element);
@@ -1551,8 +1399,6 @@ const PAGE_AUDIT = (focusProperties, parseColor, describe) => {
     }
   }
 
-  // Links sitting in a sentence carry their own spacing from the line box, so
-  // the same exemption target-size-minimum applies holds here.
   const spaceable = boxes.filter(({ element }) => !insideText(element)).slice(0, LAYOUT_ELEMENT_LIMIT);
   for (let first = 0; first < spaceable.length; first += 1) {
     for (let second = first + 1; second < spaceable.length; second += 1) {
@@ -1646,16 +1492,11 @@ async function overflowFindings(page, url) {
   return findings;
 }
 
-// A sidebar or background that ends while the page goes on: a sidebar sized to 100vh
-// in a page that scrolls, or a full-width wrapper whose content overflows its fixed
-// height. The page is measured scrolled to its bottom, so a fixed sidebar of viewport
-// height reaches the bottom by construction. The canvas paints html's background, and
-// body's when html has none, across the whole page, so neither is a candidate then.
 const REGION_AUDIT = (parseColor, describe) => {
-  const SHORT_BY = 16; // a gap up to this reads as an inset, not a stop
+  const SHORT_BY = 16;
   const EDGE = 8;
   const PROBE_STEP = 16;
-  const PROBE_DEPTH = 64; // a margin up to this may separate a region from what continues its column
+  const PROBE_DEPTH = 64;
   const root = document.documentElement;
   window.scrollTo({ top: root.scrollHeight, behavior: 'instant' });
   const pageHeight = root.scrollHeight;
@@ -1686,7 +1527,6 @@ const REGION_AUDIT = (parseColor, describe) => {
     ? [{ element: document.body, style: getComputedStyle(document.body), box: pageBox(document.body) }, ...boxes]
     : boxes;
 
-  // Another element under the sidebar's column, such as a footer it ends on, continues it.
   const columnContinues = ({ element, box }) => {
     const x = (box.left + box.right) / 2;
     for (let y = box.bottom + 2; y < Math.min(pageHeight, box.bottom + PROBE_DEPTH); y += PROBE_STEP) {
@@ -1696,7 +1536,6 @@ const REGION_AUDIT = (parseColor, describe) => {
     }
     return false;
   };
-  // In-flow content painted past the layer's bottom; absolute, fixed and clipped content does not count.
   const contentOverflows = ({ element, box }) => boxes.some((inner) => {
     if (inner.element === element || !element.contains(inner.element) || inner.box.bottom <= box.bottom + SHORT_BY) {
       return false;
@@ -1750,15 +1589,11 @@ const REGION_AUDIT = (parseColor, describe) => {
 };
 
 async function regionFindings(page) {
-  // Scrolling first lets content revealed on scroll load and settle before the measure.
   await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
   await settleAnimations(page);
   return page.evaluate(`(${REGION_AUDIT})(${parseComputedColor}, ${describeElement})`);
 }
 
-// WCAG 2.2 SC 1.4.10 Reflow: 320x256 CSS px is the 400% zoom equivalent of a 1280x1024
-// viewport. Vertical scrolling is allowed there; scrolling in two dimensions is not,
-// unless the content genuinely requires a two-dimensional layout, which no script decides.
 async function reflowFindings(page, url) {
   await page.setViewportSize({ width: 320, height: 256 });
   await page.goto(url, { waitUntil: 'load' });
@@ -1793,18 +1628,11 @@ export async function renderedAudit({ url, viewports, cwd }) {
       const key = `${viewport.width}x${viewport.height}`;
       await page.setViewportSize(viewport);
       await page.goto(url, { waitUntil: 'load' });
-      // A same-document navigation (e.g. the page only stripped a URL fragment
-      // via history.replaceState) does not reload the document, so focus left
-      // over from the previous viewport's Tab pass would otherwise survive
-      // into this viewport's baseline audit. Force a real reload per viewport.
       await page.reload({ waitUntil: 'load' });
       await settleAnimations(page);
-      // A function argument cannot cross into the page, so the audit and the colour
-      // parser travel as one source expression.
       const audit = await page.evaluate(
         `(${PAGE_AUDIT})(${JSON.stringify(FOCUS_SIGNATURE_PROPERTIES)}, ${parseComputedColor}, ${describeElement})`);
       const focusFindings = await focusIndicatorFindings(page, audit.focusables);
-      // Last, because it scrolls the page to its bottom.
       const shortRegions = await regionFindings(page);
       const findings = [...audit.findings, ...focusFindings, ...shortRegions].map((entry) => ({ ...entry, viewport: key }));
       perViewport[key] = { status: 'ok', findings };
@@ -1815,14 +1643,10 @@ export async function renderedAudit({ url, viewports, cwd }) {
   }
 }
 
-// The finding names the design-ui docs restate live in one asset; verify pins
-// each doc list to it.
 const FINDING_LISTS = JSON.parse(readFileSync(new URL('../assets/check-ui-findings.json', import.meta.url), 'utf8'));
-// The slop tropes build-pass.md names that this script detects.
 export const DECORATIVE_TELLS = Object.freeze(FINDING_LISTS.decorativeTells);
 export const ALWAYS_BLOCKING = new Set(FINDING_LISTS.alwaysBlocking);
 
-// A selector ends in `file:line` for a line-level finding and in `rule (file:line)` for a rule-level one.
 const RULE_LOCATION = /\(([^()]*):\d+\)$/;
 
 function findingFile(entry) {
@@ -1830,13 +1654,11 @@ function findingFile(entry) {
   return ruleLocation ? ruleLocation[1] : entry.selector.replace(/:\d+$/, '');
 }
 
-/** The selector without its line number, so a finding keeps its key when lines above it shift. */
 function comparisonKey(entry) {
   const selector = entry.selector.replace(/:\d+(\)?)$/, '$1');
   return `${entry.type}|${selector}|${entry.measured}|${entry.viewport ?? ''}`;
 }
 
-/** Every finding the report carries: static, the fixed-width checks, and each viewport's own. */
 function reportFindings(report) {
   if (typeof report?.static?.status !== 'string') return null;
   const staticFindings = report?.static?.findings ?? [];
@@ -1858,7 +1680,6 @@ function reportFindings(report) {
   return wellFormed ? findings : null;
 }
 
-/** {type: {threshold, note}} from the first finding seen per type, in report order. */
 export function notesTable(findings) {
   const table = {};
   for (const entry of findings) {
@@ -1867,10 +1688,6 @@ export function notesTable(findings) {
   return table;
 }
 
-/**
- * Drops threshold/note from each finding, in place, when it equals its type's table entry.
- * Lossless: a finding plus the table's entry for its type reconstructs the dropped fields.
- */
 export function applyNotesTable(findings) {
   const table = notesTable(findings);
   for (const entry of findings) {
@@ -1881,10 +1698,8 @@ export function applyNotesTable(findings) {
   return table;
 }
 
-// Advisory types a run leaves out of its stdout and comparison unless --all asks for them.
 export const ADVISORY_TYPES = new Set(['target-size-enhanced', 'raw-value-in-media-query']);
 
-/** Removes every ADVISORY_TYPES finding from the report's lists, in place; returns how many it removed. */
 export function omitAdvisory(report) {
   const lists = [report.static?.findings, report.rendered?.fixed?.findings];
   for (const entry of Object.values(report.rendered?.viewports ?? {})) lists.push(entry.findings);
@@ -1897,11 +1712,6 @@ export function omitAdvisory(report) {
   return omitted;
 }
 
-/**
- * The default summary: `total` is the one stdout line, `types` holds one `<type> <count> blocking=<n>`
- * line per type among the definite or blocking findings, most blocking first, for the report file.
- * An ignored finding is never shown.
- */
 export function summaryLines({ report, findings, comparison, ignoreEntries, omitted, reportFile }) {
   const blocking = new Set(comparison.blocking);
   const shown = findings.filter((entry) => blocking.has(entry)
@@ -1987,7 +1797,6 @@ export function compareFindings(baselineFindings, currentFindings, ignoreEntries
 
 const IGNORE_FILE = path.join('docs', 'design', 'check-ui-ignore.json');
 const IGNORE_FIELDS = ['type', 'file', 'reason'];
-// Every type this script reports; an ignore entry naming another type, such as a renamed one, matches nothing.
 const FINDING_TYPES = new Set([
   ...DECORATIVE_TELLS,
   'inline-event-handler', 'important-override', 'placeholder-copy', 'float-layout', 'physical-direction-property',
@@ -2053,7 +1862,6 @@ async function main(argv) {
       ? await renderedAudit({ url: requireUrl(flags.url), viewports, cwd: process.cwd() })
       : { status: 'unavailable', reason: '--url was not given' }
   };
-  // The report file keeps every finding; --all only widens the stdout view and what the comparison gates.
   const shownReport = flags.all ? report : structuredClone(report);
   const omitted = flags.all ? 0 : omitAdvisory(shownReport);
   const findings = reportFindings(shownReport) ?? [];
