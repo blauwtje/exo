@@ -201,6 +201,7 @@ function runGh(args) {
   }
 }
 
+// why: GitHub closes an issue on merge only for its closing keywords (close, fix, resolve and their forms).
 function closesIssue(body, issue) {
   return new RegExp(`\\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?\\s+#${issue}\\b`, 'i').test(body);
 }

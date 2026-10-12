@@ -15,6 +15,7 @@ const MAX_FILES = 4;
 const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
+// why: Markdown closes a fence only on a run of backticks at least as long as the one that opened it.
 function fenceAfter(line, open) {
   const backticks = line.match(/^(`{3,})/);
   if (backticks === null) return open;

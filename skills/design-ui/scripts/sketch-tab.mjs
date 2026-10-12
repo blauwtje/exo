@@ -453,6 +453,7 @@ async function runningTab(directory) {
   try {
     process.kill(recorded.pid, 0);
   } catch (error) {
+    // why: kill(pid, 0) fails with EPERM when the process exists under another user.
     if (error.code !== 'EPERM') return null;
   }
   return recorded;
