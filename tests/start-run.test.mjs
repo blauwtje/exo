@@ -176,9 +176,9 @@ test('refuses a --checkout that is not a git checkout, naming the next command',
 });
 
 test('an unknown flag prints the usage line and exits 2', async () => {
-  const result = await run(SCRIPT, ['--help']);
+  const result = await run(SCRIPT, ['--bogus']);
   assert.equal(result.code, 2);
-  assert.equal(result.stderr, "start-run: unknown flag '--help'\nusage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]\n");
+  assert.equal(result.stderr, "start-run: unknown flag '--bogus'\nusage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]\n");
 });
 
 test('a starting call writes the run rules file silently, and --find-only writes none', async () => {
