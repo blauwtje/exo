@@ -693,3 +693,22 @@ test('--dry-run prints the chosen session mode: auto picks plan for a small disj
   const bad = await runPlan(await setup(), [], ['--session', 'both']);
   assert.equal(bad.code, 2);
 });
+
+test('--session plan: a stopped plan session leaves a clean tree, its leftover in a patch, for the per-task fallback', async () => {
+  const context = await setup({ gate: 'node --test' });
+  const wrapper = path.join(context.tools, 'leftover.mjs');
+  // First spawn: task 1's file, its report and a failing test for task 2, then no result line. Later spawns note what they find.
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nif (!fs.existsSync(process.env.STUB_RECORD)) { fs.writeFileSync('a.txt', 'x\\n'); fs.writeFileSync('b.test.mjs', "import './b.mjs';\\n"); fs.mkdirSync('.exo', { recursive: true }); fs.writeFileSync('.exo/implementer-1.md', 'Landed: x\\nProof:\\nnode --version: pass\\n  v1\\nUnresolved: none\\n'); }\nelse fs.appendFileSync(${JSON.stringify(path.join(context.tools, 'seen.txt'))}, fs.existsSync('b.test.mjs') + ',' + fs.existsSync('a.txt') + ',' + fs.existsSync('notes.txt') + ',' + fs.existsSync('.exo/implementer-1.md') + '\\n');\nawait import(${JSON.stringify(context.stub)});\n`);
+  context.stub = wrapper;
+  await fs.writeFile(path.join(context.root, 'notes.txt'), 'mine\n');
+  const result = await runPlan(context, [{}, land(1), land(2), { result: 'Verify done.' }], ['--session', 'plan']);
+  assert.equal(result.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', result.stdout);
+  assert.deepEqual(result.calls.map((call) => call.pin), ['plan/1', 'plan/1', 'plan/2', null].slice(0, result.calls.length));
+  assert.equal((await fs.readFile(path.join(context.tools, 'seen.txt'), 'utf8')).split('\n')[0], 'false,false,true,true');
+  const logDir = path.dirname(result.stdout.match(/^Details: (.+)$/m)[1]);
+  const patch = await fs.readFile(path.join(logDir, 'plan-leftover-1.patch'), 'utf8');
+  assert.match(patch, /b\.test\.mjs/);
+  assert.match(patch, /a\.txt/);
+  assert.doesNotMatch(patch, /\.exo\/implementer/);
+  assert.match(await fs.readFile(path.join(context.root, 'notes.txt'), 'utf8'), /mine/);
+});

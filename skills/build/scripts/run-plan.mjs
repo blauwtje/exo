@@ -299,6 +299,32 @@ function snapshot(root) {
   };
 }
 
+const untrackedPaths = (root) => (gitOut(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }) ?? '').split('\0').filter(Boolean);
+
+/** Saves every non-.exo change against HEAD as a binary patch (untracked included, the index untouched), then restores tracked files and removes the untracked paths absent from `knownUntracked`. Returns the patch path, or null when the tree was clean. */
+function shelveLeftover(root, patchFile, knownUntracked) {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-leftover-'));
+  try {
+    const indexFile = path.resolve(root, gitOut(root, ['rev-parse', '--git-path', 'index']) ?? '.git/index');
+    const copy = path.join(scratch, 'index');
+    if (fs.existsSync(indexFile)) fs.copyFileSync(indexFile, copy);
+    const env = { ...process.env, GIT_INDEX_FILE: copy };
+    const spec = ['--', '.', `:(exclude)${SCRATCH_FOLDER}`];
+    spawnSync('git', ['-C', root, 'add', '-A', ...spec], { env });
+    const diff = spawnSync('git', ['-C', root, 'diff', '--cached', '--binary', 'HEAD', ...spec], { env, maxBuffer: 1024 * 1024 * 1024 });
+    if (diff.status !== 0) return null;
+    if (diff.stdout.length === 0) return null;
+    fs.writeFileSync(patchFile, diff.stdout);
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
+  spawnSync('git', ['-C', root, 'restore', '--worktree', '--source=HEAD', '--', '.', `:(exclude)${SCRATCH_FOLDER}`]);
+  for (const file of untrackedPaths(root)) {
+    if (!knownUntracked.has(file) && !file.startsWith(`${SCRATCH_FOLDER}/`)) fs.rmSync(path.join(root, file), { force: true, recursive: true });
+  }
+  return patchFile;
+}
+
 const planTaskLines = (root, sha) => (gitOut(root, ['log', '-1', '--format=%B', sha]) ?? '').split('\n').filter((line) => /^Plan-task: /.test(line));
 
 /** The breach a process left, or null: a task allows one commit carrying only its own trailer, a tail session none (the script lands its fix), else any commit with no trailer. */
@@ -810,6 +836,7 @@ async function main(argv) {
     if (stop === undefined) {
       iteration += 1;
       const startedPlan = Date.now();
+      const untrackedBefore = new Set(untrackedPaths(root));
       say(`plan session start: tasks ${numbersText(order)}`);
       const log = path.join(logDir, `iter-${iteration}-plan.log`);
       const { before, outcome, parsed } = await spawnOne({ prompt: planPrompt({ plan, planPath, numbers: order, root }), allow: taskAllow, settings: taskSettings, pin: `${planId}/${first}`, log, kind: 'plan', task: first });
@@ -839,6 +866,11 @@ async function main(argv) {
         say(`task ${n} not landed by the script: ${clip(lastLine(output), 80)}`);
         retryNote = `\nThe previous attempt did not land task ${n}. Its last result line: ${lastLine(output)}\nIts log: ${landLog}`;
         break;
+      }
+      // The per-task fallback starts from HEAD: the session's leftover goes to a patch first.
+      if (stop === undefined && landedTasks(plan.tasks, root, planId).length < plan.tasks.length) {
+        const patch = shelveLeftover(root, path.join(logDir, `plan-leftover-${iteration}.patch`), untrackedBefore);
+        if (patch !== null) say(`plan session leftover saved to ${patch}`);
       }
     }
   }
