@@ -561,6 +561,13 @@ function summaryLines(run, stop) {
   return lines;
 }
 
+function deniedLines(records) {
+  const denied = records.flatMap((record) => record.denied.map((command) => ({ record, command })));
+  if (denied.length === 0) return [];
+  const header = `Denied: ${denied.length} command${denied.length === 1 ? '' : 's'} (first 120 characters each; add one to Allow: if its task needs it; full text in the iteration logs)`;
+  return [header, ...denied.map(({ record, command }) => `  iteration ${record.iteration}, task ${record.task}: ${clip(command, 120)}`)];
+}
+
 function detailLines(run, stop) {
   const { planPath, plan, branch, cap, records, landings, logDir, root } = run;
   const lines = [`Plan: ${planPath}`, `Branch: ${branch}`, `Iterations: ${records.filter((record) => record.task !== null).length} of ${cap}`, `Logs: ${logDir}`];
@@ -575,11 +582,7 @@ function detailLines(run, stop) {
   lines.push(`Total cost: ${money(records.reduce((sum, record) => sum + record.cost, 0))}`);
   const tail = records.find((record) => record.task === null);
   if (tail !== undefined) lines.push(`Tail: ${tail.log}, turns ${tail.turns}, last line: ${tail.last || '(none)'}`);
-  const denied = records.flatMap((record) => record.denied.map((command) => ({ record, command })));
-  if (denied.length > 0) {
-    lines.push(`Denied: ${denied.length} command${denied.length === 1 ? '' : 's'} (first 120 characters each; add one to Allow: if its task needs it; full text in the iteration logs)`);
-    for (const { record, command } of denied) lines.push(`  iteration ${record.iteration}, task ${record.task}: ${clip(command, 120)}`);
-  }
+  lines.push(...deniedLines(records));
   if (run.redGreenLine) lines.push(run.redGreenLine);
   lines.push(...run.verifyLines);
   for (const [number, landing] of landings) if (!landing.before) lines.push(...reportLines(root, number));
@@ -954,6 +957,8 @@ async function main(argv) {
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
 
   appendLog(path.join(logDir, 'summary.txt'), `${detailLines(run, stop).join('\n')}\n`, fs.writeFileSync);
+  const refused = deniedLines(run.records);
+  if (process.env.EXO_RUN_DIR && refused.length > 0) appendLog(path.join(process.env.EXO_RUN_DIR, 'denied.txt'), `${refused.join('\n')}\n`);
   process.stdout.write(`${summaryLines(run, stop).join('\n')}\n`);
   return exitCode;
 }
