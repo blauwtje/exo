@@ -56,6 +56,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The code rules judge code structure only on lines whose code changed.
 - A directory named `spec` no longer marks test code, so a task that changes `skills/spec/` gets a real red check.
 - `report.md` of an `exo run` keeps the refused commands after the worktree is removed: the run directory stores them and the report lists every command the permission rules refused.
+- A guard test run inside an exo build no longer parks that run on its sample commands.
 
 ## 0.131.1 - 2026-10-11
 
