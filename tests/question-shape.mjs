@@ -1,8 +1,3 @@
-// Parses one rendered exo question and asserts the limits of the shape in
-// `skills/route-skills/references/question.md`: a bold title of at most 10
-// words (a `1/3 ` progress prefix allowed), at most one 15-word context sentence,
-// two or three lettered options of 3-word labels and 8-word text in order, and
-
 import assert from 'node:assert/strict';
 import { MAX_OPTIONS, QUESTION_CAPS, QUESTION_OPTION, QUESTION_REASON, QUESTION_TITLE } from '../verify/checks/question-options.mjs';
 
