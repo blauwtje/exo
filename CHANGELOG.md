@@ -28,6 +28,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The flow benchmark counts comment lines added, hook denials and the hidden check per cell (`benchmarks/results/2026-10-12-no-comments.md`).
 - `strip-comments.mjs` lists and removes disallowed code comments and prints the comment percentage; a script's usage header becomes its `--help` text.
 - `npm run check` fails on any disallowed comment in `skills/`, `lib/` and `hooks/`.
+- Each release keeps the newest 10 versions in `CHANGELOG.md` and moves the rest to `CHANGELOG-archive.md`.
 - `plan-check` refuses a task whose Proof or the `Allow:` list starts a nested claude, because `exo run`'s sandbox cannot; the measurement moves to the Success line.
 
 ### Changed
@@ -37,6 +38,8 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - Versions before 0.124.4 moved to `CHANGELOG-archive.md`.
 - This repo builds plans through `exo run --detach`, and each plan ends with a task that writes its `## Unreleased` line.
 - The `verify` skill body moves situational loop text into its references, so it fits its 2700-byte budget again.
+- `verify` and the red check share one test-path rule, `isTestPath` in `lib/red-green.mjs`; a `-test.` suffix no longer counts as a test file.
+- A builder flattens a too-deep block it touches.
 - Comments in `skills/`, `lib/` and `hooks/` are removed, from 14.6% of lines to 0.0% disallowed; a comment on behavior forced by a library, browser, platform or protocol returns as a `// why:` line.
 
 ### Fixed
@@ -48,6 +51,7 @@ Versions before 0.124.4 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - `exo run` no longer stops with `Landing the review fix failed: no changed path to commit` when the review fixer changes nothing; it goes on to the final gate.
 - The Success gate of `exo run` drops an unreachable stall stop.
 - The code rules judge code structure only on lines whose code changed.
+- A directory named `spec` no longer marks test code, so a task that changes `skills/spec/` gets a real red check.
 
 ## 0.131.1 - 2026-10-11
 
