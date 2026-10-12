@@ -1,7 +1,3 @@
-// State of `exo run` runs: <root>/.exo/run/<id>/state.json per run and one lock
-// file <root>/.exo/run/lock holding the id of the run that owns the checkout.
-// Pure file functions; every writer of these files goes through this module.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -62,8 +58,6 @@ export function updateRun(root, id, patch) {
   return next;
 }
 
-// gates.md in a run dir: one line per gate, `- <status>: <source>: <action> (<reason>)`, status
-// open, approved or used. A parked run waits on its open gates; `exo approve` approves them.
 const gatesFile = (dir) => path.join(dir, 'gates.md');
 const GATE_LINE = /^- (open|approved|used): ([^:]+): (.*) \(([^()]*)\)$/;
 
@@ -83,10 +77,8 @@ function writeGates(dir, gates) {
   writeAtomic(gatesFile(dir), text);
 }
 
-// A multi-line action reads as one line, so the gate line stays whole.
 const oneLine = (action) => action.replace(/\s*\n\s*/g, ' ').trim();
 
-// Adds an open gate unless one with the same source and action is already open.
 export function openGate(dir, { source, action, reason }) {
   const gates = readGates(dir);
   const act = oneLine(action);
@@ -95,7 +87,6 @@ export function openGate(dir, { source, action, reason }) {
   writeGates(dir, gates);
 }
 
-// Returns the number of gates approved.
 export function approveGates(dir) {
   const gates = readGates(dir);
   let n = 0;
@@ -104,7 +95,6 @@ export function approveGates(dir) {
   return n;
 }
 
-// Marks the first approved gate whose action equals `action` used; true when there was one.
 export function takeApproved(dir, action) {
   const gates = readGates(dir);
   const g = gates.find((x) => x.status === 'approved' && x.action === oneLine(action));
@@ -114,7 +104,6 @@ export function takeApproved(dir, action) {
   return true;
 }
 
-// Oldest first.
 export function listRuns(root) {
   let names;
   try {
@@ -129,13 +118,6 @@ export function listRuns(root) {
 export function removeRun(root, id) {
   fs.rmSync(runDir(root, id), { recursive: true, force: true });
 }
-
-// The lock is only ever made visible whole: its text is written to a scratch file first, then
-// linked (create) or renamed (takeover) into place. Each lock file instance has a key (inode and
-// mtime) that no later instance shares. Replacing or removing an instance needs a claim on its key:
-// claim files lock.<key>.<n> hold the claimant's pid, made by link so one contender wins each n,
-// and a claim left by a dead process passes to n + 1. An instance once replaced never returns, so
-// a late claimant finds a new key and backs off.
 
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const claimFile = (root, key, n) => path.join(runsDir(root), `lock.${key}.${n}`);
@@ -152,7 +134,6 @@ function drop(file) {
   } catch {}
 }
 
-// Windows refuses to replace or unlink a file another process has open for a moment.
 function settle(fn) {
   for (let attempt = 0; ; attempt++) {
     try {
@@ -164,7 +145,6 @@ function settle(fn) {
   }
 }
 
-// The lock as one file instance: { holder, key }, or null when there is none.
 function readLock(root) {
   let fd;
   try {
@@ -181,7 +161,6 @@ function readLock(root) {
   }
 }
 
-// Claim number n, or -1 while a live process holds the claim on `key`.
 function claim(root, key, token) {
   for (let n = 0; n < 16; n++) {
     try {
@@ -203,16 +182,12 @@ function unclaim(root, key, n) {
   for (let k = 0; k <= n; k++) drop(claimFile(root, key, k));
 }
 
-// A lock naming `id` itself is left by an earlier process of the same run, which --resume replaces.
 function held(root, holder, id) {
   if (holder === '' || holder === id) return false;
   const state = readState(root, holder);
   return state !== null && !FINAL_PHASES.includes(state.phase) && isAlive(state.pid);
 }
 
-// Take the lock for run `id`. Returns { ok: true, stale?: previousId } or { ok: false, holder: id }.
-// A lock whose run is final, missing or has a dead pid is stale. Callers write the run's state with
-// its live pid before taking the lock, so a contender never mistakes a fresh lock for a stale one.
 export function acquireLock(root, id) {
   const file = lockFile(root);
   fs.mkdirSync(runsDir(root), { recursive: true });
@@ -251,7 +226,6 @@ export function acquireLock(root, id) {
   }
 }
 
-// Remove the lock only when `id` still owns it.
 export function releaseLock(root, id) {
   let token = null;
   try {

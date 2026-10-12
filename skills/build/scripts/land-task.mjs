@@ -1,28 +1,3 @@
-// Lands one green task: refuses before it stages or commits anything when
-// the checkout has changed or added a path outside the task's `Files:`, else runs the task's `Commit:` block as the plan wrote it, its bare trailer
-// swapped for one naming the plan, checks that the new commit carries the `Plan-task: <plan-id>/<n>` trailer and that the landed set now
-// holds the task, and prints that set and next-task's `Next:` or `Wave:` line, so the session neither pastes the
-// block nor reads the log. A compact task lands only when its `Proof:`
-// command, or with none the Success-criterion test its build report names,
-// passes when this script runs it in the checkout, and the report lists no
-// command as failing under Proof; the printout carries that run's exit status
-// and last output lines. A long-format task lands only when each distinct
-// `Run:` command a step expects to pass passes the same way; its report is not read. A
-// `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short name,
-// lands on its `<command>: deferred` line instead and prints `Pending: mcp:<tool> <args>`
-// for the session to run. Each passed proof's command, exit status and outcome line go to
-// `.exo/proof-<plan id>-task-<n>.txt`, which `next-task.mjs --proofs` prints. Above eight tasks each `Choice:` line of the
-// report is appended to `<plan stem>-decisions.md` beside the plan. `--fix <subject>` bypasses all of that for a
-// review-fix or bug-fix commit: it stages every changed path and commits it
-// with the given subject, no task, plan or trailer needed. A task whose
-// changed exported function signature still has a caller outside its
-// `Files:` is refused with a `PLAN DRIFT` line, the one the drift repair reads.
-// Under `EXO_RUN_TASK=<plan-id>/<n>`, which run-plan.mjs sets for each task process, this
-// serves that one task of that plan: another plan or task, `--fix`, a task whose Proof is an
-// MCP call and a malformed value are refused with exit 1 before anything stages or commits.
-// It then prints at most QUIET_LINES lines in all, stdout and stderr together: the result line,
-// the Proof tail and the path of the proof file, which keeps the full output.
-
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,37 +14,22 @@ import { runOnBase, testPaths } from '#red-green';
 import { codeRuleFindings } from '#code-rules';
 import { attributionProblem, subjectProblem } from '#commit-text';
 
-/** The plan or the checkout gave no commit to land: exit 1 with an empty stdout. */
 export class LandingError extends Error {}
 
-/** A landing refusal the plan must repair: printed bare, so its line opens with `PLAN DRIFT`. */
 export class PlanDriftError extends LandingError {}
 
-// Single-quoted, with an embedded quote escaped by closing, escaping, and
-// reopening the quote, so bash takes a path or title literally even with a
-// `$`, backtick or double quote in it.
 function shellQuote(value) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-// The `Plan-task:` trailer plus one `Signature:` trailer per caller-breaking
-// signature change, in one paragraph so git reads them all as trailers.
 function trailersOf(planId, number, signatures) {
   return [planTaskTrailer(planId, number), ...signatures.map((signature) => `Signature: ${signature}`)].join('\n');
 }
 
-// The value of the task's `Drops:` field (`<word> in <path>[, ...]`), read from its
-// field line since the plan parser keeps no such key; null when the task has none.
 function dropsOf(task) {
   return task.section.match(/^Depends on: .*?\| Drops: ([^|\n]*?) *(?:\||$)/m)?.[1] || null;
 }
 
-// A compact task carries no `Commit:` block by design: its heading title is
-// the commit subject and its `Files:` field is the `git add` list, so this
-// derives the same shape land-task would otherwise read from the plan text.
-// A path `git rm` already staged as deleted is left out of the `git add`,
-// which refuses a path matching neither the index nor the tree; the index
-// still carries the removal into the commit.
 function deriveCommit(task, number, planId, signatures, root) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${number} has no Commit: block and no Files: to derive one from`);
@@ -82,9 +42,6 @@ function deriveCommit(task, number, planId, signatures, root) {
   return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(trailers)}`;
 }
 
-// The `{ planId, number }` an `EXO_RUN_TASK` value pins this process to; null when the
-// variable is unset. A set value that is not `<plan-id>/<n>`, even an empty one, refuses,
-// so a mangled pin never falls back to an unpinned run.
 function parsePin(value) {
   if (value === undefined) return null;
   const match = value.match(/^([^/\s]+)\/(\d+)$/);
@@ -105,10 +62,6 @@ function refuseMcpProofUnderPin(pin, task) {
   }
 }
 
-// A `--root` naming a subdirectory of the checkout, or a copy under another
-// name, would stage and commit paths outside the checkout the plan and its
-// Files: lines describe. This runs before any command that stages or
-// commits, so a mismatch never touches the checkout's git state.
 function refuseMismatchedToplevel(root) {
   const resolvedRoot = realpathSync(root);
   const toplevel = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
@@ -118,20 +71,11 @@ function refuseMismatchedToplevel(root) {
   }
 }
 
-// Refuses commit text that attributes the work to an AI or whose subject is not
-// a Conventional Commit, before git runs, so nothing is staged or committed.
 function refuseBadCommitText(subject, rest = '') {
   const problem = subjectProblem(subject) ?? attributionProblem(`${subject}\n${rest}`);
   if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
 }
 
-// A review-fix or bug-fix commit names no task and touches whatever the
-// repair changed, so `--fix <subject>` skips the Files: scope check and the
-// Plan-task trailer entirely: it stages every changed path and commits it
-// with the given subject as-is, the same shape the calling skill used to
-// spell out as a bare `git add -A && git commit -m` line.
-// With a `plan` path, the plan's `Lint:` command first runs on the changed
-// script paths and a failure refuses the commit, as a task landing does.
 export function fixLand({ root, subject, plan = null, pin = null }) {
   if (pin !== null) throw new LandingError(`EXO_RUN_TASK pins this run to ${pin.planId}/${pin.number}; --fix is refused`);
   refuseMismatchedToplevel(root);
@@ -147,8 +91,6 @@ export function fixLand({ root, subject, plan = null, pin = null }) {
   return `Committed: ${sha}\n`;
 }
 
-// spec writes a `Commit:` block's trailer as the bare `Plan-task: <n>`, which
-// names no plan; the block runs with that trailer swapped for the one that does.
 export function commitBlockOf(plan, number, planId, signatures = [], root = '.') {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
@@ -166,25 +108,11 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// `<command>: <outcome>`, backticked or bare, optionally as a list item; a
-// bare command runs to the last colon, so `npm run test:unit: pass` keeps its
-// script name.
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
-// The build report's own field names, never a command.
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
-// A Proof run past this counts as failed; it stays under the 600-second cap of
-// the Bash call that runs land-task, as wait-report's 540 seconds does.
 const PROOF_TIMEOUT_MS = 540_000;
-// The last non-empty output lines of the Proof run that the printout or the
-// refusal carries.
 const PROOF_TAIL_LINES = 20;
-// A test-first report's `Test first:` and `Red: <command>: fail` lines come before `Proof:`;
-// the red run's `fail` is the step before the edit, never a command outcome, so the lines read
-// drop each of them and the more indented lines under it, the assertion and observed value.
 const RED_FIELD_LINE = /^\s*(?:[-*]\s+)?(?:Test first|Red):/;
-// The command whose outcome proves the task: the plan's `Proof:`, or for an
-// older compact plan with none, the first command the report gives an outcome
-// for, which is the Success-criterion test build-task wrote or picked.
 function provedCommand(task, lines, reportPath) {
   if (task.proof !== null) return task.proof.replace(/^`(.*)`$/, '$1');
   for (const line of lines) {
@@ -198,13 +126,8 @@ function provedCommand(task, lines, reportPath) {
 const FAILED_OUTCOME = /^fail(?:ed|s|ing)?\b/i;
 const BARE_FAILED_OUTCOME = /^fail(?:ed)?(?:\s*\(.*\))?$/i;
 const PROOF_FIELD_LINE = /^\s*(?:[-*]\s+)?Proof:\s*(.*)$/;
-// A field line that closes the Proof section; `Choice:` lines follow it too.
 const SECTION_END_LINE = /^\s*(?:[-*]\s+)?(?:Landed|Unresolved|Report|Choice):/;
 
-// The report's Proof section: the lines after its `Proof:` field (plus any
-// command on that line itself), or with no such field the report's opening
-// lines, up to the next field line, so `Unresolved:` prose naming a failure
-// never counts as an outcome line.
 function proofSectionOf(lines) {
   const start = lines.findIndex((line) => PROOF_FIELD_LINE.test(line));
   const section = start === -1 ? lines : [lines[start].match(PROOF_FIELD_LINE)[1], ...lines.slice(start + 1)];
@@ -212,24 +135,17 @@ function proofSectionOf(lines) {
   return end === -1 ? section : section.slice(0, end);
 }
 
-// A compact task's green is its `Proof:` pass, yet a build report that lists
-// any other test or suite command as failing is a red checkout: landing it
-// would commit a task the builder itself saw break something.
 function refuseFailedCommand(task, lines) {
   for (const line of proofSectionOf(lines)) {
     const match = line.match(ANY_OUTCOME_LINE);
     const command = match?.[1] ?? match?.[2];
     if (command === undefined || REPORT_FIELDS.has(command)) continue;
-    // A bare line is as likely the proof command's own output ("ok 3 - parser: fails on empty input"),
-    // so it counts only as a bare "fail" or "fail (...)"; a backticked command keeps any failing word.
     const failing = match[1] === undefined ? BARE_FAILED_OUTCOME : FAILED_OUTCOME;
     if (!failing.test(match[3])) continue;
     throw new LandingError(`Task ${task.number}: the build report lists "${command}: ${match[3]}" under Proof, no clear pass`);
   }
 }
 
-// What every report refusal ends with, so one round fixes every report fault:
-// the layout the report must have under Proof, filled with the task's command.
 function expectedLayout(task, reportPath, command = null) {
   const written = command ?? (task.proof === null ? '<test command>' : task.proof.replace(/^`(.*)`$/, '$1'));
   const outcome = mcpProofOf(task) === null ? 'pass' : 'deferred';
@@ -253,7 +169,6 @@ function reportLinesOf(task, reportText, reportPath) {
   return kept;
 }
 
-// Each `<command>: <outcome>` line the report gives `command`, lowercased.
 function outcomesOf(command, lines) {
   const outcomeLine = new RegExp(`^(\\s*)(?:[-*]\\s+)?(?:Proof:\\s*)?\`?${escapeRegExp(command)}\`?:\\s*(.*?)\\s*$`);
   return lines.flatMap((line, index) => {
@@ -262,18 +177,11 @@ function outcomesOf(command, lines) {
   });
 }
 
-// A `Proof: mcp:<tool> <args>`, or one starting with a known MCP tool's short
-// name, names a tool of an MCP server only the session holds, so this returns
-// that call in its `mcp:` form, or null for a Bash proof.
 export function mcpProofOf(task) {
   if (task.proof === null) return null;
   return mcpToolCall(task.proof.replace(/^`(.*)`$/, '$1'));
 }
 
-// The builder holds no MCP tool, so an MCP Proof lands on the report's
-// `<command>: deferred` line, the command as the plan wrote it or in its `mcp:`
-// form, never a pass it could not have seen; the session runs the tool after
-// the landing, so this returns the `mcp:` form.
 export function deferredProofOf(task, call, reportText, reportPath) {
   const lines = reportLinesOf(task, reportText, reportPath);
   const written = provedCommand(task, lines, reportPath);
@@ -289,9 +197,6 @@ export function deferredProofOf(task, call, reportText, reportPath) {
   return call;
 }
 
-// The Bash command land-task runs as the task's Proof, once the report lists
-// no command as failing under Proof: the builder saw that break, whatever the
-// Proof's own run shows.
 function proofCommandOf(task, reportText, reportPath) {
   const lines = reportLinesOf(task, reportText, reportPath);
   const command = provedCommand(task, lines, reportPath);
@@ -299,18 +204,9 @@ function proofCommandOf(task, reportText, reportPath) {
   return command;
 }
 
-// A task is done only on proof from the real product, never on the report's
-// word: the Proof, or a long-format task's `Run:` command (`field`), runs in the checkout under bash, as the Land gate does, with
-// stderr merged into stdout so the tail keeps their order. A nonzero exit, a
-// signal or the timeout refuses the landing with the output's last lines; a
-// pass returns its exit status and those lines for the printout.
-// Under a pin: the proof file the output is kept in, and every proof's whole output.
 const QUIET_LINES = 20;
 const quiet = { file: null, proofOutput: '' };
 
-// The text cut to QUIET_LINES lines with the proof file's path last; that file also gets the
-// whole text and every proof's whole output. Success drops the Landed/Route/Next/Wave lines,
-// which the run script does not read.
 function quietText(text, ok) {
   const all = text.split('\n').filter((line) => line.trim() !== '');
   const lines = ok ? all.filter((line) => !/^(?:Landed|Route|Next|Wave): /.test(line)) : all;
@@ -324,7 +220,6 @@ function runProof(task, command, root, field) {
   if (cachedPass(root, command) !== null) return { command, tail: ['  passed already on this tree, not rerun'] };
   const before = workingTreeKey(root);
   const started = Date.now();
-  // EXO_PROOF_TIMEOUT_MS overrides the deadline for a test.
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const proofRun = runTreeSync(command, { cwd: root, timeoutMs: deadlineMs });
   if (quiet.file !== null) quiet.proofOutput += `${command}\n${proofRun.output}\n`;
@@ -342,8 +237,6 @@ function runProof(task, command, root, field) {
 
 const CHOICE_LINE = /^\s*(?:[-*]\s+)?Choice:\s*(.+?)\s*$/;
 
-// Above BLOCK_TASK_LIMIT tasks each `Choice:` line of the build report
-// becomes one `Task <n> <short sha>: <choice>` line of the decision log.
 function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
   if (planPath === undefined || reportText === null || taskCount <= BLOCK_TASK_LIMIT) return;
   const choices = reportText.replace(/\r\n/g, '\n').split('\n').flatMap((line) => {
@@ -353,19 +246,6 @@ function appendDecisions({ planPath, reportText, taskCount, number, sha }) {
   if (choices.length > 0) fs.appendFileSync(decisionsPathOf(planPath), choices.join(''));
 }
 
-// Every path the checkout has changed or added since HEAD, tracked or not: a
-// `Commit:` block's own `git add` (the derived Files: list for a compact
-// task, or a plan-written `git add .`) stages an untracked path alongside the
-// task's files, so an untracked stray is as real as a tracked one. The
-// checkout's own `${SCRATCH_FOLDER}/` scratch folder (the build report
-// land-task itself reads) is never a stray: a host that has not yet run
-// `scratch-exclude.mjs` still leaves it untracked, so it is dropped here
-// rather than trusted to `--exclude-standard`. Likewise the plan file itself,
-// when `planPath` sits inside `root`: spec hands its brief straight
-// to build without committing it, so the plan the run is landing from can
-// still be untracked in the very checkout it lands into. The decision log
-// beside the plan is exempt for the same reason: land-task writes it after
-// the commit and never commits it.
 function untrackedPaths(root) {
   return execFileSync('git', ['-C', root, 'ls-files', '--others', '--exclude-standard'], { encoding: 'utf8' }).split('\n');
 }
@@ -378,10 +258,6 @@ function changedPaths(root, planPath) {
     .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
 }
 
-// A task lands only the paths its `Files:` lines name: a build that also
-// touched or added another path is not this task's, whatever its proof, so
-// this stops the Commit: block before it stages or commits anything.
-// A `Files:` entry ending in `/` names a folder and covers every path under it.
 function isCovered(entries, changed) {
   return entries.some((entry) => entry === changed || (entry.endsWith('/') && changed.startsWith(entry)));
 }
@@ -391,14 +267,6 @@ function strayPaths(task, root, planPath, siblingWork = () => false) {
   return changedPaths(root, planPath).filter((changed) => !isCovered(entries, changed) && !siblingWork(changed));
 }
 
-// In a block several builders share one checkout, so a path an unlanded task
-// of the plan names in its `Files:` is that sibling's work, not this task's
-// stray; a landed task's path is committed, so a change to it stays a stray.
-// A landing exempts one only while it is unstaged, since `git commit` takes
-// the whole index. A derived commit's `git add` stages this task's `Files:`
-// alone. A plan-written Commit: block (the inline route writes every task's
-// files first) exempts only an untracked path none of its `git add`
-// arguments covers, since `git commit -a` takes tracked changes.
 function siblingWorkOf(plan, task, root, planPath, landing) {
   const written = landing && (task.commitBlock !== null || !task.compact);
   const added = written ? addedPathspecs(task.commitBlock ?? '') : [];
@@ -413,11 +281,8 @@ function siblingWorkOf(plan, task, root, planPath, landing) {
     && (!written || (untracked.has(changed) && !isCovered(added, changed)));
 }
 
-// A `git add` of `.`, `-A`, `--all`, `:/` or a glob stages every untracked path.
 const STAGES_ALL = /^(?:\.|\.\/|-A|--all|:\/|.*[*?[].*)$/;
 
-// Every path a Commit: block's `git add` lines name, a folder ending in `/`;
-// null when one stages everything.
 function addedPathspecs(commitBlock) {
   const specs = [...commitBlock.matchAll(/\bgit\s+add\b([^;&|\n]*)/g)]
     .flatMap((match) => match[1].trim().split(/\s+/))
@@ -427,35 +292,24 @@ function addedPathspecs(commitBlock) {
   return specs.flatMap((spec) => [spec, `${spec.replace(/\/$/, '')}/`]);
 }
 
-// The file's source at HEAD, or null when HEAD holds no such file.
 function sourceAtHead(root, file) {
   const shown = spawnSync('git', ['-C', root, 'show', `HEAD:${file}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   return shown.status === 0 ? shown.stdout : null;
 }
 
-// Tracked script files outside `inFiles` that hold `name` as a whole word; a
-// comment or a same-named local counts too, which costs one plan repair.
 function outsideCallers(root, name, inFiles) {
   const pathspecs = [...SCRIPT_EXTENSIONS].map((extension) => `*${extension}`);
   const found = spawnSync('git', ['-C', root, 'grep', '-l', '-w', '-F', '-e', name, '--', ...pathspecs], { encoding: 'utf8' });
-  // git grep exits 1 when nothing matches.
   if (found.error !== undefined || found.status > 1) {
     throw new LandingError(`git grep for callers of ${name} failed: ${found.error?.message ?? found.stderr.trim()}`);
   }
   return found.stdout.split('\n').filter((file) => file !== '' && !isCovered([...inFiles], file));
 }
 
-// A call written against the old list fails against the new one when it must
-// now pass more arguments, or passes more than the list now holds; a rename,
-// an added default or an added rest parameter breaks no call.
 function breaksCallers(before, after) {
   return after.required > before.required || after.total < before.total || (before.hasRest && !after.hasRest);
 }
 
-// Each exported function whose parameter list the task changed so that it
-// breaks callers, as the `<file>:<name>(<old>) -> (<new>)` text the commit's
-// `Signature:` trailer carries. One that still has a caller outside `Files:`,
-// even when its proof and suite stay green, sends the task back to the plan.
 function signatureChanges(task, root) {
   const inFiles = new Set(task.files.map((file) => file.path));
   const changes = [];
@@ -479,12 +333,6 @@ function signatureChanges(task, root) {
   return changes;
 }
 
-// A `Lint: <command>` line in the plan's `## Plan basis` runs once on the
-// task's own `Files:` paths (a `--fix` commit's changed paths) that are
-// scripts and still exist, spawned without a shell, so the task lands on its Proof plus lint, not the test suite; a
-// script the task deleted never reaches the linter as a missing path. A plan
-// without the line, with `Lint: none`, or a task with no existing script path
-// lints nothing.
 function runLint(lint, files, root) {
   if (lint === null || lint === 'none') return;
   const paths = files
@@ -498,8 +346,6 @@ function runLint(lint, files, root) {
   }
 }
 
-// The task's own paths must add no comment, suppression or over-nested code; a fail refuses
-// the landing, a warn comes back as a line for the output.
 function runCodeRules(files, root) {
   const { fails, warns } = codeRuleFindings({ root, base: 'HEAD', paths: files.filter((file) => !file.endsWith('/')) });
   if (fails.length > 0) {
@@ -508,13 +354,6 @@ function runCodeRules(files, root) {
   return warns.map((warn) => `Code rule warning: ${warn}\n`).join('');
 }
 
-// A `Land gate: <command>` line in the plan's `## Plan basis` runs once more
-// right before the commit, so a check spec wrote against the plan's own
-// layout still holds on whatever the build left; a plan without the line, or
-// with `Land gate: none`, gates on nothing, as land-task always has. The
-// gate is skipped, with one line returned, when it already passed on this
-// working tree or its last recorded pass took SLOW_GATE_MS or more, which
-// verify then runs once. A pass is recorded with its time.
 function runLandGate(landGate, root, drops = null) {
   if (landGate === null || landGate === 'none') return null;
   if (cachedPass(root, landGate) !== null) return `Land gate "${landGate}" skipped: it already passed on this tree.\n`;
@@ -524,10 +363,7 @@ function runLandGate(landGate, root, drops = null) {
   }
   const before = workingTreeKey(root);
   const started = Date.now();
-  // EXO_LAND_GATE_TIMEOUT_MS overrides the deadline for a test.
   const deadlineMs = environmentMs('EXO_LAND_GATE_TIMEOUT_MS', PROOF_TIMEOUT_MS);
-  // EXO_DROPS reaches the gate child only: the child inherits this process's
-  // environment, so it is set for that one call and restored after.
   const outerDrops = process.env.EXO_DROPS;
   if (drops === null) delete process.env.EXO_DROPS;
   else process.env.EXO_DROPS = drops;
@@ -547,22 +383,15 @@ function runLandGate(landGate, root, drops = null) {
   return '';
 }
 
-// A test runner's pass count (`ℹ pass 3`, `# pass 3`, `3 passing`, `Tests: 3 passed`), the line
-// that says what the proof showed; a timing line (`ℹ duration_ms 41`, `Done in 0.4s`) says nothing.
 const PASS_SUMMARY_LINE = /^(?:ℹ |# )?pass \d+\b|\b\d+ (?:passing|passed)\b|^Tests:/;
 const TIMING_LINE = /^(?:ℹ |# )?duration_ms\b|^(?:Time|Duration|Done in)\b/;
 
-// A passed proof's outcome in one line: its exit status, then its pass-count line, else its
-// last line that is not timing.
 function proofOutcomeOf(tail) {
   const lines = tail.map((line) => line.trim()).filter((line) => !TIMING_LINE.test(line));
   const outcome = lines.findLast((line) => PASS_SUMMARY_LINE.test(line)) ?? lines.at(-1) ?? 'no output';
   return `exit 0, ${outcome}`;
 }
 
-// The report's `Proof: <command> -> <outcome>` line for each proof this landing passed, so the
-// session reports proofs from script output and never reruns them, then the Red line; a task
-// with no Bash proof, such as an MCP-deferred one, records its Red line alone.
 function writeProofRecord({ root, planId, number, proofs, redLine }) {
   const lines = [...proofs.map(({ command, tail }) => `Proof: \`${command}\` -> ${proofOutcomeOf(tail)}\n`), `${redLine}\n`];
   const record = proofRecordPath(root, planId, number);
@@ -570,7 +399,6 @@ function writeProofRecord({ root, planId, number, proofs, redLine }) {
   fs.writeFileSync(record, lines.join(''));
 }
 
-// The task's uncommitted paths: changed, added and untracked files, a deleted path as a removal.
 function taskChangedPaths(root) {
   const entries = execFileSync('git', ['-C', root, 'status', '--porcelain', '-z', '-uall'], { encoding: 'utf8' }).split('\0').filter((entry) => entry !== '');
   const paths = [];
@@ -581,11 +409,6 @@ function taskChangedPaths(root) {
   return paths;
 }
 
-// A Proof that passes on HEAD with only the task's test changes laid over it proves nothing
-// about the task's production change, unless the task names `Red: none (<reason>)`. A Proof of
-// several commands is red when one fails there. Fails closed: a base run that errors refuses.
-// A task with no passing Bash proof command has nothing to run on the base, so the check skips.
-// Returns the proof record's line.
 function redGreenLine(task, proofCommands, root, pending) {
   if (task.red !== null) return `Red: skipped: none (${task.red.reason})`;
   if (pending !== null) return 'Red: skipped: deferred MCP proof';

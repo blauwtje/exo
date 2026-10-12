@@ -1,18 +1,3 @@
-// Prints what the next build needs, read from the plan and the checkout's
-// history instead of the session's memory: the landed set, the route, the
-// next task or wave, and for each of its tasks its Design:, Proof:
-// and Run: lines, the drift of its Modify: regions and the path of its brief.
-// The brief, the frame fields and the section verbatim, goes to a file under
-// the checkout's scratch directory, so the section reaches only build-task
-// and stays out of the session. `--block` prints only the landed set and the
-// next run-unit block, for the build session, which leaves the plan to the unit,
-// then each landed task's proof lines as `--proofs` prints them.
-// On the inline route, where the session builds each task itself, both print
-// the inline steps and each unlanded task's section instead.
-// `--proofs` prints each landed task's `Proof:` lines as land-task recorded
-// them and the decision log's path; no step copies them into the final message,
-// since `verify` writes them to the run report.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,15 +8,8 @@ import { mcpToolCall } from '#mcp-tool-call';
 import { proofLines, proofsReport } from '#proofs-report';
 import { defaultBranch, driftOf, frameOf, isolatedCheckout, landedTasks, nextBlock, nextWave, parsePlan, PlanError, planIdOf, planRoute, regionRange, routeLine, waveLine } from '#plan-tasks';
 
-// The Non-goals, Context and Decisions bullets that name one of the task's paths or
-// regions; with no match, every bullet for a task of three or more files,
-// because a brief that drops a fact turns it into a guess, and none for a
-// task of at most two files, whose brief stays small.
 const SMALL_TASK_FILES = 2;
 
-// A bullet names a file when it holds the full path, the basename as a whole
-// word not preceded by `/`, the region, or a parent directory as a whole path
-// not followed by a further segment.
 const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function namesFile(bullet, file) {
@@ -47,7 +25,6 @@ function bulletsFor(task, bullets) {
   return named.length === 0 && task.files.length > SMALL_TASK_FILES ? bullets : named;
 }
 
-// A heading with its bullets; a small task's empty heading is left out.
 function sectionLines(task, heading, bullets) {
   const lines = bulletsFor(task, bullets);
   if (lines.length === 0 && task.files.length <= SMALL_TASK_FILES) return [];
@@ -63,10 +40,6 @@ function visualDirectionLines(task, frame) {
   return ['Visual direction:', frame.visualDirection];
 }
 
-// The `path:start-end` of each Modify: region's one definition, so the brief
-// points build-task at that range instead of the whole file. A region
-// driftOf already flags missing or duplicated stays out: no single range
-// exists to give.
 function modifyRanges(task, root) {
   return task.files
     .filter((file) => file.kind === 'Modify' && file.region !== null)
@@ -88,9 +61,6 @@ function successCriterionLines(frame) {
   return frame.successCriterion === null ? [] : [`Success criterion: ${frame.successCriterion}`];
 }
 
-// `--frame` prints the plan frame's header sections verbatim, the fields
-// frameOf reads off the plan, so a plan's Goal, Non-goals, Context,
-// Decisions and Visual direction reach a caller without it retyping them as prose.
 function frameReport(frame) {
   return `${[
     `Goal: ${frame.goal}`,
@@ -105,22 +75,18 @@ function frameReport(frame) {
   ].join('\n')}\n`;
 }
 
-// build-task's stated report cap, so the brief carries the number the agent
-// writes to.
 function reportCapLines() {
   const prompt = fs.readFileSync(path.join(SKILL_DIRECTORY, '..', '..', 'agents', 'build-task.md'), 'utf8');
   const cap = reportCap(prompt);
   return cap === null ? [] : [`Report cap: ${cap} lines`];
 }
 
-/** The boundary lines every builder keeps; each is verbatim in lean.md or fix-review.md. */
 export const BOUNDARY_LINES = [
   'Make the smallest change that fully does what the user asked.',
   'Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.',
   'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy.'
 ];
 
-/** The run's fixed rules as one file's text, written once by start-run.mjs. */
 export function runRules(frame) {
   return [
     `Goal: ${frame.goal}`,
@@ -133,8 +99,6 @@ export function runRules(frame) {
   ].join('\n');
 }
 
-// The Proof: and Run: commands that name an MCP tool, which only the session
-// can call, so a builder reads them off the brief instead of probing each one.
 function deferredLines(task) {
   const commands = [task.proof, ...task.runs.map((run) => run.command)]
     .filter((command) => command !== null && command !== undefined)
@@ -151,11 +115,8 @@ function readable(file) {
   }
 }
 
-// The brief's text: the frame fields that name the task's paths, then the
-// task section once. `run-plan.mjs` prints it in the session's prompt.
 export function taskBrief(task, frame, root) {
   const rulesPath = scratchPath(root, 'run-rules.md');
-  // A rules file that exists but cannot be read counts as absent, so the brief keeps its own lines.
   const hasRules = readable(rulesPath);
   const direction = visualDirectionLines(task, frame);
   return [
@@ -174,16 +135,12 @@ export function taskBrief(task, frame, root) {
   ].join('\n');
 }
 
-// The brief sits in the run checkout's scratch directory, which git ignores
-// and a wave's worktrees do not share, so a worktree never commits it.
 function writeBrief(task, frame, root, briefDirectory) {
   const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
   fs.writeFileSync(briefPath, taskBrief(task, frame, root));
   return briefPath;
 }
 
-// A compact task's `Design:` segment sits mid-line after `| `; a long task's
-// `Design:` line opens its line.
 function designLine(task) {
   const match = task.section.match(/(?:^|\| )Design: (.+?)(?: \||$)/m);
   return match === null ? 'Design: none' : `Design: ${match[1]}`;
@@ -201,8 +158,6 @@ function taskLines(task, frame, root, briefDirectory) {
   ];
 }
 
-// On the inline route the session builds each task itself from its section,
-// so the report carries the section in place of a brief.
 function inlineTaskLines(task, root) {
   const drift = driftOf(task, root);
   return [
@@ -211,8 +166,6 @@ function inlineTaskLines(task, root) {
   ];
 }
 
-// The inline reference's bullets are the steps; reading them here keeps that
-// file their one source, and filling in the paths spares the session reading it.
 const SKILL_DIRECTORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const VERIFY_DIRECTORY = path.join(path.dirname(SKILL_DIRECTORY), 'verify');
 
@@ -224,8 +177,6 @@ function inlineSteps(planPath, root) {
       .replaceAll('<plan>', planPath).replaceAll('<checkout>', root).replaceAll('<base>', defaultBranch(root) ?? 'main'));
 }
 
-// Reads only the plan's frame and prints its header sections; `main` reaches
-// this under `--frame`, before a plan holds a task worth a wave.
 export function frameOnlyReport(planText) {
   return frameReport(frameOf(parsePlan(planText).frame));
 }
@@ -236,29 +187,20 @@ function parseTasks(planPath, planText) {
   return plan;
 }
 
-// How settled the plan's `## Visual direction` is, so the build session
-// routes a `Design:` task without reading that section: `named` for a frozen
-// `Contract:`, the `pending at rung <n>` design-ui recorded, else `none`.
 function directionOf(visualDirection) {
   const pending = visualDirection?.match(/Direction: (pending at rung \d+)/);
   if (pending) return pending[1];
   return /Contract: /.test(visualDirection ?? '') ? 'named' : 'none';
 }
 
-// The line `--block` prints: the next block, a `Design:` task with its
-// direction, or none when every task landed.
 function blockLine(block, visualDirection) {
   if (block.length === 0) return waveLine(block);
   if (block[0].design) return `Design: Task ${block[0].number}, direction ${directionOf(visualDirection)}`;
   return `Block: ${block.map((task) => `Task ${task.number}`).join(', ')}`;
 }
 
-// Reads no task section and writes no brief: the build session dispatches
-// the block to run-unit, which runs this script without `--block`, and a
-// `Design:` task by its direction per design-tasks.md.
 export function blockReport({ planPath, planText, root }) {
   const plan = parseTasks(planPath, planText);
-  // The inline route has no block: the session builds every task itself.
   if (planRoute(plan.tasks).route === 'inline') return nextTaskReport({ planPath, planText, root });
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   return `${[
@@ -270,15 +212,12 @@ export function blockReport({ planPath, planText, root }) {
   ].join('\n')}\n`;
 }
 
-// Writes a brief file for each task of the next wave and returns the report
-// that names them.
 export function nextTaskReport({ planPath, planText, root, inFlight = [] }) {
   const plan = parseTasks(planPath, planText);
   const frame = frameOf(plan.frame);
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   const route = planRoute(plan.tasks);
   const inline = route.route === 'inline';
-  // The inline route builds in the run checkout, never in a wave's worktrees.
   const wave = nextWave(plan.tasks, landed, inline || isolatedCheckout(root) ? null : frame.worktreeSetup, frame.parallel, inFlight);
   const lines = [
     `Plan: ${planPath}`,
@@ -289,8 +228,6 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [] }) {
     waveLine(wave, inFlight)
   ];
   if (wave.length === 0) return `${lines.join('\n')}\n`;
-  // On the inline route the lead builds every unlanded task in plan order, so
-  // one call prints them all, with the steps to build them.
   if (inline) {
     const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
     lines.push(`Inline: ${unlanded.map((task) => `Task ${task.number}`).join(', ')}`, 'Steps:', ...inlineSteps(planPath, root));

@@ -1,11 +1,3 @@
-// The tail of an unattended run, by script: the reviews verify.mjs names, the merge, at most one fix
-// round and the gate. No session loads a skill: each review or fix session gets the text of
-// `agents/review-branch.md` or `skills/build/review-fixer-prompt.md` with its inputs filled.
-//
-// `runSession({ kind, prompt, task, model })` is the caller's: it spawns one headless session and
-// returns `{ resultText }`, or `{ stop }` when the session broke a rule or the run's budget is spent.
-// The tail returns `{ stop }` (a stop object the caller reports) or `{ gate }`, the final verify.mjs run.
-
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,19 +23,15 @@ const node = (script, args, root) => spawnSync(process.execPath, [script, ...arg
 });
 const out = (answer) => `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
 
-/** The agent file's text without its frontmatter; its `${CLAUDE_PLUGIN_ROOT}` is filled, as no headless prompt fills it. */
 const agentBody = () => fs.readFileSync(REVIEW_AGENT, 'utf8').replace(/^---\n[\s\S]*?\n---\n/, '').replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN_ROOT).trim();
 
-/** The `model:` of the agent's frontmatter, the model of a review session the verify line gives none. */
 const agentModel = () => fs.readFileSync(REVIEW_AGENT, 'utf8').match(/^---\n[\s\S]*?^model:\s*(\S+)\s*$[\s\S]*?\n---\n/m)?.[1] ?? null;
 
-/** The fixer prompt: the fenced block of review-fixer-prompt.md with its `<...>` inputs filled. */
 function fixerPrompt({ planPath, root, base, findings }) {
   const block = fs.readFileSync(FIXER_PROMPT, 'utf8').match(/```text\n([\s\S]*?)\n```/)[1];
   return block.replace(/<plan path>/g, planPath).replace(/<root>/g, root).replace(/<base>/g, base).replace(/<findings path>/g, findings).replace(/<plan>/g, planPath);
 }
 
-/** The dispatch a review session gets after the agent text: the inputs `review-rules.md` `## Dispatch` lists. */
 function reviewPrompt({ planPath, root, base, branch, scope, findings, questions = [] }) {
   return [
     agentBody(),
@@ -65,7 +53,6 @@ function reviewPrompt({ planPath, root, base, branch, scope, findings, questions
 const verdictOf = (text) => text.match(/verdict=(CLEAN|FINDINGS|BLOCKED)\b/)?.[1] ?? null;
 const countOf = (text, name) => Number(text.match(new RegExp(`\\b${name}=(\\d+)`))?.[1] ?? 0);
 
-/** `{ reviews, overlaps, reviewed }` from verify.mjs --reviews-only: what to dispatch and which records exist. */
 export function parseReviewLines(text) {
   const reviews = [];
   const overlaps = [];
@@ -83,10 +70,6 @@ export function parseReviewLines(text) {
 
 const stopOf = (line, why, next) => ({ line, why, next });
 
-/**
- * Runs the tail. `say` logs one event line; `base` is the default branch or null.
- * A `fix` finding gets one fix session, the gate, one `fix diff` review and a `--fix` landing.
- */
 export async function runTail({ planPath, plan, root, base, branch, runSession, say = () => {} }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
@@ -143,7 +126,6 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       if (secondVerdict === 'BLOCKED' || (secondVerdict === 'FINDINGS' && fixCount > 0)) {
         return { stop: stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}; the fix stays uncommitted`, `read ${fixReview}, then run exo run again`) };
       }
-      // A fixer that changed nothing, or committed its own edits, leaves nothing for land-task to commit.
       const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
       if (status.status === 0 && status.stdout.trim() === '') {
         say('fix landed: nothing to commit');
