@@ -15,7 +15,8 @@ import { transcriptFolder } from '#confine-claude';
 import { contextPeaks, HARD_LIMIT } from '#context-limits';
 import { mcpToolCall } from '#mcp-tool-call';
 import { packageHasEntryPoint } from '#package-entry-point';
-import { TEST_FILE, taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
+import { isTestPath } from '#red-green';
+import { taskDiffOf, taskPaths, taskReviewer } from './pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps, readChanges } from './review-overlap.mjs';
 
 const USAGE = `Usage: node verify.mjs --plan <path> [--root <checkout>] [--base <ref>] [--check-command <cmd>] [--reviews-only]
@@ -156,7 +157,12 @@ export function unchangedFiles(files, changed) {
 }
 
 export function isTestFirst(task) {
-  return task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => TEST_FILE.test(file.path)));
+  return task.risk !== null || (/^fix\b/.test(task.title) && task.files.some((file) => isTestPath(file.path)));
+}
+
+function testLineHits({ file, line, pattern, at }) {
+  if (file === null || !isTestPath(file) || !pattern.test(line)) return [];
+  return [{ file, at, text: line.slice(1).trim() }];
 }
 
 export function weakenedTests(patch) {
@@ -177,12 +183,12 @@ export function weakenedTests(patch) {
     } else if (header !== null) {
       if (header[1] !== '/dev/null') file = header[1];
     } else if (oldLeft > 0 && line.startsWith('-')) {
-      if (TEST_FILE.test(file) && REMOVED_ASSERTION.test(line)) removed.push({ file, at: oldLine, text: line.slice(1).trim() });
+      removed.push(...testLineHits({ file, line, pattern: REMOVED_ASSERTION, at: oldLine }));
       oldLeft -= 1;
       oldLine += 1;
     } else if (newLeft > 0 && line.startsWith('+')) {
       added.add(line.slice(1).trim());
-      if (TEST_FILE.test(file) && ADDED_SKIP.test(line)) skips.push({ file, at: newLine, text: line.slice(1).trim() });
+      skips.push(...testLineHits({ file, line, pattern: ADDED_SKIP, at: newLine }));
       newLeft -= 1;
       newLine += 1;
     }
@@ -226,7 +232,7 @@ function claimLines(task, root, planId) {
   const lines = [];
   const unchanged = unchangedFiles(task.files, changed);
   if (unchanged.length > 0) lines.push(`WARN claims-diff Task ${task.number} (Files: unchanged in its commit: ${unchanged.join(', ')})`);
-  if (isTestFirst(task) && !changed.some((path) => TEST_FILE.test(path))) {
+  if (isTestFirst(task) && !changed.some(isTestPath)) {
     lines.push(`FAIL claims-diff Task ${task.number} (test-first, but its commit adds or changes no test file)`);
   }
   for (const sha of shas) {

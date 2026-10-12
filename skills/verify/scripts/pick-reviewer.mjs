@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { basename, extname } from 'node:path';
 import { onPath } from '#on-path';
+import { isTestPath } from '#red-green';
 import { readKindTable } from '#model-kinds';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { inRun, recordDecision } from '#run-decision';
@@ -55,17 +56,21 @@ export function taskReviewer(task, changedPaths, route, taskDiff = '') {
   if (route === 'inline') return 'none (inline route)';
   if (changedPaths.some(isInstructionPath)) return REVIEWER_AGENTS.light;
   if (!changedPaths.some((name) => SCRIPT_EXTENSIONS.has(extname(name)))) return 'none (text only)';
-  if (changedPaths.some((name) => TEST_FILE.test(name)) && outputOnly(taskDiff)) return 'none (output only, test covered)';
+  if (changedPaths.some(isTestPath) && outputOnly(taskDiff)) return 'none (output only, test covered)';
   return REVIEWER_AGENTS.light;
 }
 
-export const TEST_FILE = /(?:^|\/)(?:tests?|specs?|__tests__)\/|(?:^|\/)test_[^/]+$|[._-](?:test|spec)\.[^/.]+$/;
 const OUTPUT_LINE = /^\s*$|^\s*(?:\/\/|\/\*(?:(?!\*\/).)*\*\/\s*$|\/\*\*?\s*$|\*\/\s*$)|^\s*(?:console\.(?:log|error|warn|info)|process\.(?:stdout|stderr)\.write)\([^()]*\)\s*;?\s*$/;
+
+function isReviewedScript(file) {
+  return file !== null && SCRIPT_EXTENSIONS.has(extname(file)) && !isTestPath(file);
+}
 
 function outputOnly(taskDiff) {
   let file = null;
   let header = false;
   let counted = false;
+  let otherCode = false;
   for (const line of taskDiff.split('\n')) {
     if (line.startsWith('diff --git ')) {
       file = line.slice(line.lastIndexOf(' b/') + 3);
@@ -74,13 +79,12 @@ function outputOnly(taskDiff) {
       header = false;
     } else if (header && /^(\+\+\+|---) /.test(line)) {
       continue;
-    } else if ((line.startsWith('+') || line.startsWith('-')) && file !== null) {
-      if (!SCRIPT_EXTENSIONS.has(extname(file)) || TEST_FILE.test(file)) continue;
-      if (!OUTPUT_LINE.test(line.slice(1))) return false;
+    } else if ((line.startsWith('+') || line.startsWith('-')) && isReviewedScript(file)) {
+      otherCode = otherCode || !OUTPUT_LINE.test(line.slice(1));
       counted = true;
     }
   }
-  return counted;
+  return counted && !otherCode;
 }
 
 export function taskDiffOf(task, root, planId) {

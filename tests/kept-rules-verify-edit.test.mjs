@@ -3,7 +3,8 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { mergeReviews } from '../skills/verify/scripts/merge-reviews.mjs';
-import { REVIEWER_AGENTS, TEST_FILE, pickEffort, taskReviewer, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
+import { isTestPath } from '#red-green';
+import { REVIEWER_AGENTS, pickEffort, taskReviewer, touchesManifest } from '../skills/verify/scripts/pick-reviewer.mjs';
 import { findOverlaps, formatOverlaps } from '../skills/verify/scripts/review-overlap.mjs';
 import { fixedProbes } from '../skills/verify/scripts/run-probes.mjs';
 
@@ -58,9 +59,16 @@ test('reviewer: a diff of only comments and output calls in a script, with a tes
   assert.equal(taskReviewer({ risk: null }, paths, 'tasks', diff.replace('console.log("x");', 'run();')), REVIEWER_AGENTS.light);
 });
 
+test('reviewer: an output-only diff on a spec-skill script counts as covered by the test file', () => {
+  const diff = 'diff --git a/skills/spec/scripts/plan-check.mjs b/skills/spec/scripts/plan-check.mjs\n--- a/skills/spec/scripts/plan-check.mjs\n+++ b/skills/spec/scripts/plan-check.mjs\n@@ -1 +1 @@\n-// old\n+console.log("x");\n';
+  const paths = ['skills/spec/scripts/plan-check.mjs', 'tests/a.test.mjs'];
+  assert.equal(taskReviewer({ risk: null }, paths, 'tasks', diff), 'none (output only, test covered)');
+  assert.equal(taskReviewer({ risk: null }, paths.slice(0, 1), 'tasks', diff), REVIEWER_AGENTS.light);
+});
+
 test('test file: folders, test_ prefix and .test or _spec suffix count', () => {
-  for (const name of ['tests/a.mjs', 'src/__tests__/a.js', 'test_a.py', 'a.test.mjs', 'a_spec.rb']) assert.ok(TEST_FILE.test(name), name);
-  assert.ok(!TEST_FILE.test('lib/contest.mjs'));
+  for (const name of ['tests/a.mjs', 'src/__tests__/a.js', 'test_a.py', 'a.test.mjs', 'a_spec.rb']) assert.ok(isTestPath(name), name);
+  assert.ok(!isTestPath('lib/contest.mjs'));
 });
 
 test('effort: any manifest touch, a lockfile bump included, moves the pick off skip', () => {
