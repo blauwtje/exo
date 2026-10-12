@@ -72,6 +72,49 @@ test('a Removed section is a minor before 1.0 and a major after', async () => {
   assert.equal(pluginVersion, expected);
 });
 
+function releases(count) {
+  const sections = [];
+  for (let minor = count; minor >= 1; minor -= 1) {
+    sections.push(`## 0.${minor}.0 - 2026-09-10\n\n- change ${minor}\n`);
+  }
+  return sections.join('\n');
+}
+
+const LONG_HEAD = '# Changelog\n\nVersions before 0.1.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).\n\n## Unreleased\n\n- a change\n\n';
+
+test('versions past the newest 10 move to the archive, newest first', async () => {
+  const directory = await scratchCopy(`${LONG_HEAD}${releases(10)}`);
+  const archivePath = path.join(directory, 'CHANGELOG-archive.md');
+  await fs.writeFile(archivePath, '# Changelog archive\n\nReleases before 0.1.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).\n\n## 0.0.9 - 2026-01-01\n\n- old\n');
+  const result = await run(path.join(directory, 'bump.mjs'), [], { cwd: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /CHANGELOG-archive\.md/);
+  const changelog = await fs.readFile(path.join(directory, 'CHANGELOG.md'), 'utf8');
+  assert.equal(changelog.match(/^## \d/gm).length, 10);
+  assert.ok(!changelog.includes('## 0.1.0 - '), changelog);
+  assert.match(changelog, /^Versions before 0\.2\.0 are in /m);
+  const archive = await fs.readFile(archivePath, 'utf8');
+  assert.match(archive, /^Releases before 0\.2\.0;/m);
+  assert.ok(archive.includes('## 0.1.0 - 2026-09-10\n\n- change 1\n\n## 0.0.9 - 2026-01-01'), archive);
+});
+
+test('a missing archive is created with its title and link line', async () => {
+  const directory = await scratchCopy(`${LONG_HEAD}${releases(11)}`);
+  const result = await run(path.join(directory, 'bump.mjs'), [], { cwd: directory });
+  assert.equal(result.code, 0, result.stderr);
+  const archive = await fs.readFile(path.join(directory, 'CHANGELOG-archive.md'), 'utf8');
+  assert.ok(archive.startsWith('# Changelog archive\n\nReleases before 0.3.0; newer ones are in [CHANGELOG.md](CHANGELOG.md).\n\n## 0.2.0 - '), archive);
+  assert.ok(archive.includes('## 0.1.0 - '), archive);
+});
+
+test('ten versions or fewer leave the archive alone', async () => {
+  const directory = await scratchCopy(`${LONG_HEAD}${releases(9)}`);
+  const result = await run(path.join(directory, 'bump.mjs'), [], { cwd: directory });
+  assert.equal(result.code, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /archive/);
+  await assert.rejects(fs.access(path.join(directory, 'CHANGELOG-archive.md')));
+});
+
 test('an empty Unreleased section stops the bump before any file changes', async () => {
   const directory = await scratchCopy('# Changelog\n\n## Unreleased\n\n## 0.1.0 - 2026-09-10\n');
   const before = await versions(directory);

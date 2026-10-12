@@ -15,6 +15,9 @@ import { releaseLevel, sectionBody, UNRELEASED_HEADING } from './verify/changelo
 const MANIFESTS = ['package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
 const CHANGELOG = 'CHANGELOG.md';
+const ARCHIVE = 'CHANGELOG-archive.md';
+const KEPT_VERSIONS = 10;
+const VERSION_HEADING = /^## (\d+\.\d+\.\d+) - \d{4}-\d{2}-\d{2}$/gm;
 const UNRELEASED_LINE = new RegExp(`^${UNRELEASED_HEADING}$`, 'm');
 const RELEASES = ['auto', 'patch', 'minor', 'major'];
 
@@ -65,9 +68,33 @@ for (const manifest of MANIFESTS) {
   rewritten.push({ file: manifest, after });
 }
 
+function archiveOlder(text) {
+  const headings = [...text.matchAll(VERSION_HEADING)];
+  if (headings.length <= KEPT_VERSIONS) return { changelog: text, archive: null };
+  const cut = headings[KEPT_VERSIONS].index;
+  const oldestKept = headings[KEPT_VERSIONS - 1][1];
+  const moved = text.slice(cut).trimEnd();
+  const archivePath = path.join(root, ARCHIVE);
+  const base = fs.existsSync(archivePath)
+    ? fs.readFileSync(archivePath, 'utf8')
+    : `# Changelog archive\n\nReleases before ${oldestKept}; newer ones are in [CHANGELOG.md](${CHANGELOG}).\n`;
+  const relabelled = base.replace(/^(Releases before )\S+?(;)/m, `$1${oldestKept}$2`);
+  const first = relabelled.search(new RegExp(VERSION_HEADING.source, 'm'));
+  const archive = first === -1
+    ? `${relabelled.trimEnd()}\n\n${moved}\n`
+    : `${relabelled.slice(0, first)}${moved}\n\n${relabelled.slice(first)}`;
+  return {
+    changelog: `${text.slice(0, cut).trimEnd()}\n`.replace(/^(Versions before )\S+( are in)/m, `$1${oldestKept}$2`),
+    archive,
+  };
+}
+
 // UTC, so the heading does not depend on the machine's time zone.
 const today = new Date().toISOString().slice(0, 10);
-rewritten.push({ file: CHANGELOG, after: changelog.replace(UNRELEASED_LINE, `${UNRELEASED_HEADING}\n\n## ${next} - ${today}`) });
+const dated = changelog.replace(UNRELEASED_LINE, `${UNRELEASED_HEADING}\n\n## ${next} - ${today}`);
+const archived = archiveOlder(dated);
+rewritten.push({ file: CHANGELOG, after: archived.changelog });
+if (archived.archive !== null) rewritten.push({ file: ARCHIVE, after: archived.archive });
 
 for (const { file, after } of rewritten) {
   fs.writeFileSync(path.join(root, file), after);
