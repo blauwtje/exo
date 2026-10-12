@@ -225,6 +225,22 @@ test('a build session whose hooks never ran marks the run cell as missing exo', 
   assert.equal(writeRunUsage(directory, ledger).missingHooks, 1);
 });
 
+test('a run cell killed mid-write keeps the usage of its complete ledger lines and skips the truncated last one', async () => {
+  const { directory, ledger } = await ledgerOf([{ kind: 'task', task: 1, sessionId: 'a1', costUsd: 0.25, hooks: 3 }]);
+  await fs.appendFile(ledger, '{"kind":"review","task":null,"sessionId":"b2","cos');
+  const usage = writeRunUsage(directory, ledger);
+  assert.equal(usage.sessions, 1);
+  assert.equal(usage.costUsd, 0.25);
+  assert.equal(usage.counts.output, 10);
+  assert.equal(JSON.parse(await fs.readFile(path.join(directory, 'usage.json'), 'utf8')).sessions, 1);
+});
+
+test('a broken ledger line before the last still fails loudly', async () => {
+  const { directory, ledger } = await ledgerOf([{ kind: 'task', task: 1, sessionId: 'a1', costUsd: 0.25, hooks: 3 }]);
+  await fs.writeFile(ledger, `{"kind":"task","ses\n${await fs.readFile(ledger, 'utf8')}`);
+  assert.throws(() => writeRunUsage(directory, ledger), SyntaxError);
+});
+
 // A stand-in `claude` that starts a grandchild ignoring SIGTERM and hangs; the
 // grandchild's pid and, if it outlives the cell folder, a mark go to stderr.log.
 async function hangingClaude() {

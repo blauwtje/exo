@@ -144,6 +144,20 @@ export function writeCellUsage(cellDirectory, sessionId) {
   return usage;
 }
 
+// A cell killed on timeout can cut the ledger's last line short; that line is
+// dropped so the complete lines still count. A broken line before it still throws.
+function readLedger(ledgerFile) {
+  const lines = fs.readFileSync(ledgerFile, 'utf8').split('\n').filter((line) => line.trim() !== '');
+  return lines.flatMap((line, index) => {
+    try {
+      return [JSON.parse(line)];
+    } catch (error) {
+      if (index === lines.length - 1) return [];
+      throw error;
+    }
+  });
+}
+
 // A run arm has no single session: every id in the run's sessions.jsonl counts,
 // each message once, and costUsd sums the ledger. `missingHooks` lists the build
 // sessions in which no exo hook ran, `missingTranscripts` the ledger sessions
@@ -151,7 +165,7 @@ export function writeCellUsage(cellDirectory, sessionId) {
 // ledger is missing.
 export function writeRunUsage(cellDirectory, ledgerFile) {
   if (ledgerFile === null || !fs.existsSync(ledgerFile)) return null;
-  const sessions = fs.readFileSync(ledgerFile, 'utf8').split('\n').filter((line) => line.trim() !== '').map((line) => JSON.parse(line));
+  const sessions = readLedger(ledgerFile);
   const calls = {};
   const subagents = [];
   let missingTranscripts = 0;
