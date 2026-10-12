@@ -8,12 +8,13 @@ Source of Claude Code plugin `exo`. Layout → `README.md`; commands and interna
 - Run start → `git pull --ff-only` on `main`, then remove every worktree and branch, local and remote, merged into `main`; each worktree per the removal bullet below.
 - Same tidy → `git fetch --prune`, then delete each local branch whose upstream is gone (`git branch -vv` shows `: gone]`); `git branch --merged` misses squash merges.
 - Lead only orchestrates: every edit, fix and failed-check repair → worktree subagent; independent parts in parallel.
-- `CHANGELOG.md` → only the lead writes it, so subagent branches never conflict on it.
+- `CHANGELOG.md` → only the lead writes it, so subagent branches never conflict on it; every plan here ends with a task writing its `## Unreleased` line, since `land-run` writes none.
 - Subagent → one concern; brief with two unrelated parts → two subagents.
-- `exo:spec` and `exo:build` → lead runs them itself; code reading goes to `exo:locate-code`, tasks to `exo:run-unit`; the lead writes the brief itself.
+- `exo:spec` → lead runs it itself; code reading goes to `exo:locate-code`; the lead writes the brief itself.
+- Build → `node skills/build/scripts/exo-cli.mjs run <brief> --detach`, not `exo:build` in the lead session.
 - Verify → one fresh subagent briefed with the skill and its inputs only, no checks beyond the skill's.
 - Handover between phases → the brief and `.exo/` files.
-- Land in one integration worktree under `.worktrees/`: merge subagent branches, add `CHANGELOG.md` lines, fetch, rebase onto `origin/main`.
+- Land in one integration worktree under `.worktrees/`: merge subagent branches, fetch, rebase onto `origin/main`; the plan's final task has already added the `CHANGELOG.md` lines.
 - After rebase → every line of this run stays under `## Unreleased`; release workflow pushes a `chore(release)` commit after every push.
 - Then → `npm run check` once, output to a log; read back only `SUMMARY` and failing lines; fast-forward `main`; push `main` directly, no pull request.
 - After push → remove every worktree and branch the run created, local and remote.
