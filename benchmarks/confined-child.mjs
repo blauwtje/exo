@@ -38,6 +38,7 @@ function main() {
   fs.mkdirSync(tmp, { recursive: true });
   const run = confinedClaude({ args: withoutDropped(process.argv.slice(2)), roots: [cellRoot], cwd, tmp });
   const child = spawn(run.command, run.args, { cwd: run.cwd, env: { ...process.env, ...run.env }, stdio: 'inherit' });
+  for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(signal, () => child.kill(signal));
   child.on('close', (code, signal) => process.exit(code ?? (signal === null ? 1 : 128)));
 }
 

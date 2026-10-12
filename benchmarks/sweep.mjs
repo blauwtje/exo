@@ -21,6 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { confinedClaude } from '#confine-claude';
+import { killTree } from '#process-tree';
 import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
@@ -35,6 +36,37 @@ const RUNS = path.join(ROOT, 'benchmarks', 'runs');
 const RESULTS = path.join(ROOT, 'benchmarks', 'results');
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
+const KILL_GRACE_MS = 10 * 1000;
+// EXO_SWEEP_CELL_TIMEOUT_MS shortens every cell's time-out, for the tests.
+const CELL_TIMEOUT_MS = Number(process.env.EXO_SWEEP_CELL_TIMEOUT_MS) || null;
+// Cells running now, each with the scratch folder that goes once it has closed.
+const live = new Map();
+
+// SIGTERM to the cell's process group, SIGKILL to it once the grace has passed or
+// the leader has closed, so no grandchild outlives the cell or its folder.
+function endGroup(child) {
+  if (process.platform === 'win32') killTree(child.pid);
+  else try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already gone */ }
+  const grace = setTimeout(() => killTree(child.pid), KILL_GRACE_MS);
+  child.once('close', () => clearTimeout(grace));
+}
+
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    const roots = [...live.values()];
+    for (const child of live.keys()) {
+      endGroup(child);
+      child.once('close', () => {
+        live.delete(child);
+        if (live.size === 0) {
+          for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
+          process.exit(130);
+        }
+      });
+    }
+    if (live.size === 0) process.exit(130);
+  });
+}
 
 function parseArguments(argv) {
   const options = { sets: null, cells: null, confirm: false, concurrency: 2, out: null, results: RESULTS };
@@ -75,15 +107,20 @@ function runClaude(cell, workdir, cellRoot, cellDirectory, copies) {
     const child = spawn(run.command, run.args, {
       cwd: run.cwd,
       env: { ...process.env, ...run.env },
-      stdio: ['ignore', stdout, stderr]
+      stdio: ['ignore', stdout, stderr],
+      detached: process.platform !== 'win32'
     });
+    live.set(child, cellRoot);
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGKILL');
-    }, cell.timeoutMs);
+      endGroup(child);
+    }, CELL_TIMEOUT_MS ?? cell.timeoutMs);
     child.on('close', (exitCode) => {
       clearTimeout(timer);
+      live.delete(child);
+      // The leader may have left a descendant behind, so the group goes whatever ended it.
+      killTree(child.pid);
       fs.closeSync(stdout);
       fs.closeSync(stderr);
       resolve({ exitCode, timedOut, wallMs: Date.now() - startedAt });

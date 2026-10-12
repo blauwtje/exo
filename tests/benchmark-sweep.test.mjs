@@ -181,3 +181,35 @@ test('a build session whose hooks never ran marks the run cell as missing exo', 
   const { directory, ledger } = await ledgerOf([{ kind: 'plan', task: 1, sessionId: 'a1', costUsd: 0.1, hooks: 0 }]);
   assert.equal(writeRunUsage(directory, ledger).missingHooks, 1);
 });
+
+// A stand-in `claude` that starts a grandchild ignoring SIGTERM and hangs; the
+// grandchild's pid and, if it outlives the cell folder, a mark go to stderr.log.
+async function hangingClaude() {
+  const bin = await fixture();
+  await fs.writeFile(path.join(bin, 'claude'), [
+    '#!/bin/sh',
+    '[ "$1" = "--version" ] && { echo 0.0.0; exit 0; }',
+    `sh -c 'trap "" TERM; echo "pid $$" >&2; while sleep 0.2; do [ -d "$0" ] || echo "ORPHAN" >&2; done' "$PWD" &`,
+    'wait'
+  ].join('\n'), { mode: 0o755 });
+  return { PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_SWEEP_CELL_TIMEOUT_MS: '1500' };
+}
+
+function alive(pid) {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+test('a cell time-out ends the cell process tree before its folder goes', async () => {
+  const env = await hangingClaude();
+  const out = await fixture();
+  const results = await fixture();
+  const result = await run(SWEEP, ['--set', 'flow', '--cells', 'flow-base', '--confirm', '--concurrency', '1', '--out', out, '--results', results], { env });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /TIMED OUT/);
+  const log = await fs.readFile(path.join(out, 'flow-base', 'stderr.log'), 'utf8');
+  const pids = [...log.matchAll(/^pid (\d+)$/gm)].map((match) => Number(match[1]));
+  assert.ok(pids.length > 0, log);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  for (const pid of pids) assert.equal(alive(pid), false, `grandchild ${pid} still alive`);
+  assert.doesNotMatch(log, /ORPHAN/);
+});
