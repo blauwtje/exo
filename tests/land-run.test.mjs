@@ -209,6 +209,27 @@ test('review: FINDINGS with fix=0 lands; fix>=1, BLOCKED, missing and stale park
   assert.match(r.gate, /older than the run/);
 });
 
+test('review: a landed review fix with a clean fix review lands; a fix-bearing, BLOCKED or older one parks', () => {
+  const branchReview = 'FINDINGS\n\nCount: defect=1 hazard=0 question=0 fix=1\n';
+  const cases = [
+    ['CLEAN\n', 1, 'landed'],
+    ['FINDINGS\n\n- hazard: x.txt:1 stale name; defer\n', 1, 'landed'],
+    ['FINDINGS\n\n- defect: x.txt:1 wrong value; fix\n', 1, 'parked'],
+    ['BLOCKED\n', 1, 'parked'],
+    ['CLEAN\n', -2, 'parked'],
+  ];
+  for (const [fixReview, offsetSeconds, phase] of cases) {
+    const f = fixture({ review: branchReview });
+    const file = path.join(f.root, '.exo', 'fix-review.md');
+    write(f.root, '.exo/fix-review.md', fixReview);
+    const at = fs.statSync(path.join(f.root, '.exo', 'branch-review.md')).mtimeMs / 1000 + offsetSeconds;
+    fs.utimesSync(file, at, at);
+    const r = f.land();
+    assert.equal(r.phase, phase, `${fixReview.trim()} at ${offsetSeconds}s: ${r.gate}`);
+    if (phase === 'parked') assert.match(r.gate, /^review not clean: branch review is FINDINGS with fix=1/);
+  }
+});
+
 test('an approved land anyway gate skips the review once', () => {
   const f = fixture({ review: 'BLOCKED\n' });
   assert.equal(f.land().phase, 'parked');
