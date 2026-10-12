@@ -83,6 +83,19 @@ test('a fix-diff review that still holds a fix finding leaves the fix uncommitte
   assert.equal(context.result.code, 1);
 });
 
+test('a fix session that changes nothing lands no fix commit and ends on the gate', async () => {
+  const context = await runSteps([
+    land(1), land(2),
+    { result: FINDINGS_LINE, findings: FINDING },
+    { result: 'fixed=0 reported=0 report=x' },
+    { result: CLEAN_LINE, findings: 'CLEAN\n' }
+  ]);
+  assert.equal(context.stop, 'run-plan: stop: done, 2/2 tasks landed, gate PASS', context.result.stdout + context.result.stderr);
+  assert.equal(context.calls.length, 5);
+  assert.ok(!context.subjects.some((subject) => subject.startsWith('fix(')));
+  assert.match(context.result.stdout, /fix landed: nothing to commit/);
+});
+
 test('a review with no findings file merges as BLOCKED and stops before any fix session', async () => {
   const context = await runSteps([land(1), land(2), { result: CLEAN_LINE }]);
   assert.equal(context.stop, 'run-plan: stop: branch review BLOCKED');

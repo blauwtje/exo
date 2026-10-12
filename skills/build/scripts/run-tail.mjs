@@ -143,10 +143,16 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
       if (secondVerdict === 'BLOCKED' || (secondVerdict === 'FINDINGS' && fixCount > 0)) {
         return { stop: stopOf(`fix review ${secondVerdict}`, `The review of the fix returned ${secondVerdict}; the fix stays uncommitted`, `read ${fixReview}, then run exo run again`) };
       }
-      const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
-      const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
-      if (landed.status !== 0) return { stop: stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again') };
-      say('fix landed');
+      // A fixer that changed nothing, or committed its own edits, leaves nothing for land-task to commit.
+      const status = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' });
+      if (status.status === 0 && status.stdout.trim() === '') {
+        say('fix landed: nothing to commit');
+      } else {
+        const scope = plan.tasks[0]?.title.match(/^\w+\(([^)]+)\)/)?.[1];
+        const landed = node(SCRIPT.landTask, ['--fix', `fix${scope === undefined ? '' : `(${scope})`}: address the branch review`, '--plan', planPath, '--root', root], root);
+        if (landed.status !== 0) return { stop: stopOf('fix landing failed', `Landing the review fix failed: ${out(landed).trim().split('\n').at(-1)}`, 'repair on the branch, then run exo run again') };
+        say('fix landed');
+      }
     }
   }
   const gate = node(SCRIPT.verify, gateArgs, root);
