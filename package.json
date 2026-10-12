@@ -8,6 +8,7 @@
   "imports": {
     "#budgets": "./verify/budgets.mjs",
     "#check-cache": "./lib/check-cache.mjs",
+    "#code-comments": "./lib/code-comments.mjs",
     "#commit-text": "./lib/commit-text.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#context-limits": "./lib/context-limits.mjs",
