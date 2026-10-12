@@ -109,6 +109,50 @@ export function prepareValueRepo(task, repo) {
   return tree;
 }
 
+// The plan an exo-run cell hands to `exo run`, kept in the cell repo under
+// docs/specs/<task id>.md, which .git/info/exclude hides from every diff.
+export function runPlanPath(task) {
+  const file = path.join(task.directory, 'run-plan.md');
+  if (!fs.existsSync(file)) throw new Error(`${task.id} has no run-plan.md, which the exo-run arm needs`);
+  return file;
+}
+
+export function planFileOf(task) {
+  return path.join('docs', 'specs', `${task.id}.md`);
+}
+
+// Copies the task's run-plan.md into the cell repo with its Repository: line
+// pointing at the repo, and hides docs/ from git.
+export function writeRunPlan(task, repo) {
+  const text = fs.readFileSync(runPlanPath(task), 'utf8').replace(/^Repository: .*$/m, `Repository: ${fs.realpathSync(repo)}`);
+  fs.mkdirSync(path.join(repo, 'docs', 'specs'), { recursive: true });
+  fs.writeFileSync(path.join(repo, planFileOf(task)), text);
+  fs.appendFileSync(path.join(repo, '.git', 'info', 'exclude'), '/docs/\n');
+}
+
+// The plan's Branch:, checked out when the run created it, so scoring sees the
+// run's work. Registrations of removed worktrees are pruned first.
+export function checkoutPlanBranch(task, repo) {
+  const branch = fs.readFileSync(runPlanPath(task), 'utf8').match(/^Branch: (.+)$/m)?.[1].trim();
+  if (!branch) return;
+  git(repo, ['worktree', 'prune']);
+  try {
+    git(repo, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`]);
+  } catch {
+    return;
+  }
+  git(repo, ['checkout', '-q', branch]);
+}
+
+// The newest sessions.jsonl under the repo's run logs, or null.
+export function newestRunLedger(repo) {
+  const logs = path.join(repo, '.exo', 'run-plan');
+  if (!fs.existsSync(logs)) return null;
+  const ledgers = fs.readdirSync(logs, { recursive: true }).filter((name) => path.basename(name) === 'sessions.jsonl').map((name) => path.join(logs, name));
+  ledgers.sort((left, right) => fs.statSync(right).mtimeMs - fs.statSync(left).mtimeMs);
+  return ledgers[0] ?? null;
+}
+
 // check.mjs prints one JSON line; anything else is the harness's error, which
 // a cell records apart from a fail.
 function checkVerdict(stdout, stderr, code, signal) {

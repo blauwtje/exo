@@ -66,6 +66,8 @@ export const ARMS = {
   exo: { prompt: null, pluginDirs: [ROOT], promptSuffix: null },
   'exo-pointer': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'session-pointer' },
   'exo-no-find-cause': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, variant: 'no-find-cause' },
+  // Value tier only: the task's run-plan.md goes through `exo run`, not `claude -p`.
+  'exo-run': { prompt: null, pluginDirs: [ROOT], promptSuffix: null, runPlan: true },
   // skills-rival is a skills-only rival plugin. Unforced, its skill triggered 0
   // of 8 times (docs/research/positioning/4b-devil.md), so its promptSuffix in
   // rivals.local.json names the skill.
@@ -77,7 +79,7 @@ export const ARMS = {
 };
 
 // The cut arms run only when named, so a default run keeps its cost.
-export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].variant);
+export const DEFAULT_ARMS = Object.keys(ARMS).filter((name) => !ARMS[name].gitOnly && !ARMS[name].variant && !ARMS[name].runPlan);
 
 export const TEMPLATE_TASKS = [
   { id: 'tmpl-fe-timepicker', kind: 'frontend', prompt: 'Create a component in the frontend for choosing a time of day.' },

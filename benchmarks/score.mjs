@@ -210,7 +210,7 @@ const VALUE_METRICS = {
   pass: (cell) => (cell.checks.pass ? 1 : 0),
   defects: (cell) => cell.checks.defects,
   loc: (cell) => cell.checks.loc.added,
-  tokens: (cell) => (cell.usage === null ? null : cell.usage.counts.weightedInput + cell.usage.counts.output),
+  tokens: (cell) => (cell.usage?.counts == null ? null : cell.usage.counts.weightedInput + cell.usage.counts.output),
   cost: (cell) => cell.result?.total_cost_usd ?? null,
   time: (cell) => cell.checks.wallMs
 };

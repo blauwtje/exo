@@ -25,13 +25,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { countLines, measureWorkdir } from './cell-checks.mjs';
-import { exoLoaded, writeCellUsage } from './cell-usage.mjs';
+import { exoLoaded, writeCellUsage, writeRunUsage } from './cell-usage.mjs';
 import { confinedClaude } from '#confine-claude';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
-import { copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from './value.mjs';
+import { checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, planFileOf, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -39,6 +40,7 @@ const RUNS = path.join(BENCHMARKS, 'runs');
 const CELL_TIMEOUT_MS = 20 * 60 * 1000;
 // The cap per cell; a value task's maxBudgetUsd replaces it.
 const CELL_BUDGET_USD = '3';
+const CONFINED_CHILD = fileURLToPath(new URL('./confined-child.mjs', import.meta.url));
 const EXO_COPY_LABEL = '<copy of this checkout without benchmarks/>';
 const SAFE_CHECK_TIMEOUT_MS = 30 * 1000;
 const FULL_RUNS = 4;
@@ -171,6 +173,23 @@ function claudeArguments(armName, task, model, effort, copies) {
   return args;
 }
 
+// What a cell starts: `claude -p`, or for the exo-run arm `node exo-cli.mjs run`
+// on the task's plan, on the arm's copy of exo and through the confining child.
+function cellCommand(armName, task, model, effort, copies) {
+  if (!ARMS[armName].runPlan) return { command: 'claude', args: claudeArguments(armName, task, model, effort, copies) };
+  const copy = copies[copyKey(ARMS[armName])];
+  return {
+    command: 'node',
+    args: [
+      path.join(copy, 'skills', 'build', 'scripts', 'exo-cli.mjs'), 'run', planFileOf(task),
+      '--provider', 'claude', '--model', MODELS[model], ...(effort === null ? [] : ['--effort', effort]),
+      '--max-run-usd', String(task.maxBudgetUsd ?? CELL_BUDGET_USD),
+      '--plugin-dir', copy,
+      '--claude', CONFINED_CHILD
+    ]
+  };
+}
+
 // Git- and value-tier cells drop the user's CLAUDE.md files and auto memory,
 // which carry a push rule of their own and would load into every arm; other
 // tiers keep the environment their past results were measured in.
@@ -217,21 +236,27 @@ function makeDefaultOptionsHome() {
 
 // The run is confined by #confine-claude to its cell root and its own
 // temporary directory; stdout and stderr go to files opened here.
-function runClaude(args, { workdir, cellRoot, tmp }, cellDirectory, extraEnvironment, timeoutMs) {
+function runClaude(args, { workdir, cellRoot, tmp, runPlan = false }, cellDirectory, extraEnvironment, timeoutMs) {
   return new Promise((resolve) => {
     const stdout = fs.openSync(path.join(cellDirectory, 'stdout.json'), 'w');
     const stderr = fs.openSync(path.join(cellDirectory, 'stderr.log'), 'w');
     const startedAt = Date.now();
-    const run = confinedClaude({ args, roots: [cellRoot, tmp], cwd: workdir, tmp });
+    // exo run starts unconfined, as a user would; its sessions confine themselves
+    // through confined-child.mjs, given the cell root here.
+    const run = runPlan
+      ? { command: process.execPath, args, cwd: workdir, env: { EXO_SWEEP_CELL_ROOT: cellRoot } }
+      : confinedClaude({ args, roots: [cellRoot, tmp], cwd: workdir, tmp });
     const child = spawn(run.command, run.args, {
       cwd: run.cwd,
       env: { ...withoutParentSession(process.env), ...extraEnvironment, ...run.env },
-      stdio: ['ignore', stdout, stderr]
+      stdio: ['ignore', stdout, stderr],
+      detached: runPlan && process.platform !== 'win32'
     });
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGKILL');
+      if (runPlan && process.platform !== 'win32') process.kill(-child.pid, 'SIGKILL');
+      else child.kill('SIGKILL');
     }, timeoutMs);
     child.on('close', (exitCode) => {
       clearTimeout(timer);
@@ -293,14 +318,20 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
     const startTree = task.tier === 'value' ? prepareValueRepo(task, workdir) : 'HEAD';
     const timeoutMs = task.tier === 'value' ? task.timeoutMinutes * 60 * 1000 : CELL_TIMEOUT_MS;
     const environment = { ...cellIsolation(task), HOME: cellHome };
-    const outcome = await runClaude(claudeArguments(arm, task, model, effort, copies), { workdir, cellRoot, tmp }, cellDirectory, environment, timeoutMs);
-    const result = parseResult(cellDirectory);
-    if (result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
+    const runPlan = ARMS[arm].runPlan === true;
+    if (runPlan) writeRunPlan(task, workdir);
+    const { args } = cellCommand(arm, task, model, effort, copies);
+    const outcome = await runClaude(args, { workdir, cellRoot, tmp, runPlan }, cellDirectory, environment, timeoutMs);
+    // An exo run has no single session: its cost and usage come from the run's ledger.
+    const runUsage = runPlan ? writeRunUsage(cellDirectory, newestRunLedger(workdir)) : null;
+    if (runUsage !== null) fs.writeFileSync(path.join(cellDirectory, 'result.json'), `${JSON.stringify({ total_cost_usd: runUsage.costUsd }, null, 2)}\n`);
+    const result = runPlan ? (runUsage === null ? null : { total_cost_usd: runUsage.costUsd }) : parseResult(cellDirectory);
+    if (!runPlan && result !== null && typeof result.session_id === 'string') writeCellUsage(cellDirectory, result.session_id);
     const checks = {
       task: task.id, tier: task.tier, arm, run, model: MODELS[model],
       exitCode: outcome.exitCode, timedOut: outcome.timedOut, wallMs: outcome.wallMs,
       resultParsed: result !== null,
-      exoLoaded: result !== null && typeof result.session_id === 'string' ? exoLoaded(result.session_id) : null
+      exoLoaded: runPlan ? (runUsage === null ? null : runUsage.missingHooks === 0) : result !== null && typeof result.session_id === 'string' ? exoLoaded(result.session_id) : null
     };
     if (task.tier === 'template') {
       Object.assign(checks, measureWorkdir(workdir, task));
@@ -311,6 +342,7 @@ async function runCell(cell, fixtureDirectory, effort, cellHome, copies) {
       // is a build cut off mid-wave, counted and removed with the cell.
       const worktrees = linkedWorktrees(workdir);
       for (const worktree of worktrees) fs.rmSync(worktree, { recursive: true, force: true });
+      if (runPlan) checkoutPlanBranch(task, workdir);
       Object.assign(checks, { worktreesLeft: worktrees.length }, await scoreValueRepo(task, workdir, startTree));
     } else {
       Object.assign(checks, { loc: countLines(workdir) });
@@ -378,8 +410,8 @@ function printDryRun(cells, effort) {
     const missing = arm.pluginDirs.filter((directory) => !fs.existsSync(directory)).map((directory) => ` [missing: ${directory}]`);
     if (arm.missing) missing.push(` [missing: ${arm.missing}]`);
     const labels = { [copyKey(arm)]: arm.variant ? `${EXO_COPY_LABEL} with variant ${arm.variant}` : EXO_COPY_LABEL };
-    const argv = claudeArguments(cell.arm, cell.task, cell.model, effort, labels).map((argument) => JSON.stringify(argument));
-    console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, 'claude', ...argv].join(' ')}`);
+    const { command, args } = cellCommand(cell.arm, cell.task, cell.model, effort, labels);
+    console.log(`${cell.task.id} ${cell.arm} #${cell.run}${missing.join('')}: ${[...environment, command, ...args.map((argument) => JSON.stringify(argument))].join(' ')}`);
   }
   const projection = projectCost(cells.map((cell) => ({ task: cell.task, arm: cell.arm, modelId: MODELS[cell.model] })), RUNS);
   console.log(`${cells.length} cells, projected $${projection.total.toFixed(2)} (${projection.fromRuns} from past runs, ${projection.fromTask} from estimateUsd, ${projection.fromDefault} at the $${DEFAULT_ESTIMATE_USD.toFixed(2)} default)`);
@@ -421,6 +453,11 @@ async function main() {
         cells.push({ task, arm, run, model: options.model, cellDirectory: path.join(runDirectory, task.id, arm, String(run)) });
       }
     }
+  }
+  for (const cell of cells) {
+    if (!ARMS[cell.arm].runPlan) continue;
+    if (cell.task.tier !== 'value') throw new Error(`arm ${cell.arm} runs value tasks only, not ${cell.task.id}`);
+    runPlanPath(cell.task);
   }
   if (options.dryRun) {
     printDryRun(cells, options.effort);

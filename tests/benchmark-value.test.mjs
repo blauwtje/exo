@@ -8,11 +8,12 @@
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
-import { copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, prepareValueRepo, projectCost, scoreValueRepo } from '../benchmarks/value.mjs';
+import { checkoutPlanBranch, copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, newestRunLedger, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from '../benchmarks/value.mjs';
 
 const SCHEMA = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const SCORE = fileURLToPath(new URL('../benchmarks/score.mjs', import.meta.url));
@@ -324,4 +325,28 @@ test('score.mjs prints a value run as one row per task and arm with standard err
     execFile(process.execPath, [SCORE, runs], { timeout: 30_000 }, (error, stdout, stderr) => (error ? reject(new Error(stderr)) : resolve(stdout)));
   });
   assert.match(output, /\| value-a \| exo \| 2 \| 1 \| 50% ±50% \| 1\.0 ±1\.0 \| 15 ±5 \| 1\.0k ±0 \| \$2\.00 ±\$1\.00 \| 1\.0m ±0\.0m \|/);
+});
+
+test('the exo-run plan is copied with the repo as Repository:, passes plan-check, and stays out of git', async () => {
+  const task = loadValueTasks().find((candidate) => candidate.id === 'value-test-pollution');
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-run-plan-test-'));
+  try {
+    prepareValueRepo(task, repo);
+    writeRunPlan(task, repo);
+    const plan = path.join(repo, 'docs', 'specs', 'value-test-pollution.md');
+    assert.match(await fs.readFile(plan, 'utf8'), new RegExp(`^Repository: ${await fs.realpath(repo)}$`, 'm'));
+    assert.equal(git(repo, ['status', '--porcelain']).trim(), '');
+    const report = execFileSync(process.execPath, [path.join(ROOT, 'skills', 'spec', 'scripts', 'plan-check.mjs'), '--plan', plan, '--loop', '--run'], { encoding: 'utf8' });
+    assert.match(report, /plan-check: ok/);
+    assert.equal(newestRunLedger(repo), null);
+    git(repo, ['branch', 'bench/test-pollution']);
+    checkoutPlanBranch(task, repo);
+    assert.equal(git(repo, ['branch', '--show-current']).trim(), 'bench/test-pollution');
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test('a task without run-plan.md is an error for the exo-run arm', () => {
+  assert.throws(() => runPlanPath({ id: 'value-x', directory: '/nonexistent' }), /no run-plan\.md/);
 });

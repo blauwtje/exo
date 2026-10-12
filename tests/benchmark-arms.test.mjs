@@ -89,3 +89,15 @@ test('a cell loads the arm\'s variant copy', (t) => {
   assert.deepEqual([exo.pointer, pointer.pointer], [false, true]);
   assert.ok(![exo, pointer].some((cell) => cell.plugin === ROOT.replace(/\/$/, '')));
 });
+
+test('an exo-run cell dry-runs exo run on the task plan, and stays out of the default arms and other tiers', () => {
+  assert.ok(!DEFAULT_ARMS.includes('exo-run'));
+  const run = dryRun('--tasks', 'value-test-pollution', '--arms', 'exo-run', '--effort', 'high');
+  assert.equal(run.status, 0, run.stderr);
+  const line = run.stdout.split('\n').find((row) => row.startsWith('value-test-pollution exo-run '));
+  assert.match(line, / node "<copy of [^"]*\/skills\/build\/scripts\/exo-cli\.mjs" "run" "docs\/specs\/value-test-pollution\.md" "--provider" "claude" "--model" "claude-sonnet-5-5" "--effort" "high" "--max-run-usd" "1\.5" "--plugin-dir" "<copy of [^"]*" "--claude" "[^"]*confined-child\.mjs"/);
+  assert.doesNotMatch(line, /claude "-p"/);
+  const other = dryRun('--tasks', 'tmpl-be-recent', '--arms', 'exo-run');
+  assert.notEqual(other.status, 0);
+  assert.match(other.stderr, /value tasks only/);
+});
