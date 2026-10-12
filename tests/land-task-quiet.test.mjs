@@ -6,7 +6,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { gitRepository, git, run, compactPlanFixture, compactTask } from './harness.mjs';
+import { gitRepository, git, run, compactPlanFixture, compactTask as plainCompactTask } from './harness.mjs';
+
+// The noisy Proof passes on its base, so the task names `Red: none`.
+const compactTask = (options) => `${plainCompactTask(options)} | Red: none (fixture)`;
 
 const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/land-task.mjs', import.meta.url));
 const PROOF = 'node tests/noisy.mjs';
