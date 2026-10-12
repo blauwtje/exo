@@ -582,3 +582,19 @@ test('plan-check accepts Product run: none with a reason and flags one without',
 test('plan-check leaves a library plan with no bin or start script unflagged', async () => {
   assert.equal(planCheckReport(await productPlan({}, '`npm test` passes.')).ok, true);
 });
+
+test('plan-check flags a Red or Repeat line without its reason, a Repeat count outside 2-5 and a Success equal to the Land gate', async () => {
+  const base = compactPlanFixture({ tasks: compactTasks(1) });
+  assert.equal(planCheckReport(base).ok, true);
+  const flagged = (criterion) => planCheckReport(base.replace('`node --test` passes.', criterion));
+  assert.match(flagged('`node --test` passes.\nRed: none').lines.join('\n'), /Red: none' states no reason/);
+  assert.equal(flagged('`node --test` passes.\nRed: none (docs only)').ok, true);
+  assert.match(flagged('`node --test` passes.\nRepeat: 9 (flaky)').lines.join('\n'), /count is not 2 to 5/);
+  assert.match(flagged('`node --test` passes.\nRepeat: 3').lines.join('\n'), /Repeat:' states no reason/);
+  assert.equal(flagged('`node --test` passes.\nRepeat: 3 (flaky)').ok, true);
+  const gated = base.replace(/^(Branch: .+)$/m, '$1\nLand gate: node --test');
+  assert.match(planCheckReport(gated).lines.join('\n'), /equals the 'Land gate:' command/);
+  assert.equal(planCheckReport(gated.replace('`node --test` passes.', '`node --test` passes.\nRed: none (same check)')).ok, true);
+  const task = base.replace(/(Depends on: none)/, '$1 | Red: none');
+  assert.match(planCheckReport(task).lines.join('\n'), /Task 1: 'Red: none' states no reason/);
+});

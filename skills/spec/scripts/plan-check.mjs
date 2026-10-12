@@ -321,6 +321,26 @@ function checkProductRun(frame, root) {
   return [`the plan's '## Success criterion' runs no product, though package.json names ${entries}: run one in the command, or add 'Product run: none (<reason>)' under it`];
 }
 
+// Red: none (<reason>) and Repeat: <2-5> (<reason>) name a reason the plan can
+// be held to; a Success criterion equal to the Land gate command passes where
+// each task's gate already did, so it needs its own Red: line to be able to fail.
+function checkRedGreen(plan) {
+  const problems = [];
+  for (const task of plan.tasks) {
+    if (task.red !== null && task.red.reason === '') problems.push(`Task ${task.number}: 'Red: none' states no reason: write 'Red: none (<reason>)'`);
+  }
+  if (plan.successRed !== null && plan.successRed.reason === '') problems.push("the plan's Success criterion 'Red: none' states no reason: write 'Red: none (<reason>)'");
+  const repeat = plan.successRepeat;
+  if (repeat !== null && !(repeat.count >= 2 && repeat.count <= 5)) problems.push("the plan's Success criterion 'Repeat:' count is not 2 to 5: write 'Repeat: <2-5> (<reason>)'");
+  else if (repeat !== null && repeat.reason === '') problems.push("the plan's Success criterion 'Repeat:' states no reason: write 'Repeat: <2-5> (<reason>)'");
+  const command = (plan.frame['Success criterion'] ?? '').match(/`([^`]+)`/)?.[1].trim();
+  const gate = frameOf(plan.frame).landGate?.replace(/^`|`$/g, '').trim();
+  if (command !== undefined && command === gate && plan.successRed === null) {
+    problems.push(`the plan's Success criterion '${command}' equals the 'Land gate:' command, so it cannot fail where every task passed: name a command that checks the goal, or add 'Red: none (<reason>)' under it`);
+  }
+  return problems;
+}
+
 function checkFrame(frame) {
   const problems = [];
   if ((frame.Goal ?? '').trim() === '') problems.push("the plan has no '## Goal'");
@@ -457,6 +477,7 @@ export function planCheckReport(planText, { root, loop = false, planPath, run = 
           ...openPoints(planText).map((entry) => `the plan's '## Open points' still holds an unanswered question: ${entry}`),
           ...checkLandGate(plan.frame, resolvedRoot),
           ...checkProductRun(plan.frame, resolvedRoot),
+          ...checkRedGreen(plan),
           ...checkAcceptanceCitations(plan.frame),
           ...plan.tasks.flatMap((task) => checkCompactFields(task))
         ]
