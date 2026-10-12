@@ -7,6 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Highlights
+
+- **`exo run` now builds a small plan in one session and lands it by script: in the flow benchmark it uses 1.23x the no-plugin baseline's tokens with the hidden check 4/4, against 1.76x for the `build` flow.**
+
+### Added
+
+- `exo run` orchestrates a plan by script: a small plan with no shared step or design task runs as one plan session whose tasks the script lands, any other plan task by task, each session from one generated task brief with lean flags and the run's plugin; a plan session that stops short has its leftover saved as a patch in the run's log folder and the tree cleaned before the per-task fallback; `--session auto|task|plan` picks the mode, `--max-run-usd` caps the run from a per-run session ledger, a scripted tail reviews, fixes and verifies the branch, and `land-task` under a run pin prints at most 20 lines.
+- The flow benchmark gains a `flow-run` arm that measures `exo run` with confined child sessions and ranks it against `flow-base` (`benchmarks/results/2026-10-12-flow-run-4b.md`); the per-task `flow-run-task` arm was dropped at 2.7x.
+
+### Fixed
+
+- A timeout or kill of `exo run` now also stops its claude session, which runs in its own process group, and a run whose log folder was removed no longer crashes; a benchmark cell time-out likewise ends the cell's whole process tree before its folder goes.
+
 ## 0.131.1 - 2026-10-11
 
 ### Fixed
