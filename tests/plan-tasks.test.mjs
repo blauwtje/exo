@@ -518,3 +518,38 @@ test('with builds in flight, a Design:, unnamed or path-less task waits, and a r
   assert.deepEqual(started(plan([{}, { files: [] }, {}])), [3], 'a task without Files paths waits');
   assert.deepEqual(started(plan([{ files: [] }, {}, {}])), [], 'a running task without Files blocks every start');
 });
+
+const redPlan = (criterion, field = '') => `# Plan
+
+## Goal
+
+G.
+
+## Success criterion
+
+${criterion}
+
+### Task 1: One
+Depends on: none | Files: \`a.js\` | Risk: public signature${field} | Proof: node --test a.test.js
+`;
+
+test('parsePlan reads a task Red line and the Success criterion Red and Repeat lines', () => {
+  const plan = parsePlan(redPlan('`npm run check`\nRed: none (the check is a lint)\nRepeat: 3 (flaky timing)', ' | Red: none (docs only)'));
+  assert.deepEqual(plan.tasks[0].red, { reason: 'docs only' });
+  assert.equal(plan.tasks[0].proof, 'node --test a.test.js');
+  assert.deepEqual(plan.successRed, { reason: 'the check is a lint' });
+  assert.deepEqual(plan.successRepeat, { count: 3, reason: 'flaky timing' });
+  assert.equal(frameOf(plan.frame).successCriterion.match(/`([^`]+)`/)[1], 'npm run check');
+});
+
+test('parsePlan leaves Red and Repeat null when absent and keeps a bare or malformed line for plan-check', () => {
+  const none = parsePlan(redPlan('`npm run check`'));
+  assert.equal(none.tasks[0].red, null);
+  assert.equal(none.successRed, null);
+  assert.equal(none.successRepeat, null);
+  const bare = parsePlan(redPlan('`npm run check`\nRed: none\nRepeat: many', ' | Red: none'));
+  assert.deepEqual(bare.tasks[0].red, { reason: '' });
+  assert.deepEqual(bare.successRed, { reason: '' });
+  assert.equal(bare.successRepeat.count, NaN);
+  assert.equal(bare.successRepeat.reason, '');
+});
