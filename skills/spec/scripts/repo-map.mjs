@@ -1,12 +1,3 @@
-// Builds the map of the repository the session works in, on demand, and prints
-// the path to read. The map sits beside the project memory in the shared git
-// directory, so nothing is committed and every linked worktree reads one file.
-// Its header records the commit and the cap it was built with: a call that
-// finds both unchanged leaves the file alone, and any other call rebuilds it.
-// Uncommitted work is not detected.
-//
-//   node repo-map.mjs [--cap <bytes>]      0 lifts the cap
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -18,8 +9,6 @@ import { locateRepository, readTrackedFiles, unchangedSince } from './map-source
 const USAGE = 'usage: repo-map.mjs [--cap <bytes>]';
 const MAP_NAME = 'map.md';
 
-// A map with every folder left closed runs to about 200 bytes, so any cap from
-// here up can be met.
 const MINIMUM_CAP = 500;
 
 function fail(message) {
@@ -42,8 +31,6 @@ function requestedCap(args) {
   return cap;
 }
 
-// The commit and the cap a stored map was built with; null when no map is
-// stored or its first lines do not read as a header.
 function storedHeading(file) {
   let text;
   try {

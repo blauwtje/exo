@@ -1,17 +1,4 @@
 #!/usr/bin/env node
-// Waits on a pull request's checks with `gh pr checks --watch`, bounded, so a
-// stuck CI never holds the session that ships it. `--watch` reprints the
-// whole check table every ten seconds; that table goes to a log under the
-// git directory instead of this script's own stdout, which prints one
-// verdict line. A watch still running at the limit is stopped and exits 124.
-// Checks that have not registered yet are asked for again until the grace
-// period ends, because CI starts a few seconds after a pull request opens;
-// after that the script exits 0 with a note, and the merge gate reads the
-// API for itself.
-//
-//   node wait-checks.mjs --pr <number> [--minutes <n>] [--grace-seconds <n>]
-//
-// --minutes defaults to 20 and --grace-seconds to 120.
 
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -19,8 +6,6 @@ import path from 'node:path';
 import process from 'node:process';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
-// ship's SKILL.md states these two figures; the shared contracts check pins
-// that text to these exports.
 export const DEFAULT_MINUTES = 20;
 const DEFAULT_GRACE_SECONDS = 120;
 const RETRY_MS = 15_000;
@@ -49,8 +34,6 @@ function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-// The log lives beside the repository's own git metadata, one per worktree,
-// so a rerun overwrites it rather than growing without bound.
 function openLog(cwd) {
   const gitDirectory = execFileSync('git', ['rev-parse', '--absolute-git-dir'], { cwd, encoding: 'utf8' }).trim();
   const logPath = path.join(gitDirectory, 'exo', 'wait-checks.log');
@@ -58,8 +41,6 @@ function openLog(cwd) {
   return fs.createWriteStream(logPath, { flags: 'w' });
 }
 
-// gh's watch table is columnar, either tab- or space-padded; a row whose
-// status field reads "fail" names a failed check.
 function failingChecks(text) {
   const names = new Set();
   for (const line of text.split('\n')) {
@@ -136,8 +117,6 @@ async function main() {
     process.exitCode = outcome.code;
     return;
   }
-  // gh exited nonzero without a failed-checks table to show for it: an auth,
-  // network or not-found error, not a red check, so it gets its own exit code.
   const firstErrorLine = outcome.errorText.split('\n').find((line) => line.trim() !== '') ?? '';
   console.log(`checks: error ${firstErrorLine.trim()}`);
   process.exitCode = GH_ERROR_EXIT;

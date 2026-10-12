@@ -1,17 +1,3 @@
-// Checks a plan against task-list.md's per-task rules without carrying its
-// code into the caller's context: a Commit: block with the task's Plan-task:
-// trailer, a git add line matching Files:, Run: and Expected: on every step
-// with code, no placeholder, a size within the split threshold, every
-// Modify: path present in the target repository, and no shared Files: path
-// between two tasks with no Depends on chain between them, and a plan with
-// two such independent tasks and no Worktree setup: line, a compact task
-// whose Proof: runs the whole suite, and a Parallel: line in none of its
-// accepted forms, and in the exo repository a name the derivation check
-// refuses in every tracked file. With --loop it also refuses what
-// run-plan.mjs cannot run unattended; --run, run-plan's own preflight, lets
-// a plan with no Land: line through. Planning runs
-// this instead of reading the finished plan back.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFlags, UsageError, isMain } from '#script-flags';
@@ -23,18 +9,12 @@ import { packageEntryPoints, packageRunTerms } from '#package-entry-point';
 import { wholeSuiteKeys } from '#suite-command';
 
 const STEP_HEADING = /^Step \d+: .*$/;
-// A run of dots on their own, not a spread or rest operator: `...args` and
-// `{ ...rest }` are real code, an isolated `...` is the template's own
-// placeholder for "more steps follow".
 const PLACEHOLDER_ELLIPSIS = /(?<![.\w])\.\.\.(?!\w)/;
 const MAX_LINES = 250;
 const MAX_FILES = 4;
 const RISK_CATEGORIES = ['security boundary', 'persisted format', 'public signature', 'dependency'];
 const CHECKPOINT_POINTS = ['Blocks first:', 'Parallel:', 'Shared state:', 'Smallest safe split:'];
 
-// A fence closes only on a run of backticks at least as long as the one that
-// opened it, mirroring plan-tasks.mjs's fence tracking, so a step boundary
-// inside a shown file's own fences is not mistaken for a real step.
 function fenceAfter(line, open) {
   const backticks = line.match(/^(`{3,})/);
   if (backticks === null) return open;
@@ -102,8 +82,6 @@ function checkSize(task) {
   return [];
 }
 
-// A symlink is never followed, so a link to an ancestor cannot loop; it counts
-// as its own link size.
 function bytesUnder(target) {
   let stat;
   try {
@@ -115,8 +93,6 @@ function bytesUnder(target) {
   return fs.readdirSync(target).reduce((total, name) => total + bytesUnder(path.join(target, name)), 0);
 }
 
-// One agent lands a task from its text and its Files: paths, so their bytes
-// over 4 estimate the context it needs; over the split threshold fails.
 function checkContextSize(task, root) {
   if (root === undefined || root === null) return [];
   const bytes = Buffer.byteLength(task.section) + task.files.reduce((total, file) => total + bytesUnder(path.join(root, file.path)), 0);
@@ -125,13 +101,6 @@ function checkContextSize(task, root) {
   return [`Task ${task.number}: split Task ${task.number} (about ${tokens} tokens of task text and Files:, over ${TASK_SPLIT_TOKENS})`];
 }
 
-// task-list.md rule 1 asks for a verified path; a task's own Modify: entry
-// names one the executor edits rather than creates, so plan-check resolves
-// it against the target repository the way driftOf() does and fails the
-// plan when it is missing. With no root given, and no Repository: line in
-// the plan to fall back on, the check is skipped rather than guessed. A path
-// an earlier task in this task's Depends on chain lists as Create: does not
-// exist yet either, so it is not a miss.
 function checkFilesExist(task, root, byNumber) {
   if (root === undefined || root === null) return [];
   const createdEarlier = new Set(
@@ -150,9 +119,6 @@ function checkFilesExist(task, root, byNumber) {
   return problems;
 }
 
-// A depth-first walk of the Depends on edges already validated by
-// parsePlan/checkOrder (no cycle, every number known), so it always halts.
-// Collects every task number `from` depends on, transitively.
 function dependencyChainOf(byNumber, from) {
   const stack = [...byNumber.get(from).dependsOn];
   const seen = new Set();
@@ -169,11 +135,6 @@ function reachesThrough(byNumber, from, to) {
   return dependencyChainOf(byNumber, from).has(to);
 }
 
-// task-list.md rule 4 asks the author to split a shared write target unless
-// a real invariant earns a Depends on edge that serializes the two tasks;
-// plan-check fails a plan where two tasks list the same Files: path with no
-// such chain between them, in either direction, and names both tasks and
-// the path.
 function checkSharedFiles(tasks) {
   const byNumber = new Map(tasks.map((task) => [task.number, task]));
   const problems = [];
@@ -193,20 +154,12 @@ function checkSharedFiles(tasks) {
   return problems;
 }
 
-// task-list.md's '## Checkpoint' item says 'Parallel:' reads 'none', 'every
-// task' or task numbers such as 'Tasks 1, 2 and 3', with no range or clause;
-// any other text opts no task into a wave, so a line that reads otherwise is
-// flagged rather than quietly naming nothing.
 function checkParallelForm(frame) {
   const { parallelLine } = frameOf(frame);
   if (parallelLine === null || parallelValueValid(parallelLine)) return [];
   return [`the plan's '## Checkpoint' line 'Parallel: ${parallelLine}' does not read 'none', 'every task' or task numbers such as 'Tasks 1, 2 and 3'`];
 }
 
-// task-list.md's '## Checkpoint' item says 'Parallel:' names only tasks whose
-// Files: sets share no path; plan-check flags each pair of named tasks that
-// list the same path, unless a Depends on chain joins the two. 'every task'
-// and 'none' name no pair to compare.
 function checkParallelDisjoint(tasks, frame) {
   const named = frameOf(frame).parallel ?? [];
   const listed = tasks.filter((task) => named.includes(task.number));
@@ -224,10 +177,6 @@ function checkParallelDisjoint(tasks, frame) {
   return problems;
 }
 
-// task-list.md's '## Plan basis' item 2 asks for a 'Worktree setup:' line when
-// two tasks share no Depends on chain, since without it the run builds one
-// task at a time; plan-check flags the first such pair and the missing line,
-// while 'Worktree setup: none' still passes as a deliberate choice.
 function checkWorktreeSetup(tasks, frame) {
   if (frameOf(frame).worktreeSetup !== null) return [];
   const byNumber = new Map(tasks.map((task) => [task.number, task]));
@@ -242,12 +191,6 @@ function checkWorktreeSetup(tasks, frame) {
   return [];
 }
 
-// build's SKILL.md step 1 matches a plan to a checkout by the '## Plan
-// basis' section's Repository: and Branch: lines (lib/plan-tasks.mjs's
-// frameOf); a compact plan with neither would parse but never be matched to
-// a checkout, so plan-check fails it here instead. A missing Land: line
-// fails at spec time only: on the run path (`run`) an old or benchmark plan
-// still runs and ends at phase passed without landing.
 function checkPlanBasis(frame, run) {
   const basis = frame['Plan basis'] ?? '';
   const problems = [];
@@ -258,10 +201,6 @@ function checkPlanBasis(frame, run) {
   return problems;
 }
 
-// A brief's '## Acceptance' bullet earns its place by pointing somewhere
-// checkable: the task that builds it, the Data: line proving what it holds,
-// the plan's Success criterion, or a Manual checks line. A bullet with none
-// of those anchors names no way to confirm it, so plan-check fails it here.
 const TASK_CITATION = /\bTasks?\s+\d/;
 
 function checkAcceptanceCitations(frame) {
@@ -279,11 +218,6 @@ function checkAcceptanceCitations(frame) {
   return problems;
 }
 
-// task-list.md's '## Plan basis' item 2 asks for a 'Land gate:' line when the
-// target repository's package.json has a typecheck script, and a 'Lint:' line
-// when it has a lint script: plan-check fails a compact plan that leaves
-// either out, while 'Land gate: none' and 'Lint: none' still pass as
-// deliberate opt-outs.
 function checkLandGate(frame, root) {
   if (root === undefined || root === null) return [];
   const packageJsonPath = path.join(root, 'package.json');
@@ -300,10 +234,6 @@ function checkLandGate(frame, root) {
   return problems;
 }
 
-// A package that names a `bin` or `scripts.start` is a product, and its Success
-// criterion has to run it, or the plan states why not under that command:
-// 'Product run: none (<reason>)'. Only the first backticked command counts,
-// since it is the one verify runs. An mcp: criterion drives the product itself.
 function checkProductRun(frame, root) {
   if (root === undefined || root === null) return [];
   const terms = packageRunTerms(root);
@@ -321,9 +251,6 @@ function checkProductRun(frame, root) {
   return [`the plan's '## Success criterion' runs no product, though package.json names ${entries}: run one in the command, or add 'Product run: none (<reason>)' under it`];
 }
 
-// Red: none (<reason>) and Repeat: <2-5> (<reason>) name a reason the plan can
-// be held to; a Success criterion equal to the Land gate command passes where
-// each task's gate already did, so it needs its own Red: line to be able to fail.
 function checkRedGreen(plan) {
   const problems = [];
   for (const task of plan.tasks) {
@@ -356,9 +283,6 @@ function checkFrame(frame) {
   return problems;
 }
 
-// A Proof: shows one task landed, so a segment that runs the whole suite is
-// out of place there; the Success criterion may still be `npm test`, since
-// verify runs it once in the main session.
 function checkWholeSuiteProof(task) {
   if (task.proof === null || wholeSuiteKeys(task.proof).length === 0) return [];
   return [`Task ${task.number}: 'Proof: ${task.proof}' runs the whole suite: name the one test file or script that shows this task alone landed`];
@@ -374,13 +298,6 @@ function checkCompactFields(task) {
   return [...problems, ...checkWholeSuiteProof(task)];
 }
 
-// run-plan.mjs runs a plan with no session to answer it, so `--loop` refuses,
-// by name, what only a session or a person could run: a Success criterion that is not one backticked non-MCP command, an MCP
-// `Proof:` or passing `Run:`, an output redirect to a file, a `Design:` task
-// without a selected contract, a `Branch:` that is the default branch, a task
-// whose `Files:` lists the plan file itself, which run-plan.mjs reads as a
-// changed plan, and a missing or `none` `Land gate:` while package.json has a
-// full check to run.
 const REDIRECT = /(?:\d*|&)(>>?)\s*(\S*)/g;
 const QUOTED = /"(?:\\.|[^"\\])*"|'[^']*'/g;
 
@@ -391,8 +308,6 @@ function redirectsToFile(part) {
 const realPath = (filePath) => (fs.existsSync(filePath) ? fs.realpathSync(filePath) : path.resolve(filePath));
 const repoPath = (filePath) => path.normalize(filePath).split(path.sep).join('/').replace(/^\.\//, '');
 
-// Unattended, each task lands only when the repository's full check passes,
-// so the task that breaks it repairs it, not the end of the run.
 function checkLoopLandGate(basis, root) {
   if (root === undefined || root === null) return [];
   const packageJsonPath = path.join(root, 'package.json');
@@ -404,7 +319,6 @@ function checkLoopLandGate(basis, root) {
   return [`loop: 'Land gate: ${gate}' skips the full check; set 'Land gate: ${command}' so each task lands only when it passes, per task only while it stays under a minute`];
 }
 
-// A line only a session can satisfy may stay in a plan that a session builds.
 const SESSION_BUILD = '; it may stay: build with exo:build, not run-plan';
 
 function checkLoop(plan, root, planPath) {
@@ -437,9 +351,6 @@ function checkLoop(plan, root, planPath) {
   return [...problems, ...checkLoopLandGate(basis, root)];
 }
 
-// The derivation check refuses these names in every tracked file of exo, so a
-// brief that holds one fails the land gate late; the scan runs only where that
-// check lives.
 function checkDerivedNames(planText, resolvedRoot) {
   if (resolvedRoot === undefined || !fs.existsSync(path.join(resolvedRoot, 'verify/checks/derivation.mjs'))) return [];
   const names = derivedNames();
@@ -451,22 +362,10 @@ function checkDerivedNames(planText, resolvedRoot) {
   });
 }
 
-/**
- * Reads `planText` and returns `{ ok, lines }`: the problems found, or the
- * one ok line. `root` names the repository the plan targets, so a task's
- * Modify: entry can be checked against it; omit it to skip that one check.
- * `loop` adds the problems that keep run-plan.mjs from running the plan;
- * `planPath`, the plan's own file, lets it refuse a task that edits it.
- * `run`, set by run-plan.mjs's preflight only, lets a plan with no `Land:`
- * line through, which spec time refuses.
- */
 export function planCheckReport(planText, { root, loop = false, planPath, run = false } = {}) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
-  // No --root from the caller falls back to the plan's own 'Repository:'
-  // line, the checkout the plan names, rather than the process's cwd, which
-  // spec's own plan-check step never shares with the plan's target.
   const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
   const problems = [

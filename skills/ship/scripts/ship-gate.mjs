@@ -1,18 +1,4 @@
 #!/usr/bin/env node
-// The merge gate `ship` applies right before a merge, and the order it
-// merges stacked pull requests in, read from gh's JSON so the verdict is
-// computed rather than read off a printed object.
-//
-//   node ship-gate.mjs --pr <number>
-//   node ship-gate.mjs --order <number> <number> ...
-//
-// --pr prints one line: MERGE, BEHIND, DIRTY, or STOP <field>=<value> [check].
-// It exits 0 on MERGE and 1 on any other verdict.
-// --order prints the numbers on one line, every base before the pull
-// requests stacked on it, and exits 1 with CYCLE <numbers> when the
-// base and head branches form a loop.
-// A gh failure prints STOP gh=<first error line> and exits 3; a usage error
-// exits 2.
 
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
@@ -21,15 +7,11 @@ import { UsageError, parseFlags, isMain } from '#script-flags';
 export const GH_ERROR_EXIT = 3;
 const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup';
 const ORDER_FIELDS = 'number,baseRefName,headRefName';
-// A check that ran and passed, or was skipped or neutral by its own rules,
-// does not hold the merge; every other conclusion, CANCELLED included, does.
 const PASSING_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
 const PR_NUMBER = /^[1-9][0-9]*$/;
 
 class GhError extends Error {}
 
-// A rollup entry is a CheckRun, with status and conclusion, or a commit
-// StatusContext, with state; a run not yet COMPLETED has no conclusion.
 function holdingCheck(check) {
   const name = check.name || check.context || 'unnamed';
   if (check.state !== undefined && check.status === undefined) {
@@ -40,7 +22,6 @@ function holdingCheck(check) {
   return PASSING_CONCLUSIONS.has(conclusion) ? null : `conclusion=${conclusion} ${name}`;
 }
 
-/** One verdict line for a pull request read with GATE_FIELDS. */
 export function gateVerdict(pullRequest) {
   if (pullRequest.state && pullRequest.state !== 'OPEN') return `STOP state=${pullRequest.state}`;
   if (pullRequest.mergeStateStatus === 'DIRTY' || pullRequest.mergeable === 'CONFLICTING') return 'DIRTY';
@@ -54,11 +35,6 @@ export function gateVerdict(pullRequest) {
   return 'MERGE';
 }
 
-/**
- * The pull requests' numbers with every base first: one is the base of
- * another when its headRefName is the other's baseRefName. Unrelated pull
- * requests keep their given order. Returns { order } or { cycle }.
- */
 export function stackOrder(pullRequests) {
   const byHead = new Map(pullRequests.map((pullRequest) => [pullRequest.headRefName, pullRequest]));
   const order = [];
@@ -93,8 +69,6 @@ function viewPullRequest(number, fields) {
   }
 }
 
-// --order takes every number after it, which the shared grammar has no kind
-// for, so those tokens are taken off before the rest is parsed.
 function readFlags(argv) {
   const orderAt = argv.indexOf('--order');
   const numbers = orderAt === -1 ? [] : argv.slice(orderAt + 1);

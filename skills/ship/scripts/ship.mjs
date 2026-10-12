@@ -1,44 +1,4 @@
 #!/usr/bin/env node
-// The ship route as one script, so the picked route runs push, open a
-// pull request, or wait, gate and merge one, without a separate model call
-// per step. It calls its sibling scripts as child processes rather than
-// reimplement their contracts.
-//
-//   node ship.mjs --route push|open-pr|pr-merge [--title <subject>]
-//                 [--body <file>] [--issue <n>] [--method squash|merge|rebase]
-//   node ship.mjs --merge <number> <number> ...
-//   node ship.mjs --routes
-//   node ship.mjs --verdict-current <patch-id>
-//
-// open-pr and pr-merge need --title and --body, and refuse to run on the
-// default branch. --merge does not combine with --route or its flags. Each
-// step prints `ship: <step> [#<n>]` on stderr as it starts; stdout carries
-// only the one result line a route ends on, or, for --merge, one line per
-// pull request. After a confirmed merge, stdout ends with the one line
-// return-to-default.mjs prints, once it has put the main checkout back on the
-// default branch and pulled it; its outcome never changes the exit code.
-//
-// --routes prints the route question's menu the way ship's SKILL.md derives
-// it from origin, the default branch, `gh auth status` and the `ship` exo
-// setting: one line naming why when a fact rules out every route, one line
-// naming the set route when it can run without a question, and otherwise the
-// menu, preceded by one line naming why a set route did not apply.
-//
-// --verdict-current <patch-id> compares it against the current branch's own
-// patch-id, computed the way SKILL.md's route step 2 does: `git diff
-// origin/<default>...HEAD | git patch-id --stable`. Prints `current` on a
-// match, else `stale`.
-//
-// Steps run in order, stopping at the first that fails: body check, push,
-// create, wait, gate, merge, confirm. Once a pull request is known, a stop
-// names it instead of the branch. A stop exits 1, except a gate verdict of
-// DIRTY, which exits 4; a usage error exits 2.
-//
-// --merge orders the given pull requests with ship-gate.mjs --order (a
-// CYCLE stops the whole run, exit 1), then gates, merges and confirms each
-// in that order, skipping the wait step since a requested merge is already
-// checked; a stop for one pull request is printed and the next goes on, and
-// the run exits 4 if any was DIRTY, else 1 if any stopped.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -61,8 +21,6 @@ const WAIT_CHECKS = fileURLToPath(new URL('./wait-checks.mjs', import.meta.url))
 const SHIP_GATE = fileURLToPath(new URL('./ship-gate.mjs', import.meta.url));
 
 class StepError extends Error {
-  // `subject` overrides the branch name a stop line opens with, once a step
-  // has a pull request of its own to name instead; DIRTY outranks a plain stop.
   constructor(step, reason, { subject, code = 1 } = {}) {
     super(reason);
     this.step = step;
@@ -75,9 +33,6 @@ function announce(step, number) {
   process.stderr.write(`ship: ${step}${number === undefined ? '' : ` #${number}`}\n`);
 }
 
-// --merge takes every number after it, which the shared grammar has no kind
-// for, so those tokens are taken off before the rest is parsed; anything
-// else on the line means it was combined with a route flag, which is usage.
 function readFlags(argv) {
   if (argv.includes('--routes')) {
     if (argv.length !== 1) throw new UsageError('--routes takes no other arguments');
@@ -109,7 +64,6 @@ function readFlags(argv) {
   return flags;
 }
 
-/** `<name>` with the `origin/` remote stripped, or null when no remote HEAD is set. */
 function defaultBranch() {
   try {
     const ref = execFileSync('git', ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -123,12 +77,10 @@ function currentBranch() {
   return execFileSync('git', ['branch', '--show-current'], { encoding: 'utf8' }).trim();
 }
 
-/** True when a remote named `origin` exists. */
 function hasOrigin() {
   return runGit(['remote', 'get-url', 'origin']).ok;
 }
 
-/** True in a linked worktree, where `--git-dir` sits under the main checkout's `--git-common-dir` rather than equalling it. */
 function inWorktree() {
   const gitDir = runGit(['rev-parse', '--git-dir']);
   const commonDir = runGit(['rev-parse', '--git-common-dir']);
@@ -136,13 +88,10 @@ function inWorktree() {
   return path.resolve(gitDir.stdout.trim()) !== path.resolve(commonDir.stdout.trim());
 }
 
-/** True when `gh auth status` succeeds. */
 function ghAuthOk() {
   return runGh(['auth', 'status']).ok;
 }
 
-// One question in the lettered shape of route-skills/references/question.md; a
-// plain push stays reachable through the `ship=push` setting.
 const CONTEXT = 'Your new commits are only on this computer.';
 const MENU_FULL = [
   '**Where should the commits go?**',
@@ -164,14 +113,12 @@ const MENU_PUSH_ONLY = [
   'Recommended: (A), because it backs the commits up.'
 ];
 
-/** Why a set `ship` route other than `push` cannot run yet, or null when it can. */
 function setRouteBlocked(onDefault, ghOk) {
   if (onDefault) return 'on the default branch';
   if (!ghOk) return 'gh auth status failed';
   return null;
 }
 
-/** `Unasked: push` when the `ship` setting is `ask` and origin exists and a non-default branch is checked out, else `Unasked: none`. */
 function unaskedLine() {
   if (settingValue('ship') !== 'ask' || !hasOrigin() || inRun()) return 'Unasked: none';
   const base = defaultBranch();
@@ -179,13 +126,11 @@ function unaskedLine() {
   return base !== null && branch !== '' && branch !== base ? 'Unasked: push' : 'Unasked: none';
 }
 
-/** Prints the route question's menu, or the one line SKILL.md's rules reduce it to, then the `Unasked:` line. */
 function printRoutes() {
   printRouteMenu();
   console.log(unaskedLine());
 }
 
-/** Prints the route question's menu, or the one line SKILL.md's rules reduce it to, from origin, the default branch, `gh auth status` and the `ship` setting. */
 function printRouteMenu() {
   const setting = settingValue('ship');
   if (setting === 'local') {
@@ -219,7 +164,6 @@ function printRouteMenu() {
   printMenu(!onDefault && ghOk ? MENU_FULL : MENU_PUSH_ONLY, setting === 'ask');
 }
 
-/** Prints `menu`; in a run with ship `ask` (`asked`), answers the `local` route and records that instead, as a run never asks. */
 function printMenu(menu, asked) {
   if (asked && inRun()) {
     recordDecision('ship', 'local', 'a run never asks which route ships');
@@ -229,15 +173,6 @@ function printMenu(menu, asked) {
   for (const line of menu) console.log(line);
 }
 
-/**
- * The current branch's patch-id against origin's default branch, `git diff
- * origin/<base>...HEAD | git patch-id --stable`, matching SKILL.md's verdict
- * rule; null when the default branch cannot be read. Reads `origin/<base>`,
- * not the local branch of that name: a checkout with no local `main` (a
- * fresh worktree, a CI clone) has no such ref to diff against, and a local
- * `main` that lags `origin/main` gives a different merge-base than the one
- * the recorded verdict's patch-id was computed from.
- */
 function currentPatchId() {
   const base = defaultBranch();
   if (base === null) return null;
@@ -266,12 +201,10 @@ function runGh(args) {
   }
 }
 
-/** True when `body` closes `issue` in the vocabulary GitHub links a pull request on. */
 function closesIssue(body, issue) {
   return new RegExp(`\\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?\\s+#${issue}\\b`, 'i').test(body);
 }
 
-/** The branch's open pull request, read fresh so a rerun after a resolved stop gates again. */
 function existingPullRequest(branch) {
   const result = runGh(['pr', 'view', branch, '--json', 'number,url,state']);
   if (!result.ok) return null;
@@ -279,7 +212,6 @@ function existingPullRequest(branch) {
   return pullRequest.state === 'OPEN' ? pullRequest : null;
 }
 
-/** Labels, milestone and project titles copied from the issue a pull request closes. */
 function issueFields(issue) {
   const result = runGh(['issue', 'view', String(issue), '--json', 'labels,milestone,projectItems']);
   if (!result.ok) throw new StepError('create', `gh=${result.error}`);
@@ -304,14 +236,12 @@ function createPullRequest(branch, base, flags) {
   return { number, url };
 }
 
-/** Number, url, state and head branch of a pull request read directly by its number. */
 function pullRequestView(number) {
   const result = runGh(['pr', 'view', String(number), '--json', 'number,url,state,headRefName']);
   if (!result.ok) throw new StepError('gate', `gh=${result.error}`);
   return JSON.parse(result.stdout);
 }
 
-/** Runs a sibling script as a child process and reads its one stdout line and exit code. */
 function runSibling(scriptPath, args) {
   const result = spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' });
   return { code: result.status ?? 1, line: firstLine(result.stdout ?? '') };
@@ -320,16 +250,14 @@ function runSibling(scriptPath, args) {
 function waitForChecks(number, url) {
   announce('wait', number);
   const result = runSibling(WAIT_CHECKS, ['--pr', String(number)]);
-  if (result.code === 0) return; // "checks: pass" or "checks: none"
+  if (result.code === 0) return;
   throw new StepError('wait', result.line.replace(/^checks:\s*/, ''), { subject: url });
 }
 
-/** One gate read, MERGE, BEHIND, DIRTY or STOP <x>, exactly as ship-gate.mjs prints it. */
 function gateOnce(number) {
   return runSibling(SHIP_GATE, ['--pr', String(number)]).line;
 }
 
-/** Gates `number`, updating a BEHIND branch and gating again, at most twice, then stopping. */
 function runGate(number, url) {
   announce('gate', number);
   let verdict = gateOnce(number);
@@ -363,7 +291,6 @@ function confirmMerge(number, url) {
   return `${data.url} merged`;
 }
 
-/** Gates, merges and confirms `numbers` in ship-gate's stacking order, a stop for one printed and the rest going on. */
 function runMergeList(numbers) {
   process.stderr.write(`ship: order ${numbers.join(' ')}\n`);
   const order = runSibling(SHIP_GATE, ['--order', ...numbers]);
@@ -392,8 +319,6 @@ function runMergeList(numbers) {
   process.exitCode = exitCode;
 }
 
-// Refuses a title, body file or head branch name that attributes the work to an
-// AI, or a title that is not a Conventional Commit, before git or gh runs.
 function refuseBadText(flags, branch) {
   if (flags.route === 'push') return;
   let body;
