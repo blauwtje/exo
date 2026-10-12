@@ -162,7 +162,7 @@ test('a timed-out base run leaves no child running', async () => {
 
 test('the base runs a bash-only construct like the head Proof', () => {
   const { root, git, base } = repo();
-  const r = runOnBase({ root, base, command: 'diff <(echo a) <(echo a)', timeoutMs: 30000 });
+  const r = runOnBase({ root, base, command: '[[ a == a ]]', timeoutMs: 30000 });
   assert.equal(r.status, 'green', r.output);
   assert.equal(worktrees(git), 1);
 });
