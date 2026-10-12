@@ -10,8 +10,8 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 - Each question has two short sentences of context at most, only what the user needs to choose.
 - No file name the user need not open, setting or field name, flag, model name, token count, endpoint or other technical term in a title, an option or the recommendation.
 - Two or three options, two only when no honest third route exists, each on its own line as `- **(A) Label**: what the user gets`, the label one to three words, the text one short plain clause on what the user gets or gives up.
-- A is always the recommended option; no option is marked "(recommended)" and no other option carries a mark.
-- The last line is `Recommended: (A), because <why A beats the others>`, one plain clause, not inside an option line.
+- The options run in the order A, B, C, never moved or re-lettered; the recommendation may sit on any letter, no option is marked "(recommended)" and no other option carries a mark.
+- The last line is `Recommended: (<letter>), because <why it beats the others>`, naming a shown letter, one plain clause, not inside an option line.
 - No `---` separator and no `Without an answer` line.
 - The whole question stays under about 60 words outside the option labels.
 - The options are text in the reply; no question tool, form or picker is used.
@@ -32,7 +32,7 @@ Each case runs from its fixture directory under `/tmp/exo-pressure/spec/`, as a 
 - The last answer closes the interview: no separate checkpoint message and no "write the brief" question; the brief follows at once.
 - A reply that opens a new costly or irreversible point adds one more question before the brief is written.
 - No file is written before the last open question is answered.
-- After the brief, the message ends on one question in the same shape, with A recommended, and nothing after its recommendation except one model line.
+- After the brief, the message ends on one question in the same shape, with one letter recommended, and nothing after its recommendation except one model line.
 - Build never starts by itself: no build work or task starts before the user picks it.
 
 ## Scripted replies

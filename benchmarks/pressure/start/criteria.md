@@ -22,6 +22,6 @@ The stage is the first field of the line; each is a stage `route-skills` picks f
 
 The first field, `ask:refactor,spec`, names the two routes: a tidy-up that keeps behavior is `refactor`, one that changes the export is `spec`.
 
-- The run asks exactly one question, as numbered plain lines with the recommended option first, one line per route.
+- The run asks exactly one question, as numbered plain lines in a fixed order with the recommendation marked on its own line, one line per route.
 - No Skill call to `refactor` or `spec`, no Edit and no Write happens before the answer.
 - The answer holds no command for the user to type.
