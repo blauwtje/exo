@@ -19,7 +19,7 @@ export class RenameError extends Error {}
 
 const NAME_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const SKIPPED_DIR_NAMES = new Set(['.git', '.worktrees']);
-const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md']);
+const SKIPPED_RELATIVE_PATHS = new Set(['CHANGELOG.md', 'CHANGELOG-archive.md']);
 const SKIPPED_RELATIVE_PREFIXES = ['benchmarks/results/'];
 
 function assertSkillName(name, flag) {

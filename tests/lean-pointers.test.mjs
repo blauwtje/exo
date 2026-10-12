@@ -42,6 +42,7 @@ test('no source file outside the changelog and benchmark results names ladder.md
   const self = 'tests/lean-pointers.test.mjs';
   const naming = tracked.filter((file) => file !== ''
     && file !== 'CHANGELOG.md'
+    && file !== 'CHANGELOG-archive.md'
     && file !== self
     && !file.startsWith('benchmarks/results/')
     && fs.existsSync(new URL(`../${file}`, import.meta.url))
