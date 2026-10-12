@@ -1,16 +1,3 @@
-// exo settings in four layers, highest first: `.claude/exo.local.json` (this
-// machine), `.claude/exo.json` (the project, shared through git), the plugin's
-// global options, then the schema default. schema.json names every key, so a
-// new setting is one entry there plus the matching userConfig entry in
-// plugin.json, which tests/settings.test.mjs holds to the schema.
-//
-//   node settings.mjs context                                one line for the session context
-//   node settings.mjs show                                   every key: value, layer, options, overridden layers
-//   node settings.mjs menu [<topic> | <key>]                 that overview, then the question that picks a topic, a key or a value
-//   node settings.mjs get <key>                              the effective value
-//   node settings.mjs set <key> <value> --scope project|local
-//   node settings.mjs set <key> <value> --scope global       on Codex only
-
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,15 +19,17 @@ import {
   typedValue,
   unknownKey
 } from '#settings-store';
+const USAGE = [
+  'usage: node settings.mjs context                                one line for the session context',
+  '       node settings.mjs show                                   every key: value, layer, options, overridden layers',
+  '       node settings.mjs menu [<topic> | <key>]                 that overview, then the question that picks a topic, a key or a value',
+  '       node settings.mjs get <key>                              the effective value',
+  '       node settings.mjs set <key> <value> --scope project|local',
+  '       node settings.mjs set <key> <value> --scope global       on Codex only',
+].join('\n');
 const OVERVIEW_WIDTH = 76;
 const BLOCK_INDENT = '   ';
 
-// A rule's `{model:<kind>}` and `{effort:<kind>}` are the provider's model and
-// effort for that kind, and `{model:<kind>@<budget>}` is that model after the
-// budget's tier swap, so a rule names the Agent call's parameters without
-// naming a model itself. Its `{from}` and `{to}` are the provider's models for
-// the two tiers of each pair in the kind table's `budgets` map under the
-// setting's value. A rule with no placeholder is used as written.
 function filledRule(rule, value) {
   if (!rule.includes('{')) return rule;
   const table = readKindTable();
@@ -63,11 +52,6 @@ function filledRule(rule, value) {
   }).join(' ');
 }
 
-// A schema key with a `rules` map contributes its current value's rule text to
-// the injected settings line; a value with no entry there (such as budget's
-// default `medium`) adds nothing. On Codex a `codexRules` map takes the place
-// of `rules` for its key, because Codex spawns a twin by name where Claude
-// Code passes the Agent call a model and effort.
 function activeRules(values) {
   const onCodex = currentHost() === 'codex';
   return Object.entries(SCHEMA)
@@ -79,15 +63,12 @@ function activeRules(values) {
     .join(' ');
 }
 
-// The session hook prints this line into every session, so a broken layer
-// degrades to the defaults and names the file instead of failing the hook.
 function contextLine(root) {
   try {
     const stack = layers(root);
     const notes = stack.map((layer) => layer.unreadable).filter(Boolean);
     const resolved = Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolve(key, stack)]));
     for (const { notes: keyNotes } of Object.values(resolved)) notes.push(...keyNotes);
-    // An empty value adds noise to every session, so the line leaves it out.
     const printed = Object.keys(SCHEMA).filter((key) => resolved[key].value !== '');
     const parts = printed.map((key) => `${key}=${resolved[key].value} (${resolved[key].layer})`);
     const rules = activeRules(Object.fromEntries(Object.keys(SCHEMA).map((key) => [key, resolved[key].value])));
@@ -101,8 +82,6 @@ function contextLine(root) {
   }
 }
 
-// A description is wrapped by hand because a terminal breaks a long fenced line
-// at the window edge, which drops the indent that ties it to its setting.
 function wrapped(text, indent) {
   const lines = [];
   let line = indent;
@@ -117,7 +96,6 @@ function wrapped(text, indent) {
   return lines;
 }
 
-// The first layer that holds the key wins, so every other layer holding it is overridden.
 function settingBlock(key, stack) {
   const entry = SCHEMA[key];
   const { value, layer } = resolve(key, stack);
@@ -151,14 +129,6 @@ function show(root) {
   console.log(overview(Object.keys(SCHEMA), layers(root)).join('\n'));
 }
 
-// The overview plus the one question that moves a change forward: which topic
-// without an argument, which setting with a topic, which value with a key.
-// Every question holds Keep plus at most two picks, three options in all: a
-// topic, setting or value past the second pick is named in the context line as
-// a typed answer.
-// Keep is always A, the recommended answer, and the plain texts come from the
-// schema's `label`, `about`, `question`, `typed` and `choices`. The option lines
-// sit outside the fence because bold renders only there.
 const MAX_PICKS = 2;
 const TOPICS = {
   work: { label: 'How I work', question: 'Which part of how I work?', about: 'how I write and how much effort', keys: ['compression', 'budget'] },
@@ -206,7 +176,6 @@ function menu(root, name) {
   console.log([...overview([name], stack), '', ...question(entry.question, context, keep, picks, 'nothing changes unless you pick another')].join('\n'));
 }
 
-// Appending to a file that lacks a final newline would glue the entry onto its last line.
 function gitignoreEntry(root, relative) {
   const file = path.join(root, '.gitignore');
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
@@ -239,7 +208,6 @@ function set(root, key, value, scope) {
 
   if (scope === 'global') return;
 
-  // check-ignore exits 0 for an ignored path, 1 for a tracked one, 128 outside git.
   const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);
   if (scope === 'local' && ignored.status === 1) {
     fs.appendFileSync(path.join(root, '.gitignore'), gitignoreEntry(root, relative));
@@ -258,7 +226,9 @@ function option(args, name) {
 const [command, ...args] = process.argv.slice(2);
 const root = projectRoot();
 try {
-  if (command === 'context') {
+  if (command === '--help') {
+    console.log(USAGE);
+  } else if (command === 'context') {
     console.log(contextLine(root));
   } else if (command === 'show') {
     show(root);

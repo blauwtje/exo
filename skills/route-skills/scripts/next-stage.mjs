@@ -1,10 +1,3 @@
-// Prints the next-stage question, or with `--fresh` the lines the user types
-// after picking the fresh-chat route. A stage skill whose work leaves a next
-// stage open (`spec`, `find-cause`) runs this at its final message instead of
-// reading `references/question.md` itself.
-//
-//   node next-stage.mjs --after <stage> --artifact <path> [--fresh]
-
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,13 +8,11 @@ import { readKindTable } from '#model-kinds';
 import { frameOf, openPoints, parsePlan } from '#plan-tasks';
 import { scratchPath, ScratchPathError } from '#scratch-path';
 
-// The stage a session just finished names the question that ends it, per
-// the question shape: a title, a context sentence, lettered option
-// lines with the recommended one on A, and the `Recommended: (A)` line saying
-// why A beats the rest. `stage` names the fresh-chat route's model row, when
-// the stage offers that route; an entry with only `stage` asks nothing and
-// offers only that route. An option is `[label, what the user gets]`; its
-// letter comes from its place in the array.
+const USAGE = [
+  'usage: node next-stage.mjs --after <stage> --artifact <path> [--fresh]',
+  'Prints the next-stage question, or with --fresh the lines the user types after picking the fresh-chat route.',
+].join('\n');
+
 const NEXT_STAGE = {
   'spec': { stage: 'build' },
   'find-cause': {
@@ -32,12 +23,6 @@ const NEXT_STAGE = {
   }
 };
 
-// A `Design:` task whose plan carries no `## Visual direction` section, or
-// one still `Direction: pending at rung <n>`, builds that task in the next
-// stage's own session, so that stage keeps the session's model and pins the
-// effort of the build skill's kind instead of the delegate's.
-// `artifact` resolves through briefFile, so an issue `#<n>` reads its scratch
-// copy; no brief file means no pending design.
 function designPending(artifact) {
   const file = briefFile(artifact);
   if (file === null) return false;
@@ -47,18 +32,12 @@ function designPending(artifact) {
   return visualDirection === null || /^Direction: pending at rung \d+$/m.test(visualDirection);
 }
 
-// The model switch the fresh-chat route asks for before its build command,
-// from the kind `stages` in `lib/model-kinds.json` gives the stage; `null`
-// when a pending `Design:` task builds in the session, which keeps the
-// session's model while the build skill pins its own effort.
 function modelSwitchFor(stage, artifact) {
   if (stage === 'build' && designPending(artifact)) return null;
   const { kinds, stages } = readKindTable();
   return `Before you type them, switch to a lighter model with \`/model ${kinds[stages[stage].kind].model}\`.`;
 }
 
-// The file holding the brief: the path itself, or for an issue `#<n>` the
-// scratch copy spec writes at `.exo/specs/<n>.md`; `null` when neither exists.
 function briefFile(artifact) {
   const issue = artifact.match(/^#(\d+)$/);
   if (issue === null) return fs.existsSync(artifact) ? artifact : null;
@@ -71,11 +50,6 @@ function briefFile(artifact) {
   }
 }
 
-// The line that offers the unattended run after spec: `run-plan.mjs` beside
-// this skill's sibling `build`, named by absolute path, for a plan that
-// `plan-check --loop` passes; `null` for any other brief or after any other
-// stage. plan-check runs as its own process, since a skill script never
-// imports from another skill folder.
 function unattendedLine(after, artifact) {
   const file = after === 'spec' ? briefFile(artifact) : null;
   if (file === null) return null;
@@ -87,10 +61,6 @@ function unattendedLine(after, artifact) {
   return `Unattended, with Claude Code: node "${script}" ${path.resolve(file)}`;
 }
 
-/**
- * The next-stage question: title, context, lettered options with the
- * recommended one on A, and the recommendation last.
- */
 export function nextStageReport({ after, artifact }) {
   const stage = NEXT_STAGE[after];
   if (stage === undefined) throw new UsageError(`no next stage known after '${after}'`);
@@ -103,26 +73,16 @@ export function nextStageReport({ after, artifact }) {
   return `${lines.join('\n')}\n`;
 }
 
-// The effort the build skill pins while it runs: the effort of the kind
-// `stages` in `lib/model-kinds.json` gives build, which the build skill's
-// frontmatter `effort:` matches.
 function effortLine(stage) {
   const { kinds, stages } = readKindTable();
   return `Build runs at \`${kinds[stages[stage].kind].effort}\` effort, which the build skill sets; \`/effort auto\` returns the session to normal effort.`;
 }
 
-// The unanswered entries under the brief's `## Open points`, which
-// start-run refuses; none when the artifact has no brief file.
 function openEntries(artifact) {
   const file = briefFile(artifact);
   return file === null ? [] : openPoints(fs.readFileSync(file, 'utf8'));
 }
 
-/**
- * The reply to a picked fresh-chat route: the two lines to type, then the
- * model switch when the stage's row names one. A brief with open points gets
- * no build route: the report names each entry to answer first.
- */
 export function freshReport({ after, artifact }) {
   const next = NEXT_STAGE[after];
   if (next === undefined) throw new UsageError(`no next stage known after '${after}'`);
@@ -144,7 +104,7 @@ export function freshReport({ after, artifact }) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { after: 'value', artifact: 'value', fresh: 'boolean' });
+  const flags = parseFlags(argv, { after: 'value', artifact: 'value', fresh: 'boolean' }, { usage: USAGE });
   if (flags.after === undefined) throw new UsageError("flag '--after' names the stage that just ran");
   if (flags.artifact === undefined) throw new UsageError("flag '--artifact' names the artifact's path");
   const report = flags.fresh ? freshReport : nextStageReport;

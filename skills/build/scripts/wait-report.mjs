@@ -1,20 +1,15 @@
-// Waits, inside node, until every named build-task report exists, is non-empty
-// and is no older than the dispatch start, so a run-unit whose Agent call came
-// back backgrounded needs no `sleep` command, which the harness blocks. A stale
-// report from an earlier run never counts.
-//
-// Usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--report <path>...] [--any] [--timeout <seconds>]
-// --since is given once for all reports or once per --report, paired in order;
-// --any returns as soon as one report is fresh and prints only the fresh paths.
-// Exit 0 prints each report path; exit 2 prints `waiting <paths>` at the
-// deadline; exit 1 is a bad argument.
-
 import fs from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 
 const DEFAULT_TIMEOUT_SECONDS = 540;
 const POLL_INTERVAL_MS = 5000;
+const USAGE = [
+  'usage: wait-report.mjs --since <epoch seconds> [--since ...] --report <path> [--report <path>...] [--any] [--timeout <seconds>]',
+  '--since is given once for all reports or once per --report, paired in order;',
+  '--any returns as soon as one report is fresh and prints only the fresh paths.',
+  'Exit 0 prints each report path; exit 2 prints `waiting <paths>` at the deadline; exit 1 is a bad argument.',
+].join('\n');
 
 function isFresh(reportPath, sinceMs) {
   if (!fs.existsSync(reportPath)) return false;
@@ -22,9 +17,6 @@ function isFresh(reportPath, sinceMs) {
   return stats.size > 0 && stats.mtimeMs >= sinceMs;
 }
 
-// `sinceSeconds` is one number for all reports or an array paired in order with
-// `reports`. Returns the reports still pending: all of them must be fresh, or
-// with `any` one is enough, so the caller reads the fresh ones as the rest.
 export async function waitForReports({ reports, sinceSeconds, timeoutSeconds, any = false }) {
   const sinceMs = reports.map((_, index) => 1000 * (Array.isArray(sinceSeconds) ? sinceSeconds[index] : sinceSeconds));
   const pendingNow = () => reports.filter((reportPath, index) => !isFresh(reportPath, sinceMs[index]));
@@ -39,7 +31,7 @@ export async function waitForReports({ reports, sinceSeconds, timeoutSeconds, an
 }
 
 async function main(argv) {
-  const flags = parseFlags(argv, { since: 'list', report: 'list', timeout: 'value', any: 'boolean' });
+  const flags = parseFlags(argv, { since: 'list', report: 'list', timeout: 'value', any: 'boolean' }, { usage: USAGE });
   if (flags.since === undefined || !flags.since.every((text) => /^\d+$/.test(text))) {
     throw new UsageError("flag '--since' needs epoch seconds");
   }

@@ -1,11 +1,3 @@
-// Where a handoff sits: beside the branch it belongs to, inside the
-// repository's own git directory, so a linked worktree never writes another
-// worktree's handoff. hooks/session-start.mjs points a resuming session at the
-// same file; this command is the one place both compute it, so the skill body
-// no longer restates the git commands.
-//
-//   node handoff.mjs path [--cwd <dir>]
-
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
@@ -19,21 +11,23 @@ function handoffFile(cwd) {
     const scope = branch.stdout.trim();
     return path.join(gitDir.stdout.trim(), 'exo', 'handoff', `${scope}.md`);
   }
-  // Outside a repository the handoff sits beside the savings record, keyed by
-  // the working directory's own name, the way a project memory falls back too.
   const scope = path.basename(path.resolve(cwd));
   return path.join(configDirectory(), 'exo', 'handoff', `${scope}.md`);
 }
 
+const USAGE = 'usage: node handoff.mjs path [--cwd <dir>]\nPrints where the handoff of the current branch sits, inside the repository\'s git directory.';
+
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { cwd: { type: 'string' } }
+  options: { cwd: { type: 'string' }, help: { type: 'boolean' } }
 });
 
 const cwd = values.cwd ?? process.cwd();
 const command = positionals[0];
 
-if (command === 'path') {
+if (values.help) {
+  console.log(USAGE);
+} else if (command === 'path') {
   console.log(handoffFile(cwd));
 } else {
   console.error(`unknown command ${command ?? '(none)'}; expected path`);

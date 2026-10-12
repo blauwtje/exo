@@ -1,13 +1,3 @@
-// Lands a run whose plan passed, or parks it in `<runDir>/gates.md`: checks the
-// branch review, fetches and rebases onto origin, reruns the re-check when the
-// rebase moved the branch, then lands per `Land:` (`local`, `push-main`, `pr`).
-// It never forces: anything it would not do alone becomes an open gate, and an
-// approved gate it named is acted on once at the next call.
-//
-// Usage: land-run.mjs --root <checkout> --run-root <build checkout> --branch <name>
-//   --mode <local|push-main|pr> --run-dir <dir> [--success <text>] --started-at <ISO time>
-// Prints one line; exit 0 landed, 3 parked, 2 bad argument.
-
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +9,11 @@ import { openGate, readGates, takeApproved } from './run-state.mjs';
 
 const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'remove-worktree.mjs');
 const LAND_ANYWAY = 'land anyway';
+const USAGE = [
+  'usage: land-run.mjs --root <checkout> --run-root <build checkout> --branch <name>',
+  '  --mode <local|push-main|pr> --run-dir <dir> [--success <text>] --started-at <ISO time>',
+  'Prints one line; exit 0 landed, 3 parked, 2 bad argument.',
+].join('\n');
 
 function run(cwd, cmd, args) {
   const r = spawnSync(cmd, args, { cwd, encoding: 'utf8' });
@@ -26,7 +21,6 @@ function run(cwd, cmd, args) {
 }
 const git = (cwd, ...args) => run(cwd, 'git', args);
 
-/** The review gate's verdict: null when the review lets the run land, else why not. */
 function reviewProblem(runRoot, startedAt) {
   const file = path.join(runRoot, '.exo', 'branch-review.md');
   let text;
@@ -75,7 +69,6 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
     }
     const check = /`([^`]+)`/.exec(success)?.[1];
     const moved = git(runRoot, 'rev-parse', 'HEAD').out !== before;
-    // A re-check that parked earlier is not waived by the next call finding the branch already rebased.
     const pending = readGates(runDir).some((g) => g.source === 'land' && g.status !== 'used' && g.reason.startsWith('re-check failed'));
     if (check && (moved || pending) && !run(runRoot, 'sh', ['-c', check]).ok
       && !takeApproved(runDir, LAND_ANYWAY)) {
@@ -107,14 +100,12 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
     return landed({ range, pushed: `origin/${branch}`, prUrl: gh.out.split('\n').pop(), cleanup: [...notes, 'branch kept'].join('; ') });
   }
 
-  // local and push-main: fast-forward the default branch onto the branch.
   const mainDirty = git(root, 'status', '--porcelain', '--untracked-files=no').out;
   if (!inPlace && (mainDirty || git(root, 'symbolic-ref', '-q', '--short', 'HEAD').out !== base)) {
     return parked(`clean ${root} and switch it to ${base}`, 'main checkout dirty or not on the default branch');
   }
   const old = git(root, 'rev-parse', base).out;
   if (inPlace && !git(root, 'switch', base).ok) return parked(`switch ${root} to ${base}`, `cannot switch to ${base}`);
-  // An in-place park returns to the run branch, so the resumed call rebases it, not the default branch.
   const parkedOnBranch = (action, reason) => {
     if (inPlace) git(root, 'switch', branch);
     return parked(action, reason);
@@ -143,7 +134,7 @@ export function landRun({ root, runRoot, branch, mode, runDir, success = '', sta
 function main(argv) {
   const f = parseFlags(argv, {
     root: 'value', 'run-root': 'value', branch: 'value', mode: 'value', 'run-dir': 'value', success: 'value', 'started-at': 'value',
-  });
+  }, { usage: USAGE });
   for (const k of ['root', 'run-root', 'branch', 'mode', 'run-dir', 'started-at']) {
     if (f[k] === undefined) throw new UsageError(`flag '--${k}' is required`);
   }

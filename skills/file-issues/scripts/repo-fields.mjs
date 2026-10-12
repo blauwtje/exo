@@ -1,25 +1,4 @@
 #!/usr/bin/env node
-// The vocabulary `file-issues` fills an issue or a pull request from, and the
-// Size, Estimate and Priority a fixed ladder computes so two sessions land
-// on the same numbers.
-//
-//   node repo-fields.mjs [--refresh]
-//   node repo-fields.mjs --size --paths <n> --criteria <n> --shape spec|report
-//     [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]
-//
-// The default mode reads the repository's vocabulary through gh, caches it
-// for a day at `<git-common-dir>/exo/fields.json`, and prints it as one
-// compact JSON line; `--refresh` bypasses a fresh cache and rewrites it. A
-// gh failure on the repo or label read prints `fields: error gh=<first
-// stderr line>` and exits 3, writing no cache; every other read is optional
-// and falls back to an empty list plus one line in the printed `unread`.
-//
-// --size takes no gh call and no cache: it sizes max(paths, criteria) against
-// a fixed table, reads the matching estimate off it, and ranks the item's
-// priority by its shape and, for a report, --shipped, or for a spec,
-// --blocking, against the four-way rank the options list (or P0/P1/P2 with
-// none given) carries. It prints one compact JSON line and exits 0.
-// A usage error prints nothing to stdout and exits 2.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -29,9 +8,15 @@ import { memoryDirectory } from '#memory-store';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const USAGE = [
+  'usage: node repo-fields.mjs [--refresh]',
+  '       node repo-fields.mjs --size --paths <n> --criteria <n> --shape spec|report',
+  '         [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]',
+  'The default mode prints the repository vocabulary as one JSON line, cached for a day; --refresh bypasses the cache.',
+  'A gh failure on the repo or label read exits 3. --size takes no gh call and prints one JSON line.',
+  'A usage error prints nothing to stdout and exits 2.',
+].join('\n');
 
-// GitHub's own defaults: a label or a project field outside these names, or
-// any issue type at all, marks the repository as having its own vocabulary.
 const DEFAULT_LABELS = new Set([
   'bug', 'documentation', 'duplicate', 'enhancement', 'good first issue',
   'help wanted', 'invalid', 'question', 'wontfix'
@@ -41,8 +26,6 @@ const DEFAULT_PROJECT_FIELDS = new Set([
   'Milestone', 'Repository', 'Reviewers', 'Parent issue', 'Sub-issues progress'
 ]);
 
-// Raised only for a gh failure, so it is told apart from a programming error
-// that should still crash the script.
 class GhError extends Error {}
 
 function gh(args) {
@@ -54,9 +37,6 @@ function gh(args) {
   }
 }
 
-// An optional read: a gh failure is recorded in `unread` instead of failing
-// the whole script, so one missing scope (a token without `read:project`)
-// still lets every other field through.
 function optional(label, unread, fallback, read) {
   try {
     return read();
@@ -107,8 +87,6 @@ function readProjectFields(owner, project, unread) {
   });
 }
 
-// One pass over the calls fields.md's "Read the repository" section names:
-// the repo and label reads are required, everything else is optional.
 function readRepository(cwd) {
   const unread = [];
   const repoJson = JSON.parse(gh(['repo', 'view', '--json', 'owner,name,defaultBranchRef']));
@@ -154,8 +132,6 @@ function cachePath(cwd) {
   return path.join(memoryDirectory(cwd), 'fields.json');
 }
 
-// A cache that fails to parse, or carries no `fetchedAt`, is treated the
-// same as no cache at all rather than as a read error.
 function readCache(file) {
   try {
     const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -211,17 +187,12 @@ function sizeForCount(count) {
   return step ? step.size : 'XL';
 }
 
-// A report only takes --shipped, a spec only --blocking, into the same
-// four-way rank: report+shipped highest, the other report and spec+blocking
-// both middle, a plain spec lowest.
 function priorityCategory({ shape, shipped, blocking }) {
   if (shape === 'report') return shipped ? 'highest' : 'middle';
   if (shape === 'spec') return blocking ? 'middle' : 'lowest';
   throw new UsageError(`--shape must be 'spec' or 'report', got '${shape}'`);
 }
 
-// With options the highest is the first and the lowest the last; the middle
-// is the option at Math.floor((n-1)/2), which is already index 0 for n<=2.
 function priorityForCategory(category, options) {
   if (!options || options.length === 0) return DEFAULT_PRIORITY[category];
   if (category === 'highest') return options[0];
@@ -229,7 +200,6 @@ function priorityForCategory(category, options) {
   return options[Math.floor((options.length - 1) / 2)];
 }
 
-/** The Size, Estimate and Priority a body's paths, criteria and shape carry. */
 export function sizeFields({ paths, criteria, shape, shipped = false, blocking = false, options }) {
   const size = sizeForCount(Math.max(paths, criteria));
   const category = priorityCategory({ shape, shipped, blocking });
@@ -241,8 +211,6 @@ function toCount(value, name) {
   return Number(value);
 }
 
-// One flag grammar for both modes, so a stray flag from the other mode
-// fails the same usage check instead of reading as "unknown flag".
 function readFlags(argv) {
   return parseFlags(argv, {
     size: 'boolean',
@@ -253,7 +221,7 @@ function readFlags(argv) {
     shipped: 'boolean',
     blocking: 'boolean',
     options: 'value'
-  });
+  }, { usage: USAGE });
 }
 
 function sizeFlagsFrom(flags) {

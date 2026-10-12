@@ -1,7 +1,3 @@
-// Provider settings for `exo run`: the catalog this plugin ships, merged under
-// the user's own <home>/.config/exo/run.json, plus the key file and the effort
-// mapping. Pure functions; callers pass `home` so tests never touch the real one.
-
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -42,7 +38,6 @@ export function readKeys(file) {
   return keys;
 }
 
-// Nearest accepted level in `order`; a tie goes to the higher level.
 export function mapEffort(level, accepted, order) {
   if (accepted.includes(level)) return level;
   const at = order.indexOf(level);

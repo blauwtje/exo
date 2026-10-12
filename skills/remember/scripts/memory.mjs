@@ -1,20 +1,3 @@
-// The project memory on disk: what this repository taught exo, attested in two
-// distinct sessions and still true. memory.json is the state this script owns
-// and memory.md the rendered file a session reads; the two are written together,
-// so a reader never sees a claim the state has already retired.
-//
-//   node memory.mjs paths
-//   node memory.mjs render
-//   node memory.mjs retire --claim "<the claim>"
-//   node memory.mjs book --source review --key <key> --claim "<defect>" --session <id> [--quote "<text>"]
-//   node memory.mjs propose [--count]
-//   node memory.mjs reject --session <id> (--key <key> | --claim "<the claim>")
-//   node memory.mjs write --decision --claim "<the decision>" --refs <paths>
-//   node memory.mjs decisions
-//
-// Every command takes --cwd naming the repository, defaulting to the process
-// working directory.
-
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -32,8 +15,6 @@ function memoryFile(cwd) {
   return path.join(memoryDirectory(cwd), 'memory.md');
 }
 
-// A missing state is an empty one; any other read or parse failure throws,
-// because a state written back without being read drops every line in it.
 function readState(cwd) {
   let text;
   try {
@@ -53,23 +34,14 @@ function readState(cwd) {
 
 const HEADER = '# Project memory\n\nexo writes this file. Do not edit it by hand: run `/exo:remember` instead.';
 
-// A spec decision is a line the user answered, kept in the state beside the
-// lessons but never rendered or counted against the budget.
 function isMemory(line) {
   return isLive(line) && line.decision !== true;
 }
 
-// Live means still the answer: never superseded, dropped by verify, or retired
-// by hand. Every filter that decides what a session reads or what counts
-// against the budget shares this one rule.
 function isLive(line) {
   return line.superseded === null && line.dropped === null && line.retired === null;
 }
 
-// What a session reads and what the budget measures: the claims still live,
-// each once. A line that left the understanding says so in memory.json, which
-// keeps every claim it ever held, dated; rendering that history here would
-// charge the budget for an answer no session reads anymore.
 function render(state) {
   const live = state.lines.filter(isMemory);
   const understanding = live.length === 0
@@ -86,8 +58,6 @@ function fail(message) {
   process.exit(1);
 }
 
-// Both files are written together, so a reader never sees a claim the state has
-// already retired.
 function writeState(cwd, state) {
   fs.mkdirSync(memoryDirectory(cwd), { recursive: true });
   fs.writeFileSync(stateFile(cwd), `${JSON.stringify(state, null, 2)}\n`);
@@ -98,16 +68,11 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// A rejection holds against the sessions that already saw the claim when the
-// user turned it down; only a session outside that list brings it back, because
-// a repeat from a listed session is the same evidence the user already weighed.
 function revive(state, name, session) {
   const rejection = state.rejected[name];
   if (rejection !== undefined && !rejection.sessions.includes(session)) delete state.rejected[name];
 }
 
-// A second booking from the same session replaces that session's quote rather
-// than counting twice: a session that repeats itself has still seen the claim once.
 function book(state, claim, quote, session) {
   revive(state, claim, session);
   const attestations = (state.candidates[claim] ?? []).filter((entry) => entry.session !== session);
@@ -120,8 +85,6 @@ function normalizeKey(key) {
   return key.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-// A review defect is booked under a stable key, so two sessions that word one
-// defect differently still count as one lesson.
 function bookReview(state, key, claim, quote, session) {
   const name = `review:${key}`;
   revive(state, name, session);
@@ -131,17 +94,12 @@ function bookReview(state, key, claim, quote, session) {
   return attestations.length;
 }
 
-// A rejected candidate keeps its attestations but is not proposed, so ship's
-// count of ready lessons drops to what the user has not yet turned down.
 function proposable(state) {
   return Object.entries(state.candidates)
     .filter(([name, attestations]) => attestations.length >= ATTESTATIONS_REQUIRED && state.rejected[name] === undefined)
     .map(([claim, attestations]) => ({ claim, attestations }));
 }
 
-// A ref names a file this repository still holds, optionally a symbol inside it
-// as `<path>#<symbol>`. It is resolved against the root and rejected when it
-// escapes: a ref is model-written text, and verify opens whatever it names.
 function resolveRef(cwd, ref) {
   const [relative, symbol] = ref.split('#');
   const root = path.resolve(cwd);
@@ -157,8 +115,6 @@ function parseRefs(cwd, refs) {
   return listed;
 }
 
-// The refusal names what has to go, oldest live line first, because a writer
-// told only that it is over budget has to open the file to act on it.
 function budgetRefusal(state, bytes) {
   const live = state.lines.filter(isMemory);
   const oldest = [...live].sort((left, right) => (left.written < right.written ? -1 : 1));
@@ -166,15 +122,11 @@ function budgetRefusal(state, bytes) {
   return `refused: memory.md would be ${bytes} bytes, over the ${MEMORY_BUDGET.bytes} byte budget. Retire one of these lines, oldest first, or archive the decision history: ${named.join('; ')}`;
 }
 
-// The write happens only after the user approved the proposal, which is why this
-// runs as its own command rather than at the end of propose.
 function writeClaim(cwd, state, claim, refs, replaces, name = claim) {
   const attestations = state.candidates[name] ?? [];
   if (attestations.length < ATTESTATIONS_REQUIRED) {
     throw new Error(`refused: "${claim}" is attested in ${attestations.length} session(s), and ${ATTESTATIONS_REQUIRED} are required`);
   }
-  // One live line per claim: a claim two later sessions attest again is already
-  // in the file, and a second copy of it costs every session the budget twice.
   const live = state.lines.find((line) => line.claim === claim && isLive(line));
   if (live !== undefined) {
     throw new Error(`refused: "${claim}" is already live, written ${live.written}. Supersede it with --replaces or retire it rather than writing it twice`);
@@ -207,9 +159,6 @@ function git(cwd, ...args) {
   return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
 }
 
-// The commit a decision was made against: where HEAD left the default branch.
-// No default branch or no commit yet stores none, and a decision without a
-// commit is settled.
 function decisionCommit(cwd) {
   const head = git(cwd, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
   const candidates = [head.status === 0 ? head.stdout.trim() : null, 'main', 'master'].filter(Boolean);
@@ -231,8 +180,6 @@ function writeDecision(cwd, state, claim, refs) {
   writeState(cwd, { candidates: state.candidates, lines, rejected: state.rejected });
 }
 
-// changed: the commit is gone from HEAD's history, or the refs gained more lines
-// than half of what they hold now.
 function decisionStatus(cwd, line) {
   if (!line.commit || line.refs.length === 0) return 'settled';
   if (git(cwd, 'merge-base', '--is-ancestor', line.commit, 'HEAD').status !== 0) return 'changed';
@@ -247,10 +194,6 @@ function decisionStatus(cwd, line) {
   return added > total / 2 ? 'changed' : 'settled';
 }
 
-// A live line stays live only while every path and symbol it names is still
-// there. A line that fails is marked dropped and keeps its place in the history,
-// never removed: the claim and the refs that killed it are the only record that
-// exo ever believed it. A line already superseded or dropped is not re-checked.
 function verifyLines(cwd, state) {
   const date = today();
   let checked = 0;
@@ -270,9 +213,22 @@ function verifyLines(cwd, state) {
   return { lines, live: checked - dropped.length, dropped };
 }
 
+const USAGE = [
+  'usage: node memory.mjs paths',
+  '       node memory.mjs render',
+  '       node memory.mjs retire --claim "<the claim>"',
+  '       node memory.mjs book --source review --key <key> --claim "<defect>" --session <id> [--quote "<text>"]',
+  '       node memory.mjs propose [--count]',
+  '       node memory.mjs reject --session <id> (--key <key> | --claim "<the claim>")',
+  '       node memory.mjs write --decision --claim "<the decision>" --refs <paths>',
+  '       node memory.mjs decisions',
+  'Every command takes --cwd naming the repository, defaulting to the process working directory.',
+].join('\n');
+
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
+    help: { type: 'boolean' },
     cwd: { type: 'string' },
     claim: { type: 'string' },
     quote: { type: 'string' },
@@ -289,7 +245,9 @@ const { values, positionals } = parseArgs({
 const cwd = values.cwd ?? process.cwd();
 const command = positionals[0];
 
-if (command === 'paths') {
+if (values.help) {
+  console.log(USAGE);
+} else if (command === 'paths') {
   console.log(stateFile(cwd));
   console.log(memoryFile(cwd));
 } else if (command === 'render') {
@@ -369,9 +327,6 @@ if (command === 'paths') {
     fail(error.message);
   }
 } else if (command === 'verify') {
-  // A ref reaches this point already resolved once at write time, so a throw
-  // here means the state was edited by hand; it stops the prune rather than
-  // deleting lines it could not check.
   try {
     const state = readState(cwd);
     const { lines, live, dropped } = verifyLines(cwd, state);
@@ -394,8 +349,6 @@ if (command === 'paths') {
     fail(error.message);
   }
 } else if (command === 'reject') {
-  // The user turned the proposal down: the candidate is recorded as rejected
-  // rather than deleted, so its attestations stay and a later session can revive it.
   if (values.session === undefined || (values.key === undefined) === (values.claim === undefined)) {
     fail('reject needs --session and exactly one of --key or --claim');
   }

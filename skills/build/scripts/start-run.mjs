@@ -1,24 +1,4 @@
 #!/usr/bin/env node
-// Finds the plan build's step 1 should run: the file under docs/plans/,
-// docs/specs/ or ~/.claude/plans/ whose `Repository:` line equals the
-// checkout's toplevel, preferring one whose `Branch:` line equals the
-// current branch, exactly as build's SKILL.md describes, and runs
-// scratch-exclude.mjs, so a session that opens on a plan reaches its first
-// dispatch in one command instead of picking the plan by hand.
-//
-//   node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]
-//
-// `--plan` names the plan the user gave, which skips the search.
-// `--find-only` only resolves and prints the plan: the workspace decision
-// reads the plan's `Repository:` and `Branch:` lines before the run's
-// checkout is known, so it runs before the starting call.
-// `--find-only` prints the picked plan's absolute path, then its
-// `Repository:` and `Branch:` lines (`none` when absent), so the session
-// never opens the plan for them. The starting call
-// prints one `run started` line naming the plan, checkout and branch, plus a
-// note when the checkout's branch is not the plan's `Branch:`. A refusal
-// (zero or several plans, a `--checkout` that is not a checkout) exits 1 with
-// one line naming the cause and the next command.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -33,15 +13,20 @@ import { frameOf, openPoints, parsePlan, PlanError } from '#plan-tasks';
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
 const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
 const USAGE = 'usage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]';
+const HELP = [
+  'usage: node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]',
+  '--plan names the plan the user gave, which skips the search.',
+  "--find-only prints the picked plan's absolute path, then its `Repository:` and `Branch:` lines (`none` when absent).",
+  'The starting call prints one `run started` line naming the plan, checkout and branch.',
+  'A refusal (zero or several plans, a --checkout that is not a checkout) exits 1 with one line naming the cause and the next command.',
+].join('\n');
 
-/** No plan matches, several do, or the run checkout is no checkout: the caller exits 1. */
 export class RefusalError extends Error {}
 
 function gitLine(root, args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
 }
 
-// Every `.md` file under `directory`, or none when it does not exist.
 function markdownFiles(directory) {
   if (!fs.existsSync(directory)) return [];
   return fs.readdirSync(directory, { recursive: true, withFileTypes: true })
@@ -49,8 +34,6 @@ function markdownFiles(directory) {
     .map((entry) => path.join(entry.parentPath, entry.name));
 }
 
-// The frame's fields of one plan file, or null when it does not parse as
-// spec writes a plan.
 function planFrame(file) {
   try {
     return frameOf(parsePlan(fs.readFileSync(file, 'utf8')).frame);
@@ -60,7 +43,6 @@ function planFrame(file) {
   }
 }
 
-/** Every plan under the three plan folders whose `Repository:` line equals `repository`. */
 export function candidatePlans(root, repository) {
   const directories = [...PLAN_DIRECTORIES.map((dir) => path.join(root, dir)), path.join(os.homedir(), '.claude', 'plans')];
   return directories.flatMap(markdownFiles)
@@ -68,13 +50,11 @@ export function candidatePlans(root, repository) {
     .filter(({ frame }) => frame !== null && frame.repository === repository);
 }
 
-/** Every candidate whose `Branch:` equals `branch`, when any do, else every candidate. */
 export function pickPlans(candidates, branch) {
   const onBranch = candidates.filter(({ frame }) => frame.branch === branch);
   return onBranch.length > 0 ? onBranch : candidates;
 }
 
-/** The plan to run for `root`, or throws `RefusalError` naming why none is picked. */
 export function resolvePlan(root) {
   const repository = gitLine(root, ['rev-parse', '--show-toplevel']);
   const branch = gitLine(root, ['branch', '--show-current']);
@@ -90,7 +70,7 @@ export function resolvePlan(root) {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { root: 'value', checkout: 'value', plan: 'value', 'find-only': 'boolean' });
+  const flags = parseFlags(argv, { root: 'value', checkout: 'value', plan: 'value', 'find-only': 'boolean' }, { usage: HELP });
   const root = flags.root ?? process.cwd();
   const planPath = flags.plan ? path.resolve(flags.plan) : resolvePlan(root);
   if (flags['find-only']) {
@@ -116,8 +96,6 @@ function main(argv) {
   }
 }
 
-// The run checkout's current branch, empty on a detached HEAD, or a
-// refusal when the path is no git checkout.
 function checkoutBranch(checkout) {
   try {
     return execFileSync('git', ['-C', checkout, 'branch', '--show-current'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
