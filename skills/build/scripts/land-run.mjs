@@ -21,6 +21,19 @@ function run(cwd, cmd, args) {
 }
 const git = (cwd, ...args) => run(cwd, 'git', args);
 
+function fixLanded(runRoot, branchMtime) {
+  const file = path.join(runRoot, '.exo', 'fix-review.md');
+  let text;
+  try {
+    if (fs.statSync(file).mtimeMs < branchMtime) return false;
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    return false;
+  }
+  const verdict = /\b(CLEAN|FINDINGS|BLOCKED)\b/.exec(text)?.[1];
+  return verdict === 'CLEAN' || (verdict === 'FINDINGS' && !/;\s*fix\s*$/m.test(text));
+}
+
 function reviewProblem(runRoot, startedAt) {
   const file = path.join(runRoot, '.exo', 'branch-review.md');
   let text;
@@ -36,6 +49,7 @@ function reviewProblem(runRoot, startedAt) {
   if (verdict === 'CLEAN') return null;
   const fix = [...text.matchAll(/^Count:.*\bfix=(\d+)/gm)].at(-1)?.[1];
   if (verdict === 'FINDINGS' && fix === '0') return null;
+  if (verdict === 'FINDINGS' && fixLanded(runRoot, mtime)) return null;
   return `branch review is ${verdict ?? 'unreadable'}${fix ? ` with fix=${fix}` : ''}`;
 }
 
