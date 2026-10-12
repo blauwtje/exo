@@ -778,9 +778,10 @@ async function main(argv) {
   fs.mkdirSync(logDir, { recursive: true });
   if (!isFileOnDisk(learnings)) fs.writeFileSync(learnings, '# Learnings\n');
   // The run's start commit, written once: a resume keeps the first one.
+  // No file while tasks already landed: HEAD holds their work, so the start is unknown (null) and the gate skips.
   const startFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'start-commit');
-  if (!isFileOnDisk(startFile)) fs.writeFileSync(startFile, `${gitOut(root, ['rev-parse', 'HEAD'])}\n`);
-  const startCommit = fs.readFileSync(startFile, 'utf8').trim();
+  if (!isFileOnDisk(startFile) && landedAtStart.length === 0) fs.writeFileSync(startFile, `${gitOut(root, ['rev-parse', 'HEAD'])}\n`);
+  const startCommit = isFileOnDisk(startFile) ? fs.readFileSync(startFile, 'utf8').trim() : null;
   const startedAt = Date.now();
   const run = { planPath, plan, branch, cap, root, contextBudget: provider.contextBudget, logDir, records: [], landings: new Map(), uncommitted: new Set(), verifyLines: [], elapsed: () => Date.now() - startedAt };
   for (const number of landedAtStart) {
@@ -1010,7 +1011,8 @@ async function main(argv) {
       const command = criterionCommand(criterion);
       const skip = plan.successRed !== null ? `Red: none (${plan.successRed.reason})`
         : /^Product run: none\b/m.test(criterion) ? 'Product run: none'
-          : command === null || command.startsWith('mcp:') ? 'no shell Success command' : null;
+          : command === null || command.startsWith('mcp:') ? 'no shell Success command'
+            : startCommit === null ? "the run's start commit is unknown: tasks landed before start-commit was recorded" : null;
       if (skip !== null) {
         run.redGreenLine = `Red-green: skipped (${skip})`;
         say(run.redGreenLine);

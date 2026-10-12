@@ -61,3 +61,21 @@ test('the red-green skip and outcome lines reach stdout, which exo run keeps as 
   const proved = await runPlan(await setup({ success: '`test -f b.txt`', successRed: null }), [land(1), land(2), { result: 'Verify done.' }]);
   assert.match(proved.stdout, /^\[\d\d:\d\d\] Red-green: proved$/m, proved.stdout + proved.stderr);
 });
+
+test('a resume with tasks landed and no start-commit file skips the gate, not a HEAD base', async () => {
+  const context = await setup({ success: '`test -f b.txt`', successRed: null });
+  for (const [number, file] of [[1, 'a.txt'], [2, 'b.txt']]) {
+    await fs.writeFile(path.join(context.root, file), `${number}\n`);
+    git(context.root, 'add', file);
+    git(context.root, 'commit', '-q', '-m', `feat: task ${number}`, '-m', `Plan-task: plan/${number}`);
+  }
+  const result = await runPlan(context, [{ result: 'Verify done.' }]);
+  const line = "Red-green: skipped (the run's start commit is unknown: tasks landed before start-commit was recorded)";
+  assert.ok(result.detail.split('\n').includes(line), result.stdout + result.stderr);
+  assert.ok(result.progress.includes(`] ${line}\n`));
+  assert.ok(result.stdout.includes(`] ${line}\n`));
+  assert.match(result.progress, /final review start/);
+  assert.ok(result.calls.every((call) => !/also passes on/.test(call.stdin)));
+  const start = await fs.readFile(path.join(context.root, '.exo', 'run-plan', 'plan', 'start-commit'), 'utf8').catch(() => null);
+  assert.equal(start, null, 'no HEAD recorded as the start commit');
+});
