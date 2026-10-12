@@ -32,7 +32,7 @@ import { confinedClaude } from '#confine-claude';
 import { withoutParentSession } from './lean-gates.mjs';
 import { ARMS, CALIBRATION_TASKS, DEFAULT_ARMS, FIXTURE, GIT_TASKS, MODELS, NO_RUN, ROOT, SAFE_TASKS, SMOKE_TASKS, TEMPLATE_TASKS } from './tasks.mjs';
 import { applyVariant } from './variants.mjs';
-import { cellFits, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, planFileOf, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
+import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, DEFAULT_ESTIMATE_USD, GIT_IDENTITY, linkedWorktrees, loadValueTasks, newestRunLedger, parseSpendCap, planFileOf, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from './value.mjs';
 
 const BENCHMARKS = path.join(ROOT, 'benchmarks');
 const FIXTURES = path.join(BENCHMARKS, 'fixtures');
@@ -72,7 +72,7 @@ function parseArguments(argv) {
     else if (flag === '--runs') options.runs = Number(value());
     else if (flag === '--model') options.model = value();
     else if (flag === '--concurrency') options.concurrency = Number(value());
-    else if (flag === '--max-total-usd') options.maxTotalUsd = Number(value());
+    else if (flag === '--max-total-usd') options.maxTotalUsd = parseSpendCap(value());
     else if (flag === '--out') options.out = value();
     else if (flag === '--effort') options.effort = value();
     else if (flag === '--dry-run') options.dryRun = true;
@@ -500,8 +500,10 @@ async function main() {
       }
       // Stop before a cell that would pass the total cap; expected is the
       // highest finished cell of its arm in this run, else the task's estimate.
+      // Assumes --concurrency 1 and a fresh run: parallel cells each see the
+      // same spent, and a resumed run starts spent at 0.
+      const expected = highestCost[cell.arm] ?? cell.task.estimateUsd ?? DEFAULT_ESTIMATE_USD;
       if (options.maxTotalUsd !== null) {
-        const expected = highestCost[cell.arm] ?? cell.task.estimateUsd ?? DEFAULT_ESTIMATE_USD;
         if (!cellFits({ spent, expected, cap: options.maxTotalUsd })) {
           skipped.push(cell);
           console.log(`skipped ${cell.task.id} ${cell.arm} #${cell.run}: spent $${spent.toFixed(3)} + expected $${expected.toFixed(3)} passes $${options.maxTotalUsd}`);
@@ -513,10 +515,8 @@ async function main() {
       const checks = await runCell(cell, fixtureDirectory, options.effort, cellHome, copies);
       done += 1;
       const result = checks.resultParsed ? JSON.parse(fs.readFileSync(path.join(cell.cellDirectory, 'result.json'), 'utf8')) : {};
-      if (typeof result.total_cost_usd === 'number') {
-        spent += result.total_cost_usd;
-        highestCost[cell.arm] = Math.max(highestCost[cell.arm] ?? 0, result.total_cost_usd);
-      }
+      spent += cellSpend({ cost: result.total_cost_usd, expected });
+      if (typeof result.total_cost_usd === 'number') highestCost[cell.arm] = Math.max(highestCost[cell.arm] ?? 0, result.total_cost_usd);
       const cost = typeof result.total_cost_usd === 'number' ? `$${result.total_cost_usd.toFixed(3)}` : 'no result';
       const verdicts = { template: `correct=${checks.correct}`, safe: `safe=${checks.safe}`, git: `outcome=${checks.outcome}`, value: checks.harnessError ? 'HARNESS ERROR' : `pass=${checks.pass} defects=${checks.defects}/${checks.total}` };
       const verdict = verdicts[checks.tier] ?? checks.tier;

@@ -258,3 +258,19 @@ export function projectCost(cells, runsDirectory) {
 export function cellFits({ spent, expected, cap }) {
   return cap === null || spent + expected <= cap;
 }
+
+// The --max-total-usd value as a positive finite number; a missing, non-numeric
+// or non-positive value throws, so a typo cannot silently skip every cell.
+export function parseSpendCap(raw) {
+  const cap = Number(raw);
+  if (raw === undefined || raw.trim() === '' || !Number.isFinite(cap) || cap <= 0) {
+    throw new Error(`--max-total-usd needs a positive dollar amount, got ${raw === undefined ? 'nothing' : JSON.stringify(raw)}`);
+  }
+  return cap;
+}
+
+// What a finished cell adds to the spent total: its reported cost, else the
+// cost it was expected to have, so a killed or failed cell cannot pass the cap.
+export function cellSpend({ cost, expected }) {
+  return typeof cost === 'number' ? cost : expected;
+}

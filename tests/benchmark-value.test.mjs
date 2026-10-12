@@ -13,7 +13,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './harness.mjs';
-import { cellFits, checkoutPlanBranch, copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, newestRunLedger, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from '../benchmarks/value.mjs';
+import { cellFits, cellSpend, checkoutPlanBranch, copyPluginWithoutTasks, EXO_SETTINGS, GIT_IDENTITY, loadValueTasks, newestRunLedger, parseSpendCap, prepareValueRepo, projectCost, runPlanPath, scoreValueRepo, writeRunPlan } from '../benchmarks/value.mjs';
 
 const SCHEMA = JSON.parse(await fs.readFile(new URL('../skills/configure/schema.json', import.meta.url), 'utf8'));
 const SCORE = fileURLToPath(new URL('../benchmarks/score.mjs', import.meta.url));
@@ -360,4 +360,17 @@ test('cellFits lets a cell run only while spent plus expected stays within the c
   assert.equal(cellFits({ spent: 0.6, expected: 0.7, cap: 1.2 }), false);
   assert.equal(cellFits({ spent: 5, expected: 5, cap: null }), true);
   assert.equal(cellFits({ spent: 0, expected: 2, cap: 1.2 }), false);
+});
+
+test('parseSpendCap takes a positive dollar amount and rejects a missing, non-numeric or non-positive one', () => {
+  assert.equal(parseSpendCap('2.5'), 2.5);
+  for (const raw of [undefined, '', 'abc', '--runs', '0', '-1', 'Infinity']) {
+    assert.throws(() => parseSpendCap(raw), /--max-total-usd/, `raw ${raw}`);
+  }
+});
+
+test('cellSpend counts a cell without a readable cost at the cost it was expected to have', () => {
+  assert.equal(cellSpend({ cost: 0.4, expected: 0.7 }), 0.4);
+  assert.equal(cellSpend({ cost: undefined, expected: 0.7 }), 0.7);
+  assert.equal(cellSpend({ cost: null, expected: 0.7 }), 0.7);
 });
