@@ -23,10 +23,11 @@ import process from 'node:process';
 import { confinedClaude } from '#confine-claude';
 import { killTree } from '#process-tree';
 import { writeCellUsage, writeRunUsage } from './cell-usage.mjs';
+import { commentStats, ledgerTranscripts } from './comment-count.mjs';
 import { checkFlow } from './flow-check.mjs';
 import { gateFacts, readJsonl, reviewBookings, toolCalls } from './lean-gates-metrics.mjs';
 import { claudeArguments, pluginVariants, runArguments, selectCells, sweepCells } from './sweep-cells.mjs';
-import { FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
+import { FLOW_BRANCH, FLOW_TASK_COUNT, prepareBuildRepository, prepareFixerBranch, prepareFlowRepository, prepareGreenFirstBranch, prepareReviewBranch } from './sweep-fixtures.mjs';
 import { countDriftReports, lintPlan, parseReview, resultsMarkdown } from './sweep-score.mjs';
 import { ROOT } from './tasks.mjs';
 import { copyPluginWithoutTasks } from './value.mjs';
@@ -199,6 +200,11 @@ function landedTasks(repository) {
   return new Set(messages.match(/^Plan-task: \d+$/gm) ?? []).size;
 }
 
+function flowTranscripts(repository, usage) {
+  if (usage?.transcript) return [usage.transcript];
+  return ledgerTranscripts(runLedger(repository));
+}
+
 // The hidden check reads the finished code, so it runs before the repository
 // is removed; a check that throws leaves the cell a record with no landed count.
 async function measureFlow(repository, review, usage) {
@@ -227,7 +233,8 @@ async function measureFlow(repository, review, usage) {
     reviewDispatched: gates?.reviewDispatched ?? null,
     routes: gates?.routes ?? null,
     reviewBookings: calls === null ? null : reviewBookings(calls),
-    leadPeakTokens: usage?.leadPeakTokens ?? null
+    leadPeakTokens: usage?.leadPeakTokens ?? null,
+    commentStats: commentStats({ repository, branch: FLOW_BRANCH, transcripts: flowTranscripts(repository, usage), hiddenPass: check.pass })
   };
 }
 
