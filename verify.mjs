@@ -36,6 +36,7 @@ import { checkQuestionOptions } from './verify/checks/question-options.mjs';
 import { checkPaidRuns } from './verify/checks/paid-runs.mjs';
 import { checkBoundaryWords } from './verify/checks/boundary-words.mjs';
 import { checkInstructionDensity } from './verify/checks/instruction-density.mjs';
+import { checkCodeComments } from './verify/checks/code-comments.mjs';
 import { codePass } from '#check-cache';
 import { runSelfTest } from './verify/self-test.mjs';
 
@@ -93,6 +94,7 @@ checkSharedContracts(report, repository);
 checkReturnCaps(report, repository);
 checkScriptSyntax(report, repository, changedScripts);
 checkSkillScripts(report, repository, changedScripts);
+checkCodeComments(report, repository);
 // `npm run check` passed on this code, CHANGELOG.md aside: the suite and self-test are reused; the
 // static checks, which can read CHANGELOG.md, still run, and the version check demands its line.
 const reused = values['self-test'] && !values['no-reuse'] ? codePass(root, 'npm run check') : null;
