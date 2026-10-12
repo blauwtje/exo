@@ -891,15 +891,16 @@ async function main(argv) {
       if (budget !== null) return { stop: { ...budget, gate: 'FAIL' } };
       sessions += 1;
       iteration += 1;
+      const number = iteration;
       const log = path.join(logDir, `tail-${sessions}-${kind}.log`);
       const sessionModel = asked !== null && provider.name === 'claude' ? asked : model;
       const { before, outcome, parsed } = await spawnOne({ prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel });
       const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
-      run.records.push({ iteration, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [] });
+      run.records.push({ iteration: number, task: null, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, last, denied: [] });
       const breach = planBreach() ?? breachOf(root, before, { tail: true });
       const parked = breach === null ? takeParked('tail') : null;
       const notLoaded = breach === null && parked === null ? exoError(parsed.init, PLUGIN_ROOT) : null;
-      if (breach !== null) return { stop: { line: `breach in iteration ${iteration}: ${breach}`, why: `The final review or fix session breached a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
+      if (breach !== null) return { stop: { line: `breach in iteration ${number}: ${breach}`, why: `The final review or fix session breached a safety rule (${breach})`, next: `check git log on ${branch} and ${log}, then run exo run again`, gate: 'FAIL' } };
       if (parked !== null) return { stop: { ...parkedStop(parked, log), gate: 'FAIL' } };
       if (notLoaded !== null) return { stop: { line: `exo not loaded: ${notLoaded}`, why: `The plugin did not load (${clip(notLoaded, 80)})`, next: 'fix the plugin error, then run exo run again', gate: 'FAIL' } };
       return { resultText: outcome.timedOut ? '' : parsed.resultText };

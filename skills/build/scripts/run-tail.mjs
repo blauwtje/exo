@@ -13,6 +13,7 @@ const SCRIPT = {
   runProbes: path.join(PLUGIN_ROOT, 'skills', 'verify', 'scripts', 'run-probes.mjs'),
   landTask: path.join(HERE, 'land-task.mjs')
 };
+const REVIEW_CONCURRENCY = 3;
 const REVIEW_AGENT = path.join(PLUGIN_ROOT, 'agents', 'review-branch.md');
 const FIXER_PROMPT = path.join(PLUGIN_ROOT, 'skills', 'build', 'review-fixer-prompt.md');
 const REVIEW_RULES = path.join(PLUGIN_ROOT, 'skills', 'verify', 'references', 'review-rules.md');
@@ -70,6 +71,20 @@ export function parseReviewLines(text) {
 
 const stopOf = (line, why, next) => ({ line, why, next });
 
+async function mapLimited(items, limit, work) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await work(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 export async function runTail({ planPath, plan, root, base, branch, runSession, say = () => {} }) {
   const gateArgs = ['--plan', planPath, '--root', root, ...(base === null ? [] : ['--base', base])];
   const exo = path.join(root, SCRATCH_FOLDER);
@@ -91,14 +106,18 @@ export async function runTail({ planPath, plan, root, base, branch, runSession, 
     }),
     ...(overlaps.length === 0 ? [] : [{ task: null, model: reviewModel, findings: path.join(exo, 'review-overlap.md'), scope: `overlap\n${overlaps.map((target) => `OVERLAP ${target}`).join('\n')}`, questions: [] }])
   ];
-  for (const dispatch of dispatches) {
-    say(`review start: ${dispatch.task === null ? 'overlap' : `task ${dispatch.task}`}`);
+  const review = async (dispatch) => {
+    const name = dispatch.task === null ? 'overlap' : `task ${dispatch.task}`;
+    say(`review start: ${name}`);
     fs.rmSync(dispatch.findings, { force: true });
     const session = await runSession({ kind: 'review', task: dispatch.task, model: dispatch.model, prompt: reviewPrompt({ planPath, root, base: baseText, branch, ...dispatch }) });
-    if (session.stop !== undefined) return { stop: session.stop };
-    reports.push(dispatch.findings);
-    say(`review done: ${verdictOf(session.resultText) ?? 'no verdict line'}`);
-  }
+    if (session.stop === undefined) say(`review done: ${name}: ${verdictOf(session.resultText) ?? 'no verdict line'}`);
+    return session;
+  };
+  const sessions = await mapLimited(dispatches, REVIEW_CONCURRENCY, review);
+  const stopped = sessions.find((session) => session.stop !== undefined);
+  if (stopped !== undefined) return { stop: stopped.stop };
+  reports.push(...dispatches.map((dispatch) => dispatch.findings));
 
   if (reports.length > 0) {
     const merged = out(node(SCRIPT.mergeReviews, ['--root', root, ...reports.flatMap((report) => ['--report', report])], root));
