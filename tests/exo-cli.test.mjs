@@ -3,6 +3,7 @@
 // claude (the run-plan STUB shape, reduced to a call record) stands behind.
 
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -311,4 +312,23 @@ test('worktree: a checkout the pointer does not name is switched in place', asyn
     env: { STUB_RECORD: context.record, HOME: context.home, CLAUDE_CONFIG_DIR: config }
   });
   assert.equal(git(context.root, 'branch', '--show-current'), 'feat/new');
+});
+
+test('SIGTERM to exo-cli alone leaves no live claude process', async () => {
+  const context = await setup();
+  const pidFile = path.join(context.home, 'stub.pid');
+  const hang = path.join(context.home, 'hang.mjs');
+  await fs.writeFile(hang, `import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(pidFile)}, String(process.pid));\nsetInterval(() => {}, 1000);\n`);
+  const cli = spawn(process.execPath, [CLI, 'run', 'docs/specs/old.md', '--claude', hang], { cwd: context.root, env: { ...process.env, STUB_RECORD: context.record, HOME: context.home }, stdio: 'ignore' });
+  const exited = new Promise((resolve) => cli.on('close', (code) => resolve(code)));
+  const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+  const until = async (done) => { for (let round = 0; round < 100 && !(await done()); round += 1) await new Promise((r) => setTimeout(r, 100)); };
+  await until(() => fs.access(pidFile).then(() => true, () => false));
+  const stub = Number(await fs.readFile(pidFile, 'utf8'));
+  assert.ok(alive(stub), 'the stub claude runs');
+  cli.kill('SIGTERM');
+  const code = await exited;
+  await until(() => !alive(stub));
+  assert.ok(!alive(stub), 'the stub claude is gone');
+  assert.notEqual(code, 0);
 });

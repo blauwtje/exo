@@ -264,7 +264,7 @@ function runOptions(argv) {
 }
 
 /** Preflight and chores, then run-plan with inherited stdio; its exit code with where the landing step goes (`land` null: no landing). */
-function buildRun(root, plan, flags, id) {
+async function buildRun(root, plan, flags, id) {
   const files = dirtyFiles(root);
   if (files.length > 0) {
     const list = files.join(' ');
@@ -284,7 +284,16 @@ function buildRun(root, plan, flags, id) {
 
   const rootFlags = inTree ? ['--root', runRoot] : [];
   const env = { ...process.env, EXO_RUN: id, EXO_RUN_DIR: runDir(root, id) };
-  const done = spawnSync(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
+  // Async so a signal to this process reaches run-plan, which ends its claude group; exit only after it has.
+  const child = spawn(process.execPath, [RUN_PLAN, plan, ...rootFlags, ...flags], { cwd: runRoot, stdio: 'inherit', env });
+  const forward = (signal) => child.kill(signal);
+  const signals = ['SIGTERM', 'SIGINT', 'SIGHUP'];
+  for (const signal of signals) process.on(signal, forward);
+  const done = await new Promise((resolve) => {
+    child.on('error', () => resolve({ status: null }));
+    child.on('close', (status) => resolve({ status }));
+  });
+  for (const signal of signals) process.off(signal, forward);
   const preview = flags.some((flag) => flag === '--dry-run' || flag === '--help');
   return { code: done.status ?? null, runRoot, branch, land: preview ? null : land };
 }
@@ -340,7 +349,7 @@ function notify(id, phase) {
   spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
 }
 
-function runCommand(argv, { approving = false } = {}) {
+async function runCommand(argv, { approving = false } = {}) {
   const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const options = runOptions(argv);
@@ -403,7 +412,7 @@ function runCommand(argv, { approving = false } = {}) {
   try {
     if (readState(root, id).stage === 'landing') result = landStage(root, id, plan);
     else {
-      const built = buildRun(root, plan, flags, id);
+      const built = await buildRun(root, plan, flags, id);
       code = built.code ?? 1;
       phase = code === 0 ? 'passed' : code === 2 ? 'refused' : code === 3 ? 'parked' : 'stopped';
       if (code === 0 && built.land !== null) {
@@ -435,7 +444,7 @@ function runCommand(argv, { approving = false } = {}) {
   return code;
 }
 
-function approveCommand(args) {
+async function approveCommand(args) {
   const root = gitOut(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (root === null) throw new Refusal(`${process.cwd()} is not inside a git repository`);
   const id = args[0];
@@ -466,9 +475,9 @@ if (isMain(import.meta.url)) {
   try {
     if (command === 'setup') setupCommand();
     else if (command === 'run' && rest[0] === 'config') configCommand(rest.slice(1));
-    else if (command === 'approve') process.exitCode = approveCommand(rest);
+    else if (command === 'approve') process.exitCode = await approveCommand(rest);
     else if (command === 'status') statusCommand(rest);
-    else if (command === 'run') process.exitCode = runCommand(rest);
+    else if (command === 'run') process.exitCode = await runCommand(rest);
     else throw new Refusal('usage: exo run [plan] [--detach] [run-plan flags] | exo run --resume <id> | exo approve <id> | exo status [<id>] | exo run config [<key> <value>] | exo setup');
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;

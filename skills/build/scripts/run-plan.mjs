@@ -47,6 +47,16 @@ import { runTail } from './run-tail.mjs';
 import { configDir, loadRunConfig, readKeys, resolveProvider } from './run-config.mjs';
 
 const KILL_GRACE_MS = 5000;
+const PARENT_POLL_MS = 5000;
+
+/** Append to (or `write`) a log; a removed log dir (ENOENT) is not recreated and does not stop the run. */
+function appendLog(file, text, write = fs.appendFileSync) {
+  try {
+    write(file, text);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+}
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, '..', '..', '..');
 const SCRIPT = {
@@ -366,25 +376,39 @@ function spawnClaude(claude, args, { cwd, env, prompt, log, timeoutMs, refuseIni
         // The group is already gone.
       }
     };
-    // The child has its own process group, so a signal to the runner no longer reaches it: end the group, then exit.
+    // The child has its own process group, so a signal to the runner no longer reaches it: end the group, wait for its exit, then exit.
+    const exitCodes = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 };
     const onSignal = (signal) => {
-      endTree('SIGKILL');
-      process.exit(128 + (signal === 'SIGINT' ? 2 : 15));
+      const leave = () => {
+        endTree('SIGKILL');
+        process.exit(exitCodes[signal]);
+      };
+      endTree('SIGTERM');
+      if (child.exitCode !== null || child.signalCode !== null) leave();
+      else {
+        child.once('exit', leave);
+        setTimeout(leave, KILL_GRACE_MS);
+      }
     };
-    process.on('SIGINT', onSignal);
-    process.on('SIGTERM', onSignal);
+    const signals = Object.keys(exitCodes);
+    for (const signal of signals) process.on(signal, onSignal);
+    // A parent that is gone (killed without a signal we see) leaves no one to stop the session: end it too.
+    const parentPid = process.ppid;
+    const parentWatch = setInterval(() => {
+      if (process.ppid !== parentPid) onSignal('SIGHUP');
+    }, PARENT_POLL_MS).unref();
     const settle = (code, signal) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       clearTimeout(graceTimer);
-      process.off('SIGINT', onSignal);
-      process.off('SIGTERM', onSignal);
+      clearInterval(parentWatch);
+      for (const signal of signals) process.off(signal, onSignal);
       resolve({ text, code, signal, timedOut });
     };
     const record = (chunk) => {
       text += chunk;
-      fs.appendFileSync(log, chunk);
+      appendLog(log, chunk);
       if (initSeen) return;
       const lines = (partial + chunk).split('\n');
       partial = lines.pop();
@@ -746,12 +770,12 @@ async function main(argv) {
   const tasksFile = path.join(logDir, 'tasks.json');
   const progressFile = path.join(logDir, 'progress.md');
   const passes = new Set(landedAtStart);
-  const writeTasks = () => fs.writeFileSync(tasksFile, `${JSON.stringify(plan.tasks.map((task) => ({ number: task.number, title: task.title, passes: passes.has(task.number) })), null, 2)}\n`);
+  const writeTasks = () => appendLog(tasksFile, `${JSON.stringify(plan.tasks.map((task) => ({ number: task.number, title: task.title, passes: passes.has(task.number) })), null, 2)}\n`, fs.writeFileSync);
   fs.writeFileSync(progressFile, `# Progress\n\nPlan: ${planPath}\nBranch: ${branch}\n\n`);
   // One short line per event, on the terminal and in progress.md.
   const say = (text) => {
     const line = `[${clock(Date.now() - startedAt)}] ${text}`;
-    fs.appendFileSync(progressFile, `- ${line}\n`);
+    appendLog(progressFile, `- ${line}\n`);
     process.stdout.write(`${line}\n`);
   };
   writeTasks();
@@ -778,7 +802,7 @@ async function main(argv) {
     });
     const parsed = parseStream(outcome.text);
     spent += parsed.cost;
-    fs.appendFileSync(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
+    appendLog(ledgerFile, `${JSON.stringify({ kind, task, sessionId: parsed.sessionId, costUsd: parsed.cost, hooks: parsed.hooks })}\n`);
     return { before, outcome, parsed };
   };
 
@@ -858,7 +882,7 @@ async function main(argv) {
           cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs
         });
         const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
-        fs.writeFileSync(landLog, output);
+        appendLog(landLog, output, fs.writeFileSync);
         if (answer.status === 0 && landedTasks(plan.tasks, root, planId).includes(n)) {
           markLanded(n, record, startedPlan);
           continue;
@@ -976,9 +1000,9 @@ async function main(argv) {
   }
   if (stop?.parked) exitCode = 3;
   say(exitCode === 0 ? 'run done' : `run stopped: ${stop.why ?? 'final check failed'}`);
-  if (exitCode === 0) fs.appendFileSync(progressFile, 'RUN COMPLETE\n');
+  if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
 
-  fs.writeFileSync(path.join(logDir, 'summary.txt'), `${detailLines(run, stop).join('\n')}\n`);
+  appendLog(path.join(logDir, 'summary.txt'), `${detailLines(run, stop).join('\n')}\n`, fs.writeFileSync);
   process.stdout.write(`${summaryLines(run, stop).join('\n')}\n`);
   return exitCode;
 }

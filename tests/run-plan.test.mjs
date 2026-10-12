@@ -712,3 +712,16 @@ test('--session plan: a stopped plan session leaves a clean tree, its leftover i
   assert.doesNotMatch(patch, /\.exo\/implementer/);
   assert.match(await fs.readFile(path.join(context.root, 'notes.txt'), 'utf8'), /mine/);
 });
+
+test('a log dir removed while a session writes output does not crash the runner', async () => {
+  const context = await setup();
+  const wrapper = path.join(context.tools, 'wrapper.mjs');
+  await fs.writeFile(wrapper, `import fs from 'node:fs';\nfs.rmSync('.exo/run-plan', { recursive: true, force: true });\nawait import(${JSON.stringify(context.stub)});\n`);
+  const scenario = path.join(context.tools, 'scenario.json');
+  await fs.writeFile(scenario, JSON.stringify({ pluginPath: PLUGIN_ROOT, planPath: context.plan, steps: [{ result: 'Looked.' }] }));
+  const result = await run(RUNNER, [context.plan, '--root', context.root, '--claude', wrapper, '--session', 'task', ...SPAWN_ONCE], {
+    cwd: context.root, env: { STUB_SCENARIO: scenario, STUB_RECORD: path.join(context.tools, 'calls.jsonl'), CLAUDECODE: '1', HOME: context.home }
+  });
+  assert.doesNotMatch(result.stderr, /ENOENT|Error:/);
+  assert.match(result.stdout, /^Landed 0 of 2 tasks\./m);
+});
